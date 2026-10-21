@@ -35,12 +35,12 @@ const CASES: OfferCase[] = [
   {
     when: 'some deployments run it',
     marks: { a: MISSING, b: RUNS, c: RUNS },
-    offer: { kind: 'switch', ids: ['b', 'c'] }
+    offer: { kind: 'switch', ids: ['b', 'c', 'a'] }
   },
   {
     when: 'one runs it and another was not checked',
     marks: { a: UNKNOWN, b: RUNS },
-    offer: { kind: 'switch', ids: ['b'] }
+    offer: { kind: 'switch', ids: ['b', 'a'] }
   },
   {
     when: 'every deployment lacks nodes',
@@ -69,7 +69,7 @@ describe(workflowDeploymentOffer, () => {
     expect({
       kind: result.kind,
       ...(result.kind === 'switch' && {
-        ids: result.deployments.map((d) => d.deployment_id)
+        ids: result.choices.map((choice) => choice.deployment.deployment_id)
       })
     }).toEqual(offer)
   })

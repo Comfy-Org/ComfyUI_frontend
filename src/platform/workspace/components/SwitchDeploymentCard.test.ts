@@ -12,6 +12,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { NOTHING_DISCARDED } from '@/platform/workspace/deploymentSwitchReload'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
 import SwitchDeploymentCard from './SwitchDeploymentCard.vue'
 
@@ -49,8 +50,21 @@ function deployment(id: string, name: string): WorkspaceDeployment {
   }
 }
 
-const PRODUCTION = deployment('dep-prod', 'Studio production')
-const STAGING = deployment('dep-staging', 'Studio staging')
+const CHOICES: DeploymentChoice[] = [
+  {
+    deployment: deployment('dep-prod', 'Studio production'),
+    mark: { kind: 'runs' }
+  },
+  {
+    deployment: deployment('dep-staging', 'Studio staging'),
+    mark: { kind: 'runs' }
+  },
+  {
+    deployment: deployment('dep-exp', 'Experiments'),
+    mark: { kind: 'missing', nodeTypes: ['BiRefNet_Zho'] }
+  },
+  { deployment: deployment('dep-old', 'Archive'), mark: { kind: 'unknown' } }
+]
 
 function renderCard() {
   const pinia = getActivePinia()!
@@ -60,7 +74,8 @@ function renderCard() {
   const user = userEvent.setup()
   render(SwitchDeploymentCard, {
     props: {
-      deployments: [PRODUCTION, STAGING],
+      choices: CHOICES,
+      nodeTypeCount: 4,
       missing: [
         {
           label: '2 missing node packs',
@@ -111,6 +126,26 @@ describe('SwitchDeploymentCard', () => {
       'Acme Studio pipeline · Studio staging'
     )
     expect(pick).toHaveBeenCalledWith('dep-staging', NOTHING_DISCARDED)
+  })
+
+  it('lists the deployments that cannot run it muted, with what each lacks', async () => {
+    const { user } = renderCard()
+
+    await user.click(screen.getByRole('combobox', { name: 'Run on' }))
+
+    expect(
+      await screen.findByRole('option', { name: /Experiments/ })
+    ).toHaveTextContent('Missing 1 of 4 nodes')
+    expect(screen.getByRole('option', { name: /Experiments/ })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+    expect(screen.getByRole('option', { name: /Archive/ })).toHaveTextContent(
+      'Not checked'
+    )
+    expect(
+      screen.getByRole('option', { name: /Studio staging/ })
+    ).not.toHaveAttribute('aria-disabled', 'true')
   })
 
   it('stays on Comfy Cloud when the user cancels the save prompt', async () => {

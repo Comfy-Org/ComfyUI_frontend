@@ -1,18 +1,27 @@
 <template>
-  <DefineOption v-slot="{ deployment }">
-    <span class="flex min-w-0 items-center gap-1.5">
-      <span class="truncate">{{ deploymentTitle(deployment) }}</span>
+  <DefineOption v-slot="{ choice }">
+    <span class="flex w-full min-w-0 items-center gap-1.5">
+      <span class="truncate">{{ deploymentTitle(choice.deployment) }}</span>
       <span
-        v-if="deploymentRowSubtitle(deployment)"
+        v-if="deploymentRowSubtitle(choice.deployment)"
         class="truncate text-muted-foreground"
       >
-        {{ deploymentRowSubtitle(deployment) }}
+        {{ deploymentRowSubtitle(choice.deployment) }}
       </span>
       <span
-        class="ml-2 flex shrink-0 items-center gap-1 text-xs text-success-background"
+        :class="
+          cn(
+            'ml-auto flex shrink-0 items-center gap-1 pl-2 text-xs',
+            runs(choice) ? 'text-success-background' : 'text-muted-foreground'
+          )
+        "
       >
-        <i class="icon-[lucide--circle-check] size-3" aria-hidden="true" />
-        {{ $t('deploymentSwitcher.runsThisWorkflow') }}
+        <i
+          v-if="runs(choice)"
+          class="icon-[lucide--circle-check] size-3"
+          aria-hidden="true"
+        />
+        {{ markText(choice) }}
       </span>
     </span>
   </DefineOption>
@@ -32,19 +41,22 @@
             {{ $t('deploymentSwitcher.runOn') }}
           </label>
           <Select
-            :model-value="selected?.deployment_id"
+            :model-value="selected?.deployment.deployment_id"
             @update:model-value="choose"
           >
             <SelectTrigger :id="selectId">
-              <ReuseOption v-if="selected" :deployment="selected" />
+              <ReuseOption v-if="selected" :choice="selected" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem
-                v-for="deployment in deployments"
-                :key="deployment.deployment_id"
-                :value="deployment.deployment_id"
+                v-for="choice in choices"
+                :key="choice.deployment.deployment_id"
+                :value="choice.deployment.deployment_id"
+                :disabled="!runs(choice)"
+                class="py-1.5"
+                text-class="min-w-0 flex-1"
               >
-                <ReuseOption :deployment="deployment" />
+                <ReuseOption :choice="choice" />
               </SelectItem>
             </SelectContent>
           </Select>
@@ -90,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { AcceptableValue } from 'reka-ui'
@@ -103,7 +116,6 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable.vue'
@@ -112,10 +124,13 @@ import { customDeploymentCreateUrl } from '@/platform/workspace/customDeployment
 import type { MissingItemsRow } from '@/platform/workspace/customDeploymentPitch'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
-const { deployments, missing } = defineProps<{
-  /** The deployments the compatibility check says run the workflow, in switcher order. */
-  deployments: readonly WorkspaceDeployment[]
+const { choices, nodeTypeCount, missing } = defineProps<{
+  /** Every deployment with its mark, the ones that run the workflow first. */
+  choices: readonly DeploymentChoice[]
+  /** How many node types the workflow uses, for "Missing 2 of 9 nodes". */
+  nodeTypeCount: number
   missing: readonly MissingItemsRow[]
 }>()
 
@@ -131,18 +146,31 @@ const { deploymentTitle, deploymentRowSubtitle, deploymentFullLabel } =
   useDeploymentLabels()
 
 const [DefineOption, ReuseOption] = createReusableTemplate<{
-  deployment: WorkspaceDeployment
+  choice: DeploymentChoice
 }>()
 
 const selectId = useId()
 const createDeploymentUrl = customDeploymentCreateUrl()
 
+function runs(choice: DeploymentChoice): boolean {
+  return choice.mark?.kind === 'runs'
+}
+
+function markText({ mark }: DeploymentChoice): string {
+  if (mark?.kind === 'runs') return t('deploymentSwitcher.runsThisWorkflow')
+  if (mark?.kind !== 'missing') return t('deploymentSwitcher.notChecked')
+  const missing = mark.nodeTypes.length
+  const total = Math.max(nodeTypeCount, missing)
+  return t('deploymentSwitcher.missingNodesOf', { missing, total }, total)
+}
+
 const chosenId = ref<string>()
 const selected = computed(
   () =>
-    deployments.find(
-      (deployment) => deployment.deployment_id === chosenId.value
-    ) ?? deployments[0]
+    choices.find(
+      (choice) =>
+        runs(choice) && choice.deployment.deployment_id === chosenId.value
+    ) ?? choices.find(runs)
 )
 
 function choose(value: AcceptableValue) {
@@ -153,7 +181,7 @@ const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
 
 async function switchDeployment() {
-  const deployment = selected.value
+  const deployment = selected.value?.deployment
   if (!deployment || isSwitching.value) return
   isSettling.value = true
   try {

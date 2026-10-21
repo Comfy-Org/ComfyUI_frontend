@@ -19,6 +19,7 @@ import {
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { useApp } from '@/scripts/appInstance'
 
 import WorkflowNeedsDeploymentCard from './WorkflowNeedsDeploymentCard.vue'
 
@@ -28,13 +29,22 @@ const marks = vi.hoisted(
 vi.mock(
   import('@/platform/workspace/composables/useDeploymentCompatibility'),
   () => ({
-    workflowNodeTypes: vi.fn(() => []),
+    workflowNodeTypes: vi.fn(() => [
+      'BiRefNet',
+      'EmptyImage',
+      'RMBG',
+      'SaveImage'
+    ]),
     useDeploymentCompatibility: () =>
       fromPartial<ReturnType<typeof useDeploymentCompatibility>>({
         markFor: (id: string | null) => marks.get(id ?? '') ?? null
       })
   })
 )
+
+vi.mock(import('@/scripts/appInstance'), () => ({
+  useApp: () => fromPartial<ReturnType<typeof useApp>>({ isGraphReady: true })
+}))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -132,19 +142,24 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers to switch to a deployment that runs the workflow', () => {
-    renderCard({
-      production: { kind: 'runs' },
-      experiments: { kind: 'missing', nodeTypes: ['RMBG'] }
+  it('offers to switch to a deployment that runs the workflow, counting what the others lack against its node types', async () => {
+    const user = renderCard({
+      experiments: { kind: 'missing', nodeTypes: ['RMBG'] },
+      production: { kind: 'runs' }
     })
 
-    expect(screen.getByRole('combobox', { name: 'Run on' })).toHaveTextContent(
-      'production'
-    )
+    const runOn = screen.getByRole('combobox', { name: 'Run on' })
+    expect(runOn).toHaveTextContent('production')
     expect(screen.getByRole('button', { name: 'Switch' })).toBeInTheDocument()
     expect(
       screen.queryByTestId('custom-deployment-agent')
     ).not.toBeInTheDocument()
+
+    await user.click(runOn)
+
+    expect(
+      await screen.findByRole('option', { name: /experiments/ })
+    ).toHaveTextContent('Missing 1 of 4 nodes')
   })
 
   it('says no deployment runs it when the check finds each one lacks nodes', () => {

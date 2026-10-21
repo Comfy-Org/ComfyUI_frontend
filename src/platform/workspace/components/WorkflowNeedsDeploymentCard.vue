@@ -1,7 +1,8 @@
 <template>
   <SwitchDeploymentCard
     v-if="offer.kind === 'switch'"
-    :deployments="offer.deployments"
+    :choices="offer.choices"
+    :node-type-count="nodeTypeCount"
     :missing="missing"
   />
   <CustomDeploymentCard v-else :pitch="pitch" />
@@ -17,7 +18,10 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import CustomDeploymentCard from '@/platform/workspace/components/CustomDeploymentCard.vue'
 import SwitchDeploymentCard from '@/platform/workspace/components/SwitchDeploymentCard.vue'
-import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import {
+  useDeploymentCompatibility,
+  workflowNodeTypes
+} from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type {
   CustomDeploymentPitch,
@@ -31,6 +35,7 @@ import {
 } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
+import { useApp } from '@/scripts/appInstance'
 
 const NAMES_SHOWN = 3
 
@@ -43,6 +48,11 @@ const { markFor } = useDeploymentCompatibility()
 const offer = computed(() =>
   workflowDeploymentOffer(deployments.value, markFor)
 )
+
+const app = useApp()
+const nodeTypeCount = app.isGraphReady
+  ? workflowNodeTypes(app.rootGraph).length
+  : 0
 
 const packs = computed(() =>
   missingPacksOf(

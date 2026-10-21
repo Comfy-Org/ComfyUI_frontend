@@ -5,8 +5,16 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className, ...restProps } = defineProps<
-  SelectItemProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  textClass,
+  ...restProps
+} = defineProps<
+  SelectItemProps & {
+    class?: HTMLAttributes['class']
+    /** Classes for the item's text, which holds the slot. */
+    textClass?: HTMLAttributes['class']
+  }
 >()
 </script>
 
@@ -26,7 +34,7 @@ const { class: className, ...restProps } = defineProps<
       )
     "
   >
-    <SelectItemText class="truncate">
+    <SelectItemText :class="cn('truncate', textClass)">
       <slot />
     </SelectItemText>
 
