@@ -22,6 +22,12 @@ describe('follower invariant guard', () => {
     expect(scanFollowerInvariantSource(fixture('followerDoc.ts'))).toEqual([])
   })
 
+  test('accepts a plain local that shares a name with a shared-document value', () => {
+    expect(
+      scanFollowerInvariantSource(fixture('allowed-shadowed-local.ts'))
+    ).toEqual([])
+  })
+
   test.for([
     {
       name: 'forbidden-shared-update.ts',
@@ -100,7 +106,12 @@ describe('follower invariant guard', () => {
       message: 'must not call set',
       line: 4
     },
-    { name: 'forbidden-for-of-set.ts', message: 'must not call set', line: 4 }
+    { name: 'forbidden-for-of-set.ts', message: 'must not call set', line: 4 },
+    {
+      name: 'forbidden-accessor-alias-delete.ts',
+      message: 'must not call delete',
+      line: 6
+    }
   ])('rejects $name', ({ name, message, line }) => {
     expect(scanFollowerInvariantSource(fixture(name))).toEqual([
       expect.objectContaining({

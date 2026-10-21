@@ -225,6 +225,24 @@ function sourceFile(sourceInput: FollowerSource): ts.SourceFile {
   )
 }
 
+function sourceChecker(source: ts.SourceFile): ts.TypeChecker {
+  const host: ts.CompilerHost = {
+    fileExists: (fileName) => fileName === source.fileName,
+    getCanonicalFileName: (fileName) => fileName,
+    getCurrentDirectory: () => '',
+    getDefaultLibFileName: () => 'lib.d.ts',
+    getNewLine: () => '\n',
+    getSourceFile: (fileName) =>
+      fileName === source.fileName ? source : undefined,
+    readFile: () => undefined,
+    useCaseSensitiveFileNames: () => true,
+    writeFile: () => undefined
+  }
+  return ts
+    .createProgram([source.fileName], { noLib: true, noResolve: true }, host)
+    .getTypeChecker()
+}
+
 function addParseDiagnostics(
   violations: FollowerInvariantViolation[],
   source: ts.SourceFile,
@@ -254,23 +272,35 @@ function sourceDeclarations(source: ts.SourceFile): SupportedDeclaration[] {
   return declarations
 }
 
-function trackedDocReference(
-  tracked: ReadonlySet<string>,
-  throughArguments = false
-) {
+type Tracking = {
+  checker: ts.TypeChecker
+  tracked: Set<ts.Node>
+}
+
+function declarationOf(
+  checker: ts.TypeChecker,
+  node: ts.Node
+): ts.Node | undefined {
+  const symbol = checker.getSymbolAtLocation(node)
+  return symbol?.valueDeclaration ?? symbol?.declarations?.[0]
+}
+
+function isTracked({ checker, tracked }: Tracking, node: ts.Node): boolean {
+  const declaration = declarationOf(checker, node)
+  return declaration !== undefined && tracked.has(declaration)
+}
+
+function trackedDocReference(tracking: Tracking) {
   const references = (expression: ts.Expression): boolean => {
     const value = unwrapped(expression)
-    if (ts.isIdentifier(value)) return tracked.has(value.text)
+    if (ts.isIdentifier(value)) return isTracked(tracking, value)
     if (isThisDoc(value) || isFollowerDocAccess(value)) return true
     if (ts.isPropertyAccessExpression(value))
       return value.expression.kind === ts.SyntaxKind.ThisKeyword
-        ? tracked.has(value.name.text)
+        ? isTracked(tracking, value.name)
         : references(value.expression)
     if (ts.isCallExpression(value))
-      return (
-        references(value.expression) ||
-        (throughArguments && value.arguments.some(references))
-      )
+      return [value.expression, ...value.arguments].some(references)
     return false
   }
   return references
@@ -362,8 +392,11 @@ function shouldTrackDeclaration(
   return source !== undefined && referencesTrackedDoc(source)
 }
 
-function instanceofSharedTypeNames(source: ts.SourceFile): Set<string> {
-  const names = new Set<string>()
+function instanceofSharedTypeDeclarations(
+  source: ts.SourceFile,
+  checker: ts.TypeChecker
+): Set<ts.Node> {
+  const declarations = new Set<ts.Node>()
   const collect = (node: ts.Node): void => {
     if (
       ts.isBinaryExpression(node) &&
@@ -371,31 +404,36 @@ function instanceofSharedTypeNames(source: ts.SourceFile): Set<string> {
       Y_SHARED_TYPE.test(node.right.getText())
     ) {
       const value = unwrapped(node.left)
-      if (ts.isIdentifier(value)) names.add(value.text)
+      const declaration = ts.isIdentifier(value)
+        ? declarationOf(checker, value)
+        : undefined
+      if (declaration) declarations.add(declaration)
     }
     ts.forEachChild(node, collect)
   }
   collect(source)
-  return names
+  return declarations
 }
 
-function trackedDocNames(source: ts.SourceFile) {
+function trackedDocs(source: ts.SourceFile, checker: ts.TypeChecker): Tracking {
   const declarations = sourceDeclarations(source)
-  const tracked = instanceofSharedTypeNames(source)
+  const tracking = {
+    checker,
+    tracked: instanceofSharedTypeDeclarations(source, checker)
+  }
+  const referencesTrackedDoc = trackedDocReference(tracking)
   let changed = true
   while (changed) {
     changed = false
     for (const declaration of declarations) {
-      const name = declarationName(declaration)
-      if (name === null || tracked.has(name)) continue
-      const referencesTrackedDoc = trackedDocReference(tracked)
+      if (tracking.tracked.has(declaration)) continue
       if (shouldTrackDeclaration(declaration, referencesTrackedDoc)) {
-        tracked.add(name)
+        tracking.tracked.add(declaration)
         changed = true
       }
     }
   }
-  return tracked
+  return tracking
 }
 
 function applyUpdateAlias(
@@ -430,10 +468,10 @@ function yApplyUpdateNames(source: ts.SourceFile): ReadonlySet<string> {
 
 function inspectCalls(
   source: ts.SourceFile,
-  tracked: ReadonlySet<string>,
+  tracking: Tracking,
   violations: FollowerInvariantViolation[]
 ): void {
-  const referencesTrackedDoc = trackedDocReference(tracked, true)
+  const referencesTrackedDoc = trackedDocReference(tracking)
   const applyUpdateNames = yApplyUpdateNames(source)
   const inspect = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
@@ -470,7 +508,7 @@ function scanSource(sourceInput: FollowerSource): FollowerInvariantViolation[] {
   const source = sourceFile(sourceInput)
   const violations: FollowerInvariantViolation[] = []
   addParseDiagnostics(violations, source, sourceInput.contents)
-  inspectCalls(source, trackedDocNames(source), violations)
+  inspectCalls(source, trackedDocs(source, sourceChecker(source)), violations)
   return violations
 }
 
