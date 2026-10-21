@@ -96,6 +96,17 @@ describe('detectSelectionGrid', () => {
       columns: 2
     },
     {
+      name: 'two level short nodes beside a tall one',
+      boxes: [
+        box('a', 0, 0, 200, 600),
+        box('b', 240, 250, 150, 100),
+        box('c', 420, 260, 150, 100)
+      ],
+      kind: 'row',
+      rows: 1,
+      columns: 3
+    },
+    {
       name: 'a column of mixed widths',
       boxes: [
         box('a', 0, 0, 300, 100),
@@ -272,17 +283,41 @@ describe('computeTidyLayout', () => {
 
   it.for([
     {
-      name: 'overlap',
-      boxes: [box('a', 0, 0, 200, 100), box('b', 150, 0, 200, 100)]
+      name: 'falls back to a 12 gap when nodes overlap',
+      boxes: [box('a', 0, 0, 200, 100), box('b', 150, 0, 200, 100)],
+      gap: 12
     },
     {
-      name: 'touch',
-      boxes: [box('a', 0, 0, 200, 100), box('b', 200, 0, 200, 100)]
+      name: 'keeps a 0 gap when nodes touch',
+      boxes: [box('a', 0, 0, 200, 100), box('b', 200, 0, 200, 100)],
+      gap: 0
     }
-  ])('falls back to a 12 gap when nodes $name', ({ boxes }) => {
+  ])('$name', ({ boxes, gap }) => {
     const tidied = moved(boxes, computeTidyLayout(boxes))
 
-    expect(gapBetween(tidied, 'a', 'b', 'x')).toBe(12)
+    expect(gapBetween(tidied, 'a', 'b', 'x')).toBe(gap)
+  })
+
+  it.for([Number.NaN, Number.POSITIVE_INFINITY])(
+    'uses a 12 gap when it is given %s',
+    (gap) => {
+      const tidied = moved(messyGrid, computeTidyLayout(messyGrid, gap))
+
+      expect(gapBetween(tidied, 'c', 'd', 'x')).toBe(12)
+    }
+  )
+
+  it('keeps nodes that face each other a full gap apart', () => {
+    const boxes = [
+      box('a', 0, 0, 10, 10),
+      box('b', 50, 0, 10, 22),
+      box('c', 0, 50, 30, 10)
+    ]
+
+    const tidied = moved(boxes, computeTidyLayout(boxes, 12))
+
+    expect(byId(tidied, 'c').y - 22).toBeGreaterThanOrEqual(12)
+    expect(overlapping(tidied)).toBe(false)
   })
 
   it('keeps the top-left node in place when the top row starts further right', () => {
@@ -296,11 +331,32 @@ describe('computeTidyLayout', () => {
 
     expect(byId(tidied, 'top')).toMatchObject({ x: 400, y: 0 })
     expect(byId(tidied, 'right').x).toBe(400)
-    expect(gapBetween(tidied, 'left', 'right', 'x')).toBe(125)
+    expect(gapBetween(tidied, 'left', 'right', 'x')).toBe(120)
   })
 
-  it('leaves an already tidy selection where it is', () => {
-    const tidied = moved(messyGrid, computeTidyLayout(messyGrid))
+  it.for([
+    { name: 'a messy grid', boxes: messyGrid },
+    {
+      name: 'a layout that falls back to whole rows and columns',
+      boxes: [
+        box('big', 0, 0, 300, 300),
+        box('short', 700, 0, 100, 50),
+        box('middle', 320, 320, 100, 100),
+        box('narrow', 0, 650, 50, 100)
+      ]
+    },
+    {
+      name: 'a sparse grid of small nodes',
+      boxes: [
+        box('a', 0, 0, 10, 10),
+        box('b', 150, 0, 10, 10),
+        box('c', 0, 50, 10, 10),
+        box('d', 50, 50, 10, 10),
+        box('e', 100, 100, 10, 10)
+      ]
+    }
+  ])('leaves $name where it is after the first tidy', ({ boxes }) => {
+    const tidied = moved(boxes, computeTidyLayout(boxes))
 
     expect(moved(tidied, computeTidyLayout(tidied))).toEqual(tidied)
   })

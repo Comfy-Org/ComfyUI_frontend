@@ -83,7 +83,10 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
     const band = bands.at(-1)
     if (band && joinsBand(band, span)) {
       band.members.push(box)
-      band.minSize = Math.min(band.minSize, span.size)
+      if (span.size < band.minSize) {
+        band.start = span.start
+        band.minSize = span.size
+      }
     } else {
       bands.push({ start: span.start, minSize: span.size, members: [box] })
     }
@@ -202,33 +205,6 @@ export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
   }
 }
 
-function clearanceAcross(
-  cells: GridCell[],
-  axis: GapAxis,
-  boundary: number
-): number {
-  const crossAxis = crossAxisOf(axis)
-  const before = cells.filter((cell) => trackIndexOf(cell, axis) <= boundary)
-  const after = cells.filter((cell) => trackIndexOf(cell, axis) > boundary)
-  return Math.min(
-    ...after.flatMap((late) =>
-      before
-        .filter((early) =>
-          spansOverlap(
-            spanOf(early.box, crossAxis),
-            spanOf(late.box, crossAxis)
-          )
-        )
-        .map((early) => {
-          const earlySpan = spanOf(early.box, axis)
-          return (
-            spanOf(late.box, axis).start - (earlySpan.start + earlySpan.size)
-          )
-        })
-    )
-  )
-}
-
 const topLeftCell = (cells: GridCell[]): GridCell =>
   cells.reduce((best, cell) =>
     cell.row < best.row || (cell.row === best.row && cell.column < best.column)
@@ -239,100 +215,136 @@ const topLeftCell = (cells: GridCell[]): GridCell =>
 const membersOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
   grid.cells.filter((cell) => trackIndexOf(cell, axis) === track)
 
+const sizeAlong = (cell: GridCell, axis: GapAxis): number =>
+  spanOf(cell.box, axis).size
+
+const startAlong = (cell: GridCell, axis: GapAxis): number =>
+  spanOf(cell.box, axis).start
+
+function reachBefore(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  cell: GridCell,
+  startOf: (cell: GridCell) => number
+): number {
+  const track = trackIndexOf(cell, axis)
+  const previous = membersOf(grid, axis, track - 1)
+  const pastPrevious =
+    Math.min(...previous.map(startOf)) +
+    Math.min(...previous.map((member) => sizeAlong(member, axis)))
+  const pastLineNeighbours = grid.cells
+    .filter(
+      (other) =>
+        lineIndexOf(other, axis) === lineIndexOf(cell, axis) &&
+        trackIndexOf(other, axis) < track
+    )
+    .map((other) => startOf(other) + sizeAlong(other, axis))
+  return Math.max(pastPrevious, ...pastLineNeighbours)
+}
+
+const laterTracks = (grid: SelectionGrid, axis: GapAxis): number[] =>
+  Array.from(
+    { length: Math.max(0, trackCountOf(grid, axis) - 1) },
+    (_, i) => i + 1
+  )
+
 function packedOffsets(
   grid: SelectionGrid,
   axis: GapAxis,
   gap: number
 ): number[] {
-  const offsets: number[] = []
-  for (let track = 0; track < trackCountOf(grid, axis); track++) {
-    if (track === 0) {
-      offsets.push(0)
-      continue
-    }
-    const pastPrevious =
-      offsets[track - 1] +
-      Math.min(
-        ...membersOf(grid, axis, track - 1).map(
-          (cell) => spanOf(cell.box, axis).size
-        )
+  const offsets = [0]
+  const offsetOf = (cell: GridCell) => offsets[trackIndexOf(cell, axis)]
+  for (const track of laterTracks(grid, axis)) {
+    const reach = Math.max(
+      ...membersOf(grid, axis, track).map((cell) =>
+        reachBefore(grid, axis, cell, offsetOf)
       )
-    const pastLineNeighbours = membersOf(grid, axis, track).flatMap((cell) =>
-      grid.cells
-        .filter(
-          (other) =>
-            lineIndexOf(other, axis) === lineIndexOf(cell, axis) &&
-            trackIndexOf(other, axis) < track
-        )
-        .map(
-          (other) =>
-            offsets[trackIndexOf(other, axis)] + spanOf(other.box, axis).size
-        )
     )
-    offsets.push(Math.max(pastPrevious, ...pastLineNeighbours) + gap)
+    offsets.push(reach + gap)
   }
   return offsets
 }
+
+const largestSizeOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
+  Math.max(...membersOf(grid, axis, track).map((cell) => sizeAlong(cell, axis)))
 
 function uniformOffsets(
   grid: SelectionGrid,
   axis: GapAxis,
   gap: number
 ): number[] {
-  const sizes = Array.from({ length: trackCountOf(grid, axis) }, (_, track) =>
-    Math.max(
-      ...membersOf(grid, axis, track).map((cell) => spanOf(cell.box, axis).size)
+  const offsets = [0]
+  for (const track of laterTracks(grid, axis)) {
+    offsets.push(
+      offsets[track - 1] + largestSizeOf(grid, axis, track - 1) + gap
     )
-  )
-  return sizes.map((_, i) =>
-    sizes.slice(0, i).reduce((sum, size) => sum + size + gap, 0)
-  )
+  }
+  return offsets
 }
 
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b)
-  const middle = Math.floor(sorted.length / 2)
-  return sorted.length % 2
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2
-}
+const trackStartOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
+  Math.min(
+    ...membersOf(grid, axis, track).map((cell) => startAlong(cell, axis))
+  )
 
-function tidyGapOf(boxes: LayoutBox[]): number {
-  const grid = detectSelectionGrid(boxes)
-  const clearances = (['x', 'y'] as const)
-    .flatMap((axis) =>
-      Array.from({ length: trackCountOf(grid, axis) - 1 }, (_, boundary) =>
-        clearanceAcross(grid.cells, axis, boundary)
+const packedGapsAlong = (grid: SelectionGrid, axis: GapAxis): number[] =>
+  laterTracks(grid, axis).map((track) =>
+    Math.min(
+      ...membersOf(grid, axis, track).map(
+        (cell) =>
+          startAlong(cell, axis) -
+          reachBefore(grid, axis, cell, (other) => startAlong(other, axis))
       )
     )
-    .filter(Number.isFinite)
-  if (clearances.length === 0) return DEFAULT_TIDY_GAP
-  const gap = Math.round(median(clearances))
-  return gap > 0 ? gap : DEFAULT_TIDY_GAP
+  )
+
+const uniformGapsAlong = (grid: SelectionGrid, axis: GapAxis): number[] =>
+  laterTracks(grid, axis).map(
+    (track) =>
+      trackStartOf(grid, axis, track) -
+      trackStartOf(grid, axis, track - 1) -
+      largestSizeOf(grid, axis, track - 1)
+  )
+
+function roundedMedian(values: number[]): number | undefined {
+  if (values.length === 0) return undefined
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return Math.round(
+    sorted.length % 2
+      ? sorted[middle]
+      : (sorted[middle - 1] + sorted[middle]) / 2
+  )
 }
 
-/**
- * Lines boxes up into their detected rows and columns: rows align by top,
- * columns by left. Each row or column sits `gap` past the nodes it would
- * otherwise touch. The top-left box stays put.
- */
-export function computeTidyLayout(
-  boxes: LayoutBox[],
-  gap: number = tidyGapOf(boxes)
-): BoxPosition[] {
-  if (boxes.length < 2) return []
-  const grid = detectSelectionGrid(boxes)
-  const anchor = topLeftCell(grid.cells)
-  const safeGap = Math.max(0, gap)
+const AXES = ['x', 'y'] as const
 
+function crowds(a: LayoutBox, b: LayoutBox, gap: number): boolean {
+  const grown = (span: AxisSpan): AxisSpan => ({
+    start: span.start - gap,
+    size: span.size + 2 * gap
+  })
+  return AXES.some((axis) => {
+    const crossAxis = crossAxisOf(axis)
+    return (
+      spansOverlap(spanOf(a, crossAxis), spanOf(b, crossAxis)) &&
+      spansOverlap(grown(spanOf(a, axis)), spanOf(b, axis))
+    )
+  })
+}
+
+function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
+  const anchor = topLeftCell(grid.cells)
   const place = (offsetsAlong: (axis: GapAxis) => number[]): BoxPosition[] => {
-    const startsAlong = (axis: GapAxis, anchorStart: number) => {
+    const startsAlong = (axis: GapAxis) => {
       const offsets = offsetsAlong(axis)
-      const shift = anchorStart - offsets[trackIndexOf(anchor, axis)]
+      const shift =
+        startAlong(anchor, axis) - offsets[trackIndexOf(anchor, axis)]
       return offsets.map((offset) => offset + shift)
     }
-    const columnX = startsAlong('x', anchor.box.x)
-    const rowY = startsAlong('y', anchor.box.y)
+    const columnX = startsAlong('x')
+    const rowY = startsAlong('y')
     return grid.cells.map(({ box, row, column }) => ({
       id: box.id,
       x: columnX[column],
@@ -340,13 +352,55 @@ export function computeTidyLayout(
     }))
   }
 
-  const packed = place((axis) => packedOffsets(grid, axis, safeGap))
+  const packed = place((axis) => packedOffsets(grid, axis, gap))
   const packedBoxes = grid.cells.map(({ box }, i) => ({
     ...box,
     x: packed[i].x,
     y: packed[i].y
   }))
-  return anyIntersect(packedBoxes)
-    ? place((axis) => uniformOffsets(grid, axis, safeGap))
-    : packed
+  const crowded = packedBoxes.some((a, i) =>
+    packedBoxes.slice(i + 1).some((b) => crowds(a, b, gap))
+  )
+  return crowded ? place((axis) => uniformOffsets(grid, axis, gap)) : packed
+}
+
+const POSITION_TOLERANCE = 0.5
+
+const isLaidOutAt = (grid: SelectionGrid, gap: number): boolean =>
+  layoutOf(grid, gap).every(
+    (position, i) =>
+      Math.abs(position.x - grid.cells[i].box.x) <= POSITION_TOLERANCE &&
+      Math.abs(position.y - grid.cells[i].box.y) <= POSITION_TOLERANCE
+  )
+
+function gapOf(grid: SelectionGrid): number {
+  const packedGap = roundedMedian(
+    AXES.flatMap((axis) => packedGapsAlong(grid, axis))
+  )
+  if (packedGap === undefined) return DEFAULT_TIDY_GAP
+  const uniformGap = roundedMedian(
+    AXES.flatMap((axis) => uniformGapsAlong(grid, axis))
+  )
+  const keptGap = [packedGap, uniformGap].find(
+    (gap) => gap !== undefined && gap >= 0 && isLaidOutAt(grid, gap)
+  )
+  if (keptGap !== undefined) return keptGap
+  return packedGap < 0 ? DEFAULT_TIDY_GAP : Math.max(0, packedGap)
+}
+
+const safeGapOf = (gap: number): number =>
+  Number.isFinite(gap) ? Math.max(0, gap) : DEFAULT_TIDY_GAP
+
+/**
+ * Lines boxes up into their detected rows and columns: rows align by top,
+ * columns by left, and nodes that face each other sit `gap` apart. The
+ * top-left box stays put. Without `gap`, an already tidy selection keeps its gap.
+ */
+export function computeTidyLayout(
+  boxes: LayoutBox[],
+  gap?: number
+): BoxPosition[] {
+  if (boxes.length < 2) return []
+  const grid = detectSelectionGrid(boxes)
+  return layoutOf(grid, gap === undefined ? gapOf(grid) : safeGapOf(gap))
 }
