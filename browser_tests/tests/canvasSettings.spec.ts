@@ -4,6 +4,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { sleep } from '@e2e/fixtures/utils/timing'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const CLIP_NODE_COUNT = 2
 
@@ -35,11 +36,9 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       async ({ comfyPage }) => {
         const box = await comfyPage.canvas.boundingBox()
         expect(box, 'Canvas bounding box must be available').not.toBeNull()
-        // HUD is drawn ~80px tall along the bottom edge of the canvas; grab a
-        // comfortable 180px × 160px strip to catch it across viewports.
         const HUD_WIDTH = 180
         const HUD_HEIGHT = 160
-        const hudClip = {
+        const hudRect = {
           x: box!.x,
           y: box!.y + box!.height - HUD_HEIGHT,
           width: HUD_WIDTH,
@@ -50,18 +49,22 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
           await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
           await comfyPage.canvasOps.resetView()
           await comfyPage.canvasOps.moveMouseToEmptyArea()
-          await expect(comfyPage.page).toHaveScreenshot(
+          await expectRegionScreenshot(
+            comfyPage.page,
+            [hudRect],
             'canvas-info-hud-off.png',
-            { clip: hudClip, maxDiffPixels: 100 }
+            { padding: 0, maxDiffPixels: 100 }
           )
         })
 
         await test.step('Capture HUD region with setting on', async () => {
           await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', true)
           await comfyPage.canvasOps.moveMouseToEmptyArea()
-          await expect(comfyPage.page).toHaveScreenshot(
+          await expectRegionScreenshot(
+            comfyPage.page,
+            [hudRect],
             'canvas-info-hud-on.png',
-            { clip: hudClip, maxDiffPixels: 100 }
+            { padding: 0, maxDiffPixels: 100 }
           )
         })
       }

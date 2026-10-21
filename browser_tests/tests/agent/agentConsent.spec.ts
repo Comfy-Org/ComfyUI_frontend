@@ -7,6 +7,7 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -296,7 +297,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         }
       })
       expect(colors.text).not.toBe(colors.surface)
-      await expect(dialog).toHaveScreenshot('agent-consent-light-palette.png', {
+      await expectElementScreenshot(dialog, 'agent-consent-light-palette.png', {
         mask: [dialog.locator('video')]
       })
     })

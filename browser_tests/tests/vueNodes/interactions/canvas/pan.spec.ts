@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -210,13 +211,12 @@ test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
         { x: 256, y: 256 }
       )
 
-      // Fail on a pan that never landed here, not as a screenshot diff.
       await expect
         .poll(() => comfyPage.canvasOps.getOffset())
         .not.toEqual(offsetBefore)
 
-      // Tolerates text anti-aliasing noise in the widget value text.
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectElementScreenshot(
+        comfyPage.canvas,
         'vue-nodes-paned-with-touch.png',
         { maxDiffPixels: 100 }
       )
