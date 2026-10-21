@@ -26,6 +26,9 @@ const cards = computed(() => [
   ...upcoming.value
 ])
 const { shown, total, hasMore, showMore } = usePagedList(cards)
+const openSlugs = computed(() =>
+  shown.value.filter(({ app }) => app.href).map(({ app }) => app.key)
+)
 
 function openApp(app: HubCatalogueApp, position: number) {
   if (app.href)
@@ -46,21 +49,23 @@ function openApp(app: HubCatalogueApp, position: number) {
       <slot name="tabs" />
     </div>
     <h2 id="hub-app-grid" class="sr-only">{{ ac('apps', locale) }}</h2>
-    <ul
-      class="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3"
-      data-testid="app-grid"
-    >
-      <li v-for="({ app, meta }, index) in shown" :key="app.key">
-        <HubAppCard :app :meta :locale @click="openApp(app, index)" />
-      </li>
-    </ul>
-    <HubRowSeen
-      :view="{
-        surface: 'apps',
-        source: 'app_grid',
-        rowSlugs: shown.map(({ app }) => app.key)
-      }"
-    />
+    <div data-testid="app-grid-row">
+      <ul
+        class="grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3"
+        data-testid="app-grid"
+      >
+        <li v-for="({ app, meta }, index) in shown" :key="app.key">
+          <HubAppCard :app :meta :locale @click="openApp(app, index)" />
+        </li>
+      </ul>
+      <HubRowSeen
+        :view="{
+          surface: 'apps',
+          source: 'app_grid',
+          rowSlugs: openSlugs
+        }"
+      />
+    </div>
     <CatalogueShowMore
       v-if="hasMore"
       :shown="shown.length"
