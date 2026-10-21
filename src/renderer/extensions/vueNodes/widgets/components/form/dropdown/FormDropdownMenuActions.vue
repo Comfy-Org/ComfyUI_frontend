@@ -47,6 +47,11 @@ const actionButtonStyle = cn(
   'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-border transition-all duration-150'
 )
 
+const actionPopoverClass = cn(
+  DROPDOWN_PANEL_CLASS,
+  'pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
+)
+
 const layoutSwitchItemStyle =
   'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
@@ -150,12 +155,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       <PopoverContent
         align="start"
         :collision-padding="8"
-        :class="
-          cn(
-            DROPDOWN_PANEL_CLASS,
-            'pointer-events-auto z-overlay max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
-          )
-        "
+        :class="actionPopoverClass"
       >
         <div
           :class="
@@ -212,12 +212,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       <PopoverContent
         align="start"
         :collision-padding="8"
-        :class="
-          cn(
-            DROPDOWN_PANEL_CLASS,
-            'pointer-events-auto z-overlay max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
-          )
-        "
+        :class="actionPopoverClass"
       >
         <div
           :class="
@@ -274,12 +269,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       <PopoverContent
         align="start"
         :collision-padding="8"
-        :class="
-          cn(
-            DROPDOWN_PANEL_CLASS,
-            'pointer-events-auto z-overlay max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
-          )
-        "
+        :class="actionPopoverClass"
       >
         <div
           :class="
