@@ -1,6 +1,8 @@
 import type { NodeId } from '@/types/nodeId'
 
-const DEFAULT_TIDY_GAP = 12
+export const DEFAULT_TIDY_GAP = 12
+export const MIN_TIDY_GAP = 0
+export const MAX_TIDY_GAP = 48
 
 export interface LayoutBox {
   id: NodeId
@@ -474,6 +476,11 @@ function safeGapOf(gap: number): number {
 
 function isFinitePosition({ x, y }: BoxPosition): boolean {
   return Number.isFinite(x) && Number.isFinite(y)
+}
+
+/** The gap Tidy up uses for `boxes` when it is not given one. */
+export function tidyGapOf(boxes: LayoutBox[]): number {
+  return gapOf(detectSelectionGrid(boxes))
 }
 
 /**

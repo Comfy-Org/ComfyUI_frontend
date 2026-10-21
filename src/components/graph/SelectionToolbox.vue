@@ -22,7 +22,7 @@
               <InfoButton v-if="canOpenNodeInfo" />
 
               <ColorPickerButton v-if="showColorPicker" />
-              <ArrangeButton v-if="showArrange" />
+              <TidyUpButton v-if="showTidyUp" />
               <FrameNodes v-if="showFrameNodes" />
               <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
               <ConfigureSubgraph v-if="showSubgraphButtons" />
@@ -54,7 +54,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ConfigureSubgraph from '@/components/graph/selectionToolbox/ConfigureSubgraph.vue'
@@ -66,6 +65,7 @@ import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Load3DViewerButton from '@/components/graph/selectionToolbox/Load3DViewerButton.vue'
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
 import RefreshSelectionButton from '@/components/graph/selectionToolbox/RefreshSelectionButton.vue'
+import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import PublishSubgraphButton from '@/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
@@ -121,7 +121,7 @@ const {
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
-const showArrange = computed(() => hasMultipleSelection.value)
+const showTidyUp = computed(() => hasMultipleSelection.value)
 const showFrameNodes = computed(() => hasMultipleSelection.value)
 const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
@@ -147,7 +147,7 @@ const showAnyPrimaryActions = computed(
   () =>
     showColorPicker.value ||
     showConvertToSubgraph.value ||
-    showArrange.value ||
+    showTidyUp.value ||
     showFrameNodes.value ||
     showSubgraphButtons.value
 )
