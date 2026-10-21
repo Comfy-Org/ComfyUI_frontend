@@ -399,8 +399,12 @@ function thumbnailVariant(d: Document, urls: Document, types: Document) {
   if (!variant.success) return {}
   if (variant.data === 'zoomHover' || variant.data === 'hoverZoom')
     return { variant: variant.data }
-  const primaryUrl = urls['$.thumbnail']
+  const thumbnail = urls['$.thumbnail']
   const secondaryUrl = urls['$.thumbnail_comparison']
+  const hero = urls['$.hero']
+  const heroIsThumbnail = typeof hero !== 'string' || hero === thumbnail
+  const primaryUrl =
+    (heroIsThumbnail && staticThumbnail(urls, types)) || thumbnail
   return typeof primaryUrl === 'string' &&
     typeof secondaryUrl === 'string' &&
     mediaKind(types, '$.thumbnail') === 'image' &&

@@ -58,12 +58,12 @@ describe('Hub browsing thumbnails', () => {
     {
       variant: 'compareSlider',
       staticUrl: '/still.webp',
-      after: '/still.webp'
+      after: '/after.webp'
     },
     { variant: 'hoverDissolve', staticUrl: undefined, after: '/after.webp' },
-    { variant: 'hoverDissolve', staticUrl: '/still.webp', after: '/still.webp' }
+    { variant: 'hoverDissolve', staticUrl: '/still.webp', after: '/after.webp' }
   ] as const)(
-    'loads $after and the original second image, unnamed, for a $variant card',
+    'loads the presented first image and the second image, unnamed, for a $variant card',
     ({ variant, staticUrl, after }) => {
       render(WorkshopCardMedia, {
         props: {

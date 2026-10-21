@@ -17,7 +17,7 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 <template>
   <HubThumbnailMedia
     v-if="model.thumbnail?.primaryUrl && model.thumbnail.secondaryUrl"
-    :primary-url="model.thumbnail.staticUrl ?? model.thumbnail.primaryUrl"
+    :primary-url="model.thumbnail.primaryUrl"
     :secondary-url="model.thumbnail.secondaryUrl"
     :variant="model.thumbnail.variant"
     :title="model.name"

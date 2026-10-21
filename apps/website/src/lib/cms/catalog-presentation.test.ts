@@ -444,6 +444,73 @@ describe('native CONTENT presentation', () => {
       thumbnail: { url: after, kind: 'image' }
     },
     {
+      case: 'a compare slider under a video hero with a still',
+      variant: 'compareSlider',
+      media: {
+        '$.hero': '/catalog-media/hero/clip',
+        '$.thumbnail': after,
+        '$.thumbnail_comparison': before,
+        '$.static_thumb': '/catalog-media/still/frame'
+      },
+      types: {
+        ...stills,
+        '$.hero': 'video/mp4',
+        '$.static_thumb': 'image/webp'
+      },
+      thumbnail: {
+        url: '/catalog-media/hero/clip',
+        kind: 'video',
+        poster: '/catalog-media/still/frame',
+        staticUrl: '/catalog-media/still/frame',
+        variant: 'compareSlider',
+        primaryUrl: after,
+        secondaryUrl: before
+      }
+    },
+    {
+      case: 'a compare slider with a still and no hero',
+      variant: 'compareSlider',
+      media: {
+        '$.thumbnail': after,
+        '$.thumbnail_comparison': before,
+        '$.static_thumb': '/catalog-media/still/frame'
+      },
+      types: { ...stills, '$.static_thumb': 'image/webp' },
+      thumbnail: {
+        url: after,
+        kind: 'image',
+        poster: '/catalog-media/still/frame',
+        staticUrl: '/catalog-media/still/frame',
+        variant: 'compareSlider',
+        primaryUrl: '/catalog-media/still/frame',
+        secondaryUrl: before
+      }
+    },
+    {
+      case: 'a compare slider whose hero is its thumbnail',
+      variant: 'compareSlider',
+      media: {
+        '$.hero': after,
+        '$.thumbnail': after,
+        '$.thumbnail_comparison': before,
+        '$.static_thumb': '/catalog-media/still/frame'
+      },
+      types: {
+        ...stills,
+        '$.hero': 'image/webp',
+        '$.static_thumb': 'image/webp'
+      },
+      thumbnail: {
+        url: after,
+        kind: 'image',
+        poster: '/catalog-media/still/frame',
+        staticUrl: '/catalog-media/still/frame',
+        variant: 'compareSlider',
+        primaryUrl: '/catalog-media/still/frame',
+        secondaryUrl: before
+      }
+    },
+    {
       case: 'no variant',
       types: stills,
       thumbnail: { url: after, kind: 'image' }
