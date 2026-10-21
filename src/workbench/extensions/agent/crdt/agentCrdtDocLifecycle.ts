@@ -248,9 +248,6 @@ export class AgentCrdtDocLifecycle {
   /** Returns whether this refusal newly triggered a give-up notification. */
   onSubscribeRefused(code?: string): boolean {
     if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
-      // See `confirmedSinceLastSend`: bail out before touching any timer,
-      // so a stale straggler can't clear the probe/backoff state the
-      // confirm it raced behind already armed.
       if (this.confirmedSinceLastSend) return false
       this.clearAckTimer()
       this.clearStaleProbe()
