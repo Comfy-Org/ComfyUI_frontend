@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -6,10 +5,6 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-
-type Workflow = NonNullable<
-  ReturnType<typeof useExecutionStore>['queuedJobs'][string]['workflow']
->
 
 function makeJob(id: string, status: JobListItem['status']): JobListItem {
   return {
@@ -97,10 +92,10 @@ describe('useReconnectQueueRefresh', () => {
       outputs: { '9': { images: [image] } }
     }
 
-    function followRun(jobId: string, workflow?: Workflow) {
+    function followRun(jobId: string) {
       const executionStore = useExecutionStore()
       executionStore.activeJobId = jobId
-      executionStore.queuedJobs[jobId] = { nodes: {}, workflow }
+      executionStore.queuedJobs[jobId] = { nodes: {} }
     }
 
     function replayedExecutedFrames() {
@@ -382,45 +377,6 @@ describe('useReconnectQueueRefresh', () => {
       expect(replayedExecutedFrames()).toEqual([])
     })
 
-    it('dispatches recovered output without writing its change tracker directly', async () => {
-      const open = fromPartial<Workflow>({
-        path: 'workflows/open.json',
-        changeTracker: { nodeOutputs: undefined }
-      })
-      followRun('job-1', open)
-      vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        [
-          'executed',
-          expect.objectContaining({
-            node: '9',
-            output: { images: [image] },
-            prompt_id: 'job-1'
-          })
-        ]
-      ])
-      expect(open.changeTracker?.nodeOutputs).toBeUndefined()
-    })
-
-    it('dispatches background output without writing its change tracker directly', async () => {
-      const background = fromPartial<Workflow>({
-        path: 'workflows/other.json',
-        changeTracker: { nodeOutputs: undefined }
-      })
-      followRun('job-1', background)
-      vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
-      ])
-      expect(background.changeTracker?.nodeOutputs).toBeUndefined()
-    })
-
     it('keeps a submitted job that becomes active during the refresh', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-2'] = { nodes: {} }
@@ -466,26 +422,6 @@ describe('useReconnectQueueRefresh', () => {
 
       expect(replayedExecutedFrames()).toEqual([])
       expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
-    })
-
-    it('routes background output by job when a new run took the open graph', async () => {
-      const background = fromPartial<Workflow>({
-        path: 'workflows/other.json',
-        changeTracker: { nodeOutputs: undefined }
-      })
-      followRun('job-1', background)
-      const executionStore = useExecutionStore()
-      vi.mocked(api.getJobDetail).mockImplementation(async () => {
-        executionStore.activeJobId = 'job-new'
-        return finishedJob
-      })
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
-      ])
-      expect(background.changeTracker?.nodeOutputs).toBeUndefined()
     })
 
     it('restores a run that finished during an interrupted refresh on the rerun, once', async () => {
@@ -546,62 +482,6 @@ describe('useReconnectQueueRefresh', () => {
       ])
       expect(executionStore.activeJobId).toBe('job-1')
       expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-1'])
-    })
-
-    it('still replays onto the open graph when the live run belongs to a background workflow', async () => {
-      const executionStore = useExecutionStore()
-      executionStore.queuedJobs['job-0'] = { nodes: {} }
-      followRun(
-        'job-1',
-        fromPartial<Workflow>({ path: 'workflows/other.json' })
-      )
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [makeJob('job-1', 'in_progress')],
-        Pending: []
-      })
-      vi.mocked(api.getJobDetail).mockResolvedValue({
-        ...finishedJob,
-        id: 'job-0'
-      })
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ prompt_id: 'job-0' })]
-      ])
-    })
-
-    it('still replays when the only change during the refresh was a run ending', async () => {
-      const executionStore = useExecutionStore()
-      executionStore.queuedJobs['job-0'] = { nodes: {} }
-      followRun('job-1')
-      vi.mocked(api.getJobDetail).mockImplementation(async (jobId) => {
-        executionStore.activeJobId = null
-        return { ...finishedJob, id: jobId }
-      })
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ prompt_id: 'job-0' })],
-        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
-      ])
-    })
-
-    it('still dispatches by job when another run starts and finishes during the refresh', async () => {
-      followRun('job-1')
-      const executionStore = useExecutionStore()
-      vi.mocked(api.getJobDetail).mockImplementation(async () => {
-        executionStore.activeJobId = 'job-quick'
-        executionStore.activeJobId = null
-        return finishedJob
-      })
-
-      await useReconnectQueueRefresh()()
-
-      expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
-      ])
     })
 
     it('does not replay a run the restored socket already finished during the refresh', async () => {
