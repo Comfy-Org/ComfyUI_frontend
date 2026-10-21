@@ -1586,7 +1586,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     ])
   })
 
-  it('matches a coalesced observation delta to parallel terminal-only writes', () => {
+  it('confirms parallel terminal-only writes from one frame carrying both op ids', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
