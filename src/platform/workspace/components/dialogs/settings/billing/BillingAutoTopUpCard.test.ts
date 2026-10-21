@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -67,18 +67,24 @@ function renderCard(
   setup: AutoTopUpSetup | null = null
 ) {
   vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(settings)
-  vi.mocked(useBillingCapabilities)().autoTopUpSetup = computed(() => setup)
-  return render(BillingAutoTopUpCard, {
-    global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: enMessages }
-        })
-      ]
-    }
-  })
+  const setupRef = ref(setup)
+  vi.mocked(useBillingCapabilities)().autoTopUpSetup = computed(
+    () => setupRef.value
+  )
+  return {
+    setupRef,
+    ...render(BillingAutoTopUpCard, {
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: enMessages }
+          })
+        ]
+      }
+    })
+  }
 }
 
 async function setVisibility(state: DocumentVisibilityState) {
@@ -269,6 +275,29 @@ describe('BillingAutoTopUpCard', () => {
     expect(
       screen.queryByTestId('billing-auto-top-up-card')
     ).not.toBeInTheDocument()
+  })
+
+  it('reports no view while the server hides the card, then one once it shows', async () => {
+    const { setupRef } = renderCard(configured, {
+      state: 'unavailable',
+      reason: 'billing_rail_not_supported'
+    })
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalled()
+    )
+    expect(trackedEvents()).not.toHaveBeenCalled()
+
+    setupRef.value = null
+
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('On')
+    expect(trackedEvents()).toHaveBeenCalledExactlyOnceWith({
+      operation: 'auto_top_up_card',
+      stage: 'viewed',
+      outcome: 'pending',
+      status: 'on'
+    })
   })
 
   it.for([

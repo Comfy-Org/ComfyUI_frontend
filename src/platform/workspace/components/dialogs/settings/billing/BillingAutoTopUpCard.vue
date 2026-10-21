@@ -170,8 +170,10 @@ const STATUS = {
 >
 
 const { t, locale } = useI18n()
-const { state, retry } = useBillingAutoTopUpCard()
 const { autoTopUpSetup } = useBillingCapabilities()
+const { state, retry } = useBillingAutoTopUpCard(
+  () => autoTopUpSetup.value?.state !== 'unavailable'
+)
 
 function usd(cents: number) {
   return formatUsdFromCents({

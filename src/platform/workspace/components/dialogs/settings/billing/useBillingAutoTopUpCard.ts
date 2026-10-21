@@ -1,5 +1,6 @@
 import { useAsyncState, useDocumentVisibility } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { computed, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -11,7 +12,9 @@ type AutoTopUpCardState =
   | { kind: 'unavailable' }
   | { kind: 'loaded'; settings: AutoReloadSettings }
 
-export function useBillingAutoTopUpCard() {
+export function useBillingAutoTopUpCard(
+  visible: MaybeRefOrGetter<boolean> = true
+) {
   const read = useAsyncState(() => workspaceApi.getBillingAutoReload(), null, {
     resetOnExecute: false,
     onError: (error) =>
@@ -29,7 +32,7 @@ export function useBillingAutoTopUpCard() {
   })
 
   watch(
-    () => read.state.value?.status,
+    () => (toValue(visible) ? read.state.value?.status : undefined),
     (status) => {
       if (!status) return
       useTelemetry()?.trackBillingEvent({
