@@ -18,14 +18,16 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
+  createMockCanvas as createBaseMockCanvas,
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
 
-function createMockCanvas(readOnly = false): LGraphCanvas {
-  return fromPartial<LGraphCanvas>({
+function createMockCanvas(readOnly = false, graph?: LGraph): LGraphCanvas {
+  return createBaseMockCanvas({
     read_only: readOnly,
-    canvas: document.createElement('canvas')
+    canvas: document.createElement('canvas'),
+    graph
   })
 }
 
@@ -200,12 +202,7 @@ describe('useCanvasStore', () => {
   describe('rootGraphId', () => {
     it('tracks the graph id reassigned by a workflow load', async () => {
       const graph = new LGraph()
-      const fakeCanvas = {
-        canvas: document.createElement('canvas'),
-        graph,
-        selectedItems: new Set()
-      }
-      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      store.canvas = createMockCanvas(false, graph)
       await nextTick()
       expect(store.rootGraphId).toBe(graph.id)
 
@@ -222,10 +219,7 @@ describe('useCanvasStore', () => {
     const group = new LGraphGroup()
     graph.add(node)
     graph.add(group)
-    store.canvas = fromPartial<LGraphCanvas>({
-      canvas: document.createElement('canvas'),
-      graph
-    })
+    store.canvas = createMockCanvas(false, graph)
     await nextTick()
 
     useSelectionStore().apply(graphScopeOf(graph), {
@@ -235,6 +229,20 @@ describe('useCanvasStore', () => {
 
     expect(store.selectedItems).toEqual([group, node])
     expect([...store.selectedNodeIds]).toEqual([node.id])
+  })
+
+  it('redraws the background when the selected nodes change', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const canvas = createMockCanvas(false, graph)
+    store.canvas = canvas
+    await nextTick()
+
+    node.selected = true
+    await nextTick()
+
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
   })
 
   describe('isReadOnly', () => {

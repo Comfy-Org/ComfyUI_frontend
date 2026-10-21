@@ -1,6 +1,6 @@
 import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
@@ -158,6 +158,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
+
+  watch(selectedNodeIds, () => canvas.value?.setDirty(true, true))
 
   whenever(
     () => canvas.value,
