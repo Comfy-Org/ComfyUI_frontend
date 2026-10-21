@@ -220,8 +220,13 @@ const banner = computed<BannerView | null>(() => {
 })
 
 function dismiss() {
-  if (kind.value === 'outOfCredits') outOfCreditsDismissed.value = true
-  if (kind.value === 'lowCredits') lowCreditsDismissed.value = true
+  const visible = kind.value
+  if (visible === 'outOfCredits') {
+    outOfCreditsDismissed.value = true
+    if (balance.value?.lowBalance === true) lowCreditsDismissed.value = true
+  } else if (visible === 'lowCredits') {
+    lowCreditsDismissed.value = true
+  }
 }
 
 function handleAddCredits() {

@@ -150,13 +150,7 @@ describe('BillingLocalCreditBanner', () => {
     }
   ])(
     'shows out of credits to $name',
-    async ({
-      isTeamPlan,
-      renewalDate,
-      canManageSubscription,
-      body,
-      buttons
-    }) => {
+    ({ isTeamPlan, renewalDate, canManageSubscription, body, buttons }) => {
       arrange({
         isTeamPlan,
         renewalDate,
@@ -170,14 +164,16 @@ describe('BillingLocalCreditBanner', () => {
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)
-      if (buttons.includes('Add credits')) {
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Add credits' })
-        )
-        expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
-      }
     }
   )
+
+  it('opens the top-up dialog from Add credits when out of credits', async () => {
+    arrange({ subscription: { ...personalSubscription, hasFunds: false } })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+  })
 
   it.for([
     {
@@ -241,6 +237,26 @@ describe('BillingLocalCreditBanner', () => {
       balance: { amountMicros: 500, currency: 'usd' }
     })
 
+    expect(
+      screen.queryByTestId('billing-local-credit-banner')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides the out-of-credits banner that was visible without showing low credits', async () => {
+    arrange({
+      topUpDenial: 'payment_past_due',
+      canTopUp: false,
+      subscription: { ...personalSubscription, hasFunds: false },
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+    })
+
+    expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
+      'Out of credits'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+
+    expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
     expect(
       screen.queryByTestId('billing-local-credit-banner')
     ).not.toBeInTheDocument()
