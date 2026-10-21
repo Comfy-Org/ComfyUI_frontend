@@ -74,6 +74,24 @@ describe('useLegacyBilling', () => {
     })
   })
 
+  describe('fetchStatusFresh', () => {
+    it.for([
+      {
+        name: 'an adopted status',
+        response: { is_active: true } as BillingStatusResponse,
+        adopted: true
+      },
+      { name: 'a superseded read', response: null, adopted: false },
+      { name: 'a reported failure', response: undefined, adopted: false }
+    ])('reports $name as adopted=$adopted', async ({ response, adopted }) => {
+      vi.mocked(useSubscription().fetchStatus).mockResolvedValue(response)
+
+      await expect(useLegacyBilling().fetchStatusFresh?.()).resolves.toBe(
+        adopted
+      )
+    })
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       const billing = useLegacyBilling()

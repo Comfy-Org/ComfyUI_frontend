@@ -438,7 +438,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         try {
           report(error)
         } catch {
-          // Error reporters must not reject the detached request.
+          continue
         }
       }
     }

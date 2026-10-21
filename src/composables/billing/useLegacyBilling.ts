@@ -187,7 +187,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isLoading.value = true
     error.value = null
     try {
-      return (await legacyFetchStatus()) !== null
+      const status = await legacyFetchStatus()
+      return status !== null && status !== undefined
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch subscription'
