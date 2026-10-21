@@ -73,6 +73,20 @@ export interface FrameChanges {
   interiors?: InteriorChanges
 
   interiorDefinitions?: ReadonlySet<string>
+
+  /** True when the frame replaced the document's `groups` list. */
+  groups?: boolean
+}
+
+/**
+ * Root map holding the document's passthrough keys (`groups`, `extra`, ...).
+ * `@comfyorg/comfy-multi-player` reads it through its private `metaMap()`,
+ * which is not part of the package's public surface.
+ */
+const META_ROOT = 'meta'
+
+export function docMetaMap(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>(META_ROOT)
 }
 
 export interface RemoteApplyContext {
@@ -652,6 +666,7 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
+        if (changes.groups) this.applyGroups(graph, doc, context)
         if (mode === 'merge') this.placeBatch(graph, created)
         return {
           createdNodeIds: created,
@@ -660,6 +675,25 @@ export class LiveGraphApplier {
       })
     } finally {
       this.failureCounts.pop()
+    }
+  }
+
+  /**
+   * A `clear` op resets the document's `groups` to an empty list; the live
+   * canvas must then drop its groups too, or "clear the workflow" leaves
+   * every group frame standing on an otherwise empty canvas. Only the empty
+   * list is mirrored: groups the document adds are not projected onto the
+   * canvas here.
+   */
+  private applyGroups(
+    graph: LGraph,
+    doc: Y.Doc,
+    context: RemoteApplyContext
+  ): void {
+    const groups = docMetaMap(doc).get('groups')
+    if (!Array.isArray(groups) || groups.length > 0) return
+    for (const group of graph.groups) {
+      this.try(context, () => graph.remove(group))
     }
   }
 

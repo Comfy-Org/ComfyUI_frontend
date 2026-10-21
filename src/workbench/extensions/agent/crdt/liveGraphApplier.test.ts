@@ -16,7 +16,12 @@ import {
 } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
@@ -29,6 +34,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -1384,6 +1390,53 @@ describe('LiveGraphApplier', () => {
     applier.applyChanges(doc, collector.take(), CONTEXT)
 
     expect(node.flags).toEqual({ pinned: true, collapsed: true })
+  })
+
+  it('removes every live group when a clear empties the document groups', () => {
+    const group = { id: 1, title: 'Stage', bounding: [0, 0, 300, 200] }
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [],
+      groups: [group]
+    })
+    applyCollected()
+    const live = new LGraphGroup('Stage', toGroupId(1))
+    graph.add(live)
+    expect(graph.groups).toHaveLength(1)
+
+    const clear = envelope({ op: 'clear', removed_nodes: [1, 2] })
+    expect(applyOps(doc, [clear], CATALOG).outcomes).toEqual([
+      { op_id: clear.op_id, outcome: 'applied' }
+    ])
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(graph.nodes).toHaveLength(0)
+    expect(graph.groups).toHaveLength(0)
+  })
+
+  it('keeps live groups when a frame leaves the document groups alone', () => {
+    const group = { id: 1, title: 'Stage', bounding: [0, 0, 300, 200] }
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [],
+      groups: [group]
+    })
+    applyCollected()
+    const live = new LGraphGroup('Stage', toGroupId(1))
+    graph.add(live)
+
+    const remove = envelope({
+      op: 'delete_node',
+      node_id: 2,
+      removed_links: []
+    })
+    expect(applyOps(doc, [remove], CATALOG).outcomes).toEqual([
+      { op_id: remove.op_id, outcome: 'applied' }
+    ])
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(graph.nodes).toHaveLength(1)
+    expect(graph.groups).toEqual([live])
   })
 
   it('applies the rest of a frame when one operation throws, and reports it once', () => {

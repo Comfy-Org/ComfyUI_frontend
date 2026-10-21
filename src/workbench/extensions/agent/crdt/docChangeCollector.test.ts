@@ -162,6 +162,17 @@ describe('DocChangeCollector', () => {
     expect(changes.nodes.size).toBe(0)
   })
 
+  it('flags a replaced groups list and nothing for other passthrough keys', () => {
+    const { doc, collector } = setup()
+
+    doc.transact(() => doc.getMap('meta').set('extra', { ds: {} }))
+    expect(collector.take().groups).toBe(false)
+
+    doc.transact(() => doc.getMap('meta').set('groups', []))
+    expect(collector.take().groups).toBe(true)
+    expect(collector.take().groups).toBe(false)
+  })
+
   it('records link keys, clears on take, and stops observing after destroy', () => {
     const { doc, collector } = setup()
 
