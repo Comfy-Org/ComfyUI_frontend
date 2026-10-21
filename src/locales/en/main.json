@@ -3698,6 +3698,10 @@
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
+      "lowCredits": {
+        "title": "Credits are low",
+        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
+      },
       "ending": {
         "title": "Your Team plan ends on {date}",
         "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
