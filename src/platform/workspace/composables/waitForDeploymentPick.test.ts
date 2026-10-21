@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
@@ -146,10 +149,6 @@ describe('waitForDeploymentPick', () => {
       arrange: () => setDeploymentHint('ws-1', 'dep-1')
     },
     {
-      why: 'this browser has no hint for the workspace',
-      arrange: () => {}
-    },
-    {
       why: 'the page opened from a deployment link, after a boot on Comfy Cloud',
       arrange: () => {
         setDeploymentHint('ws-1', null)
@@ -216,8 +215,135 @@ describe('waitForDeploymentPick', () => {
     const confirmed = settledAt(waitForDeploymentPick())
     await vi.advanceTimersByTimeAsync(0)
     expect(confirmed.value).toBeUndefined()
-    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS)
+
+    expect(confirmed.value).toBe(true)
+  })
+
+  it('waits the full backstop for a listing that never answers when the hint names a deployment', async () => {
+    setDeploymentHint('ws-1', 'dep-1')
+    mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
+    const onLateDeployment = vi.fn()
+
+    const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+    expect(confirmed.value).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(1)
 
     expect(confirmed.value).toBe(false)
+    expect(useDeploymentPickStore().bootDeployment).toBeNull()
+    expect(onLateDeployment).not.toHaveBeenCalled()
+  })
+
+  describe('with no hint', () => {
+    function answersAfter(ms: number, answer: () => Promise<unknown>) {
+      mockWorkspaceApi.listDeployments.mockImplementation(() =>
+        new Promise((resolve) => setTimeout(resolve, ms)).then(() => answer())
+      )
+    }
+
+    it('boots on Comfy Cloud, confirmed, once the short wait passes', async () => {
+      mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
+      const onLateDeployment = vi.fn()
+
+      const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS - 1)
+      expect(confirmed.value).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(confirmed.value).toBe(true)
+      expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(onLateDeployment).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { pickSource: 'workspace_default' as const },
+      { pickSource: 'browser' as const }
+    ])(
+      'says so when a listing that answers late names a deployment: picked by $pickSource',
+      async ({ pickSource }) => {
+        const late = DEPLOYMENT_LISTING_NO_HINT_WAIT_MS + 1_000
+        answersAfter(late, async () => listingOn('dep-2', pickSource))
+        const onLateDeployment = vi.fn()
+
+        const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS)
+        expect(confirmed.value).toBe(true)
+        expect(onLateDeployment).not.toHaveBeenCalled()
+        await vi.advanceTimersByTimeAsync(late)
+
+        expect(onLateDeployment).toHaveBeenCalledOnce()
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      }
+    )
+
+    it.for([
+      {
+        answer: 'names no deployment',
+        respond: async () => ({
+          builds_visible: true,
+          picked_deployment_id: null,
+          pick_source: null,
+          items: []
+        })
+      },
+      {
+        answer: 'is a 403',
+        respond: () =>
+          Promise.reject(new WorkspaceApiError('Outside rollout', 403))
+      },
+      {
+        answer: 'is a 503',
+        respond: () =>
+          Promise.reject(new WorkspaceApiError('Service unavailable', 503))
+      },
+      {
+        answer: 'fails',
+        respond: () => Promise.reject(new WorkspaceApiError('Bad request', 400))
+      }
+    ])(
+      'says nothing when a listing that answers late $answer',
+      async ({ respond }) => {
+        answersAfter(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS + 1_000, respond)
+        const onLateDeployment = vi.fn()
+
+        const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+
+        expect(confirmed.value).toBe(true)
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+        expect(onLateDeployment).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for(failures)(
+      'boots on Comfy Cloud, confirmed, when the listing fails with $failure',
+      async ({ error }) => {
+        mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+        const onLateDeployment = vi.fn()
+
+        const confirmed = settledAt(waitForDeploymentPick(onLateDeployment))
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS)
+
+        expect(confirmed.value).toBe(true)
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+        expect(onLateDeployment).not.toHaveBeenCalled()
+      }
+    )
+
+    it('boots on Comfy Cloud at once, without retrying, on a 503', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('Service unavailable', 503)
+      )
+
+      const confirmed = settledAt(waitForDeploymentPick())
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(confirmed.value).toBe(true)
+      expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+    })
   })
 })

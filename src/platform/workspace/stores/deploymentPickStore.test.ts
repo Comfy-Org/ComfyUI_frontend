@@ -4,7 +4,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_LISTING_REUSE_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
@@ -81,7 +84,7 @@ describe('useDeploymentPickStore', () => {
   })
 
   it.for([
-    new WorkspaceApiError('Service unavailable', 503),
+    new WorkspaceApiError('Bad gateway', 502),
     new WorkspaceApiError('Network Error'),
     new WorkspaceApiError('Bad request', 400),
     new TypeError('Network unavailable')
@@ -101,7 +104,7 @@ describe('useDeploymentPickStore', () => {
   })
 
   it.for([
-    new WorkspaceApiError('Service unavailable', 503),
+    new WorkspaceApiError('Bad gateway', 502),
     new WorkspaceApiError('Gateway timeout', 504),
     new WorkspaceApiError('timeout of 30000ms exceeded')
   ])(
@@ -130,7 +133,7 @@ describe('useDeploymentPickStore', () => {
   )
 
   it('gives up on the boot lookup after three attempts', async () => {
-    const error = new WorkspaceApiError('Service unavailable', 503)
+    const error = new WorkspaceApiError('Bad gateway', 502)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
     const store = useDeploymentPickStore()
 
@@ -175,7 +178,7 @@ describe('useDeploymentPickStore', () => {
 
   it('stops retrying the boot lookup once the workspace changes', async () => {
     mockWorkspaceApi.listDeployments.mockRejectedValue(
-      new WorkspaceApiError('Service unavailable', 503)
+      new WorkspaceApiError('Bad gateway', 502)
     )
     const store = useDeploymentPickStore()
 
@@ -187,6 +190,136 @@ describe('useDeploymentPickStore', () => {
 
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+  })
+
+  describe('when the listing answers 503', () => {
+    const unavailable = new WorkspaceApiError(
+      'deployment picking is not available in this environment',
+      503
+    )
+
+    it.for([
+      { hint: 'no hint', arrange: () => {} },
+      {
+        hint: 'a Comfy Cloud hint',
+        arrange: () => setDeploymentHint('ws-1', null)
+      }
+    ])(
+      'boots on Comfy Cloud at once, without retrying, with $hint',
+      async ({ arrange }) => {
+        arrange()
+        mockWorkspaceApi.listDeployments.mockRejectedValue(unavailable)
+        const store = useDeploymentPickStore()
+
+        await store.loadOnce()
+
+        expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+        expect(store.bootDeployment).toBeNull()
+        expect(store.state.phase).toBe('hidden')
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(
+          unavailable,
+          expect.objectContaining({
+            errorType: 'error_loading_deployment_listing'
+          })
+        )
+      }
+    )
+
+    it('retries a 503 and leaves the boot source unknown when the hint names a deployment', async () => {
+      setDeploymentHint('ws-1', 'dep-1')
+      mockWorkspaceApi.listDeployments.mockRejectedValue(unavailable)
+      const store = useDeploymentPickStore()
+
+      const boot = store.loadOnce()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      await boot
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(3)
+      expect(store.bootDeployment).toBeUndefined()
+    })
+
+    it('reports a 503 once a page, however many listings get one', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(unavailable)
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await store.load()
+      await store.load()
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(3)
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('a load that may reuse the last answer', () => {
+    it.for([
+      {
+        answer: 'a refusal',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        later: DEPLOYMENT_LISTING_BACKSTOP_MS * 10,
+        listings: 1
+      },
+      {
+        answer: 'a 503 that counts as Comfy Cloud',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        later: DEPLOYMENT_LISTING_BACKSTOP_MS * 10,
+        listings: 1
+      },
+      {
+        answer: 'a recent listing',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
+        later: DEPLOYMENT_LISTING_REUSE_MS - 1,
+        listings: 1
+      },
+      {
+        answer: 'an old listing',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
+        later: DEPLOYMENT_LISTING_REUSE_MS,
+        listings: 2
+      },
+      {
+        answer: 'a failure',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Bad request', 400)
+          ),
+        later: 0,
+        listings: 2
+      }
+    ])(
+      'asks again only when the answer no longer stands: $answer',
+      async ({ respond, later, listings }) => {
+        respond()
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+
+        await vi.advanceTimersByTimeAsync(later)
+        await store.loadUnlessAnswered()
+
+        expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(listings)
+      }
+    )
+
+    it('asks again after the workspace changes', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('Outside rollout', 403)
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+      await store.loadUnlessAnswered()
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    })
   })
 
   it('boots on Comfy Cloud, quietly, when ingest has no deployment routes (404)', async () => {
@@ -1459,9 +1592,24 @@ describe('useDeploymentPickStore', () => {
         hintBefore: hint,
         respond: () =>
           mockWorkspaceApi.listDeployments.mockRejectedValue(
-            new WorkspaceApiError('Service unavailable', 503)
+            new WorkspaceApiError('Bad gateway', 502)
           ),
         hintAfter: hint
+      })),
+      ...(
+        [
+          ['deployment', 'deployment'],
+          ['cloud', 'cloud'],
+          ['unknown', 'cloud']
+        ] as const
+      ).map(([hintBefore, hintAfter]) => ({
+        answer: `a 503, with the hint at ${hintBefore}`,
+        hintBefore,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        hintAfter
       }))
     ])(
       'keeps the hint in step with the boot listing: $answer',
