@@ -10,6 +10,7 @@ import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
+import { isLiveAgentUpdate } from './layoutFollowerBridge'
 import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
 import type {
   ApplyMode,
@@ -170,8 +171,7 @@ export class AgentCrdtProjection {
       {
         actor: update.actor ?? 'agent-remote',
         opIds: update.opIds?.filter((id) => id.length > 0) ?? [],
-        liveAgentTurn:
-          !update.catchUp && update.actor?.startsWith('agent:') === true
+        liveAgentTurn: isLiveAgentUpdate(update)
       },
       this.takeApplyMode(update.workflowId)
     )

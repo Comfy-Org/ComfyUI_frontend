@@ -134,6 +134,8 @@ const telemetryState = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
+  isLiveAgentUpdate: (update: { actor?: string; catchUp?: boolean }) =>
+    update.catchUp === false && update.actor?.startsWith('agent:') === true,
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()

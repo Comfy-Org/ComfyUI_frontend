@@ -46,6 +46,10 @@ const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
 }
 
+type FrameClassification = Pick<ClassifiedDocUpdate, 'actor'> & {
+  catchUp?: boolean
+}
+
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   return {
     ...rest,
@@ -119,10 +123,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW_ID, follower)
   let seq = 0
-  const deliver = (
-    update: Uint8Array,
-    classification: Pick<ClassifiedDocUpdate, 'actor' | 'catchUp'>
-  ) => {
+  const deliver = (update: Uint8Array, classification: FrameClassification) => {
     follower.applyRemoteUpdate(update)
     expect(
       projection.applyFrame({
@@ -140,7 +141,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   })
   const hostEdit = (
     edit: () => void,
-    classification: Pick<ClassifiedDocUpdate, 'actor' | 'catchUp'> = {
+    classification: FrameClassification = {
       actor: 'agent:comfy:host',
       catchUp: false
     }
@@ -180,6 +181,12 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       name: 'live human frame',
       actor: 'user:test',
       catchUp: false,
+      expected: [20, 30]
+    },
+    {
+      name: 'unclassified agent frame',
+      actor: 'agent:test:turn-1',
+      catchUp: undefined,
       expected: [20, 30]
     }
   ])(
