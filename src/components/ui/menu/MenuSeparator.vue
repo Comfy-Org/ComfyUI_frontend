@@ -14,6 +14,6 @@ const forwarded = useForwardProps(restProps)
 <template>
   <DropdownMenuSeparator
     v-bind="forwarded"
-    :class="cn('my-1 h-px bg-border-subtle', className)"
+    :class="cn('my-1 h-px bg-border/50', className)"
   />
 </template>

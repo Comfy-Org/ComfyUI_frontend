@@ -23,7 +23,7 @@ const meta: Meta<typeof DeploymentSwitcher> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="ml-96 w-80 rounded-lg border border-border-default bg-base-background p-2"><story /></div>'
+        '<div class="ml-96 w-80 rounded-lg border border-border bg-background p-2"><story /></div>'
     })
   ]
 }

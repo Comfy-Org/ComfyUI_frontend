@@ -107,7 +107,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

@@ -347,6 +347,20 @@ describe('useBoundingBoxes node history', () => {
     })
   })
 
+  it('undoes a continuous palette color change as a single step', async () => {
+    const c = setup([box()])
+    const region = c.activeRegion.value!
+    region.palette = ['#111111']
+    c.onActivePaletteChange()
+    region.palette = ['#222222']
+    c.onActivePaletteChange()
+
+    c.undo()
+    await flush()
+    expect(modelBoxes(c)[0].metadata.palette).toEqual(['#ff0000'])
+    expect(c.canUndo.value).toBe(false)
+  })
+
   it('undoes typing into one region as a single step', async () => {
     const c = setup([box()])
     const region = c.activeRegion.value!

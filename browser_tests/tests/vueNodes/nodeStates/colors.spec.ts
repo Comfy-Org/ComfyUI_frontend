@@ -44,6 +44,28 @@ test.describe(
       )
     })
 
+    test('exposes a custom node color through the deprecated background alias', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const backgrounds = await node.body.evaluate((body) => {
+        const probe = (background: string) => {
+          const el = document.createElement('div')
+          el.style.background = background
+          body.append(el)
+          const color = getComputedStyle(el).backgroundColor
+          el.remove()
+          return color
+        }
+        return {
+          alias: probe('var(--component-node-background)'),
+          node: probe('var(--node)')
+        }
+      })
+      expect(backgrounds.alias).toBe(backgrounds.node)
+    })
+
     test('should show brightened node colors on light theme', async ({
       comfyPage
     }) => {

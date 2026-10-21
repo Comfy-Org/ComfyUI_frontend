@@ -3,7 +3,7 @@
      browser's pick or clear it. -->
 <template>
   <div
-    class="flex shrink-0 flex-col gap-1 border-t border-border-default px-4 py-2 text-xs text-muted-foreground"
+    class="flex shrink-0 flex-col gap-1 border-t px-4 py-2 text-xs text-muted-foreground"
     data-testid="deployment-switcher-owner"
   >
     <span>{{ summary }}</span>
@@ -54,7 +54,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const linkClass =
-  'cursor-pointer appearance-none border-0 bg-transparent p-0 text-xs text-base-foreground underline disabled:cursor-wait'
+  'cursor-pointer appearance-none border-0 bg-transparent p-0 text-xs text-foreground underline disabled:cursor-wait'
 
 const summary = computed(() => {
   if (defaultGone) return t('deploymentSwitcher.defaultGone')

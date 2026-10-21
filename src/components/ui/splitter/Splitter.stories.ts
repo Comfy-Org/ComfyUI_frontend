@@ -17,7 +17,7 @@ export const Default: Story = {
   render: () => ({
     components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
     template: `
-      <SplitterGroup class="h-64 rounded-lg border border-border-default">
+      <SplitterGroup class="h-64 rounded-lg border border-border">
         <SplitterPanel :default-size="30" class="p-4">Sidebar</SplitterPanel>
         <SplitterResizeHandle />
         <SplitterPanel :default-size="70" class="p-4">Content</SplitterPanel>
@@ -30,7 +30,7 @@ export const Disabled: Story = {
   render: () => ({
     components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
     template: `
-      <SplitterGroup class="h-64 rounded-lg border border-border-default">
+      <SplitterGroup class="h-64 rounded-lg border border-border">
         <SplitterPanel :default-size="30" class="p-4">Sidebar</SplitterPanel>
         <SplitterResizeHandle disabled />
         <SplitterPanel :default-size="70" class="p-4">Content</SplitterPanel>
@@ -43,7 +43,7 @@ export const Vertical: Story = {
   render: () => ({
     components: { SplitterGroup, SplitterPanel, SplitterResizeHandle },
     template: `
-      <SplitterGroup direction="vertical" class="h-64 rounded-lg border border-border-default">
+      <SplitterGroup direction="vertical" class="h-64 rounded-lg border border-border">
         <SplitterPanel :default-size="40" class="p-4">Top</SplitterPanel>
         <SplitterResizeHandle />
         <SplitterPanel :default-size="60" class="p-4">Bottom</SplitterPanel>

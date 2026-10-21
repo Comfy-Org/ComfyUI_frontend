@@ -8,7 +8,6 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { Ref } from 'vue'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
@@ -24,7 +23,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const i18n = createI18n({
@@ -51,12 +49,9 @@ function setDelete(granted: boolean, denial?: string) {
 }
 
 function hideEdit() {
-  const workspaceUI = useWorkspaceUI()
-  const uiConfig = workspaceUI.uiConfig.value
-  workspaceUI.uiConfig = computed(() => ({
-    ...uiConfig,
-    showEditWorkspaceMenuItem: false
-  }))
+  useBillingCapabilities().canEditWorkspace = computed(() =>
+    receiveServerFact('can_edit_workspace', false)
+  )
 }
 
 async function openMenu() {
@@ -186,6 +181,24 @@ describe('WorkspaceMenuButton', () => {
       screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
     ).toEqual(['Edit workspace details', LEAVE, DELETE])
   })
+
+  it.for([
+    { canEdit: true, items: ['Edit workspace details', LEAVE] },
+    { canEdit: false, items: [LEAVE] }
+  ])(
+    'renders Edit from can_edit_workspace $canEdit',
+    async ({ canEdit, items }) => {
+      useBillingCapabilities().canEditWorkspace = computed(() =>
+        receiveServerFact('can_edit_workspace', canEdit)
+      )
+      setDelete(false, 'not_workspace_owner')
+      await openMenu()
+
+      expect(
+        screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+      ).toEqual(items)
+    }
+  )
 
   it('keeps disabled items in keyboard focus order', async () => {
     hideEdit()

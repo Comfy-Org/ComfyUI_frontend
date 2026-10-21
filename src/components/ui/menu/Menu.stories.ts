@@ -38,3 +38,13 @@ export const Nested: Story = {
     items: [{ label: 'Parent', items: [{ label: 'Child', command: fn() }] }]
   }
 }
+
+export const Badges: Story = {
+  args: {
+    items: [
+      { label: 'Enter node graph', badge: 'New', command: fn() },
+      { label: 'Preview', badge: 'Beta', command: fn() },
+      { label: 'Settings', command: fn() }
+    ]
+  }
+}

@@ -9,7 +9,7 @@
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="underline underline-offset-4 hover:text-base-foreground"
+          class="underline underline-offset-4 hover:text-foreground"
         >
           {{ t('g.learnMore') }}
         </a>

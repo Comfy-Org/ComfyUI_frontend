@@ -5,16 +5,16 @@ import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
-import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
+import { useAgentTargetNavigation } from '@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
-import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
 const { workflowId, locatorId, name } = defineProps<{
   workflowId: string
@@ -87,13 +87,13 @@ async function open(): Promise<void> {
     size="unset"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="h-[53px] w-full justify-start gap-2.5 border-component-node-border px-3 py-2.5 text-left whitespace-normal"
+    class="h-[53px] w-full justify-start gap-2.5 px-3 py-2.5 text-left whitespace-normal"
     @click="open"
   >
     <span
       aria-hidden="true"
       data-testid="workflow-link-media"
-      class="flex size-8 shrink-0 items-center justify-center rounded-md border border-component-node-border bg-secondary-background text-muted-foreground"
+      class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-muted-foreground"
     >
       <span class="icon-[comfy--workflow] size-4" />
     </span>
@@ -101,7 +101,7 @@ async function open(): Promise<void> {
       data-testid="workflow-link-content"
       class="flex min-w-0 flex-1 flex-col gap-0.5"
     >
-      <span class="truncate text-sm/4 text-base-foreground">{{ label }}</span>
+      <span class="truncate text-sm/4 text-foreground">{{ label }}</span>
       <span
         v-if="nodeCount !== undefined"
         :id="nodeCountId"

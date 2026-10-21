@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -39,14 +40,15 @@ const showAddCredits = computed(
 </script>
 
 <template>
-  <div
+  <Card
+    surface="secondary"
     role="alert"
-    class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-component-node-border bg-modal-card-background p-4 shadow-sm"
+    class="flex w-full flex-col justify-center gap-2 overflow-hidden p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
       <span
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive-background"
+        class="mt-0.5 icon-[lucide--gauge] size-5 shrink-0 text-destructive"
       />
       <div class="min-w-0 flex-1 text-sm/5">
         <p class="m-0">
@@ -87,5 +89,5 @@ const showAddCredits = computed(
         {{ $t('agent.paywall.addCredits') }}
       </Button>
     </div>
-  </div>
+  </Card>
 </template>

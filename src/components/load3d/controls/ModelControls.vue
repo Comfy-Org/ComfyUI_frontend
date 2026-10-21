@@ -10,23 +10,18 @@
         :aria-label="t('load3d.upDirection')"
         @click="toggleUpDirection"
       >
-        <i class="pi pi-arrow-up text-lg text-base-foreground" />
+        <i class="pi pi-arrow-up text-lg text-foreground" />
       </Button>
       <div
         v-show="showUpDirection"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button
             v-for="direction in upDirections"
             :key="direction"
             variant="textonly"
-            :class="
-              cn(
-                'text-base-foreground',
-                upDirection === direction && 'bg-blue-500'
-              )
-            "
+            :class="cn(upDirection === direction && 'bg-blue-500')"
             @click="selectUpDirection(direction)"
           >
             {{ direction.toUpperCase() }}
@@ -45,23 +40,18 @@
         :aria-label="t('load3d.materialMode')"
         @click="toggleMaterialMode"
       >
-        <i class="pi pi-box text-lg text-base-foreground" />
+        <i class="pi pi-box text-lg text-foreground" />
       </Button>
       <div
         v-show="showMaterialMode"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button
             v-for="mode in materialModes"
             :key="mode"
             variant="textonly"
-            :class="
-              cn(
-                'whitespace-nowrap text-base-foreground',
-                materialMode === mode && 'bg-blue-500'
-              )
-            "
+            :class="cn(materialMode === mode && 'bg-blue-500')"
             @click="selectMaterialMode(mode)"
           >
             {{ formatMaterialMode(mode) }}
@@ -80,7 +70,7 @@
         :aria-label="t('load3d.showSkeleton')"
         @click="showSkeleton = !showSkeleton"
       >
-        <i class="pi pi-sitemap text-lg text-base-foreground" />
+        <i class="pi pi-sitemap text-lg text-foreground" />
       </Button>
     </div>
   </div>
@@ -94,7 +84,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
