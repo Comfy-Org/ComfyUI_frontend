@@ -75,6 +75,14 @@ function longestAlong(boxes: LayoutBox[], axis: GapAxis): AxisSpan {
     .reduce((longest, span) => (span.size > longest.size ? span : longest))
 }
 
+function isStackedWith(a: LayoutBox, b: LayoutBox, crossAxis: GapAxis) {
+  const spanA = spanOf(a, crossAxis)
+  const spanB = spanOf(b, crossAxis)
+  const overlap =
+    Math.min(endOf(spanA), endOf(spanB)) - Math.max(spanA.start, spanB.start)
+  return overlap >= Math.min(spanA.size, spanB.size) / 2
+}
+
 function joinsBand(
   members: LayoutBox[],
   box: LayoutBox,
@@ -83,7 +91,7 @@ function joinsBand(
   const crossAxis = crossAxisOf(axis)
   const { start, size } = spanOf(box, axis)
   const stacked = members.filter((member) =>
-    spansOverlap(spanOf(member, crossAxis), spanOf(box, crossAxis))
+    isStackedWith(member, box, crossAxis)
   )
   const overlapsStacked = stacked.every(
     (member) => start < endOf(spanOf(member, axis)) - OVERLAP_TOLERANCE
@@ -276,9 +284,9 @@ function reachBefore(
 ): number {
   const track = trackIndexOf(cell, axis)
   const previous = membersOf(grid, axis, track - 1)
-  const pastPrevious =
-    Math.min(...previous.map(startOf)) +
-    Math.min(...previous.map((member) => sizeAlong(member, axis)))
+  const pastPrevious = Math.min(
+    ...previous.map((member) => startOf(member) + sizeAlong(member, axis))
+  )
   const pastLineNeighbours = grid.cells
     .filter(
       (other) =>
@@ -413,12 +421,28 @@ function placeCells(
   }))
 }
 
+function readsAsSameGrid(grid: SelectionGrid, boxes: LayoutBox[]): boolean {
+  const reread = detectSelectionGrid(boxes)
+  const cellOf = new Map(reread.cells.map((cell) => [cell.box.id, cell]))
+  return (
+    reread.rowCount === grid.rowCount &&
+    reread.columnCount === grid.columnCount &&
+    grid.cells.every(({ box, row, column }) => {
+      const cell = cellOf.get(box.id)
+      return cell?.row === row && cell.column === column
+    })
+  )
+}
+
 function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
   const packed = placeCells(grid, (axis) => packedOffsets(grid, axis, gap))
   const packedBoxes = grid.cells.map(({ box }, i) => ({ ...box, ...packed[i] }))
-  return anyPair(packedBoxes, (a, b) => crowds(a, b, gap))
-    ? placeCells(grid, (axis) => uniformOffsets(grid, axis, gap))
-    : packed
+  const keepsPacking =
+    !anyPair(packedBoxes, (a, b) => crowds(a, b, gap)) &&
+    readsAsSameGrid(grid, packedBoxes)
+  return keepsPacking
+    ? packed
+    : placeCells(grid, (axis) => uniformOffsets(grid, axis, gap))
 }
 
 function isLaidOutAt(grid: SelectionGrid, gap: number): boolean {

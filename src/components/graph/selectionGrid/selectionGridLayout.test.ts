@@ -151,6 +151,17 @@ describe('detectSelectionGrid', () => {
       columns: 3
     },
     {
+      name: 'a tall node that overlaps a short one by a pixel at the side',
+      boxes: [
+        box('sampler', 0, 0, 300, 262),
+        box('decode', 340, 0, 200, 46),
+        box('save', 539, 60, 300, 270)
+      ],
+      kind: 'row',
+      rows: 1,
+      columns: 3
+    },
+    {
       name: 'two nodes stacked beside a tall one',
       boxes: [
         box('tall', 0, 0, 200, 600),
@@ -430,6 +441,22 @@ describe('computeTidyLayout', () => {
         box('short', 700, 0, 100, 50),
         box('middle', 320, 320, 100, 100),
         box('narrow', 0, 650, 50, 100)
+      ]
+    },
+    {
+      name: 'a node below the short one of a tall and a short pair',
+      boxes: [
+        box('tall', 0, 0, 200, 400),
+        box('short', 240, 0, 200, 100),
+        box('below', 480, 420, 200, 100)
+      ]
+    },
+    {
+      name: 'a node below and beside the narrow one of a wide and a narrow pair',
+      boxes: [
+        box('wide', 0, 0, 200, 100),
+        box('narrow', 0, 112, 100, 100),
+        box('beside', 212, 224, 100, 100)
       ]
     },
     {
