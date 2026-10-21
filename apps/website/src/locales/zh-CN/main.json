@@ -5504,6 +5504,10 @@
         "security": {
           "question": "身份管理与安全审查",
           "answer": "与 Comfy 讨论公司身份、已批准构建的访问权限、私有素材和工作室安全要求。围绕部署方案确定审查范围。"
+        },
+        "billing": {
+          "question": "企业方案与计费",
+          "answer": "价格、席位和使用条款将在企业协议中明确。与 Comfy 沟通用量、计费方式及团队需求。"
         }
       },
       "enterprise": "查看企业方案详情",
@@ -5567,8 +5571,8 @@
     "badge": "视觉特效",
     "heading": "一个镜头，更多可能。",
     "description": "调整光线、替换物体、扩展画面。使用 Comfy 构建可重复使用的视觉特效工作流，并融入工作室的制作流程。",
-    "sales": "联系 COMFY 团队",
-    "browse": "探索工作流",
+    "sales": "联系我们",
+    "browse": "查看视觉特效工作流",
     "workflow": "查看工作流",
     "sequenceHeading": "一次拍摄，新的视角。",
     "sequenceDescription": "查看 Seedance 基于参考视频生成的多镜头序列。打开工作流，了解序列的构建方式。",
@@ -5616,9 +5620,11 @@
     },
     "workstationTitle": "工作站与渲染",
     "videoCaption": "预先生成的示例。拖动画布探索，选择版本后拖动分隔线进行对比。",
-    "tryWorkflow": "体验工作流",
+    "tryWorkflow": "免费试用",
+    "dragHint": "左右拖动查看完整工作流",
+    "enterprisePlan": "查看企业方案",
     "prototype": {
-      "back": "返回示例",
+      "back": "返回视觉特效页面",
       "heading": "重新布光工作流",
       "use": "使用工作流",
       "customize": "在 Comfy Cloud 中自定义",
