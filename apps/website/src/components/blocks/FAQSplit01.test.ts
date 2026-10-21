@@ -81,4 +81,30 @@ describe('FAQSplit01', () => {
       'No. We match their price, always.'
     )
   })
+
+  it('links an answer to its follow-up page in the same tab', () => {
+    render(FAQSplit01, {
+      props: {
+        heading: 'FAQ',
+        faqs: [
+          {
+            id: 'billing',
+            question: 'How is billing set?',
+            answer: 'Billing is set in your agreement.',
+            link: { label: 'SEE ENTERPRISE PLAN', href: '/enterprise/' }
+          },
+          faqs[0]
+        ]
+      }
+    })
+
+    const link = within(
+      panelWith('Billing is set in your agreement.')
+    ).getByRole('link', { name: 'SEE ENTERPRISE PLAN', hidden: true })
+    expect(link.getAttribute('href')).toBe('/enterprise/')
+    expect(link.hasAttribute('target')).toBe(false)
+    expect(
+      within(panelWith(faqs[0].answer)).queryByRole('link', { hidden: true })
+    ).toBeNull()
+  })
 })

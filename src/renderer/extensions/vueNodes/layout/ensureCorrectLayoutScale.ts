@@ -1,4 +1,4 @@
-import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
@@ -31,7 +31,7 @@ interface Positioned {
  * @param targetGraph - The graph to normalize.
  */
 export function ensureCorrectLayoutScale(
-  rendererVersion: RendererType | undefined,
+  rendererVersion: LGraphExtra['workflowRendererVersion'],
   graph: LGraph
 ): boolean {
   const currentRenderer = graph.extra.workflowRendererVersion

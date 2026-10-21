@@ -20,7 +20,7 @@
           variant="textonly"
           size="icon-sm"
           :disabled
-          :aria-label="$t('g.clear')"
+          :aria-label="clearLabel"
           @click.stop="clearSearch"
         >
           <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
@@ -58,8 +58,8 @@
             sizeConfig.inputText
           )
         "
-        :placeholder="placeholderText"
-        :aria-label="ariaLabel"
+        :placeholder
+        :aria-label="accessibleLabel"
         :aria-invalid="invalid"
         :auto-focus="autofocus"
         @blur="emit('blur')"
@@ -75,7 +75,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
 import { ComboboxAnchor, ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SearchInputVariants } from './searchInput.variants'
@@ -84,11 +83,10 @@ import {
   searchInputVariants
 } from './searchInput.variants'
 
-const { t } = useI18n()
-
 const {
   placeholder,
-  ariaLabel,
+  accessibleLabel,
+  clearLabel,
   icon = 'icon-[lucide--search]',
   debounceTime = 300,
   autofocus = false,
@@ -99,7 +97,8 @@ const {
   class: className
 } = defineProps<{
   placeholder?: string
-  ariaLabel?: string
+  accessibleLabel: string
+  clearLabel: string
   icon?: string
   debounceTime?: number
   autofocus?: boolean
@@ -126,10 +125,6 @@ function focus() {
 }
 
 defineExpose({ focus })
-
-const placeholderText = computed(
-  () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
-)
 
 function clearSearch() {
   modelValue.value = ''

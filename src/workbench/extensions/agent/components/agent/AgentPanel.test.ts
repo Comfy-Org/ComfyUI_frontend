@@ -3,7 +3,7 @@ import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The node preview constructs its observer at import time; jsdom omits this API.
 vi.hoisted(() => {
@@ -95,6 +95,23 @@ function mount(isMaximized = false) {
         EmptyState: true,
         PanelHeader: true
       }
+    }
+  })
+}
+
+function mountTargetlessPanel() {
+  const pinia = getActivePinia()
+  assert.exists(pinia)
+  return render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      workflowDetached: true
+    },
+    global: {
+      plugins: [pinia, i18n],
+      directives: { tooltip: {} },
+      stubs: { WorkflowSelectorChip: true }
     }
   })
 }
@@ -481,6 +498,51 @@ describe('AgentPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
+  })
+
+  it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(document.body)
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('keeps the first-focus deadline through a chat-history round trip', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.advanceTimersByTimeAsync(200)
+    await user.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
   })
 
   it('groups chat options with the title and separates history navigation', () => {

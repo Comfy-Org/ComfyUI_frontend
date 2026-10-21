@@ -1,15 +1,18 @@
-import { clampState, roundState } from './cameraAngleMath'
+import {
+  clampState,
+  roundState
+} from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
 import {
   CAMERA_ANGLE_VIEW_MODES,
   CAMERA_ANGLE_VIEW_WIDGET_NAME,
   CAMERA_ANGLE_WIDGET_NAMES,
   DEFAULT_CAMERA_ANGLE_STATE
-} from './types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 import type {
   CameraAngleField,
   CameraAngleState,
   CameraAngleViewMode
-} from './types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 
 export interface WidgetLike {
   name: string

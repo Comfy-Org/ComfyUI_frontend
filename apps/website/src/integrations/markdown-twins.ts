@@ -28,11 +28,6 @@ const SECTIONS: SectionSpec[] = [
     title: 'Events',
     summary:
       'Livestreams, hackathons, and community meetups, upcoming and recorded.'
-  },
-  {
-    prefix: '/cloud/supported-nodes',
-    title: 'Supported nodes on Comfy Cloud',
-    summary: 'Custom-node packs preinstalled on Comfy Cloud, one page per pack.'
   }
 ]
 

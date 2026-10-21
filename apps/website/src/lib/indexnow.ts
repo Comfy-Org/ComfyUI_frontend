@@ -1,4 +1,3 @@
-import { escapeRegExp } from 'es-toolkit'
 import { createHash } from 'node:crypto'
 
 import {
@@ -8,8 +7,6 @@ import {
   INDEXNOW_MAX_URLS_PER_REQUEST,
   INDEXNOW_SITE
 } from '@/config/indexnow'
-import { LOCALE_CODES } from '@/config/locales'
-import { translationsFor } from '@/i18n/translations'
 import { htmlToTwin, renderTwin } from '@/lib/markdown-twin'
 
 /** Sitemap URL → sha256 of the page's crawler-visible content. */
@@ -45,48 +42,6 @@ function isOnSite(url: string): boolean {
   return url.startsWith(`${INDEXNOW_SITE}/`)
 }
 
-const LIVE_PACK_STAT_LABELS = new Set(
-  LOCALE_CODES.flatMap((locale) => {
-    const { t } = translationsFor(locale)
-    return [t('cloudNodes.detail.downloads'), t('cloudNodes.detail.stars')]
-  })
-)
-
-const LIVE_PACK_STAT = new RegExp(
-  `(\\*\\*(?:${[...LIVE_PACK_STAT_LABELS].map(escapeRegExp).join('|')})\\*\\*\\n\\n)[^\\n]*`,
-  'g'
-)
-
-/** Custom-node download and star counts are fetched live on every build. */
-function withoutLiveStats(twin: string, url: string): string {
-  return new URL(url).pathname.includes('/cloud/supported-nodes/')
-    ? twin.replace(LIVE_PACK_STAT, '$1')
-    : twin
-}
-
-const PACK_INDEX_PATH = /\/cloud\/supported-nodes\/$/
-
-/**
- * The pack index lists packs by live download rank, so a rank swap would read
- * as a change. Each `### ` pack section is put in name order instead.
- */
-function packsInNameOrder(twin: string): string {
-  const runs: string[][] = []
-  for (const block of twin.split(/\n(?=#{1,3} )/).map((b) => b.trimEnd())) {
-    const run = runs.at(-1)
-    if (block.startsWith('### ') && run?.[0].startsWith('### ')) run.push(block)
-    else runs.push([block])
-  }
-  return runs.flatMap((run) => run.toSorted()).join('\n')
-}
-
-function fingerprintInput(twin: string, url: string): string {
-  const stable = withoutLiveStats(twin, url)
-  return PACK_INDEX_PATH.test(new URL(url).pathname)
-    ? packsInNameOrder(stable)
-    : stable
-}
-
 /**
  * Fingerprints the page's markdown twin (title, description, canonical and
  * `<main>`), so header, footer and hashed asset names never count as a change.
@@ -99,7 +54,7 @@ export function pageFingerprint(
   twin?: string
 ): string | null {
   if (isNoindex(html)) return null
-  const input = fingerprintInput(twin ?? renderTwin(htmlToTwin(html, url)), url)
+  const input = twin ?? renderTwin(htmlToTwin(html, url))
   return createHash('sha256').update(input).digest('hex')
 }
 

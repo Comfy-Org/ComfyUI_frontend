@@ -5,9 +5,14 @@
   "description": "Vite library build shared by the workspace packages published to npm",
   "type": "module",
   "exports": "./src/publishedPackageBuild.ts",
+  "dependencies": {
+    "vite-plugin-dts": "catalog:"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:"
+    "vite": "catalog:"
+  },
+  "peerDependencies": {
+    "vite": "catalog:"
   }
 }

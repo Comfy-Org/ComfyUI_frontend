@@ -272,14 +272,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useModalLiftedZIndex.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useModalLiftedZIndex.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/usePopoverSizing.ts",
       "role": "application"
     },
@@ -467,8 +459,8 @@
       ]
     },
     {
-      "name": "Modal z-index lifting keeps overlays visible above dialogs",
-      "checks": ["src/composables/useModalLiftedZIndex.test.ts"]
+      "name": "Dialog portals preserve reopen ordering and native target forwarding",
+      "checks": ["src/components/ui/dialog/DialogPortal.test.ts"]
     },
     {
       "name": "Tree data helpers and ticker text splitting stay pure",

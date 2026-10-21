@@ -2,7 +2,12 @@
   <div class="flex min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div class="flex min-w-0 shrink-0 items-center border-b px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && allErrorGroups.length > 1"
