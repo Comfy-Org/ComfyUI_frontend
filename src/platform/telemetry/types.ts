@@ -698,8 +698,6 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * (`stage`, `exit`) pair and never across stages.
  */
 export type AgentConsentOfferExit =
-  /** No Comfy account is signed in. */
-  | 'signed_out'
   /** Signed in, but the account has not resolved to a user id yet. */
   | 'account_unresolved'
   /** No active workspace id yet, and no switch is in progress. */
