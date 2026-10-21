@@ -133,7 +133,7 @@ Flag:
   `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own
   header there moves a request out of its workspace. Off-cloud, REST requests carry
   `getUserAuthHeader()` (plus `X-Comfy-Run-Token` from `getWorkspaceAuthToken()` for a
-  bearer session) and the socket carries the same credential as `?token=`. Flag
+  bearer session, when that returns a token) and the socket carries the same credential as `?token=`. Flag
   credential resolution outside `agentAuth.ts`, or any branch that leaves Local or
   Desktop unauthenticated: they are authenticated product surfaces, not
   "anonymous / model-key-only".

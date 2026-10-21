@@ -14,13 +14,6 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
-/**
- * The workspace token the canvas queue sends partner nodes as
- * `auth_token_comfy_org`. The local agent gives it to the runs it starts, so
- * they bill the workspace a run from the canvas bills rather than the
- * signed-in user's own account. Best-effort: without it the agent runs with
- * the user credential, as before.
- */
 async function workspaceRunToken(header: AuthHeader): Promise<string | null> {
   if ('X-API-KEY' in header) return null
   try {

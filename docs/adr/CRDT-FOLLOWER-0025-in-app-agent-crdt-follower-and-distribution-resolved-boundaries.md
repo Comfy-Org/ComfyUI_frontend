@@ -390,11 +390,7 @@ described above is not needed:
   there would move a request out of its workspace. Off-cloud, `fetchApi`
   attaches nothing, so REST requests carry the user's personal auth header
   (`getUserAuthHeader`) and the socket carries the same credential as
-  `?token=`; a running turn re-sends it. A bearer session's REST requests
-  also carry `X-Comfy-Run-Token`, the `getWorkspaceAuthToken` value
-  `queuePrompt` sends partner nodes, so the runs the local agent starts bill
-  the active workspace as a manual run does. Model calls keep the personal
-  credential.
+  `?token=`; a running turn re-sends it. When `getWorkspaceAuthToken` returns a token, a bearer session's REST requests also carry it as `X-Comfy-Run-Token` (the value `queuePrompt` sends partner nodes), so the runs the local agent starts bill the active workspace as a manual run does. When the lookup returns nothing or fails, the header is omitted and runs use the personal credential, as before. Model calls always keep the personal credential.
 - **Development exception.** In development mode, a signed-out send skips the
   sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
   tells the browser so with the build-time flag
