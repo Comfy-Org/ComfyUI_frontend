@@ -1,32 +1,33 @@
+import {
+  zHubProfile,
+  zHubProfileSummary,
+  zHubWorkflowSummary,
+  zLabelRef
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-const namedSchema = z.object({ display_name: z.string() })
+const labelSchema = zLabelRef.pick({ display_name: true })
 
-export const hubCreatorWorkflowSchema = z.object({
-  share_id: z.string(),
-  name: z.string(),
-  status: z.string(),
-  is_app: z.boolean(),
-  publish_time: z.string(),
-  thumbnail_type: z.string().optional(),
-  thumbnail_url: z.string().optional(),
-  thumbnail_comparison_url: z.string().optional(),
-  tags: z.array(namedSchema).optional(),
-  models: z.array(namedSchema).optional(),
-  profile: z.object({ username: z.string() })
-})
-
-export const hubCreatorProfileSchema = z.object({
-  username: z.string(),
-  display_name: z.string().optional(),
-  description: z.string().optional(),
-  avatar_url: z.string().optional(),
-  website_urls: z.array(z.string()).optional()
-})
+export const hubCreatorWorkflowSchema = zHubWorkflowSummary
+  .pick({
+    share_id: true,
+    name: true,
+    status: true,
+    is_app: true,
+    thumbnail_type: true,
+    thumbnail_url: true,
+    thumbnail_comparison_url: true
+  })
+  .extend({
+    publish_time: z.iso.datetime().nullable(),
+    tags: z.array(labelSchema).optional(),
+    models: z.array(labelSchema).optional(),
+    profile: zHubProfileSummary.pick({ username: true })
+  })
 
 export const hubCreatorsSnapshotSchema = z.object({
   fetched_at: z.string(),
-  profiles: z.array(hubCreatorProfileSchema),
+  profiles: z.array(zHubProfile),
   workflows: z.array(hubCreatorWorkflowSchema)
 })
 

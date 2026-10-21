@@ -1,14 +1,14 @@
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { z } from 'zod'
+import {
+  zHubProfile,
+  zHubWorkflowListResponse
+} from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
 
 import { websiteRoot } from '@website/paths'
 import type { HubCreatorsSnapshot } from '@/lib/hub/creators'
-import {
-  hubCreatorProfileSchema,
-  hubCreatorWorkflowSchema,
-  hubCreatorsSnapshotSchema
-} from '@/lib/hub/creators'
+import { hubCreatorsSnapshotSchema } from '@/lib/hub/creators'
 import { isDirectExecution } from './script-entry-point'
 
 const API = 'https://cloud.comfy.org/api/hub'
@@ -18,10 +18,31 @@ const snapshotPath = join(websiteRoot, 'src/data/hub-creators.snapshot.json')
 
 type FetchJson = (url: string) => Promise<unknown>
 
-const workflowPageSchema = z.object({
-  workflows: z.array(hubCreatorWorkflowSchema),
-  next_cursor: z.string().optional()
-})
+type SnapshotWorkflow = HubCreatorsSnapshot['workflows'][number]
+
+type ApiWorkflow = z.output<
+  typeof zHubWorkflowListResponse
+>['workflows'][number]
+
+function displayNames(labels?: { display_name: string }[]) {
+  return labels?.map(({ display_name }) => ({ display_name }))
+}
+
+function toSnapshotWorkflow(workflow: ApiWorkflow): SnapshotWorkflow {
+  return {
+    share_id: workflow.share_id,
+    name: workflow.name,
+    status: workflow.status,
+    is_app: workflow.is_app,
+    publish_time: workflow.publish_time ?? null,
+    thumbnail_type: workflow.thumbnail_type,
+    thumbnail_url: workflow.thumbnail_url,
+    thumbnail_comparison_url: workflow.thumbnail_comparison_url,
+    tags: displayNames(workflow.tags),
+    models: displayNames(workflow.models),
+    profile: { username: workflow.profile.username }
+  }
+}
 
 export async function getJson(url: string): Promise<unknown> {
   const response = await fetch(url, {
@@ -39,10 +60,10 @@ async function fetchWorkflows(fetchJson: FetchJson) {
   do {
     const query = new URLSearchParams({ limit: String(PAGE_SIZE) })
     if (cursor) query.set('cursor', cursor)
-    const page = workflowPageSchema.parse(
+    const page = zHubWorkflowListResponse.parse(
       await fetchJson(`${API}/workflows?${query}`)
     )
-    workflows.push(...page.workflows)
+    workflows.push(...page.workflows.map(toSnapshotWorkflow))
     cursor = page.workflows.length > 0 ? page.next_cursor : undefined
     if (cursor && seenCursors.has(cursor))
       throw new Error(`The Hub API returned cursor ${cursor} twice`)
@@ -76,7 +97,7 @@ export async function fetchSnapshot(
   ].sort()
   const profiles = await Promise.all(
     usernames.map(async (username) =>
-      hubCreatorProfileSchema.parse(
+      zHubProfile.parse(
         await fetchJson(`${API}/profiles/${encodeURIComponent(username)}`)
       )
     )
