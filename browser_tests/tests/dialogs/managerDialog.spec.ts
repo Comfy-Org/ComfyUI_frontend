@@ -877,7 +877,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       expect(
         await grid.evaluate((element) => element.scrollTop)
       ).toBeGreaterThanOrEqual(scrollTopBeforeRetry)
-      expect(secondPageRequests).toBe(2)
+      await expect.poll(() => secondPageRequests).toBe(2)
 
       await scrollToEnd(grid)
       await expect(
