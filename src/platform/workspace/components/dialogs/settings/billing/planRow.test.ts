@@ -13,6 +13,7 @@ import type {
 
 const baseFacts: PlanRowFacts = {
   subscriptionStatus: 'active',
+  subscriptionState: null,
   billingStatus: 'paid',
   duration: 'MONTHLY',
   planName: 'Pro',
@@ -28,6 +29,37 @@ describe('derivePlanRow', () => {
     facts: Partial<PlanRowFacts>
     expected: PlanRowState
   }>([
+    {
+      case: 'an activating plan',
+      facts: { subscriptionState: 'activating' },
+      expected: { kind: 'activating', planName: 'Pro' }
+    },
+    {
+      case: 'an activating plan without a renewal date',
+      facts: { subscriptionState: 'activating', renewalDate: null },
+      expected: { kind: 'activating', planName: 'Pro' }
+    },
+    {
+      case: 'an activating plan the server has paused',
+      facts: { subscriptionState: 'activating', billingStatus: 'paused' },
+      expected: { kind: 'activating', planName: 'Pro' }
+    },
+    {
+      case: 'an activating response with no plan name',
+      facts: { subscriptionState: 'activating', planName: null },
+      expected: { kind: 'unknown' }
+    },
+    {
+      case: 'a served active state after activating clears',
+      facts: { subscriptionState: 'active' },
+      expected: {
+        kind: 'active',
+        planName: 'Pro',
+        cadence: 'monthly',
+        nextInvoice: '2026-11-15T00:00:00Z',
+        scheduledChange: null
+      }
+    },
     {
       case: 'an active monthly plan',
       facts: {},
@@ -142,6 +174,7 @@ describe('derivePlanRow', () => {
 
 describe('planRowAction', () => {
   const states: Record<string, PlanRowState> = {
+    activating: { kind: 'activating', planName: 'Pro' },
     active: {
       kind: 'active',
       planName: 'Pro',
@@ -166,6 +199,7 @@ describe('planRowAction', () => {
   }
 
   it.for([
+    { state: 'activating', expected: 'manage' },
     { state: 'active', expected: 'manage' },
     { state: 'unknown', expected: 'manage' },
     { state: 'noPlan', expected: 'subscribe' },
