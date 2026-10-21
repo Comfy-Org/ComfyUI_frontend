@@ -27,6 +27,15 @@ function measureDrawnBox(
   return { id: node.id, x, y, width, height }
 }
 
+function nodePositionForDrawnBoxAt(
+  node: LGraphNode,
+  { x, y }: BoxPosition,
+  ctx: CanvasRenderingContext2D | undefined
+) {
+  const drawn = measureDrawnBox(node, ctx)
+  return { x: x + node.pos[0] - drawn.x, y: y + node.pos[1] - drawn.y }
+}
+
 export function useSelectionGrid() {
   const { selectedNodes } = useSelectionState()
   const mutations = useLayoutMutations(LayoutSource.Canvas)
@@ -62,17 +71,17 @@ export function useSelectionGrid() {
     const nodesById = new Map(
       nodes.filter(isMovable).map((node) => [node.id, node])
     )
-    const updates = positions.flatMap(({ id, x, y }) => {
-      const node = nodesById.get(id)
+    const updates = positions.flatMap((position) => {
+      const node = nodesById.get(position.id)
       if (!node) return []
-      const drawn = measureDrawnBox(node, canvasStore.canvas?.ctx)
       return [
         {
-          nodeId: id,
-          position: {
-            x: x + node.pos[0] - drawn.x,
-            y: y + node.pos[1] - drawn.y
-          }
+          nodeId: position.id,
+          position: nodePositionForDrawnBoxAt(
+            node,
+            position,
+            canvasStore.canvas?.ctx
+          )
         }
       ]
     })

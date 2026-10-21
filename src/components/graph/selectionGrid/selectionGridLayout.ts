@@ -480,7 +480,7 @@ function isFinitePosition({ x, y }: BoxPosition): boolean {
   return Number.isFinite(x) && Number.isFinite(y)
 }
 
-/** The gap Tidy up uses for `boxes` when it is not given one, within the slider range. */
+/** The default Tidy up gap for `boxes`, clamped to the slider range. */
 export function tidyGapOf(boxes: LayoutBox[]): number {
   return clamp(gapOf(detectSelectionGrid(boxes)), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
