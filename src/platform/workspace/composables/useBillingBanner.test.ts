@@ -16,6 +16,8 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
 import { useBillingBanner as createBillingBanner } from './useBillingBanner'
 
 describe('useBillingBanner', () => {
