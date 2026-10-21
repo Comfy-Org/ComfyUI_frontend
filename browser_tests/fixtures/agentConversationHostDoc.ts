@@ -106,6 +106,10 @@ export class HostDoc {
     this.doc.getMap('meta').delete('schema_version')
   }
 
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+  }
+
   // Test-only: restores meta.schema_version and returns the frame carrying
   // just that repair, mirroring apply()'s before/after delta shape so the
   // caller can transmit the repair as its own frame -- separately from, and

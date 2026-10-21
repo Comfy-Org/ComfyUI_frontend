@@ -5,15 +5,13 @@ import type {
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -21,6 +19,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { encodeBase64 } from './docFrameClient'
 import { attachDocOpMinter } from './docOpMinter'
 import { mintWireOps } from './opEnvelope'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const WORKFLOW_ID = 'wf-human-add'
@@ -55,11 +54,10 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   }
 }
 
+let agentSocket = createFakeAgentSocket()
+
 function deliver(type: string, data: unknown): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent(type, { detail: data })
-  )
+  agentSocket.receive(type, data)
 }
 
 function frames(sent: string[], type: string) {
@@ -95,16 +93,11 @@ describe('a human-added node across a tab switch', () => {
     useAgentPanelStore().enabled = true
     LiteGraph.registerNodeType('TestSource', TestSource)
     LiteGraph.registerNodeType('TestVirtual', TestVirtual)
-    api.socket = fromPartial<WebSocket>({
-      readyState: 1,
-      send: vi.fn((frame) => {
-        if (typeof frame === 'string') sent.push(frame)
-      })
+    agentSocket = createFakeAgentSocket()
+    agentSocket.send.mockImplementation((frame) => {
+      sent.push(frame)
+      return true
     })
-  })
-
-  afterEach(() => {
-    api.socket = null
   })
 
   function mountBoundFollower(graph: LGraph) {
@@ -114,12 +107,11 @@ describe('a human-added node across a tab switch', () => {
     const view = render(
       defineComponent({
         setup() {
-          followerApi = useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
+          followerApi = useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
             isTargetActive,
-            () => graph
-          )
+            getGraph: () => graph
+          })
           return () => null
         }
       }),

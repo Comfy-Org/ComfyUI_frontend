@@ -477,6 +477,43 @@ test.describe('Keybinding Panel', { tag: '@keyboard' }, () => {
 
       await expect(confirmDialog).toBeHidden()
     })
+
+    test('Reset All confirmation traps focus and dismisses alone over Settings', async ({
+      comfyPage
+    }) => {
+      const panel = comfyPage.settingDialog.keybindingPanel
+      const confirmDialog = panel.resetAllDialog
+      const cancel = confirmDialog.getByRole('button', { name: /Cancel/i })
+      const confirm = confirmDialog.getByRole('button', { name: /Reset All/i })
+      const close = confirmDialog.getByRole('button', { name: 'Close' })
+
+      await test.step('Tab cycles inside the confirmation', async () => {
+        await panel.resetAllButton.click()
+        await expect(cancel).toBeFocused()
+        await panel.page.keyboard.press('Tab')
+        await expect(confirm).toBeFocused()
+        await panel.page.keyboard.press('Tab')
+        await expect(close).toBeFocused()
+        await panel.page.keyboard.press('Shift+Tab')
+        await expect(confirm).toBeFocused()
+      })
+
+      await test.step('Escape closes only the confirmation', async () => {
+        await panel.page.keyboard.press('Escape')
+        await expect(confirmDialog).toBeHidden()
+        await expect(comfyPage.settingDialog.root).toBeVisible()
+        await expect(panel.resetAllButton).toBeFocused()
+      })
+
+      await test.step('An outside click closes only the confirmation', async () => {
+        await panel.resetAllButton.click()
+        await expect(confirmDialog).toBeVisible()
+        await panel.page.mouse.click(5, 5)
+        await expect(confirmDialog).toBeHidden()
+        await expect(comfyPage.settingDialog.root).toBeVisible()
+        await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+      })
+    })
   })
 
   test.describe('Search Filter', () => {

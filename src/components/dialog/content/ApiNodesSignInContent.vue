@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="api-signin-dialog"
-    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] items-stretch rounded-3xl border border-border-subtle bg-base-background p-2"
+    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] rounded-3xl border border-border/50 bg-background p-2"
   >
     <Button
       variant="muted-textonly"
@@ -24,12 +24,9 @@
     >
       <div class="flex flex-col gap-5">
         <div class="flex flex-col gap-3">
-          <h2
-            :id="titleId"
-            class="m-0 text-[22px] font-semibold text-base-foreground"
-          >
+          <DialogTitle class="m-0 text-[22px]">
             {{ t('apiNodesSignInDialog.title') }}
-          </h2>
+          </DialogTitle>
           <p class="m-0 text-sm/[1.45] text-muted-foreground">
             {{ t('apiNodesSignInDialog.message') }}
           </p>
@@ -45,7 +42,7 @@
             <li
               v-for="name in apiNodeNames"
               :key="name"
-              class="flex items-center gap-2 rounded-lg bg-secondary-background px-3.5 py-2.5 text-sm font-semibold text-base-foreground"
+              class="flex items-center gap-2 rounded-lg bg-secondary px-3.5 py-2.5 text-sm font-semibold"
             >
               <i
                 class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
@@ -71,7 +68,7 @@
               :href="partnerNodesDocsUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-base-foreground motion-safe:transition-colors"
+              class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-foreground motion-safe:transition-colors"
             >
               <i
                 class="icon-[lucide--info] size-4 shrink-0"
@@ -89,7 +86,7 @@
         <Button
           variant="inverted"
           size="unset"
-          class="h-9 rounded-lg px-6 text-sm font-medium"
+          class="h-9 rounded-lg px-6"
           @click="onLogin?.()"
         >
           {{ t('apiNodesSignInDialog.signIn') }}
@@ -103,6 +100,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
@@ -113,9 +111,8 @@ const { t } = useI18n()
 const { buildDocsUrl } = useExternalLink()
 const nodeDefStore = useNodeDefStore()
 
-const { apiNodeNames, titleId, onLogin, onCancel } = defineProps<{
+const { apiNodeNames, onLogin, onCancel } = defineProps<{
   apiNodeNames: string[]
-  titleId: string
   onLogin?: () => void
   onCancel?: () => void
 }>()

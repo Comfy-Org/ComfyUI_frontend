@@ -1,11 +1,7 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import { MODAL_Z_BASE, vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
@@ -13,22 +9,14 @@ import type { ToastId } from '@/types/toastId'
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: { close: 'Close' },
-      toastMessages: {
-        notificationsLabel: 'Notification',
-        notificationsViewportLabel: 'Notifications ({hotkey})'
-      }
-    }
-  }
-})
-
 function renderToaster() {
-  return render(Toaster, { global: { plugins: [i18n] } })
+  return render(Toaster, {
+    props: {
+      closeLabel: 'Close',
+      regionLabel: 'Notification',
+      formatViewportLabel: (hotkey: string) => `Notifications (${hotkey})`
+    }
+  })
 }
 
 function pressEscapePreventedUpstream() {
@@ -115,53 +103,44 @@ describe('Toaster', () => {
     )
   })
 
-  it('labels the notification regions in the active locale', async () => {
-    render(Toaster, {
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'fr',
-            messages: {
-              fr: {
-                g: { close: 'Fermer' },
-                toastMessages: {
-                  notificationsLabel: 'Notification FR',
-                  notificationsViewportLabel: 'Notifications FR ({hotkey})'
-                }
-              }
-            }
-          })
-        ]
+  it('uses caller labels for notification regions and close buttons', async () => {
+    const { rerender } = render(Toaster, {
+      props: {
+        closeLabel: 'Fermer',
+        regionLabel: 'Notification FR',
+        formatViewportLabel: (hotkey: string) => `Notifications FR (${hotkey})`
       }
     })
 
     useToast().info('Enregistré')
     await nextTick()
 
+    expect(screen.getByRole('button', { name: 'Fermer' })).toBeInTheDocument()
     expect(
       screen.getByRole('region', { name: 'Notifications FR (F8)' })
     ).toBeInTheDocument()
     expect(
       screen.getByRole('status', { name: 'Notification FR' })
     ).toHaveTextContent('Enregistré')
+
+    await rerender({ closeLabel: 'Dismiss notification' })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Dismiss notification' })
+    )
+    expect(useToast().toasts).toEqual([])
   })
 
-  it('lifts a new notification above a dialog opened after the last one', async () => {
+  it('keeps a notification above a dialog opened after it', async () => {
     renderToaster()
     useToast().info('Uploading')
     await nextTick()
     render({
-      directives: { rekaZIndex: vRekaZIndex },
-      template: '<div v-reka-z-index data-testid="dialog" />'
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
-
-    useToast().info('Ready')
     await nextTick()
 
-    expect(
-      Number(screen.getByTestId('toast-viewport').style.zIndex)
-    ).toBeGreaterThan(Number(screen.getByTestId('dialog').style.zIndex))
+    expect(screen.getByTestId('toast-viewport')).toHaveClass('z-toast')
   })
 
   it('stays out of the modal stacking order while idle', async () => {
@@ -172,7 +151,6 @@ describe('Toaster', () => {
     useToast().dismiss(id)
     await nextTick()
 
-    expect(ZIndex.getCurrent('modal')).toBeLessThan(MODAL_Z_BASE)
     expect(screen.queryByTestId('toast-viewport')).not.toBeInTheDocument()
   })
 

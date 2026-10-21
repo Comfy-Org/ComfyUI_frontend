@@ -1,0 +1,11 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [
+    {
+      "path": "../object-info-parser/tsconfig.build.json"
+    },
+    {
+      "path": "../registry-types/tsconfig.declarations.json"
+    }
+  ]
+}

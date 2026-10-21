@@ -1,8 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type {
+  ComponentPropsAndSlots,
+  Meta,
+  StoryObj
+} from '@storybook/vue3-vite'
 
 import Message from './Message.vue'
 
-const meta: Meta<typeof Message> = {
+const meta: Meta<ComponentPropsAndSlots<typeof Message>> = {
   title: 'Components/Message',
   component: Message,
   tags: ['autodocs'],
@@ -10,10 +14,10 @@ const meta: Meta<typeof Message> = {
 }
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<ComponentPropsAndSlots<typeof Message>>
 
 export const Default: Story = {
-  render: (args) => ({
+  render: (args: ComponentPropsAndSlots<typeof Message>) => ({
     components: { Message },
     setup: () => ({ args }),
     template: '<Message v-bind="args">A useful inline message.</Message>'
@@ -34,8 +38,8 @@ export const AllSeverities: Story = {
 }
 
 export const Closable: Story = {
-  args: { closable: true },
-  render: (args) => ({
+  args: { closable: true, closeLabel: 'Close' },
+  render: (args: ComponentPropsAndSlots<typeof Message>) => ({
     components: { Message },
     setup: () => ({ args }),
     template: `

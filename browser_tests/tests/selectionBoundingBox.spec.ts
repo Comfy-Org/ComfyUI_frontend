@@ -70,10 +70,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     const vueCases: ReadonlyArray<{
       type: NodeType
       state: NodeState
@@ -126,10 +122,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     test('collapsed node narrows bounding box when bypass is removed', async ({
@@ -189,10 +181,6 @@ test.describe(
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await comfyPage.nextFrame()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     const legacyCases: ReadonlyArray<{ state: NodeState; pos: Position }> = [

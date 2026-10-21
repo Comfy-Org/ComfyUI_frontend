@@ -1,5 +1,5 @@
-import { getNodeSource, NodeSourceType } from '../classifiers/nodeSource'
-import type { ComfyNodeDef } from '../schemas/nodeDefSchema'
+import { getNodeSource, NodeSourceType } from '#/classifiers/nodeSource'
+import type { ComfyNodeDef } from '#/schemas/nodeDefSchema'
 
 export interface PackedNode {
   className: string

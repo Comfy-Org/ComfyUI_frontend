@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-(--descrip-text)">
+    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
       {{ t('maskEditor.layers') }}
     </h3>
 
@@ -13,12 +13,12 @@
       @update:model-value="onMaskOpacityChange"
     />
 
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       t('maskEditor.maskBlendingOptions')
     }}</span>
 
     <div
-      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px]"
+      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px]"
     >
       <select
         class="maskEditor_sidePanelDropdown"
@@ -31,11 +31,11 @@
       </select>
     </div>
 
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
@@ -64,11 +64,11 @@
       </button>
     </div>
 
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
@@ -104,11 +104,11 @@
       </button>
     </div>
 
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       t('maskEditor.baseImageLayer')
     }}</span>
     <div
-      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent"
     >
       <input
         type="checkbox"

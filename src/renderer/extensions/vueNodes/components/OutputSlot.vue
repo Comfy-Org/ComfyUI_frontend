@@ -1,5 +1,7 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
+    ⚠️
+  </div>
   <Tooltip v-else :disabled="!tooltipText">
     <TooltipTrigger as-child>
       <div
@@ -8,11 +10,7 @@
         @pointerleave="unrevealLinks"
       >
         <div class="relative flex h-full min-w-0 items-center">
-          <!-- Slot Name -->
-          <span
-            v-if="!props.dotOnly && !hasNoLabel"
-            class="truncate text-node-component-slot-text"
-          >
+          <span v-if="!props.dotOnly && !hasNoLabel" class="truncate">
             {{
               slotData.label ||
               slotData.localized_name ||

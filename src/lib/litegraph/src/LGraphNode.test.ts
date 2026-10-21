@@ -12,6 +12,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -97,6 +98,16 @@ describe('LGraphNode', () => {
       expect(node.connect(0, target, 1)?.id).toBe(toLinkId(nextId))
     }
   )
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
+  })
 
   test('preserves null property values', () => {
     const widget = node.addWidget('number', 'value', 1, 'value')

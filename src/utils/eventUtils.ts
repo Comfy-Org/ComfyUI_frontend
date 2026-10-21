@@ -35,16 +35,49 @@ export function getDroppedAsset(
     : undefined
 }
 
-export async function fetchDroppedAsset({
-  name,
-  uri
-}: DroppedAsset): Promise<File | undefined> {
+function decodedBasename(pathname: string): string {
+  const segment = pathname.split('/').pop() || ''
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+function sourceFileName(
+  { name, ref }: DroppedAsset,
+  uri: string,
+  responseUrl: string
+): string {
+  const resolvedUrl = new URL(responseUrl || uri, 'http://localhost')
+  const named = [
+    resolvedUrl.searchParams.get('filename'),
+    ref,
+    decodedBasename(resolvedUrl.pathname),
+    name
+  ].find((candidate) => candidate && /\.[a-z0-9]{1,8}$/i.test(candidate))
+  return named || name
+}
+
+interface FetchDroppedAssetOptions {
+  signal?: AbortSignal
+  nameFromSource?: boolean
+}
+
+export async function fetchDroppedAsset(
+  asset: DroppedAsset,
+  { signal, nameFromSource = false }: FetchDroppedAssetOptions = {}
+): Promise<File | undefined> {
+  const { name, uri } = asset
   if (!uri) return undefined
   try {
-    const response = await fetch(uri)
+    const response = await fetch(uri, { signal })
     if (!response.ok) return undefined
     const blob = await response.blob()
-    return new File([blob], name, { type: blob.type })
+    const fileName = nameFromSource
+      ? sourceFileName(asset, uri, response.url)
+      : name
+    return new File([blob], fileName, { type: blob.type })
   } catch {
     return undefined
   }

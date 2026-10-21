@@ -7,6 +7,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // FE-1305: a completed turn's tool calls (the work-summary trace shown live,
 // via ToolPart in agent_tool_call WebSocket events) used to vanish on
@@ -47,7 +48,7 @@ test(
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
     workflowSelection.finishSave(true)
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.pressSequentially('find a node for me')
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })

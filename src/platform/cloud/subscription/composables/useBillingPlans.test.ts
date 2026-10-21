@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  TeamCreditStops
+} from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { computed, nextTick } from 'vue'
 
@@ -29,6 +32,7 @@ const buildPlan = (overrides: Partial<Plan> = {}): Plan => ({
   price_cents: 2000,
   credits_cents: 4200,
   max_seats: 1,
+  action: 'subscribe',
   availability: { available: true },
   seat_summary: {
     seat_count: 1,
@@ -96,14 +100,22 @@ describe('useBillingPlans', () => {
 
     it('populates teamCreditStops from the response', async () => {
       const { useBillingPlans, workspaceApi } = await importUseBillingPlans()
-      const stops = {
+      const stops: TeamCreditStops = {
         default_stop_index: 2,
         stops: [
           {
             id: 'team_700',
             credits: 147_700,
-            monthly: { list_price_cents: 70_000, price_cents: 66_500 },
-            yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+            monthly: {
+              action: 'subscribe',
+              list_price_cents: 70_000,
+              price_cents: 66_500
+            },
+            yearly: {
+              action: 'subscribe',
+              list_price_cents: 70_000,
+              price_cents: 63_000
+            }
           }
         ]
       }
@@ -337,14 +349,22 @@ describe('useBillingPlans', () => {
     it('reports a recovered fallback and preserves cached catalog state', async () => {
       const { useBillingPlans, workspaceApi, reportError } =
         await importUseBillingPlans()
-      const stops = {
+      const stops: TeamCreditStops = {
         default_stop_index: 0,
         stops: [
           {
             id: 'team_700',
             credits: 147_700,
-            monthly: { list_price_cents: 70_000, price_cents: 66_500 },
-            yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+            monthly: {
+              action: 'subscribe',
+              list_price_cents: 70_000,
+              price_cents: 66_500
+            },
+            yearly: {
+              action: 'subscribe',
+              list_price_cents: 70_000,
+              price_cents: 63_000
+            }
           }
         ]
       }

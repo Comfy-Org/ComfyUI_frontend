@@ -25,7 +25,8 @@ const testTooltipProviderProps = shallowReactive({
   delayDuration: 0,
   skipDelayDuration: 300,
   disableClosingTrigger: undefined,
-  disabled: undefined
+  disabled: undefined,
+  content: undefined
 })
 
 const appShellTooltipProvider: Plugin = {
@@ -67,21 +68,6 @@ beforeEach(({ task }) => {
 
 afterEach(() => {
   clearRegisteredLiteGraphTypes()
-})
-
-// Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
-vi.mock('@sparkjsdev/spark', async () => {
-  const three = await import('three')
-  return {
-    SplatMesh: class SplatMesh {
-      constructor() {}
-    },
-    SparkRenderer: class SparkRenderer extends three.Object3D {
-      constructor() {
-        super()
-      }
-    }
-  }
 })
 
 // Modules below `@/scripts/app` reach the singleton through `useApp()`. Route
