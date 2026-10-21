@@ -32,7 +32,7 @@ export default defineConfig({
       formats: ['es']
     },
     minify: false,
-    rollupOptions: {
+    rolldownOptions: {
       external:
         /^(vue|cva|reka-ui|@vueuse\/core|chart\.js|dompurify|es-toolkit)(\/|$)/,
       output: {
