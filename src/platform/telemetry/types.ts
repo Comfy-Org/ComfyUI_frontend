@@ -683,7 +683,7 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * must split by `exit`; a total is not a quantity.**
  *
  * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `already_offered`.
+ * `already_offered`, `consent_declined`.
  * Owed and not made: everything else.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
