@@ -120,6 +120,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/graph/selectionToolbox/TidyUpButton.test.ts",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/graph/selectionToolbox/TidyUpButton.vue",
       "role": "presentation"
     },
@@ -272,7 +276,8 @@
         "src/components/graph/selectionToolbox/BypassButton.test.ts",
         "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
         "src/components/graph/selectionToolbox/InfoButton.test.ts",
-        "src/components/graph/selectionToolbox/MaskEditorButton.test.ts"
+        "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
+        "src/components/graph/selectionToolbox/TidyUpButton.test.ts"
       ]
     },
     {

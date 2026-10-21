@@ -83,6 +83,7 @@ export function useSelectionToolboxPosition(
     easing: TransitionPresets.easeOutQuint,
     disabled: computed(() => motionPreference.value === 'reduce')
   })
+  const isLifted = computed(() => lift.value !== 0 || easedLift.value !== 0)
 
   useEventListener(
     lgCanvas.canvas,
@@ -143,7 +144,7 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    if (lift.value === 0) worldPosition.value = anchor
+    if (!isLifted.value) worldPosition.value = anchor
 
     updateTransform()
   }
@@ -276,12 +277,9 @@ export function useSelectionToolboxPosition(
 
   watch(isDragging, handleDragStateChange)
 
-  watch(
-    () => lift.value === 0,
-    (settled) => {
-      if (settled) updateSelectionBounds()
-    }
-  )
+  watch(isLifted, (lifted) => {
+    if (!lifted) updateSelectionBounds()
+  })
 
   onUnmounted(() => {
     resetMoreOptionsState()

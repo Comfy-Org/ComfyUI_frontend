@@ -128,7 +128,7 @@ describe('useSelectionToolboxPosition', () => {
     unmount()
   })
 
-  it('eases up by the lift and holds its place until the lift ends', async () => {
+  it('eases up by the lift and holds its place until the lift has eased away', async () => {
     const node = addNode(graph, 100, 200)
     canvas.select(node)
     const { toolbox, unmount } = renderToolbox()
@@ -146,6 +146,10 @@ describe('useSelectionToolboxPosition', () => {
     )
 
     lift.value = 0
+    await nextTick()
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+      `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+    )
     await vi.waitFor(() =>
       expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
         `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`

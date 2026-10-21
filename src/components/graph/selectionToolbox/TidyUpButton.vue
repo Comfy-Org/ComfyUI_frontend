@@ -44,6 +44,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { isEqual } from 'es-toolkit'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -65,7 +66,7 @@ const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
 const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
-const { canTidy } = useSelectionGrid()
+const { canTidy, gridNodes } = useSelectionGrid()
 const { gap, start, previewGap, commitGap, finish } = useTidySession()
 const { lift } = useSelectionToolboxLift()
 
@@ -76,6 +77,13 @@ watch(isOpen, (open) => {
   if (open) start()
   else finish()
 })
+
+watch(
+  () => gridNodes.value.map((node) => node.id),
+  (ids, previousIds) => {
+    if (!isEqual(ids, previousIds)) isOpen.value = false
+  }
+)
 
 onBeforeUnmount(() => {
   lift.value = 0
