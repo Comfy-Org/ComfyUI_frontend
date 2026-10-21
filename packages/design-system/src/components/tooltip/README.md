@@ -1,8 +1,9 @@
 # Tooltip
 
-The design-system tooltip is the shadcn-vue/reka-ui compound. `App.vue` mounts
-the app's `TooltipProvider`, which sets the app-wide behaviour from
-`tooltipConfig.ts`: a 300 ms open delay, content that closes when the pointer
+The design-system tooltip is the shadcn-vue/reka-ui compound in
+`@comfyorg/design-system/tooltip/*`. `App.vue` mounts the app's
+`TooltipProvider`, which sets the app-wide behaviour from
+`@comfyorg/design-system/lib/tooltip/tooltipConfig`: a 300 ms open delay, content that closes when the pointer
 leaves the trigger, and no opening on pointer-caused focus. Vitest
 (`vitest.setup.ts`) and Storybook (`.storybook/preview.ts`) supply the same
 provider, so tests and stories do not mount their own.

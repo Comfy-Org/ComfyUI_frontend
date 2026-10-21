@@ -6,6 +6,11 @@ on:
     paths:
       - 'packages/design-system/**'
       - 'packages/tailwind-utils/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'tsconfig.declarations.json'
+      - '.github/workflows/ci-design-system-pack.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,6 +41,11 @@ jobs:
           PACKED=$(pnpm --config.ignore-scripts=true -C packages/design-system pack --dry-run --json)
           jq -e --slurpfile manifest packages/design-system/package.json '
             [.files[].path] as $packed
+            | ($manifest[0].exports | keys | map(select(startswith("./lib/")))) as $built
+            | ($manifest[0].publishConfig.exports | keys | map(select(startswith("./lib/")))) as $published
+            | if $built != $published
+              then error("lib exports differ from publishConfig.exports: " + ((($built - $published) + ($published - $built)) | join(", ")))
+              else . end
             | [$manifest[0].publishConfig.exports[]
                 | if type == "object" then .[] else . end
                 | ltrimstr("./")]

@@ -171,9 +171,9 @@
     "@vueuse/integrations": "catalog:",
     "chart.js": "^4.5.0",
     "cva": "catalog:",
-    "dompurify": "catalog:",
-    "es-toolkit": "^1.39.9",
-    "fuse.js": "7.0.0",
+    "dompurify": "^3.4.13",
+    "es-toolkit": "catalog:",
+    "fuse.js": "^7.0.0",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
