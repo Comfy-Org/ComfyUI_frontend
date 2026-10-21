@@ -1,16 +1,42 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
-import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentCompatibility,
+  WorkspaceDeployment
+} from '@/platform/workspace/api/workspaceApi'
+import type { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
-import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
+import {
+  COMPATIBILITY_WAIT_MS,
+  noticeMissingNodes
+} from '@/platform/workspace/noticeMissingNodes'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
+vi.mock(import('@/composables/useFeatureFlags'))
+
+const compatibility = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  return shallowRef<DeploymentCompatibility | null>(null)
+})
+vi.mock(
+  import('@/platform/workspace/composables/useDeploymentCompatibility'),
+  () => ({
+    workflowNodeTypes: vi.fn(() => []),
+    useDeploymentCompatibility: () =>
+      fromPartial<ReturnType<typeof useDeploymentCompatibility>>({
+        compatibility
+      })
+  })
+)
 
 const offered = vi.hoisted(() => ({ value: true }))
 vi.mock(
@@ -38,12 +64,13 @@ const UNSUPPORTED: MissingNodeType[] = [
 
 function listing(
   buildsVisible: boolean,
-  bootDeployment: WorkspaceDeployment | null
+  bootDeployment: WorkspaceDeployment | null,
+  items: WorkspaceDeployment[] = []
 ) {
   const store = useDeploymentPickStore()
   store.state = reduceDeploymentPick(
     { phase: 'idle' },
-    loadedEvent({ builds_visible: buildsVisible, items: [] })
+    loadedEvent({ builds_visible: buildsVisible, items })
   )
   store.bootDeployment = bootDeployment
 }
@@ -51,8 +78,39 @@ function listing(
 describe(noticeMissingNodes, () => {
   beforeEach(() => {
     offered.value = true
+    compatibility.value = null
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockReset()
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
+  })
+
+  describe('with the compatibility check on and deployments to check', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        true
+      listing(true, null, [deployment])
+    })
+
+    it('opens the dialog once the check answers', async () => {
+      noticeMissingNodes(UNSUPPORTED)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS - 1)
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+
+      compatibility.value = {
+        deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+        cloud: { missing_node_types: ['BiRefNet'] }
+      }
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    })
+
+    it('opens the dialog without the check once it has waited long enough', async () => {
+      noticeMissingNodes(UNSUPPORTED)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+
+      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    })
   })
 
   it('offers a custom deployment instead of the overlay on Comfy Cloud, to an account that may create Builds', async () => {

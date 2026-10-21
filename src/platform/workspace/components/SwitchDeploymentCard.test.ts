@@ -1,0 +1,148 @@
+import { getActivePinia } from 'pinia'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { useExternalLink } from '@/composables/useExternalLink'
+import enMessages from '@/locales/en/main.json'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { NOTHING_DISCARDED } from '@/platform/workspace/deploymentSwitchReload'
+import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+import SwitchDeploymentCard from './SwitchDeploymentCard.vue'
+
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
+vi.mock(import('@/composables/useExternalLink'), () => ({
+  useExternalLink: () =>
+    fromPartial<ReturnType<typeof useExternalLink>>({
+      buildDocsUrl: (path: string) => `https://docs.comfy.org${path}`
+    })
+}))
+
+vi.mock(import('@/platform/workspace/settleUnsavedWorkBeforeSwitch'), () => ({
+  settleUnsavedWorkBeforeSwitch: vi.fn(),
+  unsavedWorkBeforeSwitch: vi.fn(() => [])
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
+
+function deployment(id: string, name: string): WorkspaceDeployment {
+  return {
+    deployment_id: id,
+    deployment_name: name,
+    build_name: 'Acme Studio pipeline',
+    release_id: `rel-${id}`,
+    release_version: 4,
+    status: 'ready',
+    created_at: '2026-10-01T00:00:00Z'
+  }
+}
+
+const PRODUCTION = deployment('dep-prod', 'Studio production')
+const STAGING = deployment('dep-staging', 'Studio staging')
+
+function renderCard() {
+  const pinia = getActivePinia()!
+  const pick = vi.spyOn(useDeploymentPickStore(pinia), 'pick')
+  pick.mockResolvedValue(null)
+  const onDone = vi.fn()
+  const user = userEvent.setup()
+  render(SwitchDeploymentCard, {
+    props: {
+      deployments: [PRODUCTION, STAGING],
+      missing: [
+        {
+          label: '2 missing node packs',
+          names: 'ComfyUI-BiRefNet, ComfyUI-RMBG'
+        }
+      ],
+      onDone
+    },
+    global: { plugins: [pinia, i18n] }
+  })
+  return { pick, onDone, user }
+}
+
+describe('SwitchDeploymentCard', () => {
+  beforeEach(() => {
+    vi.mocked(settleUnsavedWorkBeforeSwitch).mockResolvedValue(
+      NOTHING_DISCARDED
+    )
+  })
+
+  it('offers the first deployment that runs the workflow, with Create on Platform second', () => {
+    renderCard()
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Run this workflow on a custom deployment'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Run on' })).toHaveTextContent(
+      /^Acme Studio pipeline\s*Studio production · v4\s*Runs this workflow$/
+    )
+    expect(
+      screen.getByRole('link', { name: /Create on Platform/ })
+    ).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/deploy#builds'
+    )
+  })
+
+  it('switches to the chosen deployment once unsaved work is settled', async () => {
+    const { pick, user } = renderCard()
+
+    await user.click(screen.getByRole('combobox', { name: 'Run on' }))
+    await user.click(await screen.findByRole('option', { name: /staging/ }))
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+    expect(settleUnsavedWorkBeforeSwitch).toHaveBeenCalledWith(
+      'Acme Studio pipeline · Studio staging'
+    )
+    expect(pick).toHaveBeenCalledWith('dep-staging', NOTHING_DISCARDED)
+  })
+
+  it('stays on Comfy Cloud when the user cancels the save prompt', async () => {
+    vi.mocked(settleUnsavedWorkBeforeSwitch).mockResolvedValue(null)
+    const { pick, user } = renderCard()
+
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+    expect(pick).not.toHaveBeenCalled()
+  })
+
+  it("shows the server's refusal as a toast and lets the user try again", async () => {
+    const { pick, user } = renderCard()
+    pick.mockResolvedValue('This deployment is stopped')
+
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'Could not switch',
+        description: 'This deployment is stopped'
+      })
+    )
+    expect(screen.getByRole('button', { name: 'Switch' })).toBeEnabled()
+  })
+
+  it('closes when the user goes to create a deployment instead', async () => {
+    const { onDone, user } = renderCard()
+
+    await user.click(screen.getByRole('link', { name: /Create on Platform/ }))
+
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+})

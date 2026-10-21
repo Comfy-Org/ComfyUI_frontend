@@ -1,15 +1,23 @@
 <template>
-  <CustomDeploymentCard :pitch="pitch" />
+  <SwitchDeploymentCard
+    v-if="offer.kind === 'switch'"
+    :deployments="offer.deployments"
+    :missing="missing"
+  />
+  <CustomDeploymentCard v-else :pitch="pitch" />
 </template>
 
 <script setup lang="ts">
 import { uniqBy } from 'es-toolkit'
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import CustomDeploymentCard from '@/platform/workspace/components/CustomDeploymentCard.vue'
+import SwitchDeploymentCard from '@/platform/workspace/components/SwitchDeploymentCard.vue'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type {
   CustomDeploymentPitch,
@@ -21,12 +29,20 @@ import {
   missingPacksOf,
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
 
 const NAMES_SHOWN = 3
 
 const { t } = useI18n()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const missingModelStore = useMissingModelStore()
+const { deployments } = storeToRefs(useDeploymentPickStore())
+const { markFor } = useDeploymentCompatibility()
+
+const offer = computed(() =>
+  workflowDeploymentOffer(deployments.value, markFor)
+)
 
 const packs = computed(() =>
   missingPacksOf(
@@ -79,8 +95,13 @@ const missing = computed<MissingItemsRow[]>(() => [
 
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
-  title: t('deploymentSwitcher.workflowNeedsDeployment.title'),
   brief: workflowDeploymentBrief(packs.value, models.value),
-  missing: missing.value
+  missing: missing.value,
+  ...(offer.value.kind === 'noneRunIt'
+    ? {
+        title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
+        note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
+      }
+    : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
 }))
 </script>

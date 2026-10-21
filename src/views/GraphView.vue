@@ -92,6 +92,8 @@ import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/ge
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -128,6 +130,7 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 if (isCloud) useDeploymentCompatibility()
+if (isCloud) setMissingNodesNotice(noticeMissingNodes)
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
