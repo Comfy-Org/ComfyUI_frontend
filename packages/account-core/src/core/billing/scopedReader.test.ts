@@ -6,28 +6,28 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
+import type { SessionSnapshot } from '#/core/session'
 import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { BillingScopeSource } from './billingScope.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import { createCreditsReader } from './credits.js'
-import { createBillingEventsReader } from './events.js'
-import { createPaymentMethodsReader } from './paymentMethods.js'
-import { createPlansReader } from './plans.js'
-import { createBillingStatusReader } from './status.js'
+} from './billingContracts'
+import type { BillingScopeSource } from './billingScope'
+import { sessionBillingScopeSource } from './billingScope'
+import { createCapabilitiesReader } from './capabilities'
+import { createCreditsReader } from './credits'
+import { createBillingEventsReader } from './events'
+import { createPaymentMethodsReader } from './paymentMethods'
+import { createPlansReader } from './plans'
+import { createBillingStatusReader } from './status'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk,
   httpStatus
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 const SIGNED_OUT: SessionSnapshot = {
   phase: 'signed-out',

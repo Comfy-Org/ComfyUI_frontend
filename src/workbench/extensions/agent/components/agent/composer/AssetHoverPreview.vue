@@ -11,9 +11,8 @@ import AssetMediaPreview from './AssetMediaPreview.vue'
 
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -44,7 +43,6 @@ const contentHovered = useElementHover(content, {
   delayLeave: 150,
   triggerOnRemoval: true
 })
-const contentStyle = useModalLiftedZIndex(open)
 
 watch(
   [triggerHovered, contentHovered, triggerPointerInside],
@@ -124,10 +122,9 @@ function onInteractOutside(event: Event): void {
       align="start"
       :side-offset="8"
       :collision-padding="16"
-      :style="contentStyle"
       :class="
         cn(
-          'z-1700 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
+          'z-overlay max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "

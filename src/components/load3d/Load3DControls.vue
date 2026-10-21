@@ -127,7 +127,7 @@ import type {
   MaterialMode,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

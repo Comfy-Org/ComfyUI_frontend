@@ -19,7 +19,6 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import BillingTab from './BillingTab.vue'
 
@@ -53,7 +52,8 @@ interface Scenario {
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
   isInitialized?: boolean
   error?: string | null
-  role?: 'owner' | 'member'
+  canManageSubscription?: boolean
+  canManageBilling?: boolean
   canSubscribeSelfServe?: boolean
   canRevertScheduledChange?: boolean
   canReactivate?: boolean
@@ -108,6 +108,18 @@ function arrange(scenario: Scenario = {}) {
         () => scenario.canRevertScheduledChange ?? false
       ),
       canReactivate: computed(() => scenario.canReactivate ?? false),
+      canManageSubscription: computed(() =>
+        receiveServerFact(
+          'can_manage_subscription',
+          scenario.canManageSubscription ?? true
+        )
+      ),
+      canManageBilling: computed(() =>
+        receiveServerFact(
+          'can_manage_billing',
+          scenario.canManageBilling ?? true
+        )
+      ),
       canTopUp: computed(() => scenario.canTopUp ?? true),
       canManageAutoTopUp: computed(() =>
         receiveServerFact(
@@ -126,9 +138,6 @@ function arrange(scenario: Scenario = {}) {
   )
   vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
     scenario.autoTopUpFlag ?? true
-  vi.mocked(useWorkspaceUI).mockReturnValue(
-    fromPartial({ workspaceRole: computed(() => scenario.role ?? 'owner') })
-  )
   vi.mocked(useFreeTierQuota).mockReturnValue(
     fromPartial({
       quotaEnabled: computed(() => false),
@@ -206,7 +215,11 @@ describe('BillingTab', () => {
   })
 
   it('gives a member usage instead of billing and no plan action', () => {
-    arrange({ role: 'member', canSubscribeSelfServe: false })
+    arrange({
+      canManageSubscription: false,
+      canManageBilling: false,
+      canSubscribeSelfServe: false
+    })
 
     expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
       'Managed by the workspace owner.'
@@ -219,6 +232,41 @@ describe('BillingTab', () => {
       screen.queryByRole('link', { name: 'Open billing' })
     ).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      canManageSubscription: true,
+      line: 'Billed monthly. Next invoice November 15.'
+    },
+    {
+      canManageSubscription: false,
+      line: 'Billed monthly. Next invoice November 15. Managed by the workspace owner.'
+    }
+  ])(
+    'renders the plan line from can_manage_subscription $canManageSubscription',
+    ({ canManageSubscription, line }) => {
+      arrange({ canManageSubscription, canManageBilling: true })
+
+      expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+        line
+      )
+    }
+  )
+
+  it.for([
+    { canManageBilling: true, link: 'Open billing', path: '/profile/billing' },
+    { canManageBilling: false, link: 'View usage', path: '/profile/usage' }
+  ])(
+    'hands off to $link when can_manage_billing is $canManageBilling',
+    ({ canManageBilling, link, path }) => {
+      arrange({ canManageSubscription: true, canManageBilling })
+
+      expect(screen.getByRole('link', { name: link })).toHaveAttribute(
+        'href',
+        `https://platform.test${path}?workspace=ws_1`
+      )
+    }
+  )
 
   describe('Stay on plan', () => {
     const scheduledChange: SubscriptionInfo = {
@@ -518,7 +566,7 @@ describe('BillingTab', () => {
       { case: 'the flag is off', scenario: { autoTopUpFlag: false } },
       {
         case: 'a member without can_manage_auto_top_up',
-        scenario: { role: 'member', canManageAutoTopUp: false }
+        scenario: { canManageAutoTopUp: false }
       },
       {
         case: 'top-up is paused (can_top_up false)',

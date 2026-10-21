@@ -20,28 +20,13 @@
           <i class="icon-[lucide--grid-3x3] size-4" />
           <span>{{ $t('boundingBoxes.grid') }}</span>
         </Button>
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="cn(actionBtnClass, 'ml-auto')"
-          :disabled="!canUndo"
-          :aria-label="$t('boundingBoxes.undo')"
-          :tooltip="$t('boundingBoxes.undo')"
-          @click="undo"
-        >
-          <i class="icon-[lucide--undo-2] size-4" />
-        </Button>
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="actionBtnClass"
-          :disabled="!canRedo"
-          :aria-label="$t('boundingBoxes.redo')"
-          :tooltip="$t('boundingBoxes.redo')"
-          @click="redo"
-        >
-          <i class="icon-[lucide--redo-2] size-4" />
-        </Button>
+        <WidgetHistoryButtons
+          class="ml-auto"
+          :can-undo
+          :can-redo
+          @undo="undo"
+          @redo="redo"
+        />
         <Button
           variant="textonly"
           size="unset"
@@ -177,6 +162,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'

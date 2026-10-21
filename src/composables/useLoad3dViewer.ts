@@ -1,10 +1,12 @@
 import { ref, toRaw, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -21,7 +23,7 @@ import type {
   ModelConfig,
   SceneConfig,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -377,7 +379,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const hasTargetDimensions = !!(width && height)
 
-      load3d = createLoad3d(containerRef, {
+      load3d = createLoad3d(containerRef, load3dHost, {
         width: width ? (toRaw(width).value as number) : undefined,
         height: height ? (toRaw(height).value as number) : undefined,
         getDimensions: hasTargetDimensions
@@ -496,7 +498,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       isStandaloneMode.value = true
 
-      load3d = createLoad3d(containerRef, {
+      load3d = createLoad3d(containerRef, load3dHost, {
         width: 800,
         height: 600,
         isViewerMode: true
@@ -513,6 +515,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
 
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
@@ -546,6 +549,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     try {
       saveStandaloneConfig()
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
@@ -839,6 +843,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
 
       captureAdapterFlags(load3d)

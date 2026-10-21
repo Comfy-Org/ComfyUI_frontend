@@ -32,11 +32,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'))
-import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentChatEvent } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 import ConversationView from './ConversationView.vue'
 

@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import type Load3d from './Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
 
 const { contextMenuMock } = vi.hoisted(() => ({

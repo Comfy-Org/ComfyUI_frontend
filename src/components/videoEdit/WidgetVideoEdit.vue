@@ -18,14 +18,22 @@
       :error="error"
       @load-error="onError"
       @retry="retry"
-    />
+      @edit-end="commitAfterUpdate"
+    >
+      <template #history>
+        <WidgetHistoryButtons :can-undo :can-redo @undo="undo" @redo="redo" />
+      </template>
+    </VideoEditPanel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import VideoEditPanel from '@/components/videoEdit/VideoEditPanel.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import { useVideoEditModel } from '@/composables/video/useVideoEditModel'
 import { useVideoFilmstrip } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
@@ -95,4 +103,22 @@ const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
   width,
   height
 })
+
+function isVideoEditValue(value: unknown): value is VideoEditValue {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
+  useWidgetValueHistory({
+    scope: () => widgetHistoryScope(widget, nodeId),
+    read: () => modelValue.value,
+    apply: (value) => {
+      if (isVideoEditValue(value)) modelValue.value = value
+    }
+  })
+void nextTick(syncBaseline)
+
+function commitAfterUpdate(mergeKey?: string) {
+  void nextTick(() => commit(mergeKey))
+}
 </script>

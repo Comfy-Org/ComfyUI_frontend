@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
-import { TelemetryEvents } from '../../types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {

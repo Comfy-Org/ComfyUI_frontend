@@ -1,14 +1,14 @@
 import * as THREE from 'three'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import {
   copyLoad3dState,
   getNodeByLoad3d,
   handleViewportRefresh,
   removeLoad3d
 } from '@/extensions/core/load3d/load3dInstances'
-import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
+import { QuadWireframeOverlay } from '@comfyorg/viewport3d/load3d/quadWireframe/QuadWireframeManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'

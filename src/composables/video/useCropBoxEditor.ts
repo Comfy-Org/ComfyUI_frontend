@@ -16,6 +16,7 @@ interface UseCropBoxEditorOptions {
   sourceHeight: Ref<number>
   isDisabled: () => boolean
   lockedRatio?: Ref<number | null>
+  onEditEnd?: () => void
 }
 
 export function useCropBoxEditor(
@@ -180,6 +181,7 @@ export function useCropBoxEditor(
       target.removeEventListener('pointerup', endDrag)
       target.removeEventListener('lostpointercapture', endDrag)
       cleanupDrag = null
+      options.onEditEnd?.()
     }
 
     cleanupDrag = endDrag
