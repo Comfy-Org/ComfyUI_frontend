@@ -17,6 +17,10 @@ type RunOptions = {
   beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
+export function imageOutput(filename: string) {
+  return { images: [{ filename, subfolder: '', type: 'output' }] }
+}
+
 /**
  * Build a `NodeError` describing a single failed input on a KSampler node.
  * Shared between specs that surface validation rings via 400 responses.
@@ -45,6 +49,7 @@ export function buildKSamplerError(
  */
 export class ExecutionHelper {
   private jobCounter = 0
+  private metadata: Record<string, unknown> | undefined
   private readonly completedJobs: RawJobListItem[] = []
   private readonly page: ComfyPage['page']
   private readonly command: ComfyPage['command']
@@ -67,6 +72,34 @@ export class ExecutionHelper {
       )
     }
     return this.ws
+  }
+
+  withWorkflowId(workflowId: string | undefined, send: () => void): void {
+    this.withMetadata(
+      workflowId === undefined ? undefined : { workflow_id: workflowId },
+      send
+    )
+  }
+
+  withMetadata(
+    metadata: Record<string, unknown> | undefined,
+    send: () => void
+  ): void {
+    const previous = this.metadata
+    this.metadata = metadata
+    try {
+      send()
+    } finally {
+      this.metadata = previous
+    }
+  }
+
+  private emit(type: string, data: Record<string, unknown>): void {
+    const payload =
+      this.metadata && 'prompt_id' in data
+        ? { ...this.metadata, ...data }
+        : data
+    this.requireWs().send(JSON.stringify({ type, data: payload }))
   }
 
   /**
@@ -139,12 +172,14 @@ export class ExecutionHelper {
    * Encodes the metadata and a tiny 1x1 PNG so the app creates a blob URL.
    */
   latentPreview(jobId: string, nodeId: string): void {
+    const workflowId = this.metadata?.workflow_id
     const metadata = JSON.stringify({
       node_id: nodeId,
       display_node_id: nodeId,
       parent_node_id: nodeId,
       real_node_id: nodeId,
       prompt_id: jobId,
+      ...(typeof workflowId === 'string' && { workflow_id: workflowId }),
       image_type: 'image/png'
     })
     const metadataBytes = new TextEncoder().encode(metadata)
@@ -168,22 +203,16 @@ export class ExecutionHelper {
 
   /** Send `execution_start` WS event. */
   executionStart(jobId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_start',
-        data: { prompt_id: jobId, timestamp: Date.now() }
-      })
-    )
+    this.emit('execution_start', { prompt_id: jobId, timestamp: Date.now() })
   }
 
   /** Send `executing` WS event to signal which node is currently running. */
   executing(jobId: string, nodeId: string | null): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'executing',
-        data: { prompt_id: jobId, node: nodeId }
-      })
-    )
+    this.emit('executing', {
+      prompt_id: jobId,
+      node: nodeId,
+      ...(nodeId !== null && { display_node: nodeId })
+    })
   }
 
   /** Send `executed` WS event with node output. */
@@ -192,45 +221,30 @@ export class ExecutionHelper {
     nodeId: string,
     output: Record<string, unknown> | null | undefined
   ): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'executed',
-        data: {
-          prompt_id: jobId,
-          node: nodeId,
-          display_node: nodeId,
-          output
-        }
-      })
-    )
+    this.emit('executed', {
+      prompt_id: jobId,
+      node: nodeId,
+      display_node: nodeId,
+      output
+    })
   }
 
   /** Send `execution_success` WS event. */
   executionSuccess(jobId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_success',
-        data: { prompt_id: jobId, timestamp: Date.now() }
-      })
-    )
+    this.emit('execution_success', { prompt_id: jobId, timestamp: Date.now() })
   }
 
   /** Send `execution_error` WS event. */
   executionError(jobId: string, nodeId: string, message: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_error',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          exception_message: message,
-          exception_type: 'RuntimeError',
-          traceback: []
-        }
-      })
-    )
+    this.emit('execution_error', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      exception_message: message,
+      exception_type: 'RuntimeError',
+      traceback: []
+    })
   }
 
   /** Send `execution_error` WS event carrying cloud validation node errors. */
@@ -239,46 +253,50 @@ export class ExecutionHelper {
     nodeId: string,
     nodeErrors: Record<string, NodeError>
   ): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_error',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          exception_message: JSON.stringify({ node_errors: nodeErrors }),
-          exception_type: 'prompt_outputs_failed_validation',
-          traceback: []
-        }
-      })
-    )
+    this.emit('execution_error', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      exception_message: JSON.stringify({ node_errors: nodeErrors }),
+      exception_type: 'prompt_outputs_failed_validation',
+      traceback: []
+    })
   }
 
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'execution_interrupted',
-        data: {
-          prompt_id: jobId,
-          timestamp: Date.now(),
-          node_id: nodeId,
-          node_type: 'Unknown',
-          executed: []
-        }
-      })
-    )
+    this.emit('execution_interrupted', {
+      prompt_id: jobId,
+      timestamp: Date.now(),
+      node_id: nodeId,
+      node_type: 'Unknown',
+      executed: []
+    })
   }
 
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'progress',
-        data: { prompt_id: jobId, node: nodeId, value, max }
-      })
-    )
+    this.emit('progress', { prompt_id: jobId, node: nodeId, value, max })
+  }
+
+  runningNodeState(
+    jobId: string,
+    nodeId: string,
+    value: number,
+    max: number
+  ): Record<string, NodeProgressState> {
+    return {
+      [nodeId]: {
+        node_id: nodeId,
+        display_node_id: nodeId,
+        real_node_id: nodeId,
+        prompt_id: jobId,
+        state: 'running',
+        value,
+        max
+      }
+    }
   }
 
   /**
@@ -286,27 +304,13 @@ export class ExecutionHelper {
    * emitting both the `progress_state` and `progress` events the backend sends.
    */
   nodeRunning(jobId: string, nodeId: string, value: number, max: number): void {
-    const state: NodeProgressState = {
-      node_id: nodeId,
-      display_node_id: nodeId,
-      real_node_id: nodeId,
-      prompt_id: jobId,
-      state: 'running',
-      value,
-      max
-    }
-    this.progressState(jobId, { [nodeId]: state })
+    this.progressState(jobId, this.runningNodeState(jobId, nodeId, value, max))
     this.progress(jobId, nodeId, value, max)
   }
 
   /** Send `progress_state` WS event with per-node execution state. */
   progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'progress_state',
-        data: { prompt_id: jobId, nodes }
-      })
-    )
+    this.emit('progress_state', { prompt_id: jobId, nodes })
   }
 
   /**
@@ -341,11 +345,8 @@ export class ExecutionHelper {
 
   /** Send `status` WS event to update queue count. */
   status(queueRemaining: number): void {
-    this.requireWs().send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: queueRemaining } } }
-      })
-    )
+    this.emit('status', {
+      status: { exec_info: { queue_remaining: queueRemaining } }
+    })
   }
 }

@@ -788,6 +788,13 @@ export class ComfyApp implements IComfyApp {
         detail.display_node || detail.node
       )
       if (!executionId) return
+      if (
+        !useExecutionStore().belongsToActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
 
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
@@ -804,6 +811,7 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
+      // Account-scoped, so not gated by the visible workflow.
       const precondition = resolveAccountPrecondition({
         exceptionType: detail.exception_type,
         exceptionMessage: detail.exception_message
@@ -818,13 +826,17 @@ export class ComfyApp implements IComfyApp {
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
       // Enhanced preview with explicit node context
-      const { blob, displayNodeId, jobId } = detail
+      const { blob, displayNodeId, jobId, workflowId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const displayNodeExecutionId = tryNormalizeNodeExecutionId(displayNodeId)
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId, workflowId)) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
       // Ensure clean up if `executing` event is missed.
       revokePreviewsByExecutionId(displayNodeExecutionId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews

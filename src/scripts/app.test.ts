@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -97,6 +98,7 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import * as accountPreconditionDialogModule from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
@@ -3528,6 +3530,184 @@ describe('ComfyApp', () => {
 
       expect(executionErrorHandler).toBeTypeOf('function')
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+    })
+
+    it('opens the account dialog even for a background run error', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const open = vi.fn()
+      vi.spyOn(
+        accountPreconditionDialogModule,
+        'useAccountPreconditionDialog'
+      ).mockReturnValue({ open })
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const executionErrorHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'execution_error'
+      )?.[1] as EventListener | undefined
+      expect(executionErrorHandler).toBeTypeOf('function')
+
+      executionErrorHandler?.(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-b',
+            workflow_id: workflowBId,
+            node_id: '1',
+            node_type: 'PartnerApiNode',
+            exception_message:
+              'Payment Required: Please add credits to your account to use this node.',
+            exception_type: 'InsufficientFundsError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(open).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ nodeType: 'PartnerApiNode' })
+      )
+    })
+
+    it.for([
+      { jobId: 'job-a', owner: 'active', applied: true },
+      { jobId: 'job-b', owner: 'background', applied: false }
+    ] as const)(
+      '$owner run output applied: $applied',
+      async ({ jobId, owner, applied }) => {
+        const workflowA = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+        )
+        const workflowB = markLoaded(
+          new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+        )
+        workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+        workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+        useWorkflowStore().activeWorkflow = workflowA
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+        const executionStore = useExecutionStore()
+        const workflow = owner === 'active' ? workflowA : workflowB
+        const workflowId = owner === 'active' ? workflowAId : workflowBId
+        executionStore.storeJob({
+          nodes: ['1'],
+          id: jobId,
+          promptOutput: {},
+          workflow,
+          mode: 'graph'
+        })
+
+        const setOutputs = vi.spyOn(
+          useNodeOutputStore(),
+          'setNodeOutputsByExecutionId'
+        )
+        const addEventListener = vi.spyOn(api, 'addEventListener')
+        Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+        const executedHandler = addEventListener.mock.calls.find(
+          ([event]) => event === 'executed'
+        )?.[1] as EventListener | undefined
+        expect(executedHandler).toBeTypeOf('function')
+
+        executedHandler?.(
+          new CustomEvent('executed', {
+            detail: {
+              prompt_id: jobId,
+              workflow_id: workflowId,
+              node: '1',
+              display_node: '1',
+              output: { images: [{ filename: 'from-b.png', type: 'output' }] }
+            }
+          })
+        )
+
+        expect(setOutputs).toHaveBeenCalledTimes(applied ? 1 : 0)
+      }
+    )
+
+    it('keeps a background preview job-keyed but off the visible graph', () => {
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      workflowB.changeTracker.activeState = workflowGraphData(workflowBId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      const setPreviews = vi.spyOn(
+        useNodeOutputStore(),
+        'setNodePreviewsByExecutionId'
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const previewHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'b_preview_with_metadata'
+      )?.[1] as EventListener | undefined
+      expect(previewHandler).toBeTypeOf('function')
+
+      previewHandler?.(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob(),
+            nodeId: '1',
+            displayNodeId: '1',
+            parentNodeId: '1',
+            realNodeId: '1',
+            jobId: 'job-b',
+            workflowId: workflowBId
+          }
+        })
+      )
+
+      expect(
+        setPreviews,
+        'the node-keyed write is gated: the visible graph has the same node ids'
+      ).not.toHaveBeenCalled()
+      useWorkflowStore().activeWorkflow = workflowB
+      previewHandler?.(
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob(),
+            nodeId: '1',
+            displayNodeId: '1',
+            parentNodeId: '1',
+            realNodeId: '1',
+            jobId: 'job-b',
+            workflowId: workflowBId
+          }
+        })
+      )
+      expect(
+        setPreviews,
+        "and applied once that job's own tab is in front"
+      ).toHaveBeenCalled()
+      expect(
+        useJobPreviewStore().previewsByPromptId['job-b'],
+        'the background job keeps its own thumbnail'
+      ).toBeTruthy()
     })
 
     it('restores the failed run state when returning to a workflow tab', async () => {

@@ -4,6 +4,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { toNodeId } from '@/types/nodeId'
 import {
   TaskItemImpl,
   useQueuePendingTaskCountStore,
@@ -354,6 +355,7 @@ describe('useQueueStore', () => {
 
   beforeEach(() => {
     store = useQueueStore()
+    vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
   })
 
   describe('initial state', () => {
@@ -757,6 +759,127 @@ describe('useQueueStore', () => {
       expect(store.historyTasks[0]).toBe(initialTask)
       // Should preserve array identity when history is unchanged
       expect(store.historyTasks).toBe(initialHistoryTasks)
+    })
+  })
+
+  describe('terminal-job reconciliation', () => {
+    it('clears progress for a job the backend reports only in history', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        'hist-stuck': {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'hist-stuck'
+          }
+        }
+      }
+
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createHistoryJob(1, 'hist-stuck')
+      ])
+
+      await store.update()
+
+      expect(
+        executionStore.nodeProgressStatesByJob['hist-stuck']
+      ).toBeUndefined()
+    })
+
+    it('looks up a tracked job that fell outside the history page', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        'older-stuck': {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'older-stuck'
+          }
+        }
+      }
+
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([
+        createHistoryJob(2, 'newer-job')
+      ])
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        createHistoryJob(1, 'older-stuck')
+      )
+
+      await store.update()
+
+      expect(
+        executionStore.nodeProgressStatesByJob['older-stuck']
+      ).toBeUndefined()
+    })
+
+    it('evicts a tracked job only after a second failed lookup', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        ghost: {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'ghost'
+          }
+        }
+      }
+
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+      await store.update()
+      expect(
+        executionStore.nodeProgressStatesByJob['ghost'],
+        'one miss could be a network blip, so it is still tracked'
+      ).toBeDefined()
+
+      await store.update()
+      expect(
+        executionStore.nodeProgressStatesByJob['ghost'],
+        'two consecutive misses means it is gone'
+      ).toBeUndefined()
+    })
+
+    it('resets the miss count when the tracked job reappears', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.nodeProgressStatesByJob = {
+        ghost: {
+          '1': {
+            value: 3,
+            max: 10,
+            state: 'running',
+            node_id: toNodeId('1'),
+            prompt_id: 'ghost'
+          }
+        }
+      }
+
+      vi.mocked(api.getQueue)
+        .mockResolvedValueOnce({ Running: [], Pending: [] })
+        .mockResolvedValueOnce({
+          Running: [createRunningJob(1, 'ghost')],
+          Pending: []
+        })
+        .mockResolvedValueOnce({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      vi.mocked(api.getJobDetail)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(undefined)
+
+      await store.update()
+      await store.update()
+      await store.update()
+
+      expect(executionStore.trackedJobIds).toContain('ghost')
     })
   })
 

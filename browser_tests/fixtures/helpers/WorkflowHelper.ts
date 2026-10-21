@@ -219,6 +219,14 @@ export class WorkflowHelper {
     })
   }
 
+  async getActiveWorkflowId(): Promise<string | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      return workflow?.activeState.id ?? workflow?.initialState.id ?? undefined
+    })
+  }
+
   async getActiveWorkflowActiveAppMode(): Promise<AppMode | null | undefined> {
     return this.comfyPage.page.evaluate(() => {
       return (window.app!.extensionManager as WorkspaceStore).workflow
@@ -253,23 +261,21 @@ export class WorkflowHelper {
     })
   }
 
-  async openPersistedWorkflow(workflowName: string): Promise<void> {
-    await this.comfyPage.page.evaluate(async (name) => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      await store.syncWorkflows()
-      const workflow =
-        store.getWorkflowByPath(`workflows/${name}.json`) ??
-        store.persistedWorkflows.find(
-          (candidate) =>
-            candidate.filename === name ||
-            candidate.path.endsWith(`${name}.json`)
-        )
-      if (!workflow) {
-        throw new Error(`Persisted workflow not found: ${name}`)
-      }
-      await store.openWorkflow(workflow)
-    }, workflowName)
-    await this.waitForWorkflowIdle()
+  async openPersistedWorkflow(
+    workflowName: string,
+    { idleTimeout }: { idleTimeout?: number } = {}
+  ): Promise<void> {
+    const sidebar = this.comfyPage.menu.workflowsTab
+    const wasOpen = await sidebar.selectedTabButton.isVisible()
+    await sidebar.open()
+    await sidebar.getPersistedItem(workflowName, { exact: true }).click()
+    if (!wasOpen) await sidebar.close()
+    await this.waitForWorkflowIdle(idleTimeout)
+    await expect
+      .poll(async () =>
+        (await this.getActiveWorkflowPath())?.endsWith(`${workflowName}.json`)
+      )
+      .toBe(true)
     await this.comfyPage.vueNodes.waitForNodes()
   }
 
