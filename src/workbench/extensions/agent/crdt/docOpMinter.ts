@@ -151,27 +151,39 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isVirtualNode) return snapshot
   const values = valueWidgetsOnly(node, named)
-  const form = nodeLocalWidgetForm(node, values)
-  return form
-    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
-    : { ...snapshot, widgets_values: values }
+  const inputTypes = new Set(
+    Object.values(useNodeDefStore().fromLGraphNode(node)?.inputs ?? {}).map(
+      (spec) => spec.type
+    )
+  )
+  const form = nodeLocalWidgetForm(node, values, inputTypes)
+  if (!form) return { ...snapshot, widgets_values: values }
+  // comfy-multi-player composes catalog-owned dynamic-combo children with an
+  // ARRAY form only (Amendment A25); an object form stays closed, so a write
+  // to a child that a later selection shows would be refused.
+  const widgetsValues = inputTypes.has('COMFY_DYNAMICCOMBO_V3')
+    ? form.order.map((name) => values[name])
+    : values
+  return {
+    ...snapshot,
+    widgets_values: widgetsValues,
+    widgets_values_form: form
+  }
 }
 
-const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+/** Input types whose widget set the document cannot recompute from a form. */
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = [
   'COMFY_AUTOGROW_V3',
-  'COMFY_DYNAMICCOMBO_V3',
   'COMFY_DYNAMICGROUP_V3'
-])
+]
 
 function nodeLocalWidgetForm(
   node: LGraphNode,
-  values: Record<string, unknown>
+  values: Record<string, unknown>,
+  inputTypes: ReadonlySet<string>
 ): WidgetValuesForm | undefined {
-  const definition = useNodeDefStore().fromLGraphNode(node)
-  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
-    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
-  )
-  if (layoutDependsOnValues) return undefined
+  if (VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.some((type) => inputTypes.has(type)))
+    return undefined
   const order = (node.widgets ?? [])
     .map((widget) => widget.name)
     .filter((name) => Object.hasOwn(values, name))

@@ -2464,14 +2464,6 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
 
   it.for([
     {
-      case: 'a dynamic combo input',
-      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] }),
-      build: (n: LGraphNode) => {
-        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-        n.addWidget('number', 'mode.steps', 4, () => {})
-      }
-    },
-    {
       case: 'a dynamic group input',
       definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICGROUP_V3', {}] }),
       build: (n: LGraphNode) => {
@@ -2640,6 +2632,11 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         }
       }
     }
+    const snapshot = wireNodeSnapshot(node)!
+    expect(snapshot).toMatchObject({
+      widgets_values: ['a', 4],
+      widgets_values_form: { order: ['mode', 'mode.steps'] }
+    })
     const doc = mint({ nodes: [], links: [] }, catalog)
     const operations: GraphOperation[] = [
       {
@@ -2647,7 +2644,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         node_id: node.id,
         class_type: 'Dynamic',
         pos: [0, 0],
-        node: wireNodeSnapshot(node)!
+        node: snapshot
       },
       { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
       { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
@@ -2664,7 +2661,10 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       'applied',
       'applied'
     ])
-    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    expect(project(doc, catalog).nodes[0]).toMatchObject({
+      widgets_values: ['b', 7],
+      widgets_values_form: { order: ['mode', 'mode.other'] }
+    })
     doc.destroy()
   })
 })

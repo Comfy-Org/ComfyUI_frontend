@@ -97,34 +97,35 @@ async function emptyCanvasPointBelow(
   return point
 }
 
-const ADDED_CLASS = 'DynamicModePicker'
+/**
+ * An uncatalogued class whose widget set grows with its inputs (autogrow) gets
+ * no declared `widgets_values_form`, so the host still has no mapping for its
+ * `prompt` value and refuses the add. A dynamic combo no longer serves here:
+ * it now carries a declared form, so the host accepts its add (FE-3512).
+ */
+const ADDED_CLASS = 'AutogrowPromptPicker'
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = '1'
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
   [ADDED_CLASS]: {
     name: ADDED_CLASS,
-    display_name: 'Dynamic Mode Picker',
+    display_name: 'Autogrow Prompt Picker',
     description: '',
     category: 'testing',
     python_module: 'custom_nodes.test',
     output_node: false,
     input: {
       required: {
-        mode: [
-          'COMFY_DYNAMICCOMBO_V3',
+        prompt: ['STRING', { default: '' }],
+        images: [
+          'COMFY_AUTOGROW_V3',
           {
-            options: [
-              { key: 'creative', inputs: { required: {} } },
-              {
-                key: 'faithful',
-                inputs: {
-                  required: {
-                    detail: ['INT', { default: 80, min: 0, max: 100 }]
-                  }
-                }
-              }
-            ]
+            template: {
+              input: { required: { image: ['IMAGE', {}] } },
+              names: ['image_1', 'image_2'],
+              min: 0
+            }
           }
         ]
       }

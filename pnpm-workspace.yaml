@@ -163,7 +163,7 @@ catalog:
   zod: ^4.6.5
   zod-validation-error: ^5.0.0
   '@datadog/browser-logs': 6.33.0
-  '@comfyorg/comfy-multi-player': 0.3.10
+  '@comfyorg/comfy-multi-player': 0.3.12
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
   dependency-cruiser: ^18.5.0
   '@microsoft/api-extractor': 7.58.9
@@ -207,6 +207,7 @@ overrides:
 # Transitional - drop each entry once that version is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.5.0'
+  - '@comfyorg/comfy-multi-player@0.3.12'
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
