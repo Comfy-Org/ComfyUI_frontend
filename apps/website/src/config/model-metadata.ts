@@ -77,9 +77,6 @@ export const modelMetadata: Record<string, ModelOverride> = {
   },
   'hunyuan-3d': {
     docsUrl: 'https://docs.comfy.org/tutorials/3d/hunyuan3D-2',
-    // The hub spells this family without the hyphen, and unlike the other
-    // mismatches here it is not a variant alias the hub redirects, so the
-    // hyphenated URL 404s rather than resolving.
     hubSearch: 'hunyuan3d',
     featured: true
   },
@@ -108,7 +105,6 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   moonvalley: {
-    hubSearch: 'moonvalley',
     featured: false
   },
   'magnific-ai': {
@@ -144,11 +140,9 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'veo-2': {
-    hubSearch: 'veo',
     featured: false
   },
   'veo-3': {
-    hubSearch: 'veo',
     featured: false
   },
   'flux-2-api': {
@@ -170,7 +164,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'sd-xl-base-1-0': {
-    hubSearch: 'stable',
+    hubSearch: 'sdxl',
     featured: false
   },
   'z-image-bf16': {
