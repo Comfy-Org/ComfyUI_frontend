@@ -334,65 +334,6 @@ export const useQueueStore = defineStore('queue', () => {
     await currentUpdate
   }
 
-  function getJobDetailForRecovery(jobId: string, signal: AbortSignal) {
-    return api.getJobDetail(jobId, signal)
-  }
-
-  function getFollowedJobIds() {
-    const executionStore = useExecutionStore()
-    const ids = new Set(Object.keys(executionStore.queuedJobs))
-    if (executionStore.activeJobId) ids.add(executionStore.activeJobId)
-    return [...ids]
-  }
-
-  function isFollowingJob(jobId: string) {
-    const executionStore = useExecutionStore()
-    return (
-      jobId in executionStore.queuedJobs || executionStore.activeJobId === jobId
-    )
-  }
-
-  function clearStaleExecution(
-    activeJobIds: Set<string>,
-    previouslyFollowedJobIds: readonly string[]
-  ) {
-    const executionStore = useExecutionStore()
-    const currentJobId = executionStore.activeJobId
-    if (!currentJobId || previouslyFollowedJobIds.includes(currentJobId)) {
-      executionStore.clearActiveJobIfStale(activeJobIds)
-    }
-  }
-
-  function forgetFinishedExecutions(jobIds: Iterable<string>) {
-    useExecutionStore().forgetFinishedJobs(jobIds)
-  }
-
-  function dispatchRecoveredExecuted(
-    detail: Parameters<typeof api.dispatchCustomEvent<'executed'>>[1]
-  ) {
-    api.dispatchCustomEvent('executed', detail)
-  }
-
-  function dispatchRecoveredSuccess(
-    detail: Parameters<typeof api.dispatchCustomEvent<'execution_success'>>[1]
-  ) {
-    api.dispatchCustomEvent('execution_success', detail)
-  }
-
-  function dispatchRecoveredInterrupted(
-    detail: Parameters<
-      typeof api.dispatchCustomEvent<'execution_interrupted'>
-    >[1]
-  ) {
-    api.dispatchCustomEvent('execution_interrupted', detail)
-  }
-
-  function dispatchRecoveredError(
-    detail: Parameters<typeof api.dispatchCustomEvent<'execution_error'>>[1]
-  ) {
-    api.dispatchCustomEvent('execution_error', detail)
-  }
-
   async function fetchQueueAndHistory() {
     updateState.inFlight = true
     updateState.dirty = false
@@ -510,15 +451,6 @@ export const useQueueStore = defineStore('queue', () => {
 
     update,
     updateFresh,
-    getJobDetailForRecovery,
-    getFollowedJobIds,
-    isFollowingJob,
-    clearStaleExecution,
-    forgetFinishedExecutions,
-    dispatchRecoveredExecuted,
-    dispatchRecoveredSuccess,
-    dispatchRecoveredInterrupted,
-    dispatchRecoveredError,
     clear,
     delete: deleteTask
   }

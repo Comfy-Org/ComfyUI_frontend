@@ -4,6 +4,8 @@ import type {
   ExecutionError,
   JobDetail
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 
@@ -44,21 +46,18 @@ const UNKNOWN_EXECUTION_ERROR: ExecutionError = {
  */
 export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
+  const executionStore = useExecutionStore()
   const detailRequests = new Semaphore(DETAIL_CONCURRENCY)
   const unreadableRefreshes = new Map<JobId, number>()
   let inFlight: Promise<void> | null = null
   let reconnects = 0
-
-  function followedJobIds(): JobId[] {
-    return queueStore.getFollowedJobIds()
-  }
 
   async function fetchDetail(jobId: JobId): Promise<JobDetail | undefined> {
     await detailRequests.acquire()
     const request = new AbortController()
     try {
       return await withTimeout(
-        () => queueStore.getJobDetailForRecovery(jobId, request.signal),
+        () => api.getJobDetail(jobId, request.signal),
         DETAIL_TIMEOUT_MS
       )
     } catch {
@@ -138,13 +137,9 @@ export function useReconnectQueueRefresh() {
     return readOutcome(jobId, historyTask)
   }
 
-  function stillFollowed(jobId: JobId): boolean {
-    return queueStore.isFollowingJob(jobId)
-  }
-
   function replayOutputs(jobId: JobId, outputs: TaskOutput) {
     for (const [node, output] of Object.entries(outputs)) {
-      queueStore.dispatchRecoveredExecuted({
+      api.dispatchCustomEvent('executed', {
         node,
         display_node: node,
         output,
@@ -154,7 +149,10 @@ export function useReconnectQueueRefresh() {
   }
 
   function dispatchSuccess(jobId: JobId, timestamp: number) {
-    queueStore.dispatchRecoveredSuccess({ prompt_id: jobId, timestamp })
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: jobId,
+      timestamp
+    })
   }
 
   function dispatchInterrupted(
@@ -162,13 +160,12 @@ export function useReconnectQueueRefresh() {
     timestamp: number,
     error: ExecutionError | undefined
   ) {
-    const normalizedError = error ?? UNKNOWN_EXECUTION_ERROR
-    queueStore.dispatchRecoveredInterrupted({
+    api.dispatchCustomEvent('execution_interrupted', {
       prompt_id: jobId,
       timestamp,
-      node_id: normalizedError.node_id,
-      node_type: normalizedError.node_type,
-      executed: normalizedError.executed ?? []
+      node_id: error?.node_id ?? '',
+      node_type: error?.node_type ?? '',
+      executed: error?.executed ?? []
     })
   }
 
@@ -178,7 +175,7 @@ export function useReconnectQueueRefresh() {
     error: ExecutionError | undefined
   ) {
     const normalizedError = error ?? UNKNOWN_EXECUTION_ERROR
-    queueStore.dispatchRecoveredError({
+    api.dispatchCustomEvent('execution_error', {
       prompt_id: jobId,
       timestamp,
       node_id: normalizedError.node_id,
@@ -211,7 +208,13 @@ export function useReconnectQueueRefresh() {
   }
 
   function replayOutcome(jobId: JobId, outcome: JobOutcome) {
-    if (outcome.state !== 'ended' || !stillFollowed(jobId)) return
+    if (
+      outcome.state !== 'ended' ||
+      (!(jobId in executionStore.queuedJobs) &&
+        executionStore.activeJobId !== jobId)
+    ) {
+      return
+    }
     if (outcome.outputs) replayOutputs(jobId, outcome.outputs)
     dispatchTerminal(jobId, outcome)
   }
@@ -227,7 +230,11 @@ export function useReconnectQueueRefresh() {
   }
 
   async function refresh() {
-    const followed = followedJobIds()
+    const followedIds = new Set(Object.keys(executionStore.queuedJobs))
+    if (executionStore.activeJobId) {
+      followedIds.add(executionStore.activeJobId)
+    }
+    const followed = [...followedIds]
     await queueStore.updateFresh()
     const activeJobIds = new Set([
       ...queueStore.runningTasks.map((t) => t.jobId),
@@ -260,10 +267,18 @@ export function useReconnectQueueRefresh() {
       replayOutcome(jobId, outcome)
     })
 
-    queueStore.clearStaleExecution(activeJobIds, followed)
-    queueStore.forgetFinishedExecutions(unreadable)
+    const currentJobId = executionStore.activeJobId
+    if (!currentJobId || followed.includes(currentJobId)) {
+      executionStore.clearActiveJobIfStale(activeJobIds)
+    }
+    executionStore.forgetFinishedJobs(unreadable)
     for (const jobId of unreadableRefreshes.keys()) {
-      if (!stillFollowed(jobId)) unreadableRefreshes.delete(jobId)
+      if (
+        !(jobId in executionStore.queuedJobs) &&
+        executionStore.activeJobId !== jobId
+      ) {
+        unreadableRefreshes.delete(jobId)
+      }
     }
   }
 
