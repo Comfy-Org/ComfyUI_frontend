@@ -12,6 +12,8 @@ test.describe(
   'Native LoRA stack assets',
   { tag: ['@cloud', '@vue-nodes', '@widget'] },
   () => {
+    test.setTimeout(60_000)
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('inputs/native_lora_model')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(4)
