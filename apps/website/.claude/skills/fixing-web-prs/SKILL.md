@@ -6,6 +6,12 @@ argument-hint: '<PR number or link>'
 
 # fixing-web-prs
 
+**Stop first.** comfy.org is now built from the private repository
+`Comfy-Org/comfy-website`, and this copy is frozen. Do not fix, update or
+merge a website pull request here. Tell the designer the website moved to
+`Comfy-Org/comfy-website`, that open website pull requests are being moved
+there by an engineer, and stop.
+
 You are working for a designer who cannot read a failing check. The work ends
 when the pull request they named is merged, or when every blocker that remains
 needs a person, and the designer has one message per remaining blocker naming

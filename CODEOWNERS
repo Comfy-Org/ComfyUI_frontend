@@ -182,3 +182,5 @@
 /docs/architecture/domains/records/support-feedback.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/server-facts.domain.json @Comfy-Org/comfy_frontend_devs
 /docs/architecture/domains/records/tasks.domain.json @Comfy-Org/comfy_frontend_devs
+
+/apps/website/ @Comfy-Org/website-freeze-approvers
