@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
@@ -122,17 +121,12 @@ function catalogFacts(
         >
           <dt class="text-primary-warm-gray">{{ t(fact.label) }}</dt>
           <dd class="min-w-0 truncate text-primary-comfy-canvas tabular-nums">
-            <component
-              :is="authorHref ? 'a' : 'span'"
+            <WorkflowAuthor
               v-if="fact.label === 'workshop.workflow.factAuthor'"
+              :name="fact.value"
+              :avatar="model.catalogDetails?.authorAvatarURL"
               :href="authorHref"
-              :class="cn(authorHref && 'hover:underline')"
-            >
-              <WorkflowAuthor
-                :name="fact.value"
-                :avatar="model.catalogDetails?.authorAvatarURL"
-              />
-            </component>
+            />
             <template v-else>{{ fact.value }}</template>
           </dd>
         </div>

@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { UserRound } from '@lucide/vue'
-const { name, avatar } = defineProps<{ name: string; avatar?: string }>()
+const { name, avatar, href } = defineProps<{
+  name: string
+  avatar?: string
+  href?: string
+}>()
 </script>
 <template>
-  <span class="flex items-center gap-2">
+  <component
+    :is="href ? 'a' : 'span'"
+    :href
+    :class="cn('flex items-center gap-2', href && 'hover:underline')"
+  >
     <img
       v-if="avatar"
       :src="avatar"
@@ -18,5 +27,5 @@ const { name, avatar } = defineProps<{ name: string; avatar?: string }>()
       aria-hidden="true"
     />
     <span class="truncate">{{ name }}</span>
-  </span>
+  </component>
 </template>
