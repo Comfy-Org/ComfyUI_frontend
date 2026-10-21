@@ -58,6 +58,8 @@ test.describe(
           .humanOpFrames()
           .slice(framesBefore)
         expect(resent.opIds).toEqual(sent.opIds)
+        expect(resent.tab).toBe(sent.tab)
+        expect(resent.writers).toEqual(sent.writers)
         expect(resent.comfyConnection).toBeGreaterThan(sent.comfyConnection)
 
         await agentConversation.waitForHumanOps(outcomesBefore + 1)

@@ -61,10 +61,12 @@ export interface ClientDocFrame {
   atMs: number
   type: string
   workflowId: string | null
+  tab: string | null
   stateVector: string | null
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  writers: Array<string | null>
   connection: number
   comfyConnection: number
 }
@@ -245,9 +247,11 @@ export class AgentFollowerHostSocket {
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
+      tab: frame.tab,
       stateVector: frame.stateVector,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
+      writers: ops.map(claimedWriter),
       connection: this.connections,
       comfyConnection: this.comfyConnections
     })
