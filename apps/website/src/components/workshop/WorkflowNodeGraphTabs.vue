@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import { useNodeGraphNeeds } from '@/composables/useNodeGraphNeeds'
 import { useTablist } from '@/composables/useTablist'
 import type { Locale } from '@/i18n/translations'
@@ -13,6 +12,7 @@ import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 import WorkflowNodeGraphFacts from './WorkflowNodeGraphFacts.vue'
 import WorkflowNodeGraphOverview from './WorkflowNodeGraphOverview.vue'
+import WorkflowNodeGraphVersions from './WorkflowNodeGraphVersions.vue'
 
 const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
@@ -31,10 +31,6 @@ const graphSource = computed(
     workflow.files?.find(({ href }) => href === selectedFile.value)?.href ??
     workflow.graphSource
 )
-function selectFile(event: Event) {
-  if (event.target instanceof HTMLSelectElement)
-    selectedFile.value = event.target.value
-}
 const needs = useNodeGraphNeeds(graphSource)
 const samples = computed(() =>
   workflow.examples
@@ -123,37 +119,15 @@ const sectionLabels = {
         </div>
         <div class="min-w-0 lg:col-span-4">
           <div class="flex flex-col gap-4 lg:sticky lg:top-24">
-            <div
+            <WorkflowNodeGraphVersions
               v-if="workflow.files && workflow.files.length > 1"
-              class="flex flex-col gap-3"
-              data-testid="workflow-versions"
-            >
-              <label class="grid gap-2 text-sm text-primary-warm-gray">
-                {{ t('cccWorkflow.version') }}
-                <select
-                  :value="graphSource"
-                  class="min-h-11 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-primary-comfy-canvas"
-                  @change="selectFile"
-                >
-                  <option
-                    v-for="file in workflow.files"
-                    :key="file.href"
-                    :value="file.href"
-                  >
-                    {{ file.name }}
-                  </option>
-                </select>
-              </label>
-              <Button
-                as="a"
-                :href="graphSource"
-                :download="workflow.downloadName ?? true"
-                variant="outline"
-                class="h-auto min-h-11 max-w-full whitespace-normal"
-                @click="emit('download')"
-                >{{ t('workshop.workflow.download') }}</Button
-              >
-            </div>
+              :files="workflow.files"
+              :selected="graphSource"
+              :download-name="workflow.downloadName"
+              :locale="locale"
+              @select="selectedFile = $event"
+              @download="emit('download')"
+            />
             <WorkflowNodeGraphFacts
               :workflow="workflow"
               :needs="needs"
