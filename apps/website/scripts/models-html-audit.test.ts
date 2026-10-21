@@ -187,14 +187,41 @@ describe(auditCatalogDetailBody, () => {
     summary: 'Turns prompts into images.'
   }
   const page = (body: string) => `<main>${body}</main>`
+  const head = '<h1>Example Model</h1><p>Turns prompts into images.</p>'
+  const workflow = {
+    ...record,
+    catalogDetails: {
+      longDescription: 'First paragraph.\n\nSecond paragraph.',
+      faqs: [
+        {
+          question: 'Does it run?',
+          answer: 'Yes, see [the docs](https://docs.comfy.org).'
+        }
+      ],
+      models: [{ name: 'Flux Kontext' }, { name: ' ' }]
+    }
+  }
+  const about = '<p>First paragraph.</p><p>Second paragraph.</p>'
+  const faq =
+    '<h3>Does it run?</h3><p>Yes, see <a href="https://docs.comfy.org">the docs</a>.</p>'
+  const models =
+    '<ul><li><a href="/hub/models/flux/">Flux Kontext</a></li></ul>'
 
   it('accepts one named h1 with the summary', () => {
+    expect(auditCatalogDetailBody(page(head), record)).toEqual([])
+  })
+
+  it('accepts a workflow body with its long description, FAQ and models', () => {
     expect(
-      auditCatalogDetailBody(
-        page('<h1>Example Model</h1><p>Turns prompts into images.</p>'),
-        record
-      )
+      auditCatalogDetailBody(page(head + about + faq + models), workflow)
     ).toEqual([])
+  })
+
+  it('takes the model list of a template workflow from its template', () => {
+    const template = { ...record, workflow: { template: { models: ['SDXL'] } } }
+    expect(auditCatalogDetailBody(page(head), template)).toEqual([
+      'server HTML is missing the model "SDXL"'
+    ])
   })
 
   it.for([
@@ -215,5 +242,30 @@ describe(auditCatalogDetailBody, () => {
     ]
   ] as const)('rejects %s', ([, html]) => {
     expect(auditCatalogDetailBody(html, record)).not.toEqual([])
+  })
+
+  it.for([
+    {
+      missing: 'a long description paragraph',
+      body: '<p>First paragraph.</p>' + faq + models,
+      error: 'server HTML is missing the long description'
+    },
+    {
+      missing: 'an FAQ answer',
+      body: about + '<h3>Does it run?</h3>' + models,
+      error: 'server HTML is missing the FAQ "Does it run?"'
+    },
+    {
+      missing: 'a model',
+      body: about + faq,
+      error: 'server HTML is missing the model "Flux Kontext"'
+    },
+    {
+      missing: 'a long description that only a template holds',
+      body: `<template>${about}</template>` + faq + models,
+      error: 'server HTML is missing the long description'
+    }
+  ])('rejects a workflow body without $missing', ({ body, error }) => {
+    expect(auditCatalogDetailBody(page(head + body), workflow)).toEqual([error])
   })
 })

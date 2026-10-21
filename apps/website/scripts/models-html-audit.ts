@@ -1,3 +1,5 @@
+import { parseFaqAnswer } from '@/utils/faqAnswer'
+
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',
   '&lt;': '<',
@@ -39,13 +41,60 @@ export function auditModelPage(html: string, modelName: string): string[] {
   return errors
 }
 
+interface CatalogDetailBody {
+  name: string
+  summary?: string
+  catalogDetails?: {
+    longDescription?: string
+    faqs: readonly { question: string; answer: string }[]
+    models: readonly { name: string }[]
+  }
+  workflow?: { template?: { models?: readonly string[] } }
+}
+
+function squashed(html: string): string {
+  return textOf(html).replace(/\s/g, '')
+}
+
+function faqAnswerText(answer: string): string {
+  return parseFaqAnswer(answer)
+    .map((part) => part.label ?? part.value)
+    .join('')
+}
+
+function bodyErrors(html: string, record: CatalogDetailBody): string[] {
+  const text = squashed(html)
+  const has = (value: string) => text.includes(squashed(value))
+  const details = record.catalogDetails
+  const paragraphs = (details?.longDescription ?? '')
+    .split(/\n\s*\n/)
+    .filter((paragraph) => paragraph.trim())
+  const models = details
+    ? details.models.map((model) => model.name)
+    : (record.workflow?.template?.models ?? [])
+  return [
+    ...(paragraphs.every(has)
+      ? []
+      : ['server HTML is missing the long description']),
+    ...(details?.faqs ?? [])
+      .filter(
+        ({ question, answer }) => !has(question) || !has(faqAnswerText(answer))
+      )
+      .map(({ question }) => `server HTML is missing the FAQ "${question}"`),
+    ...models
+      .filter((name) => name.trim() && !has(name))
+      .map((name) => `server HTML is missing the model "${name.trim()}"`)
+  ]
+}
+
 /**
  * A catalog detail page's server HTML must carry the record itself: exactly
- * one h1 naming it, its summary, and no loader standing in for the content.
+ * one h1 naming it, its summary, its long description, FAQ and model list,
+ * and no loader standing in for the content.
  */
 export function auditCatalogDetailBody(
   html: string,
-  record: { name: string; summary?: string }
+  record: CatalogDetailBody
 ): string[] {
   const errors: string[] = []
   const live = withoutHiddenMarkup(html)
@@ -64,7 +113,7 @@ export function auditCatalogDetailBody(
     live.includes('data-testid="workshop-loading"')
   )
     errors.push('paints a loader in place of the record')
-  return errors
+  return [...errors, ...bodyErrors(live, record)]
 }
 
 const PLACEHOLDER_LABEL = /^(?:Output|Sample \d+)$/

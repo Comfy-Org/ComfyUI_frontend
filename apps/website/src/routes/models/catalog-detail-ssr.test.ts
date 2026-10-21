@@ -37,6 +37,66 @@ function serveCatalog() {
   })
 }
 
+const nativeWorkflow = {
+  type: 'workflow',
+  title: 'Native workflow',
+  description: 'Turns one photo into a product shot.',
+  slug: 'native-workflow',
+  long_description: 'Upload a photo.\n\nPick a scene and run it.',
+  faq: [
+    {
+      question: 'Which photos work best?',
+      answer: 'Well lit photos, see [the guide](https://docs.comfy.org).'
+    }
+  ],
+  model_uids: ['00000000-0000-4000-8000-0000000000aa'],
+  website_model_labels: [
+    {
+      uid: '00000000-0000-4000-8000-0000000000aa',
+      title: 'Flux Kontext',
+      href: '/hub/models/flux-kontext'
+    }
+  ]
+}
+const runInputs = {
+  inputSchema: {
+    type: 'object',
+    properties: { quality: { type: 'number', enum: [1, 2], default: 1 } }
+  },
+  inputs: {
+    quality: {
+      label: 'Quality',
+      help: '',
+      hidden: false,
+      advanced: false,
+      control: 'dropdown'
+    }
+  }
+}
+
+function serveNativeWorkflow(data: Record<string, unknown>) {
+  vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+  vi.mocked(fetch).mockResolvedValue(
+    Response.json({
+      revision_id: 1,
+      generation: 0,
+      items: [
+        {
+          uid: '00000000-0000-4000-8000-000000000031',
+          edit_version: '00000000-0000-4000-8000-000000000032',
+          kind: 'WORKFLOW',
+          slug: '/hub/workflows/native-workflow',
+          enabled: true,
+          visibility: 'PUBLIC',
+          deleted: false,
+          revision: 1,
+          data
+        }
+      ]
+    })
+  )
+}
+
 describe('catalog detail pages in server HTML (SEO audit)', () => {
   it('covers both workflow and model records', () => {
     expect(records.some((entry) => entry.kind === 'WORKFLOW')).toBe(true)
@@ -75,6 +135,37 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
         })
       )
       expect(auditCatalogDetailBody(html, page.model)).toEqual([])
+    }
+  )
+
+  it.for([
+    { form: 'without a Run form', data: nativeWorkflow },
+    { form: 'with a Run form', data: { ...nativeWorkflow, ...runInputs } }
+  ])(
+    'server-renders a CCC workflow $form with its long description, FAQ and models',
+    async ({ data }) => {
+      serveNativeWorkflow(data)
+      const pathname = '/hub/workflows/native-workflow/'
+      const load = await loadCatalogDetailPage({}, pathname, 'en')
+      if (load.status !== 'ok') throw new Error(load.status)
+      const html = await renderToString(
+        createSSRApp({
+          render: () =>
+            h(CatalogDetailPage, {
+              path: pathname,
+              initial: load.page,
+              locale: 'en'
+            })
+        })
+      )
+      expect(auditCatalogDetailBody(html, load.page.model)).toEqual([])
+      expect(load.page.model).toMatchObject({
+        catalogDetails: {
+          longDescription: nativeWorkflow.long_description,
+          faqs: [{ question: nativeWorkflow.faq[0].question }],
+          models: [{ name: 'Flux Kontext' }]
+        }
+      })
     }
   )
 
