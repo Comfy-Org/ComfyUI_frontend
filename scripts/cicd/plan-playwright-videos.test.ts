@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
@@ -253,15 +253,15 @@ describe('independent video workflow', () => {
       const command = workflow.jobs['playwright-video-new-tests'].steps.find(
         (step) => step.name === 'Record changed tests'
       )?.run
-      if (!command) throw new Error('Missing recording command')
+      assert.exists(command)
       const root = mkdtempSync(join(tmpdir(), 'playwright-video-command-'))
-      try {
-        const bin = join(root, 'bin')
-        mkdirSync(bin)
-        symlinkSync(process.execPath, join(bin, 'node'))
-        writeFileSync(
-          join(bin, 'pnpm'),
-          `#!${process.execPath}
+      onTestFinished(() => rmSync(root, { recursive: true, force: true }))
+      const bin = join(root, 'bin')
+      mkdirSync(bin)
+      symlinkSync(process.execPath, join(bin, 'node'))
+      writeFileSync(
+        join(bin, 'pnpm'),
+        `#!${process.execPath}
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
@@ -274,42 +274,39 @@ if (dir && !${JSON.stringify(blobless)}.includes(args.at(-1))) {
 }
 process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
 `,
-          { mode: 0o755 }
-        )
-        const specs = files.map((file, i) => ({ file, key: `key${i}` }))
-        const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
-          cwd: root,
-          encoding: 'utf8',
-          env: {
-            PATH: `${bin}:/usr/bin:/bin`,
-            PROJECT: 'cloud',
-            SPECS_JSON: JSON.stringify(specs)
-          }
-        })
+        { mode: 0o755 }
+      )
+      const specs = files.map((file, i) => ({ file, key: `key${i}` }))
+      const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          PATH: `${bin}:/usr/bin:/bin`,
+          PROJECT: 'cloud',
+          SPECS_JSON: JSON.stringify(specs)
+        }
+      })
 
-        expect(result.status).toBe(status)
-        expect(
-          readFileSync(join(root, 'calls.jsonl'), 'utf8')
-            .trim()
-            .split('\n')
-            .map((line) => JSON.parse(line))
-        ).toEqual(
-          files.map((file) => [
-            'exec',
-            'playwright',
-            'test',
-            '--project=cloud',
-            '--timeout=180000',
-            '--retries=0',
-            file
-          ])
-        )
-        const blobs = readdirSync(join(root, 'blob-report'))
-        expect(blobs).toEqual(expect.arrayContaining(expectedBlobs))
-        expect(blobs).toHaveLength(expectedBlobs.length)
-      } finally {
-        rmSync(root, { recursive: true, force: true })
-      }
+      expect(result.status).toBe(status)
+      expect(
+        readFileSync(join(root, 'calls.jsonl'), 'utf8')
+          .trim()
+          .split('\n')
+          .map((line) => JSON.parse(line))
+      ).toEqual(
+        files.map((file) => [
+          'exec',
+          'playwright',
+          'test',
+          '--project=cloud',
+          '--timeout=180000',
+          '--retries=0',
+          file
+        ])
+      )
+      const blobs = readdirSync(join(root, 'blob-report'))
+      expect(blobs).toEqual(expect.arrayContaining(expectedBlobs))
+      expect(blobs).toHaveLength(expectedBlobs.length)
     }
   )
 
@@ -340,28 +337,24 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       const command = workflow.jobs.report.steps.find(
         (step) => step.name === 'Combine cached and new recordings'
       )?.run
-      if (!command) throw new Error('Missing combine command')
+      assert.exists(command)
       const root = mkdtempSync(join(tmpdir(), 'playwright-video-combine-'))
-      try {
-        mkdirSync(join(root, 'video-blobs'))
-        mkdirSync(join(root, 'previous-cache'))
-        writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
-        for (const file of recorded)
-          writeFileSync(join(root, 'video-blobs', file), 'blob')
+      onTestFinished(() => rmSync(root, { recursive: true, force: true }))
+      mkdirSync(join(root, 'video-blobs'))
+      mkdirSync(join(root, 'previous-cache'))
+      writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
+      spawnSync('touch', recorded, { cwd: join(root, 'video-blobs') })
 
-        const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
-          cwd: root,
-          encoding: 'utf8',
-          env: { ...process.env, HITS: '["hit"]' }
-        })
+      const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...process.env, HITS: '["hit"]' }
+      })
 
-        expect(result.status).toBe(status)
-        const cache = readdirSync(join(root, 'video-cache'))
-        expect(cache).toEqual(expect.arrayContaining(cached))
-        expect(cache).toHaveLength(cached.length)
-      } finally {
-        rmSync(root, { recursive: true, force: true })
-      }
+      expect(result.status).toBe(status)
+      const cache = readdirSync(join(root, 'video-cache'))
+      expect(cache).toEqual(expect.arrayContaining(cached))
+      expect(cache).toHaveLength(cached.length)
     }
   )
 
