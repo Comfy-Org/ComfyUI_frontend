@@ -56,13 +56,14 @@ function unwrapped(expression: ts.Expression): ts.Expression {
   return current
 }
 
+const Y_SHARED_TYPE =
+  /(?:^|\.)Y\.(?:Array|Doc|Map|Text|XmlElement|XmlFragment|XmlText)(?:<|$)/
+
 function hasYType(type: ts.TypeNode | undefined): boolean {
   if (type === undefined) return false
   const constituents = ts.isUnionTypeNode(type) ? type.types : [type]
   return constituents.some((constituent) =>
-    /(?:^|\.)Y\.(?:Array|Doc|Map|Text|XmlElement|XmlFragment|XmlText)(?:<|$)/.test(
-      constituent.getText()
-    )
+    Y_SHARED_TYPE.test(constituent.getText())
   )
 }
 
@@ -253,21 +254,61 @@ function sourceDeclarations(source: ts.SourceFile): SupportedDeclaration[] {
   return declarations
 }
 
-function trackedDocReference(tracked: ReadonlySet<string>) {
-  return (expression: ts.Expression): boolean => {
+function trackedDocReference(
+  tracked: ReadonlySet<string>,
+  throughArguments = false
+) {
+  const references = (expression: ts.Expression): boolean => {
     const value = unwrapped(expression)
     if (ts.isIdentifier(value)) return tracked.has(value.text)
     if (isThisDoc(value) || isFollowerDocAccess(value)) return true
     if (ts.isPropertyAccessExpression(value))
-      return trackedDocReference(tracked)(value.expression)
+      return value.expression.kind === ts.SyntaxKind.ThisKeyword
+        ? tracked.has(value.name.text)
+        : references(value.expression)
     if (ts.isCallExpression(value))
-      return trackedDocReference(tracked)(value.expression)
+      return (
+        references(value.expression) ||
+        (throughArguments && value.arguments.some(references))
+      )
     return false
   }
+  return references
 }
 
 function declarationName(declaration: SupportedDeclaration): string | null {
   return ts.isIdentifier(declaration.name) ? declaration.name.text : null
+}
+
+function iteratedExpression(
+  declaration: ts.VariableDeclaration
+): ts.Expression | undefined {
+  const list = declaration.parent
+  return ts.isVariableDeclarationList(list) && ts.isForOfStatement(list.parent)
+    ? list.parent.expression
+    : undefined
+}
+
+function callbackReceiver(
+  parameter: ts.ParameterDeclaration
+): ts.Expression | undefined {
+  const callback = parameter.parent
+  if (!ts.isArrowFunction(callback) && !ts.isFunctionExpression(callback))
+    return undefined
+  const call = callback.parent
+  return ts.isCallExpression(call) && call.arguments.includes(callback)
+    ? calledMember(call)?.receiver
+    : undefined
+}
+
+function declarationSource(
+  declaration: Exclude<SupportedDeclaration, ts.BindingElement>
+): ts.Expression | undefined {
+  if (ts.isVariableDeclaration(declaration))
+    return declaration.initializer ?? iteratedExpression(declaration)
+  if (ts.isParameter(declaration))
+    return declaration.initializer ?? callbackReceiver(declaration)
+  return declaration.initializer
 }
 
 function bindingSourceExpression(
@@ -280,7 +321,9 @@ function bindingSourceExpression(
     ts.isBindingElement(current)
   )
     current = current.parent
-  return ts.isVariableDeclaration(current) ? current.initializer : undefined
+  return ts.isVariableDeclaration(current) || ts.isParameter(current)
+    ? declarationSource(current)
+    : undefined
 }
 
 function boundPropertyName(element: ts.BindingElement): string | null {
@@ -315,14 +358,30 @@ function shouldTrackDeclaration(
     return shouldTrackBindingElement(declaration, referencesTrackedDoc)
   if (hasYType(declaration.type)) return true
   if (isNewYDoc(declaration.initializer)) return true
-  return (
-    declaration.initializer !== undefined &&
-    referencesTrackedDoc(declaration.initializer)
-  )
+  const source = declarationSource(declaration)
+  return source !== undefined && referencesTrackedDoc(source)
 }
 
-function trackedDocNames(declarations: readonly SupportedDeclaration[]) {
-  const tracked = new Set<string>()
+function instanceofSharedTypeNames(source: ts.SourceFile): Set<string> {
+  const names = new Set<string>()
+  const collect = (node: ts.Node): void => {
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword &&
+      Y_SHARED_TYPE.test(node.right.getText())
+    ) {
+      const value = unwrapped(node.left)
+      if (ts.isIdentifier(value)) names.add(value.text)
+    }
+    ts.forEachChild(node, collect)
+  }
+  collect(source)
+  return names
+}
+
+function trackedDocNames(source: ts.SourceFile) {
+  const declarations = sourceDeclarations(source)
+  const tracked = instanceofSharedTypeNames(source)
   let changed = true
   while (changed) {
     changed = false
@@ -374,7 +433,7 @@ function inspectCalls(
   tracked: ReadonlySet<string>,
   violations: FollowerInvariantViolation[]
 ): void {
-  const referencesTrackedDoc = trackedDocReference(tracked)
+  const referencesTrackedDoc = trackedDocReference(tracked, true)
   const applyUpdateNames = yApplyUpdateNames(source)
   const inspect = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
@@ -411,7 +470,7 @@ function scanSource(sourceInput: FollowerSource): FollowerInvariantViolation[] {
   const source = sourceFile(sourceInput)
   const violations: FollowerInvariantViolation[] = []
   addParseDiagnostics(violations, source, sourceInput.contents)
-  inspectCalls(source, trackedDocNames(sourceDeclarations(source)), violations)
+  inspectCalls(source, trackedDocNames(source), violations)
   return violations
 }
 

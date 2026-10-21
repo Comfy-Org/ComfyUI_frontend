@@ -79,7 +79,28 @@ describe('follower invariant guard', () => {
       name: 'forbidden-destructured-doc-set.ts',
       message: 'must not call set',
       line: 6
-    }
+    },
+    {
+      name: 'forbidden-accessor-delete.ts',
+      message: 'must not call delete',
+      line: 5
+    },
+    {
+      name: 'forbidden-instanceof-set.ts',
+      message: 'must not call set',
+      line: 4
+    },
+    {
+      name: 'forbidden-this-field-delete.ts',
+      message: 'must not call delete',
+      line: 11
+    },
+    {
+      name: 'forbidden-for-each-set.ts',
+      message: 'must not call set',
+      line: 4
+    },
+    { name: 'forbidden-for-of-set.ts', message: 'must not call set', line: 4 }
   ])('rejects $name', ({ name, message, line }) => {
     expect(scanFollowerInvariantSource(fixture(name))).toEqual([
       expect.objectContaining({
