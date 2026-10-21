@@ -7,7 +7,6 @@ import {
   loadAppCatalogue,
   loadHubAppCatalogue
 } from '@/lib/workshop/catalogue-components'
-import { upcomingApps } from '@/lib/workshop/hub-coming-soon-apps'
 import { HUB_HOME_FLAG } from '@/lib/workshop/hub-section'
 import { useWorkshopFlag } from '@/scripts/posthog'
 
@@ -24,12 +23,11 @@ const hubOpen = useWorkshopFlag(HUB_HOME_FLAG)
 </script>
 
 <template>
-  <HubAppCatalogue
-    v-if="hubOpen"
-    :apps
-    :upcoming="upcomingApps(locale)"
-    :locale
-  />
+  <HubAppCatalogue v-if="hubOpen" :apps :locale>
+    <template #tabs>
+      <slot name="tabs" />
+    </template>
+  </HubAppCatalogue>
   <AppCatalogue
     v-else
     v-model:browse-all="browseAll"
