@@ -7,7 +7,6 @@
       side="right"
       align="start"
       :side-offset="8"
-      :collision-padding="8"
       :avoid-collisions="true"
       :side-flip="true"
       :hide-when-detached="true"

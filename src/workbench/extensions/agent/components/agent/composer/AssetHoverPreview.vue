@@ -123,7 +123,7 @@ function onInteractOutside(event: Event): void {
       :collision-padding="16"
       :class="
         cn(
-          'z-overlay max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
+          'max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "

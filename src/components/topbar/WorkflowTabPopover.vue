@@ -2,10 +2,8 @@
   <PopoverRoot v-model:open="open">
     <PopoverAnchor as="template" :reference="anchor ?? undefined" />
     <PopoverContent
-      side="bottom"
       :side-offset="8"
       class="workflow-popover-fade w-fit rounded-xl border-none bg-transparent p-0 shadow-lg transition-opacity duration-150 ease-out data-[state=closed]:animate-none data-[state=open]:animate-none"
-      :collision-padding="8"
       @open-auto-focus="!clicked && $event.preventDefault()"
       @close-auto-focus.prevent="restoreFocus"
       @interact-outside="onInteractOutside"

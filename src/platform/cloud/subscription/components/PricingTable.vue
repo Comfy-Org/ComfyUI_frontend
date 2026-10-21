@@ -163,7 +163,6 @@
                       </PopoverTrigger>
                       <PopoverContent
                         align="start"
-                        :collision-padding="8"
                         dismiss-on-viewport-change
                         class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto shadow-lg data-[state=open]:animate-none"
                       >

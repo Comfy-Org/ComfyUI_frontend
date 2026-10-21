@@ -29,7 +29,6 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            :collision-padding="8"
             class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
@@ -67,7 +66,6 @@
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            :collision-padding="8"
             class="max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
             dismiss-on-viewport-change
           >
@@ -138,7 +136,6 @@
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                :collision-padding="8"
                 class="ml-[-13px] max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
                 dismiss-on-viewport-change
               >

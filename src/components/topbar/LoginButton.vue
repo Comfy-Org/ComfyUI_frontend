@@ -22,7 +22,6 @@
     </PopoverAnchor>
     <PopoverContent
       class="w-auto rounded-lg border-border/50 p-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
-      :collision-padding="8"
       @open-auto-focus.prevent
       @close-auto-focus.prevent
       @interact-outside="onInteractOutside"

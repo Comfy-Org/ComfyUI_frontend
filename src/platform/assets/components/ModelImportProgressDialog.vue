@@ -149,7 +149,6 @@ async function cancelDownload(taskId: TaskId) {
             </PopoverTrigger>
             <PopoverContent
               align="end"
-              :collision-padding="8"
               class="w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
             >
               <div

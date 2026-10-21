@@ -22,12 +22,7 @@
             <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          side="bottom"
-          align="start"
-          :side-offset="8"
-          :class="menuPanelClass"
-        >
+        <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
           <button
             v-for="c in categoryDefs"
             :key="c.key"

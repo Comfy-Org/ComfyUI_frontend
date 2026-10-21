@@ -32,12 +32,7 @@
           {{ formatDuration(recordingDuration ?? 0) }}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="8"
-        :class="menuPanelClass"
-      >
+      <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
         <button
           type="button"
           :class="menuButtonClass"

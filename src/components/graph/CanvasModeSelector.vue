@@ -29,7 +29,6 @@
     <PopoverContent
       side="top"
       :side-offset="8"
-      :collision-padding="8"
       :class="
         cn(
           menuContentClass,

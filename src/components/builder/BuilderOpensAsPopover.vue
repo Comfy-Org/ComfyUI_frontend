@@ -35,7 +35,6 @@
         <PopoverContent
           side="top"
           :side-offset="5"
-          :collision-padding="10"
           class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
         >
           <ViewTypeRadioGroup

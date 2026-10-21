@@ -36,7 +36,6 @@ watch(controlModel, props.widget.controlWidget.update)
         </PopoverTrigger>
         <PopoverContent
           :side-offset="5"
-          :collision-padding="10"
           dismiss-on-viewport-change
           class="w-auto p-2"
         >

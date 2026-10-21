@@ -15,7 +15,6 @@
       </Button>
     </PopoverTrigger>
     <PopoverContent
-      side="bottom"
       align="start"
       :side-offset="8"
       :class="cn(formPanelClass, 'w-56')"

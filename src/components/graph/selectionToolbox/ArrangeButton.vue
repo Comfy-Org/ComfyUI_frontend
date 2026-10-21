@@ -14,7 +14,6 @@
     </PopoverTrigger>
     <PopoverContent
       :side-offset="5"
-      :collision-padding="10"
       class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
     >
       <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">

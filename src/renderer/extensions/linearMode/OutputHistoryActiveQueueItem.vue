@@ -47,7 +47,6 @@ function clearQueue(close: () => void) {
       <PopoverContent
         side="top"
         :side-offset="5"
-        :collision-padding="10"
         dismiss-on-viewport-change
         class="w-auto p-2"
         @focus-outside.prevent

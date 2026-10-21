@@ -13,7 +13,6 @@
     <PopoverContent
       :side="sidebarOnLeft ? 'right' : 'left'"
       :side-offset="8"
-      :collision-padding="10"
       dismiss-on-viewport-change
       class="w-auto p-2"
     >

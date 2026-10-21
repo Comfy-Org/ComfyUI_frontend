@@ -43,7 +43,7 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        :class="cn(menuContentClass, 'z-overlay flex w-auto min-w-20 flex-col')"
+        :class="cn(menuContentClass, 'flex w-auto min-w-20 flex-col')"
       >
         <button
           v-for="item in zoomItems"

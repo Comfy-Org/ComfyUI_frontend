@@ -115,7 +115,6 @@ const isOpen = ref(false)
     <PopoverContent
       align="start"
       :side-offset="7"
-      :collision-padding="10"
       class="w-auto border-0 bg-transparent p-0 shadow-none"
     >
       <ColorPickerPanel

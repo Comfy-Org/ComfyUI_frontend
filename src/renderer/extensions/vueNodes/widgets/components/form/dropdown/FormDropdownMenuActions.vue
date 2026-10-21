@@ -151,11 +151,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[lucide--arrow-up-down] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -208,11 +204,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[lucide--user] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -265,11 +257,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           <i class="icon-[comfy--ai-model] size-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(

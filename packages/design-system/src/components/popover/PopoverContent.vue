@@ -20,6 +20,7 @@ defineOptions({
 const {
   align = 'center',
   sideOffset = 4,
+  collisionPadding = 8,
   class: className,
   dismissOnViewportChange = false,
   ...restProps
@@ -34,6 +35,7 @@ const emits = defineEmits<PopoverContentEmits>()
 const delegatedProps = computed(() => ({
   align,
   sideOffset,
+  collisionPadding,
   ...restProps
 }))
 

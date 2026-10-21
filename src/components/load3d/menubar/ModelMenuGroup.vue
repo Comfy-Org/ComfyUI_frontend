@@ -14,12 +14,7 @@
         <span v-if="!compact">{{ t('load3d.menuBar.upDirection') }}</span>
       </Button>
     </PopoverTrigger>
-    <PopoverContent
-      side="bottom"
-      align="start"
-      :side-offset="8"
-      :class="menuPanelClass"
-    >
+    <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
       <button
         v-for="d in upDirections"
         :key="d"
@@ -50,12 +45,7 @@
         <span v-if="!compact">{{ t('load3d.menuBar.material') }}</span>
       </Button>
     </PopoverTrigger>
-    <PopoverContent
-      side="bottom"
-      align="start"
-      :side-offset="8"
-      :class="menuPanelClass"
-    >
+    <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
       <button
         v-for="m in materialModes"
         :key="m"

@@ -335,7 +335,6 @@ function showPicker() {
       <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
       <PopoverContent
         align="start"
-        :collision-padding="8"
         class="pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"

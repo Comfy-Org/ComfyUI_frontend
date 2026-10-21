@@ -30,7 +30,6 @@
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        :collision-padding="8"
         class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
       >
         <PackVersionSelectorPopover
