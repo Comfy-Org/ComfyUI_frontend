@@ -79,13 +79,12 @@ export async function screenshotRegion(
 ): Promise<ScreenshotRegion> {
   if (targets.length === 0) throw new Error('No targets to frame')
   let clip = await enclosingRect(targets, padding)
-  let previous: PageRect | undefined
   await expect
     .poll(
       async () => {
         const sample = await enclosingRect(targets, padding)
-        const settled = isEqual(previous, sample)
-        previous = clip = sample
+        const settled = isEqual(clip, sample)
+        clip = sample
         return settled
       },
       { intervals: [50], message: 'Screenshot region targets never settled' }
