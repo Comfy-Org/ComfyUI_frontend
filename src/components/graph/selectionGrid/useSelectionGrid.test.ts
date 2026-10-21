@@ -32,14 +32,21 @@ describe('useSelectionGrid', () => {
     const a = nodeIn(graph, 'A')
     const b = nodeIn(graph, 'B')
     const pinnedLater = nodeIn(graph, 'Pinned later')
+    const unpinnedLater = nodeIn(graph, 'Unpinned later')
     const elsewhere = nodeIn(new LGraph(), 'Elsewhere')
+    unpinnedLater.flags.pinned = true
     useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
-    setCanvasSelection([a, b, pinnedLater, elsewhere])
+    setCanvasSelection([a, b, pinnedLater, unpinnedLater, elsewhere])
     const { canTidy, measure } = useSelectionGrid()
     expect(canTidy.value).toBe(true)
 
     pinnedLater.flags.pinned = true
+    unpinnedLater.flags.pinned = false
 
-    expect(measure().map((box) => box.id)).toEqual([a.id, b.id])
+    expect(measure().map((box) => box.id)).toEqual([
+      a.id,
+      b.id,
+      unpinnedLater.id
+    ])
   })
 })
