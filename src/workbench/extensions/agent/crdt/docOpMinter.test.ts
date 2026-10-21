@@ -875,7 +875,8 @@ describe('attachDocOpMinter', () => {
         const sources = [new TestSource(), new TestSource()]
         const sink = new TestAutogrowSink()
         withGraphIntentSource('load', () => {
-          for (const source of sources) graph.add(source)
+          graph.add(sources[0])
+          graph.add(sources[1])
           graph.add(sink)
         })
         const doc = mintDocFrom(graph)
