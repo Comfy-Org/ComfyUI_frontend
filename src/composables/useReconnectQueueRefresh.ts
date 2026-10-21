@@ -1,15 +1,13 @@
 import { Semaphore, delay, withTimeout } from 'es-toolkit'
 
-import type { JobId } from '@/platform/remote/comfyui/execution/types'
 import type {
   ExecutionError,
   JobDetail
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { api } from '@/scripts/api'
-import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 
+type JobId = JobDetail['id']
 type TaskOutput = TaskItemImpl['outputs']
 type EndedStatus = Extract<
   JobDetail['status'],
@@ -32,11 +30,13 @@ const DETAIL_TIMEOUT_MS = 5_000
 const DETAIL_RETRY_DELAY_MS = 1_000
 const DETAIL_CONCURRENCY = 4
 const MAX_UNREADABLE_REFRESHES = 3
-
-function isEndedStatus(
-  status: JobDetail['status'] | undefined
-): status is EndedStatus {
-  return status === 'completed' || status === 'failed' || status === 'cancelled'
+const UNKNOWN_EXECUTION_ERROR: ExecutionError = {
+  node_id: '',
+  node_type: '',
+  exception_message:
+    'The job failed while the live connection was unavailable.',
+  exception_type: 'JobExecutionError',
+  traceback: []
 }
 
 /**
@@ -44,16 +44,13 @@ function isEndedStatus(
  */
 export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
-  const executionStore = useExecutionStore()
   const detailRequests = new Semaphore(DETAIL_CONCURRENCY)
   const unreadableRefreshes = new Map<JobId, number>()
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
   function followedJobIds(): JobId[] {
-    const ids = new Set<JobId>(Object.keys(executionStore.queuedJobs))
-    if (executionStore.activeJobId) ids.add(executionStore.activeJobId)
-    return [...ids]
+    return queueStore.getFollowedJobIds()
   }
 
   async function fetchDetail(jobId: JobId): Promise<JobDetail | undefined> {
@@ -61,7 +58,7 @@ export function useReconnectQueueRefresh() {
     const request = new AbortController()
     try {
       return await withTimeout(
-        () => api.getJobDetail(jobId, request.signal),
+        () => queueStore.getJobDetailForRecovery(jobId, request.signal),
         DETAIL_TIMEOUT_MS
       )
     } catch {
@@ -72,36 +69,47 @@ export function useReconnectQueueRefresh() {
     }
   }
 
+  function outcomeTimestamp(
+    detail: JobDetail | undefined,
+    historyTask: TaskItemImpl | undefined
+  ) {
+    const detailTimestamp = detail?.execution_end_time
+    if (detailTimestamp != null) return detailTimestamp
+    return historyTask?.executionEndTimestamp ?? Date.now()
+  }
+
+  function historyPreviewOutputs(historyTask: TaskItemImpl | undefined) {
+    if (!historyTask || historyTask.outputsCount !== 1) return undefined
+    if (historyTask.job.preview_output?.mediaType === 'text') return undefined
+    return historyTask.outputs
+  }
+
   function completedOutcome(
     detail: JobDetail | undefined,
     historyTask: TaskItemImpl | undefined
   ): JobOutcome {
-    const timestamp =
-      detail?.execution_end_time ??
-      historyTask?.executionEndTimestamp ??
-      Date.now()
-    if (detail?.outputs) {
-      return {
-        state: 'ended',
-        status: 'completed',
-        outputs: detail.outputs,
-        timestamp
-      }
+    const outputs = detail?.outputs ?? historyPreviewOutputs(historyTask)
+    if (!detail && !outputs) return { state: 'unknown' }
+    return {
+      state: 'ended',
+      status: 'completed',
+      outputs,
+      timestamp: outcomeTimestamp(detail, historyTask)
     }
-    if (
-      historyTask?.outputsCount === 1 &&
-      historyTask.job.preview_output?.mediaType !== 'text'
-    ) {
-      return {
-        state: 'ended',
-        status: 'completed',
-        outputs: historyTask.outputs,
-        timestamp
-      }
+  }
+
+  function nonCompletedOutcome(
+    status: Exclude<EndedStatus, 'completed'>,
+    detail: JobDetail | undefined,
+    historyTask: TaskItemImpl | undefined
+  ): JobOutcome {
+    return {
+      state: 'ended',
+      status,
+      executionError:
+        detail?.execution_error ?? historyTask?.executionError ?? undefined,
+      timestamp: outcomeTimestamp(detail, historyTask)
     }
-    return detail
-      ? { state: 'ended', status: 'completed', timestamp }
-      : { state: 'unknown' }
   }
 
   async function readOutcome(
@@ -113,22 +121,11 @@ export function useReconnectQueueRefresh() {
     if (status !== undefined && LIVE_STATUSES.has(status)) {
       return { state: 'live' }
     }
-    if (!isEndedStatus(status)) {
-      return { state: 'unknown' }
+    if (status === 'completed') return completedOutcome(detail, historyTask)
+    if (status === 'failed' || status === 'cancelled') {
+      return nonCompletedOutcome(status, detail, historyTask)
     }
-    if (status !== 'completed') {
-      return {
-        state: 'ended',
-        status,
-        executionError:
-          detail?.execution_error ?? historyTask?.executionError ?? undefined,
-        timestamp:
-          detail?.execution_end_time ??
-          historyTask?.executionEndTimestamp ??
-          Date.now()
-      }
-    }
-    return completedOutcome(detail, historyTask)
+    return { state: 'unknown' }
   }
 
   async function jobOutcome(
@@ -142,14 +139,12 @@ export function useReconnectQueueRefresh() {
   }
 
   function stillFollowed(jobId: JobId): boolean {
-    return (
-      jobId in executionStore.queuedJobs || executionStore.activeJobId === jobId
-    )
+    return queueStore.isFollowingJob(jobId)
   }
 
   function replayOutputs(jobId: JobId, outputs: TaskOutput) {
     for (const [node, output] of Object.entries(outputs)) {
-      api.dispatchCustomEvent('executed', {
+      queueStore.dispatchRecoveredExecuted({
         node,
         display_node: node,
         output,
@@ -158,13 +153,49 @@ export function useReconnectQueueRefresh() {
     }
   }
 
+  function dispatchSuccess(jobId: JobId, timestamp: number) {
+    queueStore.dispatchRecoveredSuccess({ prompt_id: jobId, timestamp })
+  }
+
+  function dispatchInterrupted(
+    jobId: JobId,
+    timestamp: number,
+    error: ExecutionError | undefined
+  ) {
+    const normalizedError = error ?? UNKNOWN_EXECUTION_ERROR
+    queueStore.dispatchRecoveredInterrupted({
+      prompt_id: jobId,
+      timestamp,
+      node_id: normalizedError.node_id,
+      node_type: normalizedError.node_type,
+      executed: normalizedError.executed ?? []
+    })
+  }
+
+  function dispatchError(
+    jobId: JobId,
+    timestamp: number,
+    error: ExecutionError | undefined
+  ) {
+    const normalizedError = error ?? UNKNOWN_EXECUTION_ERROR
+    queueStore.dispatchRecoveredError({
+      prompt_id: jobId,
+      timestamp,
+      node_id: normalizedError.node_id,
+      node_type: normalizedError.node_type,
+      executed: normalizedError.executed ?? [],
+      exception_message: normalizedError.exception_message,
+      exception_type: normalizedError.exception_type,
+      traceback: normalizedError.traceback,
+      current_inputs: normalizedError.current_inputs,
+      current_outputs: normalizedError.current_outputs
+    })
+  }
+
   function dispatchTerminal(jobId: JobId, outcome: JobOutcome) {
     if (outcome.state !== 'ended') return
     if (outcome.status === 'completed') {
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: jobId,
-        timestamp: outcome.timestamp
-      })
+      dispatchSuccess(jobId, outcome.timestamp)
       return
     }
 
@@ -173,30 +204,10 @@ export function useReconnectQueueRefresh() {
       outcome.status === 'cancelled' ||
       error?.exception_type === 'InterruptProcessingException'
     ) {
-      api.dispatchCustomEvent('execution_interrupted', {
-        prompt_id: jobId,
-        timestamp: outcome.timestamp,
-        node_id: error?.node_id ?? '',
-        node_type: error?.node_type ?? '',
-        executed: error?.executed ?? []
-      })
+      dispatchInterrupted(jobId, outcome.timestamp, error)
       return
     }
-
-    api.dispatchCustomEvent('execution_error', {
-      prompt_id: jobId,
-      timestamp: outcome.timestamp,
-      node_id: error?.node_id ?? null,
-      node_type: error?.node_type ?? '',
-      executed: error?.executed ?? [],
-      exception_message:
-        error?.exception_message ??
-        'The job failed while the live connection was unavailable.',
-      exception_type: error?.exception_type ?? 'JobExecutionError',
-      traceback: error?.traceback ?? [],
-      current_inputs: error?.current_inputs,
-      current_outputs: error?.current_outputs
-    })
+    dispatchError(jobId, outcome.timestamp, error)
   }
 
   function replayOutcome(jobId: JobId, outcome: JobOutcome) {
@@ -249,11 +260,8 @@ export function useReconnectQueueRefresh() {
       replayOutcome(jobId, outcome)
     })
 
-    const currentJobId = executionStore.activeJobId
-    if (!currentJobId || followed.includes(currentJobId)) {
-      executionStore.clearActiveJobIfStale(activeJobIds)
-    }
-    executionStore.forgetFinishedJobs(unreadable)
+    queueStore.clearStaleExecution(activeJobIds, followed)
+    queueStore.forgetFinishedExecutions(unreadable)
     for (const jobId of unreadableRefreshes.keys()) {
       if (!stillFollowed(jobId)) unreadableRefreshes.delete(jobId)
     }

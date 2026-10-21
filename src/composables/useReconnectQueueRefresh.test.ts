@@ -3,14 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+
+type Workflow = NonNullable<
+  ReturnType<typeof useExecutionStore>['queuedJobs'][string]['workflow']
+>
 
 function makeJob(id: string, status: JobListItem['status']): JobListItem {
   return {
@@ -117,7 +116,7 @@ describe('useReconnectQueueRefresh', () => {
       outputs: { '9': { images: [image] } }
     }
 
-    function followRun(jobId: string, workflow?: ComfyWorkflow) {
+    function followRun(jobId: string, workflow?: Workflow) {
       const executionStore = useExecutionStore()
       executionStore.activeJobId = jobId
       executionStore.queuedJobs[jobId] = { nodes: {}, workflow }
@@ -402,12 +401,11 @@ describe('useReconnectQueueRefresh', () => {
       expect(replayedExecutedFrames()).toEqual([])
     })
 
-    it('replays a run recorded against the open workflow onto the open graph', async () => {
-      const open = fromPartial<LoadedComfyWorkflow>({
+    it('dispatches recovered output without writing its change tracker directly', async () => {
+      const open = fromPartial<Workflow>({
         path: 'workflows/open.json',
         changeTracker: { nodeOutputs: undefined }
       })
-      useWorkflowStore().activeWorkflow = open
       followRun('job-1', open)
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
 
@@ -423,11 +421,11 @@ describe('useReconnectQueueRefresh', () => {
           })
         ]
       ])
-      expect(open.changeTracker.nodeOutputs).toBeUndefined()
+      expect(open.changeTracker?.nodeOutputs).toBeUndefined()
     })
 
     it('dispatches background output without writing its change tracker directly', async () => {
-      const background = fromPartial<ComfyWorkflow>({
+      const background = fromPartial<Workflow>({
         path: 'workflows/other.json',
         changeTracker: { nodeOutputs: undefined }
       })
@@ -490,7 +488,7 @@ describe('useReconnectQueueRefresh', () => {
     })
 
     it('routes background output by job when a new run took the open graph', async () => {
-      const background = fromPartial<ComfyWorkflow>({
+      const background = fromPartial<Workflow>({
         path: 'workflows/other.json',
         changeTracker: { nodeOutputs: undefined }
       })
@@ -574,7 +572,7 @@ describe('useReconnectQueueRefresh', () => {
       executionStore.queuedJobs['job-0'] = { nodes: {} }
       followRun(
         'job-1',
-        fromPartial<ComfyWorkflow>({ path: 'workflows/other.json' })
+        fromPartial<Workflow>({ path: 'workflows/other.json' })
       )
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [makeJob('job-1', 'in_progress')],
