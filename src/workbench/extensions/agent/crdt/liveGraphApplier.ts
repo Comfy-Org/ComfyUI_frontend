@@ -642,9 +642,7 @@ export class LiveGraphApplier {
           })
         }
 
-        for (const id of changes.removedGroups ?? []) {
-          this.try(context, () => this.deleteGroup(graph, id))
-        }
+        this.deleteGroups(graph, changes.removedGroups, context)
 
         for (const id of changes.resyncNodes) {
           if (touchedNodes.has(id)) continue
@@ -803,9 +801,17 @@ export class LiveGraphApplier {
     if (node) graph.remove(node)
   }
 
-  private deleteGroup(graph: LGraph, id: string): void {
-    const group = graph.groups.find((group) => String(group.id) === id)
-    if (group) graph.remove(group)
+  private deleteGroups(
+    graph: LGraph,
+    ids: ReadonlySet<string> | undefined,
+    context: RemoteApplyContext
+  ): void {
+    for (const id of ids ?? []) {
+      this.try(context, () => {
+        const group = graph.groups.find((group) => String(group.id) === id)
+        if (group) graph.remove(group)
+      })
+    }
   }
 
   private upsertNode(
