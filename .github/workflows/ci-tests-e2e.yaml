@@ -3,7 +3,7 @@ name: 'CI: Tests E2E'
 
 on:
   push:
-    branches: [main, master, core/*, desktop/*, cloud/*]
+    branches: [main, master, core/*, desktop/*, cloud/**]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
   merge_group:
@@ -304,7 +304,7 @@ jobs:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
     needs: [changes, setup, preflight]
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' && needs.changes.outputs.is-release-push != 'true' }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
@@ -317,24 +317,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - browser: chromium-2x
-            artifact: frontend-dist
-          - browser: chromium-0.5x
-            artifact: frontend-dist
-          - browser: mobile-chrome
-            artifact: frontend-dist
-          - browser: mobile-safari
-            artifact: frontend-dist-cloud
-          - browser: desktop
-            artifact: frontend-dist-desktop
+        browser:
+          [chromium-2x, chromium-0.5x, mobile-chrome, mobile-safari, desktop]
+        exclude: ${{ fromJSON(needs.changes.outputs.is-release-push == 'true' && '[{"browser":"chromium-2x"},{"browser":"chromium-0.5x"},{"browser":"mobile-chrome"},{"browser":"desktop"}]' || '[]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ matrix.artifact }}
+          name: ${{ matrix.browser == 'mobile-safari' && 'frontend-dist-cloud' || matrix.browser == 'desktop' && 'frontend-dist-desktop' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -429,7 +421,7 @@ jobs:
 
   playwright-tests-native-lora:
     needs: [changes, setup, preflight]
-    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' && needs.changes.outputs.is-release-push != 'true' }}
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -511,11 +503,7 @@ jobs:
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          if [[ "$RELEASE_PUSH" == "true" ]]; then
-            for job in SHARDED BROWSERS NATIVE_LORA; do
-              [[ "${!job}" != "skipped" ]] || printf -v "$job" success
-            done
-          fi
+          [[ "$RELEASE_PUSH" == "true" && "$SHARDED" == "skipped" ]] && SHARDED=success
           [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$NATIVE_LORA" == "failure" ]] && echo "E2E failed" && exit 1
           [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$NATIVE_LORA" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
           [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || "$NATIVE_LORA" != "success" ]] && echo "E2E failed" && exit 1
