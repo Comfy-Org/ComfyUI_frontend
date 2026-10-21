@@ -105,10 +105,23 @@ const metadata = new Set([
   'expected_revision_uid'
 ])
 
+// Server-assigned values that item reads may include but saves must not send.
+// The server rewrites them on every save, so the editor drops them silently
+// instead of refusing the form.
+const serverAssigned = new Set(['creator_uid'])
+
+function withoutServerAssigned(document: Cccjson): Cccjson {
+  return Object.fromEntries(
+    Object.entries(document).filter(([key]) => !serverAssigned.has(key))
+  )
+}
+
 export function authoredDocument(flat: Cccjson): Document | undefined {
   const result = jsonObject.safeParse(
     Object.fromEntries(
-      Object.entries(flat).filter(([key]) => !metadata.has(key))
+      Object.entries(withoutServerAssigned(flat)).filter(
+        ([key]) => !metadata.has(key)
+      )
     )
   )
   return result.success ? result.data : undefined
@@ -183,7 +196,7 @@ export function savePayload(
   snapshot?: EditorSnapshot
 ): Cccjson {
   return {
-    ...document,
+    ...withoutServerAssigned(document),
     type,
     schema_version: snapshot?.schema_version ?? 2,
     expected_draft_rev: draft,

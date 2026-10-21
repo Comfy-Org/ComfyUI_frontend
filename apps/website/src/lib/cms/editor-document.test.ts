@@ -142,6 +142,21 @@ describe('complete authored documents', () => {
       schema_version: 2
     })
   })
+  it('drops the server-assigned creator on read and save so edits round-trip', () => {
+    const read = { ...flat, creator_uid: uid }
+    const snapshot = editorSnapshot(read)
+    expect(snapshot?.document).not.toHaveProperty('creator_uid')
+    expect(authoredDocument(read)).not.toHaveProperty('creator_uid')
+    expect(hasReservedFields({ creator_uid: uid })).toBe(false)
+    const payload = savePayload(
+      { ...snapshot!.document, creator_uid: uid, title: 'Edited' },
+      'workflow',
+      7,
+      snapshot
+    )
+    expect(payload).not.toHaveProperty('creator_uid')
+    expect(payload).toMatchObject({ title: 'Edited', author_uid: uid })
+  })
 })
 
 describe('input definitions', () => {
