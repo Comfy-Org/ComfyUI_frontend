@@ -582,11 +582,22 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('advances to confirmation without charging', async () => {
+  it('shows the purchase disclosure before confirming without charging', async () => {
     renderDialog()
+
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
 
     await clickAddCredits()
 
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()
@@ -760,7 +771,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
-      expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
+      expect(createCheckout).toHaveBeenCalledWith(
+        5000,
+        window.location.href,
+        expect.any(AbortSignal)
+      )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
         screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
@@ -901,7 +916,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeInTheDocument()
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
-          'https://testbilling.comfy.org/return/topup'
+          'https://testbilling.comfy.org/return/topup',
+          expect.any(AbortSignal)
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
@@ -1040,6 +1056,46 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeInTheDocument()
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
+    it('abandons a checkout still opening once this tab starts switching workspace, then opens the next attempt', async () => {
+      refuseForNoPaymentMethod()
+      const handedSignals: AbortSignal[] = []
+      vi.spyOn(workspaceApi, 'createTopupCheckout')
+        .mockImplementationOnce((_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return new Promise((_resolve, reject) =>
+            signal?.addEventListener('abort', () => reject(signal.reason))
+          )
+        })
+        .mockImplementationOnce(async (_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return { checkout_url: checkoutUrl }
+        })
+      const abandonedTab = newCheckoutTab()
+      const nextTab = newCheckoutTab()
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(abandonedTab as never)
+        .mockReturnValueOnce(nextTab as never)
+      const { continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(handedSignals).toHaveLength(1))
+
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceTransitionGeneration: 1
+      })
+
+      expect(handedSignals[0].aborted).toBe(true)
+      await waitFor(() => expect(abandonedTab.close).toHaveBeenCalledOnce())
+      expect(abandonedTab.location.href).toBe('')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      )
+
+      await waitFor(() => expect(nextTab.location.href).toBe(checkoutUrl))
+      expect(handedSignals[1].aborted).toBe(false)
     })
 
     describe('reopening checkout from the hand-off', () => {
@@ -2310,7 +2366,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(harness.sdk.topup.createHostedTopupCheckout).toHaveBeenCalledWith({
         amountCents: 5000,
-        returnUrl: window.location.href
+        returnUrl: window.location.href,
+        signal: expect.any(AbortSignal)
       })
     })
   })

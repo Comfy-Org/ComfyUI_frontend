@@ -191,6 +191,32 @@ describe('auditPublishedModelPages with redirect source patterns', () => {
       errors: [missing]
     },
     {
+      name: 'a one-or-more param that covers the page',
+      page: '/cloud/supported-nodes/basic_data_handling/',
+      source: '/cloud/supported-nodes/:path+/',
+      destination: '/cloud/',
+      live: ['/cloud/'],
+      errors: []
+    },
+    {
+      name: 'a one-or-more param across several segments',
+      page: '/cloud/supported-nodes/a/b/',
+      source: '/cloud/supported-nodes/:path+/',
+      destination: '/cloud/',
+      live: ['/cloud/'],
+      errors: []
+    },
+    {
+      name: 'a one-or-more param, which never matches the bare path',
+      page: '/cloud/supported-nodes/',
+      source: '/cloud/supported-nodes/:path+/',
+      destination: '/cloud/',
+      live: ['/cloud/'],
+      errors: [
+        '/cloud/supported-nodes/ removed: add a permanent redirect in src/config/redirects.ts or restore the page'
+      ]
+    },
+    {
       name: 'a locale param',
       page: '/zh-CN/models/',
       source: '/:locale/models/',

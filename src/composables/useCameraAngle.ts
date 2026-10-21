@@ -5,22 +5,22 @@ import {
   createSceneHoverHandlers,
   useViewportNodeWiring
 } from '@/composables/useViewportNodeWiring'
-import { CameraAngleViewport } from '@/extensions/core/cameraAngle/CameraAngleViewport'
+import { CameraAngleViewport } from '@comfyorg/viewport3d/cameraAngle/CameraAngleViewport'
 import {
   clampState,
   describeCameraAngle,
   roundState
-} from '@/extensions/core/cameraAngle/cameraAngleMath'
+} from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
 import {
   CAMERA_ANGLE_WIDGET_NAMES,
   DEFAULT_CAMERA_ANGLE_STATE
-} from '@/extensions/core/cameraAngle/types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 import type {
   CameraAngleField,
   CameraAngleState,
   CameraAngleViewMode,
   SubjectFaceLabels
-} from '@/extensions/core/cameraAngle/types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 import {
   readStateFromWidgets,
   readViewMode,

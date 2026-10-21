@@ -1,5 +1,5 @@
 <template>
-  <DialogPanel class="w-full max-w-[512px]" @close="onDismiss">
+  <AppDialogPanel body-class="flex flex-col gap-4" @close="onDismiss">
     <template #title>
       {{
         canAccessSubscriptionFeatures
@@ -8,15 +8,13 @@
       }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{
-          canAccessSubscriptionFeatures
-            ? $t('workspacePanel.inviteUpsellDialog.messageSingleSeat')
-            : $t('workspacePanel.inviteUpsellDialog.messageNotSubscribed')
-        }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{
+        canAccessSubscriptionFeatures
+          ? $t('workspacePanel.inviteUpsellDialog.messageSingleSeat')
+          : $t('workspacePanel.inviteUpsellDialog.messageNotSubscribed')
+      }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onDismiss">
@@ -26,11 +24,11 @@
         {{ $t('workspacePanel.inviteUpsellDialog.upgradeToTeam') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'

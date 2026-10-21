@@ -28,7 +28,7 @@
         :class="cn('absolute', sizeConfig.clearPos)"
         variant="textonly"
         size="icon-sm"
-        :aria-label="$t('g.clear')"
+        :aria-label="clearLabel"
         @click.stop="clearSearch"
       >
         <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
@@ -66,7 +66,8 @@
             sizeConfig.inputText
           )
         "
-        :placeholder="placeholderText"
+        :placeholder
+        :aria-label="accessibleLabel"
         :auto-focus="autofocus"
         @compositionstart="isComposing = true"
         @compositionend="isComposing = false"
@@ -74,15 +75,15 @@
       />
     </ComboboxAnchor>
 
-    <ComboboxPortal>
+    <ComboboxPortal :key="Number(isOpen)">
       <ComboboxContent
         v-if="suggestions.length > 0"
         position="popper"
         :side-offset="4"
-        :style="[contentStyle, liftedContentStyle]"
+        :style="contentStyle"
         :class="
           cn(
-            'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+            'z-overlay max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
             'rounded-lg border bg-background p-1 shadow-lg'
           )
         "
@@ -119,24 +120,22 @@ import {
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
-  ComboboxPortal,
-  ComboboxRoot
+  ComboboxRoot,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,
   searchInputVariants
 } from './searchInput.variants'
 
-const { t } = useI18n()
-
 const {
   placeholder,
+  accessibleLabel,
+  clearLabel,
   icon = 'icon-[lucide--search]',
   autofocus = false,
   inputId,
@@ -153,6 +152,8 @@ const {
   contentStyle
 } = defineProps<{
   placeholder?: string
+  accessibleLabel: string
+  clearLabel: string
   icon?: string
   autofocus?: boolean
   inputId?: string
@@ -182,7 +183,6 @@ const comboboxRef = useTemplateRef('comboboxRef')
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function focus() {
   inputRef.value?.$el?.focus()
@@ -193,10 +193,6 @@ function open() {
 }
 
 defineExpose({ focus, open })
-
-const placeholderText = computed(
-  () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
-)
 
 function clearSearch() {
   modelValue.value = ''

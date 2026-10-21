@@ -8,6 +8,24 @@ import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
+  it('renders item badges in nested menus', async () => {
+    render(Menu, {
+      props: {
+        items: [{ label: 'More', items: [{ label: 'Run', badge: 'Beta' }] }]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
+
+    expect(await screen.findByText('Beta')).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Run' })).toHaveTextContent(
+      'Beta'
+    )
+  })
+
   it('executes a quick press-and-hold click exactly once', async () => {
     const command = vi.fn()
     render(Menu, {
@@ -31,6 +49,68 @@ describe('Menu', () => {
 
     expect(command).toHaveBeenCalledOnce()
   })
+
+  it('emits activate once with the item for a click', async () => {
+    const onActivate = vi.fn()
+    const item = { label: 'Rename', command: vi.fn() }
+    render(Menu, {
+      props: { open: true, items: [item], onActivate },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(await screen.findByRole('menuitem', { name: 'Rename' }))
+
+    expect(onActivate).toHaveBeenCalledExactlyOnceWith(item)
+  })
+
+  it.for([
+    { gesture: 'a click', role: 'menuitem', checked: undefined, hold: 0 },
+    { gesture: 'a click', role: 'menuitemcheckbox', checked: false, hold: 0 },
+    {
+      gesture: 'a 100 ms hold',
+      role: 'menuitem',
+      checked: undefined,
+      hold: 100
+    },
+    {
+      gesture: 'a 100 ms hold',
+      role: 'menuitemcheckbox',
+      checked: false,
+      hold: 100
+    }
+  ] as const)(
+    'emits one activate event for $gesture on a press-and-hold $role',
+    async ({ role, checked, hold }) => {
+      const onActivate = vi.fn()
+      render(Menu, {
+        props: {
+          open: true,
+          items: [
+            {
+              label: 'Zoom',
+              command: vi.fn(),
+              pressAndHoldInterval: 50,
+              checked
+            }
+          ],
+          onActivate
+        },
+        slots: { trigger: '<button>Open</button>' }
+      })
+      const item = await screen.findByRole(role, { name: 'Zoom' })
+      const user = userEvent.setup({
+        advanceTimers: vi.advanceTimersByTime,
+        pointerEventsCheck: 0
+      })
+
+      await user.pointer({ keys: '[MouseLeft>]', target: item })
+      await vi.advanceTimersByTimeAsync(hold)
+      await user.pointer({ keys: '[/MouseLeft]', target: item })
+
+      expect(onActivate).toHaveBeenCalledOnce()
+    }
+  )
 
   it('does not add a click command after press-and-hold repeats', async () => {
     const command = vi.fn()
@@ -140,7 +220,10 @@ describe('Menu', () => {
 
   it('keeps the page interactive for a non-modal menu', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Run' }], modal: false },
+      props: {
+        items: [{ label: 'Run' }],
+        modal: false
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     await userEvent.click(screen.getByRole('button', { name: 'Open' }))
@@ -150,7 +233,9 @@ describe('Menu', () => {
 
   it('disables commandless actions', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Unavailable' }] },
+      props: {
+        items: [{ label: 'Unavailable' }]
+      },
       slots: { trigger: '<button>Open</button>' }
     })
 
@@ -169,7 +254,9 @@ describe('Menu', () => {
     async ({ label }) => {
       const command = vi.fn()
       render(Menu, {
-        props: { items: [{ label, command }] },
+        props: {
+          items: [{ label, command }]
+        },
         slots: { trigger: '<button>Open</button>' }
       })
       const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -215,7 +302,10 @@ describe('Menu', () => {
 
   it('closes when its owner changes the open state', async () => {
     const { rerender } = render(Menu, {
-      props: { items: [{ label: 'Run' }], open: true },
+      props: {
+        items: [{ label: 'Run' }],
+        open: true
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     await screen.findByRole('menu')
@@ -329,7 +419,9 @@ describe('Menu', () => {
 
   it('toggles closed and reopens from its trigger', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Run' }] },
+      props: {
+        items: [{ label: 'Run' }]
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -350,7 +442,10 @@ describe('Menu', () => {
     render(
       defineComponent({
         setup: () => () =>
-          h(ContextMenu, { model: [{ label: 'Inspect' }], ref: menu })
+          h(ContextMenu, {
+            model: [{ label: 'Inspect' }],
+            ref: menu
+          })
       })
     )
     menu.value?.show(

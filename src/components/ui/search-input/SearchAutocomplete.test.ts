@@ -2,21 +2,28 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { searchPlaceholder: 'Search...' } } }
-})
-
 describe('SearchAutocomplete', () => {
+  it('renders caller labels without an i18n plugin', () => {
+    render(SearchAutocomplete, {
+      props: {
+        modelValue: 'abc',
+        accessibleLabel: 'Rechercher',
+        clearLabel: 'Effacer',
+        placeholder: 'Rechercher...'
+      }
+    })
+    expect(
+      screen.getByRole('combobox', { name: 'Rechercher' })
+    ).toHaveAttribute('placeholder', 'Rechercher...')
+    expect(screen.getByRole('button', { name: 'Effacer' })).toBeVisible()
+  })
+
   function renderComponent(props: Record<string, unknown> = {}) {
     return render(SearchAutocomplete, {
       global: {
-        plugins: [i18n],
         stubs: {
           ComboboxRoot: { template: '<div><slot /></div>' },
           ComboboxAnchor: { template: '<div><slot /></div>' },
@@ -35,7 +42,12 @@ describe('SearchAutocomplete', () => {
           }
         }
       },
-      props: { modelValue: '', ...props }
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: '',
+        ...props
+      }
     })
   }
 
@@ -107,11 +119,12 @@ describe('SearchAutocomplete', () => {
     const onHighlight = vi.fn()
     const user = userEvent.setup()
     render(SearchAutocomplete, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: '',
         suggestions: ['foo', 'bar'],
         openOnFocus: true,
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onHighlight
       }
     })
@@ -132,11 +145,12 @@ describe('SearchAutocomplete', () => {
       const onHighlight = vi.fn()
       const user = userEvent.setup()
       render(SearchAutocomplete, {
-        global: { plugins: [i18n] },
         props: {
           modelValue: 'fo',
           suggestions: ['foo', 'bar', 'baz'],
           openOnFocus: true,
+          accessibleLabel: 'Search',
+          clearLabel: 'Clear',
           onHighlight
         }
       })
@@ -165,8 +179,12 @@ describe('SearchAutocomplete', () => {
 
   it('lets Shift+Home reach leading-slot controls', () => {
     render(SearchAutocomplete, {
-      global: { plugins: [i18n] },
-      props: { modelValue: 'fo', suggestions: ['foo'] },
+      props: {
+        modelValue: 'fo',
+        suggestions: ['foo'],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear'
+      },
       slots: { leading: () => h('button', 'Filter chip') }
     })
     const chip = screen.getByRole('button', { name: 'Filter chip' })
@@ -187,10 +205,11 @@ describe('SearchAutocomplete', () => {
   it('highlights the first suggestion when results change', async () => {
     const onHighlight = vi.fn()
     const { rerender } = render(SearchAutocomplete, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: 'foo',
         suggestions: [],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onHighlight
       }
     })
@@ -204,10 +223,11 @@ describe('SearchAutocomplete', () => {
   it('does not treat a matching query as a selected suggestion', async () => {
     const user = userEvent.setup()
     render(SearchAutocomplete, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: 'foo',
         suggestions: ['foo', 'bar'],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         openOnFocus: true
       }
     })
@@ -225,11 +245,12 @@ describe('SearchAutocomplete', () => {
     const onUpdateModelValue = vi.fn()
     const user = userEvent.setup()
     render(SearchAutocomplete, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: '',
         suggestions: ['foo'],
         openOnFocus: true,
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onSelect,
         'onUpdate:modelValue': onUpdateModelValue
       }

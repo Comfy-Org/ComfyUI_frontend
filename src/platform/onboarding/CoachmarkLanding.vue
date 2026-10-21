@@ -1,19 +1,14 @@
 <template>
   <Dialog :open="true" @update:open="(value) => !value && emit('skip')">
     <DialogPortal>
-      <DialogOverlay
-        v-reka-z-index
-        data-testid="coach-landing-overlay"
-        class="bg-black/60"
-      />
+      <DialogOverlay data-testid="coach-landing-overlay" class="bg-black/60" />
       <DialogContent
-        v-reka-z-index
         data-testid="coach-landing"
         class="w-[800px] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-2xl bg-secondary p-0 shadow-2xl md:h-fit md:min-h-100 md:max-w-[800px] md:flex-row"
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
-        <DialogClose as-child>
+        <DialogClose :aria-label="$t('g.close')" as-child>
           <Button
             variant="muted-textonly"
             size="icon"
@@ -80,7 +75,6 @@ import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
 const { title, message, image, primaryLabel, skipLabel, waitingForTarget } =
   defineProps<{

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import type { SharedRendererHandle } from '@/renderer/three/sharedWebGLRenderer'
+import type { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 
 const load3dModule = vi.hoisted(() => {
   const deferred = () => {
@@ -18,13 +18,13 @@ const load3dModule = vi.hoisted(() => {
   return { create: vi.fn<typeof createLoad3d>(), importStarted, importReady }
 })
 
-vi.mock(import('@/renderer/three/sharedWebGLRenderer'), () => ({
+vi.mock(import('@comfyorg/viewport3d/three/sharedWebGLRenderer'), () => ({
   acquireSharedRenderer: vi.fn(() =>
     fromPartial<SharedRendererHandle>({ release: vi.fn() })
   )
 }))
 
-vi.mock(import('@/extensions/core/load3d/createLoad3d'), async () => {
+vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), async () => {
   load3dModule.importStarted.resolve()
   await load3dModule.importReady.promise
   return { createLoad3d: load3dModule.create }
