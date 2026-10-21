@@ -2783,6 +2783,30 @@ describe('useExecutionStore - frames from a background workflow', () => {
     }
   )
 
+  it('drops a background progress frame still queued when its job ends', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
+    expect(store.runningJobIds).toEqual([])
+  })
+
   it('re-adopts the visible job once a late-owned job proves to belong elsewhere', async () => {
     useWorkflowStore().activeWorkflow = backgroundWorkflow
     await nextTick()

@@ -939,8 +939,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) forgetJob(jobId)
+    cancelPendingProgressUpdates()
     if (!activeJobId.value || jobId === activeJobId.value) {
-      cancelPendingProgressUpdates()
       executionIdToLocatorCache.clear()
       nodeProgressStates.value = {}
       activeJobId.value = null
