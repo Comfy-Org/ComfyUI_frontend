@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/load3d/ViewportWidgetShell.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/load3d/menubar/menuBarStyles.ts",
       "role": "presentation"
     },

@@ -403,7 +403,6 @@
           "src/components/common/WaveAudioPlayer.stories.ts",
           "src/components/common/WaveAudioPlayer.test.ts",
           "src/components/common/WaveAudioPlayer.vue",
-          "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
           "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
           "src/renderer/extensions/vueNodes/widgets/components/audio/**"
@@ -817,7 +816,6 @@
       {
         "name": "canvas-renderer/presentation",
         "patterns": [
-          "src/components/graph/CanvasBanner.vue",
           "src/components/graph/CanvasModeSelector.test.ts",
           "src/components/graph/CanvasModeSelector.vue",
           "src/components/graph/GraphCanvasMenu.vue",
@@ -978,7 +976,6 @@
           "src/types/toastOptions.ts",
           "src/utils/histogramUtil.test.ts",
           "src/utils/histogramUtil.ts",
-          "src/utils/textTickerUtils.ts",
           "src/utils/treeUtil.test.ts",
           "src/utils/treeUtil.ts",
           "src/utils/validationUtil.ts"
@@ -1015,32 +1012,25 @@
       {
         "name": "design-system/presentation",
         "patterns": [
-          "src/components/actionbar/TinyChevronIcon.vue",
           "src/components/button/**",
           "src/components/card/**",
           "src/components/chip/**",
           "src/components/curve/CurveEditor.test.ts",
           "src/components/curve/CurveEditor.vue",
-          "src/components/icons/**",
           "src/components/loader/**",
           "src/components/range/RangeEditor.test.ts",
           "src/components/range/RangeEditor.vue",
-          "src/components/tab/**",
           "src/components/ui/Popover.vue",
-          "src/components/ui/ZoomPane.vue",
           "src/components/ui/badge/**",
-          "src/components/ui/button-group/**",
           "src/components/ui/button/**",
           "src/components/ui/chart/**",
           "src/components/ui/checkbox/**",
           "src/components/ui/color-picker/**",
           "src/components/ui/dialog/**",
-          "src/components/ui/field/**",
           "src/components/ui/hover-card/**",
           "src/components/ui/input-group/**",
           "src/components/ui/input/**",
           "src/components/ui/knob/**",
-          "src/components/ui/label/**",
           "src/components/ui/menu/**",
           "src/components/ui/message/**",
           "src/components/ui/multi-select/**",
@@ -1051,13 +1041,10 @@
           "src/components/ui/search-input/**",
           "src/components/ui/select/**",
           "src/components/ui/single-select/**",
-          "src/components/ui/skeleton/**",
           "src/components/ui/slider/**",
           "src/components/ui/spinner/**",
-          "src/components/ui/splitter/**",
           "src/components/ui/switch/**",
           "src/components/ui/table/**",
-          "src/components/ui/tabs/**",
           "src/components/ui/tags-input/**",
           "src/components/ui/textarea/**",
           "src/components/ui/toggle-group/**",
@@ -2650,8 +2637,7 @@
           "src/components/graph/selectionToolbox/MaskEditorButton.vue",
           "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
           "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
-          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
-          "src/components/graph/selectionToolbox/VerticalDivider.vue"
+          "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue"
         ]
       },
       {
@@ -2724,7 +2710,6 @@
         "name": "settings/presentation",
         "patterns": [
           "src/components/common/BackgroundImageUpload.vue",
-          "src/components/common/CustomFormValue.vue",
           "src/components/common/FormColorPicker.test.ts",
           "src/components/common/FormColorPicker.vue",
           "src/components/common/FormImageUpload.vue",
@@ -3025,7 +3010,6 @@
         "name": "viewport-3d/presentation",
         "patterns": [
           "src/components/load3d/ViewportWidgetShell.test.ts",
-          "src/components/load3d/ViewportWidgetShell.vue",
           "src/components/load3d/menubar/menuBarStyles.ts"
         ]
       },
@@ -3077,7 +3061,8 @@
         "patterns": [
           "src/renderer/extensions/vueNodes/VideoPreview.agentReset.test.ts",
           "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
-          "src/renderer/extensions/vueNodes/VideoPreview.vue"
+          "src/renderer/extensions/vueNodes/VideoPreview.vue",
+          "src/renderer/extensions/vueNodes/components/**"
         ]
       },
       {
@@ -3255,7 +3240,6 @@
           "src/components/sidebar/tabs/SidebarTabCloseButton.vue",
           "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
           "src/components/sidebar/tabs/SidebarTabTemplate.vue",
-          "src/components/sidebar/tabs/SidebarTopArea.vue",
           "src/components/topbar/ActionBarButtons.vue",
           "src/components/topbar/TopbarBadge.test.ts",
           "src/components/topbar/TopbarBadge.vue",
@@ -3863,10 +3847,6 @@
           "src/renderer/extensions/vueNodes/layout/**",
           "src/renderer/extensions/vueNodes/utils/**"
         ]
-      },
-      {
-        "name": "vue-node-renderer/presentation/outer-1",
-        "patterns": ["src/renderer/extensions/vueNodes/components/**"]
       },
       {
         "name": "vue-node-renderer/integration/outer-1",
@@ -6326,7 +6306,6 @@
           "vue-node-renderer/application",
           "vue-node-renderer/presentation",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6339,7 +6318,6 @@
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "unclassified"
         ]
@@ -7375,17 +7353,6 @@
         ]
       },
       {
-        "from": "vue-node-renderer/presentation/outer-1",
-        "allow": [
-          "vue-node-renderer/domain",
-          "vue-node-renderer/application",
-          "vue-node-renderer/presentation",
-          "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "vue-node-renderer/integration/outer-1",
         "allow": [
           "vue-node-renderer/domain",
@@ -7394,7 +7361,6 @@
           "vue-node-renderer/presentation",
           "vue-node-renderer/integration",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "unclassified"
         ]
@@ -7995,7 +7961,6 @@
           "version-compatibility/application/outer-1",
           "video-edit/application/outer-1",
           "vue-node-renderer/application/outer-1",
-          "vue-node-renderer/presentation/outer-1",
           "vue-node-renderer/integration/outer-1",
           "vue-node-widgets/presentation/outer-1",
           "vue-node-widgets/integration/outer-1",
