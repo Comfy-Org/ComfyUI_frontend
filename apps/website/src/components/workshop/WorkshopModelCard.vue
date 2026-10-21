@@ -151,27 +151,16 @@ const pillClass =
           on its own — searched, filtered, or beside models — it keeps the tag,
           which is then the only place the kind is written. -->
         <div
-          v-if="showsTask"
-          :class="
-            cn(
-              'flex min-w-0 items-center gap-1.5',
-              hasModelActions ? 'min-h-6' : 'h-6 overflow-hidden'
-            )
-          "
+          v-if="showsTask && !hasModelActions"
+          class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
         >
           <span
             :id="`${id}-task`"
-            :class="
-              hasModelActions
-                ? 'min-w-0 rounded-xl bg-hub-surface px-2 py-1 text-xs text-content'
-                : pillClass
-            "
+            :class="pillClass"
             data-testid="model-card-task"
+            >{{ taskLabel }}</span
           >
-            {{ taskLabel }}
-          </span>
           <TagRow
-            v-if="!hasModelActions"
             :tags="model.capabilities"
             :link-tags="false"
             class="min-w-0 flex-1"
@@ -181,21 +170,29 @@ const pillClass =
     </a>
     <div
       v-if="hasModelActions"
-      class="flex items-center justify-end gap-2 px-3"
+      class="flex min-h-6 items-center justify-between gap-1 px-3"
     >
-      <a
-        :href="model.href"
-        data-model-try
-        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2 py-2 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:px-3 md:text-sm"
-        >{{ t('workshop.hub.tryModel') }}</a
+      <span
+        :id="`${id}-task`"
+        class="min-w-0 text-xs text-content"
+        data-testid="model-card-task"
+        >{{ taskLabel }}</span
       >
-      <a
-        :href="`${model.href}#api`"
-        data-model-api
-        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2 py-2 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:px-3 md:text-sm"
-        >{{ t('workshop.hub.useApi')
-        }}<span aria-hidden="true" class="ml-1.5">⌘</span></a
-      >
+      <div class="flex shrink-0 items-center gap-1">
+        <a
+          :href="model.href"
+          data-model-try
+          class="inline-flex h-6 items-center rounded-full border border-transparency-white-t20 px-1 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          >{{ t('workshop.hub.tryModel') }}</a
+        >
+        <a
+          :href="`${model.href}#api`"
+          data-model-api
+          class="inline-flex h-6 items-center rounded-full border border-transparency-white-t20 px-1 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          >{{ t('workshop.hub.useApi')
+          }}<span aria-hidden="true" class="ml-1">⌘</span></a
+        >
+      </div>
     </div>
   </div>
 </template>
