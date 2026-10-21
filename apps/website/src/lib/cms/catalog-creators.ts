@@ -45,33 +45,54 @@ function catalogOrigin() {
   return origin && cmsEnabled() ? origin : undefined
 }
 
-function mergedByUsername(items: z.output<typeof creatorsPageSchema>['items']) {
-  const creators = new Map<string, HubCreatorSummary>()
-  for (const item of items) {
-    const username = item.username.toLowerCase()
-    const known = creators.get(username)
-    const avatarUrl = known?.avatarUrl ?? hubAvatarUrl(item.avatar_url)
-    creators.set(username, {
-      username,
-      displayName: known?.displayName ?? (item.display_name || item.username),
-      workflowCount: (known?.workflowCount ?? 0) + item.workflow_count,
-      ...(avatarUrl && { avatarUrl })
-    })
+type DirectoryItem = z.output<typeof creatorsPageSchema>['items'][number]
+
+function summaryOf(item: DirectoryItem): HubCreatorSummary {
+  const avatarUrl = hubAvatarUrl(item.avatar_url)
+  return {
+    username: item.username.toLowerCase(),
+    displayName: item.display_name || item.username,
+    workflowCount: item.workflow_count,
+    ...(avatarUrl && { avatarUrl })
   }
+}
+
+function withCounts(
+  known: HubCreatorSummary | undefined,
+  next: HubCreatorSummary
+): HubCreatorSummary {
+  return known
+    ? {
+        ...next,
+        ...known,
+        workflowCount: known.workflowCount + next.workflowCount
+      }
+    : next
+}
+
+function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
+  return (
+    b.workflowCount - a.workflowCount || a.username.localeCompare(b.username)
+  )
+}
+
+function mergedByUsername(items: readonly DirectoryItem[]) {
+  const creators = new Map<string, HubCreatorSummary>()
+  for (const summary of items.map(summaryOf))
+    creators.set(
+      summary.username,
+      withCounts(creators.get(summary.username), summary)
+    )
   return [...creators.values()]
     .filter(({ workflowCount }) => workflowCount > 0)
-    .sort(
-      (a, b) =>
-        b.workflowCount - a.workflowCount ||
-        a.username.localeCompare(b.username)
-    )
+    .sort(busiestFirst)
 }
 
 export async function loadCatalogCreators() {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items: z.output<typeof creatorsPageSchema>['items'] = []
+  const items: DirectoryItem[] = []
   const visited = new Set<string>()
   let cursor: string | undefined
   try {
