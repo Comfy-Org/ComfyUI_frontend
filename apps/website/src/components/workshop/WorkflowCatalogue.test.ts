@@ -348,6 +348,30 @@ describe('workflow catalogue capability address on the server-filtered list', ()
     )
   })
 
+  it('trims, drops blank and merges repeated capabilities from the address', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WorkflowCatalogue, {
+      props: {
+        models: [models[1]],
+        initialSearch: '?capability=+&capability=+b+&capability=b',
+        serverPage,
+        serverFacets
+      }
+    })
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /^Remove / })).toHaveLength(
+        1
+      )
+    )
+    expect(screen.getByRole('button', { name: 'Remove b' })).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('workshop-sort'))
+    await user.click(screen.getByTestId('sort-name'))
+    await waitFor(() =>
+      expect(emitted('search').at(-1)).toEqual(['capability=b&sort=name'])
+    )
+  })
+
   it('shows the empty result for a capability the server does not know, and clears it', async () => {
     const user = userEvent.setup()
     const { emitted } = render(WorkflowCatalogue, {

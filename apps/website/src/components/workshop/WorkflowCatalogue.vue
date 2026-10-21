@@ -18,7 +18,7 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
-import { sortWorkshopModels } from '@/config/models-catalogue'
+import { catalogueAddress, sortWorkshopModels } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
 import type {
   CatalogListPages,
@@ -86,6 +86,7 @@ const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
   filters: [
     ['category', () => selected.value],
     ['model', () => runsOn.value],
+    ['capability', () => capabilities.value],
     ['sort', () => sort.value]
   ]
 })
@@ -124,34 +125,26 @@ function readAddress(search: string, preserveQuery = false) {
         ? serverFacets.models.some((model) => model.value === name)
         : models.some((model) => model.models?.includes(name))
     )
-  capabilities.value = params
-    .getAll('capability')
-    .filter((value) =>
-      serverPage
-        ? value.trim()
-        : models.some((model) => model.capabilities.includes(value))
-    )
+  capabilities.value = [
+    ...new Set(params.getAll('capability').map((value) => value.trim()))
+  ].filter((value) =>
+    serverPage
+      ? value
+      : models.some((model) => model.capabilities.includes(value))
+  )
   if (serverPage)
     sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
 }
 function filterAddress() {
-  const params = new URLSearchParams(initialSearch ?? location.search)
-  for (const key of [
-    'q',
-    'category',
-    'model',
-    'capability',
-    'sort',
-    'p',
-    'cursor'
-  ])
-    params.delete(key)
-  if (query.value) params.set('q', query.value)
-  for (const value of selected.value) params.append('category', value)
-  for (const value of runsOn.value) params.append('model', value)
-  for (const value of capabilities.value) params.append('capability', value)
-  if (sort.value !== 'popular') params.set('sort', sort.value)
-  return params.toString()
+  return catalogueAddress(initialSearch ?? location.search, {
+    query: query.value,
+    sort: sort.value,
+    filters: {
+      category: selected.value,
+      model: runsOn.value,
+      capability: capabilities.value
+    }
+  })
 }
 let searchReady = false
 let requestedQuery: string | undefined

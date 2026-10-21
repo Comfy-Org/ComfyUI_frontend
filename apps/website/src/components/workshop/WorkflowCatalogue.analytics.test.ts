@@ -110,6 +110,38 @@ describe('WorkflowCatalogue analytics', () => {
     ])
   })
 
+  it('reports a capability the visitor removes but not the one a shared link sets', async () => {
+    history.replaceState(null, '', '/hub/workflows/?capability=Upscale')
+    const user = userEvent.setup()
+    render(WorkflowCatalogue, {
+      props: {
+        models: [
+          { ...models[0], capabilities: ['Upscale'] },
+          ...models.slice(1)
+        ]
+      }
+    })
+    const remove = await screen.findByRole('button', {
+      name: 'Remove Upscale'
+    })
+    vi.advanceTimersByTime(SEARCH_SETTLE_MS)
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+    await user.click(remove)
+
+    expect(events('hub_filter_changed')).toEqual([
+      {
+        name: 'hub_filter_changed',
+        properties: {
+          surface: 'workflows',
+          filter: 'capability',
+          value: 'all',
+          previous_value: 'Upscale'
+        }
+      }
+    ])
+  })
+
   it('reports a workflow opened from the featured banner', async () => {
     const user = userEvent.setup()
     const highlighted = models.map((model) => ({
