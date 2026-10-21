@@ -2,9 +2,9 @@ import hubAppNames from './hub-app-names.json' with { type: 'json' }
 import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 import { modelAliasUrls, modelPageUrls } from './model-urls'
 
-export const HUB_MODELS_PATH = '/hub/models'
-export const HUB_WORKFLOWS_PATH = '/hub/workflows'
-export const HUB_APPS_PATH = '/hub/apps'
+import { HUB_APPS_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH } from './hub-paths'
+
+export { HUB_APPS_PATH, HUB_MODELS_PATH, HUB_WORKFLOWS_PATH } from './hub-paths'
 const WORKFLOW_SLUG_PREFIX = 'workflows/'
 const APP_SLUG_PREFIX = 'apps/'
 

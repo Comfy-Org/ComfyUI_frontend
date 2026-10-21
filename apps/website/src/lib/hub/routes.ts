@@ -1,6 +1,4 @@
-import { getRoutes } from '@/config/routes'
-
-const HUB_CREATORS_PATH = '/hub/creators'
+import { HUB_CREATORS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-paths'
 
 type HubWorkflowsFilter = { capability: string } | { q: string }
 
@@ -11,7 +9,7 @@ export function hubWorkflowsUrl(filter?: HubWorkflowsFilter): string {
         .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
         .join('&')}`
     : ''
-  return `${getRoutes().hubWorkflows}${query}`
+  return `${HUB_WORKFLOWS_PATH}/${query}`
 }
 
 export const hubTagUrl = (tag: string) => hubWorkflowsUrl({ capability: tag })
