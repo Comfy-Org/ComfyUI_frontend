@@ -590,6 +590,29 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('releases the owned graph when a forced reload into it fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/owned.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+      ).resolves.toBe(false)
+
+      expect(workflow.graph).toBeNull()
+    })
+
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
       // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
       // extension hook throwing, here) previously skipped both

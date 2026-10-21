@@ -145,7 +145,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["graph-model"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

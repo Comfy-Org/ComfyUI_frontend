@@ -961,20 +961,15 @@ export class AgentConversationHarness {
     return this.lastAddGhosted
   }
 
-  // Records the live node set the moment a tab's canvas finishes rebuilding,
-  // and every node the live graph drops afterwards, so a node present after
-  // configure() and gone later is distinguishable from one never rebuilt.
   installTabSwitchObserver(): Promise<void> {
     return this.page.evaluate(() => {
-      const lens: TabSwitchLens = { afterConfigure: [], removed: [] }
+      const lens: TabSwitchLens = { afterLoad: [], removed: [] }
       window.__tabSwitchLens = lens
       const app = window.app!
       app.registerExtension({
         name: 'TabSwitchLens',
-        afterConfigureGraph() {
-          lens.afterConfigure.push(
-            app.graph.nodes.map((node) => String(node.id))
-          )
+        afterLoadGraph() {
+          lens.afterLoad.push(app.graph.nodes.map((node) => String(node.id)))
         }
       })
       app.rootGraph.events.addEventListener('node:removed', (event) => {
