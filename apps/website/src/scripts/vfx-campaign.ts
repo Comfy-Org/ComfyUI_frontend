@@ -1,4 +1,5 @@
 import { captureVfxLinkClick } from '@/scripts/posthog'
+import { isVfxV3Path, vfxNavCloudHref } from '@/utils/vfxNavCampaign'
 import { campaignHref } from '@/utils/campaignHref'
 
 function linkPlacement(
@@ -58,7 +59,11 @@ export function mountVfxCampaign(root: HTMLElement): () => void {
     for (const link of root.querySelectorAll<HTMLAnchorElement>('a[href]')) {
       const href = link.getAttribute('href')
       if (!href) continue
-      const decorated = campaignHref(href, window.location.href)
+      const decorated =
+        isVfxV3Path(window.location.pathname) &&
+        link.matches('nav [data-vfx-nav-no-utm]')
+          ? vfxNavCloudHref(window.location.pathname, href)
+          : campaignHref(href, window.location.href)
       if (decorated !== href) link.setAttribute('href', decorated)
     }
   }

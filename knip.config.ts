@@ -17,7 +17,8 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',

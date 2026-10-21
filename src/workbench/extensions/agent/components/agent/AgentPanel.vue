@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
+import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -272,7 +273,23 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const runNoticeReady = ref(false)
+const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
+  useTimeoutFn(
+    () => {
+      runNoticeReady.value = true
+    },
+    500,
+    {
+      immediate: false
+    }
+  )
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+function onComposerFocus(): void {
+  if (runNoticeTimerPending.value || runNoticeReady.value) return
+  startRunNoticeTimer()
+}
 
 function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
@@ -512,6 +529,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
+            :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
@@ -533,6 +551,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
+            @focusin="onComposerFocus"
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"

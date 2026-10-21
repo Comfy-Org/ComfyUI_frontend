@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { vfxMediaRoot } from '@/data/vfxMedia'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { vfxMediaRoot, vfxVariantMedia } from '@/data/vfxMedia'
+import { computed, onMounted, ref, useId, useTemplateRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
@@ -9,6 +9,8 @@ import GlassCard from '@/components/common/GlassCard.vue'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 import VideoPlayer from '@/components/common/VideoPlayer.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import { externalLinks } from '@/config/routes'
+import { campaignHref } from '@/utils/campaignHref'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -30,6 +32,9 @@ const {
 }>()
 const { t } = translationsFor(locale)
 const root = useTemplateRef<HTMLElement>('root')
+const signupHref = ref<string>(externalLinks.cloudSignup)
+const studioTitleId = `vfx-${demo}-${useId()}-title`
+const signupHintId = `vfx-${demo}-${useId()}-signup`
 const mode = ref('workflow')
 const time = ref(0)
 const paused = ref(prefersReducedMotion())
@@ -85,6 +90,10 @@ function selectVariant(id: string) {
 }
 
 onMounted(() => {
+  signupHref.value = campaignHref(
+    externalLinks.cloudSignup,
+    window.location.href
+  )
   paused.value = playbackPaused()
   const id = root.value?.closest<HTMLElement>('vfx-workflow-showcase')?.dataset
     .selectedVariant
@@ -102,6 +111,25 @@ useEventListener(
       selected.value = event.detail
   }
 )
+function isFileDrag(event: DragEvent) {
+  return event.dataTransfer?.types.includes('Files') ?? false
+}
+
+function onFileDragOver(event: DragEvent) {
+  if (!isFileDrag(event)) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'link'
+}
+
+function onFileDrop(event: DragEvent) {
+  if (!isFileDrag(event)) return
+  event.preventDefault()
+  event.stopPropagation()
+  window.location.assign(
+    campaignHref(externalLinks.cloudSignup, window.location.href)
+  )
+}
+
 function workflowDetail(event: Event): object | undefined {
   if (!(event instanceof CustomEvent)) return undefined
   const detail: unknown = event.detail
@@ -154,11 +182,18 @@ useEventListener(
   <div
     ref="root"
     data-vfx-studio
+    role="region"
+    :aria-labelledby="studioTitleId"
     :data-playback-time="time"
     class="min-w-0 space-y-6"
+    @dragover.capture="onFileDragOver"
+    @drop.capture="onFileDrop"
   >
     <div>
-      <h3 class="text-2xl text-primary-warm-white md:text-3xl">
+      <h3
+        :id="studioTitleId"
+        class="text-2xl text-primary-warm-white md:text-3xl"
+      >
         {{ t(`vfxV3.studio.${demo}.title`) }}
       </h3>
       <p class="mt-3 text-sm text-primary-warm-gray">
@@ -175,8 +210,8 @@ useEventListener(
             v-if="demo === 'sequence'"
             :key="active.id"
             data-vfx-sequence-player
-            :src="`${vfxMediaRoot}/${active.id}.mp4`"
-            :poster="`${vfxMediaRoot}/${active.id}.jpg`"
+            :src="vfxVariantMedia(active.id, 'mp4')"
+            :poster="vfxVariantMedia(active.id, 'jpg')"
             :aria-label="active.label"
             :locale="locale"
             fit="contain"
@@ -194,9 +229,11 @@ useEventListener(
             :media-kind="mediaKind"
             fit="contain"
             :before-src="`${vfxMediaRoot}/${source}.${mediaKind === 'video' ? 'mp4' : 'jpg'}`"
-            :after-src="`${vfxMediaRoot}/${active.id}.${mediaKind === 'video' ? 'mp4' : 'jpg'}`"
+            :after-src="
+              vfxVariantMedia(active.id, mediaKind === 'video' ? 'mp4' : 'jpg')
+            "
             :before-poster-src="`${vfxMediaRoot}/${source}.jpg`"
-            :after-poster-src="`${vfxMediaRoot}/${active.id}.jpg`"
+            :after-poster-src="vfxVariantMedia(active.id, 'jpg')"
             :before-label="t('vfxV3.originalFootage')"
             :after-label="active.label"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
@@ -214,7 +251,15 @@ useEventListener(
           <p class="text-sm text-primary-warm-gray">
             {{ t('vfxV3.studio.sourceHint') }}
           </p>
-          <BrandButton disabled variant="outline" class="font-bold">
+          <p :id="signupHintId" class="text-sm text-primary-warm-gray">
+            {{ t('vfxV3.studio.uploadHint') }}
+          </p>
+          <BrandButton
+            :href="signupHref"
+            :aria-describedby="signupHintId"
+            variant="outline"
+            class="font-bold"
+          >
             {{ t('vfxV3.studio.upload') }}
           </BrandButton>
         </div>
@@ -246,7 +291,7 @@ useEventListener(
                   @click="selectVariant(variant.id)"
                 >
                   <img
-                    :src="`${vfxMediaRoot}/${variant.id}.jpg`"
+                    :src="vfxVariantMedia(variant.id, 'jpg')"
                     alt=""
                     width="160"
                     height="90"
