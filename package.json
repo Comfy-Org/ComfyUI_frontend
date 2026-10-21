@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfy-multi-player",
-  "version": "0.3.10",
+  "version": "0.3.12",
   "license": "MIT",
   "description": "Shared workflow-document package: CRDT op applier + JSON projection used identically by the browser and the server doc host.",
   "type": "module",
