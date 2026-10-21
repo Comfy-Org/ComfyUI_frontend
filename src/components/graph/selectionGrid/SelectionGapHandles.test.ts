@@ -64,6 +64,7 @@ describe('SelectionGapHandles', () => {
       ),
       canTidy: computed(() => true),
       measure: () => row,
+      placeBoxes: vi.fn(),
       moveBoxes,
       recordUndoStep,
       tidyUp: vi.fn()
@@ -105,9 +106,11 @@ describe('SelectionGapHandles', () => {
 
     expect(handle).toHaveTextContent('40')
     await user.pointer({ keys: '[/MouseLeft]', target: document.body })
-    expect(moveBoxes).toHaveBeenLastCalledWith(expect.any(Array), {
-      captureUndo: true
-    })
+    expect(moveBoxes).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      { captureUndo: true }
+    )
   })
 
   it('commits when a move arrives with no button pressed after a release it never saw', async () => {
@@ -124,9 +127,11 @@ describe('SelectionGapHandles', () => {
       })
     )
 
-    expect(moveBoxes).toHaveBeenLastCalledWith(expect.any(Array), {
-      captureUndo: true
-    })
+    expect(moveBoxes).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      { captureUndo: true }
+    )
     expect(emitted()).toHaveProperty('edited')
   })
 
@@ -149,10 +154,36 @@ describe('SelectionGapHandles', () => {
     await user.keyboard('{ArrowRight>3}{/ArrowRight}')
 
     expect(moveBoxes).toHaveBeenCalledTimes(3)
-    expect(moveBoxes).toHaveBeenCalledWith(expect.any(Array), {
-      captureUndo: false
-    })
+    expect(moveBoxes).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      { captureUndo: false }
+    )
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
+  })
+
+  it('records held-arrow nudges when focus leaves the handle before the key is released', async () => {
+    const user = userEvent.setup()
+    const { handle, emitted } = await renderHandles()
+    handle.focus()
+
+    await user.keyboard('{ArrowRight>2}')
+    await user.tab()
+
+    expect(recordUndoStep).toHaveBeenCalledTimes(1)
+    expect(emitted()).toHaveProperty('edited')
+  })
+
+  it('records nothing for an arrow released during a drag', async () => {
+    const user = userEvent.setup()
+    const { handle, emitted } = await renderHandles()
+    handle.focus()
+
+    await user.pointer([press(handle, 215), moveTo(225)])
+    await user.keyboard('{ArrowRight}')
+
+    expect(recordUndoStep).not.toHaveBeenCalled()
+    expect(emitted()).not.toHaveProperty('edited')
   })
 
   it('asks to close the bar when Escape is pressed on a handle', async () => {

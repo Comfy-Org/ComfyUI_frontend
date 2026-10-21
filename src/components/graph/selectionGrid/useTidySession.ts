@@ -50,6 +50,13 @@ export function useTidySession() {
     recordUndoStep()
   }
 
+  const adoptGap = (laidOutGap: number) => {
+    dropPendingPreview()
+    gap.value = laidOutGap
+    committedGap = laidOutGap
+    appliedGap = laidOutGap
+  }
+
   const finish = () => {
     const isSettled = gap.value === committedGap && appliedGap === committedGap
     if (isSettled) dropPendingPreview()
@@ -58,5 +65,12 @@ export function useTidySession() {
 
   tryOnScopeDispose(finish)
 
-  return { gap: readonly(gap), start, previewGap, commitGap, finish }
+  return {
+    gap: readonly(gap),
+    start,
+    previewGap,
+    commitGap,
+    adoptGap,
+    finish
+  }
 }

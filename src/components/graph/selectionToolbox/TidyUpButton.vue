@@ -61,7 +61,7 @@ import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHa
 import {
   MAX_TIDY_GAP,
   MIN_TIDY_GAP,
-  isTidyAt
+  tidiedGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
@@ -79,14 +79,16 @@ const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
 const { canTidy, gridNodes, measure } = useSelectionGrid()
-const { gap, start, previewGap, commitGap, finish } = useTidySession()
+const { gap, start, previewGap, commitGap, adoptGap, finish } = useTidySession()
 const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
 const hasMixedGaps = ref(false)
 
 const checkGaps = () => {
-  hasMixedGaps.value = !isTidyAt(measure(), gap.value)
+  const tidiedGap = tidiedGapOf(measure())
+  hasMixedGaps.value = tidiedGap === undefined
+  if (tidiedGap !== undefined) adoptGap(tidiedGap)
 }
 
 watch(isOpen, (open) => {

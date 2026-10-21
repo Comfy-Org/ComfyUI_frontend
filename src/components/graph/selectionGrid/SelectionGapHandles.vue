@@ -22,6 +22,7 @@
       @pointerdown="onPointerDown($event, bar)"
       @keydown="onKeyDown($event, bar)"
       @keyup="onKeyUp($event, bar)"
+      @focusout="commitPendingNudges"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <span
@@ -311,10 +312,12 @@ function onKeyDown(event: KeyboardEvent, bar: ScreenBar) {
   nudge(bar, direction * step)
 }
 
+const commitPendingNudges = () => {
+  if (commitNudges()) emit('edited')
+}
+
 function onKeyUp(event: KeyboardEvent, bar: ScreenBar) {
-  if (!NUDGE_KEYS[bar.axis].includes(event.key)) return
-  commitNudges()
-  emit('edited')
+  if (NUDGE_KEYS[bar.axis].includes(event.key)) commitPendingNudges()
 }
 
 const unregisterEscapeOverride = registerEscapeOverride(

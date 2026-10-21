@@ -6,7 +6,7 @@ import {
   computeGapLayout,
   computeTidyLayout,
   detectSelectionGrid,
-  isTidyAt,
+  tidiedGapOf,
   tidyGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
@@ -491,15 +491,36 @@ describe('computeTidyLayout', () => {
   })
 })
 
-describe('isTidyAt', () => {
-  it('tells a tidy selection from one with a gap changed by hand', () => {
-    const tidied = moved(messyGrid, computeTidyLayout(messyGrid, 20))
-    const widened = tidied.map((b) =>
-      b.id === 'd' ? { ...b, x: b.x + 30 } : b
-    )
+describe('tidiedGapOf', () => {
+  const tidied = moved(messyGrid, computeTidyLayout(messyGrid, 20))
 
-    expect(isTidyAt(tidied, 20)).toBe(true)
-    expect(isTidyAt(widened, 20)).toBe(false)
+  it.for<{ name: string; boxes: LayoutBox[]; gap: number | undefined }>([
+    { name: 'a grid tidied at 20', boxes: tidied, gap: 20 },
+    {
+      name: 'a tidied grid with one gap widened by hand',
+      boxes: tidied.map((b) => (b.id === 'd' ? { ...b, x: b.x + 30 } : b)),
+      gap: undefined
+    },
+    {
+      name: 'a pair whose only gap was dragged past the slider range',
+      boxes: [box('a', 0, 0, 100, 100), box('b', 160, 0, 100, 100)],
+      gap: 60
+    },
+    {
+      name: 'a single node',
+      boxes: [box('a', 0, 0, 100, 100)],
+      gap: undefined
+    },
+    {
+      name: 'nodes without finite geometry',
+      boxes: [
+        box('a', Number.NaN, 0, 100, 100),
+        box('b', 0, Number.NaN, 100, 100)
+      ],
+      gap: undefined
+    }
+  ])('reads $name as $gap', ({ boxes, gap }) => {
+    expect(tidiedGapOf(boxes)).toBe(gap)
   })
 })
 

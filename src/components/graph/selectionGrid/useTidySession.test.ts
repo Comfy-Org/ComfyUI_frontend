@@ -150,6 +150,19 @@ describe('useTidySession', () => {
     expect(recordUndoStep).not.toHaveBeenCalled()
   })
 
+  it('shows a gap the handles laid out and closes without moving nodes', () => {
+    const session = startedSession()
+    session.previewGap(18)
+
+    session.adoptGap(60)
+    session.finish()
+    flushFrames()
+
+    expect(session.gap.value).toBe(60)
+    expect(tidyUp).not.toHaveBeenCalled()
+    expect(recordUndoStep).not.toHaveBeenCalled()
+  })
+
   it('commits a previewed gap when its owner goes away', () => {
     const scope = effectScope()
     const session = scope.run(() => useTidySession())

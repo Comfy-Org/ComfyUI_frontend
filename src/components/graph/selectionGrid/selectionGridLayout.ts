@@ -499,9 +499,12 @@ export function tidyGapOf(boxes: LayoutBox[]): number {
   return clamp(gapOf(detectSelectionGrid(boxes)), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
 
-/** Whether `boxes` already sit where Tidy up with `gap` would put them. */
-export function isTidyAt(boxes: LayoutBox[], gap: number): boolean {
-  return boxes.length < 2 || isLaidOutAt(detectSelectionGrid(boxes), gap)
+/** The one gap `boxes` are tidied at, or undefined when their gaps differ. */
+export function tidiedGapOf(boxes: LayoutBox[]): number | undefined {
+  const grid = detectSelectionGrid(boxes)
+  if (grid.cells.length < 2) return undefined
+  const gap = gapOf(grid)
+  return isLaidOutAt(grid, gap) ? gap : undefined
 }
 
 /**
