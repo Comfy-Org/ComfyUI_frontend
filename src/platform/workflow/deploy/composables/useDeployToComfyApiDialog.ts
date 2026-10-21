@@ -9,6 +9,10 @@ const VIDEO_SOURCES = [
 ]
 const POSTER_SRC = `${MEDIA_BASE}/comfy-api-poster.jpg`
 
+export interface DeployToComfyApiDialogOptions {
+  deploysInstallation?: boolean
+}
+
 export function useDeployToComfyApiDialog() {
   const dialogStore = useDialogStore()
 
@@ -16,7 +20,7 @@ export function useDeployToComfyApiDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show() {
+  function show({ deploysInstallation }: DeployToComfyApiDialogOptions = {}) {
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: DeployToComfyApiCard,
@@ -24,6 +28,7 @@ export function useDeployToComfyApiDialog() {
         titleId: DIALOG_KEY,
         videoSources: VIDEO_SOURCES,
         posterSrc: POSTER_SRC,
+        deploysInstallation,
         onDone: hide,
         onDismiss: hide
       },

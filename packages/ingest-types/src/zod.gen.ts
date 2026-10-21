@@ -2465,6 +2465,26 @@ export const zDesktopLoginCodeCreateRequest = z.object({
 })
 
 /**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export const zDeployToCloudError = z.object({
+  error: z.enum([
+    'offline',
+    'multiple_credentials',
+    'invalid_api_key_format',
+    'invalid_body',
+    'missing_credentials',
+    'unauthorized',
+    'too_large',
+    'too_many_bundles',
+    'builder_rejected',
+    'builder_unavailable',
+    'builder_busy'
+  ]),
+  message: z.string().optional()
+})
+
+/**
  * Response after deleting a session cookie
  */
 export const zDeleteSessionResponse = z.object({
@@ -4322,6 +4342,32 @@ export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
 export const zGetDefaultWorkflowResponse = z.record(z.string(), z.unknown())
 
 /**
+ * A JSON object; `{}` is valid. Null members count as absent.
+ */
+export const zCreateDeployBundleBody = z.object({
+  name: z.string().max(200).nullish(),
+  workflow: z.record(z.string(), z.unknown()).nullish()
+})
+
+/**
+ * Bundle stored on comfy-builder
+ */
+export const zCreateDeployBundleResponse = z.object({
+  bundle_id: z.uuid(),
+  expires_at: z.iso.datetime(),
+  url: z.url(),
+  workspace_id: z.string()
+})
+
+/**
+ * Counts of what the bundle would include
+ */
+export const zGetDeploySummaryResponse = z.object({
+  custom_nodes: z.int(),
+  models: z.int()
+})
+
+/**
  * Embedding names
  */
 export const zGetEmbeddingsResponse = z.array(z.string())
@@ -4375,6 +4421,7 @@ export const zGetFeaturesResponse = z.object({
     .default('control'),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
+  deploy_to_cloud: z.boolean().optional(),
   free_tier_balance: z
     .object({
       allowance: z.int(),
