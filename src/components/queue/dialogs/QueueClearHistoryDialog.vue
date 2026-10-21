@@ -1,35 +1,21 @@
 <template>
-  <section
-    class="w-[360px] rounded-2xl border border-interface-stroke bg-interface-panel-surface font-inter text-text-primary shadow-interface"
+  <AppDialogPanel
+    size="compact"
+    body-class="flex flex-col gap-4 text-[14px] text-muted-foreground"
+    @close="onCancel"
   >
-    <header
-      class="flex items-center justify-between border-b border-interface-stroke p-4"
-    >
-      <p class="m-0 text-[14px] leading-none font-normal">
-        {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
-      </p>
-      <Button
-        size="icon"
-        variant="muted-textonly"
-        :aria-label="t('g.close')"
-        @click="onCancel"
-      >
-        <i class="icon-[lucide--x] block size-4 leading-none" />
-      </Button>
-    </header>
+    <template #title>
+      {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
+    </template>
 
-    <div class="flex flex-col gap-4 p-4 text-[14px] text-text-secondary">
-      <p class="m-0">
-        {{
-          t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription')
-        }}
-      </p>
-      <p class="m-0">
-        {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogAssetsNote') }}
-      </p>
-    </div>
+    <p class="m-0">
+      {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription') }}
+    </p>
+    <p class="m-0">
+      {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogAssetsNote') }}
+    </p>
 
-    <footer class="flex items-center justify-end p-4">
+    <template #footer>
       <div class="flex items-center gap-4 leading-none">
         <Button variant="muted-textonly" size="lg" @click="onCancel">
           {{ t('g.cancel') }}
@@ -42,11 +28,12 @@
           >{{ t('g.clear') }}</Button
         >
       </div>
-    </footer>
-  </section>
+    </template>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

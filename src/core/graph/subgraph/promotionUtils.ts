@@ -9,13 +9,16 @@ import type { LinkId } from '@/types/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import {
+  providePromoteRecommendedWidgets,
+  useCanvasStore
+} from '@/renderer/core/canvas/canvasStore'
+import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -494,10 +497,8 @@ function getParentNodes(): SubgraphNode[] {
   const { navigationStack } = useSubgraphNavigationStore()
   const subgraph = navigationStack.at(-1)
   if (!subgraph) {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph')
+    useToast().error(t('g.error'), {
+      description: t('subgraphStore.promoteOutsideSubgraph')
     })
     return []
   }
@@ -608,7 +609,7 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphService()
+  const { updatePreviews } = useLitegraphServiceAccess()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
@@ -716,3 +717,5 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     )
   )
 }
+
+providePromoteRecommendedWidgets(promoteRecommendedWidgets)

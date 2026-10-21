@@ -11,9 +11,7 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { TOOLTIP_TEXT_CLASS } from '@/composables/useTooltipConfig'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -22,11 +20,11 @@ import {
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
   useOnboarding
-} from '../../composables/agent/useOnboarding'
+} from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
@@ -246,13 +244,13 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
+    <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
         :style="{ ...spotlightStyle }"
-        class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
+        class="pointer-events-none absolute rounded-lg border-2 border-foreground shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]"
       />
       <div
         v-if="step.tooltip"
@@ -263,10 +261,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border"
         />
         <div
-          :class="cn(TOOLTIP_TEXT_CLASS, 'wrap-break-word whitespace-pre-line')"
+          class="rounded-md border bg-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-foreground shadow-md"
         >
           {{ step.tooltip }}
         </div>
@@ -285,10 +283,8 @@ useEventListener(
           }"
           :class="
             cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2
-                ? 'border-secondary-background'
-                : 'border-alpha-smoke-500-20'
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-background p-4 text-foreground shadow-lg',
+              index < 2 ? 'border-secondary' : 'border-smoke-500/20'
             )
           "
         >

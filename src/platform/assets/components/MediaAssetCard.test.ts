@@ -11,9 +11,9 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 
-vi.mock(import('../composables/useMediaAssetActions'))
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -96,8 +96,7 @@ function renderCard(
       plugins: [i18n],
       stubs: {
         MediaTitle: true
-      },
-      directives: { tooltip: {} }
+      }
     }
   })
 }
@@ -246,6 +245,33 @@ describe('MediaAssetCard', () => {
     await user.dblClick(preview)
     expect(emitted().select).toHaveLength(3)
     expect(emitted().zoom).toEqual([[asset]])
+  })
+
+  it('previews an exr asset from its preview_url', async () => {
+    const previewUrl = '/api/assets/exr-preview/content'
+    renderCard({
+      loading: false,
+      asset: { ...asset, name: 'render.exr', preview_url: previewUrl }
+    })
+
+    expect(
+      await screen.findByRole('img', { name: 'render.exr' })
+    ).toHaveAttribute('src', previewUrl)
+  })
+
+  it('inspects an HDR asset on double click', async () => {
+    const user = userEvent.setup()
+    const hdrAsset = {
+      ...asset,
+      name: 'sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    }
+    const { emitted } = renderCard({ loading: false, asset: hdrAsset })
+    const preview = await screen.findByRole('img', { name: 'sky.exr' })
+
+    await user.dblClick(preview)
+
+    expect(emitted().zoom).toEqual([[hdrAsset]])
   })
 
   it('selects non-video assets from the preview', async () => {

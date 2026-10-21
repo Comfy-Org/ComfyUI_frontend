@@ -1,5 +1,5 @@
-import type { HistoryGroups } from '../stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from '../stores/agent/agentConversationStore'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 

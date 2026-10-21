@@ -112,7 +112,7 @@ await expect(async () => {
 ## Screenshot Baselines
 
 - **Screenshots are Linux-only.** Don't commit local screenshots.
-- **To update baselines:** Add PR label `New Browser Test Expectations`
+- **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun; the workflow fails if the run is missing or incomplete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` to rerun Playwright when one test takes several changed screenshots
 - **Mask dynamic content:**
   ```typescript
   await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
@@ -126,7 +126,8 @@ await expect(async () => {
 2. Extract and view trace: `pnpm dlx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
-5. Local runs: `pnpm test:browser:local`
+5. Local runs: `pnpm test:browser:local`, after the readiness checks in
+   `browser_tests/README.md` → Running Tests
 
 ## Anti-Patterns
 

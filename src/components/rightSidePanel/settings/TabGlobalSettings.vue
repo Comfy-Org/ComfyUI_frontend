@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +15,7 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
@@ -91,9 +91,9 @@ function openFullSettings() {
 </script>
 
 <template>
-  <div class="flex flex-col border-t border-interface-stroke">
+  <div class="flex flex-col border-t">
     <!-- NODES Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.nodes') }}
       </template>
@@ -117,7 +117,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CANVAS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
@@ -160,13 +160,13 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CONNECTION LINKS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.connectionLinks') }}
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <SingleSelect
+          <AppSingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
             :label="t('rightSidePanel.globalSettings.linkShape')"
@@ -184,13 +184,11 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- View all settings button -->
-    <div
-      class="flex items-center justify-center border-b border-interface-stroke p-4"
-    >
+    <div class="flex items-center justify-center border-b p-4">
       <Button
         variant="muted-textonly"
         size="sm"
-        class="gap-2 text-sm"
+        class="text-sm"
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}

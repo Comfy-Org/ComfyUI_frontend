@@ -17,6 +17,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -105,6 +106,10 @@ export class HostDoc {
     this.doc.getMap('meta').delete('schema_version')
   }
 
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+  }
+
   // Test-only: restores meta.schema_version and returns the frame carrying
   // just that repair, mirroring apply()'s before/after delta shape so the
   // caller can transmit the repair as its own frame -- separately from, and
@@ -183,6 +188,26 @@ export class HostDoc {
       Y.encodeStateAsUpdate(this.doc, before),
       HOST_ACTOR,
       ops.map((op) => op.op_id)
+    )
+  }
+
+  seedDefinition(definition: ExportedSubgraph): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const minted = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [definition] } },
+      this.catalog
+    )
+      .getMap<unknown>('definitions')
+      .get(definition.id)
+    if (!(minted instanceof Y.Map)) {
+      throw new Error('the definition did not mint')
+    }
+    this.doc.getMap<unknown>('definitions').set(definition.id, minted.clone())
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
     )
   }
 

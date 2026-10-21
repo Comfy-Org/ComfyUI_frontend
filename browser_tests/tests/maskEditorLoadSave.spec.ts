@@ -124,7 +124,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const savedRef = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'LoadImage')!
       const ref = node.images?.[0]
-      return ref
+      return ref?.filename
         ? { filename: ref.filename, subfolder: ref.subfolder ?? '' }
         : null
     })

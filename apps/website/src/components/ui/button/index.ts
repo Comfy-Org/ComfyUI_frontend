@@ -17,8 +17,12 @@ export const buttonVariants = cva(
           'bg-primary-comfy-yellow text-primary-comfy-ink uppercase hover:bg-primary-comfy-yellow/90',
         outline:
           'border text-primary-comfy-yellow uppercase hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
+        secondary:
+          'bg-primary-warm-white text-primary-comfy-ink uppercase hover:bg-white active:scale-[0.97] active:bg-primary-comfy-canvas',
+        secondaryOutline:
+          'border border-primary-warm-white/70 text-primary-warm-white uppercase hover:border-primary-warm-white hover:bg-primary-warm-white hover:text-primary-comfy-ink active:scale-[0.97] active:border-primary-comfy-canvas active:bg-primary-comfy-canvas active:text-primary-comfy-ink',
         ghost:
-          'bg-transparency-white-t8 font-medium tracking-normal text-primary-warm-white hover:bg-transparency-white-t20',
+          'bg-transparency-white-t8 text-primary-warm-white uppercase hover:bg-transparency-white-t20 active:scale-[0.97]',
         link: "h-auto justify-start px-0 py-1 text-base text-primary-comfy-yellow uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
         underlineLink:
           "relative h-auto justify-start px-0 py-1 text-primary-comfy-yellow uppercase after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-200 hover:opacity-90 hover:after:scale-x-100 [&_svg:not([class*='size-'])]:size-6",

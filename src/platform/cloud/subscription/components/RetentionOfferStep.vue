@@ -7,7 +7,7 @@
   >
     <template v-if="phase === 'applied'" #title-icon>
       <i
-        class="icon-[lucide--circle-check-big] size-6 text-success-background"
+        class="icon-[lucide--circle-check-big] size-6 text-success"
         aria-hidden="true"
       />
     </template>
@@ -17,31 +17,26 @@
       class="flex flex-col gap-3"
     >
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 px-4 py-5 shadow-xs"
+        class="flex flex-col gap-3 rounded-[14px] border border-border/50 bg-secondary/50 px-4 py-5 shadow-xs"
       >
         <div class="flex items-center justify-between gap-2">
-          <p class="m-0 text-sm font-medium text-base-foreground">
+          <p class="m-0 text-sm font-medium">
             {{
               $t('subscription.retentionOffer.stayOnPlan', { plan: planName })
             }}
           </p>
-          <Badge
-            variant="compact"
-            class="bg-base-foreground text-base-background"
-          >
+          <Badge variant="compact" class="bg-foreground text-background">
             {{ $t('subscription.retentionOffer.percentOff', { percent }) }}
           </Badge>
         </div>
-        <p class="m-0 flex flex-wrap items-baseline gap-1.5">
-          <span
-            class="text-[32px] leading-[1.15] font-semibold text-base-foreground"
-          >
+        <p class="m-0 flex flex-wrap items-baseline gap-1.5 text-sm">
+          <span class="text-[32px] leading-[1.15] font-semibold">
             {{ discountedPrice }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-muted-foreground">
             {{ $t('subscription.retentionOffer.perMonth') }}
           </span>
-          <span class="text-sm text-muted-foreground line-through">
+          <span class="text-muted-foreground line-through">
             {{ regularPrice }}
           </span>
         </p>
@@ -54,7 +49,7 @@
             )
           }}
         </p>
-        <div class="h-px bg-border-subtle" role="presentation" />
+        <div class="h-px bg-border/50" role="presentation" />
         <p class="m-0 text-sm text-muted-foreground">{{ keepMessage }}</p>
       </div>
       <p class="m-0 text-sm text-muted-foreground">
@@ -68,19 +63,16 @@
       </p>
     </div>
 
-    <div v-else-if="phase === 'applied'" class="flex flex-col gap-5">
+    <div v-else-if="phase === 'applied'" class="flex flex-col gap-5 text-sm">
       <div
-        class="flex flex-col gap-3 rounded-[14px] border border-border-subtle bg-secondary-background/50 p-4 shadow-xs"
+        class="flex flex-col gap-3 rounded-[14px] border border-border/50 bg-secondary/50 p-4 shadow-xs"
       >
-        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <span class="flex items-center gap-2 text-base-foreground">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="flex items-center gap-2">
             {{
               $t('subscription.retentionOffer.nextPayments', { months }, months)
             }}
-            <Badge
-              variant="compact"
-              class="bg-base-foreground text-base-background"
-            >
+            <Badge variant="compact" class="bg-foreground text-background">
               {{ $t('subscription.retentionOffer.appliedBadge') }}
             </Badge>
           </span>
@@ -88,7 +80,7 @@
             <span class="text-muted-foreground line-through">
               {{ regularAmount }}
             </span>
-            <span class="text-base-foreground">
+            <span>
               {{
                 $t('subscription.retentionOffer.pricePerMonth', {
                   price: discountedMonthlyAmount
@@ -97,7 +89,7 @@
             </span>
           </span>
         </div>
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0 text-muted-foreground">
           {{
             $t(
               'subscription.retentionOffer.savings',
@@ -107,7 +99,7 @@
           }}
         </p>
       </div>
-      <p class="m-0 text-sm text-muted-foreground">
+      <p class="m-0 text-muted-foreground">
         {{
           $t('subscription.retentionOffer.renewsAt', {
             regular: regularAmount,
@@ -198,6 +190,7 @@ import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import { useCancellationPlan } from '@/platform/cloud/subscription/composables/useCancellationPlan'
 import { useRetentionOffer } from '@/platform/cloud/subscription/composables/useRetentionOffer'
@@ -210,7 +203,6 @@ import {
   fullPriceRenewal,
   outcomeOnClose
 } from '@/platform/cloud/subscription/utils/retentionOffer'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { formatCurrencyCents } from '@/utils/numberUtil'
 
 const {
@@ -335,10 +327,7 @@ function close() {
 
 async function acceptOffer() {
   if (!isScopeCurrent()) {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('subscription.cancelDialog.workspaceChanged')
-    })
+    useToast().warning(t('subscription.cancelDialog.workspaceChanged'))
     close()
     return
   }

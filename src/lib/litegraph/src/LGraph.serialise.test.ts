@@ -422,14 +422,13 @@ describe('LGraph Serialisation', () => {
     const node = new LGraphNode('Extended')
     const cyclic: Record<string, unknown> = {}
     cyclic.self = cyclic
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     node.onSerialize = (data) => {
       Object.assign(data, { cyclic })
     }
 
     expect(() => node.serialize()).not.toThrow()
     expect(node.serialize()).not.toHaveProperty('extensions.cyclic')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       'LiteGraph: ignoring non-serializable extension payload'
     )
   })

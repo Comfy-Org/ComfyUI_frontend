@@ -7,14 +7,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
 import type {
   ChatSession,
   HistoryGroups
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 const {
   groups,
@@ -139,26 +138,18 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex h-10 shrink-0 items-center gap-1 px-2">
-      <AccessibleTooltip
-        :label="t('agent.backToPreviousChat')"
-        side="bottom"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
+      <Button
+        :tooltip="t('agent.backToPreviousChat')"
+        tooltip-side="bottom"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('agent.backToPreviousChat')"
+        class="size-6 shrink-0"
+        @click="emit('back')"
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('agent.backToPreviousChat')"
-            class="size-6 shrink-0"
-            @click="emit('back')"
-          >
-            <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
+        <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
+      </Button>
       <h2 class="m-0 text-xs font-normal text-muted-foreground">
         {{ t('agent.history') }}
       </h2>
@@ -179,7 +170,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         <div
           v-for="session in items"
           :key="session.id"
-          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-secondary-background-hover"
+          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
         >
           <div
             v-if="renamingId === session.id"
@@ -206,26 +197,18 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               :failed="failedId === session.id"
               @select="pick(session)"
             />
-            <AccessibleTooltip
-              :label="t('agent.copyMarkdown')"
-              :skip-delay-duration="0"
-              disable-hoverable-content
-              :collision-padding="8"
+            <Button
+              :tooltip="t('agent.copyMarkdown')"
+              type="button"
+              variant="muted-textonly"
+              size="icon-sm"
+              class="shrink-0"
+              :aria-label="t('agent.copyMarkdown')"
+              :disabled="loadingId === session.id"
+              @click="emit('copyMarkdown', session.id)"
             >
-              <template #trigger>
-                <Button
-                  type="button"
-                  variant="muted-textonly"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('agent.copyMarkdown')"
-                  :disabled="loadingId === session.id"
-                  @click="emit('copyMarkdown', session.id)"
-                >
-                  <span class="icon-[lucide--copy] size-3.5" />
-                </Button>
-              </template>
-            </AccessibleTooltip>
+              <span class="icon-[lucide--copy] size-3.5" />
+            </Button>
             <Menu
               :items="getSessionMenuItems(session)"
               side="bottom"

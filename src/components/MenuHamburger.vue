@@ -1,10 +1,10 @@
 <template>
   <div
     v-show="workspaceState.focusMode"
-    class="no-drag fixed top-0 right-0 z-9999 flex flex-row"
+    class="no-drag fixed top-0 right-0 z-overlay flex"
   >
     <Button
-      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
+      :tooltip="$t('menu.showMenu')"
       variant="muted-textonly"
       size="lg"
       :aria-label="$t('menu.showMenu')"

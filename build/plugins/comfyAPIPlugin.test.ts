@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { readFileSync } from 'fs'
 import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -8,11 +9,11 @@ describe('comfyAPIPlugin transform', () => {
   const root = process.cwd()
   const source = 'export const api = 1\nexport function helper() {}\n'
 
-  function runTransform(isDev: boolean, id: string) {
+  function runTransform(isDev: boolean, id: string, code = source) {
     const emitFile = vi.fn()
     const handler = comfyAPIPlugin(isDev).transform
     const context = fromPartial<ThisParameterType<typeof handler>>({ emitFile })
-    const result = handler.call(context, source, id)
+    const result = handler.call(context, code, id)
     return { result, emitFile }
   }
 
@@ -67,6 +68,42 @@ describe('comfyAPIPlugin transform', () => {
     expect(asset.source).not.toContain('console.warn')
     expect(result?.code).toContain('window.comfyAPI.api.api = api;')
   })
+
+  it.for([
+    {
+      module: 'widgets',
+      names: [
+        'addValueControlWidget',
+        'addValueControlWidgets',
+        'updateControlWidgetLabel'
+      ]
+    },
+    {
+      module: 'pnginfo',
+      names: [
+        'getAvifMetadata',
+        'getFlacMetadata',
+        'getLatentMetadata',
+        'getPngMetadata',
+        'getWebpMetadata'
+      ]
+    }
+  ])(
+    'keeps compatibility exports in scripts/$module.js',
+    ({ module, names }) => {
+      const id = path.join(root, `src/scripts/${module}.ts`)
+      const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))
+
+      expect(emitFile.mock.calls[0][0].source.split('\n')).toEqual(
+        expect.arrayContaining(
+          names.map(
+            (name) =>
+              `export const ${name} = window.comfyAPI.${module}.${name};`
+          )
+        )
+      )
+    }
+  )
 
   it('derives the module name from an id with Windows separators', () => {
     const { result, emitFile } = runTransform(

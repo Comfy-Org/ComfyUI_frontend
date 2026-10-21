@@ -1,13 +1,12 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { LinkId } from '@/types/linkId'
+import type { SharedIntersection } from '@/lib/litegraph/src/interfaces'
 import type {
   IWidgetInputSlot,
-  SharedIntersection
-} from '@/lib/litegraph/src/interfaces'
-import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/types/slots'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,

@@ -1,4 +1,5 @@
 import { useDialogStore } from '@/stores/dialogStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -40,17 +41,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     loadGraphData: mockLoadGraphData
   }
 }))
-
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -303,8 +293,9 @@ describe('useSharedWorkflowUrlLoader', () => {
       contentProps: { openingAction: 'copy-and-open' }
     })
     expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
-    expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
-    expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
+    expect(
+      dialogInstance.dialogComponentProps.dismissOnPointerDownOutside
+    ).toBeUndefined()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
     graphLoad.resolve()
@@ -452,12 +443,9 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'Failed to import workflow assets'
-      })
-    )
+    expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
+      description: 'Failed to import workflow assets'
+    })
   })
 
   it('clears share intent when graph load fails after importing assets', async () => {
@@ -560,10 +548,8 @@ describe('useSharedWorkflowUrlLoader', () => {
 
     expect(loaded).toBe('failed')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load shared workflow'
+    expect(useToast().error).toHaveBeenCalledWith('Error', {
+      description: 'Failed to load shared workflow'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(

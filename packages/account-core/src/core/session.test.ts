@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import { makeClient } from './__fixtures__/sessionClientFixture'
 import {
   EXCHANGE_URL,
   jsonResponse,
@@ -9,19 +9,19 @@ import {
   mintBody,
   okFetch,
   testUser
-} from './__fixtures__/sessionFakes.js'
+} from './__fixtures__/sessionFakes'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
   SessionErrorCode
-} from './session.js'
+} from './session'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
-} from './session.js'
+} from './session'
 
 function seedCache(
   storage: CredentialStorage,
@@ -170,6 +170,27 @@ describe('ensureFresh', () => {
       expect(storage.raw()).toBeNull()
     }
   )
+
+  it('carries the organization an sso_required refusal names', async () => {
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(403, {
+          code: 'sso_required',
+          message: 'x',
+          organization_id: 'org_acme'
+        })
+      )
+    })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(result).toStrictEqual({
+      status: 'error',
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme',
+      httpStatus: 403
+    })
+  })
 
   it.for([
     [

@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdateError } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -5,12 +10,10 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 
-import type { LGraph } from '../LGraph'
-import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
-import { slotFloatingLinks } from '../LLink'
-import type { LLink } from '../LLink'
-import { NodeSlotType } from '../types/globalEnums'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 /**
  * Store-backed reads over the links attached to a node's slots.
  * These replace the `output.links[]` / `input.link` mirrors: the link

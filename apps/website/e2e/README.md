@@ -4,6 +4,10 @@ Use `test` from `./fixtures/blockExternalMedia`, not `@playwright/test`.
 Use its `page` and `context`. Set user-agent variants with scoped `test.use`
 options instead of creating browser contexts.
 
+Find an auth toast with `new AuthToasts(page).withText(...)` from
+`./fixtures/authToasts`, never `page.getByText` on its copy: a screen-reader
+live region repeats that copy.
+
 ## No external requests
 
 Register test-specific `context.route` responses before navigation. They override
@@ -63,6 +67,12 @@ ffmpeg -f lavfi -i color=c=black:s=16x16:r=1 -t 16 -c:v libx264 -pix_fmt yuv420p
 ffmpeg -f lavfi -i color=c=black:s=700x394:r=1 -t 1 -c:v libvpx-vp9 -b:v 1k -an e2e/assets/validation-700px.webm
 ```
 
+`assets/vfx-playback.mp4` is an eight-second, 64×36 generated test pattern at 24 fps. VFX comparison tests use it for playback, looping and seeking without downloading campaign media. Regenerate it with:
+
+```sh
+ffmpeg -f lavfi -i testsrc2=size=64x36:rate=24 -t 8 -c:v libx264 -pix_fmt yuv420p -g 24 -keyint_min 24 -sc_threshold 0 -bf 0 -crf 32 -movflags +faststart e2e/assets/vfx-playback.mp4
+```
+
 ## Font fixture
 
 `assets/inter-latin.woff2` is the unmodified Inter Latin font from the website's
@@ -71,3 +81,17 @@ downloaded for Chromium on September 7, 2026. Its
 [source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
 has SHA-256 `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62`.
 The SIL Open Font License is in `assets/Inter-OFL.txt`.
+
+## Screenshot baselines
+
+Baselines are Linux-only (`*-visual-linux.png`); never commit ones generated
+locally. When a `@visual` assertion fails in CI, the shard uploads the actual
+image on the baseline's path as a `website-snapshot-updates-*` artifact.
+Comment `/update-website-screenshots`, add the `Update Website Screenshots`
+label, or tick the checkbox in the PR report comment: the workflow waits for
+the E2E run and commits those images to the branch without rerunning
+Playwright. A run with no failed screenshot assertions commits nothing.
+The workflow fails and says why when there is no E2E run for the head
+commit, the run takes over 45 minutes, or a shard did not finish or left no
+artifact. `/update-website-screenshots full` reruns the visual project with
+`--update-snapshots` instead.

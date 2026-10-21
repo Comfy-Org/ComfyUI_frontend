@@ -8,7 +8,7 @@
  */
 
 import { debounce } from 'es-toolkit'
-import { useToast } from 'primevue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { tryOnScopeDispose, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -22,21 +22,22 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import type { StartupOutcome } from '../base/draftTypes'
+import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
-} from '../base/storageIO'
-import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+} from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
@@ -51,6 +52,8 @@ export function useWorkflowPersistenceV2() {
   const router = useRouter()
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
+  const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
+  let openedFolderWorkflows = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
@@ -111,10 +114,8 @@ export function useWorkflowPersistenceV2() {
     })
 
     if (!saved) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft')
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToSaveDraft')
       })
       return
     }
@@ -258,6 +259,10 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
+    openedFolderWorkflows =
+      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+    if (openedFolderWorkflows) return 'restored'
+
     if (!workflowPersistenceEnabled.value) {
       return await resolveStartupOutcome()
     }
@@ -400,6 +405,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
+    if (openedFolderWorkflows) return
 
     // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]

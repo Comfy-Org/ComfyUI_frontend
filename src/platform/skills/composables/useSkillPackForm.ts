@@ -4,9 +4,12 @@ import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import { publishSkillPack, SkillPacksApiError } from '../api/skillsApi'
-import { useSkillPacksStore } from '../stores/skillPacksStore'
-import type { SkillPack } from '../types'
+import {
+  publishSkillPack,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillPack } from '@/platform/skills/types'
 import {
   CONTROL_CHARACTERS,
   codePointLength,
@@ -15,7 +18,7 @@ import {
   PACK_NAME_PATTERN,
   RESERVED_PACK_NAMES,
   utf8ByteLength
-} from '../types'
+} from '@/platform/skills/types'
 
 interface UseSkillPackFormOptions {
   pack?: MaybeRefOrGetter<SkillPack | undefined>
@@ -170,6 +173,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     if (!validate()) return
 
     const generation = formGeneration
+    const requestScope = store.scope
     loading.value = true
     try {
       const saved = await publishSkillPack({
@@ -177,10 +181,12 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
         description: form.description,
         body: form.body
       })
-      store.upsertPack(saved)
+      if (!store.isCurrentScope(requestScope)) return
+      store.upsertPack(saved, requestScope)
       if (generation !== formGeneration) return
       visible.value = false
     } catch (error) {
+      if (!store.isCurrentScope(requestScope)) return
       handlePublishFailure(error, generation)
     } finally {
       loading.value = false

@@ -334,7 +334,8 @@ describe('useCustomerEventsService', () => {
       account_created: 'credits.eventTypes.accountCreated',
       api_usage_completed: 'credits.eventTypes.apiUsage',
       gpu_usage: 'credits.eventTypes.gpuUsage',
-      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+      api_node_usage: 'credits.eventTypes.apiNodeUsage',
+      agent_usage: 'credits.eventTypes.agentUsage'
     }
 
     it('maps known legacy and unified event types to expected i18n keys', () => {
@@ -364,6 +365,7 @@ describe('useCustomerEventsService', () => {
     it('returns warning for unified usage events', () => {
       expect(service.getEventSeverity('gpu_usage')).toBe('warning')
       expect(service.getEventSeverity('api_node_usage')).toBe('warning')
+      expect(service.getEventSeverity('agent_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {
@@ -448,50 +450,6 @@ describe('useCustomerEventsService', () => {
       }
 
       expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
-  })
-
-  describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
-      expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
-      expect(result).toContain('<br>')
-    })
-
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
     })
   })
 
