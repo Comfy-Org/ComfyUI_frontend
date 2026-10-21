@@ -28,6 +28,9 @@ function getMinimapLocators(comfyPage: ComfyPage) {
     container,
     canvas: comfyPage.page.getByTestId(TestIds.canvas.minimapCanvas),
     viewport: comfyPage.page.getByTestId(TestIds.canvas.minimapViewport),
+    interactionOverlay: comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    ),
     toggleButton: comfyPage.page.getByTestId(
       TestIds.canvas.toggleMinimapButton
     ),
@@ -63,15 +66,14 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
   })
 
   test('Validate minimap is visible by default', async ({ comfyPage }) => {
-    const { container, canvas, viewport } = getMinimapLocators(comfyPage)
+    const { container, canvas, viewport, interactionOverlay } =
+      getMinimapLocators(comfyPage)
 
     await expect(container).toBeVisible()
     await expect(canvas).toBeVisible()
     await expect(viewport).toBeVisible()
     await expect.poll(() => comfyPage.canvasOps.getMinimapRightInset()).toBe(8)
-    await comfyPage.page
-      .getByTestId(TestIds.canvas.minimapInteractionOverlay)
-      .click({ trial: true })
+    await interactionOverlay.click({ trial: true })
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
