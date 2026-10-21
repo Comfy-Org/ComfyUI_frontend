@@ -234,6 +234,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
+  const mayReportLostEdit = createReportBudget()
   const mayReportSettlementFailure = createReportBudget()
   const mayReportSerializationFailure = createReportBudget()
 
@@ -274,10 +275,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     let reportedFailure = false
     return (outcome, workflowId) => {
       if (outcome.state !== 'acknowledged')
-        reportLostEdit(outcome.state, outcome.ops, {
-          code,
-          workflowId: workflowId ?? undefined
-        })
+        reportLostEdit(
+          outcome.state,
+          outcome.ops,
+          {
+            code,
+            workflowId: workflowId ?? undefined
+          },
+          { shouldReport: mayReportLostEdit() }
+        )
       try {
         deps.onBatchSettled(outcome)
       } catch (cause) {

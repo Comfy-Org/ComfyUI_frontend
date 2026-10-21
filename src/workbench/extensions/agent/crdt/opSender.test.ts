@@ -18,7 +18,14 @@ import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
+const devLogState = vi.hoisted(() => ({
+  recordDevEvent: vi.fn()
+}))
+
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./devPanelLog'), () => ({
+  recordDevEvent: devLogState.recordDevEvent
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -1526,6 +1533,23 @@ describe('createOpSender', () => {
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)
+  })
+
+  it('budgets platform lost-edit reports without skipping settlement events', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    sender.enqueue([addNode(4)])
+    sender.enqueue([addNode(5)])
+
+    sender.abortAll()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(5)
   })
 
   it('abortAll settles every other batch when one settlement listener throws', () => {

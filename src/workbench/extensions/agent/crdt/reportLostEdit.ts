@@ -23,7 +23,8 @@ export function reportLostEdit(
     nodeId?: string | number
     message?: string
     failedIndex?: number
-  }
+  },
+  { shouldReport = true }: { shouldReport?: boolean } = {}
 ): void {
   const { errorType = `failure_syncing_agent_edit_${kind}`, ...detail } = cause
   const context = {
@@ -33,14 +34,15 @@ export function reportLostEdit(
     opIds: ops.map((op) => op.op_id),
     operations: ops.map((op) => op.op)
   }
-  reportError(new Error(errorType), {
-    surface: 'agent',
-    errorType,
-    fingerprint: [errorType],
-    level: kind === 'host_rejected' ? 'warning' : 'error',
-    tags: { tab: api.clientId, outcome: kind, code: cause.code },
-    context
-  })
+  if (shouldReport)
+    reportError(new Error(errorType), {
+      surface: 'agent',
+      errorType,
+      fingerprint: [errorType],
+      level: kind === 'host_rejected' ? 'warning' : 'error',
+      tags: { tab: api.clientId, outcome: kind, code: cause.code },
+      context
+    })
   if (kind === 'mint_divergence' || kind === 'host_rejected') {
     recordDevEvent(kind, context, { level: 'warn' })
   } else {
