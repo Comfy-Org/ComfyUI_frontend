@@ -303,9 +303,6 @@ describe('AgentPanel extension flag gate', () => {
       expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
         'first_load'
       )
-      expect(
-        localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
-      ).toBeNull()
     })
 
     it.for([
@@ -338,7 +335,10 @@ describe('AgentPanel extension flag gate', () => {
 
     it('queues consent after sign-in from another entry despite a previous introduction response', async () => {
       currentUser.value = null
-      localStorage.setItem('Comfy.AgentConsent.IntroductionResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
 
       await loadEntryAndSetup()
       await flush()
@@ -354,30 +354,42 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       expect(agentStore.isVisible).toBe(true)
       expect(
-        localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
+        localStorage.getItem(
+          'Comfy.AgentConsent.IntroductionResponded.signed-out'
+        )
       ).toBe('true')
     })
 
     it.for([
-      { restore: 'auth', user: null, initialized: false, identity: null },
+      {
+        restore: 'auth',
+        user: null,
+        initialized: false,
+        workspaceId: 'workspace-a'
+      },
       {
         restore: 'workspace',
         user: { id: 'account-a' },
         initialized: true,
-        identity: null
+        workspaceId: null
       }
     ])(
       'keeps only the locked panel when initial $restore arrives late after an earlier Skip',
-      async ({ user, initialized, identity }) => {
+      async ({ user, initialized, workspaceId }) => {
         currentUser.value = user
         isAuthInitialized.value = initialized
-        Object.assign(consentStore, { identity })
-        localStorage.setItem('Comfy.AgentConsent.IntroductionResponded', 'true')
+        Object.assign(workspaceStore, { activeWorkspaceId: workspaceId })
+        Object.assign(consentStore, { identity: null })
+        localStorage.setItem(
+          'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+          'true'
+        )
         localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
         await loadEntryAndSetup()
         await flush()
 
         currentUser.value = { id: 'account-a' }
+        Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
         Object.assign(consentStore, { identity: 'account-a/workspace-a' })
         isAuthInitialized.value = true
         await flush()
@@ -390,7 +402,10 @@ describe('AgentPanel extension flag gate', () => {
     it('keeps an external sign-in queued until its workspace resolves', async () => {
       currentUser.value = null
       Object.assign(consentStore, { identity: null })
-      localStorage.setItem('Comfy.AgentConsent.IntroductionResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
       await loadEntryAndSetup()
       await flush()
       openDialog()
@@ -406,13 +421,20 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it.for([
-      { session: 'signed out', user: null },
-      { session: 'signed in', user: { id: 'account-a' } }
+      { session: 'signed out', user: null, scope: 'signed-out' },
+      {
+        session: 'signed in',
+        user: { id: 'account-a' },
+        scope: 'account-a.workspace-a'
+      }
     ])(
       'opens the locked panel on every $session launch after Skip',
-      async ({ user }) => {
+      async ({ user, scope }) => {
         currentUser.value = user
-        localStorage.setItem('Comfy.AgentConsent.IntroductionResponded', 'true')
+        localStorage.setItem(
+          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
+          'true'
+        )
         localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
         openDialog()
 
@@ -477,8 +499,8 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       expect(
-        localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
-      ).toBeNull()
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
       setAgentReady(true)
       await flush()
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
@@ -490,8 +512,8 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
       expect(
-        localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
-      ).toBeNull()
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
     })
 
     it('waits for auth initialization before treating startup as signed out', async () => {
@@ -525,7 +547,10 @@ describe('AgentPanel extension flag gate', () => {
 
     it('does not ask again while a signed-out acceptance continues through sign-in', async () => {
       currentUser.value = null
-      localStorage.setItem('Comfy.AgentConsent.IntroductionResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
       Object.assign(useAgentConsentIntroductionStore(), {
         isContinuingSignIn: true
       })

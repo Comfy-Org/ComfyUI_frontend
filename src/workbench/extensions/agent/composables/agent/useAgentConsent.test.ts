@@ -179,11 +179,19 @@ describe('useAgentConsent', () => {
   )
 
   it.for([
-    { action: 'Agree and continue', signedOut: true },
-    { action: 'Skip for now', signedOut: false }
+    {
+      action: 'Agree and continue',
+      signedOut: true,
+      key: 'Comfy.AgentConsent.IntroductionResponded.signed-out'
+    },
+    {
+      action: 'Skip for now',
+      signedOut: false,
+      key: 'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+    }
   ])(
-    'remembers the introduction response to $action',
-    async ({ action, signedOut }) => {
+    'remembers the introduction response to $action for its scope',
+    async ({ action, signedOut, key }) => {
       useCurrentUser().isLoggedIn = computed(() => !signedOut)
       useCurrentUser().resolvedUserInfo = computed(() =>
         signedOut ? null : { id: 'account-a' }
@@ -194,16 +202,12 @@ describe('useAgentConsent', () => {
       const dialog = await waitForConsentDialog()
       await renderConsentCard(dialog)
 
-      expect(
-        localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
-      ).toBeNull()
+      expect(localStorage.getItem(key)).toBeNull()
       await userEvent.click(screen.getByRole('button', { name: action }))
       await request
 
       await vi.waitFor(() => {
-        expect(
-          localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
-        ).toBe('true')
+        expect(localStorage.getItem(key)).toBe('true')
       })
       expect(useAgentConsentStore().accepted).toBe(false)
       expect(onOpen).not.toHaveBeenCalled()
@@ -219,7 +223,9 @@ describe('useAgentConsent', () => {
     await request
 
     expect(
-      localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+      )
     ).toBeNull()
   })
 
@@ -248,7 +254,9 @@ describe('useAgentConsent', () => {
     await request
 
     expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
-    expect(useAgentConsentIntroductionStore().hasResponded).toBe(true)
+    expect(
+      useAgentConsentIntroductionStore().hasResponded('account-a.workspace-a')
+    ).toBe(true)
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ method: 'POST' }),
@@ -362,7 +370,9 @@ describe('useAgentConsent', () => {
     })
 
     expect(
-      localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'
+      )
     ).toBe('true')
     expect(useAgentConsentStore().accepted).toBe(false)
     expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
@@ -925,7 +935,9 @@ describe('useAgentConsent', () => {
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }]
     ])
     expect(
-      localStorage.getItem('Comfy.AgentConsent.IntroductionResponded')
+      localStorage.getItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out'
+      )
     ).toBe('true')
     expect(useAgentConsentStore().accepted).toBe(false)
 

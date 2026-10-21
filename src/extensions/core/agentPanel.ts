@@ -237,31 +237,20 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
-      const consentScope = (): string | null => {
-        if (!isLoggedIn.value) return 'signed-out'
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        return userId && workspaceId ? `${userId}.${workspaceId}` : null
-      }
       const consentCardSeenIn = new Set<string>()
-      let scopeChangeOfferUserId: string | undefined
       let lockedStartupOpened = false
       let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
-          const scope = consentScope()
+          const { scope } = introductionStore
           if (scope) consentCardSeenIn.add(scope)
         }
       )
 
-      function introductionAnswered(): boolean {
-        return (
-          agentPanelStore.onboarding.offerMemory === 'answered' &&
-          introductionStore.hasResponded &&
-          (scopeChangeOfferUserId === undefined ||
-            resolvedUserInfo.value?.id !== scopeChangeOfferUserId)
-        )
+      function introductionOwed(): boolean {
+        const { scope } = introductionStore
+        return scope !== null && !introductionStore.hasResponded(scope)
       }
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
@@ -269,7 +258,8 @@ export function registerAgentPanelExtension(): void {
           ? isAuthInitialized.value
           : isLoggedIn.value) &&
         !introductionStore.isContinuingSignIn &&
-        !introductionAnswered() &&
+        (agentPanelStore.onboarding.offerMemory !== 'answered' ||
+          introductionOwed()) &&
         !consentStore.isChecking &&
         !consentStore.accepted
       const offerIneligibility = (): AgentConsentOfferExit | null =>
@@ -354,7 +344,7 @@ export function registerAgentPanelExtension(): void {
           if (consentStore.accepted) dropHold()
           return
         }
-        const scope = consentScope()
+        const { scope } = introductionStore
         if (scope && consentCardSeenIn.has(scope)) {
           reportOfferExit('card_already_seen', 'offer')
           dropHold()
@@ -530,17 +520,7 @@ export function registerAgentPanelExtension(): void {
           () => consentStore.identity,
           () => isAuthInitialized.value
         ],
-        ([userId, identity], previous) => {
-          if (
-            !introductionStore.isContinuingSignIn &&
-            previous[2] &&
-            userId &&
-            (userId !== previous[0] ||
-              (previous[1] !== null && identity !== previous[1]))
-          )
-            scopeChangeOfferUserId = userId
-          loadConsentIfEligible()
-        }
+        loadConsentIfEligible
       )
 
       whenever(
