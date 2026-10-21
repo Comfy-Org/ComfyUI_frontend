@@ -1,3 +1,4 @@
+import { paymentRecoveryAvailableFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
@@ -500,6 +501,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     renderComponent('personal')
 
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps Add credits for a past-due owner so it can open Update payment', async () => {
+    const user = userEvent.setup()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('add-credits-button'))
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {

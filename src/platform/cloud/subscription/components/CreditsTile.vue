@@ -196,6 +196,25 @@
         {{ creditsUseNote }}
       </span>
     </div>
+    <div v-else-if="paymentRecoveryAvailable" class="flex flex-col gap-3">
+      <Button
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        size="lg"
+        :class="
+          cn(
+            'w-full font-normal',
+            !isOutOfCredits && 'bg-muted text-foreground'
+          )
+        "
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
+        @click="handleAddCredits"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+        {{ creditsUseNote }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -245,7 +264,7 @@ const {
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp } = useBillingCapabilities()
+const { canTopUp, paymentRecoveryAvailable } = useBillingCapabilities()
 const {
   prepaidCredits,
   totalCredits,

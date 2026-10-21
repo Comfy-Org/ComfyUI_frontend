@@ -1,3 +1,4 @@
+import { paymentRecoveryAvailableFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -501,6 +502,20 @@ describe('CreditsTile', () => {
       expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
     }
   )
+
+  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+    renderTile()
+
+    await userEvent.click(screen.getByText('Add credits'))
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
+  })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
     activeProSubscription()
