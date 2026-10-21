@@ -4565,7 +4565,7 @@
       "readMore": "展开全文",
       "readLess": "收起",
       "provide": "你需要提供",
-      "runsHereTitle": "在 ComfyUI 中运行",
+      "runsHereTitle": "在 ComfyUI 中运行。",
       "runsHereCloud": "此工作流无法在本页面运行。你可以在 Comfy Cloud 中打开（已预先加载所需内容），或下载后在自己的 ComfyUI 中使用。",
       "noExamples": "此工作流暂无示例输出。",
       "sampleOf": "示例 {n}/{total}",
@@ -4577,7 +4577,7 @@
         "export": "代码读取的是 API 格式：在 ComfyUI 中打开下载的工作流，选择「文件 → 导出 (API)」。",
         "keyCloud": "需要，来自你的 Comfy 账户",
         "customNodes": "自定义节点",
-        "customNodesNote": "运行该调用的 ComfyUI 上必须安装这些自定义节点。"
+        "customNodesNote": "Comfy Cloud 已安装这些自定义节点，无需额外设置。"
       }
     },
     "api": {

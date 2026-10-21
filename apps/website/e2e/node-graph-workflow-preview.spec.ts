@@ -1,14 +1,21 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { waitForIsland } from './fixtures/islands'
 
 const PREVIEW = '/hub-preview/node-graph-workflow/'
+
+async function openPreview(page: Page) {
+  await page.goto(PREVIEW)
+  await waitForIsland(page, page.getByTestId('node-graph-workflow'))
+}
 
 test.describe('Node graph workflow preview', () => {
   test('leads with Try in Cloud and offers the workflow download', async ({
     page
   }) => {
-    await page.goto(PREVIEW)
+    await openPreview(page)
 
     const tryCloud = page.getByRole('link', { name: 'Try in Cloud' })
     await expect(tryCloud).toHaveCount(1)
@@ -25,7 +32,7 @@ test.describe('Node graph workflow preview', () => {
   test('switches the output when another sample is chosen', async ({
     page
   }) => {
-    await page.goto(PREVIEW)
+    await openPreview(page)
 
     const output = page.getByTestId('node-graph-output')
     await expect(
@@ -43,7 +50,7 @@ test.describe('Node graph workflow preview', () => {
   })
 
   test('opens the Details and API tabs', async ({ page }) => {
-    await page.goto(PREVIEW)
+    await openPreview(page)
 
     await page.getByRole('tab', { name: 'Details' }).click()
     const details = page.getByRole('tabpanel', { name: 'Details' })

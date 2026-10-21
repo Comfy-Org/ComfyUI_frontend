@@ -53,14 +53,36 @@ describe('nodeGraphInputs', () => {
       expected: [{ media: 'audio', title: undefined }]
     },
     {
-      name: 'finds loaders inside subgraphs and skips other nodes',
+      name: 'finds loaders inside the subgraphs the graph uses',
       graph: {
-        nodes: [{ type: 'SaveVideo' }],
+        nodes: [{ type: 'SaveVideo' }, { type: 'voice-subgraph' }],
         definitions: {
-          subgraphs: [{ nodes: [{ type: 'LoadAudio', title: 'Voice' }] }]
+          subgraphs: [
+            {
+              id: 'voice-subgraph',
+              nodes: [{ type: 'LoadAudio', title: 'Voice' }]
+            },
+            { id: 'unused', nodes: [{ type: 'LoadImage', title: 'Unused' }] }
+          ]
         }
       },
       expected: [{ media: 'audio', title: 'Voice' }]
+    },
+    {
+      name: 'skips muted and bypassed loaders',
+      graph: {
+        nodes: [
+          { type: 'LoadImage', title: 'Muted', mode: 2 },
+          { type: 'LoadImage', title: 'Bypassed', mode: 4 },
+          { type: 'VHS_LoadVideo', title: 'Load Driving Video', mode: 0 }
+        ]
+      },
+      expected: [{ media: 'video', title: 'Driving video' }]
+    },
+    {
+      name: 'capitalizes the label once "Load" is removed',
+      graph: { nodes: [{ type: 'LoadImage', title: 'Load reference photo' }] },
+      expected: [{ media: 'image', title: 'Reference photo' }]
     },
     {
       name: 'returns nothing for a file that is not a graph',

@@ -57,7 +57,8 @@ export function listHubWorkflows(): readonly HubTemplate[] {
   return templates
 }
 
-const FILE_INPUTS: Record<
+/** The loader nodes that take a file from the reader, by node type. */
+export const FILE_INPUTS: Record<
   string,
   { accept: 'image' | 'video' | 'audio'; label: string } | undefined
 > = {

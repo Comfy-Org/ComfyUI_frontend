@@ -3,6 +3,8 @@ import { join } from 'node:path'
 
 import { websiteRoot } from '@website/paths'
 
+import { isProductionBuild } from '@/config/build-env'
+
 const nodeGraphWorkflow = join(
   websiteRoot,
   'src/routes/design-previews/node-graph-workflow.astro'
@@ -14,21 +16,21 @@ export const DESIGN_PREVIEW_ROUTES = [
   '/zh-CN/hub-preview/node-graph-workflow'
 ].map((pattern) => ({ pattern, entrypoint: nodeGraphWorkflow }))
 
-export function isDesignPreviewBuild(
-  vercelEnv: string | undefined = process.env.VERCEL_ENV
-): boolean {
-  return vercelEnv !== 'production'
+type InjectRoute = (route: (typeof DESIGN_PREVIEW_ROUTES)[number]) => void
+
+/** Injects the design preview routes, unless this is the production build. */
+export function injectDesignPreviews(injectRoute: InjectRoute): void {
+  if (isProductionBuild()) return
+  for (const route of DESIGN_PREVIEW_ROUTES) injectRoute(route)
 }
 
-/** Injects the design preview routes in every build except production. */
+/** Astro integration that adds the design previews to non-production builds. */
 export function designPreviews(): AstroIntegration {
   return {
     name: 'design-previews',
     hooks: {
-      'astro:config:setup': ({ injectRoute }) => {
-        if (!isDesignPreviewBuild()) return
-        for (const route of DESIGN_PREVIEW_ROUTES) injectRoute(route)
-      }
+      'astro:config:setup': ({ injectRoute }) =>
+        injectDesignPreviews(injectRoute)
     }
   }
 }

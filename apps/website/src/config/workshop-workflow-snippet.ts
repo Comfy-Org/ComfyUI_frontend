@@ -11,6 +11,9 @@ import {
   workflowCloudRequest
 } from './workshop-workflow-api'
 
+/** The Comfy SDK release the workflow snippets install. */
+export const COMFY_SDK_VERSION = '0.4.0'
+
 function uploadPlaceholder(name: string): string {
   return `UPLOADED_${name}_FILENAME`
 }
@@ -114,7 +117,7 @@ export function workflowSdkPlan(
 export function workflowTypeScript(plan: WorkflowSdkPlan): string {
   const literal = (value: string) => JSON.stringify(value)
   return [
-    '// Node 22+: npm install @comfyorg/sdk@0.4.0',
+    `// Node 22+: npm install @comfyorg/sdk@${COMFY_SDK_VERSION}`,
     "import { Comfy } from '@comfyorg/sdk'",
     '',
     'const apiKey = process.env.COMFY_API_KEY?.trim()',
@@ -140,7 +143,7 @@ export function workflowTypeScript(plan: WorkflowSdkPlan): string {
 export function workflowPython(plan: WorkflowSdkPlan): string {
   const literal = (value: string) => JSON.stringify(value)
   return [
-    '# Python 3.10+: pip install comfy-sdk==0.4.0',
+    `# Python 3.10+: pip install comfy-sdk==${COMFY_SDK_VERSION}`,
     'import os',
     '',
     'from comfy_sdk import Comfy',

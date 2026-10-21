@@ -1,5 +1,6 @@
 import type { SnippetLanguage } from '@/config/models-snippets'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { COMFY_SDK_VERSION } from '@/config/workshop-workflow-snippet'
 
 const API_GRAPH_FILE = 'workflow_api.json'
 const literal = (value: string) => JSON.stringify(value)
@@ -20,7 +21,7 @@ function curlSnippet(): string {
 
 function pythonSnippet(): string {
   return [
-    '# Python 3.10+: pip install comfy-sdk==0.4.0',
+    `# Python 3.10+: pip install comfy-sdk==${COMFY_SDK_VERSION}`,
     'import json',
     'import os',
     '',
@@ -42,7 +43,7 @@ function pythonSnippet(): string {
 
 function typeScriptSnippet(): string {
   return [
-    '// Node 22+: npm install @comfyorg/sdk@0.4.0',
+    `// Node 22+: npm install @comfyorg/sdk@${COMFY_SDK_VERSION}`,
     "import { readFile } from 'node:fs/promises'",
     "import { Comfy } from '@comfyorg/sdk'",
     '',

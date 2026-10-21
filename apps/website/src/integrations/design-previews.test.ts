@@ -1,31 +1,45 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { DESIGN_PREVIEW_ROUTES, isDesignPreviewBuild } from './design-previews'
+import { DESIGN_PREVIEW_ROUTES, injectDesignPreviews } from './design-previews'
 
 describe('design previews', () => {
-  it('stays out of production builds', () => {
-    expect(isDesignPreviewBuild('production')).toBe(false)
-  })
+  it.for([
+    { vercelEnv: 'production', injected: [] },
+    {
+      vercelEnv: 'preview',
+      injected: [
+        '/hub-preview/node-graph-workflow',
+        '/zh-CN/hub-preview/node-graph-workflow'
+      ]
+    },
+    {
+      vercelEnv: undefined,
+      injected: [
+        '/hub-preview/node-graph-workflow',
+        '/zh-CN/hub-preview/node-graph-workflow'
+      ]
+    }
+  ])(
+    'VERCEL_ENV=$vercelEnv injects $injected.length routes',
+    ({ vercelEnv, injected }) => {
+      vi.stubEnv('VERCEL_ENV', vercelEnv)
+      const injectRoute = vi.fn()
 
-  it('builds on pull request previews and locally', () => {
-    vi.stubEnv('VERCEL_ENV', undefined)
+      injectDesignPreviews(injectRoute)
 
-    expect([isDesignPreviewBuild('preview'), isDesignPreviewBuild()]).toEqual([
-      true,
-      true
-    ])
-  })
+      expect(injectRoute.mock.calls.map(([route]) => route.pattern)).toEqual(
+        injected
+      )
+    }
+  )
 
-  it('reads VERCEL_ENV when no environment is passed', () => {
-    vi.stubEnv('VERCEL_ENV', 'production')
-
-    expect(isDesignPreviewBuild()).toBe(false)
-  })
-
-  it('builds every preview in English and Chinese', () => {
-    expect(DESIGN_PREVIEW_ROUTES.map(({ pattern }) => pattern)).toEqual([
-      '/hub-preview/node-graph-workflow',
-      '/zh-CN/hub-preview/node-graph-workflow'
-    ])
+  it('points every preview route at the node graph page', () => {
+    expect(
+      DESIGN_PREVIEW_ROUTES.map(({ entrypoint }) =>
+        entrypoint.endsWith(
+          'src/routes/design-previews/node-graph-workflow.astro'
+        )
+      )
+    ).toEqual([true, true])
   })
 })

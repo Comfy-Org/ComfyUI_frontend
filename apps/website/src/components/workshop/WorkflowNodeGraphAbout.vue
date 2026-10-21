@@ -80,9 +80,9 @@ const more = computed(() => workflow.description.slice(1))
       class="mt-auto rounded-b-2xl border-t border-transparency-white-t8 px-5 py-4 text-sm text-primary-warm-gray"
       data-testid="node-graph-footer"
     >
-      <span class="font-bold text-primary-comfy-canvas"
-        >{{ t('workshop.nodeGraph.runsHereTitle') }}.</span
-      >
+      <span class="font-bold text-primary-comfy-canvas">{{
+        t('workshop.nodeGraph.runsHereTitle')
+      }}</span>
       {{ t('workshop.nodeGraph.runsHereCloud') }}
     </p>
   </section>
