@@ -111,14 +111,16 @@ export async function runRecording(
     'A browser window is about to open with a small floating toolbar',
     'at the top middle. That toolbar is all you need.',
     '',
-    '1. Get set up first — sign in, look around. Nothing is recorded',
-    '   until you press Record.',
-    '2. Press the ⏺ Record button in the floating toolbar, then do the',
+    '1. Turn off Pick locator: click the arrow in the toolbar. While',
+    '   it is on, your clicks pick elements instead of using the app.',
+    '2. Get set up — sign in, look around. Nothing is recorded until',
+    '   you press Record.',
+    '3. Press the ⏺ Record button in the floating toolbar, then do the',
     '   thing you want to show: click, type, drag.',
-    '3. Add a proof step (required): press one of the assert buttons',
+    '4. Add a proof step (required): press one of the assert buttons',
     '   next to Record, then click the thing that proves your action',
     '   worked — text that appeared, a value that changed.',
-    '4. When done, just close the window — everything is saved',
+    '5. When done, just close the window — everything is saved',
     '   automatically as you go, no copying needed.'
   ])
   console.log()
@@ -155,9 +157,6 @@ export async function runRecording(
           // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // No PW_CODEGEN_NO_INSPECTOR: since Playwright 1.63 it disables the
-          // whole recorder, including the in-app floating toolbar with Record
-          // and the assert buttons, not just the separate Inspector window.
           // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL:
             devServerUrl() +

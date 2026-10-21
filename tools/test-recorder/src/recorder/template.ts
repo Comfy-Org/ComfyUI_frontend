@@ -137,12 +137,6 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
       ${pageExpr}.context() as unknown as RecorderEnabledContext
     )._enableRecorder({
       language: 'playwright-test',
-      // Inspecting: the floating toolbar shows, but NOTHING is captured until
-      // the Record button is pressed. Signing in, exploring, and getting set
-      // up all stay off the record — no accidental actions and no typed
-      // passwords end up in the code. Playwright 1.63 accepts only
-      // 'inspecting' or 'recording' here ('standby' throws), and with no
-      // mode the toolbar stays hidden.
       mode: 'inspecting',
       pauseOnNextStatement: false,
       outputFile: ${safeOutputPath}
@@ -151,16 +145,17 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
     console.warn('Could not start the recorder toolbar:', error)
     await ${pageExpr}.pause()
   }
-  // 1. Get set up first — sign in, look around. Nothing is being
-  //    captured yet.
-  // 2. Press the Record button in the floating toolbar (top middle of
-  //    the app window) when you are ready. From then on your clicks and
-  //    typing are captured.
-  // 3. Add a proof step — required. It checks something visible really
+  // 1. Turn off Pick locator (the arrow in the floating toolbar, top
+  //    middle of the app window). While it is on, your clicks pick
+  //    elements instead of using the app.
+  // 2. Get set up — sign in, look around. Nothing is being captured yet.
+  // 3. Press the Record button in the floating toolbar when you are
+  //    ready. From then on your clicks and typing are captured.
+  // 4. Add a proof step — required. It checks something visible really
   //    happened (text appeared, a value changed). Use the toolbar's
   //    assert buttons next to Record, then click the thing that shows
   //    your action worked.
-  // 4. When done, close the browser window — the code is already
+  // 5. When done, close the browser window — the code is already
   //    saved, no copy/paste needed.
   await ${pageExpr}.pause()
 `
