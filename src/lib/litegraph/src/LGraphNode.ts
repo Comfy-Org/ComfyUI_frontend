@@ -817,7 +817,7 @@ export class LGraphNode
 
   declare animatedImages?: boolean
   declare imgs?: HTMLImageElement[]
-  declare images?: ResultItem[]
+  declare images?: (ResultItem | null)[]
   declare videoContainer?: HTMLElement
   /** Whether the node's preview media is loading */
   declare isLoading?: boolean
