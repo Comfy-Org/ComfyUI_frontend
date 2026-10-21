@@ -130,11 +130,7 @@ const pillClass =
         </span>
       </div>
 
-      <div
-        :class="
-          cn('flex flex-col gap-3 px-3', hasModelActions && 'min-h-16 pr-28')
-        "
-      >
+      <div class="flex flex-col gap-3 px-3">
         <!-- The mark over the artwork already says who answers for this, so the
           line under it is the card's own name and nothing else. -->
         <h3
@@ -156,11 +152,20 @@ const pillClass =
           which is then the only place the kind is written. -->
         <div
           v-if="showsTask"
-          :class="cn('flex min-w-0 items-center gap-1.5', hasModelActions ? 'min-h-6' : 'h-6 overflow-hidden')"
+          :class="
+            cn(
+              'flex min-w-0 items-center gap-1.5',
+              hasModelActions ? 'min-h-6' : 'h-6 overflow-hidden'
+            )
+          "
         >
           <span
             :id="`${id}-task`"
-            :class="hasModelActions ? 'min-w-0 rounded-xl bg-hub-surface px-2 py-1 text-xs text-content' : pillClass"
+            :class="
+              hasModelActions
+                ? 'min-w-0 rounded-xl bg-hub-surface px-2 py-1 text-xs text-content'
+                : pillClass
+            "
             data-testid="model-card-task"
           >
             {{ taskLabel }}
@@ -176,18 +181,18 @@ const pillClass =
     </a>
     <div
       v-if="hasModelActions"
-      class="absolute right-5 bottom-4 flex flex-col items-end gap-2"
+      class="flex items-center justify-end gap-2 px-3"
     >
       <a
         :href="model.href"
         data-model-try
-        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2.5 py-1 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2 py-2 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:px-3 md:text-sm"
         >{{ t('workshop.hub.tryModel') }}</a
       >
       <a
         :href="`${model.href}#api`"
         data-model-api
-        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2.5 py-1 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-2 py-2 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:px-3 md:text-sm"
         >{{ t('workshop.hub.useApi')
         }}<span aria-hidden="true" class="ml-1.5">⌘</span></a
       >
