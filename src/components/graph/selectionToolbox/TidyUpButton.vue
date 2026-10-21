@@ -44,7 +44,6 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { isEqual } from 'es-toolkit'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -57,6 +56,7 @@ import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8
@@ -78,12 +78,13 @@ watch(isOpen, (open) => {
   else finish()
 })
 
-watch(
-  () => gridNodes.value.map((node) => node.id),
-  (ids, previousIds) => {
-    if (!isEqual(ids, previousIds)) isOpen.value = false
-  }
-)
+const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) =>
+  nodes.length === previous.length &&
+  nodes.every((node) => previous.includes(node))
+
+watch(gridNodes, (nodes, previous) => {
+  if (!hasSameNodes(nodes, previous)) isOpen.value = false
+})
 
 onBeforeUnmount(() => {
   lift.value = 0

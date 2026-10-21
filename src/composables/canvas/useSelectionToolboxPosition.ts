@@ -79,9 +79,10 @@ export function useSelectionToolboxPosition(
   const { lift } = useSelectionToolboxLift()
   const motionPreference = usePreferredReducedMotion()
   const easedLift = useTransition(lift, {
-    duration: LIFT_DURATION_MS,
-    easing: TransitionPresets.easeOutQuint,
-    disabled: computed(() => motionPreference.value === 'reduce')
+    duration: computed(() =>
+      motionPreference.value === 'reduce' ? 0 : LIFT_DURATION_MS
+    ),
+    easing: TransitionPresets.easeOutQuint
   })
   const isLifted = computed(() => lift.value !== 0 || easedLift.value !== 0)
 
@@ -135,7 +136,7 @@ export function useSelectionToolboxPosition(
       : undefined
   }
 
-  const updateSelectionBounds = () => {
+  const updateSelectionBounds = ({ reanchor = !isLifted.value } = {}) => {
     const anchor = selectionAnchor()
 
     if (!anchor || isDragging.value) {
@@ -144,7 +145,7 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    if (!isLifted.value) worldPosition.value = anchor
+    if (reanchor) worldPosition.value = anchor
 
     updateTransform()
   }
@@ -196,9 +197,11 @@ export function useSelectionToolboxPosition(
       () => linkSelectionStore.selection
     ],
     ([selectedItems], [previousSelectedItems]) => {
-      if (selectedItems !== previousSelectedItems)
-        handleSelectionMembershipChange()
-      updateSelectionBounds()
+      const selectionChanged = selectedItems !== previousSelectedItems
+      if (selectionChanged) handleSelectionMembershipChange()
+      updateSelectionBounds({
+        reanchor: selectionChanged || !isLifted.value
+      })
     },
     { immediate: true }
   )

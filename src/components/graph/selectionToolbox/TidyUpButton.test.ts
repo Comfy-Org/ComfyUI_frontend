@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
@@ -40,17 +40,44 @@ function renderButton() {
 }
 
 describe('TidyUpButton', () => {
-  it('closes the gap bar when the selection changes', async () => {
-    const user = userEvent.setup()
-    setCanvasSelection([nodeWithId(1), nodeWithId(2)])
-    const { unmount } = renderButton()
+  it.for<{
+    change: string
+    next: (selected: LGraphNode[]) => LGraphNode[]
+    staysOpen: boolean
+  }>([
+    {
+      change: 'other nodes',
+      next: () => [nodeWithId(3), nodeWithId(4)],
+      staysOpen: false
+    },
+    {
+      change: 'other nodes with the same ids',
+      next: () => [nodeWithId(1), nodeWithId(2)],
+      staysOpen: false
+    },
+    {
+      change: 'the same nodes in another order',
+      next: ([first, second]) => [second, first],
+      staysOpen: true
+    }
+  ])(
+    'keeps the gap bar open: $staysOpen, when the selection changes to $change',
+    async ({ next, staysOpen }) => {
+      const user = userEvent.setup()
+      const selected = [nodeWithId(1), nodeWithId(2)]
+      setCanvasSelection(selected)
+      const { unmount } = renderButton()
 
-    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
-    expect(await screen.findByRole('slider')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+      expect(await screen.findByRole('slider')).toBeInTheDocument()
 
-    setCanvasSelection([nodeWithId(3), nodeWithId(4)])
+      setCanvasSelection(next(selected))
+      await nextTick()
 
-    await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
-    unmount()
-  })
+      await waitFor(() =>
+        expect(screen.queryByRole('slider') !== null).toBe(staysOpen)
+      )
+      unmount()
+    }
+  )
 })
