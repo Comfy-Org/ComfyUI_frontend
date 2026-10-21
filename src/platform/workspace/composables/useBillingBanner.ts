@@ -100,25 +100,20 @@ function deriveLifecycleNotice(
   return showsPlanChange ? 'planChange' : null
 }
 
+function showsPastDueOutOfCredits(inputs: BillingBannerInputs): boolean {
+  return (
+    (inputs.topUpDeniedPastDue || inputs.runDeniedPastDue) &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  )
+}
+
 function deriveNoticeBanner(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
   if (!inputs.billingControlEnabled) return null
-  if (
-    inputs.topUpDeniedPastDue &&
-    inputs.hasFunds === false &&
-    !inputs.outOfCreditsDismissed
-  ) {
-    return 'outOfCredits'
-  }
-  if (
-    inputs.runDeniedPastDue &&
-    inputs.hasFunds === false &&
-    !inputs.outOfCreditsDismissed
-  ) {
-    return 'outOfCredits'
-  }
+  if (showsPastDueOutOfCredits(inputs)) return 'outOfCredits'
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
