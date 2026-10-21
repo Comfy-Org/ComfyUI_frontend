@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useClipboard, useClipboardItems } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -9,6 +8,7 @@ import Tag from '@/components/chip/Tag.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -64,16 +64,14 @@ const readableText = computed(() =>
   })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
-const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
-const richClipboard = useClipboardItems({ copiedDuring: 2000 })
-const copied = computed(
-  () => plainClipboard.copied.value || richClipboard.copied.value
-)
+const { copied, copyToClipboard } = useCopyToClipboard({
+  copiedDuring: 2000,
+  showSuccessToast: false
+})
 
 async function copyMessage(): Promise<void> {
   if (
     (workflowReferences.length || skillReference) &&
-    richClipboard.isSupported.value &&
     typeof ClipboardItem !== 'undefined'
   ) {
     const content = userMessageClipboard({
@@ -84,19 +82,21 @@ async function copyMessage(): Promise<void> {
       attachments
     })
     try {
-      await richClipboard.copy([
-        new ClipboardItem({
-          'text/plain': new Blob([content.text], { type: 'text/plain' }),
-          'text/html': new Blob([content.html], { type: 'text/html' })
-        })
-      ])
+      await copyToClipboard(content.text, {
+        clipboardItems: [
+          new ClipboardItem({
+            'text/plain': new Blob([content.text], { type: 'text/plain' }),
+            'text/html': new Blob([content.html], { type: 'text/html' })
+          })
+        ]
+      })
       return
     } catch {
-      await plainClipboard.copy(content.text)
+      await copyToClipboard(content.text)
       return
     }
   }
-  await plainClipboard.copy(readableText.value)
+  await copyToClipboard(readableText.value)
 }
 
 function copySelection(event: ClipboardEvent): void {
@@ -262,7 +262,6 @@ function attachmentUrl(
         variant="muted-textonly"
         size="icon-sm"
         :aria-label="t('g.edit')"
-        class="size-6 rounded-lg"
         @click="
           emit('edit', {
             text,
@@ -280,7 +279,6 @@ function attachmentUrl(
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="size-6 rounded-lg"
             @click="copyMessage"
           >
             <span

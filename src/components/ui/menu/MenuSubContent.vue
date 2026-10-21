@@ -12,6 +12,7 @@ import { menuContentClass } from './menuStyles'
 
 const {
   class: className,
+  collisionPadding = 10,
   width = 'default',
   maxHeight = 'available',
   ...restProps
@@ -29,6 +30,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <DropdownMenuSubContent
     v-bind="forwarded"
+    :collision-padding
     :class="
       cn(
         menuContentClass,

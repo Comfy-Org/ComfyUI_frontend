@@ -84,16 +84,16 @@ async function open(): Promise<void> {
     v-if="agentEnabled && tab"
     type="button"
     variant="outline"
-    size="unset"
+    size="lg"
     :aria-label="t('agent.openWorkflowTab', { name: label })"
     :aria-describedby="nodeCount === undefined ? undefined : nodeCountId"
-    class="h-[53px] w-full justify-start gap-2.5 px-3 py-2.5 text-left whitespace-normal"
+    class="h-auto w-full justify-start text-left whitespace-normal"
     @click="open"
   >
     <span
       aria-hidden="true"
       data-testid="workflow-link-media"
-      class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-muted-foreground"
+      class="flex shrink-0 items-center justify-center text-muted-foreground"
     >
       <span class="icon-[comfy--workflow] size-4" />
     </span>

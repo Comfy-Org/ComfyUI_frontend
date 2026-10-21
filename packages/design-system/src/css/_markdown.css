@@ -128,6 +128,14 @@
   margin: 0.5rem 0;
 }
 
+.comfy-markdown-content ul {
+  list-style-type: disc;
+}
+
+.comfy-markdown-content ol {
+  list-style-type: decimal;
+}
+
 .comfy-markdown-content ul ul,
 .comfy-markdown-content ol ol,
 .comfy-markdown-content ul ol,
@@ -177,11 +185,11 @@
 }
 
 .comfy-markdown-content td {
-  color: var(--muted-foreground);
+  color: var(--foreground);
 }
 
 .comfy-markdown-content tr {
-  border-bottom: 1px solid var(--secondary);
+  border-bottom: 1px solid var(--border);
 }
 
 .comfy-markdown-content tr:last-child {
@@ -193,7 +201,7 @@
 }
 
 .comfy-markdown-content a {
-  color: var(--muted-foreground);
+  color: var(--foreground);
   text-decoration: underline;
 }
 

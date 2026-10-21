@@ -1,5 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -11,6 +12,7 @@ import ModelInfoPanel from './ModelInfoPanel.vue'
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   })
 }))

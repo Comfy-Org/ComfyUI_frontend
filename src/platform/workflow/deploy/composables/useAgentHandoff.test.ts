@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -15,7 +16,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => {
     (_text: string, _options?: { toastOnSuccess?: boolean }) =>
       Promise.resolve(true)
   )
-  return { useCopyToClipboard: () => ({ copyToClipboard }) }
+  return { useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard }) }
 })
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({

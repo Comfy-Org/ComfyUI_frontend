@@ -5,7 +5,9 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
 
 const {
@@ -72,10 +74,13 @@ function choose(action: 'accept' | 'reject'): void {
     </Button>
   </DefineDocsLink>
 
-  <div ref="containerRef" class="@container w-[min(640px,calc(100vw-2rem))]">
+  <div
+    ref="containerRef"
+    class="@container w-[min(640px,calc(100vw-2rem))] max-w-full"
+  >
     <div
       data-testid="agent-consent-card"
-      class="max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
+      class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-border bg-background shadow-lg"
     >
       <div class="p-2">
         <Video
@@ -98,9 +103,9 @@ function choose(action: 'accept' | 'reject'): void {
         </Video>
       </div>
 
-      <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
+      <section class="flex flex-col gap-4 px-4 py-2">
         <div class="flex flex-col gap-4">
-          <DialogTitle class="my-0 text-xl @xl:text-2xl">
+          <DialogTitle class="my-0">
             {{ title }}
           </DialogTitle>
           <p
@@ -113,38 +118,35 @@ function choose(action: 'accept' | 'reject'): void {
 
           <ReuseDocsLink v-if="docsUrl && !isWide" />
 
-          <p v-if="error" role="alert" class="my-0 text-sm/5 text-destructive">
+          <Message v-if="error" severity="error">
             {{ error }}
-          </p>
+          </Message>
         </div>
-
-        <footer
-          class="flex flex-col gap-2.5 @xl:flex-row @xl:flex-wrap @xl:items-center @xl:justify-end"
-        >
-          <ReuseDocsLink v-if="docsUrl && isWide" />
-
-          <div
-            class="flex max-w-full flex-col gap-2.5 @xl:flex-row @xl:flex-wrap @xl:justify-end"
-          >
-            <Button
-              v-for="action in actions"
-              :key="action"
-              :variant="action === 'accept' ? 'inverted' : 'secondary'"
-              size="lg"
-              class="w-full @xl:w-auto"
-              :loading="action === 'accept' && accepting"
-              :disabled="accepting"
-              @click="choose(action)"
-            >
-              {{
-                action === 'accept'
-                  ? $t('agent.consent.accept')
-                  : $t('agent.consent.reject')
-              }}
-            </Button>
-          </div>
-        </footer>
       </section>
+      <DialogFooter class="flex-col @xl:flex-row @xl:flex-wrap">
+        <ReuseDocsLink v-if="docsUrl && isWide" />
+
+        <div
+          class="flex max-w-full flex-col gap-2.5 @xl:flex-row @xl:flex-wrap @xl:justify-end"
+        >
+          <Button
+            v-for="action in actions"
+            :key="action"
+            :variant="action === 'accept' ? 'inverted' : 'secondary'"
+            size="lg"
+            class="w-full @xl:w-auto"
+            :loading="action === 'accept' && accepting"
+            :disabled="accepting"
+            @click="choose(action)"
+          >
+            {{
+              action === 'accept'
+                ? $t('agent.consent.accept')
+                : $t('agent.consent.reject')
+            }}
+          </Button>
+        </div>
+      </DialogFooter>
     </div>
   </div>
 </template>

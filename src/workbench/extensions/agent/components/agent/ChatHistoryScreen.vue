@@ -185,7 +185,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               type="text"
               :aria-label="t('g.rename')"
               :maxlength="MAX_TITLE_LENGTH"
-              class="h-6 flex-1 px-2 py-1 text-xs"
+              class="flex-1"
               @keydown="onRenameKeydown(session, $event)"
               @blur="commitRename(session)"
             />

@@ -103,7 +103,7 @@ function scrollPage(direction: -1 | 1): void {
           size="icon"
           :aria-label="t('g.scrollLeft')"
           :disabled="!hasMoreLeft"
-          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
+          class="pointer-events-auto shrink-0 shadow-sm"
           @click="scrollPage(-1)"
         >
           <span aria-hidden="true" class="icon-[lucide--chevron-left] size-4" />
@@ -122,7 +122,7 @@ function scrollPage(direction: -1 | 1): void {
           size="icon"
           :aria-label="t('g.scrollRight')"
           :disabled="!hasMoreRight"
-          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
+          class="pointer-events-auto shrink-0 shadow-sm"
           @click="scrollPage(1)"
         >
           <span

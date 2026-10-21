@@ -277,7 +277,7 @@ watch(
       variant="secondary"
       size="icon"
       :aria-label="t('agent.latest')"
-      class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
+      class="absolute bottom-2 left-1/2 -translate-x-1/2 shadow-md"
       @click="scrollToLatest"
     >
       <span class="icon-[lucide--chevron-down] size-4" />

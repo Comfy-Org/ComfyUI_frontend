@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const { isMaximized = false } = defineProps<{
@@ -50,12 +50,7 @@ const sizeToggleLabel = computed(() =>
         <span class="icon-[lucide--info] size-4" />
       </Button>
     </div>
-    <Badge
-      variant="pill"
-      class="border bg-transparent text-xs text-muted-foreground"
-    >
-      {{ t('agent.beta') }}
-    </Badge>
+    <Badge variant="compact">{{ t('agent.beta') }}</Badge>
 
     <div class="ml-auto flex items-center gap-2">
       <Button

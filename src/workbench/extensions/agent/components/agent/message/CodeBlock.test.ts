@@ -1,9 +1,17 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
 
 import CodeBlock from './CodeBlock.vue'
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: vi.fn()
+  })
+}))
 
 vi.mock(import('shiki'), () => ({
   codeToHtml: vi.fn(async (code: string, options: { lang: string }) => {

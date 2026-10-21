@@ -19,7 +19,7 @@ const placeholderHint = computed(() => {
     :inert="!visible"
     :class="
       cn(
-        'pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-[14px]/5 font-normal text-muted-foreground',
+        'pointer-events-none z-10 col-start-1 row-start-1 self-start p-3 font-inter text-sm/5 font-normal text-muted-foreground',
         !visible && 'invisible'
       )
     "
@@ -30,16 +30,14 @@ const placeholderHint = computed(() => {
       :tooltip="nodeReferenceDisabledReason ?? ''"
       type="button"
       variant="link"
-      size="unset"
+      size="link"
       :aria-disabled="!!nodeReferenceDisabledReason || undefined"
       :aria-description="nodeReferenceDisabledReason"
-      class="pointer-events-auto h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+      class="pointer-events-auto py-0 align-top aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
       @click="emit('selectNodes', $event)"
     >
       <span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0" />
-      <span class="underline decoration-dashed underline-offset-2">{{
-        placeholderHint.mentionNodes
-      }}</span>
+      <span>{{ placeholderHint.mentionNodes }}</span>
     </Button>
   </div>
 </template>
