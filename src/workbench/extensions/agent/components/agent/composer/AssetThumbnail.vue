@@ -68,7 +68,7 @@ const icon = computed(() => {
     <span
       v-else-if="showNameTile"
       aria-hidden="true"
-      class="flex size-full items-center justify-center overflow-hidden rounded-sm bg-muted p-1 text-center text-[10px] leading-tight break-all text-foreground"
+      class="flex size-full items-center justify-center overflow-hidden rounded-md p-1 text-center text-[10px] leading-tight break-all text-foreground ring-1 ring-border ring-inset"
     >
       <span class="line-clamp-3">{{ name }}</span>
     </span>
