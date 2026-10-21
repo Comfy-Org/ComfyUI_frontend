@@ -33,7 +33,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isSameSitePath(href: unknown): href is string {
   return (
-    typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')
+    typeof href === 'string' && href.startsWith('/') && !/^\/[\\/]/.test(href)
   )
 }
 

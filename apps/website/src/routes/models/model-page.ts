@@ -118,7 +118,7 @@ export async function prepareModelPage(
       model.useCases?.length === 1 ? model.useCases[0] : undefined
     ),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
-    providerModels: await providerModelRows(model),
+    providerModels: model.routerId ? await providerModelRows(model) : [],
     workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
     tags,
     ...splitShownTags(tags)

@@ -14,6 +14,13 @@ const comparable = (name: string) =>
 // release, with a version or more than one word, is read as this model.
 const namesARelease = (name: string) => /\d/.test(name) || name.includes(' ')
 
+const continuesTheVersion = (release: string, rest: string) =>
+  /\d$/.test(release) && /^\d/.test(rest)
+
+const namesAVariantOf = (name: string, release: string) =>
+  name.startsWith(`${release} `) &&
+  !continuesTheVersion(release, name.slice(release.length + 1))
+
 export function workflowsUsingModel(
   model: Pick<WorkshopModel, 'name'>,
   pages: readonly WorkshopModel[]
@@ -26,7 +33,7 @@ export function workflowsUsingModel(
         const release = comparable(used)
         return (
           namesARelease(release) &&
-          (name === release || name.startsWith(`${release} `))
+          (name === release || namesAVariantOf(name, release))
         )
       })
   )

@@ -272,11 +272,14 @@ watch(
 )
 const apiSection = useTemplateRef<HTMLElement>('apiSection')
 const apiInView = useElementVisibility(apiSection)
-watch([apiInView, workshopEnabled], ([inView, enabled]) => {
-  if (enabled && inView) {
-    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
-  }
-})
+watch(
+  () => apiInView.value && workshopEnabled.value,
+  (viewed) => {
+    if (viewed)
+      captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
 function captureApiKeyClick() {
   if (workshopEnabled.value)
     captureWorkshopEvent({

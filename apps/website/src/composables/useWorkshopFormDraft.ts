@@ -1,4 +1,4 @@
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -23,7 +23,10 @@ export function useWorkshopFormDraft(
   values: Ref<FormValues>,
   nativeJson: Ref<boolean>,
   allowNativeJson: boolean,
-  { persistFiles = false }: { persistFiles?: boolean } = {}
+  {
+    persistFiles = false,
+    held
+  }: { persistFiles?: boolean; held?: Readonly<Ref<boolean>> } = {}
 ) {
   const key = `comfy-workshop-form:${slug}`
   const mediaKey = `${key}:media`
@@ -33,8 +36,10 @@ export function useWorkshopFormDraft(
   let saveRevision = 0
   const restoreFailed = ref(false)
   const controller = new AbortController()
+  let released = !held?.value
 
   function persistScalars() {
+    if (!released) return
     try {
       const scalars = Object.fromEntries(
         Object.entries(values.value)
@@ -126,10 +131,15 @@ export function useWorkshopFormDraft(
       activity.value = 'idle'
     }
   }
-  onMounted(() => {
+  function startRestoring() {
+    released = true
     restoration = restore().finally(() => {
       restoration = undefined
     })
+  }
+  onMounted(() => {
+    if (held?.value) whenever(() => !held.value, startRestoring, { once: true })
+    else startRestoring()
     if (persistFiles)
       watch(
         schema.value

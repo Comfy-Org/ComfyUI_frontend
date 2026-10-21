@@ -5,16 +5,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { leaveForSignIn } from '@/config/workshop-return'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-
-type RunGate =
-  | 'unavailable'
-  | 'resolving'
-  | 'rollingOut'
-  | 'pending'
-  | 'signedOut'
-  | 'noCredits'
-  | 'memberNoCredits'
-  | 'ready'
+import type { RunGate } from '@/lib/workshop/run-gate'
 
 const {
   gate,
