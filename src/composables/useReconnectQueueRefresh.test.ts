@@ -284,6 +284,21 @@ describe('useReconnectQueueRefresh', () => {
       expect(Object.keys(executionStore.queuedJobs)).toContain('job-new')
     })
 
+    it('restores the recovered run when a tab switch adopts that run during refresh', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-1'] = { nodes: {} }
+      vi.mocked(api.getJobDetail).mockImplementation(async () => {
+        executionStore.activeJobId = 'job-1'
+        return finishedJob
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+    })
+
     it('ignores runs this tab was not following', async () => {
       vi.mocked(api.getHistory).mockResolvedValue([
         {
