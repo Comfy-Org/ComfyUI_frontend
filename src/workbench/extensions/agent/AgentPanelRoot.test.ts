@@ -6635,6 +6635,7 @@ describe('AgentPanelRoot workflow binding', () => {
       (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           accept = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
             onAccept()
             resolve()
           }
@@ -6650,6 +6651,7 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.linearMode = true
     useAgentPanelStore().close('close_button')
     unmount()
+    expect(useAgentComposerStore().submission).toBeNull()
     accept()
     await waitFor(() =>
       expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)

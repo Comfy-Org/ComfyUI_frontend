@@ -6,7 +6,8 @@ import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 import { computed, defineComponent, h, reactive, ref } from 'vue'
 import { setImmediate } from 'node:timers/promises'
 
@@ -874,9 +875,24 @@ describe('useAgentConsent', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it.for(['account', 'workspace'] as const)(
-    'closes a Desktop card when its %s changes before a decision',
-    async (scope) => {
+  it.for([
+    {
+      scope: 'account',
+      change: (userId: Ref<string>) => {
+        userId.value = 'account-b'
+      }
+    },
+    {
+      scope: 'workspace',
+      change: () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        })
+      }
+    }
+  ])(
+    'closes a Desktop card when its $scope changes before a decision',
+    async ({ change }) => {
       distribution.isDesktop = true
       const userId = ref('account-a')
       useCurrentUser().resolvedUserInfo = computed(() => ({ id: userId.value }))
@@ -884,15 +900,13 @@ describe('useAgentConsent', () => {
       const request = useAgentConsent().withConsent('first_message', onSend)
       const dialog = await waitForConsentDialog()
 
-      if (scope === 'account') userId.value = 'account-b'
-      else
-        Object.assign(useTeamWorkspaceStore(), {
-          activeWorkspaceId: 'workspace-b'
-        })
+      change(userId)
       await vi.waitFor(() =>
         expect(useDialogStore().dialogStack).toHaveLength(0)
       )
-      ;(dialog.contentProps.onAccept as () => void)()
+      const accept = dialog.contentProps.onAccept
+      assert(typeof accept === 'function')
+      accept()
       await request
 
       expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
@@ -997,7 +1011,7 @@ describe('useAgentConsent', () => {
     expect(nextDialog.contentProps.requiresSignIn).toBe(true)
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
     const reject = nextDialog.contentProps.onReject
-    if (typeof reject !== 'function') throw new Error('Missing skip action')
+    assert(typeof reject === 'function')
     reject()
     await retry
     expect(onOpen).not.toHaveBeenCalled()
