@@ -6,6 +6,7 @@
     v-else
     :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
+    @pointerdown="recordPressPosition"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
@@ -79,6 +80,7 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -170,7 +172,19 @@ const handleCollapse = () => {
   emit('collapse')
 }
 
-const handleDoubleClick = () => {
+let pressPosition: { x: number; y: number } | undefined
+
+const recordPressPosition = (event: PointerEvent) => {
+  pressPosition = { x: event.clientX, y: event.clientY }
+}
+
+const releasedAfterDrag = (event: MouseEvent) =>
+  pressPosition !== undefined &&
+  Math.hypot(event.clientX - pressPosition.x, event.clientY - pressPosition.y) >
+    CanvasPointer.maxClickDrift
+
+const handleDoubleClick = (event: MouseEvent) => {
+  if (releasedAfterDrag(event)) return
   isEditing.value = true
 }
 

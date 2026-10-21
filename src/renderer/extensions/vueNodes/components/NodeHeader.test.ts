@@ -154,6 +154,33 @@ describe('NodeHeader.vue', () => {
     expect(onUpdateTitle).toHaveBeenCalledWith('My Custom Sampler')
   })
 
+  it.for([
+    { case: 'a drag', end: { clientX: 200, clientY: 140 }, opensEditor: false },
+    {
+      case: 'a click with slight drift',
+      end: { clientX: 13, clientY: 12 },
+      opensEditor: true
+    }
+  ])(
+    'opens the title editor on a double click ending $case: $opensEditor',
+    async ({ end, opensEditor }) => {
+      const { user } = renderHeader()
+      const target = screen.getByTestId('node-header-1')
+      const start = { clientX: 10, clientY: 10 }
+
+      await user.pointer([
+        { keys: '[MouseLeft]', target, coords: start },
+        { keys: '[MouseLeft>]', target, coords: start },
+        { target, coords: end },
+        { keys: '[/MouseLeft]', target, coords: end }
+      ])
+
+      expect(screen.queryByTestId('node-title-input') !== null).toBe(
+        opensEditor
+      )
+    }
+  )
+
   it('cancels rename on escape and keeps previous title', async () => {
     const { user, onUpdateTitle } = renderHeader({
       nodeData: makeNodeData({ title: 'KeepMe' })
