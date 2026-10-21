@@ -8,7 +8,7 @@ import { z } from 'zod'
 
 const labelSchema = zLabelRef.pick({ display_name: true })
 
-export const hubCreatorWorkflowSchema = zHubWorkflowSummary
+const hubCreatorWorkflowSchema = zHubWorkflowSummary
   .pick({
     share_id: true,
     name: true,
