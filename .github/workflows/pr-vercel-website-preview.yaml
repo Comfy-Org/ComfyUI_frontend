@@ -26,6 +26,7 @@ jobs:
       cancel-in-progress: false
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false' &&
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     steps:
