@@ -85,7 +85,12 @@ function isQuotaExceeded(error: unknown): boolean {
   )
 }
 
-function isValidIndex(value: unknown): value is DraftIndexV2 {
+type PersistedDraftIndexV2 = Omit<DraftIndexV2, 'order' | 'entries'> & {
+  order: unknown[]
+  entries: Record<string, unknown>
+}
+
+function isValidIndex(value: unknown): value is PersistedDraftIndexV2 {
   if (typeof value !== 'object' || value === null) return false
   const obj = value as Record<string, unknown>
   return (
@@ -95,6 +100,78 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
     typeof obj.entries === 'object' &&
     obj.entries !== null
   )
+}
+
+function isValidPayload(value: unknown): value is DraftPayloadV2 {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    typeof obj.data === 'string' &&
+    typeof obj.updatedAt === 'number' &&
+    Number.isFinite(obj.updatedAt)
+  )
+}
+
+function isValidPersistedIndexEntry(
+  entry: unknown
+): entry is Record<string, unknown> {
+  if (typeof entry !== 'object' || entry === null) return false
+  const value = entry as Record<string, unknown>
+  return (
+    typeof value.path === 'string' &&
+    value.path.length > 0 &&
+    typeof value.name === 'string' &&
+    typeof value.isTemporary === 'boolean' &&
+    typeof value.updatedAt === 'number' &&
+    Number.isFinite(value.updatedAt)
+  )
+}
+
+function normalizeIndexEntry(
+  entry: unknown
+): DraftIndexV2['entries'][string] | null {
+  if (!isValidPersistedIndexEntry(entry)) return null
+
+  const normalized = { ...entry }
+  if (
+    'isModified' in normalized &&
+    typeof normalized.isModified !== 'boolean'
+  ) {
+    delete normalized.isModified
+  }
+  return normalized as unknown as DraftIndexV2['entries'][string]
+}
+
+function sanitizeIndexOrder(
+  order: unknown[],
+  entries: DraftIndexV2['entries']
+): string[] {
+  const seen = new Set<string>()
+  return order.filter((draftKey): draftKey is string => {
+    if (
+      typeof draftKey !== 'string' ||
+      !(draftKey in entries) ||
+      seen.has(draftKey)
+    ) {
+      return false
+    }
+    seen.add(draftKey)
+    return true
+  })
+}
+
+function sanitizeIndexEntries(index: PersistedDraftIndexV2): DraftIndexV2 {
+  const entries: DraftIndexV2['entries'] = {}
+  for (const [draftKey, entry] of Object.entries(index.entries)) {
+    const normalized = normalizeIndexEntry(entry)
+    if (normalized) entries[draftKey] = normalized
+  }
+
+  return {
+    ...index,
+    order: sanitizeIndexOrder(index.order, entries),
+    entries
+  }
 }
 
 /**
@@ -111,7 +188,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
     const parsed = JSON.parse(json)
     if (!isValidIndex(parsed)) return null
 
-    return parsed
+    return sanitizeIndexEntries(parsed)
   } catch {
     return null
   }
@@ -133,6 +210,44 @@ export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
   }
 }
 
+function draftPayloadStorageKey(workspaceId: string, draftKey: string): string {
+  return `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+}
+
+/** Reads the exact serialized draft payload without parsing workflow data. */
+export function readPayloadRaw(
+  workspaceId: string,
+  draftKey: string
+): string | null {
+  if (!isStorageReadable()) return null
+
+  try {
+    return localStorage.getItem(draftPayloadStorageKey(workspaceId, draftKey))
+  } catch {
+    return null
+  }
+}
+
+/** Writes an exact serialized draft payload. Used for lossless rollback. */
+export function writePayloadRaw(
+  workspaceId: string,
+  draftKey: string,
+  serializedPayload: string
+): boolean {
+  if (!isStorageAvailable()) return false
+
+  try {
+    localStorage.setItem(
+      draftPayloadStorageKey(workspaceId, draftKey),
+      serializedPayload
+    )
+    return true
+  } catch (error) {
+    if (isQuotaExceeded(error)) return false
+    throw error
+  }
+}
+
 /**
  * Reads a draft payload from localStorage.
  */
@@ -140,14 +255,12 @@ export function readPayload(
   workspaceId: string,
   draftKey: string
 ): DraftPayloadV2 | null {
-  if (!isStorageReadable()) return null
+  const json = readPayloadRaw(workspaceId, draftKey)
+  if (json === null) return null
 
   try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    const json = localStorage.getItem(key)
-    if (!json) return null
-
-    return JSON.parse(json) as DraftPayloadV2
+    const parsed = JSON.parse(json)
+    return isValidPayload(parsed) ? parsed : null
   } catch {
     return null
   }
@@ -161,27 +274,20 @@ export function writePayload(
   draftKey: string,
   payload: DraftPayloadV2
 ): boolean {
-  if (!isStorageAvailable()) return false
-
-  try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    localStorage.setItem(key, JSON.stringify(payload))
-    return true
-  } catch (error) {
-    if (isQuotaExceeded(error)) return false
-    throw error
-  }
+  return writePayloadRaw(workspaceId, draftKey, JSON.stringify(payload))
 }
 
 /**
  * Deletes a draft payload from localStorage.
  */
-export function deletePayload(workspaceId: string, draftKey: string): void {
+export function deletePayload(workspaceId: string, draftKey: string): boolean {
+  if (!isStorageAvailable()) return false
+
   try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
-    localStorage.removeItem(key)
+    localStorage.removeItem(draftPayloadStorageKey(workspaceId, draftKey))
+    return true
   } catch {
-    // Ignore errors during deletion
+    return false
   }
 }
 
@@ -228,8 +334,7 @@ export function deleteOrphanPayloads(
   let deleted = 0
 
   for (const key of payloadKeys) {
-    if (!indexKeys.has(key)) {
-      deletePayload(workspaceId, key)
+    if (!indexKeys.has(key) && deletePayload(workspaceId, key)) {
       deleted++
     }
   }
@@ -359,6 +464,17 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
   }
 }
 
+/** Reads the durable open-path pointer used for browser-restart recovery. */
+export function readPersistentOpenPaths(
+  workspaceId: string
+): OpenPathsPointer | null {
+  const pointer = readLocalPointer<OpenPathsPointer>(
+    StorageKeys.lastOpenPaths(workspaceId),
+    isValidOpenPathsPointer
+  )
+  return pointer?.workspaceId === workspaceId ? pointer : null
+}
+
 /**
  * Reads the open paths pointer from sessionStorage.
  * Falls back to workspace-based search when clientId changes after reload,
@@ -374,13 +490,7 @@ export function readOpenPaths(
       StorageKeys.prefixes.openPaths,
       targetWorkspaceId,
       isValidOpenPathsPointer
-    ) ??
-    (targetWorkspaceId
-      ? readLocalPointer<OpenPathsPointer>(
-          StorageKeys.lastOpenPaths(targetWorkspaceId),
-          isValidOpenPathsPointer
-        )
-      : null)
+    ) ?? (targetWorkspaceId ? readPersistentOpenPaths(targetWorkspaceId) : null)
   )
 }
 
