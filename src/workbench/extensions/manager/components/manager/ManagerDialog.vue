@@ -148,11 +148,7 @@
         >
           <div class="flex items-center justify-between gap-3">
             {{ $t('manager.loadMoreFailed') }}
-            <Button
-              variant="secondary"
-              :disabled="isSearchLoading"
-              @click="retryNextPage"
-            >
+            <Button variant="secondary" @click="retryNextPage">
               {{ $t('g.retry') }}
             </Button>
           </div>
