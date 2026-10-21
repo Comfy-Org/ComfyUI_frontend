@@ -63,11 +63,13 @@ jobs:
     needs: plan
     if: needs.plan.outputs.has-tests == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 50
     permissions:
       actions: read
     steps:
       - name: Wait for CI Tests E2E to finish
+        continue-on-error: true
+        timeout-minutes: 45
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -77,6 +79,7 @@ jobs:
             gh run list --workflow ci-tests-e2e.yaml --event pull_request \
               --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty'
           }
+          echo "Looking for the CI: Tests E2E run on $HEAD_SHA"
           RUN_ID=$(find_run)
           until [ -n "$RUN_ID" ]; do
             sleep 30
@@ -182,7 +185,7 @@ jobs:
 
   report:
     needs: [plan, playwright-video-new-tests]
-    if: always() && needs.plan.outputs.has-tests == 'true'
+    if: ${{ !cancelled() && needs.plan.outputs.has-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
