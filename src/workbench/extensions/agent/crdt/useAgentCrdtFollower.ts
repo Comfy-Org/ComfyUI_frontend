@@ -16,7 +16,6 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
-import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
@@ -1147,7 +1146,7 @@ function startAgentCrdtFollower(
   const debugSnapshot = (): CrdtDebugSnapshot =>
     readCrdtSnapshot(bridge.follower.doc, {
       status: status.value,
-      tabId: api.clientId ?? null,
+      tabId,
       lastSeq: bridge.lastSequence,
       schemaError: bridge.lastSchemaError?.message ?? null
     })
