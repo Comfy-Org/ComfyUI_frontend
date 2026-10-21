@@ -7,6 +7,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
 import type { BundleFailureReason } from '@/platform/workflow/deploy/api/installationBundleApi'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -72,6 +73,7 @@ export function useInstallationDeploy() {
   forgetLinkFromEarlierDialog()
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
+  const workflowStore = useWorkflowStore()
   const { showSignInDialog } = useAuthDialogs()
   const toast = useToast()
   const state = computed<InstallationDeployState>(() => {
@@ -81,6 +83,12 @@ export function useInstallationDeploy() {
       ? { status: 'tab_blocked', url: current.url }
       : { status: 'idle' }
   })
+
+  function openWorkflow() {
+    const workflow = workflowStore.activeWorkflow
+    workflow?.changeTracker.prepareForSave()
+    return workflow?.activeState
+  }
 
   async function workspaceToken(): Promise<TokenLookup> {
     try {
@@ -163,12 +171,13 @@ export function useInstallationDeploy() {
 
   async function deploy(): Promise<boolean> {
     if (deployment.value.status === 'uploading') return false
+    const workflow = openWorkflow()
     deployment.value = { status: 'uploading' }
     const credential = await signedInCredential()
     const { owner } = credential
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
     if (!credential.ok) return fail(credential)
-    const bundle = await createInstallationBundle(credential.header)
+    const bundle = await createInstallationBundle(credential.header, workflow)
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
     if (!bundle.ok) return fail(bundle)
     const opened = openInNewTab(bundle.url)

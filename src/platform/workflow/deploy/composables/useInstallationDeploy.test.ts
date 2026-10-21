@@ -12,6 +12,7 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -35,6 +36,8 @@ type PendingToken = {
   reject: (cause: Error) => void
 }
 
+const CANVAS_GRAPH = { last_node_id: 1, nodes: [{ id: 1, type: 'KSampler' }] }
+
 const BUNDLE_ID = 'b78dcd79-8aba-4d5f-abd7-d35e4d33cbce'
 const BUILDER_URL = `https://platform.comfy.org/profile/builds/new?step=import&bundle=${BUNDLE_ID}&workspace=ws-1`
 
@@ -45,6 +48,20 @@ function bundleCreated(url = BUILDER_URL) {
     workspace_id: 'ws-1',
     expires_at: '2026-10-18T00:00:00Z'
   } satisfies CreateDeployBundleResponse)
+}
+
+function openWorkflowOnCanvas(canvasGraph: Record<string, unknown>) {
+  let savedGraph: Record<string, unknown> = { nodes: [] }
+  useWorkflowStore().activeWorkflow = fromPartial({
+    get activeState() {
+      return savedGraph
+    },
+    changeTracker: {
+      prepareForSave: () => {
+        savedGraph = canvasGraph
+      }
+    }
+  })
 }
 
 beforeEach(() => {
@@ -79,6 +96,39 @@ describe(useInstallationDeploy, () => {
     )
     expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
     expect(state.value).toEqual({ status: 'opened' })
+  })
+
+  it('uploads the open workflow as it stands on the canvas', async () => {
+    openWorkflowOnCanvas(CANVAS_GRAPH)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+
+    await expect(useInstallationDeploy().deploy()).resolves.toBe(true)
+
+    expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
+      '/deploy/bundle',
+      expect.objectContaining({
+        body: JSON.stringify({ workflow: CANVAS_GRAPH })
+      })
+    )
+  })
+
+  it('uploads the installation alone when the workflow makes the bundle too large', async () => {
+    openWorkflowOnCanvas(CANVAS_GRAPH)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        Response.json({ error: 'too_large' } satisfies DeployToCloudError, {
+          status: 413
+        })
+      )
+      .mockResolvedValueOnce(bundleCreated())
+
+    await expect(useInstallationDeploy().deploy()).resolves.toBe(true)
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.body)
+    ).toEqual([JSON.stringify({ workflow: CANVAS_GRAPH }), '{}'])
+    expect(useToast().error).not.toHaveBeenCalled()
+    expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
   })
 
   it('uploads with the stored API key when there is no workspace token', async () => {

@@ -12,7 +12,9 @@ import { api } from '@/scripts/api'
 import type { AuthHeader } from '@/types/authTypes'
 
 const BUNDLE_TIMEOUT_MS = 90_000
-const EMPTY_BUNDLE_REQUEST: CreateDeployBundleData['body'] = {}
+
+type BundleRequest = CreateDeployBundleData['body']
+type BundleWorkflow = NonNullable<BundleRequest['workflow']>
 
 const zBundleCreated = zCreateDeployBundleResponse.extend({
   url: z.url({ protocol: /^https$/ })
@@ -64,12 +66,15 @@ function failureReason(status: number, body: unknown): BundleFailureReason {
   return status < 500 ? 'invalid_request' : 'unavailable'
 }
 
-async function postBundle(credential: AuthHeader): Promise<BundlePost> {
+async function postBundle(
+  credential: AuthHeader,
+  request: BundleRequest
+): Promise<BundlePost> {
   try {
     const response = await api.fetchApi('/deploy/bundle', {
       method: 'POST',
       headers: { ...credential, 'Content-Type': 'application/json' },
-      body: JSON.stringify(EMPTY_BUNDLE_REQUEST),
+      body: JSON.stringify(request),
       timeoutMs: BUNDLE_TIMEOUT_MS
     })
     return { ok: true, response }
@@ -78,10 +83,11 @@ async function postBundle(credential: AuthHeader): Promise<BundlePost> {
   }
 }
 
-export async function createInstallationBundle(
-  credential: AuthHeader
+async function uploadBundle(
+  credential: AuthHeader,
+  request: BundleRequest
 ): Promise<BundleResult> {
-  const sent = await postBundle(credential)
+  const sent = await postBundle(credential, request)
   if (!sent.ok) return { ok: false, reason: 'unavailable', cause: sent.cause }
 
   const body = await readJson(sent.response)
@@ -97,4 +103,13 @@ export async function createInstallationBundle(
   return created.success
     ? { ok: true, url: created.data.url }
     : { ok: false, reason: 'unavailable', cause: created.error }
+}
+
+export async function createInstallationBundle(
+  credential: AuthHeader,
+  workflow?: BundleWorkflow
+): Promise<BundleResult> {
+  const bundle = await uploadBundle(credential, { workflow })
+  if (!workflow || bundle.ok || bundle.reason !== 'too_large') return bundle
+  return uploadBundle(credential, {})
 }
