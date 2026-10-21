@@ -2023,6 +2023,8 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
     expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
     releaseRefresh()
+    await setImmediate()
+    expect(screen.getByTestId(STANDING)).toBeInTheDocument()
   })
 
   it('reports the impression against the credits_exhausted surface', async () => {
