@@ -18,7 +18,10 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { createDevAgentConfig } from './build/devAgentConfig.ts'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 import {
   hasCompleteSentryUploadConfig,
@@ -96,12 +99,6 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   functions: 67,
   lines: 70
 }
-
-// WebGL2 / pixel-processing passes that need a real rendering context,
-// which happy-dom does not provide. TODO: cover via browser tests.
-const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
-  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
-]
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
@@ -218,7 +215,7 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-const devAgentConfig = createDevAgentConfig(process.env)
+const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -341,7 +338,10 @@ export default defineConfig({
           }
         : {}),
 
-      ...(devAgentConfig.proxy ? { '/api/agent': devAgentConfig.proxy } : {}),
+      ...devServerAgentRoutes(devAgentConfig.proxy, {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
+      }),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -711,11 +711,6 @@ export default defineConfig({
 
             // UI component libraries
             {
-              name: 'vendor-primevue',
-              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
-              priority: 15
-            },
-            {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
               priority: 15
@@ -803,7 +798,10 @@ export default defineConfig({
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
+    'import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL': JSON.stringify(
+      devAgentConfig.proxySuppliesCredential ? 'true' : ''
+    )
   },
 
   resolve: {
@@ -924,7 +922,6 @@ export default defineConfig({
         'src/locales/**',
         'src/assets/**',
         'packages/**',
-        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: process.env.VITEST_SHARD

@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { PromptEditor } from '../../types/promptEditor'
-import type { WorkflowReferenceOption } from '../../types/workflowReference'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
+import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 import type {
   MentionPickerEvent,
   MentionPickerState,
@@ -11,8 +11,8 @@ import type {
 import { transitionMentionPicker } from './mentionPickerState'
 import type { SelectedNode } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { SkillReferenceMetadata } from '../../types/skillReference'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 const SKILL_QUERY = /^[A-Za-z0-9._-]*$/
 

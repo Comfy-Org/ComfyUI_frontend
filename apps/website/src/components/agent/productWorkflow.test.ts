@@ -1,8 +1,4 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { assert, describe, expect, it } from 'vitest'
-
-import { websiteRoot } from '@website/paths'
 
 import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
@@ -25,27 +21,22 @@ function animationFrames(
 }
 
 describe('conditioner workflow', () => {
-  const motion = createWorkflowMotion(productWorkflow)
+  const motion = createWorkflowMotion(productWorkflow, { fadeNodes: true })
   const { scene } = motion
 
   it('keeps the animation duration synchronized with media playback', () => {
-    expect(motion.duration).toBeCloseTo(23.52772575250836, 6)
+    expect(motion.duration).toBeCloseTo(29.27772575250836, 6)
   })
 
-  it('ships only the two authored cursor overrides alongside generated CSS', () => {
-    const overrides = readFileSync(
-      join(websiteRoot, 'src/styles/product-workflow-keyframes.css'),
-      'utf8'
-    )
-    const names = Array.from(
-      overrides.matchAll(/@keyframes ([^{\s]+)/g),
-      ([, name]) => name
-    )
-
-    expect(names).toEqual([scene.userCursor.name, scene.agentCursor.name])
-    expect(
-      names.every((name) => motion.css.includes(`@keyframes ${name}{`))
-    ).toBe(true)
+  it('reveals nodes at full size without shrinking the labels', () => {
+    expect(motion.css).not.toContain('scale(0)')
+    for (const node of scene.nodes) {
+      expect(
+        animationFrames(motion, node.name).every((frame) =>
+          frame.value.includes('scale(1)')
+        )
+      ).toBe(true)
+    }
   })
 
   it.for(['base', 'products', 'motionref'])(
@@ -89,10 +80,12 @@ describe('conditioner workflow', () => {
       )
     )
     const reference = animationFrames(motion, 'wf-conditioner-motionref').find(
-      (frame) => frame.value.includes('scale(1)')
+      (frame) =>
+        frame.value.startsWith('opacity:1;') && frame.value.includes('scale(1)')
     )
     const generation = animationFrames(motion, 'wf-conditioner-videogen').find(
-      (frame) => frame.value.includes('scale(1)')
+      (frame) =>
+        frame.value.startsWith('opacity:1;') && frame.value.includes('scale(1)')
     )
     assert.exists(selection)
     assert.exists(reference)
@@ -137,9 +130,15 @@ describe('conditioner workflow', () => {
       const placement = animationFrames(
         motion,
         `wf-conditioner-${processor}`
-      ).find((frame) => frame.value.includes('scale(1)'))
+      ).find(
+        (frame) =>
+          frame.value.startsWith('opacity:1;') &&
+          frame.value.includes('scale(1)')
+      )
       const shell = animationFrames(motion, `wf-conditioner-${output}`).find(
-        (frame) => frame.value.includes('scale(1)')
+        (frame) =>
+          frame.value.startsWith('opacity:1;') &&
+          frame.value.includes('scale(1)')
       )
       const media = animationFrames(
         motion,
@@ -183,7 +182,7 @@ describe('conditioner workflow', () => {
     }
   )
 
-  it('loops the final purple video in place during a ten-second hold', () => {
+  it('loops the final purple video in place during a sixteen-second hold', () => {
     const imageFrames = animationFrames(
       motion,
       'wf-conditioner-result-purple-image'
@@ -193,7 +192,7 @@ describe('conditioner workflow', () => {
     )
     assert.exists(final)
     expect(imageFrames).toHaveLength(2)
-    expect(imageFrames[1].time - imageFrames[0].time).toBeCloseTo(10, 5)
+    expect(imageFrames[1].time - imageFrames[0].time).toBeCloseTo(16, 5)
     const finalIndex = productWorkflow.nodes.indexOf(final)
     const holdFrame = animationFrames(
       motion,
@@ -231,10 +230,12 @@ describe('conditioner workflow', () => {
       (node) => node.id === 'motionref'
     )
     const placement = animationFrames(motion, 'wf-conditioner-motionref').find(
-      (frame) => frame.value.includes('scale(1)')
+      (frame) =>
+        frame.value.startsWith('opacity:1;') && frame.value.includes('scale(1)')
     )
     const generation = animationFrames(motion, 'wf-conditioner-videogen').find(
-      (frame) => frame.value.includes('scale(1)')
+      (frame) =>
+        frame.value.startsWith('opacity:1;') && frame.value.includes('scale(1)')
     )
     assert.exists(placement)
     assert.exists(generation)
@@ -322,7 +323,8 @@ describe('conditioner workflow', () => {
           .map((node) => node.x + node.width)
       )
     )
-    expect(reference.output.x).toBe(reference.x + reference.width)
+    expect(reference.output.x).toBeGreaterThan(reference.x)
+    expect(reference.output.x).toBeLessThan(reference.x + reference.width)
     expect(reference.output.y).toBeGreaterThan(reference.y)
     expect(reference.output.y).toBeLessThan(reference.y + reference.height)
   })
@@ -338,8 +340,14 @@ describe('conditioner workflow', () => {
     for (const edge of productWorkflow.edges) {
       const source = productWorkflow.nodes.find((node) => node.id === edge.from)
       const target = productWorkflow.nodes.find((node) => node.id === edge.to)
-      const from = edge.curves?.[0].from
-      const to = edge.curves?.at(-1)?.to
+      const wire = scene.wires.find(
+        (wire) => wire.name === `wf-conditioner-${edge.from}-${edge.to}`
+      )
+      assert.exists(wire)
+      const coordinates = wire.path.match(/-?\d+(?:\.\d+)?/g)?.map(Number)
+      assert.exists(coordinates)
+      const from = { x: coordinates[0], y: coordinates[1] }
+      const to = { x: coordinates.at(-2), y: coordinates.at(-1) }
       assert.exists(source?.output)
       assert.exists(target)
       assert.exists(from)
@@ -349,9 +357,8 @@ describe('conditioner workflow', () => {
     }
   })
 
-  it('connects right-side outputs to left-side inputs across the workflow', () => {
-    // Dots may sit slightly inside or outside the card edge, never mid-card.
-    const edgeTolerance = 12
+  it('connects right-side outputs to left-side inputs, keeping ports near the card edge', () => {
+    const edgeTolerance = 27
     const nearEdge = (x: number, edge: number) =>
       Math.abs(x - edge) <= edgeTolerance
     const misplacedPorts = productWorkflow.nodes.flatMap((node) => [

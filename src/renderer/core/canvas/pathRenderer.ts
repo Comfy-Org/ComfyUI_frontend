@@ -85,6 +85,77 @@ interface DragLinkData {
   fromInput?: boolean
 }
 
+const LINEAR_LINK_OFFSET = 15
+const STRAIGHT_LINK_OFFSET = 10
+const CURVE_SAMPLES = 16
+
+function directionOffset(direction: Direction, distance: number): Point {
+  switch (direction) {
+    case 'left':
+      return { x: -distance, y: 0 }
+    case 'right':
+      return { x: distance, y: 0 }
+    case 'up':
+      return { x: 0, y: -distance }
+    case 'down':
+      return { x: 0, y: distance }
+    case 'none':
+    default:
+      return { x: 0, y: 0 }
+  }
+}
+
+function offsetPoint(point: Point, direction: Direction, distance: number) {
+  const offset = directionOffset(direction, distance)
+  return { x: point.x + offset.x, y: point.y + offset.y }
+}
+
+function pointOnCubic(
+  t: number,
+  p0: Point,
+  p1: Point,
+  p2: Point,
+  p3: Point
+): Point {
+  const mt = 1 - t
+  const mt2 = mt * mt
+  const mt3 = mt2 * mt
+  const t2 = t * t
+  const t3 = t2 * t
+  return {
+    x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
+  }
+}
+
+function pointOnCurve(
+  start: Point,
+  controls: Point[],
+  end: Point,
+  t: number
+): Point {
+  if (controls.length >= 2)
+    return pointOnCubic(t, start, controls[0], controls[1], end)
+  const u = 1 - t
+  if (controls.length === 1) {
+    const [c1] = controls
+    return {
+      x: u * u * start.x + 2 * u * t * c1.x + t * t * end.x,
+      y: u * u * start.y + 2 * u * t * c1.y + t * t * end.y
+    }
+  }
+  return {
+    x: start.x + (end.x - start.x) * t,
+    y: start.y + (end.y - start.y) * t
+  }
+}
+
+function sampleCurve(start: Point, controls: Point[], end: Point): Point[] {
+  return Array.from({ length: CURVE_SAMPLES + 1 }, (_, i) =>
+    pointOnCurve(start, controls, end, i / CURVE_SAMPLES)
+  )
+}
+
 export class CanvasPathRenderer {
   /**
    * Draw a link between two points
@@ -97,25 +168,20 @@ export class CanvasPathRenderer {
   ): Path2D {
     const path = new Path2D()
 
-    // Determine final color
     const isHighlighted = context.highlightedIds?.has(link.id) ?? false
     const color = this.determineLinkColor(link, context, isHighlighted)
 
-    // Save context state
     ctx.save()
 
-    // Apply disabled pattern if needed
     if (link.disabled && context.patterns?.disabled) {
       ctx.strokeStyle = context.patterns.disabled
     } else {
       ctx.strokeStyle = color
     }
 
-    // Set line properties
     ctx.lineWidth = context.style.connectionWidth
     ctx.lineJoin = 'round'
 
-    // Draw border if needed
     if (context.style.borderWidth && !context.style.lowQuality) {
       this.drawLinkPath(
         ctx,
@@ -127,7 +193,6 @@ export class CanvasPathRenderer {
       )
     }
 
-    // Draw main link
     this.drawLinkPath(
       ctx,
       path,
@@ -137,15 +202,12 @@ export class CanvasPathRenderer {
       color
     )
 
-    // Calculate and store center position
     this.calculateCenterPoint(link, context)
 
-    // Draw arrows if needed
     if (context.style.showArrows) {
       this.drawArrows(ctx, link, context, color)
     }
 
-    // Draw center marker if needed (for link menu interaction)
     if (
       context.style.showCenterMarker &&
       context.scale &&
@@ -155,7 +217,6 @@ export class CanvasPathRenderer {
       this.drawCenterMarker(ctx, link, context, color)
     }
 
-    // Draw flow animation if needed
     if (link.flow && context.animation) {
       this.drawFlowAnimation(ctx, path, link, context)
     }
@@ -198,23 +259,16 @@ export class CanvasPathRenderer {
 
     // Build the path based on render mode
     if (context.style.mode === 'linear') {
-      this.buildLinearPath(
+      this.buildPolylinePath(
         path,
-        start,
-        end,
-        link.startDirection,
-        link.endDirection
+        this.linearPoints(start, end, link.startDirection, link.endDirection)
       )
     } else if (context.style.mode === 'straight') {
-      this.buildStraightPath(
+      this.buildPolylinePath(
         path,
-        start,
-        end,
-        link.startDirection,
-        link.endDirection
+        this.straightPoints(start, end, link.startDirection, link.endDirection)
       )
     } else {
-      // Spline mode (default)
       this.buildSplinePath(
         path,
         start,
@@ -228,119 +282,67 @@ export class CanvasPathRenderer {
     ctx.stroke(path)
   }
 
-  private buildLinearPath(
-    path: Path2D,
+  private linearPoints(
     start: Point,
     end: Point,
     startDir: Direction,
     endDir: Direction
-  ): void {
-    // Match original litegraph LINEAR_LINK mode with 4-point path
-    const l = 15 // offset distance for control points
-
-    const innerA = { x: start.x, y: start.y }
-    const innerB = { x: end.x, y: end.y }
-
-    // Apply directional offsets to create control points
-    switch (startDir) {
-      case 'left':
-        innerA.x -= l
-        break
-      case 'right':
-        innerA.x += l
-        break
-      case 'up':
-        innerA.y -= l
-        break
-      case 'down':
-        innerA.y += l
-        break
-      case 'none':
-        break
-    }
-
-    switch (endDir) {
-      case 'left':
-        innerB.x -= l
-        break
-      case 'right':
-        innerB.x += l
-        break
-      case 'up':
-        innerB.y -= l
-        break
-      case 'down':
-        innerB.y += l
-        break
-      case 'none':
-        break
-    }
-
-    // Draw 4-point path: start -> innerA -> innerB -> end
-    path.moveTo(start.x, start.y)
-    path.lineTo(innerA.x, innerA.y)
-    path.lineTo(innerB.x, innerB.y)
-    path.lineTo(end.x, end.y)
+  ): Point[] {
+    const innerA = offsetPoint(start, startDir, LINEAR_LINK_OFFSET)
+    const innerB = offsetPoint(end, endDir, LINEAR_LINK_OFFSET)
+    return [start, innerA, innerB, end]
   }
 
-  private buildStraightPath(
-    path: Path2D,
+  private straightPoints(
     start: Point,
     end: Point,
     startDir: Direction,
     endDir: Direction
-  ): void {
-    // Match original STRAIGHT_LINK implementation with l=10 offset
-    const l = 10 // offset distance matching original
-
-    const innerA = { x: start.x, y: start.y }
-    const innerB = { x: end.x, y: end.y }
-
-    // Apply directional offsets to match original behavior
-    switch (startDir) {
-      case 'left':
-        innerA.x -= l
-        break
-      case 'right':
-        innerA.x += l
-        break
-      case 'up':
-        innerA.y -= l
-        break
-      case 'down':
-        innerA.y += l
-        break
-      case 'none':
-        break
-    }
-
-    switch (endDir) {
-      case 'left':
-        innerB.x -= l
-        break
-      case 'right':
-        innerB.x += l
-        break
-      case 'up':
-        innerB.y -= l
-        break
-      case 'down':
-        innerB.y += l
-        break
-      case 'none':
-        break
-    }
-
-    // Calculate midpoint using innerA/innerB positions (matching original)
+  ): Point[] {
+    const innerA = offsetPoint(start, startDir, STRAIGHT_LINK_OFFSET)
+    const innerB = offsetPoint(end, endDir, STRAIGHT_LINK_OFFSET)
     const midX = (innerA.x + innerB.x) * 0.5
+    return [
+      start,
+      innerA,
+      { x: midX, y: innerA.y },
+      { x: midX, y: innerB.y },
+      innerB,
+      end
+    ]
+  }
 
-    // Build path: start -> innerA -> (midX, innerA.y) -> (midX, innerB.y) -> innerB -> end
-    path.moveTo(start.x, start.y)
-    path.lineTo(innerA.x, innerA.y)
-    path.lineTo(midX, innerA.y)
-    path.lineTo(midX, innerB.y)
-    path.lineTo(innerB.x, innerB.y)
-    path.lineTo(end.x, end.y)
+  private buildPolylinePath(path: Path2D, points: Point[]): void {
+    const [first, ...rest] = points
+    path.moveTo(first.x, first.y)
+    for (const point of rest) path.lineTo(point.x, point.y)
+  }
+
+  polylineOf(link: LinkRenderData, mode: RenderMode): Point[] {
+    const { startPoint, endPoint, startDirection, endDirection } = link
+    if (mode === 'linear')
+      return this.linearPoints(
+        startPoint,
+        endPoint,
+        startDirection,
+        endDirection
+      )
+    if (mode === 'straight')
+      return this.straightPoints(
+        startPoint,
+        endPoint,
+        startDirection,
+        endDirection
+      )
+    const controls =
+      link.controlPoints ||
+      this.calculateControlPoints(
+        startPoint,
+        endPoint,
+        startDirection,
+        endDirection
+      )
+    return sampleCurve(startPoint, controls, endPoint)
   }
 
   private buildSplinePath(
@@ -398,19 +400,7 @@ export class CanvasPathRenderer {
   }
 
   private getDirectionOffset(direction: Direction, distance: number): Point {
-    switch (direction) {
-      case 'left':
-        return { x: -distance, y: 0 }
-      case 'right':
-        return { x: distance, y: 0 }
-      case 'up':
-        return { x: 0, y: -distance }
-      case 'down':
-        return { x: 0, y: distance }
-      case 'none':
-      default:
-        return { x: 0, y: 0 }
-    }
+    return directionOffset(direction, distance)
   }
 
   private drawArrows(
@@ -557,16 +547,7 @@ export class CanvasPathRenderer {
     p2: Point,
     p3: Point
   ): Point {
-    const mt = 1 - t
-    const mt2 = mt * mt
-    const mt3 = mt2 * mt
-    const t2 = t * t
-    const t3 = t2 * t
-
-    return {
-      x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
-      y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
-    }
+    return pointOnCubic(t, p0, p1, p2, p3)
   }
 
   /**
@@ -641,22 +622,18 @@ export class CanvasPathRenderer {
     }
   }
 
-  /**
-   * Calculate and store the center point and angle of a link
-   * Mimics the original litegraph center point calculation
-   */
   private calculateCenterPoint(
     link: LinkRenderData,
     context: RenderContext
   ): void {
     const { startPoint, endPoint, controlPoints } = link
+    const wantsAngle = context.style.centerMarkerShape === 'arrow'
 
     if (
       context.style.mode === 'spline' &&
       controlPoints &&
       controlPoints.length >= 2
     ) {
-      // For spline mode, find point at t=0.5 on the bezier curve
       const centerPos = this.findPointOnBezier(
         0.5,
         startPoint,
@@ -666,8 +643,7 @@ export class CanvasPathRenderer {
       )
       link.centerPos = centerPos
 
-      // Calculate angle for arrow marker (point slightly past center)
-      if (context.style.centerMarkerShape === 'arrow') {
+      if (wantsAngle) {
         const justPastCenter = this.findPointOnBezier(
           0.51,
           startPoint,
@@ -681,95 +657,41 @@ export class CanvasPathRenderer {
         )
       }
     } else if (context.style.mode === 'linear') {
-      // For linear mode, calculate midpoint between control points (matching original)
-      const l = 15 // Same offset as buildLinearPath
-      const innerA = { x: startPoint.x, y: startPoint.y }
-      const innerB = { x: endPoint.x, y: endPoint.y }
-
-      // Apply same directional offsets as buildLinearPath
-      switch (link.startDirection) {
-        case 'left':
-          innerA.x -= l
-          break
-        case 'right':
-          innerA.x += l
-          break
-        case 'up':
-          innerA.y -= l
-          break
-        case 'down':
-          innerA.y += l
-          break
-      }
-
-      switch (link.endDirection) {
-        case 'left':
-          innerB.x -= l
-          break
-        case 'right':
-          innerB.x += l
-          break
-        case 'up':
-          innerB.y -= l
-          break
-        case 'down':
-          innerB.y += l
-          break
-      }
-
+      const innerA = offsetPoint(
+        startPoint,
+        link.startDirection,
+        LINEAR_LINK_OFFSET
+      )
+      const innerB = offsetPoint(
+        endPoint,
+        link.endDirection,
+        LINEAR_LINK_OFFSET
+      )
       link.centerPos = {
         x: (innerA.x + innerB.x) * 0.5,
         y: (innerA.y + innerB.y) * 0.5
       }
 
-      if (context.style.centerMarkerShape === 'arrow') {
+      if (wantsAngle) {
         link.centerAngle = Math.atan2(innerB.y - innerA.y, innerB.x - innerA.x)
       }
     } else if (context.style.mode === 'straight') {
-      // For straight mode, match original STRAIGHT_LINK center calculation
-      const l = 10 // Same offset as buildStraightPath
-      const innerA = { x: startPoint.x, y: startPoint.y }
-      const innerB = { x: endPoint.x, y: endPoint.y }
-
-      // Apply same directional offsets as buildStraightPath
-      switch (link.startDirection) {
-        case 'left':
-          innerA.x -= l
-          break
-        case 'right':
-          innerA.x += l
-          break
-        case 'up':
-          innerA.y -= l
-          break
-        case 'down':
-          innerA.y += l
-          break
-      }
-
-      switch (link.endDirection) {
-        case 'left':
-          innerB.x -= l
-          break
-        case 'right':
-          innerB.x += l
-          break
-        case 'up':
-          innerB.y -= l
-          break
-        case 'down':
-          innerB.y += l
-          break
-      }
-
-      // Calculate center using midX and average of innerA/innerB y positions
-      const midX = (innerA.x + innerB.x) * 0.5
+      const innerA = offsetPoint(
+        startPoint,
+        link.startDirection,
+        STRAIGHT_LINK_OFFSET
+      )
+      const innerB = offsetPoint(
+        endPoint,
+        link.endDirection,
+        STRAIGHT_LINK_OFFSET
+      )
       link.centerPos = {
-        x: midX,
+        x: (innerA.x + innerB.x) * 0.5,
         y: (innerA.y + innerB.y) * 0.5
       }
 
-      if (context.style.centerMarkerShape === 'arrow') {
+      if (wantsAngle) {
         const diff = innerB.y - innerA.y
         if (Math.abs(diff) < 4) {
           link.centerAngle = 0
@@ -780,9 +702,8 @@ export class CanvasPathRenderer {
         }
       }
     } else {
-      // Fallback to simple midpoint
       link.centerPos = this.getLinkCenter(link)
-      if (context.style.centerMarkerShape === 'arrow') {
+      if (wantsAngle) {
         link.centerAngle = Math.atan2(
           endPoint.y - startPoint.y,
           endPoint.x - startPoint.x

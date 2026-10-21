@@ -42,7 +42,7 @@ import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const { t } = useI18n()
 const cameras = [

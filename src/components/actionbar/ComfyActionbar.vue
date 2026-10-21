@@ -46,7 +46,7 @@
               ? activeSidebarTabId === 'job-history'
               : queueOverlayExpanded
           "
-          class="relative px-3"
+          class="px-3"
           data-testid="queue-overlay-toggle"
           @click="toggleQueueOverlay"
           @contextmenu.stop.prevent="showQueueContextMenu"
@@ -54,10 +54,11 @@
           <span class="text-sm font-normal tabular-nums">
             {{ activeJobsLabel }}
           </span>
-          <StatusBadge
+          <Badge
             v-if="activeJobsCount > 0"
             data-testid="active-jobs-indicator"
             variant="dot"
+            severity="default"
             class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
           />
           <span class="sr-only">{{ queueToggleLabel }}</span>
@@ -91,7 +92,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
@@ -375,8 +376,8 @@ const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x] text-destructive-background',
-    class: '*:text-destructive-background',
+    icon: 'icon-[lucide--list-x] text-destructive',
+    class: '*:text-destructive',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
       void handleClearQueue()

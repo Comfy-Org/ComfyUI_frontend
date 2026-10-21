@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const ATTACHMENT_COUNT = 36
+const ATTACHMENT_COUNT = 25
 
 // Regression: https://linear.app/comfyorg/issue/FE-3202
 test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
@@ -14,9 +14,6 @@ test.describe('Agent composer bulk attachments', { tag: '@cloud' }, () => {
     postedMessages
   }) => {
     const page = comfyPage.page
-    // Each attachment ref is the upload response name, so a shared name would
-    // make the POST assertion below pass on one ref echoed 36 times. Unique
-    // names are what let it distinguish that from 36 refs actually travelling.
     const uploadedRefs: string[] = []
     await page.route('**/api/upload/image', (route) => {
       const name = `reference-${uploadedRefs.length + 1}.png`

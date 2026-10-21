@@ -233,6 +233,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
 }
 
+function isRegion(value: unknown): value is Region {
+  return (
+    isRecord(value) &&
+    typeof value.x === 'number' &&
+    typeof value.y === 'number' &&
+    typeof value.w === 'number' &&
+    typeof value.h === 'number' &&
+    (value.type === 'obj' || value.type === 'text') &&
+    typeof value.text === 'string' &&
+    typeof value.desc === 'string' &&
+    Array.isArray(value.palette) &&
+    value.palette.every((color) => typeof color === 'string')
+  )
+}
+
+export function isRegionList(value: unknown): value is Region[] {
+  return Array.isArray(value) && value.every(isRegion)
+}
+
 export function fromBoundingBoxes(
   boxes: readonly unknown[],
   width: number,

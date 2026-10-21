@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
@@ -139,7 +140,7 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
@@ -152,7 +153,7 @@ export function useAgentConsent() {
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -184,7 +185,6 @@ export function useAgentConsent() {
         component: AgentConsentCard,
         props: {
           title: t('agent.consent.title'),
-          titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
@@ -200,18 +200,14 @@ export function useAgentConsent() {
           onAccept: () => void accept(),
           onReject: () => {
             reportOutcome('rejected')
+            if (expectedIdentity && identity.value === expectedIdentity)
+              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          dismissableMask: true,
-          closeOnEscape: true,
-          modal: true,
+          dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true

@@ -1,0 +1,42 @@
+{
+  "name": "@comfyorg/viewport3d",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/viewport3d": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@comfyorg/fbx-exporter-three": "^1.0.1",
+    "@comfyorg/quad-wireframe-three": "^0.1.0",
+    "@sparkjsdev/spark": "catalog:",
+    "es-toolkit": "catalog:",
+    "three": "catalog:",
+    "wwobjloader2": "catalog:"
+  },
+  "devDependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@total-typescript/shoehorn": "catalog:",
+    "@types/three": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

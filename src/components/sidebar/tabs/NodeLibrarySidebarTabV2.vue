@@ -12,6 +12,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
           @search="handleSearch"
         />
@@ -126,16 +128,16 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   NodeCategoryId,
+  NodeLibrarySection,
   NodeSection,
   SortingStrategyId,
   TabId
 } from '@/types/nodeOrganizationTypes'
 import type {
-  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'

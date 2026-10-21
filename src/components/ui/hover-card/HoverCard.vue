@@ -1,33 +1,15 @@
 <script setup lang="ts">
-import { HoverCardRoot, useForwardProps } from 'reka-ui'
+import { HoverCardRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HoverCardRootEmits, HoverCardRootProps } from 'reka-ui'
-import { provide, ref, watch } from 'vue'
-
-import { hoverCardOpenKey } from './hoverCardContext'
 
 const props = defineProps<HoverCardRootProps>()
 const emits = defineEmits<HoverCardRootEmits>()
 
-const forwarded = useForwardProps(props)
-
-const isOpen = ref(forwarded.value.open ?? props.defaultOpen ?? false)
-provide(hoverCardOpenKey, isOpen)
-
-watch(
-  () => forwarded.value.open,
-  (open) => {
-    if (open !== undefined) isOpen.value = open
-  }
-)
-
-function handleOpenUpdate(open: boolean) {
-  if (forwarded.value.open === undefined) isOpen.value = open
-  emits('update:open', open)
-}
+const forwarded = useForwardPropsEmits(props, emits)
 </script>
 
 <template>
-  <HoverCardRoot v-bind="forwarded" @update:open="handleOpenUpdate">
+  <HoverCardRoot v-bind="forwarded">
     <slot />
   </HoverCardRoot>
 </template>

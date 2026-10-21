@@ -6,7 +6,10 @@ import { localizeHref } from '@/config/routes'
 import { minimaxLinks } from '@/data/minimax'
 import ModelLaunchHeroSection from '@/templates/model-launch/ModelLaunchHeroSection.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { fitCtas = false, locale = 'en' } = defineProps<{
+  fitCtas?: boolean
+  locale?: Locale
+}>()
 
 const hero = {
   layout: 'overlay',
@@ -35,5 +38,5 @@ const hero = {
 </script>
 
 <template>
-  <ModelLaunchHeroSection :hero :locale heading-tag="h2" />
+  <ModelLaunchHeroSection :hero :locale heading-tag="h2" :fit-ctas />
 </template>

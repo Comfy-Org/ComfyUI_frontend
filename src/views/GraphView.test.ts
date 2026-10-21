@@ -6,7 +6,10 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
+import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -14,6 +17,20 @@ import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadSto
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
+  vi.mocked(apiMock.getHistory).mockResolvedValue([])
+  vi.mocked(apiMock.getSystemStats).mockResolvedValue({
+    system: {
+      os: 'Linux',
+      python_version: '3.11',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.3.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  })
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
     undefined
   )
@@ -28,14 +45,6 @@ beforeEach(() => {
   )
 })
 
-const apiMock = vi.hoisted(() =>
-  Object.assign(new EventTarget(), {
-    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
-    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
-    getHistory: vi.fn(async () => [])
-  })
-)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -65,7 +74,7 @@ const templateInputMock = vi.hoisted(() => ({
   updateProgress: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -243,11 +252,8 @@ describe('GraphView - reconnect wiring', () => {
   it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchEvent(new Event('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
-    // `handleReconnected` calls both before its first `await`, so dispatching
-    // the event is enough — there is nothing to wait for, and waiting for it
-    // only hid how long the import above was taking.
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
   })
@@ -322,7 +328,8 @@ describe('GraphView - output assets refresh', () => {
     useSidebarTabStore().activeSidebarTabId = null
     const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
 
-    apiMock.dispatchEvent(new Event('execution_success'))
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
@@ -345,5 +352,37 @@ describe('GraphView - partner nodes education card', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('GraphView - deployment pick at startup', () => {
+  const pickGone = 'The deployment you picked no longer exists.'
+
+  beforeEach(() => {
+    mockDeploymentListing({
+      items: [],
+      builds_visible: true,
+      gone_picked_deployment_id: 'dep-gone'
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce')
+  })
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it("warns on Cloud that this browser's picked deployment is gone, without opening the account menu", async () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(pickGone)).toBeInTheDocument()
+  })
+
+  it('does not look up the deployment on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+    expect(screen.queryByText(pickGone)).toBeNull()
   })
 })

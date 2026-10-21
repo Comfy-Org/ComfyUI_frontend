@@ -7,7 +7,7 @@ import type {
   ScheduledRefreshReport,
   SessionClientOptions,
   SessionSnapshot
-} from './session.js'
+} from './session'
 import {
   EXCHANGE_URL,
   NINETY_MINUTES_MS,
@@ -15,9 +15,9 @@ import {
   memoryStorage,
   mintResponse,
   testUser
-} from './__fixtures__/sessionFakes.js'
-import { createSessionClient } from './session.js'
-import { DEFAULT_BUFFER_MS } from './refreshScheduler.js'
+} from './__fixtures__/sessionFakes'
+import { createSessionClient } from './session'
+import { DEFAULT_BUFFER_MS } from './refreshScheduler'
 
 function makeClient(
   overrides: Partial<SessionClientOptions> = {},

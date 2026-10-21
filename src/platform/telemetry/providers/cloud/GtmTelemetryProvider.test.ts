@@ -84,6 +84,24 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).toMatchObject({ event: 'view_promotion' })
     })
 
+    it('keeps the selected workspace out of the subscription modal push', () => {
+      const provider = createInitializedProvider()
+      provider.trackSubscription('modal_opened', {
+        current_tier: 'free',
+        reason: 'subscribe_to_run',
+        workspace_id: 'owner-personal-team-plan',
+        workspace_type: 'personal',
+        workspace_role: 'member',
+        workspace_tier: 'TEAM',
+        auth_rail: 'web_session'
+      })
+      expect(lastDataLayerEntry()).toEqual({
+        event: 'view_promotion',
+        current_tier: 'free',
+        reason: 'subscribe_to_run'
+      })
+    })
+
     it('pushes subscribe click as select_promotion', () => {
       const provider = createInitializedProvider()
       provider.trackSubscription('subscribe_clicked')

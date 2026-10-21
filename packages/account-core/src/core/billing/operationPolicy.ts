@@ -3,12 +3,12 @@
  * app's `billingOperationStore` rather than invented, so a consumer moving
  * onto the SDK sees the same request rate and the same give-up points.
  */
-import { isBlockedOnCustomerPhase } from './operationState.js'
+import { isBlockedOnCustomerPhase } from './operationState'
 import type {
   BillingAuthenticationState,
   EmbeddedChallenge,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 
 export const OPERATION_POLL_TIMING = {
   initialMs: 1_000,

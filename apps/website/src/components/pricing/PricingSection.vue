@@ -4,8 +4,14 @@ import type { Locale, TranslationKey } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
+import { comfyAgentFeatureGroups } from '@/data/comfyAgentPlanLimits'
+import { comfyApiFeatureGroup } from '@/data/comfyApiPlanLimits'
 import { pricingPlans } from '@/data/pricingPlans'
-import type { BillingCycle, PricingPlan } from '@/data/pricingPlans'
+import type {
+  BillingCycle,
+  PlanFeatureGroup,
+  PricingPlan
+} from '@/data/pricingPlans'
 import { translationsFor } from '@/i18n/translations'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -81,6 +87,18 @@ function creditsLabelFor(plan: PricingPlan): string {
   )
 }
 
+function cardFeatureGroups(plan: PricingPlan): PlanFeatureGroup[] {
+  return [
+    ...plan.featureGroups,
+    ...comfyAgentFeatureGroups(plan.id),
+    comfyApiFeatureGroup(plan.id)
+  ]
+}
+
+const groupRowCount = computed(() =>
+  Math.max(...pricingPlans.map((plan) => cardFeatureGroups(plan).length))
+)
+
 const planCards = computed(() =>
   pricingPlans.map((plan) => ({
     plan,
@@ -90,8 +108,20 @@ const planCards = computed(() =>
     creditsKey: displayCreditsKey(plan),
     creditsLabel: creditsLabelFor(plan),
     estimateKey: displayEstimateKey(plan),
-    featureGroups: plan.featureGroups
+    featureGroupRows: Array.from({ length: groupRowCount.value }, (_, index) =>
+      cardFeatureGroups(plan).slice(index, index + 1)
+    )
   }))
+)
+
+const cardRowSpanByGroupRows: Record<number, string> = {
+  1: 'row-span-7',
+  2: 'row-span-8',
+  3: 'row-span-9',
+  4: 'row-span-10'
+}
+const cardRowSpan = computed(
+  () => cardRowSpanByGroupRows[groupRowCount.value] ?? 'row-span-10'
 )
 </script>
 
@@ -151,10 +181,10 @@ const planCards = computed(() =>
           creditsKey,
           creditsLabel,
           estimateKey,
-          featureGroups
+          featureGroupRows
         } in planCards"
         :key="plan.id"
-        class="row-span-7 grid grid-rows-subgrid"
+        :class="cn('grid grid-rows-subgrid', cardRowSpan)"
       >
         <div class="flex items-center gap-4">
           <PricingPlanLabel
@@ -176,8 +206,12 @@ const planCards = computed(() =>
           :locale
         />
 
-        <div v-if="featureGroups.length" class="mt-8">
-          <PricingPlanFeatureList :features="featureGroups" :locale />
+        <div
+          v-for="(groups, groupIndex) in featureGroupRows"
+          :key="groupIndex"
+          :class="groupIndex === 0 ? 'mt-8' : 'mt-5'"
+        >
+          <PricingPlanFeatureList :features="groups" :locale />
         </div>
 
         <PricingCredits
