@@ -138,12 +138,31 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
     }
   )
 
+  const authoredFaqs = [{ question: nativeWorkflow.faq[0].question }]
+  const authoredModels = [{ name: 'Flux Kontext' }]
+  const describedOnly = { ...nativeWorkflow, faq: [], model_uids: [] }
   it.for([
-    { form: 'without a Run form', data: nativeWorkflow },
-    { form: 'with a Run form', data: { ...nativeWorkflow, ...runInputs } }
+    {
+      form: 'without a Run form',
+      data: nativeWorkflow,
+      faqs: authoredFaqs,
+      models: authoredModels
+    },
+    {
+      form: 'with a Run form',
+      data: { ...nativeWorkflow, ...runInputs },
+      faqs: authoredFaqs,
+      models: authoredModels
+    },
+    {
+      form: 'with only a long description',
+      data: describedOnly,
+      faqs: [],
+      models: []
+    }
   ])(
-    'server-renders a CCC workflow $form with its long description, FAQ and models',
-    async ({ data }) => {
+    'server-renders a CCC workflow $form with all of its body content',
+    async ({ data, faqs, models }) => {
       serveNativeWorkflow(data)
       const pathname = '/hub/workflows/native-workflow/'
       const load = await loadCatalogDetailPage({}, pathname, 'en')
@@ -162,8 +181,8 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
       expect(load.page.model).toMatchObject({
         catalogDetails: {
           longDescription: nativeWorkflow.long_description,
-          faqs: [{ question: nativeWorkflow.faq[0].question }],
-          models: [{ name: 'Flux Kontext' }]
+          faqs,
+          models
         }
       })
     }
