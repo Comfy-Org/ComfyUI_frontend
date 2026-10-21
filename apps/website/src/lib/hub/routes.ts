@@ -1,4 +1,6 @@
-const HUB = 'https://comfy.org/hub'
+import { HUB_WORKFLOWS_PATH } from '@/config/hub-models'
+
+const HUB_CREATORS_PATH = '/hub/creators'
 
 type HubWorkflowsFilter = { capability: string } | { q: string }
 
@@ -9,10 +11,10 @@ export function hubWorkflowsUrl(filter?: HubWorkflowsFilter): string {
         .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
         .join('&')}`
     : ''
-  return `${HUB}/workflows/${query}`
+  return `${HUB_WORKFLOWS_PATH}/${query}`
 }
 
 export const hubTagUrl = (tag: string) => hubWorkflowsUrl({ capability: tag })
 export const hubModelUrl = (family: string) => hubWorkflowsUrl({ q: family })
 export const hubCreatorUrl = (username: string) =>
-  `${HUB}/creators/${encodeURIComponent(username)}/`
+  `${HUB_CREATORS_PATH}/${encodeURIComponent(username)}/`

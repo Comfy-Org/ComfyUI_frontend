@@ -28,9 +28,10 @@ export const GET: APIRoute = ({ props, site }) => {
   const model = props.model as Model
   const base = site ?? 'https://comfy.org'
   const pageUrl = new URL(localModelPath(model.slug), base).href
-  const workflowsUrl = model.hubSearch
-    ? hubModelUrl(model.hubSearch)
-    : hubWorkflowsUrl()
+  const workflowsUrl = new URL(
+    model.hubSearch ? hubModelUrl(model.hubSearch) : hubWorkflowsUrl(),
+    base
+  ).href
 
   const description = buildWhatIsDescription(model)
   const summary = description.split('. ')[0]

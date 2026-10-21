@@ -2806,7 +2806,7 @@
         "workflows": "{count} 个工作流"
       },
       "contact": {
-        "heading": "选择一个模型，浏览社区的创作成果。<a href=\"https://comfy.org/hub/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">访问 Comfy Workflows</a> 查看最新工作流。",
+        "heading": "选择一个模型，浏览社区的创作成果。<a href=\"/hub/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">访问 Comfy Workflows</a> 查看最新工作流。",
         "label": "COMFY WORKFLOWS"
       },
       "creations": {
