@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { agentComposerPerformanceTest as test } from '@e2e/fixtures/agentPanelFixture'
+import { restoredTargetlessAgentThreadTest as test } from '@e2e/fixtures/agentPanelFixture'
 
 test.describe(
   'PM-1236 targetless run-permissions notice',
