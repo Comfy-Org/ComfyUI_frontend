@@ -466,6 +466,34 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('keeps persisted thinking in order when an earlier entry names a call the transcript lacks', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 'Round one.', tool_call_id: 'call-missing' },
+        { text: 'Round two.', tool_call_id: 'call-2' },
+        { text: 'Final round.' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-2',
+          tool_call_id: 'call-2',
+          tool_name: 'add_node',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(
+      transcript.messages[0].parts.map((part) =>
+        part.type === 'thinking' ? part.text : part.type
+      )
+    ).toEqual(['Round one.', 'Round two.', 'tool', 'Final round.', 'text'])
+  })
+
   it('restores a persisted skill name', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {

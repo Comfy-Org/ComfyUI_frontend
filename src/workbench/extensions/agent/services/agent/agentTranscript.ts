@@ -360,24 +360,22 @@ function insertThinking(
   const raw = content?.thinking
   if (!Array.isArray(raw)) return parts
   const next = [...parts]
+  let unplaced: ThinkingPart[] = []
   for (const entry of raw as unknown[]) {
     const parsed = zPersistedThinkingEntry.safeParse(entry)
     if (!parsed.success || !parsed.data.text.trim()) continue
-    const part: ThinkingPart = {
-      type: 'thinking',
-      text: parsed.data.text,
-      state: 'done'
-    }
+    unplaced.push({ type: 'thinking', text: parsed.data.text, state: 'done' })
     const anchor = parsed.data.tool_call_id
     const index = anchor
       ? next.findIndex(
           (existing) => existing.type === 'tool' && existing.callId === anchor
         )
       : -1
-    if (index === -1) next.push(part)
-    else next.splice(index, 0, part)
+    if (index === -1) continue
+    next.splice(index, 0, ...unplaced)
+    unplaced = []
   }
-  return next
+  return [...next, ...unplaced]
 }
 
 /** A persisted tool-call `status` of `pending`/`running` is still in flight;
