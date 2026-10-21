@@ -19,7 +19,7 @@ const HIGHLIGHT_CTA = t('ltx.reviews.highlightCta', {}, { locale: 'en' })
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 const LTX_RUN_TEMPLATE = 'https://cloud.comfy.org/?template=video_ltx2_5_i2v'
-const LTX_HUB_MODEL = 'https://comfy.org/hub/workflows/?q=ltx'
+const LTX_HUB_MODEL = '/hub/workflows/?q=ltx'
 
 // Counts are the launch requirement, not a snapshot of the config: deriving them
 // would let a dropped badge, card or Q&A entry pass.

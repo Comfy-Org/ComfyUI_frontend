@@ -55,6 +55,12 @@ describe('GET', () => {
     expect(body).toContain('https://cloud.comfy.org/mcp')
   })
 
+  it('links the Hub workflow search on the site origin', async () => {
+    const flux = mustFind((m) => m.slug === 'flux1-dev')
+    const body = await render(flux, new URL('https://example.org')).text()
+    expect(body).toContain('https://example.org/hub/workflows/?q=flux')
+  })
+
   it('falls back to comfy.org when no site is configured', async () => {
     const body = await render(open).text()
     expect(body).toContain(`https://comfy.org/hub/models/local/${open.slug}`)

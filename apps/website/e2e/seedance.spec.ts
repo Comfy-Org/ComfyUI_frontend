@@ -134,7 +134,7 @@ test.describe('Seedance 2.5 page — link targets', () => {
       hero.getByRole('link', {
         name: t('seedance.hero.secondaryCta', {}, { locale: 'en' })
       })
-    ).toHaveAttribute('href', 'https://comfy.org/hub/workflows/?q=seedance')
+    ).toHaveAttribute('href', '/hub/workflows/?q=seedance')
   })
 
   test('renders one step card per configured step', async ({ page }) => {

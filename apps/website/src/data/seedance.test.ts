@@ -71,7 +71,7 @@ describe('seedance 2.5 workflow links', () => {
     // about. The search lists the shipped 2.5 workflows, which is what the launch
     // playbook asks the page to link, and matches what /ltx-2.5 already does.
     expect(seedancePage.hero.secondaryCta?.href).toBe(
-      'https://comfy.org/hub/workflows/?q=seedance'
+      '/hub/workflows/?q=seedance'
     )
   })
 

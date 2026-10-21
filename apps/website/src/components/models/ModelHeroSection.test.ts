@@ -48,7 +48,7 @@ describe('ModelHeroSection', () => {
         screen
           .getByRole('link', { name: t('models.hero.primaryCta') })
           .getAttribute('href')
-      ).toBe(`https://comfy.org/hub/workflows/?q=${encodeURIComponent(term)}`)
+      ).toBe(`/hub/workflows/?q=${encodeURIComponent(term)}`)
     }
   )
 })

@@ -73,10 +73,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     await expect(primary).toHaveAttribute('target', '_blank')
 
     const secondary = hero.getByRole('link', { name: HERO_SECONDARY_CTA })
-    await expect(secondary).toHaveAttribute(
-      'href',
-      'https://comfy.org/hub/workflows/?q=wan'
-    )
+    await expect(secondary).toHaveAttribute('href', '/hub/workflows/?q=wan')
   })
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
