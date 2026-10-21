@@ -144,6 +144,17 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
+ * One entry of a completed assistant row's `content.thinking`: the
+ * `agent_thinking` text one model round showed live, persisted so a reload or
+ * chat switch keeps it in the work summary. `tool_call_id` names the round's
+ * first tool call; the final round has none.
+ */
+export const zPersistedThinkingEntry = z.object({
+  text: z.string(),
+  tool_call_id: z.string().nullish()
+})
+
+/**
  * The message-parse boundary's `content.tool_calls` field is deliberately
  * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
  * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on

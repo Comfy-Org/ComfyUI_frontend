@@ -430,6 +430,42 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('skips malformed persisted thinking and keeps an entry whose call is missing after the calls', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 42 },
+        { text: '   ' },
+        { text: 'Looking it up.', tool_call_id: 'call-1' },
+        { text: 'The audit row is gone.', tool_call_id: 'call-missing' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('restores a persisted skill name', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
