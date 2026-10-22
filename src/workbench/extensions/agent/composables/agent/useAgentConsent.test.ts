@@ -19,7 +19,7 @@ import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -1143,7 +1143,11 @@ describe('accepting while signed out across a page reload', () => {
       prompt: { text, references: [] },
       attachments: [],
       nodes: [],
-      target: {} as ComfyWorkflow
+      target: new ComfyWorkflow({
+        path: 'workflows/test.json',
+        modified: 0,
+        size: 0
+      })
     })
   }
 
@@ -1267,6 +1271,30 @@ describe('accepting while signed out across a page reload', () => {
     expect(useAgentComposerStore().draft).toBe('something newer')
   })
 
+  it('keeps the accept until its save settles, so a reload during the save resumes it again', async () => {
+    storePending('make it blue')
+    signedIn()
+    vi.spyOn(useAgentConsentStore(), 'ensureScope').mockResolvedValue(
+      'account-a/workspace-a'
+    )
+    let finishSave = (_saved: boolean) => {}
+    vi.spyOn(useAgentConsentStore(), 'accept').mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => (finishSave = resolve))
+    )
+
+    const resume = useAgentConsent().resumeAcceptAfterReload()
+    await vi.waitFor(() =>
+      expect(useAgentConsentStore().accept).toHaveBeenCalledOnce()
+    )
+
+    expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+      draft: 'make it blue'
+    })
+    finishSave(true)
+    await resume
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+  })
+
   it('accepts only once when resumed twice', async () => {
     storePending('make it blue')
     signedIn()
@@ -1290,25 +1318,24 @@ describe('accepting while signed out across a page reload', () => {
     {
       case: 'expired',
       setup: () => storePending('old', Date.now() - 11 * 60 * 1000),
-      loggedIn: true
+      authSetup: signedIn
     },
-    { case: 'absent', setup: () => {}, loggedIn: true },
+    { case: 'absent', setup: () => {}, authSetup: signedIn },
     {
       case: 'malformed',
       setup: () => sessionStorage.setItem(PENDING_KEY, '{"draft":1}'),
-      loggedIn: true
+      authSetup: signedIn
     },
     {
       case: 'there but the user is signed out',
       setup: () => storePending('hi'),
-      loggedIn: false
+      authSetup: signedOut
     }
   ])(
     'does nothing when the kept accept is $case',
-    async ({ setup, loggedIn }) => {
+    async ({ setup, authSetup }) => {
       setup()
-      if (loggedIn) signedIn()
-      else signedOut()
+      authSetup()
       const accept = vi.spyOn(useAgentConsentStore(), 'accept')
 
       await useAgentConsent().resumeAcceptAfterReload()

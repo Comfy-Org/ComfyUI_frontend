@@ -2254,9 +2254,8 @@ describe('AgentPanel extension flag gate', () => {
       expect(consentStore.load).not.toHaveBeenCalled()
 
       finishResume()
-      await flush()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
       expect(resume).toHaveBeenCalledOnce()
-      expect(consentStore.load).toHaveBeenCalledOnce()
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
     })
 
