@@ -1,37 +1,35 @@
+import type { Component } from 'vue'
+
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
+import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
+import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import { useDialogStore } from '@/stores/dialogStore'
 
-async function openCustomDeploymentDialog(
+async function openCardDialog(
   key: string,
-  pitch: CustomDeploymentPitch
+  load: () => Promise<{ default: Component }>,
+  props: Record<string, unknown>
 ): Promise<boolean> {
-  const CustomDeploymentCard =
-    await import('@/platform/workspace/components/CustomDeploymentCard.vue').then(
-      (module) => module.default,
-      (error: unknown) => {
-        useErrorHandling().toastErrorHandler(error)
-        return null
-      }
-    )
-  if (CustomDeploymentCard === null) return false
+  const card = await load().then(
+    (module) => module.default,
+    (error: unknown) => {
+      useErrorHandling().toastErrorHandler(error)
+      return null
+    }
+  )
+  if (card === null) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({
     key,
-    component: CustomDeploymentCard,
-    props: {
-      pitch,
-      videoSources: DEPLOY_VIDEO_SOURCES,
-      posterSrc: DEPLOY_VIDEO_POSTER_SRC,
-      onDone: hide,
-      onDismiss: hide
-    },
+    component: card,
+    props: { ...props, onDone: hide, onDismiss: hide },
     dialogComponentProps: {
       dismissOnPointerDownOutside: true,
       headless: true
@@ -40,18 +38,27 @@ async function openCustomDeploymentDialog(
   return true
 }
 
+function openCustomDeploymentDialog(
+  key: string,
+  pitch: CustomDeploymentPitch
+): Promise<boolean> {
+  return openCardDialog(
+    key,
+    () => import('@/platform/workspace/components/CustomDeploymentCard.vue'),
+    {
+      pitch,
+      videoSources: DEPLOY_VIDEO_SOURCES,
+      posterSrc: DEPLOY_VIDEO_POSTER_SRC
+    }
+  )
+}
+
 /** Opens the Create a custom deployment dialog; false if it could not load. */
 export function openCreateCustomDeploymentDialog(): Promise<boolean> {
-  return openCustomDeploymentDialog('global-create-custom-deployment', {
-    title: t('deploymentSwitcher.customDeployment.title'),
-    body: t('deploymentSwitcher.customDeployment.body'),
-    points: [
-      t('deploymentSwitcher.customDeployment.pointNodes'),
-      t('deploymentSwitcher.customDeployment.pointGpu'),
-      t('deploymentSwitcher.customDeployment.pointApi')
-    ],
-    platformLabel: t('deploymentSwitcher.customDeployment.createOnPlatform')
-  })
+  return openCustomDeploymentDialog(
+    'global-create-custom-deployment',
+    customDeploymentPitch()
+  )
 }
 
 /** Opens the Extensions dialog on Comfy Cloud; false if it could not load. */
@@ -64,6 +71,17 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
       t('deploymentSwitcher.customDeployment.pointGpu'),
       t('deploymentSwitcher.customDeployment.pointApi')
     ],
-    platformLabel: t('deployToComfyApi.deployOnPlatform')
+    platformLabel: t('deployToComfyApi.deployOnPlatform'),
+    brief: CUSTOM_DEPLOYMENT_BRIEF
   })
+}
+
+/** Opens the needs-a-custom-deployment dialog; false if it could not load. */
+export function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  return openCardDialog(
+    'global-workflow-needs-deployment',
+    () =>
+      import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue'),
+    {}
+  )
 }
