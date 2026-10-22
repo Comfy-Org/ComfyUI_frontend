@@ -80,6 +80,10 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
+const { suppressed = false } = defineProps<{
+  suppressed?: boolean
+}>()
+
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
@@ -96,7 +100,7 @@ const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
 const kind = computed(() => {
-  if (isCloud) return null
+  if (suppressed || isCloud) return null
   return deriveLocalCreditBanner({
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     hasFunds: subscription.value?.hasFunds ?? null,
