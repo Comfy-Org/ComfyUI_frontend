@@ -9230,7 +9230,9 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeInTheDocument()
   })
 
-  function reportTools(tools: [string, 'success' | 'error'][]): void {
+  type ToolOutcomes = [string, 'success' | 'error'][]
+
+  function reportTools(tools: ToolOutcomes): void {
     tools.forEach(([toolName, status], index) => {
       dispatchApiEvent('agent_tool_call', {
         tool_call_id: `call-${index}-${toolName}`,
@@ -9259,7 +9261,7 @@ describe('AgentPanelRoot workflow binding', () => {
         ['clear_canvas', 'success']
       ]
     }
-  ] satisfies { name: string; tools: [string, 'success' | 'error'][] }[])(
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
     'does not contradict an empty canvas after $name',
     async ({ tools }) => {
       makeTab('wf-42')
@@ -9306,7 +9308,7 @@ describe('AgentPanelRoot workflow binding', () => {
         ['delete_node', 'success']
       ]
     }
-  ] satisfies { name: string; tools: [string, 'success' | 'error'][] }[])(
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
     'flags an empty canvas when $name',
     async ({ tools }) => {
       makeTab('wf-42')

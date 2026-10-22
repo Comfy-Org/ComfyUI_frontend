@@ -59,8 +59,6 @@ test.describe(
         await agent.sendPrompt('Turn this forest scene to daytime.')
         await agent.hostSocket.waitForSubscribe()
 
-        // get_template places a gallery template on the canvas server-side
-        // (draft_committed=true); no follower frame ever reaches this tab.
         agent.reportToolCall('get_template', 'call-template')
         agent.finishTurn('Your workflow is ready to run.')
 
