@@ -1,7 +1,10 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+import {
+  canManageBillingFact,
+  runDeniedPaymentPastDueFact
+} from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -370,6 +373,27 @@ describe('BillingStatusBanner', () => {
       ).toEqual(buttons)
     }
   )
+
+  it('shows the past-due copy when run is denied and top-up is still allowed', () => {
+    exhausted()
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    useBillingCapabilities().canManageBilling = canManageBillingFact(true)
+
+    renderBanner()
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Out of credits')
+    expect(banner).toHaveTextContent(
+      'Your team has used all its credits. Update your payment method to add more.'
+    )
+    expect(
+      screen.getByRole('button', { name: 'Update payment' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+  })
 
   it('opens the billing portal from the past-due out-of-credits banner', async () => {
     exhausted()
