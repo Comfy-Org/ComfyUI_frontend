@@ -135,6 +135,9 @@ describe('WorkshopModelsGrid', () => {
     )
     expect(screen.queryByTestId('browse-all-top')).toBeNull()
     expect(cardNames()).toHaveLength(models.length)
+    expect(
+      screen.getAllByTestId('model-card-name').map((name) => name.textContent)
+    ).toEqual(['Kling AI', 'Flux', 'Mystery'])
   })
 
   it('filters by use case from the filter menu', async () => {
