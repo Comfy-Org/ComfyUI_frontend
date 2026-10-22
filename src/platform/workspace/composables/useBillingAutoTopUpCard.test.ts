@@ -174,4 +174,39 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     void card.retry()
     await vi.waitFor(() => expect(card.state.value.kind).toBe('loading'))
   })
+
+  it('starts no second read for workspace B when workspace A finishes while B is reading', async () => {
+    const reads = heldReads()
+    await switchBillingScope('actor-a', 'workspace-a')
+    const card = mountRead()
+    card.ensureRead()
+    await switchBillingScope('actor-a', 'workspace-b')
+    await nextTick()
+    expect(reads.count()).toBe(2)
+
+    await reads.answer(0, 'failed')
+    card.ensureRead()
+
+    expect(reads.count()).toBe(2)
+  })
+
+  it('keeps the last settings when a refresh of the same workspace fails', async () => {
+    await switchBillingScope('actor-a', 'workspace-a')
+    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValueOnce(
+      settingsWith('failed')
+    )
+    const card = mountRead()
+    card.ensureRead()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('loaded'))
+
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+      new Error('auto reload down')
+    )
+    await card.retry()
+
+    expect(card.state.value).toMatchObject({
+      kind: 'loaded',
+      settings: { status: 'failed' }
+    })
+  })
 })

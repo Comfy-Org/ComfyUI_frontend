@@ -15,10 +15,8 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import {
-  activateBillingScope,
-  grantedAutoTopUpFact
-} from '@/platform/workspace/composables/activateBillingScope.testUtils'
+import { activateBillingScope } from '@/platform/workspace/composables/activateBillingScope.testUtils'
+import { canManageAutoTopUpFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
@@ -139,7 +137,7 @@ describe('BillingAutoTopUpCard', () => {
       isPaused: computed(() => false)
     })
     vi.mocked(useFeatureFlags().flags).autoTopUpEnabled = true
-    useBillingCapabilities().canManageAutoTopUp = grantedAutoTopUpFact()
+    useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(true)
     render(BillingLocalCreditBanner, i18nOptions())
     await vi.waitFor(() =>
       expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
@@ -361,7 +359,7 @@ describe('BillingAutoTopUpCard', () => {
     })
   })
 
-  it('does not report the stale status when a reread failed and the card shows again', async () => {
+  it('keeps the last status and reports no new view when a reread fails', async () => {
     const { setupRef } = renderCard(configured)
     await screen.findByTestId('billing-auto-top-up-status')
 
@@ -369,7 +367,7 @@ describe('BillingAutoTopUpCard', () => {
       new WorkspaceApiError('boom', 500)
     )
     await returnToTab()
-    await screen.findByText("Couldn't load auto top-up.")
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
     setupRef.value = {
       state: 'unavailable',
       reason: 'billing_rail_not_supported'
@@ -378,6 +376,9 @@ describe('BillingAutoTopUpCard', () => {
     setupRef.value = null
     await nextTick()
 
+    expect(screen.getByTestId('billing-auto-top-up-status')).toHaveTextContent(
+      'On'
+    )
     expect(trackedEvents()).toHaveBeenCalledOnce()
   })
 
@@ -394,11 +395,6 @@ describe('BillingAutoTopUpCard', () => {
     async ({ settings, label, views }) => {
       const { setupRef } = renderCard(configured)
       await screen.findByTestId('billing-auto-top-up-status')
-      vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
-        new WorkspaceApiError('boom', 500)
-      )
-      await returnToTab()
-      await screen.findByText("Couldn't load auto top-up.")
       let settleReread: (value: AutoReloadSettings) => void = () => {}
       vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValueOnce(
         new Promise((resolve) => {
@@ -464,7 +460,7 @@ describe('BillingAutoTopUpCard', () => {
     )
   })
 
-  it('offers a retry instead of the old status when a reread fails', async () => {
+  it('keeps the last settings when a reread fails', async () => {
     renderCard(configured)
     expect(
       await screen.findByTestId('billing-auto-top-up-status')
@@ -474,41 +470,33 @@ describe('BillingAutoTopUpCard', () => {
       new WorkspaceApiError('boom', 500)
     )
     await returnToTab()
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
 
-    expect(
-      await screen.findByText("Couldn't load auto top-up.")
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByTestId('billing-auto-top-up-status')
-    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('billing-auto-top-up-status')).toHaveTextContent(
+      'On'
+    )
+    expect(screen.queryByText("Couldn't load auto top-up.")).toBeNull()
   })
 
-  it('keeps the newest settings when an older reread fails after it', async () => {
+  it('starts no second read when the owner returns to the tab during a pending read', async () => {
     renderCard(notConfigured)
-    expect(
-      await screen.findByTestId('billing-auto-top-up-status')
-    ).toHaveTextContent('Off')
+    await screen.findByTestId('billing-auto-top-up-status')
+    let settle: (value: AutoReloadSettings) => void = () => {}
+    vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValueOnce(
+      new Promise((resolve) => {
+        settle = resolve
+      })
+    )
 
-    let rejectOlderRead: (error: unknown) => void = () => {}
-    const olderRead = new Promise<AutoReloadSettings>((_, reject) => {
-      rejectOlderRead = reject
-    })
-    vi.mocked(workspaceApi.getBillingAutoReload)
-      .mockReturnValueOnce(olderRead)
-      .mockResolvedValueOnce(configured)
     await returnToTab()
     await returnToTab()
+    settle(configured)
+
     await vi.waitFor(() =>
       expect(
         screen.getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('On')
     )
-
-    rejectOlderRead(new WorkspaceApiError('boom', 500))
-    await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
-
-    expect(screen.getByTestId('billing-auto-top-up-status')).toHaveTextContent(
-      'On'
-    )
+    expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
   })
 })

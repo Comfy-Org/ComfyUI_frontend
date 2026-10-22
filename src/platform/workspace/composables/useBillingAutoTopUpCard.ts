@@ -35,12 +35,14 @@ function useBillingAutoTopUpCardInternal() {
 
   let requested = false
   let refreshSerial = 0
+  let inFlightScope: string | null = null
   let committed: ScopedRead | null = null
 
   async function readCurrentScope(): Promise<ScopedRead | null> {
     const requestScope = scope.value
     if (requestScope === null) return null
     const serial = ++refreshSerial
+    inFlightScope = requestScope
     try {
       const next = {
         scope: requestScope,
@@ -55,9 +57,14 @@ function useBillingAutoTopUpCardInternal() {
         surface: 'billing'
       })
       if (serial !== refreshSerial) return committed
+      if (committed?.scope === requestScope && committed.settings) {
+        return committed
+      }
       const failed = { scope: requestScope, settings: null }
       committed = failed
       return failed
+    } finally {
+      if (inFlightScope === requestScope) inFlightScope = null
     }
   }
 
@@ -81,7 +88,7 @@ function useBillingAutoTopUpCardInternal() {
   const isReady = computed(() => answer.value !== null && !read.isLoading.value)
 
   function refresh() {
-    if (scope.value === null) return
+    if (scope.value === null || inFlightScope === scope.value) return
     void read.execute()
   }
 
