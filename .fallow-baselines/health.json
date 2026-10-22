@@ -973,7 +973,7 @@
         "count": 1
       }
     },
-    "src/components/maskeditor/MaskEditorContent.vue": {
+    "src/renderer/extensions/maskEditor/components/MaskEditorContent.vue": {
       "crap_moderate": {
         "count": 1
       }
@@ -999,7 +999,7 @@
         "count": 1
       }
     },
-    "src/components/painter/WidgetPainter.vue": {
+    "src/renderer/extensions/painter/components/WidgetPainter.vue": {
       "crap_high": {
         "count": 1
       }
@@ -1354,7 +1354,7 @@
         "count": 1
       }
     },
-    "src/composables/maskeditor/useBrushDrawing.ts": {
+    "src/renderer/extensions/maskEditor/composables/useBrushDrawing.ts": {
       "complexity_high": {
         "count": 2
       },
@@ -1362,7 +1362,7 @@
         "count": 2
       }
     },
-    "src/composables/maskeditor/useCanvasHistory.ts": {
+    "src/renderer/extensions/maskEditor/composables/useCanvasHistory.ts": {
       "crap_high": {
         "count": 1
       },
@@ -1370,7 +1370,7 @@
         "count": 1
       }
     },
-    "src/composables/maskeditor/useCanvasTools.ts": {
+    "src/renderer/extensions/maskEditor/composables/useCanvasTools.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -1381,17 +1381,17 @@
         "count": 1
       }
     },
-    "src/composables/maskeditor/useGPUResources.ts": {
+    "src/renderer/extensions/maskEditor/composables/useGPUResources.ts": {
       "crap_moderate": {
         "count": 2
       }
     },
-    "src/composables/maskeditor/useKeyboard.ts": {
+    "src/renderer/extensions/maskEditor/composables/useKeyboard.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/composables/maskeditor/useMaskEditorLoader.ts": {
+    "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1402,12 +1402,12 @@
         "count": 1
       }
     },
-    "src/composables/maskeditor/usePanAndZoom.ts": {
+    "src/renderer/extensions/maskEditor/composables/usePanAndZoom.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/composables/maskeditor/useToolManager.ts": {
+    "src/renderer/extensions/maskEditor/composables/useToolManager.ts": {
       "crap_high": {
         "count": 1
       },
@@ -1452,7 +1452,7 @@
         "count": 2
       }
     },
-    "src/composables/painter/usePainter.ts": {
+    "src/renderer/extensions/painter/composables/usePainter.ts": {
       "crap_high": {
         "count": 2
       },
@@ -3671,7 +3671,7 @@
     "src/core/graph/widgets/dynamicWidgets.ts:untested risk",
     "src/platform/cloud/onboarding/survey/surveySchema.ts:high impact",
     "browser_tests/fixtures/helpers/SubgraphHelper.ts:circular dependency",
-    "src/composables/maskeditor/useKeyboard.ts:high impact",
+    "src/renderer/extensions/maskEditor/composables/useKeyboard.ts:high impact",
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
     "apps/website/src/composables/useCurrentPath.ts:high impact",
     "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
@@ -3692,7 +3692,7 @@
     "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
     "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
     "src/composables/useEditKeybindingDialog.ts:circular dependency",
-    "src/stores/maskEditorStore.ts:circular dependency",
+    "src/renderer/extensions/maskEditor/stores/maskEditorStore.ts:circular dependency",
     "apps/website/src/components/blocks/FeaturedCarousel01.vue:complexity",
     "src/components/videoEdit/VideoFilmstripTrim.vue:complexity",
     "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
@@ -3704,7 +3704,7 @@
     "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",
     "src/renderer/extensions/linearMode/DropZone.vue:complexity",
     "src/workbench/extensions/manager/components/manager/ManagerDialog.vue:circular dependency",
-    "src/composables/maskeditor/useCanvasHistory.ts:circular dependency",
+    "src/renderer/extensions/maskEditor/composables/useCanvasHistory.ts:circular dependency",
     "src/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
     "src/platform/cloud/subscription/components/PricingTable.vue:complexity",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",

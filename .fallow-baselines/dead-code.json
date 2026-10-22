@@ -21,7 +21,7 @@
     "browser_tests/fixtures/ComfyPage.ts->browser_tests/fixtures/components/SubgraphEditor.ts->browser_tests/fixtures/helpers/SubgraphHelper.ts",
     "src/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue->src/composables/useEditKeybindingDialog.ts",
     "src/composables/graph/useMoreOptionsMenu.ts->src/composables/graph/useSelectionMenuOptions.ts",
-    "src/composables/maskeditor/useCanvasHistory.ts->src/stores/maskEditorStore.ts",
+    "src/renderer/extensions/maskEditor/composables/useCanvasHistory.ts->src/renderer/extensions/maskEditor/stores/maskEditorStore.ts",
     "src/composables/node/usePriceBadge.ts->src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts->src/stores/workspace/sidebarTabStore.ts",
     "src/composables/usePaste.ts->src/scripts/app.ts",

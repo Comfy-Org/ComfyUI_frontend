@@ -209,16 +209,6 @@
       "count": 1
     }
   },
-  "src/components/maskeditor/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/components/maskeditor/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -289,57 +279,9 @@
       "count": 1
     }
   },
-  "src/composables/maskeditor/brushDrawingUtils.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/gpuUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useBrushDrawing.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/composables/maskeditor/useCanvasManager.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useGPUResources.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/maskeditor/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/composables/maskeditor/useMaskEditorLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 6
-    }
-  },
-  "src/composables/maskeditor/useMaskEditorSaver.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
   "src/composables/node/useNodeDragToCanvas.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 3
-    }
-  },
-  "src/composables/painter/usePainter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
     }
   },
   "src/composables/queue/useJobList.ts": {
@@ -1055,8 +997,66 @@
       "count": 1
     }
   },
+  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/brushDrawingUtils.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    },
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/gpuUtils.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useBrushDrawing.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useCanvasManager.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useGPUResources.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
   "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
+      "count": 4
+    }
+  },
+  "src/renderer/extensions/painter/composables/usePainter.ts": {
+    "comfy/no-new-error-throw": {
       "count": 4
     }
   },

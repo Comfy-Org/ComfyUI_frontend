@@ -1977,18 +1977,15 @@
       },
       {
         "name": "mask-editor/domain",
-        "patterns": ["src/extensions/core/maskeditor/**"]
+        "patterns": ["src/renderer/extensions/maskEditor/types.ts"]
       },
       {
         "name": "mask-editor/application",
         "patterns": [
-          "src/composables/maskeditor/**",
+          "src/renderer/extensions/maskEditor/composables/**",
+          "src/renderer/extensions/maskEditor/stores/**",
           "src/scripts/clipspace.test.ts",
-          "src/scripts/clipspace.ts",
-          "src/stores/maskEditorDataStore.test.ts",
-          "src/stores/maskEditorDataStore.ts",
-          "src/stores/maskEditorStore.test.ts",
-          "src/stores/maskEditorStore.ts"
+          "src/scripts/clipspace.ts"
         ]
       },
       {
@@ -2001,7 +1998,7 @@
       },
       {
         "name": "mask-editor/presentation",
-        "patterns": ["src/components/maskeditor/**"]
+        "patterns": ["src/renderer/extensions/maskEditor/components/**"]
       },
       {
         "name": "mask-editor/integration",
@@ -2507,11 +2504,11 @@
       },
       {
         "name": "painter/application",
-        "patterns": ["src/composables/painter/**"]
+        "patterns": ["src/renderer/extensions/painter/composables/**"]
       },
       {
         "name": "painter/presentation",
-        "patterns": ["src/components/painter/**"]
+        "patterns": ["src/renderer/extensions/painter/components/**"]
       },
       {
         "name": "painter/integration",

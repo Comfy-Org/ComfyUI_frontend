@@ -5,7 +5,7 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
 
 vi.mock(import('firebase/auth'))
 

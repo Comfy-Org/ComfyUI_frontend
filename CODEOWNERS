@@ -10,13 +10,7 @@
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/extensions/core/maskeditor.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/maskeditor/                  @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/components/maskeditor/                       @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/composables/maskeditor/                      @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorStore.ts                    @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorDataStore.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorStore.test.ts               @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/stores/maskEditorDataStore.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/maskEditor/               @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Crop
 /src/extensions/core/imageCrop.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
@@ -36,8 +30,7 @@
 
 # Painter
 /src/extensions/core/painter.ts                                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/components/painter/                                                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/composables/painter/                                                   @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/painter/                                          @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts   @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/lib/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
