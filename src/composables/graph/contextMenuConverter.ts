@@ -47,6 +47,7 @@ const CORE_MENU_ITEMS = new Set([
   'Rename',
   'Copy',
   'Duplicate',
+  'Reference in agent',
   'Clone',
   // Node state operations
   'Run Branch',
@@ -237,24 +238,26 @@ const MENU_ORDER: string[] = [
   'Rename',
   'Copy',
   'Duplicate',
-  // Section 2: Node actions
+  // Section 2: Reference in agent
+  'Reference in agent',
+  // Section 3: Node actions
   'Run Branch',
   'Pin',
   'Unpin',
   'Bypass',
   'Remove Bypass',
   'Mute',
-  // Section 3: Structure operations
+  // Section 4: Structure operations
   'Convert to Subgraph',
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
   'Expand Node',
   'Clone',
-  // Section 4: Node properties
+  // Section 5: Node properties
   'Node Info',
   'Color',
-  // Section 5: Clipspace operations
+  // Section 6: Clipspace operations
   'Copy (Clipspace)',
   'Paste (Clipspace)'
 ]
@@ -312,17 +315,19 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   // Section boundaries based on MENU_ORDER indices
   // Section 0: 0-4 (Open Image, Open in Mask Editor, Copy Image, Paste Image, Save Image)
   // Section 1: 5-7 (Rename, Copy, Duplicate)
-  // Section 2: 8-13 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
-  // Section 3: 14-19 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Clone)
-  // Section 4: 20-21 (Node Info, Color)
-  // Section 5: 22+ (Clipspace and fallback items)
+  // Section 2: 8 (Reference in agent)
+  // Section 3: 9-14 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
+  // Section 4: 15-20 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Clone)
+  // Section 5: 21-22 (Node Info, Color)
+  // Section 6: 23+ (Clipspace and fallback items)
   const getSectionNumber = (index: number): number => {
     if (index <= 4) return 0
     if (index <= 7) return 1
-    if (index <= 13) return 2
-    if (index <= 19) return 3
-    if (index <= 21) return 4
-    return 5
+    if (index <= 8) return 2
+    if (index <= 14) return 3
+    if (index <= 20) return 4
+    if (index <= 22) return 5
+    return 6
   }
 
   let lastSection = -1
