@@ -41,8 +41,10 @@ async function reloadWorkflowWithoutRejecting(): Promise<void> {
 }
 
 /**
- * Refreshes node definitions and the open workflow after the agent restarts
- * ComfyUI; a failed refresh runs again on ComfyUI's next reconnect.
+ * Refreshes node definitions and the open workflow once ComfyUI reconnects
+ * after the agent restarts it. The agent reports the restart before ComfyUI
+ * goes down, so the refresh waits for the reconnect; a failed refresh runs
+ * again on the next one.
  */
 export const useAgentNodeDefinitionRefreshStore = defineStore(
   'agentNodeDefinitionRefresh',
@@ -70,9 +72,7 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     }
 
     function observeAgentEvent(event: AgentWsEvent): void {
-      if (!isSuccessfulRestart(event)) return
-      stale = true
-      enqueueRefresh()
+      if (isSuccessfulRestart(event)) stale = true
     }
 
     useEventListener(api, 'reconnected', enqueueRefresh)

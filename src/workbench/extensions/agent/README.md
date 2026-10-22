@@ -24,10 +24,11 @@ The panel speaks one contract on the cloud and on the local agent:
   socket connects again. A rejected credential is not retried until the
   account changes.
 - **ComfyUI restart** (`stores/agent/agentNodeDefinitionRefreshStore.ts`). A
-  successful `restart_comfyui` tool call refreshes node definitions and then
-  reloads the open workflow; the refresh shows its own "Update requested" and
-  "Node definitions updated" toasts. A failed refresh runs again only when
-  ComfyUI's `/ws` reconnects later; until then definitions stay stale, and
+  successful `restart_comfyui` tool call means ComfyUI restarts once the turn
+  ends, so the next `/ws` reconnect refreshes node definitions and then reloads
+  the open workflow; the refresh shows its own "Update requested" and "Node
+  definitions updated" toasts. A failed refresh runs again only when ComfyUI's
+  `/ws` reconnects later; until then definitions stay stale, and
   **Refresh Node Definitions** recovers them. A restart made while the panel is
   closed is not observed.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the

@@ -20,7 +20,9 @@ test.describe(
     test('refreshes node definitions and reloads the active workflow', async ({
       agentPanel,
       comfyPage,
-      getAgentSocket
+      getAgentSocket,
+      getWebSocket,
+      nextWebSocket
     }) => {
       test.setTimeout(60_000)
       const page = comfyPage.page
@@ -47,26 +49,28 @@ test.describe(
           })
       })
 
+      let restarted = false
       await page.route('**/object_info', async (route) => {
         await route.fulfill(
-          jsonRoute({
-            ...agentReplayNodeDefs,
-            BrowserProofNode: {
-              ...agentReplayNodeDefs.KSampler,
-              name: 'BrowserProofNode',
-              display_name: 'Browser Proof Node'
-            }
-          })
+          jsonRoute(
+            restarted
+              ? {
+                  ...agentReplayNodeDefs,
+                  BrowserProofNode: {
+                    ...agentReplayNodeDefs.KSampler,
+                    name: 'BrowserProofNode',
+                    display_name: 'Browser Proof Node'
+                  }
+                }
+              : agentReplayNodeDefs
+          )
         )
       })
 
-      await test.step('deliver the successful restart event', async () => {
+      await test.step('deliver the restart before ComfyUI goes down', async () => {
         await agentPanel.open()
         await agentPanel.selectWorkflow('restart_node_refresh')
         const ws = await getAgentSocket()
-        const refreshedDefinitions = page.waitForRequest('**/object_info', {
-          timeout: 5_000
-        })
         const restart: AgentWsEvent = {
           type: 'agent_tool_call',
           data: {
@@ -78,7 +82,15 @@ test.describe(
           }
         }
         pushAgentEvent(ws, restart)
-        await refreshedDefinitions
+      })
+
+      await test.step('restart ComfyUI with the new node loaded', async () => {
+        const comfySocket = await getWebSocket()
+        const reconnected = nextWebSocket().then(() => {
+          restarted = true
+        })
+        await comfySocket.close()
+        await reconnected
       })
 
       await test.step('verify the active workflow was reconstructed', async () => {
