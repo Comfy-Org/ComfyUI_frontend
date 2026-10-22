@@ -33,43 +33,48 @@
       </div>
     </Teleport>
 
-    <Table data-testid="keybinding-table-container">
-      <TableHeader>
-        <TableRow>
-          <TableSortHead v-model:direction="commandSortDirection">
-            {{ $t('g.command') }}
-          </TableSortHead>
-          <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
-          <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
-          <TableHead class="w-36">
-            <span class="sr-only">{{ $t('g.actions') }}</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <RovingFocusGroup
-        v-model:current-tab-stop-id="currentRowTabStopId"
-        as-child
-        orientation="vertical"
+    <ContextMenu :model="rowMenuItems" @close-auto-focus="restoreRowFocus">
+      <Table
+        data-testid="keybinding-table-container"
+        @contextmenu.capture="contextMenuTarget = null"
       >
-        <TableBody>
-          <KeybindingCommandRows
-            v-for="command in visibleCommands"
-            :key="command.id"
-            :command
-            :expanded="expandedCommandIds.has(command.id)"
-            :selected="selectedCommandId === command.id"
-            @activate="activateRow(command)"
-            @row-dblclick="handleRowDblClick(command)"
-            @row-contextmenu="handleRowContextMenu($event, command)"
-            @edit="editKeybinding(command, $event)"
-            @add="addKeybinding(command)"
-            @reset="resetKeybinding(command)"
-            @remove="handleRemoveKeybindingFromMenu(command)"
-            @remove-single="removeSingleKeybinding(command, $event)"
-          />
-        </TableBody>
-      </RovingFocusGroup>
-    </Table>
+        <TableHeader>
+          <TableRow>
+            <TableSortHead v-model:direction="commandSortDirection">
+              {{ $t('g.command') }}
+            </TableSortHead>
+            <TableHead class="w-3/10">{{ $t('g.keybinding') }}</TableHead>
+            <TableHead class="w-4/25">{{ $t('g.source') }}</TableHead>
+            <TableHead class="w-36">
+              <span class="sr-only">{{ $t('g.actions') }}</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <RovingFocusGroup
+          v-model:current-tab-stop-id="currentRowTabStopId"
+          as-child
+          orientation="vertical"
+        >
+          <TableBody>
+            <KeybindingCommandRows
+              v-for="command in visibleCommands"
+              :key="command.id"
+              :command
+              :expanded="expandedCommandIds.has(command.id)"
+              :selected="selectedCommandId === command.id"
+              @activate="activateRow(command)"
+              @row-dblclick="handleRowDblClick(command)"
+              @row-contextmenu="handleRowContextMenu($event, command)"
+              @edit="editKeybinding(command, $event)"
+              @add="addKeybinding(command)"
+              @reset="resetKeybinding(command)"
+              @remove="handleRemoveKeybindingFromMenu(command)"
+              @remove-single="removeSingleKeybinding(command, $event)"
+            />
+          </TableBody>
+        </RovingFocusGroup>
+      </Table>
+    </ContextMenu>
     <AppPagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
@@ -77,7 +82,6 @@
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
     />
-    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
       :tooltip="$t('g.resetAllKeybindingsTooltip')"
@@ -93,7 +97,7 @@
 
 <script setup lang="ts">
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RovingFocusGroup } from 'reka-ui'
 
@@ -291,7 +295,6 @@ watch(searchQuery, () => {
 const selectedCommandId = ref<string | null>(null)
 const editKeybindingDialog = useEditKeybindingDialog()
 
-const rowMenu = useTemplateRef('rowMenu')
 const contextMenuTarget = ref<KeybindingCommand | null>(null)
 let rowMenuOrigin: HTMLElement | null = null
 const rowMenuItems = computed<MenuItem[]>(() => {
@@ -365,10 +368,10 @@ function handleRowContextMenu(event: Event, command: KeybindingCommand) {
   contextMenuTarget.value = command
   rowMenuOrigin =
     event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  rowMenu.value?.show(event)
 }
 
-function restoreRowFocus() {
+function restoreRowFocus(event: Event) {
+  event.preventDefault()
   const focused = document.activeElement
   if (focused === document.body || focused?.closest('[role="menu"]')) {
     rowMenuOrigin?.focus()
