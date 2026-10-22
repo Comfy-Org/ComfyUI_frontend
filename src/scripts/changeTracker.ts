@@ -41,7 +41,6 @@ import {
   withNodeHistoryValuesFrom
 } from './nodeHistoryWidgetValues'
 import { useApp } from '@/scripts/appInstance'
-import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { clipspace } from '@/scripts/clipspace'
 import { travelFocusedNodeHistory } from '@/scripts/focusedNodeHistory'
@@ -708,6 +707,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   static init() {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
     const captureState = () => getCurrentChangeTracker()?.captureCanvasState()
@@ -934,5 +934,3 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return true
   }
 }
-
-provideChangeTracker(ChangeTracker)

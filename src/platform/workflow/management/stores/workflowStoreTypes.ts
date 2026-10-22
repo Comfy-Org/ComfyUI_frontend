@@ -6,9 +6,14 @@ import type {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
+import type {
+  ChangeTrackerConstructor,
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from './comfyWorkflow'
 
 export interface WorkflowStore {
+  provideChangeTracker: (tracker: ChangeTrackerConstructor) => void
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean

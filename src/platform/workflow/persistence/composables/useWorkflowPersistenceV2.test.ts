@@ -20,7 +20,7 @@ import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -177,6 +177,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   openWorkflowMock.mockResolvedValue(true)
 })

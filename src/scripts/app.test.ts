@@ -5261,6 +5261,7 @@ describe('ComfyApp', () => {
     it('gives each imported workflow its own restorable run errors', async () => {
       const workflowService = await useRealWorkflowService()
       const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })

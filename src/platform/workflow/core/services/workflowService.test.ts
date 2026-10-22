@@ -205,6 +205,7 @@ beforeEach(() => {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
     ChangeTracker.resetCanvasTrackerForTest()

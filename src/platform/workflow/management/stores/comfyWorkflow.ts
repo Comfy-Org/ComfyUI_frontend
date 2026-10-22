@@ -70,6 +70,17 @@ export interface WorkflowChangeTracker {
   afterChange(): void
 }
 
+export interface ChangeTrackerConstructor {
+  new (
+    workflow: ComfyWorkflow,
+    initialState: ComfyWorkflowJSON
+  ): WorkflowChangeTracker
+  graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ): boolean
+}
+
 interface WorkflowDraft {
   data: string
   updatedAt: number
@@ -104,7 +115,7 @@ export function registerWorkflowRuntime(runtime: WorkflowRuntime): void {
 function workflowRuntime(): WorkflowRuntime {
   assert(
     registeredRuntime,
-    'Workflow runtime not registered; import the workflow store first'
+    'Workflow runtime not registered; create workflows through the workflow store'
   )
   return registeredRuntime
 }
