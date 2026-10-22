@@ -27,7 +27,7 @@ import {
   agentSubgraphFrames,
   agentSubgraphInteriorFrames,
   agentSubgraphWidgetDriftFrames
-} from '@e2e/fixtures/data/agentSubgraphFollower'
+} from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
