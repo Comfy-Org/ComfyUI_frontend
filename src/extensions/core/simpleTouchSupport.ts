@@ -1,11 +1,10 @@
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '@/scripts/app'
 
 import { canvasOrReport } from './touchCanvasAccess'
-
-let touchZooming = false
-let touchCount = 0
+import { touchGesture } from './touchPointerGuards'
 
 type TouchPoint = { clientX: number; clientY: number }
 
@@ -75,7 +74,7 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount += e.changedTouches.length
+        touchGesture.count += e.changedTouches.length
 
         lastTouch = null
         lastScale = null
@@ -101,9 +100,9 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchCount -= e.changedTouches.length
+        touchGesture.count -= e.changedTouches.length
 
-        if (e.touches.length !== 1) touchZooming = false
+        if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
@@ -127,8 +126,8 @@ app.registerExtension({
     )
 
     const resetTouchState = () => {
-      touchCount = 0
-      touchZooming = false
+      touchGesture.count = 0
+      touchGesture.zooming = false
       touchTime = null
       lastTouch = null
       lastScale = null
@@ -159,7 +158,7 @@ app.registerExtension({
           if (!canvas) return
           e.preventDefault()
           canvas.pointer.isDown = false
-          touchZooming = true
+          touchGesture.zooming = true
 
           LiteGraph.closeAllContextMenus(window)
           canvas.search_box?.close()
@@ -177,27 +176,3 @@ app.registerExtension({
     )
   }
 })
-
-const processMouseDown = LGraphCanvas.prototype.processMouseDown
-LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
-  const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
-  if (startsFreshTouch) {
-    touchCount = 0
-    touchZooming = false
-  }
-
-  if (touchZooming || touchCount) {
-    return
-  }
-  canvasOrReport('processMouseDown', e)
-  this.pointer.isDown = false
-  return processMouseDown.apply(this, [e])
-}
-
-const processMouseMove = LGraphCanvas.prototype.processMouseMove
-LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
-  if (touchZooming || touchCount > 1) {
-    return
-  }
-  return processMouseMove.apply(this, [e])
-}

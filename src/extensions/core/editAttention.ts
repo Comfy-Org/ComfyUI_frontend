@@ -1,4 +1,4 @@
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 type Enclosure = {
   start: number

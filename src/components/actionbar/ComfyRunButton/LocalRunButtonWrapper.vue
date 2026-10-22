@@ -7,7 +7,7 @@
       tooltip-side="bottom"
       variant="secondary"
       size="unset"
-      class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+      class="h-8 gap-1.5 rounded-lg px-4"
       data-testid="partner-sign-in-to-run-button"
       aria-describedby="partner-run-gate-caption"
       @click="openPartnerSignInDialog"

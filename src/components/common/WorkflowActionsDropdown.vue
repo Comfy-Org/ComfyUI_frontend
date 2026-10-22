@@ -7,6 +7,7 @@ let restoreFocusOnMount = false
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { snakeCase } from 'es-toolkit'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -49,6 +50,14 @@ const { menuItems } = useWorkflowActionsMenu(
 const { hasUnseenItems, markAsSeen } = useNewMenuItemIndicator(
   () => menuItems.value
 )
+
+function onMenuItemActivate(item: object) {
+  if (!('id' in item) || typeof item.id !== 'string') return
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: `workflow_actions_${snakeCase(item.id)}_clicked`,
+    element_group: 'workflow_actions'
+  })
+}
 
 const toggleShortcut = computed(() => {
   const shortcut = keybindingStore
@@ -164,6 +173,7 @@ onMounted(async () => {
     :collision-padding="10"
     class="min-w-56"
     @update:open="onOpenChange"
+    @activate="onMenuItemActivate"
   >
     <template #trigger>
       <div
@@ -194,8 +204,8 @@ onMounted(async () => {
                 cn(
                   'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                   seg.displayActive
-                    ? 'bg-secondary-background pr-2 pl-2.5 text-base-foreground group-data-[state=open]:bg-secondary-background-hover group-data-[state=open]:shadow-interface hover:bg-secondary-background'
-                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary-background hover:text-base-foreground'
+                    ? 'bg-secondary pr-2 pl-2.5 text-foreground group-data-[state=open]:bg-secondary/80 group-data-[state=open]:shadow-md hover:bg-secondary'
+                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
                 )
               "
               @click="onSegmentClick(seg, $event)"
@@ -225,7 +235,7 @@ onMounted(async () => {
               <span
                 v-if="seg.active && hasUnseenItems"
                 aria-hidden="true"
-                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary-background"
+                class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary"
               />
             </Button>
           </div>

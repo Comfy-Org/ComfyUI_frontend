@@ -19,7 +19,7 @@ const meta: Meta<typeof MemberUpsellBanner> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-[720px] bg-base-background p-6"><story /></div>'
+      template: '<div class="w-[720px] bg-background p-6"><story /></div>'
     })
   ]
 }

@@ -1,11 +1,6 @@
 <template>
   <div class="flex w-full justify-end gap-2 px-4 py-2">
-    <Button
-      variant="textonly"
-      size="md"
-      class="text-muted-foreground"
-      @click="handleCancel"
-    >
+    <Button variant="muted-textonly" size="md" @click="handleCancel">
       {{ $t('g.cancel') }}
     </Button>
     <Button

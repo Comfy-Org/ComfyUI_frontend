@@ -11,7 +11,7 @@ import { defineComponent, h, nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

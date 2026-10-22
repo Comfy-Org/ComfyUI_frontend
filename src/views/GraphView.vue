@@ -20,7 +20,7 @@
     </template>
   </div>
 
-  <Toaster />
+  <AppToaster />
   <ToastDock>
     <ModelImportProgressDialog />
     <AssetExportProgressDialog />
@@ -54,7 +54,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import ToastDock from '@/components/ui/toast/ToastDock.vue'
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
@@ -194,12 +194,6 @@ if (isCloud) void useDeploymentPickAtBoot()
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.documentElement.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.documentElement.classList.add(DARK_THEME_CLASS)
-    }
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',

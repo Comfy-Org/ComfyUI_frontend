@@ -42,6 +42,7 @@ describe('AgentConsentCard', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Skip for now' }))
 
+    expect(screen.queryByText("You'll sign in next.")).not.toBeInTheDocument()
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
   })

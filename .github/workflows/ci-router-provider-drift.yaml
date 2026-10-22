@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   drift-check:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

@@ -19,8 +19,14 @@ const ICONS: Readonly<Record<ReferenceKind, typeof UserRound>> = {
   video: Film
 }
 
-const { kind = 'cast', locale = 'en' } = defineProps<{
+const {
+  kind = 'cast',
+  removable = true,
+  locale = 'en'
+} = defineProps<{
   kind?: ReferenceKind
+  /** A required input can be replaced but not emptied. */
+  removable?: boolean
   locale?: Locale
 }>()
 const { t: tc } = translationsFor(locale)
@@ -71,7 +77,7 @@ function choose(event: Event) {
       </button>
     </CinematicTooltip>
     <button
-      v-if="file"
+      v-if="file && removable"
       type="button"
       class="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full bg-primary-warm-white text-primary-comfy-ink hover:bg-primary-comfy-yellow"
       :aria-label="`${tc('cinematic.reference.remove')}: ${tc(slot.label)}`"

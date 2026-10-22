@@ -42,17 +42,15 @@ watchDebounced(
 </script>
 
 <template>
-  <div
-    class="group relative my-2 overflow-hidden rounded-md border border-border-default"
-  >
+  <div class="group relative my-2 overflow-hidden rounded-md border">
     <div
-      class="flex items-center justify-between border-b border-border-default bg-secondary-background-hover px-3 py-1.5"
+      class="flex items-center justify-between border-b bg-accent px-3 py-1.5"
     >
       <span
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-base-foreground">{{ lang }}</span>
+        <span class="text-foreground">{{ lang }}</span>
       </span>
       <Button
         type="button"

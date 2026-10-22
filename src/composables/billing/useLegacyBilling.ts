@@ -6,6 +6,7 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import type {
   BillingStatus,
+  BillingStatusResponse,
   BillingSubscriptionStatus,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
@@ -29,6 +30,15 @@ type RuntimeLegacyBalance = Omit<
 > & {
   amount_micros?: number
   effective_balance_micros?: number
+}
+
+function fundsFromStatus(status: BillingStatusResponse | null) {
+  const hasFunds = status?.has_funds ?? false
+  return {
+    hasFunds,
+    agentHasFunds: status?.scoped_effective_has_funds?.agent ?? hasFunds,
+    agentScopedHasFunds: status?.scoped_has_funds?.agent
+  }
 }
 
 /**
@@ -99,22 +109,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
   const maxSeats = computed(() => null)
   const occupiedSeats = computed(() => null)
 
-  const hasFunds = computed(() => (authStore.balance?.amount_micros ?? 0) > 0)
-  const agentHasFunds = computed(
-    () =>
-      legacySubscriptionStatus.value?.scoped_effective_has_funds?.agent ??
-      hasFunds.value
-  )
-  const agentScopedHasFunds = computed(
-    () => legacySubscriptionStatus.value?.scoped_has_funds?.agent
-  )
   const subscription = computed<SubscriptionInfo | null>(() => {
-    // A past-due legacy status has no tier and is inactive, yet must still
-    // reach the payment-recovery banner.
+    const status = legacySubscriptionStatus.value
     if (
       !legacyCanAccessSubscriptionFeatures.value &&
       !subscriptionTier.value &&
-      !legacySubscriptionStatus.value?.renewal_invoice
+      !status?.renewal_invoice
     ) {
       return null
     }
@@ -123,14 +123,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
       isActive: legacyCanAccessSubscriptionFeatures.value,
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
-      planSlug: null, // Legacy doesn't use plan slugs
-      scheduledChange: null, // Legacy rail cannot schedule plan changes
-      renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
-      endDate: legacySubscriptionStatus.value?.cancel_at ?? null,
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: status?.renewal_date ?? null,
+      endDate: status?.cancel_at ?? null,
       isCancelled: isCancelled.value,
-      hasFunds: hasFunds.value,
-      agentHasFunds: agentHasFunds.value,
-      agentScopedHasFunds: agentScopedHasFunds.value
+      ...fundsFromStatus(status)
     }
   })
 
@@ -161,6 +159,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (legacyCanAccessSubscriptionFeatures.value) return 'active'
     return null
   })
+  const subscriptionState = computed(
+    () => legacySubscriptionStatus.value?.subscription_state ?? null
+  )
   const tier = computed(() => subscriptionTier.value)
   const renewalDate = computed(
     () => legacySubscriptionStatus.value?.renewal_date ?? null
@@ -181,9 +182,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await Promise.all([fetchStatus(), fetchBalance()])
-      // Re-fetch balance if free tier credits were just lazily granted
       if (isFreeTier.value && balance.value?.amountMicros === 0) {
-        await fetchBalance()
+        await Promise.all([fetchBalance(), fetchStatus()])
       }
       isInitialized.value = true
     } catch (err) {
@@ -296,6 +296,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isFreeTier,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice: computed(

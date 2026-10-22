@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-comfy-menu-bg px-1',
+        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-background px-1',
         isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
       )
     "
@@ -10,7 +10,7 @@
     <div
       ref="tabStripRef"
       data-testid="workflow-tab-strip"
-      class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
+      class="no-drag scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
       @transitionend="handleTabResize"
     >
@@ -70,7 +70,7 @@
       <div
         v-if="topbarBadgeStore.badges.length"
         data-testid="environment-badge-separator"
-        class="h-5 w-px shrink-0 bg-border-subtle"
+        class="h-5 w-px shrink-0 bg-border/50"
       />
       <Button
         v-if="isCloud || isNightly"
@@ -88,7 +88,7 @@
       <template v-if="showAgentEntry">
         <div
           data-testid="agent-entry-separator"
-          class="h-5 w-px shrink-0 bg-border-subtle"
+          class="h-5 w-px shrink-0 bg-border/50"
         />
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
@@ -178,9 +178,12 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (agentPanelStore.isVisible) {
+    if (
+      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
+      agentPanelStore.isVisible
+    ) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: 'closed'
+        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
       })
       agentPanelStore.toggle()
       return

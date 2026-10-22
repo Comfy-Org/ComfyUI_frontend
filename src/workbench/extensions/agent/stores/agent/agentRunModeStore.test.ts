@@ -5,7 +5,7 @@ import { api } from '@/scripts/api'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 
 import { useAgentComposerStore } from './agentComposerStore'
 import { useAgentRunModeStore } from './agentRunModeStore'

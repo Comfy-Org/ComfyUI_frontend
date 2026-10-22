@@ -76,6 +76,16 @@ test.describe('Top-up without a saved payment method', () => {
     )
     await expect(await checkoutPage).toHaveURL(CHECKOUT_URL)
     await expect(page).toHaveURL(appUrl)
+    await expect(
+      topUpDialog.root.getByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+    ).toBeVisible()
+
+    await topUpDialog.root
+      .getByRole('button', { name: 'Close', exact: true })
+      .last()
+      .click()
     await expect(topUpDialog.root).toBeHidden()
   })
 })

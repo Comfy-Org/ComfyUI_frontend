@@ -9,7 +9,7 @@
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="underline underline-offset-4 hover:text-base-foreground"
+          class="underline underline-offset-4 hover:text-foreground"
         >
           {{ t('g.learnMore') }}
         </a>
@@ -83,7 +83,6 @@ import {
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
@@ -104,7 +103,7 @@ const emit = defineEmits<{
 }>()
 
 const { handleSubmit } = useForm({
-  validationSchema: toTypedSchema(apiKeySchema),
+  validationSchema: apiKeySchema,
   initialValues: { apiKey: '' }
 })
 

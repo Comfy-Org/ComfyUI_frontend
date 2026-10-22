@@ -7,8 +7,8 @@ import type {
  * Event interfaces for event extension
  */
 
-import type { Rectangle } from '../infrastructure/Rectangle'
-import type { HasBoundingRect, Point } from '../interfaces'
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { HasBoundingRect, Point } from '@/lib/litegraph/src/interfaces'
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 interface ICanvasPosition {

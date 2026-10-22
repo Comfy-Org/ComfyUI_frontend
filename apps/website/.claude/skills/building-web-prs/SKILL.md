@@ -6,6 +6,13 @@ argument-hint: '<what to build or change, with the mock or page>'
 
 # building-web-prs
 
+**Stop first.** comfy.org is now built from the private repository
+`Comfy-Org/comfy-website`, and this copy is frozen. Do not build anything
+here. Tell the designer the website moved to `Comfy-Org/comfy-website`, that
+their request has to be made there, and stop. The only website change still
+made here is a mechanical fix that a change to `packages/` forces on this copy;
+that is not a designer request, and it follows `apps/website/AGENTS.md`.
+
 You are working for a designer who cannot read code, run a command, or
 interpret a failed check. The work ends in one of two states, and you report
 which one: a pull request that matches what they asked for, passes every

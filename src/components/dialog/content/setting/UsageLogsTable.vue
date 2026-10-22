@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="flex items-center justify-center p-8">
-      <Spinner />
+      <AppSpinner />
     </div>
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
@@ -36,7 +36,7 @@
             <TableCell>
               <div
                 v-if="event.event_type === EventType.CREDIT_ADDED"
-                class="font-semibold text-success-background"
+                class="font-semibold text-success"
               >
                 {{ $t('credits.added') }} ${{
                   customerEventService.formatAmount(eventAmount(event))
@@ -52,7 +52,7 @@
                 <div class="font-semibold">
                   {{ event.params?.api_name || $t('credits.api') }}
                 </div>
-                <div class="text-sm text-muted-foreground">
+                <div class="text-muted-foreground">
                   {{ $t('credits.model') }}: {{ event.params?.model || '-' }}
                 </div>
               </div>
@@ -74,7 +74,7 @@
           </TableRow>
         </TableBody>
       </Table>
-      <Pagination
+      <AppPagination
         v-if="pagination.total > pagination.limit"
         :page="pagination.page"
         :total="pagination.total"
@@ -93,8 +93,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'

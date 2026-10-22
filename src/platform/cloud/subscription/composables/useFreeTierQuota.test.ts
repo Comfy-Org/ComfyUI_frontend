@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useFreeTierQuota } from './useFreeTierQuota'
 
@@ -18,7 +17,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'))
 const mockCreditBadges = vi.hoisted<{ value: object[] }>(() => ({ value: [] }))
 vi.mock(import('@/scripts/app'))
 vi.mock<unknown>(import('@/systems/badgeSystem'), () => ({
@@ -31,7 +29,6 @@ describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
   function createQuota() {
-    vi.mocked(useFeatureFlags().flags).freeTierJobAllowanceEnabled = true
     const quota = scope.run(() => useFreeTierQuota())
     if (!quota) throw new Error('Failed to create free tier quota')
     return quota
@@ -50,14 +47,14 @@ describe('useFreeTierQuota', () => {
     scope.stop()
   })
 
-  it('enables the quota on Cloud when the flag and an allowance are present', () => {
+  it('enables the quota on Cloud when an allowance is present', () => {
     const quota = createQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
     expect(quota.freeTierExecutionPermitted.value).toBe(true)
   })
 
-  it('keeps the quota disabled off Cloud even when the flag and an allowance are present', () => {
+  it('keeps the quota disabled off Cloud even when an allowance is present', () => {
     mockIsCloud.value = false
 
     const quota = createQuota()
@@ -72,6 +69,15 @@ describe('useFreeTierQuota', () => {
     const quota = createQuota()
 
     expect(quota.quotaEnabled.value).toBe(true)
+    expect(quota.freeTierExecutionPermitted.value).toBe(false)
+  })
+
+  it('keeps the quota disabled when the backend sends no free-tier balance', () => {
+    remoteConfig.value = {}
+
+    const quota = createQuota()
+
+    expect(quota.quotaEnabled.value).toBe(false)
     expect(quota.freeTierExecutionPermitted.value).toBe(false)
   })
 

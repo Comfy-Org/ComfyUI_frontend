@@ -1,0 +1,41 @@
+{
+  "name": "@comfyorg/layer-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/layer-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    },
+    "./kinds": {
+      "types": "./dist/kinds/index.d.ts",
+      "default": "./src/kinds/index.ts"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "es-toolkit": "catalog:"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

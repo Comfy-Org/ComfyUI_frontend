@@ -9,8 +9,8 @@ import { z } from 'zod'
 import type {
   WebSessionBootstrapEvent,
   WebSessionIdentityOptions
-} from './core/webSessionIdentity.js'
-import type { SsoErrorCode } from './sso.js'
+} from './core/webSessionIdentity'
+import type { SsoErrorCode } from './sso'
 
 export const SESSION_TELEMETRY_EVENT = {
   refreshSucceeded: 'auth.unified.refresh.succeeded',
