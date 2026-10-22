@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { assert, describe, expect, it, vi } from 'vitest'
-import { readonly, ref } from 'vue'
+import { nextTick, readonly, ref } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
@@ -355,6 +355,65 @@ describe('WorkflowPage header', () => {
         workflow_id: model.workflowId,
         placement: 'header'
       })
+    })
+  })
+
+  describe('model_viewed', () => {
+    const nonRunnable = {
+      ...model,
+      catalogDetails: {
+        locale: 'en' as const,
+        faqs: [],
+        models: [],
+        runnable: false
+      }
+    }
+    const views = () =>
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'model_viewed')
+
+    function flags(workshop: boolean, workflows: boolean) {
+      const enabled = ref(workshop)
+      const workflowsEnabled = ref(workflows)
+      vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+      vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(
+        readonly(workflowsEnabled)
+      )
+      return { enabled, workflowsEnabled }
+    }
+
+    it('reports a non-runnable page once, even when access turns on late', async () => {
+      const { enabled } = flags(false, true)
+      mount(nonRunnable)
+      await nextTick()
+      expect(views()).toHaveLength(0)
+
+      enabled.value = true
+      await nextTick()
+      enabled.value = false
+      await nextTick()
+      enabled.value = true
+      await nextTick()
+
+      expect(views()).toHaveLength(1)
+    })
+
+    it('reports nothing while Workflows access is off', async () => {
+      flags(true, false)
+      mount(nonRunnable)
+      await nextTick()
+
+      expect(views()).toHaveLength(0)
+    })
+
+    it('leaves a runnable page to the Playground', async () => {
+      flags(true, true)
+      mount()
+      await nextTick()
+
+      expect(screen.getByTestId('workflow-playground')).toBeTruthy()
+      expect(views()).toHaveLength(0)
     })
   })
 
