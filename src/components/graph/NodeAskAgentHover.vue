@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="visible"
+    ref="root"
     data-testid="node-ask-agent-hover"
     :class="
       cn(
@@ -13,82 +14,78 @@
     @pointerdown.stop
     @click.stop
   >
-    <Popover :open="composerOpen" @update:open="setComposerOpen">
-      <PopoverTrigger as-child>
-        <Button
-          :tooltip="t('agent.askAgent')"
-          data-testid="node-ask-agent-button"
-          variant="outline"
-          size="icon"
-          :aria-label="t('agent.askAgent')"
-          class="border-border"
+    <Button
+      v-if="!composerOpen"
+      :tooltip="t('agent.askAgent')"
+      data-testid="node-ask-agent-button"
+      variant="outline"
+      size="icon"
+      :aria-label="t('agent.askAgent')"
+      class="border-border"
+      @click="openComposer"
+    >
+      <i class="icon-[lucide--astroid] size-4 text-foreground" />
+    </Button>
+    <div
+      v-else
+      data-testid="node-ask-agent-composer"
+      class="flex w-72 flex-col overflow-hidden rounded-lg border border-border bg-background text-foreground shadow-md outline-none"
+    >
+      <form class="w-full border-b border-border" @submit.prevent="onSend">
+        <InputGroup
+          class="has-[[data-slot=input-group-control]:focus-visible]:ring-0"
         >
-          <i class="icon-[lucide--astroid] size-4 text-foreground" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="right"
-        align="start"
-        data-testid="node-ask-agent-composer"
-        class="flex flex-col overflow-hidden rounded-lg border-border p-0"
-        @open-auto-focus.prevent="focusComposerInput"
+          <InputGroupInput
+            v-model="draft"
+            data-testid="node-ask-agent-input"
+            :placeholder="t('agent.nodeHover.placeholder')"
+            :aria-label="t('agent.nodeHover.placeholder')"
+          />
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              variant="inverted"
+              size="icon-sm"
+              data-testid="node-ask-agent-send"
+              :aria-label="t('agent.send')"
+              :disabled="!canSend"
+              @click="onSend"
+            >
+              <i class="icon-[lucide--arrow-up] size-4" />
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </form>
+      <div
+        data-testid="node-ask-agent-starters"
+        class="flex flex-col gap-1 p-1"
       >
-        <form class="w-full border-b border-border" @submit.prevent="onSend">
-          <InputGroup
-            class="has-[[data-slot=input-group-control]:focus-visible]:ring-0"
-          >
-            <InputGroupInput
-              v-model="draft"
-              data-testid="node-ask-agent-input"
-              :placeholder="t('agent.nodeHover.placeholder')"
-              :aria-label="t('agent.nodeHover.placeholder')"
-            />
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                variant="inverted"
-                size="icon-sm"
-                data-testid="node-ask-agent-send"
-                :aria-label="t('agent.send')"
-                :disabled="!canSend"
-                @click="onSend"
-              >
-                <i class="icon-[lucide--arrow-up] size-4" />
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-        </form>
-        <div
-          data-testid="node-ask-agent-starters"
-          class="flex flex-col gap-1 p-1"
+        <Button
+          v-for="prompt in visiblePrompts"
+          :key="prompt.id"
+          type="button"
+          variant="textonly"
+          size="sm"
+          data-testid="node-ask-agent-starter"
+          :icon="prompt.icon"
+          class="w-full justify-start"
+          @click="onPickStarter(prompt)"
         >
-          <Button
-            v-for="prompt in visiblePrompts"
-            :key="prompt.id"
-            type="button"
-            variant="textonly"
-            size="sm"
-            data-testid="node-ask-agent-starter"
-            :icon="prompt.icon"
-            class="w-full justify-start"
-            @click="onPickStarter(prompt)"
-          >
-            {{ t(prompt.labelKey) }}
-          </Button>
-          <div class="h-px bg-border" />
-          <Button
-            type="button"
-            variant="textonly"
-            size="sm"
-            data-testid="node-ask-agent-shuffle"
-            icon="icon-[lucide--shuffle]"
-            class="w-full justify-start"
-            @click="onShuffle"
-          >
-            {{ t('agent.nodeHover.shuffle') }}
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+          {{ t(prompt.labelKey) }}
+        </Button>
+        <div class="h-px bg-border" />
+        <Button
+          type="button"
+          variant="textonly"
+          size="sm"
+          data-testid="node-ask-agent-shuffle"
+          icon="icon-[lucide--shuffle]"
+          class="w-full justify-start"
+          @click="onShuffle"
+        >
+          {{ t('agent.nodeHover.shuffle') }}
+        </Button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -101,8 +98,8 @@ const openComposerNodeId = ref<NodeId | null>(null)
 </script>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
-import { computed, nextTick, onUnmounted, watch } from 'vue'
+import { onClickOutside } from '@vueuse/core'
+import { computed, nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -122,8 +119,6 @@ import InputGroup from '@/components/ui/input-group/InputGroup.vue'
 import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
 import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
 import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -146,6 +141,7 @@ const shuffleOffset = ref(0)
 const visible = computed(() => panel.enabled && !canvasStore.isPickingNodes)
 
 const composerOpen = computed(() => openComposerNodeId.value === nodeId)
+const root = useTemplateRef<HTMLElement>('root')
 
 const partnerNode = computed(() => {
   if (isPartner != null) return isPartner
@@ -173,10 +169,7 @@ function openComposer(): void {
   shuffleOffset.value = 0
 }
 
-function setComposerOpen(open: boolean): void {
-  if (open) openComposer()
-  else closeComposer()
-}
+onClickOutside(root, closeComposer)
 
 function focusComposerInput(): void {
   void nextTick(() => {

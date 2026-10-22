@@ -164,11 +164,18 @@ describe('NodeAskAgentHover', () => {
       .click(screen.getByRole('button', { name: 'Ask agent' }))
 
     expect(screen.getByTestId('node-ask-agent-composer')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
+    expect(
+      within(screen.getByTestId('node-ask-agent-hover')).getByTestId(
+        'node-ask-agent-composer'
+      )
+    ).toBeVisible()
     const composer = screen.getByTestId('node-ask-agent-composer')
     expect(composer).toHaveClass(
       'rounded-lg',
       'overflow-hidden',
       'p-0',
+      'w-72',
       'border-border'
     )
     expect(composer).not.toHaveClass('border-border/50')
@@ -187,6 +194,22 @@ describe('NodeAskAgentHover', () => {
     expect(
       screen.getByRole('button', { name: 'Explain this node for me' })
     ).toBeVisible()
+  })
+
+  it('restores the Ask agent button when the composer closes', async () => {
+    renderHover()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
+    await user.click(document.body)
+
+    expect(screen.queryByTestId('node-ask-agent-composer')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Ask agent' })).toBeVisible()
+    expect(screen.getByTestId('node-ask-agent-hover')).toHaveClass(
+      'pointer-events-auto',
+      'pl-2'
+    )
   })
 
   it('fills the main composer from a starter prompt without sending', async () => {
