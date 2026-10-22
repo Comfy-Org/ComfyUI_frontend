@@ -74,7 +74,7 @@
           id="workspace-switcher-panel"
           ref="workspaceSwitcherPanel"
           role="menu"
-          class="absolute top-0 right-full z-10 mr-4 rounded-lg border bg-background shadow-md"
+          class="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border bg-background shadow-md md:inset-x-auto md:top-0 md:right-full md:mt-0 md:mr-4"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
@@ -84,13 +84,6 @@
         </div>
       </template>
     </div>
-
-    <!-- Which developer-platform deployment this browser runs on (FE-2434).
-         The switcher renders nothing until its listing answers, and nothing
-         when the account is outside the rollout or its first listing fails. -->
-    <DeploymentSwitcher
-      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
-    />
 
     <!-- Credits Section -->
 
@@ -112,6 +105,16 @@
       </Button>
       <Button
         v-if="canTopUp"
+        variant="secondary"
+        size="sm"
+        data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="paymentRecoveryAvailable"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
@@ -253,7 +256,6 @@ import { useI18n } from 'vue-i18n'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
@@ -289,7 +291,8 @@ const {
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
+  useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const isWorkspaceNameTooltipOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')

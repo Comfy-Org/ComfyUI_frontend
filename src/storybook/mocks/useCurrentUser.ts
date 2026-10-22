@@ -7,6 +7,7 @@ export function useCurrentUser() {
     userEmail: ref('ada@example.com'),
     resolvedUserInfo: ref({ id: 'user-ada' }),
     isAuthInitialized: computed(() => true),
-    isLoggedIn: computed(() => true)
+    isLoggedIn: computed(() => true),
+    isApiKeyLogin: computed(() => false)
   }
 }

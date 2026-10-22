@@ -50,6 +50,10 @@ export function useRegistrySearch(inputs: {
    * until its search settles, then the query it searched and its outcome.
    */
   firstPage: Readonly<Ref<FirstPage>>
+  /** Whether the page after the loaded ones failed and waits for a retry. */
+  isNextPageFailed: Readonly<Ref<boolean>>
+  /** Loads the failed next page again for the same search. */
+  retryNextPage: () => Promise<boolean>
 } {
   const { searchPacks, resetCircuits } = useRegistrySearchGateway()
 
@@ -59,6 +63,7 @@ export function useRegistrySearch(inputs: {
   let isDisposed = false
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
+  const isNextPageFailed = ref(false)
   const suggestions = ref<QuerySuggestion[]>([])
   const firstPage = ref<FirstPage>(LOADING_FIRST_PAGE)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
@@ -107,15 +112,17 @@ export function useRegistrySearch(inputs: {
 
   function applyFailure(query: string, cause: unknown) {
     reportFirstFailureSinceSuccess(cause)
-    morePages.value = false
-    if (pageNumber === 0) {
-      firstPage.value = { status: 'failed', query }
-      suggestions.value = []
+    if (pageNumber > 0) {
+      isNextPageFailed.value = true
+      return
     }
+    morePages.value = false
+    firstPage.value = { status: 'failed', query }
+    suggestions.value = []
   }
 
   async function doLoadMore(): Promise<PageFreshness> {
-    if (!morePages.value) return 'current'
+    if (!morePages.value || isNextPageFailed.value) return 'current'
     const requestGeneration = generation
     const query = searchedQuery()
     const outcome = await searchPacks(query, {
@@ -143,6 +150,7 @@ export function useRegistrySearch(inputs: {
     generation++
     pageNumber = 0
     morePages.value = true
+    isNextPageFailed.value = false
     firstPage.value = LOADING_FIRST_PAGE
     items.value = []
     return preempt(loadCurrentFirstPage)
@@ -161,6 +169,13 @@ export function useRegistrySearch(inputs: {
     return reload()
   }
 
+  async function retryNextPage() {
+    if (!isNextPageFailed.value) return false
+    resetCircuits()
+    isNextPageFailed.value = false
+    return loadMore()
+  }
+
   onScopeDispose(() => {
     isDisposed = true
   }, true)
@@ -175,12 +190,14 @@ export function useRegistrySearch(inputs: {
 
   return {
     items,
-    hasMore: computed(() => morePages.value),
+    hasMore: computed(() => morePages.value && !isNextPageFailed.value),
     isLoading,
     loadMore,
     loadNew: retry,
     invalidate: reload,
     suggestions,
-    firstPage
+    firstPage,
+    isNextPageFailed,
+    retryNextPage
   }
 }

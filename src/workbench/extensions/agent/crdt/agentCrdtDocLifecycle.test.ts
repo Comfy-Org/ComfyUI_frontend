@@ -702,3 +702,27 @@ describe('AgentCrdtDocLifecycle refusalIsFinal', () => {
     expect(lifecycle.refusalIsFinal()).toBe(false)
   })
 })
+
+describe('AgentCrdtDocLifecycle page session nonce', () => {
+  it('mints the nonce on first persist and keeps it for the page session', async () => {
+    sessionStorage.clear()
+    vi.resetModules()
+    const uuid = await import('@/utils/uuid')
+    const createUuidv4 = vi.spyOn(uuid, 'createUuidv4')
+    const { AgentCrdtDocLifecycle: FreshLifecycle } =
+      await import('./agentCrdtDocLifecycle')
+    expect(createUuidv4).not.toHaveBeenCalled()
+
+    const lifecycle = new FreshLifecycle(() => WORKFLOW_ID, vi.fn(), vi.fn())
+    lifecycle.onSubscribeConfirmed()
+    const firstRecord = sessionStorage.getItem('Comfy.Agent.CrdtDocId')
+    lifecycle.onSubscribeConfirmed()
+
+    expect(createUuidv4).toHaveBeenCalledOnce()
+    expect(
+      JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!).nonce
+    ).toBe(JSON.parse(firstRecord!).nonce)
+    expect(lifecycle.readPersistedDocId()).toBe(WORKFLOW_ID)
+    lifecycle.destroy()
+  })
+})

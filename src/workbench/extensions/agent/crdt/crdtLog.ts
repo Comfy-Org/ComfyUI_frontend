@@ -14,6 +14,27 @@ export const CRDT_LOG_LEVELS: readonly CrdtLogLevel[] = [
   'trace'
 ]
 
+export function startCrdtLog(): () => void {
+  const settingStore = useSettingStore()
+  const refreshLevel = () => {
+    try {
+      const level = localStorage.getItem('Comfy.Agent.CrdtDebug.level')
+      const selected = CRDT_LOG_LEVELS.find((candidate) => candidate === level)
+      if (selected)
+        settingStore.settingValues['Comfy.Agent.CrdtDebug.Level'] = selected
+    } catch {
+      return
+    }
+  }
+  refreshLevel()
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === 'Comfy.Agent.CrdtDebug.level')
+      refreshLevel()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}
+
 const SCOPE_STYLE: Record<CrdtLogScope, string> = {
   wire: 'color:#7dd3fc',
   doc: 'color:#a5b4fc'

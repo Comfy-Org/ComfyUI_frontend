@@ -65,11 +65,12 @@
       </div>
       <Button
         as="a"
-        :href="billingUrl"
+        :href
         target="_blank"
         rel="noopener"
         :variant="view.status.action.variant"
         class="shrink-0"
+        @click="track"
       >
         {{ $t(view.status.action.label) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
@@ -79,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -90,7 +92,7 @@ import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
 
@@ -110,11 +112,13 @@ const DANGER = {
 } as const
 
 const MANAGE = {
+  id: 'manage',
   label: 'workspacePanel.billingTab.autoTopUp.actions.manage',
   variant: 'secondary'
 } as const
 
 const UPDATE_PAYMENT = {
+  id: 'update_payment',
   label: 'workspacePanel.billingTab.autoTopUp.actions.updatePayment',
   variant: 'inverted'
 } as const
@@ -131,6 +135,7 @@ const STATUS = {
     label: 'workspacePanel.billingTab.autoTopUp.status.off',
     dot: 'bg-muted-foreground',
     action: {
+      id: 'turn_on',
       label: 'workspacePanel.billingTab.autoTopUp.actions.turnOn',
       variant: 'secondary'
     }
@@ -160,14 +165,15 @@ const STATUS = {
     dot: string
     border: string
     text: string
-    action: { label: string; variant: string }
+    action: { id: AutoTopUpCardAction; label: string; variant: string }
   }
 >
 
 const { t, locale } = useI18n()
-const { state, retry } = useBillingAutoTopUpCard()
 const { autoTopUpSetup } = useBillingCapabilities()
-const billingUrl = computed(() => platformLink('/profile/billing'))
+const { state, retry } = useBillingAutoTopUpCard(
+  () => autoTopUpSetup.value?.state !== 'unavailable'
+)
 
 function usd(cents: number) {
   return formatUsdFromCents({
@@ -269,4 +275,9 @@ const view = computed(() => {
   const status = isStatus(settings.status) ? settings.status : 'off'
   return { status: STATUS[status], lines: LINES[status](settings) }
 })
+
+const { href, track } = usePlatformHandoff('/profile/billing', () => ({
+  target: 'auto_top_up',
+  action: view.value?.status.action.id ?? 'turn_on'
+}))
 </script>

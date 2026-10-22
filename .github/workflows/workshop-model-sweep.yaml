@@ -27,7 +27,7 @@ concurrency:
 jobs:
   plan:
     name: Plan published pages and paid-job budget
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -56,7 +56,7 @@ jobs:
           echo "Published model sweep plan: $plan" >> "$GITHUB_STEP_SUMMARY"
   sweep:
     name: Published defaults · shard ${{ matrix.shard }}
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     needs: plan
     runs-on: ubuntu-latest
     environment: workshop-prod

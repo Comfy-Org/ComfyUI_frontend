@@ -78,7 +78,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()
@@ -93,7 +92,7 @@ const emit = defineEmits<{
 const emailInputId = 'comfy-org-sign-in-email'
 
 const { handleSubmit, meta, validateField, values } = useForm({
-  validationSchema: toTypedSchema(signInSchema),
+  validationSchema: signInSchema,
   initialValues: { email: '', password: '' }
 })
 const isEmailValid = useIsFieldValid('email')

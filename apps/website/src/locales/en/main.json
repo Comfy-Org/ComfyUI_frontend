@@ -4862,6 +4862,8 @@
       },
       "storageNote": "Models live on persistent network storage shared across a deployment's workers.",
       "billedPerSecond": "Billed by the GPU second",
+      "commercialUse": "All available models can be used for commercial purposes.",
+      "containerDiskIncluded": "The GPU price includes container disk cost.",
       "storageExample": "For example: 20 GB of models = {amount}/mo + GPU time.",
       "modelsNote": "Comfy Router usage shows per-output prices on each model card and draws from the same credit pool."
     },
