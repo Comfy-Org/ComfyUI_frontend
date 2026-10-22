@@ -3,10 +3,10 @@ import { computed, effectScope, nextTick, reactive, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
-import { accountScope } from '../base/accountScope'
-import { agentStorage } from '../base/agentStorage'
-import { StorageKeys } from '../base/storageKeys'
 import { useAccountStorage } from './useAccountStorage'
 
 const identity = ref<{ id: string } | null>({ id: 'alice' })

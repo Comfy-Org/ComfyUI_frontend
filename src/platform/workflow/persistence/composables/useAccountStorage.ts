@@ -5,9 +5,8 @@ import { computed } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
-import { accountScope } from '../base/accountScope'
-import { agentStorage } from '../base/agentStorage'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
 
 export function useAccountScope() {
   const { resolvedUserInfo } = useCurrentUser()
