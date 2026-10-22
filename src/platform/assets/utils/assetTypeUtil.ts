@@ -17,7 +17,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
  * getAssetType(asset, 'input') // Returns 'input' if no tags
  */
 export function getAssetType(
-  asset: AssetItem,
+  asset: Pick<AssetItem, 'preview_url' | 'tags'>,
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const urlType = new URLSearchParams(

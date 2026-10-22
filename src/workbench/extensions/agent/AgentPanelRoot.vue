@@ -125,6 +125,7 @@ import {
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { attachmentFileUrl } from './utils/attachmentFileUrl'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import {
   agentSocketAuthParams,
@@ -1896,9 +1897,7 @@ const attachment = useAttachment({
       ref: filename,
       url: isHdrImageFilename(file.name)
         ? undefined
-        : api.apiURL(
-            `/view?filename=${encodeURIComponent(filename)}&type=input`
-          )
+        : attachmentFileUrl({ ref: filename })
     }
   },
   resolveStoredPreview: async (file, ref) =>

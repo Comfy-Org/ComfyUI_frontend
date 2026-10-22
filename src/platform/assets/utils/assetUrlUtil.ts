@@ -3,6 +3,7 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -22,7 +23,7 @@ import { getAssetType } from './assetTypeUtil'
  * downloadFile(url, asset.name)
  */
 export function getAssetUrl(
-  asset: AssetItem,
+  asset: Pick<AssetItem, 'name' | 'tags' | 'preview_url' | 'user_metadata'>,
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const assetType = getAssetType(asset, defaultType)
@@ -58,7 +59,9 @@ export function getAssetViewUrl(asset: AssetItem): string {
  * @param asset The asset to get the subfolder for
  * @returns The subfolder, or an empty string when the asset is at the root
  */
-export function getAssetSubfolder(asset: AssetItem): string {
+export function getAssetSubfolder(
+  asset: Pick<AssetItem, 'preview_url' | 'user_metadata'>
+): string {
   const previewSubfolder = new URLSearchParams(
     (asset.preview_url ?? '').split('?')[1] ?? ''
   ).get('subfolder')
@@ -93,7 +96,10 @@ export function getAssetContentId(
  * endpoint has no such distinction.
  */
 export function getAssetFileUrl(
-  asset: AssetItem,
+  asset: Pick<
+    AssetItem,
+    'id' | 'name' | 'tags' | 'preview_url' | 'user_metadata'
+  >,
   options?: { disposition?: 'inline' | 'attachment' }
 ): string {
   if (useFeatureFlags().flags.assetsEnabled) {
@@ -103,4 +109,18 @@ export function getAssetFileUrl(
     return api.apiURL(`/assets/${getAssetContentId(asset)}/content${query}`)
   }
   return asset.preview_url || getAssetUrl(asset)
+}
+
+/**
+ * The `api.fetchApi` route of a media URL on this page's own API, or
+ * `undefined` for any other URL, which must not be sent credentials.
+ */
+export function getApiMediaRoute(href: string): string | undefined {
+  const url = URL.parse(href, window.location.origin)
+  const apiBase = new URL(api.apiURL(''), window.location.origin)
+  const basePath = apiBase.pathname.replace(/\/$/, '')
+  if (url?.origin !== apiBase.origin) return undefined
+  if (!url.pathname.startsWith(`${basePath}/`)) return undefined
+  const route = `${url.pathname.slice(basePath.length)}${url.search}`
+  return isMediaRoute(route) ? route : undefined
 }

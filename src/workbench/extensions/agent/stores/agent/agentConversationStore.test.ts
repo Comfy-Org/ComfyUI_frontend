@@ -2,6 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 
 import type {
   AgentMessages,
@@ -1372,17 +1376,30 @@ describe('useAgentConversationStore', () => {
     })
   })
 
-  it('revokes transcript blob previews on reset and on hydrate', () => {
+  it('keeps sent blob previews alive after the composer releases them, until reset', () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:image')
+      .mockReturnValueOnce('blob:video')
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const image = createSharedObjectUrl(new Blob())
+    const video = createSharedObjectUrl(new Blob())
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.recordUser(T1, 'with picture', [
-      { name: 'a.png', previewUrl: 'blob:a' }
+    store.recordUser(T1, 'with media', [
+      { name: 'a.png', previewUrl: image },
+      { name: 'clip.mp4', mediaUrl: video }
     ])
-    store.reset()
-    expect(revoke).toHaveBeenCalledWith('blob:a')
+    releaseSharedObjectUrl(image)
+    releaseSharedObjectUrl(video)
+    expect(revoke).not.toHaveBeenCalled()
 
-    revoke.mockClear()
+    store.reset()
+    expect(revoke.mock.calls).toEqual([['blob:image'], ['blob:video']])
+  })
+
+  it('revokes transcript blob previews on hydrate', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentConversationStore()
     store.startTurn(T2)
     store.recordUser(T2, 'again', [{ name: 'b.png', previewUrl: 'blob:b' }])
     store.hydrate([])
@@ -1392,7 +1409,6 @@ describe('useAgentConversationStore', () => {
         (entry) => entry.role !== 'user' || entry.attachments === undefined
       )
     ).toBe(true)
-    revoke.mockRestore()
   })
 
   it('keeps attachment labels scoped to their thread after blob previews expire', () => {
