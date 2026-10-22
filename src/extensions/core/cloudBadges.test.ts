@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
@@ -30,8 +31,9 @@ describe('cloudBadges', () => {
     expect(watchersStartedAtImport).toBe(0)
   })
 
-  it('labels the current and every later canvas from one watcher started in init', async () => {
+  it('labels the current and every later canvas with the boot deployment from one watcher started in init', async () => {
     const canvasStore = useCanvasStore()
+    const deploymentPickStore = useDeploymentPickStore()
     const initialCanvas = fromPartial<LGraphCanvas>({})
     canvasStore.canvas = initialCanvas
     vi.mocked(watch).mockClear()
@@ -39,11 +41,15 @@ describe('cloudBadges', () => {
     await extension.init?.(fromPartial<ComfyApp>({}))
 
     expect(watch).toHaveBeenCalledTimes(1)
-    expect(initialCanvas.info_text).toBe('g.comfyCloud')
+    expect(initialCanvas.info_text).toBeUndefined()
+
+    deploymentPickStore.bootDeployment = null
+    await nextTick()
+    expect(initialCanvas.info_text).toBe('deploymentSwitcher.comfyCloud')
 
     const nextCanvas = fromPartial<LGraphCanvas>({})
     canvasStore.canvas = nextCanvas
     await nextTick()
-    expect(nextCanvas.info_text).toBe('g.comfyCloud')
+    expect(nextCanvas.info_text).toBe('deploymentSwitcher.comfyCloud')
   })
 })

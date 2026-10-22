@@ -1,6 +1,6 @@
 import { computed, effectScope, watch } from 'vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { t } from '@/i18n'
+import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { toTitleCase } from '@/utils/textCaseUtil'
@@ -27,12 +27,11 @@ const canvasInfoTextScope = effectScope(true)
 
 function syncCanvasInfoText() {
   const canvasStore = useCanvasStore()
+  const runningOn = useBootDeploymentFullLabel()
   watch(
-    () => canvasStore.canvas,
-    (canvas) => {
-      if (canvas) {
-        canvas.info_text = t('g.comfyCloud')
-      }
+    [() => canvasStore.canvas, runningOn],
+    ([canvas, label]) => {
+      if (canvas && label !== undefined) canvas.info_text = label
     },
     { immediate: true }
   )
