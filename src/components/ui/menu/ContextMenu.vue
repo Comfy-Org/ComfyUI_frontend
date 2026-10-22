@@ -29,7 +29,7 @@ function setOpen(value: boolean) {
 </script>
 
 <template>
-  <ContextMenuRoot :open @update:open="setOpen">
+  <ContextMenuRoot :open :modal="false" @update:open="setOpen">
     <ContextMenuTrigger as-child>
       <slot />
     </ContextMenuTrigger>

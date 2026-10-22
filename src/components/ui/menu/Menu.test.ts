@@ -519,6 +519,19 @@ describe('Menu', () => {
     )
   })
 
+  it('keeps the page interactive while a context menu is open', async () => {
+    renderContextMenu()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
+    await screen.findByRole('menu')
+
+    expect(document.body.style.pointerEvents).not.toBe('none')
+  })
+
   it('does not open a context menu without visible items', async () => {
     renderContextMenu({ model: [{ label: 'Inspect', visible: false }] })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
