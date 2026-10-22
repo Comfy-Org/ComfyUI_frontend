@@ -582,7 +582,7 @@ if (isMain) {
   const violations = scanFollowerInvariantSources(repositoryRoot)
   if (violations.length > 0)
     throw new Error(
-      `Follower invariant violations:\n${formatFollowerInvariantViolations(
+      `Follower document mutation violations:\n${formatFollowerInvariantViolations(
         repositoryRoot,
         violations
       )}`
