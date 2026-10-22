@@ -10,8 +10,8 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 1. !!!!IMPORTANT Confirm the worktree is on a `feat/*` or `fix/*` branch. Base PRs on the local `main`, not a fork branch.
 2. Read the component source first. Understand props, emits, slots, exposed methods, and any supporting types or composables.
 3. Read nearby stories before writing anything.
-   - Search stories: `rg --files src apps | rg '\.stories\.ts$'`
-   - Inspect title patterns: `rg -n "title:\\s*'" src apps --glob '*.stories.ts'`
+   - Search stories: `rg --files src apps packages | rg '\.stories\.ts$'`
+   - Inspect title patterns: `rg -n "title:\\s*'" src apps packages --glob '*.stories.ts'`
 4. If a Figma link is provided, list the states you need to cover before writing stories.
 5. Co-locate the story file with the component: `ComponentName.stories.ts`.
 6. Sort every variation into a control or a scenario before writing exports (see "Controls Versus Scenarios"). Hover, focus, and active come from the implementation and never get a story.
@@ -165,6 +165,7 @@ export const AllVariants: Story = {
 
 ## Component-Specific Notes
 
+- Stories under `packages/design-system` cannot import from `@/`; use package-relative imports and package-local fixtures, and check them with `pnpm -C packages/design-system typecheck`.
 - Widget components often need a minimal `SimplifiedWidget` object. Build it in `setup()` and use `computed()` when `args` change `widget.options`.
 - Input and search components often need a width-constrained wrapper so they render at realistic sizes.
 - Asset and platform cards often need background decorators such as `bg-base-background` and fixed-width containers.
