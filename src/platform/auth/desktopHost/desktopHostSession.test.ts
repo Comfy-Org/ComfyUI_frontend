@@ -7,6 +7,7 @@ import type {
 import {
   canDesktopHostSwitchWorkspace,
   desktopHostUser,
+  desktopHostPartnerNodeToken,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
@@ -21,6 +22,12 @@ const SIGNED_IN: DesktopHostAuthState = {
   userId: 'user-1',
   email: 'a@example.com',
   workspaceId: 'ws-1'
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => (resolve = done))
+  return { promise, resolve }
 }
 
 function fakeBridge(initial: DesktopHostAuthState) {
@@ -89,6 +96,29 @@ describe('desktopHostSession', () => {
     expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-1')
   })
 
+  it.for([
+    {
+      name: 'throws',
+      getPartnerNodeToken: () => {
+        throw new Error('ipc failed')
+      }
+    },
+    {
+      name: 'rejects',
+      getPartnerNodeToken: () => Promise.reject(new Error('ipc failed'))
+    }
+  ])(
+    'returns no partner token when the bridge $name',
+    async ({ getPartnerNodeToken }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toMatchObject({
+        status: 'failed',
+        error: expect.any(Error)
+      })
+    }
+  )
+
   it('is active but signed out, with no token, when Desktop has no account', async () => {
     const { bridge } = fakeBridge({ status: 'signed_out' })
 
@@ -132,12 +162,6 @@ describe('desktopHostSession', () => {
   )
 
   describe('when Desktop changes state while a request is pending', () => {
-    function deferred<T>() {
-      let resolve!: (value: T) => void
-      const promise = new Promise<T>((done) => (resolve = done))
-      return { promise, resolve }
-    }
-
     it('keeps a change that arrives while the initial state is loading', async () => {
       const { bridge, push } = fakeBridge(SIGNED_IN)
       const initial = deferred<DesktopHostAuthState>()
@@ -247,6 +271,58 @@ describe('desktopHostSession', () => {
         false
       )
       expect(bridge.switchWorkspace).not.toHaveBeenCalled()
+    })
+  })
+
+  it.for([
+    {
+      name: 'keeps a token after a same-identity broadcast during mint',
+      broadcast: SIGNED_IN,
+      expected: { status: 'ready', token: 'partner-token' }
+    },
+    {
+      name: 'discards a token after a signed-out broadcast during mint',
+      broadcast: { status: 'signed_out' },
+      expected: { status: 'session_changed' }
+    }
+  ] satisfies {
+    name: string
+    broadcast: DesktopHostAuthState
+    expected: Awaited<ReturnType<typeof desktopHostPartnerNodeToken>>
+  }[])('$name', async ({ broadcast, expected }) => {
+    const { bridge, push } = fakeBridge(SIGNED_IN)
+    const pending = deferred<string | null>()
+    await startDesktopHostSession({
+      ...bridge,
+      getPartnerNodeToken: () => pending.promise
+    })
+    const request = desktopHostPartnerNodeToken('ws-1')
+    push(broadcast)
+    pending.resolve('partner-token')
+    await expect(request).resolves.toEqual(expected)
+  })
+
+  it('does not ask the native bridge for another workspace', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    const getPartnerNodeToken = vi.fn(async () => 'partner-token')
+    await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+    await expect(desktopHostPartnerNodeToken('ws-2')).resolves.toEqual({
+      status: 'session_changed'
+    })
+    expect(getPartnerNodeToken).not.toHaveBeenCalled()
+  })
+
+  it('releases a stalled partner credential call at its deadline', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    await startDesktopHostSession({
+      ...bridge,
+      getPartnerNodeToken: () => new Promise(() => {})
+    })
+    const request = desktopHostPartnerNodeToken('ws-1')
+    await vi.advanceTimersByTimeAsync(15_000)
+    await expect(request).resolves.toMatchObject({
+      status: 'failed',
+      error: expect.any(Error)
     })
   })
 

@@ -124,9 +124,9 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/platform/telemetry/reportError.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent"],
+  "allowedConsumers": ["agent", "authentication"],
   "characterizationScenarios": [
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",

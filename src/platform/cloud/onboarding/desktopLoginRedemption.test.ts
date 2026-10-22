@@ -3,6 +3,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
+import type {
+  WebSessionRequests,
+  WebSessionRequestScope
+} from '@/platform/auth/session/webSessionFetch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
@@ -676,6 +680,313 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+  it.for([
+    { provider: 'password', firebase: true },
+    { provider: 'sso-only', firebase: false }
+  ])(
+    'redeems an account code through the shared session for $provider',
+    async ({ firebase }) => {
+      const { trigger, seedStash, stashedCode } = await setup()
+      mockAuthStore.currentUser = firebase ? mockAuthStore.currentUser : null
+      const { provideWebSessionRequests } =
+        await import('@/platform/auth/session/webSessionFetch')
+      const scope = fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        workspaceId: 'stale-workspace',
+        session: { user: { id: 'comfy-user' } }
+      })
+      const send = vi.fn(async () => okResponse())
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+      )
+      const code = `dls_${'A'.repeat(43)}`
+      seedStash(code)
+      await trigger()
+      expect(send).toHaveBeenCalledExactlyOnceWith(
+        REDEEM_URL,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+          signal: expect.any(AbortSignal)
+        },
+        { session: scope.session, epoch: scope.epoch }
+      )
+      expect(mockUserGetIdToken).not.toHaveBeenCalled()
+      expect(stashedCode()).toBeUndefined()
+    }
+  )
+
+  it('does not redeem an account code after the session changes during approval', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'first-user' } }
+    })
+    let current = scope
+    const send = vi.fn(async () => okResponse())
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => current, send })
+    )
+    vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+      current = fromPartial<WebSessionRequestScope>({
+        epoch: 2,
+        session: { user: { id: 'second-user' } }
+      })
+      return true
+    })
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    expect(send).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(code)
+  })
+  it.for(['csrf_invalid', 'workspace_access_denied'])(
+    'retries an account handoff after a recoverable %s refusal',
+    async (refusal) => {
+      const { trigger, seedStash, stashedCode } = await setup()
+      const { provideWebSessionRequests } =
+        await import('@/platform/auth/session/webSessionFetch')
+      const scope = fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        session: { user: { id: 'comfy-user' } }
+      })
+      const send = vi
+        .fn()
+        .mockResolvedValueOnce(
+          Response.json(
+            { code: refusal, message: 'Sign in again' },
+            { status: 403 }
+          )
+        )
+        .mockResolvedValueOnce(okResponse())
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+      )
+      const code = `dls_${'A'.repeat(43)}`
+      seedStash(code)
+      await trigger()
+      expect(stashedCode()).toBe(code)
+      await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+      expect(send).toHaveBeenCalledTimes(2)
+      expect(stashedCode()).toBeUndefined()
+    }
+  )
+
+  it('keeps the retry delay when auth objects refresh with the same identity', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'comfy-user' } }
+    })
+    const send = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        mockAuthStore.currentUser = fromPartial({
+          uid: 'user-1',
+          getIdToken: mockUserGetIdToken
+        })
+        return new Response(null, { status: 503 })
+      })
+      .mockResolvedValueOnce(okResponse())
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+    )
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    expect(send).toHaveBeenCalledOnce()
+    expect(stashedCode()).toBe(code)
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the code while interactive SSO is pending and retries after navigation', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'comfy-user' } }
+    })
+    const send = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json(
+          { code: 'sso_required', message: 'Sign in again' },
+          { status: 403 }
+        )
+      )
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+    )
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(send).toHaveBeenCalledOnce()
+    expect(stashedCode()).toBe(code)
+    expect(useToast().toasts).toEqual([])
+    await trigger()
+    expect(stashedCode()).toBe(code)
+    send.mockResolvedValueOnce(okResponse())
+    await trigger()
+    expect(stashedCode()).toBeUndefined()
+  })
+
+  it.for([
+    { name: 'the same code', code: `dls_${'A'.repeat(43)}` },
+    { name: 'a replacement code', code: `dls_${'B'.repeat(43)}` }
+  ])('ignores a stale retry while $name waits for SSO', async ({ code }) => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'comfy-user' } }
+    })
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'sso_required', message: 'Sign in again' },
+          { status: 403 }
+        )
+      )
+      .mockResolvedValue(new Response(null, { status: 503 }))
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+    )
+    seedStash(`dls_${'A'.repeat(43)}`)
+
+    await trigger()
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(stashedCode()).toBe(code)
+    expect(useToast().toasts).toEqual([])
+
+    send.mockResolvedValueOnce(okResponse())
+    await trigger()
+    expect(send).toHaveBeenCalledTimes(3)
+    expect(stashedCode()).toBeUndefined()
+    expect(useToast().toasts.at(-1)?.title).toBe('desktopLogin.successSummary')
+  })
+
+  it('waits for the browser session after Firebase sign-in', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = vi
+      .fn<WebSessionRequests['scope']>()
+      .mockResolvedValue(undefined)
+    const send = vi.fn().mockResolvedValue(okResponse())
+    provideWebSessionRequests(fromPartial<WebSessionRequests>({ scope, send }))
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    expect(stashedCode()).toBe(code)
+    scope.mockResolvedValue(
+      fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        session: { user: { id: 'comfy-user' } }
+      })
+    )
+    await trigger()
+    expect(send).toHaveBeenCalledOnce()
+    expect(stashedCode()).toBeUndefined()
+  })
+
+  it('does not force Firebase for a pending account code', async () => {
+    const { seedStash } = await setup()
+    const { hasPendingDesktopLoginCode } =
+      await import('./desktopLoginRedemption')
+    seedStash(`dls_${'A'.repeat(43)}`)
+    expect(hasPendingDesktopLoginCode()).toBe(true)
+    expect(hasPendingDesktopLoginCode(true)).toBe(false)
+    seedStash(VALID_CODE)
+    expect(hasPendingDesktopLoginCode(true)).toBe(true)
+  })
+
+  it('reports an unavailable account session for a signed-in Firebase user', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    seedStash(`dls_${'A'.repeat(43)}`)
+    await trigger()
+    expect(stashedCode()).toBeUndefined()
+    expect(useToast().toasts.at(-1)?.title).toBe('desktopLogin.failedSummary')
+  })
+
+  it('keeps an account code while sign-in has not completed', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    mockAuthStore.currentUser = null
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
+    )
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(stashedCode()).toBe(code)
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('keeps the redemption budget after repeated session initialization stalls', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = vi
+      .fn<WebSessionRequests['scope']>()
+      .mockImplementation(() => new Promise(() => {}))
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(okResponse())
+    provideWebSessionRequests(fromPartial<WebSessionRequests>({ scope, send }))
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(stashedCode()).toBe(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(stashedCode()).toBe(code)
+    scope.mockResolvedValue(
+      fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        session: { user: { id: 'comfy-user' } }
+      })
+    )
+    await trigger()
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(stashedCode()).toBeUndefined()
+  })
+
+  it('releases the drain when session initialization stalls', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
+    )
+    seedStash(`dls_${'A'.repeat(43)}`)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    seedStash(VALID_CODE)
+    respondToFetch(REDEEM_URL, okResponse)
+    await trigger()
+    expect(stashedCode()).toBeUndefined()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 })
 vi.mock(import('firebase/auth'))

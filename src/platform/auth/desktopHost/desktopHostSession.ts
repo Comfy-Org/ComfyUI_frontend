@@ -36,7 +36,14 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
-  revision++
+  const previous = session.value
+  if (
+    previous.status !== 'signed_in' ||
+    next.status !== 'signed_in' ||
+    previous.user.id !== next.user.id ||
+    previous.user.workspaceId !== next.user.workspaceId
+  )
+    revision++
   session.value = next
 }
 
@@ -141,4 +148,56 @@ export async function requestDesktopHostWorkspaceSwitch(
   const next = await current.switchWorkspace(workspaceId).catch(() => undefined)
   if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value?.workspaceId === workspaceId
+}
+
+export function canDesktopHostMintPartnerNodeToken(): boolean {
+  return bridge?.getPartnerNodeToken !== undefined
+}
+
+type PartnerNodeTokenOutcome =
+  | { status: 'ready'; token: string }
+  | { status: 'session_changed' }
+  | { status: 'failed'; error: unknown }
+
+export async function desktopHostPartnerNodeToken(
+  workspaceId: string
+): Promise<PartnerNodeTokenOutcome> {
+  const current = bridge
+  if (
+    !current?.getPartnerNodeToken ||
+    desktopHostUser.value?.workspaceId !== workspaceId
+  )
+    return { status: 'session_changed' }
+  const before = revision
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      current.getPartnerNodeToken(workspaceId).then(
+        (token): PartnerNodeTokenOutcome =>
+          token
+            ? { status: 'ready', token }
+            : {
+                status: 'failed',
+                error: new Error('Desktop partner credential unavailable')
+              }
+      ),
+      new Promise<PartnerNodeTokenOutcome>((resolve) => {
+        timer = setTimeout(
+          () =>
+            resolve({
+              status: 'failed',
+              error: new Error('Desktop partner credential timed out')
+            }),
+          15_000
+        )
+      })
+    ])
+    return revision === before ? result : { status: 'session_changed' }
+  } catch (error) {
+    return revision === before
+      ? { status: 'failed', error }
+      : { status: 'session_changed' }
+  } finally {
+    clearTimeout(timer)
+  }
 }

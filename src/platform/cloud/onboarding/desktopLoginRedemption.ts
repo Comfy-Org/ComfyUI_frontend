@@ -1,4 +1,8 @@
 import { watch } from 'vue'
+import { classifyWebSessionFailure } from '@comfyorg/account-core/webSession'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
@@ -15,9 +19,7 @@ import { useAuthStore } from '@/stores/authStore'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN
 const DESKTOP_LOGIN_CODE_KEY = 'desktop_login_code'
 
-// The backend issues "dlc_" + 43 base64url chars; bounds are loose so the
-// backend stays the authority on exact code length.
-const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/
+const DESKTOP_LOGIN_CODE_PATTERN = /^dl[cs]_[A-Za-z0-9_-]{20,256}$/
 
 // Statuses that mean the desktop app must start a fresh sign-in, so the code
 // is dropped. 401 stays transient: the session may still be settling.
@@ -36,6 +38,7 @@ interface CodeRedemptionState {
   approvedUserUid: string | null
   settled: boolean
   forceTokenRefresh: boolean
+  retryTimer?: ReturnType<typeof setTimeout>
 }
 
 // Keyed by code so a different code arriving later gets its own approval and
@@ -91,14 +94,13 @@ function handleTransientFailure(
 ): void {
   console.warn(`[DesktopLoginRedemption] Redeem request failed: ${reason}`)
   if (state.attempts < MAX_REDEEM_ATTEMPTS) {
-    // attempts only increments, so this branch runs at most once per code
-    // and cannot stack retry timers.
-    setTimeout(() => {
+    state.retryTimer = setTimeout(() => {
+      if (getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY) !== code)
+        return
       void redeemPendingDesktopLoginCode()
     }, RETRY_DELAY_MS)
     return
   }
-  // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
@@ -140,39 +142,41 @@ function settledForSsoSession(
 
 async function redeemCode(code: string): Promise<void> {
   const state = getCodeState(code)
+  clearTimeout(state.retryTimer)
+  state.retryTimer = undefined
   if (state.settled) {
-    // A later navigation can re-capture an already-settled code; drop it.
     clearStashIfHolds(code)
     return
   }
 
+  if (code.startsWith('dls_')) {
+    await redeemAccountCode(code, state)
+    return
+  }
+  await redeemFirebaseCode(code, state)
+}
+
+async function redeemFirebaseCode(
+  code: string,
+  state: CodeRedemptionState
+): Promise<void> {
   if (settledForSsoSession(code, state)) return
 
-  // No session yet (e.g. code captured on the login page): keep the stash and
-  // let a post-login trigger redeem it.
   const user = useAuthStore().currentUser
   if (!user) return
 
-  // Mid-handoff the imminent hard reload would destroy an open dialog; keep
-  // the stash and let the reloaded app prompt on a stable route.
   if (onAuthHandoffRoute()) return
 
   if (!(await confirmRedemption(state, user.uid))) {
-    // Declined/dismissed: drop the code without an error.
     settle(code, state)
     return
   }
 
-  // Approval binds the code to one account: if the session changed while the
-  // dialog was open, keep the code stashed and let the (replayed) auth-change
-  // trigger re-prompt under the now-current account.
   const approvedUser = useAuthStore().currentUser
   if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
 
   state.attempts++
 
-  // Token comes straight from the Firebase user: authStore.getIdToken()
-  // surfaces failures through a modal dialog this background flow must avoid.
   let idToken: string
   try {
     idToken = await approvedUser.getIdToken(state.forceTokenRefresh)
@@ -181,6 +185,14 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  await redeemLegacyRequest(code, state, idToken)
+}
+
+async function redeemLegacyRequest(
+  code: string,
+  state: CodeRedemptionState,
+  idToken: string
+): Promise<void> {
   let response: Response
   try {
     response = await fetch(api.apiURL('/auth/desktop-login-codes/redeem'), {
@@ -189,8 +201,6 @@ async function redeemCode(code: string): Promise<void> {
         Authorization: `Bearer ${idToken}`,
         'Content-Type': 'application/json'
       },
-      // TODO(@comfyorg/ingest-types): type the payload with the generated
-      // request type once the desktop-login-codes openapi addition propagates.
       body: JSON.stringify({ code }),
       signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
     })
@@ -205,6 +215,100 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  await finishRedemption(code, state, response)
+}
+
+async function accountScope(requests: WebSessionRequests) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      requests.scope().then(
+        (scope) => ({ ok: true, scope }) as const,
+        () => ({ ok: false }) as const
+      ),
+      new Promise<{ ok: false }>((resolve) => {
+        timer = setTimeout(() => resolve({ ok: false }), REDEEM_TIMEOUT_MS)
+      })
+    ])
+    if (!result.ok) return
+    return result.scope
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+function unavailableAccountSession(
+  code: string,
+  state: CodeRedemptionState
+): void {
+  if (!useAuthStore().currentUser && !useAuthStore().sessionUser) return
+  settle(code, state)
+  useToast().error(t('desktopLogin.failedSummary'), {
+    description: t('desktopLogin.failedDetail'),
+    duration: 6000
+  })
+}
+
+async function approvedAccountScope(
+  requests: WebSessionRequests,
+  code: string,
+  state: CodeRedemptionState
+) {
+  const scope = await accountScope(requests)
+  if (!scope) return
+  if (onAuthHandoffRoute()) return
+  if (!(await confirmRedemption(state, scope.session.user.id))) {
+    settle(code, state)
+    return
+  }
+  const current = await accountScope(requests)
+  if (
+    !current ||
+    onAuthHandoffRoute() ||
+    current.epoch !== scope.epoch ||
+    current.session.user.id !== state.approvedUserUid
+  )
+    return
+  return current
+}
+
+async function redeemAccountCode(
+  code: string,
+  state: CodeRedemptionState
+): Promise<void> {
+  if (onAuthHandoffRoute()) return
+  const requests = webSessionRequests()
+  if (!requests) {
+    unavailableAccountSession(code, state)
+    return
+  }
+  const current = await approvedAccountScope(requests, code, state)
+  if (!current) return
+  state.attempts++
+  let response: Response
+  try {
+    response = await requests.send(
+      api.apiURL('/auth/desktop-login-codes/redeem'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+        signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
+      },
+      { session: current.session, epoch: current.epoch }
+    )
+  } catch {
+    handleTransientFailure(code, state, 'account session request failed')
+    return
+  }
+  await finishRedemption(code, state, response)
+}
+
+async function finishRedemption(
+  code: string,
+  state: CodeRedemptionState,
+  response: Response
+): Promise<void> {
   if (response.ok) {
     settle(code, state)
     useToast().success(t('desktopLogin.successSummary'), {
@@ -214,6 +318,21 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  if (code.startsWith('dls_') && response.status === 403) {
+    const body: unknown = await response
+      .clone()
+      .json()
+      .catch(() => undefined)
+    const refusal = classifyWebSessionFailure(response.status, body).code
+    if (refusal === 'SSO_REQUIRED') {
+      state.attempts--
+      return
+    }
+    if (refusal === 'WORKSPACE_ACCESS_DENIED' || refusal === 'CSRF_STALE') {
+      handleTransientFailure(code, state, 'account session refused')
+      return
+    }
+  }
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
     useToast().error(t('desktopLogin.expiredSummary'), {
@@ -223,14 +342,17 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-export function hasPendingDesktopLoginCode(): boolean {
+export function hasPendingDesktopLoginCode(legacyOnly = false): boolean {
   const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
-  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
+  return (
+    code !== undefined &&
+    DESKTOP_LOGIN_CODE_PATTERN.test(code) &&
+    (!legacyOnly || code.startsWith('dlc_'))
+  )
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
@@ -263,14 +385,10 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
   authWatcherInstalled = true
-  // A session can appear without a navigation (e.g. dialog-based sign-in).
-  // Installed lazily because pinia is not active when router.ts evaluates.
-  watch(
-    () => useAuthStore().currentUser,
-    () => {
-      void redeemPendingDesktopLoginCode()
-    }
-  )
+  const auth = useAuthStore()
+  watch([() => auth.currentUser?.uid, () => auth.sessionUser?.id], () => {
+    void redeemPendingDesktopLoginCode()
+  })
 }
 
 /**

@@ -486,6 +486,14 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   ): Promise<Response> {
     return fetchOnWebSession(url, init, scope, {
       authorize,
+      beforeSend: (current) => {
+        const stale = staleScopeFailure(current)
+        if (stale)
+          throw new WebSessionTokenError(
+            new SessionTokenError(stale),
+            webSessionFailureMessage(stale.code)
+          )
+      },
       refresh: refreshFor,
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
