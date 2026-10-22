@@ -13,6 +13,20 @@ const INVERT_ID = 2
 export const VHS_COMBINE_ID = 3
 const SAVED_FRAME_LOAD_CAP = 8
 const SAVED_FILENAME_PREFIX = 'pm2018_baseline'
+const EDITED_FRAME_LOAD_CAP = 16
+
+function loadVideoRecord(video: string, frameLoadCap: number) {
+  return {
+    video,
+    force_rate: 0,
+    frame_load_cap: frameLoadCap,
+    videopreview: {
+      hidden: false,
+      paused: false,
+      params: { filename: video, type: 'input', format: 'video/mp4' }
+    }
+  }
+}
 
 export const vhsNodeDefs: Record<string, ComfyNodeDef> = {
   VHS_LoadVideo: {
@@ -24,7 +38,7 @@ export const vhsNodeDefs: Record<string, ComfyNodeDef> = {
     output_node: false,
     input: {
       required: {
-        video: [['clip.mp4']],
+        video: [['clip.mp4', 'retake.mp4']],
         force_rate: ['FLOAT', { default: 0, min: 0, max: 60, step: 1 }],
         frame_load_cap: ['INT', { default: 0, min: 0, max: 100000, step: 1 }]
       }
@@ -66,7 +80,6 @@ export const vhsNodeDefs: Record<string, ComfyNodeDef> = {
   }
 }
 
-/** A saved VHS workflow: name-keyed widget values and a list-typed format slot. */
 export function savedVhsWorkflow(): ComfyWorkflowJSON {
   return zComfyWorkflow.parse({
     last_node_id: VHS_COMBINE_ID,
@@ -105,11 +118,7 @@ export function savedVhsWorkflow(): ComfyWorkflowJSON {
           { name: 'frame_count', type: 'INT', links: null }
         ],
         properties: { 'Node name for S&R': 'VHS_LoadVideo' },
-        widgets_values: {
-          video: 'clip.mp4',
-          force_rate: 0,
-          frame_load_cap: SAVED_FRAME_LOAD_CAP
-        }
+        widgets_values: loadVideoRecord('clip.mp4', SAVED_FRAME_LOAD_CAP)
       },
       {
         id: INVERT_ID,
@@ -186,5 +195,17 @@ export const vhsCatalog: WidgetCatalog = {
 export const restoredVhsCanvas = {
   types: ['ImageInvert', 'VHS_LoadVideo', 'VHS_VideoCombine'],
   frameLoadCap: SAVED_FRAME_LOAD_CAP,
-  filenamePrefix: SAVED_FILENAME_PREFIX
+  filenamePrefix: SAVED_FILENAME_PREFIX,
+  previewFilename: 'clip.mp4'
+}
+
+export const editedVhsLoadRecord = loadVideoRecord(
+  'retake.mp4',
+  EDITED_FRAME_LOAD_CAP
+)
+
+export const editedVhsCanvas = {
+  ...restoredVhsCanvas,
+  frameLoadCap: EDITED_FRAME_LOAD_CAP,
+  previewFilename: 'retake.mp4'
 }
