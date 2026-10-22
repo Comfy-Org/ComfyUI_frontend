@@ -10,10 +10,10 @@ import {
 } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { LightInfoViewport } from '@/extensions/core/lightInfo/LightInfoViewport'
-import type { LightInfoViewportOptions } from '@/extensions/core/lightInfo/LightInfoViewport'
-import { createDefaultLight } from '@/extensions/core/lightInfo/types'
-import type { LightInfoEntry } from '@/extensions/core/lightInfo/types'
+import { LightInfoViewport } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import type { LightInfoViewportOptions } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -37,29 +37,32 @@ const { viewportInstances } = vi.hoisted(() => ({
   viewportInstances: [] as FakeViewport[]
 }))
 
-vi.mock(import('@/extensions/core/lightInfo/LightInfoViewport'), async () => {
-  const { fromAny } = await import('@total-typescript/shoehorn')
-  return {
-    LightInfoViewport: fromAny(
-      vi.fn(function (
-        this: FakeViewport,
-        _container: HTMLElement,
-        _lights: LightInfoEntry[],
-        options: LightInfoViewportOptions
-      ) {
-        this.options = options
-        this.applyLights = vi.fn()
-        this.remove = vi.fn()
-        this.viewport = {
-          updateStatusMouseOnScene: vi.fn(),
-          updateStatusMouseOnNode: vi.fn(),
-          refreshViewport: vi.fn()
-        }
-        viewportInstances.push(this)
-      })
-    )
+vi.mock(
+  import('@comfyorg/viewport3d/lightInfo/LightInfoViewport'),
+  async () => {
+    const { fromAny } = await import('@total-typescript/shoehorn')
+    return {
+      LightInfoViewport: fromAny(
+        vi.fn(function (
+          this: FakeViewport,
+          _container: HTMLElement,
+          _lights: LightInfoEntry[],
+          options: LightInfoViewportOptions
+        ) {
+          this.options = options
+          this.applyLights = vi.fn()
+          this.remove = vi.fn()
+          this.viewport = {
+            updateStatusMouseOnScene: vi.fn(),
+            updateStatusMouseOnNode: vi.fn(),
+            refreshViewport: vi.fn()
+          }
+          viewportInstances.push(this)
+        })
+      )
+    }
   }
-})
+)
 
 const GRAPH_ID = 'light-info-test'
 const EDITOR_WIDGET = 'editor_state'

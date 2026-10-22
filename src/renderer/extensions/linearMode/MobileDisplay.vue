@@ -127,7 +127,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   {
     label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
-    new: true,
+    badge: t('contextMenu.new'),
     command: () => (canvasStore.linearMode = false)
   },
   { separator: true },

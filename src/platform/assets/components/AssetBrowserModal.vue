@@ -29,9 +29,10 @@
       >
         <SearchInput
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
           :autofocus="true"
           size="lg"
-          :aria-label="$t('assetBrowser.searchModels')"
+          :accessible-label="$t('assetBrowser.searchModels')"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-lg flex-1"
         />

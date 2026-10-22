@@ -55,7 +55,7 @@ const modelDef = props.modelDef
   max-width: 500px;
   width: fit-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;

@@ -18,6 +18,7 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -195,7 +196,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)
-        await comfyPage.expectScreenshot(
+        await expectElementScreenshot(
           ksamplerNode,
           'vue-node-required-input-missing-slot-error.png'
         )

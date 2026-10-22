@@ -1,3 +1,4 @@
+import type { SubscriptionState } from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -103,6 +104,8 @@ export interface BalanceInfo {
   cloudCreditBalanceMicros?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
+  /** Served `low_balance`. Absent when the balance response omits it. */
+  lowBalance?: boolean
 }
 
 /** Whether the billing portal opened, and why not when it did not. */
@@ -175,6 +178,7 @@ export interface BillingState {
   billingStatus: ComputedRef<BillingStatus | null>
   /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  subscriptionState: ComputedRef<SubscriptionState | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */

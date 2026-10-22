@@ -8,6 +8,24 @@ import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
+  it('renders item badges in nested menus', async () => {
+    render(Menu, {
+      props: {
+        items: [{ label: 'More', items: [{ label: 'Run', badge: 'Beta' }] }]
+      },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
+
+    expect(await screen.findByText('Beta')).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Run' })).toHaveTextContent(
+      'Beta'
+    )
+  })
+
   it('executes a quick press-and-hold click exactly once', async () => {
     const command = vi.fn()
     render(Menu, {
@@ -202,7 +220,10 @@ describe('Menu', () => {
 
   it('keeps the page interactive for a non-modal menu', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Run' }], modal: false },
+      props: {
+        items: [{ label: 'Run' }],
+        modal: false
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     await userEvent.click(screen.getByRole('button', { name: 'Open' }))
@@ -212,7 +233,9 @@ describe('Menu', () => {
 
   it('disables commandless actions', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Unavailable' }] },
+      props: {
+        items: [{ label: 'Unavailable' }]
+      },
       slots: { trigger: '<button>Open</button>' }
     })
 
@@ -231,7 +254,9 @@ describe('Menu', () => {
     async ({ label }) => {
       const command = vi.fn()
       render(Menu, {
-        props: { items: [{ label, command }] },
+        props: {
+          items: [{ label, command }]
+        },
         slots: { trigger: '<button>Open</button>' }
       })
       const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -277,7 +302,10 @@ describe('Menu', () => {
 
   it('closes when its owner changes the open state', async () => {
     const { rerender } = render(Menu, {
-      props: { items: [{ label: 'Run' }], open: true },
+      props: {
+        items: [{ label: 'Run' }],
+        open: true
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     await screen.findByRole('menu')
@@ -391,7 +419,9 @@ describe('Menu', () => {
 
   it('toggles closed and reopens from its trigger', async () => {
     render(Menu, {
-      props: { items: [{ label: 'Run' }] },
+      props: {
+        items: [{ label: 'Run' }]
+      },
       slots: { trigger: '<button>Open</button>' }
     })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -412,7 +442,10 @@ describe('Menu', () => {
     render(
       defineComponent({
         setup: () => () =>
-          h(ContextMenu, { model: [{ label: 'Inspect' }], ref: menu })
+          h(ContextMenu, {
+            model: [{ label: 'Inspect' }],
+            ref: menu
+          })
       })
     )
     menu.value?.show(
@@ -454,6 +487,28 @@ describe('Menu', () => {
       keys: '[MouseLeft>]',
       target: screen.getByRole('button', { name: 'Outside', hidden: true })
     })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
+  it('dismisses a context menu when the element it opened from is pressed', async () => {
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup() {
+          const menu = ref<InstanceType<typeof ContextMenu>>()
+          return { menu }
+        },
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)" @pointerdown.stop>Canvas</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const canvas = screen.getByRole('button', { name: 'Canvas' })
+
+    await user.pointer({ keys: '[MouseRight]', target: canvas })
+    await screen.findByRole('menu')
+    await user.pointer({ keys: '[MouseLeft>]', target: canvas })
+
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 

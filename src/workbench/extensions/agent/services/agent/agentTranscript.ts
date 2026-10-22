@@ -4,13 +4,18 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
+  zPersistedThinkingEntry,
   zPersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
-import type { AssistantMessage, ToolPart } from './agentMessageParts'
+import type {
+  AssistantMessage,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
 import {
   createAssistantMessage,
   isOpenAskPart,
@@ -110,7 +115,7 @@ function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
   })
 }
 
-function isAttachmentKind(value: unknown): value is AttachmentKind {
+export function isAttachmentKind(value: unknown): value is AttachmentKind {
   return value === 'image' || value === 'video' || value === 'audio'
 }
 
@@ -348,6 +353,31 @@ function parseToolCalls(
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
 
+function insertThinking(
+  parts: AssistantMessage['parts'],
+  content: Record<string, unknown> | undefined
+): AssistantMessage['parts'] {
+  const raw = content?.thinking
+  if (!Array.isArray(raw)) return parts
+  const next = [...parts]
+  let unplaced: ThinkingPart[] = []
+  for (const entry of raw as unknown[]) {
+    const parsed = zPersistedThinkingEntry.safeParse(entry)
+    if (!parsed.success || !parsed.data.text.trim()) continue
+    unplaced.push({ type: 'thinking', text: parsed.data.text, state: 'done' })
+    const anchor = parsed.data.tool_call_id
+    const index = anchor
+      ? next.findIndex(
+          (existing) => existing.type === 'tool' && existing.callId === anchor
+        )
+      : -1
+    if (index === -1) continue
+    next.splice(index, 0, ...unplaced)
+    unplaced = []
+  }
+  return [...next, ...unplaced]
+}
+
 /** A persisted tool-call `status` of `pending`/`running` is still in flight;
  * anything else (`success`/`error`/`ok`, or an unrecognized string) is
  * terminal — settled for good, independent of `isLive` clamping. This
@@ -425,6 +455,7 @@ function appendAssistantContent(
     }
     message.parts = appended.length > 0 ? [...parts, ...appended] : parts
   }
+  message.parts = insertThinking(message.parts, row.content)
   if (text)
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }

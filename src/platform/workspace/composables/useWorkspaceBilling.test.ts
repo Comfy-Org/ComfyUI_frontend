@@ -284,6 +284,25 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(false)
     })
 
+    it.for([
+      { served: 'activating' as const, expected: 'activating' as const },
+      { served: undefined, expected: null }
+    ])(
+      'renders subscription_state $served as $expected',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          ...(served === undefined ? {} : { subscription_state: served })
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscriptionState.value).toBe(expected)
+        expect(billing.subscription.value?.isActive).toBe(true)
+      }
+    )
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -729,6 +748,33 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false }
+    ])(
+      'passes low_balance $served through as received',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          low_balance: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value?.lowBalance).toBe(expected)
+      }
+    )
+
+    it('leaves low balance unset when the balance response omits it', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.lowBalance).toBeUndefined()
+    })
+
     it('passes the server-suggested top-up through as received', async () => {
       mockWorkspaceApi.getBillingBalance.mockResolvedValue({
         ...positiveBalance,
@@ -1061,8 +1107,7 @@ describe('useWorkspaceBilling', () => {
         expect(useToast().toasts).toEqual([
           expect.objectContaining({
             kind: 'error',
-            description:
-              "Couldn't open the billing page. Try again in a moment."
+            description: "Couldn't open billing. Try again."
           })
         ])
       }

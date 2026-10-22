@@ -65,7 +65,7 @@
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal>
+      <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -74,7 +74,7 @@
           align="start"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
+              'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
@@ -163,12 +163,12 @@
 
 <script setup lang="ts">
 import {
+  ComboboxPortal,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxVirtualizer

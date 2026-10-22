@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { StorageSerializers, createGlobalState, useStorage } from '@vueuse/core'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
@@ -62,21 +62,26 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   return configValue || defaultValue
 }
 
-export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
-  'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
-  undefined
-)
-
-/**
- * Last authenticated answer for the agent allowlist, so a transient /features
- * failure cannot unmount the panel mid-session. Deliberately NOT `useStorage`
- * like its neighbours above: a persisted grant is what let two browsers
- * disagree for one account (PM-1707).
- */
+/** Last authenticated agent-allowlist answer, kept in memory for this session and never persisted. */
 export const sessionAgentGrant = ref<boolean | undefined>()
 export const sessionAgentGrantValidUntil = ref<number | undefined>()
 
-export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
-  'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
-  undefined
-)
+function createRemoteConfigCache() {
+  return {
+    cachedBillingControlEnabled: useStorage<boolean | undefined>(
+      'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
+    ),
+    cachedV1PaymentRecovery: useStorage<boolean | undefined>(
+      'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
+    )
+  }
+}
+
+/** Persisted server-flag cache, created on first use and shared by every caller. */
+export const useRemoteConfigCache = createGlobalState(createRemoteConfigCache)

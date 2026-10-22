@@ -3,14 +3,14 @@
     <!-- This will render the nested route components -->
     <RouterView />
   </CloudTemplate>
-  <Toaster />
+  <AppToaster />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 
 import CloudTemplate from './CloudTemplate.vue'
 

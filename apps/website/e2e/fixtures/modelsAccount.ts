@@ -34,6 +34,7 @@ export const test = base.extend<{
           jsonRoute({
             token: MODELS_WORKSPACE_TOKEN,
             expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            user_id: 'uid-1',
             workspace: {
               id: MODELS_WORKSPACE_ID,
               name: 'Personal',

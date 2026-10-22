@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -180,7 +180,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <Spinner v-if="planLabel" class="size-8" />
+      <AppSpinner v-if="planLabel" class="size-8" />
       <Button v-if="planLabel" as="a" href="/" variant="link">
         {{ t('cloudOnboarding.skipToCloudApp') }}
       </Button>

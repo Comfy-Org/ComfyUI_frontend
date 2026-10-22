@@ -258,13 +258,17 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
-      suggestedTopupAmountCents: data.suggested_topup_amount_cents
+      suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      lowBalance: data.low_balance
     }
   })
 
   const billingStatus = computed(() => statusData.value?.billing_status ?? null)
   const subscriptionStatus = computed(
     () => statusData.value?.subscription_status ?? null
+  )
+  const subscriptionState = computed(
+    () => statusData.value?.subscription_state ?? null
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
@@ -858,6 +862,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isFreeTier,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice,

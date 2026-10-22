@@ -196,6 +196,9 @@ function useBillingCapabilitiesInternal() {
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
   )
+  const canRunWorkflows = computed(
+    () => capabilities.value?.can_run_workflows ?? false
+  )
   const paymentRecoveryAvailable = computed(() =>
     receiveServerFact(
       'payment_recovery_available',
@@ -551,6 +554,7 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     canManageAutoTopUp,
     autoTopUpSetup,
+    canRunWorkflows,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
     isReady,
