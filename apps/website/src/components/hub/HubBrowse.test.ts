@@ -53,14 +53,16 @@ describe('HubBrowse', () => {
     await user.type(screen.getByTestId('workshop-search'), 'upscale')
     const cards = screen.getAllByTestId('workshop-model-card')
     expect(cards.length).toBeGreaterThan(0)
-    cards.forEach((card) => {
-      const model = workshopModels.find(
-        (candidate) => candidate.href === card.getAttribute('href')
-      )
-      expect([model?.name, ...(model?.capabilities ?? [])].join(' ')).toMatch(
-        /upscale/i
-      )
-    })
+    expect(
+      cards.map((card) => {
+        const model = workshopModels.find(
+          (candidate) => candidate.href === card.getAttribute('href')
+        )
+        return /upscale/i.test(
+          [model?.name, ...(model?.capabilities ?? [])].join(' ')
+        )
+      })
+    ).not.toContain(false)
   })
 
   it('does not show a duplicate search results panel', async () => {
