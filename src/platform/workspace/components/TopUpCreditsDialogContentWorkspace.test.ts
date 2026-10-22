@@ -1415,10 +1415,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await waitFor(() =>
           expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
         )
-        await new Promise((resolve) => setTimeout(resolve, 0))
-        expect(
-          screen.getByRole('button', { name: 'Set a default card' })
-        ).toBeEnabled()
+        await waitFor(() =>
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+        )
         expect(useToast().error).not.toHaveBeenCalled()
         expect(listCards).not.toHaveBeenCalled()
 
@@ -1433,6 +1434,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           })
         )
         expect(mockBillingContext().topup).toHaveBeenCalledTimes(3)
+      })
+
+      it('does not retry Pay after Back leaves confirmation', async () => {
+        refuseForNoPaymentMethod()
+        portalOpensAt(portalUrl)
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+
+        await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+        await userEvent.click(screen.getByRole('button', { name: '$25' }))
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() =>
+          expect(
+            screen.getByRole('button', { name: 'Add credits' })
+          ).toBeEnabled()
+        )
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(1)
+        expect(mockBillingContext().topup).toHaveBeenCalledWith(5000)
       })
 
       it.for([

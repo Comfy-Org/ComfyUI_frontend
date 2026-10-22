@@ -717,6 +717,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
+  stopPayRetryOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -737,6 +738,7 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
+  if (step.value !== 'confirm') return
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
@@ -888,7 +890,7 @@ watch(
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
-  stopDefaultCardReturnRefresh?.()
+  stopPayRetryOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -913,12 +915,18 @@ function watchCheckoutCompletion() {
   })
 }
 
-function armPayRetryOnCardReturn() {
+function stopPayRetryOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = null
+}
+
+function armPayRetryOnCardReturn() {
+  stopPayRetryOnCardReturn()
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
     const stop = stopDefaultCardReturnRefresh
     stopDefaultCardReturnRefresh = null
     stop?.()
+    if (step.value !== 'confirm') return
     const attempt = purchaseAttempt
     await handleBuy()
     if (unmounted) return
