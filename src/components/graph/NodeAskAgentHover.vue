@@ -90,9 +90,17 @@
   </div>
 </template>
 
+<script lang="ts">
+import { ref } from 'vue'
+
+import type { NodeId } from '@/types/nodeId'
+
+const openComposerNodeId = ref<NodeId | null>(null)
+</script>
+
 <script setup lang="ts">
 import { PopoverTrigger } from 'reka-ui'
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -116,10 +124,7 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-const openComposerNodeId = ref<NodeId | null>(null)
 
 const {
   nodeId,

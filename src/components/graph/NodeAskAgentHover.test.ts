@@ -120,6 +120,40 @@ describe('NodeAskAgentHover', () => {
     )
   })
 
+  it('closes the other floating composer when a second one opens', async () => {
+    useAgentPanelStore().enabled = true
+    const user = userEvent.setup()
+    render(
+      {
+        components: { NodeAskAgentHover },
+        template: `
+        <div>
+          <NodeAskAgentHover :node-id="first" always-visible />
+          <NodeAskAgentHover :node-id="second" always-visible />
+        </div>
+      `,
+        setup() {
+          return { first: toNodeId(12), second: toNodeId(13) }
+        }
+      },
+      {
+        global: { plugins: [i18n] }
+      }
+    )
+
+    const [firstAsk, secondAsk] = screen.getAllByRole('button', {
+      name: 'Ask agent'
+    })
+    await user.click(firstAsk)
+    expect(screen.getByTestId('node-ask-agent-composer')).toBeVisible()
+
+    await user.click(secondAsk)
+    expect(screen.getAllByTestId('node-ask-agent-composer')).toHaveLength(1)
+    expect(
+      screen.getByRole('textbox', { name: 'Ask for a change' })
+    ).toHaveFocus()
+  })
+
   it('opens the floating composer focused on the input', async () => {
     renderHover()
 
