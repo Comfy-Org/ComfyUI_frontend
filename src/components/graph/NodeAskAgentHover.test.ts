@@ -112,8 +112,9 @@ describe('NodeAskAgentHover', () => {
       'border-border',
       'text-foreground',
       'rounded-lg',
-      'size-8'
+      'size-7'
     )
+    expect(button).not.toHaveClass('size-8')
     expect(button).not.toHaveClass(
       'hover:border-solid',
       'hover:border-border',

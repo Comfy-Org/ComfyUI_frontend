@@ -21,7 +21,7 @@
       variant="outline"
       size="icon"
       :aria-label="t('agent.askAgent')"
-      class="border-border"
+      class="size-7 border-border"
       @click="openComposer"
     >
       <i class="icon-[lucide--astroid] size-4 text-foreground" />
