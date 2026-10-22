@@ -198,7 +198,14 @@ describe('NodeAskAgentHover', () => {
     expect(inputRow).not.toHaveClass('rounded-lg')
     expect(
       screen.getByRole('textbox', { name: 'Ask for a change' })
-    ).toHaveClass('text-[14px]/5', 'font-inter', 'font-normal')
+    ).toHaveClass(
+      'p-3',
+      'font-inter',
+      'text-[14px]/5',
+      'font-normal',
+      'text-foreground',
+      'placeholder:text-muted-foreground'
+    )
     expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('size-8')
     expect(screen.getByTestId('node-ask-agent-starters')).toHaveClass('p-1')
     expect(

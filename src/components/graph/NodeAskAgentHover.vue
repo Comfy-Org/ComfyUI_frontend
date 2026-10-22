@@ -43,7 +43,7 @@
             data-testid="node-ask-agent-input"
             :placeholder="t('agent.nodeHover.placeholder')"
             :aria-label="t('agent.nodeHover.placeholder')"
-            class="font-inter text-[14px]/5 font-normal"
+            class="p-3 font-inter text-[14px]/5 font-normal text-foreground placeholder:text-muted-foreground"
           />
           <InputGroupAddon align="inline-end">
             <Button
