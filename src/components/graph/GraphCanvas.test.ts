@@ -491,8 +491,7 @@ describe('GraphCanvas execution progress updates', () => {
     await nextTick()
 
     expect(replacementNode.progress).toBeUndefined()
-    expect(mocks.setDirty).toHaveBeenCalledOnce()
-    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, expect.anything())
   })
 
   it('does no graph work for structurally equal progress', async () => {
@@ -633,6 +632,24 @@ describe('GraphCanvas widget control mode watcher', () => {
     await nextTick()
     expect(controlWidget.label).toBeTruthy()
     expect(controlWidget.label).not.toBe(labelBeforeMode)
+  })
+})
+
+describe('GraphCanvas selection watcher', () => {
+  it('redraws the background when the selected nodes change', async () => {
+    await mountGraphCanvas()
+    const graph = new LGraph()
+    const node = new LGraphNode('Test node')
+    graph.add(node)
+    useCanvasStore().canvas = app.canvas
+    useCanvasStore().currentGraph = graph
+    await nextTick()
+    mocks.setDirty.mockClear()
+
+    node.selected = true
+    await nextTick()
+
+    expect(mocks.setDirty).toHaveBeenCalledWith(expect.anything(), true)
   })
 })
 

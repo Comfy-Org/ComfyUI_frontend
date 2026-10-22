@@ -16,12 +16,11 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -42,6 +41,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -706,6 +708,20 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
+    })
+
+    it('reads the cached values from storage on first use, not at import', async () => {
+      vi.resetModules()
+      const getItem = vi.spyOn(localStorage, 'getItem')
+
+      const freshRemoteConfig =
+        await import('@/platform/remoteConfig/remoteConfig')
+      expect(getItem).not.toHaveBeenCalled()
+
+      const cache = freshRemoteConfig.useRemoteConfigCache()
+      expect(getItem).toHaveBeenCalledWith('billing_control_enabled')
+      expect(getItem).toHaveBeenCalledWith('v1_payment_recovery')
+      expect(freshRemoteConfig.useRemoteConfigCache()).toBe(cache)
     })
 
     it('returns the cached session value during the auth window', () => {

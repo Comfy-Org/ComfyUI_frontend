@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
@@ -26,10 +26,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
-const bridgeState = vi.hoisted(() => {
+const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
   let maxLiveSubscriptions = 0
   const countLiveSubscriptions = () =>
@@ -81,7 +82,7 @@ const bridgeState = vi.hoisted(() => {
       maxLiveSubscriptions = 0
     }
   }
-})
+})()
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
@@ -133,15 +134,7 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  LayoutFollowerBridge: class {
-    constructor() {
-      const bridge = new bridgeState.FakeBridge()
-      bridgeState.current = bridge
-      return bridge
-    }
-  }
-}))
+vi.mock(import('./layoutFollowerBridge'), { spy: true })
 
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
@@ -281,6 +274,11 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
+    vi.mocked(LayoutFollowerBridge).mockImplementation(function () {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return fromPartial<LayoutFollowerBridge>(bridge)
+    })
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -390,6 +388,7 @@ describe('useAgentCrdtFollower', () => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
     expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
 
@@ -407,6 +406,7 @@ describe('useAgentCrdtFollower', () => {
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
     expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
 

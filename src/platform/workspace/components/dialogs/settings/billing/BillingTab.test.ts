@@ -10,11 +10,13 @@ import type { SubscriptionState } from '@comfyorg/ingest-types'
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   WorkspaceApiError,
@@ -30,14 +32,17 @@ vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
 })
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string) => `https://platform.test${path}?workspace=ws_1`
+  platformLink: (path: string, correlationId?: string) =>
+    `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
 }))
 
 const activeSubscription: SubscriptionInfo = {
@@ -72,6 +77,12 @@ interface Scenario {
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
   isPaused?: boolean
+}
+
+function correlationIdOf(link: HTMLElement) {
+  return new URL(link.getAttribute('href') ?? '').searchParams.get(
+    'correlation_id'
+  )
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -262,7 +273,7 @@ describe('BillingTab', () => {
     expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
       'Activating your Pro plan…'
     )
-    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Manage' })).toBeInTheDocument()
   })
 
   it('returns to the served status when subscription_state is no longer activating', () => {
@@ -274,28 +285,43 @@ describe('BillingTab', () => {
     expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
   })
 
-  it('renders an active plan with Manage and the owner handoff linked to the billing site', () => {
+  it('opens plan management on Cloud instead of a platform plans page', async () => {
     arrange()
 
-    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
-    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
-      'Billed monthly. Next invoice November 15.'
-    )
-    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
-      'href',
-      'https://platform.test/profile/billing/plans?workspace=ws_1'
-    )
+    expect(
+      screen.queryByRole('link', { name: 'Manage' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Manage' }))
+
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
     expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/billing?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\?workspace=ws_1&correlation_id=.+$/
+      )
     )
+  })
+
+  it('opens Subscribe on Cloud for a workspace with no plan', async () => {
+    arrange({ subscription: null, subscriptionStatus: null })
+
+    expect(
+      screen.queryByRole('link', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
+
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
   })
 
   it('hides the plan action when the server does not grant it', () => {
     arrange({ canSubscribeSelfServe: false })
 
     expect(
-      screen.queryByRole('link', { name: 'Manage' })
+      screen.queryByRole('button', { name: 'Manage' })
     ).not.toBeInTheDocument()
   })
 
@@ -311,7 +337,9 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'View usage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/usage?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
+      )
     )
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
@@ -348,8 +376,48 @@ describe('BillingTab', () => {
 
       expect(screen.getByRole('link', { name: link })).toHaveAttribute(
         'href',
-        `https://platform.test${path}?workspace=ws_1`
+        expect.stringContaining(`https://platform.test${path}?workspace=ws_1`)
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'the owner handoff',
+      scenario: { canManageBilling: true },
+      link: 'Open billing',
+      destination: { target: 'open_billing' }
+    },
+    {
+      name: 'the member handoff',
+      scenario: {
+        canManageBilling: false,
+        canManageSubscription: false,
+        canSubscribeSelfServe: false
+      },
+      link: 'View usage',
+      destination: { target: 'usage' }
+    }
+  ] as const)(
+    'reports a click on $name with the journey its link carried, then rotates it',
+    async ({ scenario, link: name, destination }) => {
+      arrange(scenario)
+      const link = screen.getByRole('link', { name })
+      const clickedId = correlationIdOf(link)
+      link.addEventListener('click', (event) => event.preventDefault())
+
+      await userEvent.click(link)
+
+      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
+        {
+          operation: 'platform_handoff',
+          stage: 'opened',
+          outcome: 'pending',
+          correlation_id: clickedId,
+          ...destination
+        }
+      )
+      await vi.waitFor(() => expect(correlationIdOf(link)).not.toBe(clickedId))
     }
   )
 

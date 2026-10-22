@@ -2728,6 +2728,25 @@ describe('useAuthStore in local/desktop distribution', () => {
       }
     )
 
+    it('returns the workspace token or refuses, never another credential', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+        workspaceId === 'ws-a' ? 'host-token' : null
+      )
+      await startDesktopHostSession(bridge)
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).resolves.toBe(
+        'host-token'
+      )
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
     it('drops the previous account state when Desktop switches accounts', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
       await startDesktopHostSession(bridge)

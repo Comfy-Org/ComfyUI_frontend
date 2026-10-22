@@ -7,6 +7,7 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -252,18 +253,21 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
               accept.boundingBox(),
               reject.boundingBox()
             ])
-            return acceptBox && rejectBox ? acceptBox.y < rejectBox.y : false
+            return acceptBox && rejectBox
+              ? rejectBox.x + rejectBox.width <= acceptBox.x &&
+                  rejectBox.y === acceptBox.y
+              : false
           })
           .toBe(true)
       })
 
-      await test.step('Keyboard order follows docs, Start, then Skip', async () => {
+      await test.step('Keyboard order follows docs, Skip, then Start', async () => {
         await docs.focus()
         await expect(docs).toBeFocused()
         await page.keyboard.press('Tab')
-        await expect(accept).toBeFocused()
-        await page.keyboard.press('Tab')
         await expect(reject).toBeFocused()
+        await page.keyboard.press('Tab')
+        await expect(accept).toBeFocused()
       })
     })
   })
@@ -296,7 +300,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         }
       })
       expect(colors.text).not.toBe(colors.surface)
-      await expect(dialog).toHaveScreenshot('agent-consent-light-palette.png', {
+      await expectElementScreenshot(dialog, 'agent-consent-light-palette.png', {
         mask: [dialog.locator('video')]
       })
     })
@@ -398,62 +402,138 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
   }
 
-  test('keeps actions reachable in a short wide window', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-    const dialog = page.getByRole('dialog', {
-      name: enMessages.agent.consent.title
-    })
-    const accept = dialog.getByRole('button', {
-      name: enMessages.agent.consent.accept
-    })
-    const reject = dialog.getByRole('button', {
-      name: enMessages.agent.consent.reject
-    })
+  for (const viewport of [
+    { width: 1024, height: 760 },
+    { width: 1024, height: 440 },
+    { width: 430, height: 760 },
+    { width: 430, height: 560 },
+    { width: 1280, height: 480 },
+    { width: 430, height: 600 }
+  ]) {
+    test(`shows the video, full copy and actions without scrolling at ${viewport.width}×${viewport.height}`, async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const heading = dialog.getByRole('heading', {
+        name: enMessages.agent.consent.title
+      })
+      const accept = dialog.getByRole('button', {
+        name: enMessages.agent.consent.accept
+      })
+      const reject = dialog.getByRole('button', {
+        name: enMessages.agent.consent.reject
+      })
 
-    await test.step('Short wide layout keeps both actions reachable', async () => {
-      await page.setViewportSize({ width: 1280, height: 480 })
+      await test.step('The entire consent offer is visible together', async () => {
+        await page.setViewportSize(viewport)
+        await requestConsentFromOpenPanel(page)
+        await expect(dialog.getByTestId('agent-consent-video')).toBeInViewport({
+          ratio: 1
+        })
+        await expect(heading).toBeInViewport({ ratio: 1 })
+        await expect(
+          dialog.getByText(enMessages.agent.consent.body1, { exact: true })
+        ).toBeInViewport({ ratio: 1 })
+        await expect(
+          dialog.getByText(enMessages.agent.consent.body2, { exact: true })
+        ).toBeInViewport({ ratio: 1 })
+        await expect(
+          dialog.getByRole('link', { name: enMessages.agent.consent.readDocs })
+        ).toBeInViewport({ ratio: 1 })
+        await expect(accept).toBeInViewport({ ratio: 1 })
+        await expect(reject).toBeInViewport({ ratio: 1 })
+        await expect(accept).toHaveCSS('height', '44px')
+        await expect(reject).toHaveCSS('height', '44px')
+      })
+
+      await test.step('Skip closes the consent dialog', async () => {
+        await reject.click()
+        await expect(dialog).toHaveCount(0)
+      })
+    })
+  }
+
+  for (const { from, to, layout, placement } of [
+    {
+      from: { width: 1024, height: 650 },
+      to: { width: 1024, height: 649 },
+      layout: 'columns',
+      placement: { beside: true, below: false }
+    },
+    {
+      from: { width: 1024, height: 649 },
+      to: { width: 1024, height: 650 },
+      layout: 'stacked',
+      placement: { beside: false, below: true }
+    },
+    {
+      from: { width: 699, height: 560 },
+      to: { width: 700, height: 560 },
+      layout: 'columns',
+      placement: { beside: true, below: false }
+    },
+    {
+      from: { width: 700, height: 560 },
+      to: { width: 699, height: 560 },
+      layout: 'stacked',
+      placement: { beside: false, below: true }
+    }
+  ]) {
+    test(`resizing from ${from.width}×${from.height} to ${to.width}×${to.height} uses ${layout} without losing focus or content`, async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await page.setViewportSize(from)
       await requestConsentFromOpenPanel(page)
-      await accept.scrollIntoViewIfNeeded()
+      const dialog = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const video = dialog.getByTestId('agent-consent-video')
+      const heading = dialog.getByRole('heading', {
+        name: enMessages.agent.consent.title
+      })
+      const accept = dialog.getByRole('button', {
+        name: enMessages.agent.consent.accept
+      })
+      const reject = dialog.getByRole('button', {
+        name: enMessages.agent.consent.reject
+      })
+      await accept.focus()
+      await expect(accept).toBeFocused()
+
+      await page.setViewportSize(to)
+      await expect
+        .poll(async () => {
+          const [mediaBox, headingBox] = await Promise.all([
+            video.boundingBox(),
+            heading.boundingBox()
+          ])
+          if (!mediaBox || !headingBox) return undefined
+          return {
+            beside: headingBox.x >= mediaBox.x + mediaBox.width,
+            below: headingBox.y >= mediaBox.y + mediaBox.height
+          }
+        })
+        .toEqual(placement)
+      await expect(accept).toBeFocused()
+      await expect(video).toBeInViewport({ ratio: 1 })
+      await expect(heading).toBeInViewport({ ratio: 1 })
+      await expect(
+        dialog.getByText(enMessages.agent.consent.body1, { exact: true })
+      ).toBeInViewport({ ratio: 1 })
+      await expect(
+        dialog.getByText(enMessages.agent.consent.body2, { exact: true })
+      ).toBeInViewport({ ratio: 1 })
+      await expect(
+        dialog.getByRole('link', { name: enMessages.agent.consent.readDocs })
+      ).toBeInViewport({ ratio: 1 })
       await expect(accept).toBeInViewport({ ratio: 1 })
       await expect(reject).toBeInViewport({ ratio: 1 })
     })
-
-    await test.step('Skip closes the consent dialog', async () => {
-      await reject.click()
-      await expect(dialog).toHaveCount(0)
-    })
-  })
-
-  test('lets a narrow short window scroll from the heading to the actions', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-    const dialog = page.getByRole('dialog', {
-      name: enMessages.agent.consent.title
-    })
-    const heading = dialog.getByRole('heading', {
-      name: enMessages.agent.consent.title
-    })
-    const reject = dialog.getByRole('button', {
-      name: enMessages.agent.consent.reject
-    })
-
-    await test.step('Short narrow layout lets the user reach the heading', async () => {
-      await page.setViewportSize({ width: 430, height: 600 })
-      await requestConsentFromOpenPanel(page)
-      await heading.scrollIntoViewIfNeeded()
-      await expect(heading).toBeInViewport({ ratio: 1 })
-    })
-
-    await test.step('User can scroll from the heading to Skip', async () => {
-      await reject.scrollIntoViewIfNeeded()
-      await expect(reject).toBeInViewport({ ratio: 1 })
-      await reject.click()
-      await expect(dialog).toHaveCount(0)
-    })
-  })
+  }
 
   test('preserves the original silent looping promo design', async ({
     comfyPage

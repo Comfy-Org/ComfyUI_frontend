@@ -5,12 +5,11 @@ import type { Ref } from 'vue'
 import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -287,7 +286,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
-        cachedBillingControlEnabled
+        useRemoteConfigCache().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
@@ -335,7 +334,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig.value.v1_payment_recovery,
-        cachedV1PaymentRecovery
+        useRemoteConfigCache().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {
