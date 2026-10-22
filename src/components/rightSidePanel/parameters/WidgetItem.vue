@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, customRef, provide, ref } from 'vue'
+import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -33,15 +33,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import EnhancePromptButton from '@/workbench/extensions/agent/components/EnhancePromptButton.vue'
-import {
-  EnhancePromptStateKey,
-  useEnhancePrompt
-} from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { canEnhancePromptOnNode } from '@/workbench/extensions/agent/utils/canEnhancePromptOnNode'
 
 import WidgetActions from './WidgetActions.vue'
+import WidgetItemEnhancePrompt from './WidgetItemEnhancePrompt.vue'
 
 function isPromptTextareaWidget(type: string): boolean {
   const canonical = type.toLowerCase()
@@ -167,18 +163,6 @@ const enhanceWidgetId = computed((): WidgetId | undefined => {
   return widgetId(graphId, bareNodeId, widget.name)
 })
 
-const {
-  isLocked,
-  isProcessing,
-  isRevealing,
-  revealText,
-  revealStaggerMs,
-  enhance
-} = useEnhancePrompt({
-  prompt: promptValue,
-  widgetId: enhanceWidgetId.value
-})
-
 const showEnhance = computed(() => {
   if (
     !agentEnabled.value ||
@@ -199,12 +183,12 @@ const showEnhance = computed(() => {
   })
 })
 
-provide(EnhancePromptStateKey, {
-  isLocked,
-  isProcessing,
-  isRevealing,
-  revealText,
-  revealStaggerMs
+const promptWidgetBindings = computed(() => {
+  if (!isPromptTextareaWidget(simplifiedWidget.value.type)) return {}
+  return {
+    widgetId: enhanceWidgetId.value,
+    hideEnhance: true
+  }
 })
 
 const displayLabel = customRef((track, trigger) => {
@@ -268,13 +252,10 @@ const displayLabel = customRef((track, trigger) => {
         v-if="!hiddenWidgetActions"
         class="pointer-events-auto flex shrink-0 items-center gap-1"
       >
-        <EnhancePromptButton
+        <WidgetItemEnhancePrompt
           v-if="showEnhance"
-          size="icon"
-          tooltip-side="bottom"
-          :loading="isProcessing"
-          :disabled="isLocked"
-          @click="enhance"
+          v-model="promptValue"
+          :widget-id="enhanceWidgetId"
         />
         <WidgetActions
           v-model:label="displayLabel"
@@ -301,8 +282,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
-      :widget-id="enhanceWidgetId"
-      :hide-enhance="isPromptTextareaWidget(simplifiedWidget.type)"
+      v-bind="promptWidgetBindings"
       :node-id="node.id"
       :node-type="node.type"
       :class="

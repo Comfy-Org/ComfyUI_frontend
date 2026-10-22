@@ -16,6 +16,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/utils/widgetUtil'
+import * as useEnhancePromptModule from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -142,7 +143,9 @@ function getStubWidget(container: Element) {
     options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
-    value: el.getAttribute('data-widget-value')
+    value: el.getAttribute('data-widget-value'),
+    widgetId: el.getAttribute('widget-id'),
+    hideEnhance: el.hasAttribute('hide-enhance')
   }
 }
 
@@ -411,6 +414,37 @@ describe('WidgetItem', () => {
       )
 
       expect(enhanceButton()).not.toBeInTheDocument()
+    })
+
+    it('does not start an enhance session or bind enhance attrs on combo widgets', () => {
+      const spy = vi.spyOn(useEnhancePromptModule, 'useEnhancePrompt')
+      const { container } = renderWidgetItem(
+        createMockWidget({ type: 'combo', name: 'seed', value: 'option_a' })
+      )
+      const stub = getStubWidget(container)
+
+      expect(spy).not.toHaveBeenCalled()
+      expect(stub.widgetId).toBeNull()
+      expect(stub.hideEnhance).toBe(false)
+      spy.mockRestore()
+    })
+
+    it('binds enhance attrs only on prompt textarea widgets', () => {
+      useAgentPanelStore().enabled = true
+      const { container } = renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+      const stub = getStubWidget(container)
+
+      expect(stub.widgetId).toBe(
+        widgetId('test-graph-id', toNodeId(1), 'prompt')
+      )
+      expect(stub.hideEnhance).toBe(true)
     })
 
     it('uses the library icon button size and muted-textonly variant', () => {
