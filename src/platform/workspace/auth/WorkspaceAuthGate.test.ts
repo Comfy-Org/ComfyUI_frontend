@@ -347,16 +347,22 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it.for<DesktopHostAuthState>([
-      { status: 'signed_out' },
+    it.for<{
+      next: DesktopHostAuthState
+      billingInitializations: number
+    }>([
+      { next: { status: 'signed_out' }, billingInitializations: 0 },
       {
-        status: 'signed_in',
-        userId: 'next-desktop-user',
-        workspaceId: 'workspace-123'
+        next: {
+          status: 'signed_in',
+          userId: 'next-desktop-user',
+          workspaceId: 'workspace-123'
+        },
+        billingInitializations: 1
       }
     ])(
-      'ignores stale initialization after host changes to $status',
-      async (next) => {
+      'ignores stale initialization after host changes to $next.status',
+      async ({ next, billingInitializations }) => {
         Object.assign(useAuthStore(), { isInitialized: true })
         const initialWorkspace = deferredWorkspace()
         const nextWorkspace = deferredWorkspace()
@@ -391,7 +397,7 @@ describe('WorkspaceAuthGate', () => {
         nextWorkspace.resolve()
         await flushPromises()
         expect(useBillingCapabilities().initialize).toHaveBeenCalledTimes(
-          next.status === 'signed_in' ? 1 : 0
+          billingInitializations
         )
       }
     )
