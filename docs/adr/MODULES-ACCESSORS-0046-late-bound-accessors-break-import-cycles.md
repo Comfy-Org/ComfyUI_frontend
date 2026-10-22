@@ -140,5 +140,6 @@ outside this inventory but follow the same rules.
 6. Add a `deps:audit` check that fails when an exported `provide*` setter has
    no call site in a module statically reachable from `main.ts` through
    runtime imports. The call site is the provider module today and the
-   bootstrap step after follow-up 2, so the check covers both, and a setter
-   that loses its registration fails in CI rather than at its first read.
+   bootstrap step after follow-up 2, so the check covers both. It catches a
+   deleted or unreachable call site, not a call that never executes; decision
+   6 covers that case at the first read.
