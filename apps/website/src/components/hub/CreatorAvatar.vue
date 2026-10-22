@@ -25,6 +25,6 @@ const {
     class="grid shrink-0 place-items-center rounded-full bg-brand font-bold text-page"
     aria-hidden="true"
   >
-    {{ name.charAt(0).toUpperCase() }}
+    {{ [...name][0]?.toUpperCase() }}
   </span>
 </template>
