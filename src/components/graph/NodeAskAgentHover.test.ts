@@ -99,9 +99,10 @@ describe('NodeAskAgentHover', () => {
 
     expect(screen.getByTestId('node-ask-agent-composer')).toBeVisible()
     const composer = screen.getByTestId('node-ask-agent-composer')
-    expect(composer).toHaveClass('rounded-lg', 'p-1')
+    expect(composer).toHaveClass('rounded-lg', 'overflow-hidden', 'p-0')
     const [inputRow] = within(composer).getAllByRole('group')
-    expect(inputRow).toHaveClass('rounded-sm')
+    expect(inputRow).toHaveClass('rounded-lg')
+    expect(screen.getByTestId('node-ask-agent-starters')).toHaveClass('p-1')
     expect(
       screen.getByRole('button', { name: 'Explain this node for me' })
     ).toHaveClass('rounded-sm')

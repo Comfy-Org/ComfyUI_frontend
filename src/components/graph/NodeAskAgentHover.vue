@@ -30,11 +30,11 @@
         side="right"
         align="start"
         data-testid="node-ask-agent-composer"
-        class="flex flex-col gap-1 rounded-lg border-border/50 p-1"
+        class="flex flex-col overflow-hidden rounded-lg border-border/50 p-0"
         @open-auto-focus.prevent="focusComposerInput"
       >
-        <form @submit.prevent="onSend">
-          <InputGroup class="rounded-sm">
+        <form class="w-full" @submit.prevent="onSend">
+          <InputGroup>
             <InputGroupInput
               v-model="draft"
               data-testid="node-ask-agent-input"
@@ -55,31 +55,36 @@
             </InputGroupAddon>
           </InputGroup>
         </form>
-        <Button
-          v-for="prompt in visiblePrompts"
-          :key="prompt.id"
-          type="button"
-          variant="textonly"
-          size="sm"
-          data-testid="node-ask-agent-starter"
-          :icon="prompt.icon"
-          class="w-full justify-start"
-          @click="onPickStarter(prompt)"
+        <div
+          data-testid="node-ask-agent-starters"
+          class="flex flex-col gap-1 p-1"
         >
-          {{ t(prompt.labelKey) }}
-        </Button>
-        <div class="h-px bg-border" />
-        <Button
-          type="button"
-          variant="textonly"
-          size="sm"
-          data-testid="node-ask-agent-shuffle"
-          icon="icon-[lucide--shuffle]"
-          class="w-full justify-start"
-          @click="onShuffle"
-        >
-          {{ t('agent.nodeHover.shuffle') }}
-        </Button>
+          <Button
+            v-for="prompt in visiblePrompts"
+            :key="prompt.id"
+            type="button"
+            variant="textonly"
+            size="sm"
+            data-testid="node-ask-agent-starter"
+            :icon="prompt.icon"
+            class="w-full justify-start"
+            @click="onPickStarter(prompt)"
+          >
+            {{ t(prompt.labelKey) }}
+          </Button>
+          <div class="h-px bg-border" />
+          <Button
+            type="button"
+            variant="textonly"
+            size="sm"
+            data-testid="node-ask-agent-shuffle"
+            icon="icon-[lucide--shuffle]"
+            class="w-full justify-start"
+            @click="onShuffle"
+          >
+            {{ t('agent.nodeHover.shuffle') }}
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   </div>
