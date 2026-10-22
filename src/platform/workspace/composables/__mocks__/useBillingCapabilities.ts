@@ -12,6 +12,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_billing', true)
   ),
   canSubscribeSelfServe: computed(() => false),
+  canOpenPlans: computed(() => receiveServerFact('can_open_plans', false)),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
   canRevertScheduledChange: computed(() =>
