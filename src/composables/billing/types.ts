@@ -103,6 +103,8 @@ export interface BalanceInfo {
   cloudCreditBalanceMicros?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
+  /** Served `low_balance`. Absent when the balance response omits it. */
+  lowBalance?: boolean
 }
 
 /** Whether the billing portal opened, and why not when it did not. */
