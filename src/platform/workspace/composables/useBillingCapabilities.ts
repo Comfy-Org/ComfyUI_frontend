@@ -211,6 +211,9 @@ function useBillingCapabilitiesInternal() {
       resolvedResponse.value?.denied_reasons?.can_run_workflows
     )
   )
+  const runDeniedPaymentPastDue = computed(
+    () => runWorkflowsDenial.value === 'payment_past_due'
+  )
   const isReady = computed(() => {
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
@@ -557,6 +560,7 @@ function useBillingCapabilitiesInternal() {
     canRunWorkflows,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
+    runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,
     snapshotAuthoritative,
