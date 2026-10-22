@@ -31,6 +31,8 @@ export interface CatalogQueueItem extends QueueBase {
   visibleFrom?: string
   /** Turned off in the draft, so the page only exists on the live site. */
   hidden: boolean
+  /** When this change was saved, if the server reports it. */
+  savedAt?: string
   fields: FieldGroup[]
   /** What the item still lacks; empty when removed or ready. */
   gaps: ReadinessGap[]

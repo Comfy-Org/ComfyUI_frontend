@@ -24,26 +24,26 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { BillingFailure, BillingTransport } from './billingContracts.js'
-import { matchesServerCode } from './billingContracts.js'
-import type { CapabilitiesReader } from './capabilities.js'
-import type { CreditsReader } from './credits.js'
+import type { BillingFailure, BillingTransport } from './billingContracts'
+import { matchesServerCode } from './billingContracts'
+import type { CapabilitiesReader } from './capabilities'
+import type { CreditsReader } from './credits'
 import type {
   BillingOperationLifecycle,
   IssuedBillingOperation
-} from './operationLifecycle.js'
-import { operationRoute } from './operationLifecycle.js'
+} from './operationLifecycle'
+import { operationRoute } from './operationLifecycle'
 import type {
   BillingOperationKind,
   BillingOperationState,
   PendingBillingOperation
-} from './operationState.js'
-import { validateActionUrl } from './operationState.js'
-import type { ParsedBillingBody } from './sharedRead.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
-import type { BillingStatusReader } from './status.js'
-import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
-import { wireCents } from './wireCents.js'
+} from './operationState'
+import { validateActionUrl } from './operationState'
+import type { ParsedBillingBody } from './sharedRead'
+import { readValidatedBillingResponse } from './sharedRead'
+import type { BillingStatusReader } from './status'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount'
+import { wireCents } from './wireCents'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'

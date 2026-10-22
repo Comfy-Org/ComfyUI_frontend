@@ -1,4 +1,5 @@
 import { captureVfxLinkClick } from '@/scripts/posthog'
+import { isVfxV3Path, vfxNavCloudHref } from '@/utils/vfxNavCampaign'
 import { campaignHref } from '@/utils/campaignHref'
 
 function linkPlacement(
@@ -10,11 +11,47 @@ function linkPlacement(
   return 'page'
 }
 
+function isCanvasMedia(video: HTMLVideoElement) {
+  return video.closest('[data-playback-background]') !== null
+}
+
+function playbackTarget(event: Event) {
+  if (!(event.target instanceof HTMLVideoElement)) return undefined
+  return isCanvasMedia(event.target) ? undefined : event.target
+}
+
+function playbackGroup(video: HTMLVideoElement) {
+  return video.closest('[data-playback-group]')
+}
+
+function belongsToPlaybackGroup(
+  video: HTMLVideoElement,
+  comparison: Element | null
+) {
+  if (!comparison) return false
+  if (comparison.contains(video)) return true
+  return isCanvasMedia(video)
+}
+
+function shouldPauseVideo(
+  video: HTMLVideoElement,
+  active: HTMLVideoElement,
+  comparison: Element | null
+) {
+  return (
+    video !== active &&
+    !video.paused &&
+    !belongsToPlaybackGroup(video, comparison)
+  )
+}
+
 export function mountVfxCampaign(root: HTMLElement): () => void {
   function onPlay(event: Event) {
-    if (!(event.target instanceof HTMLVideoElement)) return
+    const active = playbackTarget(event)
+    if (!active) return
+    const comparison = playbackGroup(active)
     for (const video of root.querySelectorAll('video')) {
-      if (video !== event.target && !video.paused) video.pause()
+      if (shouldPauseVideo(video, active, comparison)) video.pause()
     }
   }
 
@@ -22,7 +59,11 @@ export function mountVfxCampaign(root: HTMLElement): () => void {
     for (const link of root.querySelectorAll<HTMLAnchorElement>('a[href]')) {
       const href = link.getAttribute('href')
       if (!href) continue
-      const decorated = campaignHref(href, window.location.href)
+      const decorated =
+        isVfxV3Path(window.location.pathname) &&
+        link.matches('nav [data-vfx-nav-no-utm]')
+          ? vfxNavCloudHref(window.location.pathname, href)
+          : campaignHref(href, window.location.href)
       if (decorated !== href) link.setAttribute('href', decorated)
     }
   }

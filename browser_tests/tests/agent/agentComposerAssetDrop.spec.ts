@@ -48,7 +48,8 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
 
   for (const view of ['grid', 'list'] as const) {
     test(`re-attaches a library asset without a display name from ${view} view`, async ({
-      page
+      page,
+      toast
     }) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
@@ -71,15 +72,13 @@ test.describe('Agent composer asset drop', { tag: '@cloud' }, () => {
 
       await source.dragTo(agentPanel.root)
 
-      // Named, not merely present: a drag that attaches the wrong asset is the
-      // PM-1157/PM-1158 failure, and it would pass a bare count assertion.
       await expect(agentPanel.attachmentChip(ASSET_NAME)).toBeVisible()
       await expect(agentPanel.attachmentChips).toHaveCount(1)
       await source.dragTo(agentPanel.root)
       await expect(agentPanel.attachmentChips).toHaveCount(1)
-      const duplicateNotice = page.getByRole('alert').filter({
-        hasText: `${ASSET_NAME} is already in the asset tray`
-      })
+      const duplicateNotice = toast.withText(
+        `${ASSET_NAME} is already in the asset tray`
+      )
       await expect(duplicateNotice).toHaveCount(1)
       await duplicateNotice.getByRole('button', { name: 'Close' }).click()
       await agentPanel.composer.fill('Keep this draft @agent_generated')

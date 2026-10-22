@@ -30,10 +30,10 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
-import { GetNodeParentGroupKey } from '../shared'
+import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
 import WidgetItem from './WidgetItem.vue'
 import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 

@@ -6,6 +6,7 @@ import {
 } from './comfyPageSetup.ts'
 import { useGlobalPinia } from './globalPinia.ts'
 import {
+  noJsExtensionImports,
   noRelativePackages,
   noRelativeParentPaths,
   noRestrictedPaths,
@@ -51,6 +52,7 @@ export default {
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
     'no-dom-in-computed': noDomInComputed,
+    'no-js-extension-imports': noJsExtensionImports,
     'no-js-private-class-members': noJsPrivateClassMembers,
     'no-duplicate-ingest-type': noDuplicateIngestType,
     'no-es2023-array-copy-method': noEs2023ArrayCopyMethod,
