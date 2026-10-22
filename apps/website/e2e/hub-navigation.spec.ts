@@ -31,7 +31,7 @@ for (const { from, to, copy, reducedMotion } of [
   {
     from: 'apps',
     to: 'models',
-    copy: 'Try the latest AI models',
+    copy: 'Try models here, call them through the API',
     reducedMotion: 'no-preference'
   },
   {

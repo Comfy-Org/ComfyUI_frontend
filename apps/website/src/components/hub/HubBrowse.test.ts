@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '@/composables/useHubStore'
@@ -53,7 +53,14 @@ describe('HubBrowse', () => {
     await user.type(screen.getByTestId('workshop-search'), 'upscale')
     const cards = screen.getAllByTestId('workshop-model-card')
     expect(cards.length).toBeGreaterThan(0)
-    cards.forEach((card) => expect(card.textContent).toMatch(/Upscale/i))
+    cards.forEach((card) => {
+      const model = workshopModels.find(
+        (candidate) => candidate.href === card.getAttribute('href')
+      )
+      expect([model?.name, ...(model?.capabilities ?? [])].join(' ')).toMatch(
+        /upscale/i
+      )
+    })
   })
 
   it('does not show a duplicate search results panel', async () => {
@@ -104,7 +111,9 @@ describe('HubBrowse', () => {
       )
     ).map((family) => family.latest.href)
     expect(audioModelHrefs.length).toBeGreaterThan(0)
-    expect(audioModelHrefs).toContain(lead[0].getAttribute('href'))
+    expect(audioModelHrefs).toContain(
+      within(lead[0]).getByTestId('workshop-model-card').getAttribute('href')
+    )
     expect(screen.getByTestId('hub-showing').textContent).toMatch(
       /of [1-9]\d*\b/
     )
