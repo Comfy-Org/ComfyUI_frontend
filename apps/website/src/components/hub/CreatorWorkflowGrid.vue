@@ -31,6 +31,7 @@ const failed = ref(false)
 async function loadMore() {
   if (loading.value || !nextCursor.value) return
   loading.value = true
+  failed.value = false
   try {
     const url = new URL('/models/catalogue.json', window.location.origin)
     url.search = new URLSearchParams({
@@ -47,13 +48,16 @@ async function loadMore() {
     ).catch(() => undefined)
     failed.value = !result
     if (!result) return
+    const { reset, page: readPage, nextCursor: next } = result.pages.workflows
     const shown = new Set(models.value.map(({ href }) => href))
-    models.value = [
-      ...models.value,
-      ...result.models.filter(({ href }) => !shown.has(href))
-    ]
-    nextCursor.value = result.pages.workflows.nextCursor
-    page.value += 1
+    models.value = reset
+      ? result.models
+      : [
+          ...models.value,
+          ...result.models.filter(({ href }) => !shown.has(href))
+        ]
+    nextCursor.value = next
+    page.value = reset ? readPage : page.value + 1
   } finally {
     loading.value = false
   }
