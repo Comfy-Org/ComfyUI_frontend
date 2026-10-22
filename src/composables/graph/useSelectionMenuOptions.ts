@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
+import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useFrameNodes } from './useFrameNodes'

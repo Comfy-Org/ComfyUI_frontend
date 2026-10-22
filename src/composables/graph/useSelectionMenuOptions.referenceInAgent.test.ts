@@ -8,10 +8,10 @@ import type { MenuOption } from '@/composables/graph/menuOption'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
+import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-vi.mock(import('@/composables/graph/referenceNodesInAgent'), () => ({
+vi.mock(import('@/components/graph/referenceNodesInAgent'), () => ({
   referenceNodesInAgent: vi.fn()
 }))
 

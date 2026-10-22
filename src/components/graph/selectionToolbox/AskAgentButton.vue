@@ -14,7 +14,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
+import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 
 const { t } = useI18n()

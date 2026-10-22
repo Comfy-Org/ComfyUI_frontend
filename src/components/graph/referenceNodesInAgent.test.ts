@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
+import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

@@ -4,13 +4,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import AskAgentButton from '@/components/graph/selectionToolbox/AskAgentButton.vue'
-import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
-vi.mock(import('@/composables/graph/referenceNodesInAgent'), () => ({
+vi.mock(import('@/components/graph/referenceNodesInAgent'), () => ({
   referenceNodesInAgent: vi.fn()
 }))
 
