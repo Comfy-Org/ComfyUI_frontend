@@ -9,7 +9,12 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <div ref="panelRef" :style :class="panelClass">
+    <div
+      ref="panelRef"
+      :style
+      :class="panelClass"
+      data-testid="actionbar-panel"
+    >
       <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"
@@ -20,6 +25,7 @@
             )
           "
         />
+        <DeploymentSwitcher />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -69,7 +75,11 @@
       <PartnerNodesRunCaption v-if="!isDocked" />
     </div>
 
-    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+    <Teleport
+      v-if="inlineProgressTarget"
+      :key="isDocked ? 'docked' : 'floating'"
+      :to="inlineProgressTarget"
+    >
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
         radius-class="rounded-xl"
@@ -84,6 +94,7 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  useResizeObserver,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
@@ -100,6 +111,7 @@ import type { MenuItem } from '@/components/ui/menu/types'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -301,6 +313,15 @@ const adjustMenuPosition = () => {
 }
 
 useEventListener(window, 'resize', adjustMenuPosition)
+
+function keepFloatingPanelOnScreen() {
+  const panel = panelRef.value
+  if (!panel || isDocked.value) return
+  x.value = clamp(x.value, 0, window.innerWidth - panel.offsetWidth)
+  y.value = clamp(y.value, 0, window.innerHeight - panel.offsetHeight)
+}
+
+useResizeObserver(panelRef, keepFloatingPanelOnScreen)
 
 // Drop zone state
 const isMouseOverDropZone = ref(false)

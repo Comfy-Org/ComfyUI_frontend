@@ -4815,6 +4815,28 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the kind and stored preview on a sent EXR', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this plate', [
+      {
+        ref: 'a1b2c3',
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/stored-preview.png'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ kind: 'image', previewUrl: '/stored-preview.png' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 

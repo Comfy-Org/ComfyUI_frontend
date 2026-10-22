@@ -2807,6 +2807,30 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.runningJobIds).toEqual([])
   })
 
+  it('drops a progress frame still queued when its job is forgotten', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    store.forgetFinishedJobs(['job-background'])
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
+    expect(store.activeJobId).toBe('job-visible')
+  })
+
   it('applies each job snapshot queued in the same animation frame', () => {
     fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
     fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
