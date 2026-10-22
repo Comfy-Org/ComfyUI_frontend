@@ -12,19 +12,16 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/scripts/api'))
-
+const API_ORIGIN = 'http://localhost:8188'
 const CONTENT_ROUTE = '/api/assets/1/content'
-const CONTENT_URL = 'http://localhost:8188/api/assets/1/content'
+const CONTENT_URL = `${API_ORIGIN}${CONTENT_ROUTE}`
 
 beforeEach(() => {
   distribution.isCloud = false
-  vi.mocked(api.fetchApi).mockImplementation(async () => new Response())
-  vi.mocked(api.apiURL).mockImplementation(
-    (path) => `http://localhost:8188/api${path}`
-  )
+  api.api_base = API_ORIGIN
   vi.mocked(fetch).mockReset()
   vi.mocked(fetch).mockImplementation(async () => new Response())
+  vi.spyOn(api, 'fetchApi').mockImplementation(async () => new Response())
 })
 
 describe('createFileDownload', () => {
@@ -37,7 +34,7 @@ describe('createFileDownload', () => {
   })
 
   it.for([CONTENT_ROUTE, CONTENT_URL])(
-    'fetches %s on cloud through the app authorization',
+    'fetches %s on cloud at the asset content URL',
     async (url) => {
       distribution.isCloud = true
       const download = createFileDownload(url, 'a.png')
@@ -46,7 +43,9 @@ describe('createFileDownload', () => {
 
       await download.fetch?.(url)
 
-      expect(api.fetchApi).toHaveBeenCalledWith(url)
+      expect(api.apiURL(vi.mocked(api.fetchApi).mock.calls[0][0])).toBe(
+        CONTENT_URL
+      )
       expect(fetch).not.toHaveBeenCalled()
     }
   )

@@ -33,6 +33,11 @@ function isAppRoute(url: string): boolean {
   )
 }
 
+function toApiRoute(url: string): string {
+  const parsed = URL.parse(url, window.location.origin)
+  return parsed ? `${parsed.pathname}${parsed.search}` : url
+}
+
 /** A cloud download of `url`, authorized when the URL is one of our own routes. */
 export function createFileDownload(
   url: string,
@@ -44,7 +49,7 @@ export function createFileDownload(
     url,
     filename,
     fetch: isAppRoute(url)
-      ? (route) => api.fetchApi(route)
+      ? (route) => api.fetchApi(toApiRoute(route))
       : (route) => fetch(route, { credentials: 'omit' })
   }
 }
