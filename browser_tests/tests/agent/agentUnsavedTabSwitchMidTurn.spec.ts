@@ -7,7 +7,10 @@ test.describe(
   'Agent turn on an unsaved tab, switched away mid-turn',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: 'agent-rec-three-sequential-adds' })
+    test.use({
+      conversationCase: 'agent-rec-three-sequential-adds',
+      workflowTarget: 'unsaved-draft'
+    })
 
     test('shows every edit after switching away mid-turn and back', async ({
       agentConversation,
