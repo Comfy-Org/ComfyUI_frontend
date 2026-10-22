@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest'
 
-import { isLocalDesktopHost } from './agentHost'
+import { isLocalAgentGrantHost } from './localAgentGrantHost'
 
 const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 
@@ -105,13 +105,13 @@ it.for([
     local: false
   }
 ])(
-  'classifies $host for local Desktop consent',
+  'classifies $host for the Local grant experiment',
   ({ cloud, desktop, bridge, legacyRemote, local }) => {
     distribution.isCloud = cloud
     distribution.isDesktop = desktop
     vi.stubGlobal('__comfyDesktop2', bridge)
     vi.stubGlobal('__comfyDesktop2Remote', legacyRemote)
 
-    expect(isLocalDesktopHost()).toBe(local)
+    expect(isLocalAgentGrantHost()).toBe(local)
   }
 )

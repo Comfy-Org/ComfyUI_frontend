@@ -11,10 +11,14 @@ import {
   watch
 } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -36,6 +40,38 @@ const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
+
+interface AgentOnboardingPolicy {
+  startup: 'activationVisits' | 'lockedUntilConsent'
+  offerMemory: 'shown' | 'answered'
+  agentButton: 'requestConsent' | 'togglePanel'
+  persistSkipAsRefusal: boolean
+  introduceBeforeSignIn: boolean
+}
+
+const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'activationVisits',
+  offerMemory: 'shown',
+  agentButton: 'requestConsent',
+  persistSkipAsRefusal: true,
+  introduceBeforeSignIn: false
+}
+
+const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'lockedUntilConsent',
+  offerMemory: 'answered',
+  agentButton: 'togglePanel',
+  persistSkipAsRefusal: false,
+  introduceBeforeSignIn: true
+}
+
+function isLocalDesktopApp(): boolean {
+  if (isCloud) return false
+  if (isDesktop) return true
+  const bridge = window.__comfyDesktop2
+  if (!bridge) return false
+  return !(bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false)
+}
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -84,11 +120,20 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const onboarding = computed<
+    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
+  >(() =>
+    pendingServerFact(
+      'BE-22051',
+      isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
+    )
+  )
   /** The server's `agent` feature; undefined unless its state is known. */
   const comfyAgent = computed(() => {
     if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
-    const agent = api.getServerFeature<{ state?: unknown } | null>('agent')
+    const agent = featureFlags.agent
     return agent?.state === 'starting' ||
       agent?.state === 'ready' ||
       agent?.state === 'failed'
@@ -439,6 +484,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     comfyAgent,
+    onboarding,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
     reportedFreeUseImpression,

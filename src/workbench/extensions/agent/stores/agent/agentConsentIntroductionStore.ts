@@ -1,22 +1,46 @@
-import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+const RESPONDED_PREFIX = 'Comfy.AgentConsent.IntroductionResponded'
 
 export const useAgentConsentIntroductionStore = defineStore(
   'agentConsentIntroduction',
   () => {
+    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const workspaceStore = useTeamWorkspaceStore()
     const isContinuingSignIn = ref(false)
-    const hasResponded = useStorage(
-      'Comfy.AgentConsent.DesktopResponded',
-      false,
-      undefined,
-      { writeDefaults: false, flush: 'sync' }
-    )
 
-    function markResponded(): void {
-      hasResponded.value = true
+    const scope = computed(() => {
+      if (!isLoggedIn.value) return 'signed-out'
+      const userId = resolvedUserInfo.value?.id
+      const workspaceId = workspaceStore.activeWorkspaceId
+      return userId && workspaceId ? `${userId}.${workspaceId}` : null
+    })
+
+    function hasResponded(responseScope: string): boolean {
+      try {
+        return (
+          localStorage.getItem(`${RESPONDED_PREFIX}.${responseScope}`) ===
+          'true'
+        )
+      } catch {
+        return false
+      }
     }
 
-    return { hasResponded, markResponded, isContinuingSignIn }
+    function markResponded(): boolean {
+      if (!scope.value) return false
+      try {
+        localStorage.setItem(`${RESPONDED_PREFIX}.${scope.value}`, 'true')
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    return { scope, hasResponded, markResponded, isContinuingSignIn }
   }
 )

@@ -107,12 +107,15 @@ vi.mock(
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
+  isCloud: true,
   isDesktop: false
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   DISTRIBUTION: __DISTRIBUTION__,
-  isCloud: __DISTRIBUTION__ === 'cloud',
+  get isCloud() {
+    return mocks.isCloud
+  },
   isNightly: __IS_NIGHTLY__,
   get isDesktop() {
     return mocks.isDesktop
@@ -200,7 +203,6 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => {
     setupScope.stop()
-    delete window.__comfyDesktop2
   })
 
   beforeEach(() => {
@@ -210,8 +212,8 @@ describe('AgentPanel extension flag gate', () => {
       () => isAuthInitialized.value
     )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
+    mocks.isCloud = true
     mocks.isDesktop = false
-    delete window.__comfyDesktop2
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
@@ -248,6 +250,7 @@ describe('AgentPanel extension flag gate', () => {
 
   describe('Desktop consent introduction', () => {
     beforeEach(() => {
+      mocks.isCloud = false
       mocks.isDesktop = true
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -272,88 +275,35 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it.for([
-      {
-        session: 'signed out',
-        user: null,
-        visits: '0',
-        legacyDesktop: true,
-        bridge: undefined
-      },
+      { session: 'signed out', user: null, visits: '0' },
       {
         session: 'signed in on first visit',
         user: { id: 'account-a' },
-        visits: '0',
-        legacyDesktop: true,
-        bridge: undefined
+        visits: '0'
       },
       {
         session: 'signed in after discovery',
         user: { id: 'account-a' },
-        visits: '2',
-        legacyDesktop: true,
-        bridge: undefined
+        visits: '2'
       },
-      {
-        session: 'signed out in Desktop 2 localhost',
-        user: null,
-        visits: '2',
-        legacyDesktop: false,
-        bridge: { isRemote: () => false }
-      },
-      {
-        session: 'signed out in Desktop 2 localhost before isRemote',
-        user: null,
-        visits: '2',
-        legacyDesktop: false,
-        bridge: {}
-      }
-    ])(
-      'offers consent on startup when $session',
-      async ({ user, visits, legacyDesktop, bridge }) => {
-        mocks.isDesktop = legacyDesktop
-        window.__comfyDesktop2 = bridge
-        currentUser.value = user
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, visits)
-        localStorage.setItem(
-          'Comfy.AgentConsent.AutoShown.account-a.workspace-a',
-          'true'
-        )
+      { session: 'signed out after discovery', user: null, visits: '2' }
+    ])('offers consent on startup when $session', async ({ user, visits }) => {
+      currentUser.value = user
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, visits)
+      localStorage.setItem(
+        'Comfy.AgentConsent.AutoShown.account-a.workspace-a',
+        'true'
+      )
 
-        await loadEntryAndSetup()
-        await flush()
+      await loadEntryAndSetup()
+      await flush()
 
-        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-        expect(agentStore.isVisible).toBe(true)
-        expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
-          'first_load'
-        )
-        expect(
-          localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
-        ).toBeNull()
-      }
-    )
-
-    it.for([
-      {
-        host: 'modern',
-        bridge: { isRemote: () => true },
-        legacyRemote: undefined
-      },
-      { host: 'legacy', bridge: {}, legacyRemote: true }
-    ])(
-      'keeps the signed-out automatic gate for a $host remote Desktop 2 view',
-      async ({ bridge, legacyRemote }) => {
-        mocks.isDesktop = false
-        vi.stubGlobal('__comfyDesktop2', bridge)
-        vi.stubGlobal('__comfyDesktop2Remote', legacyRemote)
-        currentUser.value = null
-
-        await loadEntryAndSetup()
-        await flush()
-
-        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      }
-    )
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(agentStore.isVisible).toBe(true)
+      expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
+        'first_load'
+      )
+    })
 
     it.for([
       { surface: 'dialog', hold: openDialog, release: closeDialog },
@@ -385,7 +335,10 @@ describe('AgentPanel extension flag gate', () => {
 
     it('queues consent after sign-in from another entry despite a previous introduction response', async () => {
       currentUser.value = null
-      localStorage.setItem('Comfy.AgentConsent.DesktopResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
 
       await loadEntryAndSetup()
       await flush()
@@ -400,31 +353,43 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       expect(agentStore.isVisible).toBe(true)
-      expect(localStorage.getItem('Comfy.AgentConsent.DesktopResponded')).toBe(
-        'true'
-      )
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentConsent.IntroductionResponded.signed-out'
+        )
+      ).toBe('true')
     })
 
     it.for([
-      { restore: 'auth', user: null, initialized: false, identity: null },
+      {
+        restore: 'auth',
+        user: null,
+        initialized: false,
+        workspaceId: 'workspace-a'
+      },
       {
         restore: 'workspace',
         user: { id: 'account-a' },
         initialized: true,
-        identity: null
+        workspaceId: null
       }
     ])(
       'keeps only the locked panel when initial $restore arrives late after an earlier Skip',
-      async ({ user, initialized, identity }) => {
+      async ({ user, initialized, workspaceId }) => {
         currentUser.value = user
         isAuthInitialized.value = initialized
-        Object.assign(consentStore, { identity })
-        localStorage.setItem('Comfy.AgentConsent.DesktopResponded', 'true')
+        Object.assign(workspaceStore, { activeWorkspaceId: workspaceId })
+        Object.assign(consentStore, { identity: null })
+        localStorage.setItem(
+          'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+          'true'
+        )
         localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
         await loadEntryAndSetup()
         await flush()
 
         currentUser.value = { id: 'account-a' }
+        Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
         Object.assign(consentStore, { identity: 'account-a/workspace-a' })
         isAuthInitialized.value = true
         await flush()
@@ -437,7 +402,10 @@ describe('AgentPanel extension flag gate', () => {
     it('keeps an external sign-in queued until its workspace resolves', async () => {
       currentUser.value = null
       Object.assign(consentStore, { identity: null })
-      localStorage.setItem('Comfy.AgentConsent.DesktopResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
       await loadEntryAndSetup()
       await flush()
       openDialog()
@@ -453,13 +421,20 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it.for([
-      { session: 'signed out', user: null },
-      { session: 'signed in', user: { id: 'account-a' } }
+      { session: 'signed out', user: null, scope: 'signed-out' },
+      {
+        session: 'signed in',
+        user: { id: 'account-a' },
+        scope: 'account-a.workspace-a'
+      }
     ])(
       'opens the locked panel on every $session launch after Skip',
-      async ({ user }) => {
+      async ({ user, scope }) => {
         currentUser.value = user
-        localStorage.setItem('Comfy.AgentConsent.DesktopResponded', 'true')
+        localStorage.setItem(
+          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
+          'true'
+        )
         localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
         openDialog()
 
@@ -524,8 +499,8 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       expect(
-        localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
-      ).toBeNull()
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
       setAgentReady(true)
       await flush()
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
@@ -537,8 +512,8 @@ describe('AgentPanel extension flag gate', () => {
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
       expect(
-        localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
-      ).toBeNull()
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
     })
 
     it('waits for auth initialization before treating startup as signed out', async () => {
@@ -572,7 +547,10 @@ describe('AgentPanel extension flag gate', () => {
 
     it('does not ask again while a signed-out acceptance continues through sign-in', async () => {
       currentUser.value = null
-      localStorage.setItem('Comfy.AgentConsent.DesktopResponded', 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
       Object.assign(useAgentConsentIntroductionStore(), {
         isContinuingSignIn: true
       })

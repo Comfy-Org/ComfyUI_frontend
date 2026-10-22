@@ -22,7 +22,8 @@ import {
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  toValue
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -858,6 +859,29 @@ describe('AgentPanelRoot Local grant messaging', () => {
       expect(
         screen.queryByRole('note', { name: 'Agent credits' })
       ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { remote: false, free: 1, placementCalls: 0 },
+    { remote: true, free: 0, placementCalls: 1 }
+  ])(
+    'keeps Desktop 2 remote=$remote grant eligibility separate from onboarding',
+    async ({ remote, free, placementCalls }) => {
+      distribution.isDesktop = false
+      vi.stubGlobal('__comfyDesktop2', { isRemote: () => remote })
+      vi.stubGlobal('__comfyDesktop2Remote', !remote)
+      assignArm('treatment')
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryAllByText('Try agent chat for free')).toHaveLength(
+        free
+      )
+      expect(useFreeUsePlacement).toHaveBeenCalledTimes(placementCalls)
+      const scope = vi.mocked(useLocalAgentGrant).mock.calls[0]?.[0]
+      expect(toValue(scope)).toBe(remote ? null : 'account-a/workspace-a/0')
     }
   )
 
@@ -6908,6 +6932,26 @@ describe('AgentPanelRoot workflow binding', () => {
     accept()
     await screen.findByRole('button', { name: 'Stop' })
     await waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
+  it('asks signed-out users in a browser tab on a local Core to sign in before consent', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(bodies).toHaveLength(0)
   })
 
   it('asks signed-out Desktop users for consent before opening sign-in and keeps their draft on Skip', async () => {

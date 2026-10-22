@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isLocalDesktopHost } from '@/workbench/extensions/agent/agentHost'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -160,7 +159,6 @@ export function registerAgentPanelExtension(): void {
       notifyRestoreMintersAfterGraphConfigure()
     },
     setup() {
-      const isLocalDesktop = isLocalDesktopHost()
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
       const introductionStore = useAgentConsentIntroductionStore()
@@ -239,37 +237,33 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
-      const consentScope = (): string | null => {
-        if (isLocalDesktop) return consentStore.identity ?? 'desktop'
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        return userId && workspaceId ? `${userId}.${workspaceId}` : null
-      }
       const consentCardSeenIn = new Set<string>()
-      let desktopAuthOfferUserId: string | undefined
-      let desktopStartupOpened = false
+      let lockedStartupOpened = false
       let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
-          const scope = consentScope()
+          const { scope } = introductionStore
           if (scope) consentCardSeenIn.add(scope)
         }
       )
 
-      const desktopIntroductionEligible = (): boolean =>
-        isAuthInitialized.value &&
-        !introductionStore.isContinuingSignIn &&
-        (!introductionStore.hasResponded ||
-          (desktopAuthOfferUserId !== undefined &&
-            resolvedUserInfo.value?.id === desktopAuthOfferUserId))
+      function introductionOwed(): boolean {
+        const { scope } = introductionStore
+        return scope !== null && !introductionStore.hasResponded(scope)
+      }
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
-        (isLocalDesktop ? desktopIntroductionEligible() : isLoggedIn.value) &&
+        (agentPanelStore.onboarding.introduceBeforeSignIn
+          ? isAuthInitialized.value
+          : isLoggedIn.value) &&
+        !introductionStore.isContinuingSignIn &&
+        (agentPanelStore.onboarding.offerMemory !== 'answered' ||
+          introductionOwed()) &&
         !consentStore.isChecking &&
         !consentStore.accepted
       const offerIneligibility = (): AgentConsentOfferExit | null =>
-        !isLocalDesktop && !isLoggedIn.value
+        !agentPanelStore.onboarding.introduceBeforeSignIn && !isLoggedIn.value
           ? 'signed_out'
           : consentStore.isChecking
             ? 'consent_unresolved'
@@ -295,13 +289,14 @@ export function registerAgentPanelExtension(): void {
           holdOffer(held, candidateUserId, offeredWorkspaceId ?? undefined)
           return false
         }
-        if (!isLocalDesktop) return true
+        if (agentPanelStore.onboarding.startup !== 'lockedUntilConsent')
+          return true
         if (!agentPanelStore.enabled) return false
         if (!agentPanelStore.isOpen) agentPanelStore.open('automatic_consent')
         return true
       }
 
-      function prepareCloudConsentOffer(
+      function claimOneShotOffer(
         candidateUserId: string | undefined,
         offeredWorkspaceId: string | null
       ): string | null {
@@ -331,13 +326,6 @@ export function registerAgentPanelExtension(): void {
       }
 
       let autoShowInFlight = false
-      function markAutomaticCardShown(
-        scope: string | null,
-        key: string | null
-      ): void {
-        if (isLocalDesktop && scope) consentCardSeenIn.add(scope)
-        else if (key) writeAutoShown(key, true)
-      }
 
       function finishAutomaticOffer(offeredIdentity: string | null): void {
         autoShowInFlight = false
@@ -356,7 +344,7 @@ export function registerAgentPanelExtension(): void {
           if (consentStore.accepted) dropHold()
           return
         }
-        const scope = consentScope()
+        const { scope } = introductionStore
         if (scope && consentCardSeenIn.has(scope)) {
           reportOfferExit('card_already_seen', 'offer')
           dropHold()
@@ -370,35 +358,41 @@ export function registerAgentPanelExtension(): void {
 
         const candidateUserId = resolvedUserInfo.value?.id
         const offeredWorkspaceId = workspaceStore.activeWorkspaceId
-        const key = isLocalDesktop
-          ? null
-          : prepareCloudConsentOffer(candidateUserId, offeredWorkspaceId)
-        if (!isLocalDesktop && key === null) return
+        const { offerMemory, startup } = agentPanelStore.onboarding
+        const key =
+          offerMemory === 'shown'
+            ? claimOneShotOffer(candidateUserId, offeredWorkspaceId)
+            : null
+        if (offerMemory === 'shown' && key === null) return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
         dropHold()
-        if (!isLocalDesktop) agentPanelStore.suppressRestoredOpen()
+        if (startup === 'activationVisits')
+          agentPanelStore.suppressRestoredOpen()
         void withConsent(
           'first_load',
           () => {
             if (
               !agentPanelStore.enabled ||
-              (!isLocalDesktop && automaticActivationVisitsComplete()) ||
+              (startup === 'activationVisits' &&
+                automaticActivationVisitsComplete()) ||
               agentPanelStore.isOpen
             )
               return
             agentPanelStore.open('automatic_consent')
           },
           {
-            onShown: () => markAutomaticCardShown(scope, key),
+            onShown: () => {
+              if (key) writeAutoShown(key, true)
+            },
             canShow: () =>
               prepareConsentCard(candidateUserId, offeredWorkspaceId)
           }
         ).finally(() => finishAutomaticOffer(offeredIdentity))
       }
 
-      function prepareDesktopStartup(): boolean {
+      function prepareLockedStartup(): boolean {
         if (
           !agentPanelStore.enabled ||
           !isAuthInitialized.value ||
@@ -411,14 +405,15 @@ export function registerAgentPanelExtension(): void {
           holdOffer(held)
           return false
         }
-        if (desktopStartupOpened) return true
-        desktopStartupOpened = true
+        if (lockedStartupOpened) return true
+        lockedStartupOpened = true
         if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
         return true
       }
 
       function prepareStartupPanel(): boolean {
-        if (isLocalDesktop) return prepareDesktopStartup()
+        if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
+          return prepareLockedStartup()
         if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
           return true
         reportOfferExit('activation_window_complete', 'startup')
@@ -430,7 +425,7 @@ export function registerAgentPanelExtension(): void {
         whenStartupDecided()
           .then((decided) => {
             if (
-              !isLocalDesktop &&
+              agentPanelStore.onboarding.persistSkipAsRefusal &&
               useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
             ) {
               reportOfferExit('consent_declined', 'startup')
@@ -461,7 +456,7 @@ export function registerAgentPanelExtension(): void {
       let activationOffered = false
       const openWhenStartupDecided = (): void => {
         if (
-          isLocalDesktop ||
+          agentPanelStore.onboarding.startup !== 'activationVisits' ||
           !agentPanelStore.enabled ||
           activationPending ||
           activationOffered
@@ -490,15 +485,17 @@ export function registerAgentPanelExtension(): void {
       }
 
       const loadConsentIfEligible = (): void => {
+        const { introduceBeforeSignIn } = agentPanelStore.onboarding
         if (
           !agentPanelStore.enabled ||
-          (isLocalDesktop && !isAuthInitialized.value)
+          (introduceBeforeSignIn && !isAuthInitialized.value)
         )
           return
-        if (!resolvedUserInfo.value) {
-          if (isLocalDesktop) offerWhenStartupDecided()
+        if (introduceBeforeSignIn && !isLoggedIn.value) {
+          offerWhenStartupDecided()
           return
         }
+        if (!resolvedUserInfo.value) return
         const identity = consentStore.identity
         void consentStore
           .load()
@@ -521,20 +518,9 @@ export function registerAgentPanelExtension(): void {
         [
           () => resolvedUserInfo.value?.id,
           () => consentStore.identity,
-          () => isLocalDesktop && isAuthInitialized.value
+          () => isAuthInitialized.value
         ],
-        ([userId, identity], previous) => {
-          if (
-            isLocalDesktop &&
-            !introductionStore.isContinuingSignIn &&
-            previous[2] &&
-            userId &&
-            (userId !== previous[0] ||
-              (previous[1] !== null && identity !== previous[1]))
-          )
-            desktopAuthOfferUserId = userId
-          loadConsentIfEligible()
-        }
+        loadConsentIfEligible
       )
 
       whenever(

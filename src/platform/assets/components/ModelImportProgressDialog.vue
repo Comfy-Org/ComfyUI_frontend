@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import Popover from '@/components/common/ImperativePopover.vue'
-import { computed, ref } from 'vue'
+import { unrefElement, whenever } from '@vueuse/core'
+import { PopoverTrigger } from 'reka-ui'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
@@ -25,11 +28,16 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
-const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isFilterOpen = ref(false)
+const filterAnchor = useTemplateRef<InstanceType<typeof Button>>('filterAnchor')
+
+usePopoverViewportDismiss(isFilterOpen, () => unrefElement(filterAnchor))
 
 whenever(
   () => !isExpanded.value,
-  () => filterPopoverRef.value?.hide()
+  () => {
+    isFilterOpen.value = false
+  }
 )
 
 const filterOptions = [
@@ -38,13 +46,9 @@ const filterOptions = [
   { value: 'failed', label: 'failed' }
 ] as const
 
-function onFilterClick(event: Event) {
-  filterPopoverRef.value?.toggle(event)
-}
-
 function setFilter(filter: typeof activeFilter.value) {
   activeFilter.value = filter
-  filterPopoverRef.value?.hide()
+  isFilterOpen.value = false
 }
 
 const downloadJobs = computed(() => assetDownloadStore.downloadList)
@@ -131,40 +135,44 @@ async function cancelDownload(taskId: TaskId) {
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="md"
-            class="gap-1.5 px-2"
-            @click="onFilterClick"
-          >
-            <i class="icon-[lucide--list-filter] size-4" />
-            <span>{{ activeFilterLabel }}</span>
-            <i class="icon-[lucide--chevron-down] size-3" />
-          </Button>
-          <Popover
-            ref="filterPopoverRef"
-            align="end"
-            content-class="border-none bg-transparent p-0 pt-2"
-          >
-            <div
-              class="flex min-w-30 flex-col rounded-lg border bg-background px-2 py-3"
-            >
+          <Popover v-model:open="isFilterOpen">
+            <PopoverTrigger as-child>
               <Button
-                v-for="option in filterOptions"
-                :key="option.value"
-                variant="textonly"
-                size="sm"
-                :class="
-                  cn(
-                    'w-full justify-start bg-transparent',
-                    activeFilter === option.value && 'bg-muted'
-                  )
-                "
-                @click="setFilter(option.value)"
+                ref="filterAnchor"
+                variant="secondary"
+                size="md"
+                class="gap-1.5 px-2"
               >
-                {{ t(`progressToast.filter.${option.label}`) }}
+                <i class="icon-[lucide--list-filter] size-4" />
+                <span>{{ activeFilterLabel }}</span>
+                <i class="icon-[lucide--chevron-down] size-3" />
               </Button>
-            </div>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              :collision-padding="8"
+              class="w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+            >
+              <div
+                class="flex min-w-30 flex-col rounded-lg border bg-background px-2 py-3"
+              >
+                <Button
+                  v-for="option in filterOptions"
+                  :key="option.value"
+                  variant="textonly"
+                  size="sm"
+                  :class="
+                    cn(
+                      'w-full justify-start bg-transparent',
+                      activeFilter === option.value && 'bg-muted'
+                    )
+                  "
+                  @click="setFilter(option.value)"
+                >
+                  {{ t(`progressToast.filter.${option.label}`) }}
+                </Button>
+              </div>
+            </PopoverContent>
           </Popover>
         </div>
       </div>

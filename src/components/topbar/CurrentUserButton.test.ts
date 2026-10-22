@@ -180,6 +180,15 @@ describe('CurrentUserButton', () => {
     expect(screen.getByText('Popover Content')).toBeInTheDocument()
   })
 
+  it('restores trigger focus after closing from inside the popover', async () => {
+    const { user } = renderComponent()
+    const trigger = screen.getByRole('button', { name: 'Current user' })
+    await user.click(trigger)
+    await user.click(screen.getByTestId('close-popover'))
+
+    expect(trigger).toHaveFocus()
+  })
+
   it.for(['loading', 'error'] as const)(
     'shows account actions while Cloud workspace initialization is %s',
     async (initState) => {

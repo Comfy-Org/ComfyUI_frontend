@@ -1,6 +1,6 @@
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 
-export function isLocalDesktopHost(): boolean {
+export function isLocalAgentGrantHost(): boolean {
   if (isCloud) return false
   if (isDesktop) return true
   const bridge = window.__comfyDesktop2

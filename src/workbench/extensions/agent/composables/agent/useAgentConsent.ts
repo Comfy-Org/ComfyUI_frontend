@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { isLocalDesktopHost } from '@/workbench/extensions/agent/agentHost'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentConsentDecision,
@@ -18,6 +17,7 @@ import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
@@ -45,11 +45,11 @@ export interface ConsentOfferHooks {
 }
 
 export function useAgentConsent() {
-  const isLocalDesktop = isLocalDesktopHost()
   const dialogStore = useDialogStore()
   const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
+  const agentPanelStore = useAgentPanelStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
@@ -112,24 +112,22 @@ export function useAgentConsent() {
         })
       }
 
+      const stopScopeWatch = watch(
+        [identity, isLoggedIn],
+        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        { flush: 'sync' }
+      )
+
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
-        stopScopeWatch?.()
+        stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
       }
 
-      const stopScopeWatch = isLocalDesktop
-        ? watch(
-            [identity, isLoggedIn],
-            () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
-            { flush: 'sync' }
-          )
-        : undefined
-
       function markIntroductionResponded(): void {
-        if (isLocalDesktop && shown) introductionStore.markResponded()
+        if (shown) introductionStore.markResponded()
       }
 
       function handleSaveFailure(error: unknown): void {
@@ -214,7 +212,7 @@ export function useAgentConsent() {
             markIntroductionResponded()
             reportOutcome('rejected')
             if (
-              !isLocalDesktop &&
+              agentPanelStore.onboarding.persistSkipAsRefusal &&
               expectedIdentity &&
               identity.value === expectedIdentity
             )
@@ -228,7 +226,7 @@ export function useAgentConsent() {
           onClose: () => {
             if (settled) return
             settled = true
-            stopScopeWatch?.()
+            stopScopeWatch()
             if (shown) reportOutcome('dismissed')
             else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)

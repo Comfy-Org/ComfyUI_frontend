@@ -217,6 +217,7 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
+    distribution.isCloud = true
     useAgentPanelStore().enabled = true
     api.serverFeatureFlagsSettled.value = false
     api.serverFeatureFlags.value = {}
@@ -347,15 +348,16 @@ describe('WorkflowTabs agent entry button', () => {
   })
 
   it.for([
-    { host: 'legacy Desktop', desktop: true, bridge: undefined },
+    { host: 'the legacy Desktop build', desktop: true, bridge: undefined },
     {
-      host: 'Desktop 2 local',
+      host: 'a local Desktop 2 window',
       desktop: false,
       bridge: { isRemote: () => false }
     }
   ])(
     'toggles the locked panel without consent in $host',
     async ({ desktop, bridge }) => {
+      distribution.isCloud = false
       distribution.isDesktop = desktop
       window.__comfyDesktop2 = bridge
       const { user } = renderComponent()
@@ -373,6 +375,21 @@ describe('WorkflowTabs agent entry button', () => {
       expect(withConsent).not.toHaveBeenCalled()
     }
   )
+
+  it.for([
+    { host: 'a browser tab on a local Core', bridge: undefined },
+    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
+  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
+    distribution.isCloud = false
+    window.__comfyDesktop2 = bridge
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(withConsent).toHaveBeenCalledOnce()
+  })
 
   it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true

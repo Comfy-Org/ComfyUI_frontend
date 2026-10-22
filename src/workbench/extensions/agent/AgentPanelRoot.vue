@@ -115,7 +115,7 @@ import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useLocalAgentGrant } from './composables/agent/useLocalAgentGrant'
-import { isLocalDesktopHost } from './agentHost'
+import { isLocalAgentGrantHost } from './localAgentGrantHost'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import {
@@ -998,6 +998,7 @@ const {
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
   subscriptionSent
 } = useAgentCrdtFollower(boundWorkflowId, {
@@ -1064,6 +1065,7 @@ const docOpMinter = attachDocOpMinter({
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
@@ -1438,7 +1440,7 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-const freeUseExperiment = isLocalDesktopHost() ? null : useFreeUsePlacement()
+const freeUseExperiment = isLocalAgentGrantHost() ? null : useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
@@ -1456,7 +1458,7 @@ const freeUsePlacement = computed(() =>
 )
 
 const localGrantScope = computed(() =>
-  isLocalDesktopHost() && isLoggedIn.value && consentAccepted.value
+  isLocalAgentGrantHost() && isLoggedIn.value && consentAccepted.value
     ? consentIdentity.value
     : null
 )
@@ -1681,7 +1683,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
     if (
-      !isLocalDesktopHost() &&
+      !agentPanelStore.onboarding.introduceBeforeSignIn &&
       !hasAgentCredential() &&
       !(await ensureSignedIn())
     )

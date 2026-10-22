@@ -15,6 +15,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   WorkspaceApiError,
@@ -35,9 +36,11 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string) => `https://platform.test${path}?workspace=ws_1`
+  platformLink: (path: string, correlationId?: string) =>
+    `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
 }))
 
 const activeSubscription: SubscriptionInfo = {
@@ -72,6 +75,12 @@ interface Scenario {
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
   isPaused?: boolean
+}
+
+function correlationIdOf(link: HTMLElement) {
+  return new URL(link.getAttribute('href') ?? '').searchParams.get(
+    'correlation_id'
+  )
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -283,11 +292,15 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/billing/plans?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+      )
     )
     expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/billing?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\?workspace=ws_1&correlation_id=.+$/
+      )
     )
   })
 
@@ -311,7 +324,9 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'View usage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/usage?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
+      )
     )
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
@@ -348,8 +363,54 @@ describe('BillingTab', () => {
 
       expect(screen.getByRole('link', { name: link })).toHaveAttribute(
         'href',
-        `https://platform.test${path}?workspace=ws_1`
+        expect.stringContaining(`https://platform.test${path}?workspace=ws_1`)
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'the plan action',
+      scenario: { canManageBilling: true },
+      link: 'Manage',
+      destination: { target: 'plans' }
+    },
+    {
+      name: 'the owner handoff',
+      scenario: { canManageBilling: true },
+      link: 'Open billing',
+      destination: { target: 'open_billing' }
+    },
+    {
+      name: 'the member handoff',
+      scenario: {
+        canManageBilling: false,
+        canManageSubscription: false,
+        canSubscribeSelfServe: false
+      },
+      link: 'View usage',
+      destination: { target: 'usage' }
+    }
+  ] as const)(
+    'reports a click on $name with the journey its link carried, then rotates it',
+    async ({ scenario, link: name, destination }) => {
+      arrange(scenario)
+      const link = screen.getByRole('link', { name })
+      const clickedId = correlationIdOf(link)
+      link.addEventListener('click', (event) => event.preventDefault())
+
+      await userEvent.click(link)
+
+      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
+        {
+          operation: 'platform_handoff',
+          stage: 'opened',
+          outcome: 'pending',
+          correlation_id: clickedId,
+          ...destination
+        }
+      )
+      await vi.waitFor(() => expect(correlationIdOf(link)).not.toBe(clickedId))
     }
   )
 
