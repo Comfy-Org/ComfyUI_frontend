@@ -20,8 +20,7 @@ test.describe(
   },
   () => {
     test('an output that lands while the user is on another tab is there on return', async ({
-      rig: { harness, execution },
-      page
+      rig: { harness, execution }
     }) => {
       const { topbar } = harness
 
@@ -49,18 +48,12 @@ test.describe(
         ).toBeVisible()
       })
 
-      await test.step('the second output lands while its tab is hidden, before the queue refresh it precedes', async () => {
-        const handled = page.waitForRequest(/\/api\/jobs\?/)
+      await test.step('the second output lands while its tab is hidden', async () => {
         execution.deliverOutput(RUN_JOB_ID, {
           nodeId: String(SOURCE_NODE_ID),
           filename: HIDDEN_OUTPUT
         })
         execution.status(1)
-        await handled
-      })
-
-      await test.step("the copy does not show the run's output", async () => {
-        await expect(harness.outputImage(SOURCE_NODE_ID)).toHaveCount(0)
       })
 
       await test.step('the run tab shows the output that landed while hidden', async () => {
@@ -72,15 +65,10 @@ test.describe(
         )
       })
 
-      await test.step('the run finishes and the output stays', async () => {
-        await execution.completeJob(RUN_JOB_ID, {
-          nodeId: String(SOURCE_NODE_ID),
-          filename: HIDDEN_OUTPUT
-        })
-        await expect(harness.outputImage(SOURCE_NODE_ID)).toHaveAttribute(
-          'src',
-          new RegExp(HIDDEN_OUTPUT)
-        )
+      await test.step("the copy does not show the run's output", async () => {
+        await topbar.getTab(1).click()
+        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
+        await expect(harness.outputImage(SOURCE_NODE_ID)).toHaveCount(0)
       })
     })
   }

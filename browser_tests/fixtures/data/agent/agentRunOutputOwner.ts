@@ -6,13 +6,10 @@ import {
   WORKFLOW_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 
-/** Fixture data for `agentRunOutputsStayOnOwnerTab.spec.ts` (PM-2275). */
-
 export const RUN_JOB_ID = 'agent-exec-server-run-pm-2275'
 export const SHOWN_OUTPUT = 'agent-run-shown-output.png'
 export const HIDDEN_OUTPUT = 'agent-run-hidden-output.png'
 
-/** The `run` tool's success frame, naming the job and the workflow it ran for. */
 export const runSuccessFrame: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {

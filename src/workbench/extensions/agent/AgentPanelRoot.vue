@@ -916,7 +916,7 @@ function reportPendingSend(): void {
   })
 }
 
-function adoptAgentRunJob(event: AgentWsEvent): void {
+function registerAgentRunJobOwner(event: AgentWsEvent): void {
   if (event.type !== 'agent_tool_call') return
   const { job_id: jobId, job_workflow_id: workflowId } = event.data
   if (!jobId || !workflowId) return
@@ -925,6 +925,11 @@ function adoptAgentRunJob(event: AgentWsEvent): void {
 }
 
 const agentNodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
+
+function observeAgentEvent(event: AgentWsEvent): void {
+  agentNodeDefinitionRefresh.observeAgentEvent(event)
+  registerAgentRunJobOwner(event)
+}
 
 const {
   sendMessage,
@@ -951,10 +956,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
-  onAgentEvent: (event) => {
-    agentNodeDefinitionRefresh.observeAgentEvent(event)
-    adoptAgentRunJob(event)
-  },
+  onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,

@@ -86,6 +86,7 @@ import {
   setCanvasSelection
 } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import {
   createMockLoadedWorkflow,
   createMockChangeTracker,
@@ -9627,6 +9628,43 @@ describe('AgentPanelRoot workflow binding', () => {
       ).toBeVisible()
     }
   )
+
+  it('registers an Agent run job only when its workflow resolves', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('run this workflow')
+    const registerJobOwner = vi.spyOn(useExecutionStore(), 'registerJobOwner')
+
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-run',
+      tool_name: 'run',
+      status: 'success',
+      duration_ms: 40,
+      job_id: 'job-unknown-workflow',
+      job_workflow_id: 'wf-unknown',
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    expect(registerJobOwner).not.toHaveBeenCalled()
+
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-run-known',
+      tool_name: 'run',
+      status: 'success',
+      duration_ms: 40,
+      job_id: 'job-known-workflow',
+      job_workflow_id: 'wf-42',
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    expect(registerJobOwner).toHaveBeenCalledExactlyOnceWith(
+      'job-known-workflow',
+      tab
+    )
+  })
 
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
     makeTab('wf-42')

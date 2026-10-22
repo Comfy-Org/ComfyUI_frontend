@@ -25,6 +25,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
@@ -394,12 +395,9 @@ export class MultiAutogrowRealignHarness {
       .toEqual([SENTINEL_PROMPT, SENTINEL_WIDTH, SENTINEL_HEIGHT])
   }
 
-  /** Opens a copy of the active workflow in a second tab: same node ids, different owner. */
   async duplicateWorkflowIntoNewTab(): Promise<void> {
     await expect(this.topbar.tabs).toHaveCount(1)
-    await this.page.evaluate(() =>
-      window.app!.extensionManager.command.execute('Comfy.DuplicateWorkflow')
-    )
+    await new CommandHelper(this.page).executeCommand('Comfy.DuplicateWorkflow')
     await expect(this.topbar.tabs).toHaveCount(2)
     await expect(
       this.topbar.getTab(1).and(this.topbar.getActiveTab())
