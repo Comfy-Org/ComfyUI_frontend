@@ -1027,6 +1027,12 @@ export class AgentConversationHarness {
     return this.host.projection().nodes.map((node) => node.pos)
   }
 
+  hostNode(nodeId: string) {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
+  }
+
   async reloadWithoutLocalWorkflow(): Promise<void> {
     await this.page.evaluate(() => {
       for (const storage of [localStorage, sessionStorage]) {
