@@ -18,8 +18,8 @@ import type {
 import {
   onBillingRefresh,
   provideCheckoutOperationReader
-} from '@/platform/workspace/billing/billingRefresh'
-import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
+} from '@/platform/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {

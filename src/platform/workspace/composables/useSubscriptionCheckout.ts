@@ -32,13 +32,13 @@ import type {
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
-import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { openHostedBillingTab } from '@/platform/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import {
   SettledOperationError,
   billingClientOf
-} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+} from '@/platform/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
@@ -64,7 +64,7 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 interface SelectedTeamCheckout {

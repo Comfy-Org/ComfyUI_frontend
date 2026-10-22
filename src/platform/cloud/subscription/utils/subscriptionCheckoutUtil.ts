@@ -29,7 +29,7 @@ import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
 import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 

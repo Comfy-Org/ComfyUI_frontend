@@ -11,8 +11,8 @@ import {
   pendingTopup,
   serverCode,
   settledTopup
-} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
+} from '@/platform/billing/sdk/billingSdkTestUtils'
+import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -46,7 +46,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 

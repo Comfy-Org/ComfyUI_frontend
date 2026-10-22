@@ -5,12 +5,12 @@ import { render } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'
 
-import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import type {
   SettledSubscribeResponse,
   SubscriptionRailOutcome
-} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+} from '@/platform/billing/sdk/subscriptionOperationView'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -243,10 +243,9 @@ const {
   }
 })
 
-vi.mock<unknown>(
-  import('@/platform/workspace/billing/openHostedBillingTab'),
-  () => ({ openHostedBillingTab: mockOpenHostedBillingTab })
-)
+vi.mock<unknown>(import('@/platform/billing/openHostedBillingTab'), () => ({
+  openHostedBillingTab: mockOpenHostedBillingTab
+}))
 
 /** The reads the checkout takes off the rail, as the store answers them. */
 interface SubscriptionRailStub {

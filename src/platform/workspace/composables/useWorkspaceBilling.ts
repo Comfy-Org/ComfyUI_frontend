@@ -33,22 +33,22 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
-import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { openHostedBillingTabOutcome } from '@/platform/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import type {
   SettledSubscribeResponse,
   SubscriptionRailOutcome
-} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import { SettledOperationError } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+} from '@/platform/billing/sdk/subscriptionOperationView'
+import { SettledOperationError } from '@/platform/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { subscribeInputFrom } from '@/platform/workspace/billing/subscribeInput'
+import { subscribeInputFrom } from '@/platform/billing/subscribeInput'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {

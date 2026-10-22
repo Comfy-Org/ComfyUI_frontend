@@ -1,10 +1,10 @@
-import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
-import { disarmHostedBillingReturnRefresh } from '@/platform/workspace/billing/openHostedBillingTab'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
+import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   afterEach,

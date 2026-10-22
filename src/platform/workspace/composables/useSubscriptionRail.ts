@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import type { SubscriptionRail } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import type { SubscriptionRail } from '@/platform/billing/sdk/subscriptionOperationView'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 /**

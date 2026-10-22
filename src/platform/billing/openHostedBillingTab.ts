@@ -10,13 +10,13 @@ import type { BillingIntent } from '@comfyorg/billing-contract'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   readCheckoutOperation,
   refreshBilling
-} from '@/platform/workspace/billing/billingRefresh'
-import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
+} from '@/platform/billing/billingRefresh'
+import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { createJourneyId } from '@/platform/workspace/utils/checkoutJourney'

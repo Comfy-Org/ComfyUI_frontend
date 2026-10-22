@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { projectBillingCapabilities } from '@/platform/workspace/billing/sdk/billingCapabilitiesView'
+import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 import {
   WorkspaceApiError,

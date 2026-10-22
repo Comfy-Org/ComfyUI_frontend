@@ -14,7 +14,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 

@@ -5,9 +5,9 @@ vi.mock(import('firebase/auth'))
 import {
   fakeBillingSdk,
   pendingSubscription
-} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+} from '@/platform/billing/sdk/billingSdkTestUtils'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -20,7 +20,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 

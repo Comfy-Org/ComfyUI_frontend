@@ -24,18 +24,18 @@ import type {
   BillingOperationPhase,
   BillingRecoveryAction
 } from '@/platform/workspace/api/workspaceApi'
-import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type {
   ProgressToast,
   ProgressToastKind
-} from '@/platform/workspace/billing/customerAttention'
+} from '@/platform/billing/customerAttention'
 import {
   isBlockedOnCustomerPhase,
   isParkedCheckout,
   legacyOperationActionHold,
   needsCustomerAttention,
   progressToastKind
-} from '@/platform/workspace/billing/customerAttention'
+} from '@/platform/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

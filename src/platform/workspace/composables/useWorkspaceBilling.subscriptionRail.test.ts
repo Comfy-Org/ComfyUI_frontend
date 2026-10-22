@@ -16,8 +16,8 @@ import {
   fakeBillingSdk,
   serverCode,
   settledOperation
-} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
+} from '@/platform/billing/sdk/billingSdkTestUtils'
+import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -63,7 +63,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 

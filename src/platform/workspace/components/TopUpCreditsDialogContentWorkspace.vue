@@ -443,12 +443,12 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import type { BillingTab } from '@/platform/workspace/billing/billingTab'
-import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
-import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
-import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
-import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
+import type { BillingTab } from '@/platform/billing/billingTab'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
+import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
+import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'

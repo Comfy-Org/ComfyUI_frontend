@@ -136,63 +136,63 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/billing/customerActionParity.test.ts",
+      "path": "src/platform/billing/customerActionParity.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/workspace/billing/customerAttention.test.ts",
+      "path": "src/platform/billing/customerAttention.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/workspace/billing/customerAttention.ts",
+      "path": "src/platform/billing/customerAttention.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
+      "path": "src/platform/billing/hostedBillingRoutes.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/billing/hostedBillingRoutes.ts",
+      "path": "src/platform/billing/hostedBillingRoutes.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/billing/openHostedBillingTab.handoff.test.ts",
+      "path": "src/platform/billing/openHostedBillingTab.handoff.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/openHostedBillingTab.test.ts",
+      "path": "src/platform/billing/openHostedBillingTab.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/openHostedBillingTab.ts",
+      "path": "src/platform/billing/openHostedBillingTab.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/refreshOnReturn.test.ts",
+      "path": "src/platform/billing/refreshOnReturn.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/refreshOnReturn.ts",
+      "path": "src/platform/billing/refreshOnReturn.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/sdk/**",
+      "path": "src/platform/billing/sdk/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/billing/sdk/billingSdkStore.test.ts",
+      "path": "src/platform/billing/sdk/billingSdkStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/sdk/billingSdkStore.ts",
+      "path": "src/platform/billing/sdk/billingSdkStore.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/sdk/billingSdkTelemetryOwnership.test.ts",
+      "path": "src/platform/billing/sdk/billingSdkTelemetryOwnership.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/billing/subscribeInput.ts",
+      "path": "src/platform/billing/subscribeInput.ts",
       "role": "infrastructure"
     },
     {
@@ -562,12 +562,12 @@
     {
       "name": "Billing SDK operations and top-ups settle, poll, and refresh balances",
       "checks": [
-        "src/platform/workspace/billing/sdk/billingSdkStore.test.ts",
-        "src/platform/workspace/billing/sdk/createBillingSdk.test.ts",
-        "src/platform/workspace/billing/sdk/webSessionBillingSession.test.ts",
-        "src/platform/workspace/billing/sdk/topupOperationView.test.ts",
-        "src/platform/workspace/billing/sdk/subscriptionOperationView.test.ts",
-        "src/platform/workspace/billing/sdk/operationRecordView.test.ts",
+        "src/platform/billing/sdk/billingSdkStore.test.ts",
+        "src/platform/billing/sdk/createBillingSdk.test.ts",
+        "src/platform/billing/sdk/webSessionBillingSession.test.ts",
+        "src/platform/billing/sdk/topupOperationView.test.ts",
+        "src/platform/billing/sdk/subscriptionOperationView.test.ts",
+        "src/platform/billing/sdk/operationRecordView.test.ts",
         "src/platform/workspace/stores/billingOperationStore.test.ts",
         "src/platform/workspace/composables/useTopupOperation.test.ts",
         "src/composables/billing/usePendingTopup.test.ts",
@@ -583,11 +583,11 @@
         "src/platform/workspace/composables/useBillingBanner.test.ts",
         "src/platform/workspace/composables/deriveBillingBanner.test.ts",
         "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
-        "src/platform/workspace/billing/customerAttention.test.ts",
-        "src/platform/workspace/billing/customerActionParity.test.ts",
-        "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
-        "src/platform/workspace/billing/openHostedBillingTab.test.ts",
-        "src/platform/workspace/billing/refreshOnReturn.test.ts",
+        "src/platform/billing/customerAttention.test.ts",
+        "src/platform/billing/customerActionParity.test.ts",
+        "src/platform/billing/hostedBillingRoutes.test.ts",
+        "src/platform/billing/openHostedBillingTab.test.ts",
+        "src/platform/billing/refreshOnReturn.test.ts",
         "src/composables/billing/useBillingDialogs.topUpCredits.test.ts",
         "src/composables/billing/useBillingDialogs.subscriptionRequired.test.ts",
         "src/composables/billing/useNextInvoice.test.ts",

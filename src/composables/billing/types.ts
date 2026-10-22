@@ -5,7 +5,7 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,

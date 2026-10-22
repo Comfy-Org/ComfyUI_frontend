@@ -1,4 +1,4 @@
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 /**
  * The app's single billing SDK instance and the top-up effects the poller
  * performs today, moved onto the lifecycle's state: the progress toast and —
@@ -45,16 +45,16 @@ import type {
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type {
   ProgressToast,
   ProgressToastKind
-} from '@/platform/workspace/billing/customerAttention'
+} from '@/platform/billing/customerAttention'
 import {
   isParkedCheckout,
   needsCustomerAttention,
   progressToastKind
-} from '@/platform/workspace/billing/customerAttention'
+} from '@/platform/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { provideBillingSdkStore } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'

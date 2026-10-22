@@ -531,9 +531,9 @@
           "src/composables/billing/billingRail.test.ts",
           "src/composables/billing/billingRail.ts",
           "src/composables/billing/types.ts",
-          "src/platform/workspace/billing/customerActionParity.test.ts",
-          "src/platform/workspace/billing/customerAttention.test.ts",
-          "src/platform/workspace/billing/customerAttention.ts",
+          "src/platform/billing/customerActionParity.test.ts",
+          "src/platform/billing/customerAttention.test.ts",
+          "src/platform/billing/customerAttention.ts",
           "src/platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
           "src/platform/workspace/utils/checkoutJourney.test.ts",
           "src/platform/workspace/utils/checkoutJourney.ts"
@@ -561,14 +561,14 @@
           "src/composables/billing/useNextInvoice.ts",
           "src/composables/billing/usePendingTopup.test.ts",
           "src/composables/billing/usePendingTopup.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.handoff.test.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.test.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.ts",
-          "src/platform/workspace/billing/refreshOnReturn.test.ts",
-          "src/platform/workspace/billing/refreshOnReturn.ts",
-          "src/platform/workspace/billing/sdk/billingSdkStore.test.ts",
-          "src/platform/workspace/billing/sdk/billingSdkStore.ts",
-          "src/platform/workspace/billing/sdk/billingSdkTelemetryOwnership.test.ts",
+          "src/platform/billing/openHostedBillingTab.handoff.test.ts",
+          "src/platform/billing/openHostedBillingTab.test.ts",
+          "src/platform/billing/openHostedBillingTab.ts",
+          "src/platform/billing/refreshOnReturn.test.ts",
+          "src/platform/billing/refreshOnReturn.ts",
+          "src/platform/billing/sdk/billingSdkStore.test.ts",
+          "src/platform/billing/sdk/billingSdkStore.ts",
+          "src/platform/billing/sdk/billingSdkTelemetryOwnership.test.ts",
           "src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts",
           "src/platform/workspace/composables/billingOperationTestUtils.ts",
           "src/platform/workspace/composables/deriveBillingBanner.test.ts",
@@ -609,9 +609,9 @@
           "src/config/billingWeb.ts",
           "src/platform/workspace/api/capabilityRevision.test.ts",
           "src/platform/workspace/api/capabilityRevision.ts",
-          "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
-          "src/platform/workspace/billing/hostedBillingRoutes.ts",
-          "src/platform/workspace/billing/subscribeInput.ts",
+          "src/platform/billing/hostedBillingRoutes.test.ts",
+          "src/platform/billing/hostedBillingRoutes.ts",
+          "src/platform/billing/subscribeInput.ts",
           "src/services/customerEventsService.test.ts",
           "src/services/customerEventsService.ts"
         ]
@@ -3587,7 +3587,7 @@
       {
         "name": "billing/infrastructure/outer-1",
         "patterns": [
-          "src/platform/workspace/billing/sdk/**",
+          "src/platform/billing/sdk/**",
           "src/platform/workspace/utils/**",
           "src/services/__mocks__/**"
         ]

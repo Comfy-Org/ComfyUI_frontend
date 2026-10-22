@@ -7,7 +7,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useTelemetry } from '@/platform/telemetry'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
-import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'

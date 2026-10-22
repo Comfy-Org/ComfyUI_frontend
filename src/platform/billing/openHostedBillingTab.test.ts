@@ -9,10 +9,9 @@ import {
 } from 'vitest'
 
 const mockHostedBillingRoute = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/workspace/billing/hostedBillingRoutes'),
-  () => ({ hostedBillingRoute: mockHostedBillingRoute })
-)
+vi.mock<unknown>(import('@/platform/billing/hostedBillingRoutes'), () => ({
+  hostedBillingRoute: mockHostedBillingRoute
+}))
 
 const flagState = vi.hoisted(() => ({
   hostedBillingDestination: 'billing_web' as const
@@ -35,15 +34,14 @@ const mockStop = vi.hoisted(() => vi.fn())
 const mockRegisterRefreshOnReturn = vi.hoisted(() =>
   vi.fn((_refresh: () => Promise<unknown>) => mockStop)
 )
-vi.mock<unknown>(
-  import('@/platform/workspace/billing/refreshOnReturn'),
-  () => ({ registerRefreshOnReturn: mockRegisterRefreshOnReturn })
-)
+vi.mock<unknown>(import('@/platform/billing/refreshOnReturn'), () => ({
+  registerRefreshOnReturn: mockRegisterRefreshOnReturn
+}))
 
 import {
   onBillingRefresh,
   provideCheckoutOperationReader
-} from '@/platform/workspace/billing/billingRefresh'
+} from '@/platform/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {

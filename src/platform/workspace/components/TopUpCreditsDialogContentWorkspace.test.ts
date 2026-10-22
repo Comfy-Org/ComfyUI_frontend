@@ -10,8 +10,8 @@ import {
   failedTopup,
   fakeBillingSdk,
   settledTopup
-} from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
+} from '@/platform/billing/sdk/billingSdkTestUtils'
+import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -77,7 +77,7 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 

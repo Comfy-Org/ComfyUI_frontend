@@ -34,7 +34,7 @@ import {
 import {
   readCheckoutOperation,
   refreshBilling
-} from '@/platform/workspace/billing/billingRefresh'
+} from '@/platform/billing/billingRefresh'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 

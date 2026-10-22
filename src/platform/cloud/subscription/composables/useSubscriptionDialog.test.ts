@@ -1,8 +1,8 @@
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
-import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
+import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -73,7 +73,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 // The store is real; only the composition root it builds is faked, so the
 // testing Pinia still owns the store and its actions.
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({

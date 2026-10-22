@@ -14,17 +14,17 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import {
   SettledOperationError,
   billingClientOf
-} from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+} from '@/platform/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 
 export interface DowngradePreview {
   preview: PreviewSubscribeResponse

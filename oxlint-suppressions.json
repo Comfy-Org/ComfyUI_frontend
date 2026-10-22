@@ -680,6 +680,11 @@
       "count": 1
     }
   },
+  "src/platform/billing/customerAttention.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
   "src/platform/cloud/oauth/oauthApi.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -898,11 +903,6 @@
   "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
     "comfy/no-new-error-throw": {
       "count": 4
-    }
-  },
-  "src/platform/workspace/billing/customerAttention.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
     }
   },
   "src/platform/workspace/components/PricingTableWorkspace.test.ts": {
