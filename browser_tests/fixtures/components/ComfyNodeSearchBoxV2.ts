@@ -25,7 +25,7 @@ export class ComfyNodeSearchBoxV2 {
     const page = comfyPage.page
     this.dialog = page.getByRole('search')
     this.input = this.dialog.getByRole('combobox')
-    const filterPopover = page.locator('[data-slot="popover-content"]')
+    const filterPopover = page.getByTestId(searchBoxV2.typeFilterPopover)
     this.filterSearch = filterPopover.getByRole('textbox', {
       name: 'Search'
     })

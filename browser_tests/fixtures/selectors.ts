@@ -347,6 +347,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

@@ -5,6 +5,7 @@
     </PopoverTrigger>
     <PopoverContent
       class="w-64 rounded-lg px-4 py-1"
+      data-testid="type-filter-popover"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent
