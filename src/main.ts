@@ -28,6 +28,8 @@ import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
+import { api } from '@/scripts/api'
+import { attachLegacyUI } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -37,6 +39,8 @@ import { i18n } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+api.captureLaunchContext()
 
 if (isCloud) {
   stripPaymentReturnParams()
@@ -149,6 +153,9 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
+
+const detachLegacyUI = attachLegacyUI()
+import.meta.hot?.dispose(detachLegacyUI)
 
 app.mount('#vue-app')
 bootstrapTracer.milestone('app-mounted')

@@ -357,7 +357,7 @@ export class ComfyApp implements IComfyApp {
 
   vueAppReady: boolean
   api: ComfyApi
-  ui: ComfyUI
+  ui!: ComfyUI
   extensionManager!: ExtensionManager
   private readonly nodeOutputsData: Partial<
     Record<string, NodeExecutionOutput>
@@ -441,12 +441,12 @@ export class ComfyApp implements IComfyApp {
     return this.configuringGraphLevel > 0
   }
   ctx!: CanvasRenderingContext2D
-  bodyTop: HTMLElement
-  bodyLeft: HTMLElement
-  bodyRight: HTMLElement
-  bodyBottom: HTMLElement
-  canvasContainer: HTMLElement
-  menu: ComfyAppMenu
+  bodyTop!: HTMLElement
+  bodyLeft!: HTMLElement
+  bodyRight!: HTMLElement
+  bodyBottom!: HTMLElement
+  canvasContainer!: HTMLElement
+  menu!: ComfyAppMenu
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
@@ -548,35 +548,8 @@ export class ComfyApp implements IComfyApp {
 
   constructor() {
     this.vueAppReady = false
-    this.ui = new ComfyUI(this, {
-      resetView: () => useLitegraphService().resetView(),
-      restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
-      trackRunButton: (intent) =>
-        useRunButtonTelemetry().trackRunButton(intent),
-      enterFocusMode: () => {
-        useWorkspaceStore().focusMode = true
-      }
-    })
     this.api = api
-    // Dummy placeholder elements before GraphCanvas is mounted.
-    this.bodyTop = $el('div.comfyui-body-top')
-    this.bodyLeft = $el('div.comfyui-body-left')
-    this.bodyRight = $el('div.comfyui-body-right')
-    this.bodyBottom = $el('div.comfyui-body-bottom')
-    this.canvasContainer = $el('div.graph-canvas-container')
-
-    this.menu = new ComfyAppMenu()
-
-    /**
-     * Stores the execution output data for each node
-     * @type {Record<string, any>}
-     */
     this.nodeOutputs = {}
-
-    /**
-     * Stores the preview image data for each node
-     * @type {Record<string, Image>}
-     */
     this.nodePreviewImages = {}
   }
 
@@ -2781,3 +2754,30 @@ export class ComfyApp implements IComfyApp {
 
 export const app = new ComfyApp()
 registerApp(app)
+
+/**
+ * Builds the legacy menu, dialogs, and placeholder body elements on an app.
+ * Returns a function that removes them and their listeners.
+ */
+export function attachLegacyUI(target: ComfyApp = app): () => void {
+  target.ui = new ComfyUI(target, {
+    resetView: () => useLitegraphService().resetView(),
+    restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
+    trackRunButton: (intent) => useRunButtonTelemetry().trackRunButton(intent),
+    enterFocusMode: () => {
+      useWorkspaceStore().focusMode = true
+    }
+  })
+  target.bodyTop = $el('div.comfyui-body-top')
+  target.bodyLeft = $el('div.comfyui-body-left')
+  target.bodyRight = $el('div.comfyui-body-right')
+  target.bodyBottom = $el('div.comfyui-body-bottom')
+  target.canvasContainer = $el('div.graph-canvas-container')
+  target.menu = new ComfyAppMenu()
+
+  const { ui, menu } = target
+  return () => {
+    ui.dispose()
+    menu.element.remove()
+  }
+}
