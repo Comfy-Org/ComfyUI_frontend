@@ -4,6 +4,8 @@ import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -138,4 +140,18 @@ describe('useBillingBanner', () => {
       expect(kind.value).toBe(expected)
     }
   )
+
+  it('keeps the out-of-credits banner when run is denied for a past-due payment and access is locked', async () => {
+    const billing = setupBilling()
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    const { kind } = useBillingBanner()
+
+    billing.tier.value = 'PRO'
+    billing.subscription.value = { hasFunds: false }
+    billing.canAccessSubscriptionFeatures.value = false
+    await nextTick()
+
+    expect(kind.value).toBe('outOfCredits')
+  })
 })
