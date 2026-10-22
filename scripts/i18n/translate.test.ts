@@ -53,24 +53,39 @@ describe('translateLocaleItems', () => {
         )
       )
     }
-    const translations = await translateLocaleItems(
+    const { translated } = await translateLocaleItems(
       locale,
       items,
       flaky,
       translationConfig
     )
-    expect(translations.get('1')).toBe('Bonjour {name}')
+    expect(translated.get('1')).toBe('Bonjour {name}')
     expect(calls).toBe(2)
   })
 
-  it('fails after exhausting rounds when tokens stay corrupted', async () => {
-    const corrupting: TranslateBatch = (_batchLocale, batch) =>
+  it('keeps passing translations and reports items still corrupted after the last round', async () => {
+    const corruptingGreeting: TranslateBatch = (_batchLocale, batch) =>
       Promise.resolve(
-        Object.fromEntries(batch.map((item) => [item.id, 'Bonjour name']))
+        Object.fromEntries(
+          batch.map((item) => [
+            item.id,
+            item.id === '1' ? 'Bonjour name' : 'Titre'
+          ])
+        )
       )
-    await expect(
-      translateLocaleItems(locale, items, corrupting, translationConfig)
-    ).rejects.toThrow(/failed for 1 strings/)
+    const { translated, untranslated } = await translateLocaleItems(
+      locale,
+      [
+        ...items,
+        { id: '2', context: 'main.json: title', source: 'Title', preserve: [] }
+      ],
+      corruptingGreeting,
+      translationConfig
+    )
+    expect(translated).toEqual(new Map([['2', 'Titre']]))
+    expect(untranslated.map(({ context }) => context)).toEqual([
+      'main.json: greeting'
+    ])
   })
 
   it('retries empty translations', async () => {
@@ -83,13 +98,13 @@ describe('translateLocaleItems', () => {
         )
       )
     }
-    const translations = await translateLocaleItems(
+    const { translated } = await translateLocaleItems(
       locale,
       items,
       blankFirst,
       translationConfig
     )
-    expect(translations.get('1')).toBe('Bonjour {name}')
+    expect(translated.get('1')).toBe('Bonjour {name}')
     expect(calls).toBe(2)
   })
 
@@ -111,11 +126,11 @@ describe('translateLocaleItems', () => {
       inFlight--
       return Object.fromEntries(batch.map((item) => [item.id, `t${item.id}`]))
     }
-    const translations = await translateLocaleItems(locale, sixItems, gated, {
+    const { translated } = await translateLocaleItems(locale, sixItems, gated, {
       ...translationConfig,
       requestConcurrency: 2
     })
-    expect(translations.size).toBe(6)
+    expect(translated.size).toBe(6)
     expect(maxInFlight).toBe(2)
   })
 
@@ -134,13 +149,13 @@ describe('translateLocaleItems', () => {
     let call = 0
     const crossTalking: TranslateBatch = () =>
       Promise.resolve(responses[call++] ?? {})
-    const translations = await translateLocaleItems(
+    const { translated } = await translateLocaleItems(
       locale,
       threeItems,
       crossTalking,
       translationConfig
     )
-    expect(translations.get('3')).toBe('ok3')
+    expect(translated.get('3')).toBe('ok3')
   })
 
   it('sends a retry note naming the violation on later rounds', async () => {
@@ -193,7 +208,7 @@ describe('translateLocaleItems', () => {
         )
       }
 
-      const translations = await translateLocaleItems(
+      const { translated } = await translateLocaleItems(
         locale,
         [docsLink],
         correctsOnRetry,
@@ -206,7 +221,7 @@ describe('translateLocaleItems', () => {
         }
       )
 
-      expect(translations).toEqual(new Map([['1', accepted]]))
+      expect(translated).toEqual(new Map([['1', accepted]]))
       expect(requests).toEqual([[docsLink], [{ ...docsLink, retryNote }]])
     }
   )

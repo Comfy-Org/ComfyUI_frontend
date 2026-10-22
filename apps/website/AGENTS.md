@@ -36,8 +36,11 @@ file wins. These root rules do not apply here:
   vue-i18n message syntax), not in the app's root `src/locales/`. Read it with
   the request-bound `Astro.locals.t` in Astro or `translationsFor(locale).t` in
   Vue and TypeScript; never fill a placeholder with `.replace`. Write a literal
-  `@`, `|`, `{` or `}` as `{'@'}`, `{'|'}`, `{'{'}` or `{'}'}`. Add `en` and
-  `zh-CN` values for every new string. See the README's Localization section.
+  `@`, `|`, `{` or `}` as `{'@'}`, `{'|'}`, `{'{'}` or `{'}'}`. Write new and
+  changed copy in `en/main.json` only. Do not edit another locale's file except
+  for the excluded legal namespaces in `src/config/translation.ts`: a workflow
+  translates eligible English changes on main into a PR, and missing strings
+  render in English until it merges. See the README's Localization section.
 - The dev server is `pnpm --filter @comfyorg/website dev` on
   `http://localhost:4321`, not `pnpm dev` on 5173. The root
   `/verify-visually` command points at the wrong server for this site.

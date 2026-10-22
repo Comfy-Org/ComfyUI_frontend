@@ -391,8 +391,11 @@ export async function translateLocaleItems(
     | 'maxTranslationRounds'
     | 'strictProtectedTokens'
   >
-): Promise<Map<string, string>> {
-  const results = new Map<string, string>()
+): Promise<{
+  translated: Map<string, string>
+  untranslated: TranslationItem[]
+}> {
+  const translated = new Map<string, string>()
   let remaining = [...items]
 
   for (
@@ -414,11 +417,11 @@ export async function translateLocaleItems(
         return Object.entries(response).filter(([id]) => requested.has(id))
       }
     )
-    const translated = new Map(responses.flat())
+    const responded = new Map(responses.flat())
 
     const failed: TranslationItem[] = []
     for (const item of remaining) {
-      const value = translated.get(item.id)
+      const value = responded.get(item.id)
       const errors =
         value === undefined
           ? ['no translation returned']
@@ -428,7 +431,7 @@ export async function translateLocaleItems(
                 strict: config.strictProtectedTokens
               })
       if (value !== undefined && errors.length === 0) {
-        results.set(item.id, value)
+        translated.set(item.id, value)
       } else {
         failed.push({
           ...item,
@@ -439,14 +442,5 @@ export async function translateLocaleItems(
     remaining = failed
   }
 
-  if (remaining.length > 0) {
-    const details = remaining
-      .map((item) => `  ${item.context}`)
-      .slice(0, 20)
-      .join('\n')
-    throw new Error(
-      `Translation into ${locale.code} failed for ${remaining.length} strings after ${config.maxTranslationRounds} attempts:\n${details}`
-    )
-  }
-  return results
+  return { translated, untranslated: remaining }
 }
