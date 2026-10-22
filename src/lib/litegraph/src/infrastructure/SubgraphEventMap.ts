@@ -1,7 +1,10 @@
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+import type {
+  Subgraph,
+  SubgraphInput,
+  SubgraphNode,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type { LGraphEventMap } from './LGraphEventMap'

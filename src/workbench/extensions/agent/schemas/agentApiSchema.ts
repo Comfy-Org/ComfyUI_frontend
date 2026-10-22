@@ -2,12 +2,17 @@ import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentAskFrame,
+  zAgentAskKind,
   zAgentAskResolvedFrame,
+  zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
+  zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
+  zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowResponse,
@@ -15,6 +20,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type {
   AgentAnswerAccepted,
+  AgentAskKind,
   AgentCancelAccepted,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
@@ -46,6 +52,18 @@ export const zAgentTurnAccepted = zGeneratedAgentTurnAccepted.extend({
 export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
   workflow_id?: string
 }
+
+export const RENDERED_ASK_KINDS = [
+  'run_approval',
+  'ask_user',
+  'delete_approval'
+] as const satisfies readonly AgentAskKind[]
+export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
+
+const zTolerantPendingAsk = zAgentPendingAskBase.extend({
+  kind: zAgentAskKind.or(z.literal('unknown')).catch('unknown'),
+  context: z.unknown().optional()
+})
 
 export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
   ({ mode, credit_limit }, ctx) => {
@@ -88,6 +106,11 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
+export const zPersistedThinkingEntry = z.object({
+  text: z.string(),
+  tool_call_id: z.string().nullish()
+})
+
 const zAgentMessageContent = zGeneratedAgentMessage.shape.content
   .unwrap()
   .extend({
@@ -98,7 +121,8 @@ const zAgentMessageContent = zGeneratedAgentMessage.shape.content
   })
 
 export const zAgentMessage = zGeneratedAgentMessage.extend({
-  content: zAgentMessageContent.optional()
+  content: zAgentMessageContent.optional(),
+  pending_ask: zTolerantPendingAsk.optional()
 })
 
 export const zAgentMessages = z.array(zAgentMessage)
@@ -116,6 +140,12 @@ export type CloudWorkflowEntry = z.infer<
 >['data'][number]
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
+
+export const zAttachmentRejection = zAgentAttachmentRejected.pick({
+  rejected: true,
+  rejected_count: true,
+  type: true
+})
 
 /**
  * The 403 body the agent service returns when it will not serve the turn's
@@ -155,18 +185,15 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
-const zAgentToolCallData = z
-  .object({
-    tool_call_id: z.string(),
-    tool_name: z.string(),
-    status: z.enum(['running', 'success', 'error']),
-    skill: zSkillName,
-    args: z.never().optional(),
-    duration_ms: z.number().optional(),
-    message_id: z.string(),
-    thread_id: z.string()
-  })
-  .passthrough()
+const zAgentToolCallData = zGeneratedAgentToolCallData.extend({
+  skill: zSkillName,
+  args: z.never().optional(),
+  workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
+  op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
+  doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
+  doc_lineage_seq:
+    zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
+})
 
 const zAgentMessageDeltaData = z
   .object({
@@ -249,6 +276,10 @@ const zAgentActiveTabEvent = z.object({
   data: zAgentActiveTabData
 })
 
+const zAgentAskEvent = zAgentAskFrame.extend({
+  data: zTolerantPendingAsk.extend({ thread_id: z.string() })
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -256,12 +287,12 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
-  zAgentAskFrame,
+  zAgentAskEvent,
   zAgentAskResolvedFrame
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
-export const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
+const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
   zAgentWsEvent.options.flatMap(({ shape: { type } }) =>
     'value' in type ? [type.value] : type.options
   )
@@ -275,4 +306,14 @@ export function parseAgentWsEvent(
   value: unknown
 ): z.ZodSafeParseResult<AgentWsEvent> {
   return zAgentWsEvent.safeParse(pendingServerFact('BE-20403', value))
+}
+
+export const zAgentIdentity = zGeneratedAgentIdentity.extend({
+  user_id: z.string().min(1)
+})
+
+/** The server's `agent` feature, pushed again on every change. */
+export interface AgentServerFeature {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
 }

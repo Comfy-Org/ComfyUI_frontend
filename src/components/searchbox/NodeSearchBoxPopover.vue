@@ -2,9 +2,8 @@
   <div>
     <Dialog v-model:open="visible">
       <DialogPortal>
-        <DialogOverlay v-reka-z-index />
+        <DialogOverlay />
         <DialogContent
-          v-reka-z-index
           :class="
             cn(
               'border-0 bg-transparent p-0 shadow-none duration-100',
@@ -67,7 +66,6 @@ import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
@@ -82,7 +80,7 @@ import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'

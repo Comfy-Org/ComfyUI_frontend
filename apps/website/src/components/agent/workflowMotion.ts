@@ -27,7 +27,7 @@ type MotionStep =
   | { type: 'connect'; from: string; to: string }
   | { type: 'connect-group'; from: string; to: string[] }
   | { type: 'images'; nodes: string[]; delay?: number }
-  | { type: 'select'; node: string }
+  | { type: 'select'; node: string; returnToRest?: boolean }
   | { type: 'pause'; duration: number }
 export type MotionWorkflow = {
   id: string
@@ -58,7 +58,6 @@ const portY = 19.2
 // Preserve the requested connection speed from the original animation.
 const dragDuration = 1.35 / 1.3 / 1.15
 const entranceDuration = 0.25
-const hiddenNode = 'opacity:1;transform:translate(0,0) scale(0);'
 const shownNode = 'opacity:1;transform:translate(0,0) scale(1);'
 
 function edgeCurves(
@@ -122,7 +121,13 @@ function checkedDuration(duration: number, minimum = 0) {
   return duration
 }
 
-export function createWorkflowMotion(workflow: MotionWorkflow) {
+export function createWorkflowMotion(
+  workflow: MotionWorkflow,
+  { fadeNodes = false }: { fadeNodes?: boolean } = {}
+) {
+  const hiddenNode = fadeNodes
+    ? 'opacity:0;transform:translate(0,0) scale(1);'
+    : 'opacity:1;transform:translate(0,0) scale(0);'
   const { width, holdDuration, agentRest, userRest } = workflow
   const connectionSpeed = 2
   if (
@@ -348,8 +353,10 @@ export function createWorkflowMotion(workflow: MotionWorkflow) {
       click(cursors.user, time)
       state.selectionAt = time + 0.07
       time += 0.2
-      moveCursor(cursors.user, cursors.user.rest, time, 0.25)
-      time += 0.25
+      if (step.returnToRest !== false) {
+        moveCursor(cursors.user, cursors.user.rest, time, 0.25)
+        time += 0.25
+      }
     }
 
     for (const step of workflow.steps) {

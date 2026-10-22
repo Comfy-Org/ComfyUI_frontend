@@ -1,6 +1,5 @@
 import { getActivePinia } from 'pinia'
 import { render } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -33,7 +32,7 @@ describe('GridSkeleton', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, getActivePinia()!, i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           PackCardSkeleton: {
             template: '<div data-testid="pack-card-skeleton" />'

@@ -6,8 +6,8 @@
  * Every rule fails toward hosted, which works on every rail and needs
  * nothing from the host but a way to open a URL.
  */
-import type { BillingPresentation } from './operationState.js'
-import type { BillingStatusData } from './status.js'
+import type { BillingPresentation } from './operationState'
+import type { BillingStatusData } from './status'
 
 export interface PresentationRoutingInput {
   /** The host can drive an in-page challenge: its provider adapter and key are present. */

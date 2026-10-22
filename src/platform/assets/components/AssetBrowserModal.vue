@@ -29,9 +29,10 @@
       >
         <SearchInput
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
           :autofocus="true"
           size="lg"
-          :aria-label="$t('assetBrowser.searchModels')"
+          :accessible-label="$t('assetBrowser.searchModels')"
           :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-lg flex-1"
         />
@@ -78,7 +79,7 @@
       <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
       <div
         v-else
-        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted"
+        class="flex h-full items-center justify-center p-6 text-center wrap-break-word text-muted-foreground"
       >
         {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
       </div>

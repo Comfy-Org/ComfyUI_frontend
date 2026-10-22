@@ -7,7 +7,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 
 type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
 

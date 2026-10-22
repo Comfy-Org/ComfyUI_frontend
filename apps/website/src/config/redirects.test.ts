@@ -77,6 +77,21 @@ describe('vercel.json redirects', () => {
 })
 
 describe('the redirect list', () => {
+  it.for([
+    ['/vfx', '/solutions/vfx/'],
+    ['/zh-CN/vfx', '/zh-CN/solutions/vfx/']
+  ])(
+    'permanently redirects both slash forms of %s to %s',
+    ([source, destination]) => {
+      expect(toVercelRedirects(siteRedirects)).toEqual(
+        expect.arrayContaining([
+          { source, destination, permanent: true },
+          { source: `${source}/`, destination, permanent: true }
+        ])
+      )
+    }
+  )
+
   const sources = siteRedirects.map(({ source }) => source)
 
   it('names each source once', () => {
@@ -102,7 +117,12 @@ describe('the redirect list', () => {
       sources.filter(
         (source) =>
           !/^(\/[A-Za-z0-9._-]+)+$/.test(source) &&
-          !/^\/p\/supported-models\/:slug\([a-z0-9|-]+\)(\.md)?$/.test(source)
+          !/^\/p\/supported-models\/:slug\([a-z0-9|-]+\)(\.md)?$/.test(
+            source
+          ) &&
+          !/^(\/zh-CN)?\/cloud\/supported-nodes\/(:pack\.md|:path\+)$/.test(
+            source
+          )
       )
     ).toEqual([])
   })
@@ -157,6 +177,8 @@ describe('generated Vercel rules', () => {
       destination: '/hub/models/local/t5xxl-fp16/'
     },
     { source: '/p/supported-models', destination: '/hub/models/local/' },
+    { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+    { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -184,6 +206,13 @@ describe('generated Vercel rules', () => {
           permanent: true
         })
       }
+    }
+  )
+
+  it.for(['/nvidia-vfx/', '/zh-CN/nvidia-vfx/'])(
+    'sends the old NVIDIA address to %s, a built page',
+    (destination) => {
+      expect(pageExistsAt(destination)).toBe(true)
     }
   )
 
@@ -266,6 +295,67 @@ describe('the retired gallery and launches pages', () => {
   })
 })
 
+describe('the retired supported-nodes pages', () => {
+  const vercelRedirects = toVercelRedirects(siteRedirects)
+  const find = (source: string) =>
+    vercelRedirects.find((redirect) => redirect.source === source)
+
+  const article =
+    'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
+
+  it.for([
+    '/cloud/supported-nodes',
+    '/cloud/supported-nodes/',
+    '/cloud/supported-nodes/:path+',
+    '/zh-CN/cloud/supported-nodes',
+    '/zh-CN/cloud/supported-nodes/',
+    '/zh-CN/cloud/supported-nodes/:path+'
+  ])('sends %s to the Custom nodes on Cloud article with a 308', (source) => {
+    expect(find(source)).toEqual({
+      source,
+      destination: article,
+      permanent: true
+    })
+  })
+
+  it.for([
+    ['/cloud/supported-nodes.md', '/cloud.md'],
+    ['/cloud/supported-nodes/llms.txt', '/cloud.md'],
+    ['/cloud/supported-nodes/:pack.md', '/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes.md', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/llms.txt', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/:pack.md', '/zh-CN/cloud.md']
+  ])(
+    'keeps Markdown readers on the Cloud twin: %s to %s',
+    ([source, destination]) => {
+      expect(find(source)).toEqual({ source, destination, permanent: true })
+    }
+  )
+
+  it('sends the pack Markdown twins to the Cloud twin before the catch-all', () => {
+    const order = vercelRedirects.map(({ source }) => source)
+    expect(order.indexOf('/cloud/supported-nodes/:pack.md')).toBeLessThan(
+      order.indexOf('/cloud/supported-nodes/:path+')
+    )
+    expect(order.indexOf('/zh-CN/cloud/supported-nodes/:pack.md')).toBeLessThan(
+      order.indexOf('/zh-CN/cloud/supported-nodes/:path+')
+    )
+  })
+
+  it('points the Markdown twins at pages that exist', () => {
+    expect(pageExistsAt('/cloud/')).toBe(true)
+    expect(pageExistsAt('/zh-CN/cloud/')).toBe(true)
+  })
+
+  it('ships no Astro stub under the retired address', () => {
+    expect(
+      Object.keys(astroRedirects).filter((source) =>
+        source.includes('/cloud/supported-nodes')
+      )
+    ).toEqual([])
+  })
+})
+
 describe('link-stale sources', () => {
   it('leave out a bare source whose slash form is a page', () => {
     expect(linkStaleSources).not.toContain('/about')
@@ -283,7 +373,12 @@ describe('link-stale sources', () => {
 describe('Astro redirects', () => {
   it('cover every internal row whose slash form redirects, except retired addresses', () => {
     const isRetiredAddress = (source: string) =>
-      ['/models', '/p/supported-models'].some(
+      [
+        '/models',
+        '/p/supported-models',
+        '/cloud/supported-nodes',
+        '/zh-CN/cloud/supported-nodes'
+      ].some(
         (root) =>
           source === root ||
           source.startsWith(`${root}/`) ||

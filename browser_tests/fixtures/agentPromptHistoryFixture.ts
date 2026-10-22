@@ -46,15 +46,14 @@ export const promptHistoryTest = base.extend<{
   agentPanel: async ({ page }, use) => {
     await use(new AgentPanel(page))
   },
-  promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
-    // Workflow selection boots the app before these agent-specific routes.
+  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const threads: AgentThreadListResponse = {
         threads: threadId
           ? [
@@ -137,7 +136,7 @@ export const promptHistoryTest = base.extend<{
           type: 'agent_message_done',
           data: { message_id: messageId, thread_id: threadId }
         }
-        const socket = await getWebSocket()
+        const socket = await getAgentSocket()
         socket.send(JSON.stringify(done))
       }
     )

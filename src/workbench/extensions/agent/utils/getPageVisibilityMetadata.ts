@@ -1,6 +1,6 @@
 import type { PageVisibilityMetadata } from '@/platform/telemetry/types'
 
-import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export function getPageVisibilityMetadata(
   visibility_state: PageVisibilityMetadata['visibility_state']

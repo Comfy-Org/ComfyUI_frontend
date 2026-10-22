@@ -15,6 +15,11 @@ const { locale = 'en', reviews } = defineProps<{
 }>()
 const { t } = translationsFor(locale)
 
+const quoteSizeClass =
+  reviews.quoteSize === 'compact'
+    ? 'text-lg/relaxed lg:text-xl/relaxed'
+    : 'text-xl/relaxed lg:text-2xl/relaxed'
+
 const quotes = creatorReviews.map((review) => ({
   id: review.id,
   body: review.body[locale] || review.body.en,
@@ -44,6 +49,7 @@ const quotes = creatorReviews.map((review) => ({
 
     <ScrollCarousel
       :locale
+      :autoplay-ms="reviews.autoplayMs"
       gap-class="gap-8"
       class="mt-12 max-w-none p-0 lg:mt-16 lg:p-0"
     >
@@ -52,9 +58,7 @@ const quotes = creatorReviews.map((review) => ({
         :key="quote.id"
         class="flex w-full shrink-0 snap-start flex-col justify-between rounded-5xl bg-transparency-white-t4 p-8 lg:w-2/3 lg:p-12"
       >
-        <p
-          class="text-xl/relaxed font-light text-primary-comfy-canvas lg:text-2xl/relaxed"
-        >
+        <p :class="cn('font-light text-primary-comfy-canvas', quoteSizeClass)">
           "{{ quote.body }}"
         </p>
 

@@ -5,27 +5,32 @@ import { ref } from 'vue'
 interface UsePaletteSwatchRowOptions {
   modelValue: Ref<string[]>
   container: Readonly<ShallowRef<HTMLDivElement | null>>
+  onEditEnd?: (mergeKey?: string) => void
 }
 
 export function usePaletteSwatchRow({
   modelValue,
-  container
+  container,
+  onEditEnd
 }: UsePaletteSwatchRowOptions) {
   function updateAt(i: number, value: string) {
     if (modelValue.value[i] === value) return
     const next = modelValue.value.slice()
     next[i] = value
     modelValue.value = next
+    onEditEnd?.(`color:${i}`)
   }
 
   function remove(i: number) {
     const next = modelValue.value.slice()
     next.splice(i, 1)
     modelValue.value = next
+    onEditEnd?.()
   }
 
   function addColor() {
     modelValue.value = [...modelValue.value, '#ffffff']
+    onEditEnd?.()
   }
 
   const drag = ref<{
@@ -77,6 +82,7 @@ export function usePaletteSwatchRow({
         next.splice(insertAt > d.index ? insertAt - 1 : insertAt, 0, moved)
         modelValue.value = next
         drag.value = null
+        onEditEnd?.()
         return
       }
     }

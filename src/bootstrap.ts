@@ -1,7 +1,7 @@
 if (__DISTRIBUTION__ === 'cloud') {
   const { initDatadogRum } = await import('@/platform/telemetry/initDatadogRum')
   const { flushErrorReports } = await import('@/platform/telemetry/reportError')
-  void initDatadogRum()
+  await initDatadogRum()
     .then(flushErrorReports)
     .catch(() => {})
 }

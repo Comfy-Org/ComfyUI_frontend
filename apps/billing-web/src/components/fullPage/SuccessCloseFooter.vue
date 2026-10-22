@@ -18,7 +18,7 @@ const { remaining } = useCountdown(CLOSE_AFTER_SECONDS, {
 </script>
 
 <template>
-  <p class="m-0 text-center text-sm text-muted-foreground">
+  <p class="m-0 text-sm text-muted-foreground">
     {{
       closesItself
         ? t('checkout.fullPage.ending.closingIn', { seconds: remaining })

@@ -28,6 +28,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="
             $t('g.searchPlaceholder', {
               subject: $t('sideToolbar.labels.models')
@@ -38,7 +40,7 @@
         <p
           v-if="searchResults.capped"
           role="status"
-          class="mx-2 my-1 text-xs text-muted"
+          class="mx-2 my-1 text-xs text-muted-foreground"
         >
           {{
             $t('sideToolbar.searchResultsCapped', {
@@ -333,10 +335,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
-}
-</style>

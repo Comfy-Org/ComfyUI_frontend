@@ -24,13 +24,13 @@ test.describe(
 
     test('shows a spinning in-progress row for a running tool call and settles it when the call finishes', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Open a new tab for the upscale graph')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
@@ -65,13 +65,13 @@ test.describe(
 
     test('renders a multi-sentence thinking update in full instead of cutting it off', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Plan the upscale pass before you edit')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
@@ -102,13 +102,13 @@ test.describe(
 
     test('names how long the finished turn took', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 

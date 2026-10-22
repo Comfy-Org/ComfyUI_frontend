@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
-import type { SceneConfig } from '@/extensions/core/load3d/interfaces'
+import type { SceneConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({
@@ -34,7 +34,7 @@ type Props = {
 function renderGroup(props: Props = {}) {
   const result = render(SceneMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }

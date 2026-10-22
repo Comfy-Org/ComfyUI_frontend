@@ -1,0 +1,87 @@
+{
+  "id": "remote-config",
+  "capability": "Remote configuration",
+  "description": "Server feature configuration from /features: the reactive remote config state and cached flags, server feature flag names, config types, and the bounded refresh that reloads config on sign-in and session changes.",
+  "modules": [
+    {
+      "path": "src/composables/__mocks__/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useFeatureFlags.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remoteConfig/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remoteConfig/refreshRemoteConfig.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remoteConfig/refreshRemoteConfig.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remoteConfig/serverFeatureFlag.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remoteConfig/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/storybook/mocks/useFeatureFlags.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/devFeatureFlagOverride.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/devFeatureFlagOverride.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/sessionFeatureFlagOverride.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/sessionFeatureFlagOverride.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Remote config refresh loads /features with a bounded wait and records load state",
+      "checks": ["src/platform/remoteConfig/refreshRemoteConfig.test.ts"]
+    },
+    {
+      "name": "Feature flags read remote config values and server feature flags",
+      "checks": ["src/composables/useFeatureFlags.test.ts"]
+    },
+    {
+      "name": "Feature flags resolve from remote config with dev and session overrides",
+      "checks": [
+        "src/composables/useFeatureFlags.test.ts",
+        "src/utils/devFeatureFlagOverride.test.ts",
+        "src/utils/sessionFeatureFlagOverride.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "remoteConfig refs and cached localStorage flags keep their names because feature-flag, billing, auth, and agent code read them.",
+    "RemoteConfig typing against telemetry event names remains visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}
