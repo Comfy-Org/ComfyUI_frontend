@@ -13,6 +13,7 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from './createNode'
 import {
   getWidgetIdForNode,
+  isVideoOutput,
   mapLiveWidgetsById,
   migrateWidgetsValues,
   resolveNode
@@ -89,6 +90,20 @@ describe('resolveNode', () => {
 
     const targetNode = sg2._nodes[0]
     expect(resolveNode(targetNode.id, rootGraph)).toBe(targetNode)
+  })
+})
+
+describe('isVideoOutput', () => {
+  it.for([
+    { filename: 'clip.mp4', expected: true },
+    { filename: 'anim.avif', expected: false }
+  ])('is $expected for animated $filename', ({ filename, expected }) => {
+    expect(
+      isVideoOutput({
+        images: [{ filename, type: 'output' }],
+        animated: [true]
+      })
+    ).toBe(expected)
   })
 })
 

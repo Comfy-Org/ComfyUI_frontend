@@ -1,3 +1,4 @@
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
@@ -57,20 +58,16 @@ export function isAnimatedOutput(
 }
 
 /**
- * Check if output data indicates video content (animated but not webp/png).
+ * Check if output data indicates video content (animated but not an image format).
  */
 export function isVideoOutput(
   output: ExecutedWsMessage['output'] | undefined
 ): boolean {
   if (!isAnimatedOutput(output)) return false
 
-  const isAnimatedWebp = output?.images?.some((img) =>
-    img.filename?.endsWith('.webp')
+  return !output?.images?.some(
+    (img) => getMediaTypeFromFilename(img.filename) === 'image'
   )
-  const isAnimatedPng = output?.images?.some((img) =>
-    img.filename?.endsWith('.png')
-  )
-  return !isAnimatedWebp && !isAnimatedPng
 }
 
 export function isAudioNode(node: LGraphNode | undefined): boolean {
