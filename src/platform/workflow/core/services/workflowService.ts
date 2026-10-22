@@ -374,37 +374,12 @@ export const useWorkflowService = () => {
     }
   }
 
-  /**
-   * Open a workflow in the current workspace
-   * @param workflow The workflow to open
-   * @param options The options for opening the workflow
-   * @returns false when the graph load reported failure (the error dialog was
-   * shown and the workflow never painted) or when the open was skipped because
-   * the workflow is mid-close; true otherwise
-   */
-  /**
-   * A failed replacement load leaves the shared root graph cleaned or
-   * partially configured while the previous workflow stays selected
-   * (16075 review). Repaint the retained workflow from its just-saved
-   * state so selection, canvas, and change tracking agree again. No
-   * retry loop: a failure here leaves the first failure's dialog
-   * standing.
-   */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
     const retained = getActiveWorkflow()
-    if (!retained || retained.path === failed.path || !retained.isLoaded) return
+    if (!retained?.graph || retained.path === failed.path) return
 
-    await useApp().loadGraphData(
-      toRaw(retained.activeState) as ComfyWorkflowJSON,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
-      retained,
-      {
-        checkForRerouteMigration: false,
-        deferWarnings: true,
-        skipAssetScans: true
-      }
-    )
+    await switchToWorkflowGraph(retained, retained.graph)
+    showPendingWarnings(undefined, { silent: true })
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
@@ -427,7 +402,7 @@ export const useWorkflowService = () => {
   const switchToWorkflowGraph = async (
     workflow: ComfyWorkflow,
     graph: NonNullable<ComfyWorkflow['graph']>,
-    navigationIntentId: number
+    navigationIntentId?: number
   ): Promise<void> => {
     beforeLoadNewGraph(true)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
@@ -456,6 +431,14 @@ export const useWorkflowService = () => {
     }
   }
 
+  /**
+   * Open a workflow in the current workspace
+   * @param workflow The workflow to open
+   * @param options The options for opening the workflow
+   * @returns false when the graph load reported failure (the error dialog was
+   * shown and the workflow never painted) or when the open was skipped because
+   * the workflow is mid-close; true otherwise
+   */
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
