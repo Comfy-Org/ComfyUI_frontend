@@ -251,7 +251,7 @@
       </div>
     </template>
     <NodeAskAgentHover
-      v-if="!isRerouteNode && !nodeData.flags?.ghost"
+      v-if="panel.enabled && !isRerouteNode && !nodeData.flags?.ghost"
       :node-id="nodeData.id"
     />
   </div>
@@ -311,6 +311,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -341,6 +342,7 @@ const { nodeData } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const panel = useAgentPanelStore()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
