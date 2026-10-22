@@ -56,7 +56,8 @@ export function usePointMenu(onShow?: (event: Event) => void) {
       open.value = value
     },
     reference: reference.value,
-    modal: false
+    modal: false,
+    onFocusOutside: (event: Event) => event.preventDefault()
   }))
 
   return { open, menuProps, show, hide, toggle }
