@@ -19,6 +19,7 @@ export interface BillingStatusSnapshot {
 
 export interface BillingStatusReadOptions {
   readonly signal?: AbortSignal
+  readonly fresh?: boolean
 }
 
 export interface BillingStatusReader {
@@ -53,11 +54,28 @@ export function createBillingStatusReader(
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { status: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
+  let generation = 0
+
+  async function read(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingResult<BillingStatusSnapshot>> {
+    if (options?.fresh) {
+      generation++
+      reader.fenceInFlight({ detach: true })
+    }
+    const requestGeneration = generation
+    const result = await reader.read(options)
+    return requestGeneration === generation
+      ? result
+      : { status: 'error', code: 'SUPERSEDED' }
+  }
+
   return {
-    read: reader.read,
+    read,
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

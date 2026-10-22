@@ -5,6 +5,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingRefreshOptions } from '@/composables/billing/types'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -16,8 +17,12 @@ import type {
 
 /** The reads a rail serves, in the shape the host's billing state holds. */
 export interface BillingReadRail {
-  readStatus: () => Promise<BillingResult<BillingStatusResponse>>
-  readBalance: () => Promise<BillingResult<BillingBalanceResponse>>
+  readStatus: (
+    options?: BillingRefreshOptions
+  ) => Promise<BillingResult<BillingStatusResponse>>
+  readBalance: (
+    options?: BillingRefreshOptions
+  ) => Promise<BillingResult<BillingBalanceResponse>>
   readPlans: () => Promise<BillingResult<BillingPlansResponse>>
   readCapabilities: (
     options: CapabilitiesReadOptions

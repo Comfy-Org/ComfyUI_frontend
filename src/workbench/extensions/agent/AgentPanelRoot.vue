@@ -177,7 +177,8 @@ const {
   type: billingType,
   billingStatus,
   canAccessSubscriptionFeatures,
-  fetchStatus: refreshBillingStatus
+  fetchStatus: refreshBillingStatus,
+  fetchBalance: refreshBillingBalance
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
@@ -1463,6 +1464,17 @@ const localGrantScope = computed(() =>
     : null
 )
 const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
+watch(
+  () => (billingType.value === 'unknown' ? null : localGrantScope.value),
+  (scope) => {
+    if (scope === null) return
+    void Promise.allSettled([
+      refreshBillingStatus({ fresh: true }),
+      refreshBillingBalance({ fresh: true })
+    ])
+  },
+  { immediate: true }
+)
 const latestEntryHasError = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
   return (
