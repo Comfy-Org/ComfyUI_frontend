@@ -910,7 +910,7 @@
         "count": 1
       }
     },
-    "src/components/load3d/Load3DControls.vue": {
+    "src/extensions/core/load3d/components/Load3DControls.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -918,7 +918,7 @@
         "count": 1
       }
     },
-    "src/components/load3d/Load3DMenuBar.vue": {
+    "src/extensions/core/load3d/components/Load3DMenuBar.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -926,22 +926,22 @@
         "count": 1
       }
     },
-    "src/components/load3d/controls/HDRIControls.vue": {
+    "src/extensions/core/load3d/components/controls/HDRIControls.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/components/load3d/controls/ModelControls.vue": {
+    "src/extensions/core/load3d/components/controls/ModelControls.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/components/load3d/controls/SceneControls.vue": {
+    "src/extensions/core/load3d/components/controls/SceneControls.vue": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/components/load3d/menubar/GizmoMenuGroup.vue": {
+    "src/extensions/core/load3d/components/menubar/GizmoMenuGroup.vue": {
       "complexity_moderate": {
         "count": 1
       },
@@ -949,7 +949,7 @@
         "count": 1
       }
     },
-    "src/components/load3d/menubar/HdriMenuGroup.vue": {
+    "src/extensions/core/load3d/components/menubar/HdriMenuGroup.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -957,7 +957,7 @@
         "count": 1
       }
     },
-    "src/components/load3d/menubar/ModelMenuGroup.vue": {
+    "src/extensions/core/load3d/components/menubar/ModelMenuGroup.vue": {
       "complexity_moderate": {
         "count": 1
       },
@@ -965,7 +965,7 @@
         "count": 1
       }
     },
-    "src/components/load3d/menubar/SceneMenuGroup.vue": {
+    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -1521,7 +1521,7 @@
         "count": 2
       }
     },
-    "src/composables/useLoad3d.ts": {
+    "src/extensions/core/load3d/composables/useLoad3d.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -1532,7 +1532,7 @@
         "count": 2
       }
     },
-    "src/composables/useLoad3dViewer.ts": {
+    "src/extensions/core/load3d/composables/useLoad3dViewer.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1664,7 +1664,7 @@
         "count": 1
       }
     },
-    "src/extensions/core/load3d.ts": {
+    "src/extensions/core/load3d/load3d.ts": {
       "crap_moderate": {
         "count": 2
       }
@@ -3571,7 +3571,7 @@
     "src/renderer/glsl/useGLSLUniforms.ts:high impact",
     "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts:untested risk",
     "src/lib/litegraph/src/LGraphCanvas.ts:circular dependency",
-    "src/composables/useLoad3d.ts:circular dependency",
+    "src/extensions/core/load3d/composables/useLoad3d.ts:circular dependency",
     "src/composables/node/usePriceBadge.ts:circular dependency",
     "src/platform/keybindings/keyCombo.ts:high impact",
     "src/views/LinearView.vue:complexity",
@@ -3660,7 +3660,7 @@
     "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
     "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
     "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
-    "src/services/load3dService.ts:circular dependency",
+    "src/extensions/core/load3d/services/load3dService.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
     "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
     "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
@@ -3675,8 +3675,8 @@
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
     "apps/website/src/composables/useCurrentPath.ts:high impact",
     "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
-    "src/components/load3d/menubar/SceneMenuGroup.vue:complexity",
-    "src/composables/useLoad3dViewer.ts:circular dependency",
+    "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue:complexity",
+    "src/extensions/core/load3d/composables/useLoad3dViewer.ts:circular dependency",
     "src/lib/litegraph/src/utils/mathParser.ts:untested risk",
     "src/composables/node/useNodePricing.ts:complexity",
     "src/platform/missingModel/components/MissingModelRow.vue:complexity",

@@ -751,28 +751,28 @@
       {
         "name": "camera-authoring/application",
         "patterns": [
-          "src/composables/useCameraAngle.test.ts",
-          "src/composables/useCameraAngle.ts",
-          "src/composables/useCameraInfo.test.ts",
-          "src/composables/useCameraInfo.ts",
-          "src/extensions/core/cameraAngle/**",
-          "src/extensions/core/cameraInfo/widgetBridge.test.ts",
-          "src/extensions/core/cameraInfo/widgetBridge.ts"
+          "src/extensions/core/load3d/composables/useCameraAngle.test.ts",
+          "src/extensions/core/load3d/composables/useCameraAngle.ts",
+          "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
+          "src/extensions/core/load3d/composables/useCameraInfo.ts",
+          "src/extensions/core/load3d/cameraAngle/**",
+          "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+          "src/extensions/core/load3d/cameraInfo/widgetBridge.ts"
         ]
       },
       {
         "name": "camera-authoring/presentation",
         "patterns": [
-          "src/components/cameraAngle/**",
-          "src/components/cameraInfo/**"
+          "src/extensions/core/load3d/components/cameraAngle/**",
+          "src/extensions/core/load3d/components/cameraInfo/**"
         ]
       },
       {
         "name": "camera-authoring/integration",
         "patterns": [
-          "src/extensions/core/cameraAngle.test.ts",
-          "src/extensions/core/cameraAngle.ts",
-          "src/extensions/core/cameraInfo.ts"
+          "src/extensions/core/load3d/cameraAngle.test.ts",
+          "src/extensions/core/load3d/cameraAngle.ts",
+          "src/extensions/core/load3d/cameraInfo.ts"
         ]
       },
       {
@@ -1838,15 +1838,19 @@
       {
         "name": "light-authoring/application",
         "patterns": [
-          "src/components/lightInfo/useLightInfo.test.ts",
-          "src/components/lightInfo/useLightInfo.ts"
+          "src/extensions/core/load3d/composables/useLightInfo.test.ts",
+          "src/extensions/core/load3d/composables/useLightInfo.ts"
         ]
+      },
+      {
+        "name": "light-authoring/presentation",
+        "patterns": ["src/extensions/core/load3d/components/lightInfo/**"]
       },
       {
         "name": "light-authoring/integration",
         "patterns": [
-          "src/extensions/core/lightInfo.test.ts",
-          "src/extensions/core/lightInfo.ts",
+          "src/extensions/core/load3d/lightInfo.test.ts",
+          "src/extensions/core/load3d/lightInfo.ts",
           "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
           "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
@@ -2118,17 +2122,17 @@
       {
         "name": "model-3d/application",
         "patterns": [
-          "src/components/load3d/modelThumbnail.deferredImport.test.ts",
-          "src/components/load3d/modelThumbnail.test.ts",
-          "src/components/load3d/modelThumbnail.ts",
-          "src/composables/useLoad3d.test.ts",
-          "src/composables/useLoad3d.ts",
-          "src/composables/useLoad3dDrag.test.ts",
-          "src/composables/useLoad3dDrag.ts",
-          "src/composables/useLoad3dViewer.test.ts",
-          "src/composables/useLoad3dViewer.ts",
-          "src/services/load3dService.test.ts",
-          "src/services/load3dService.ts"
+          "src/extensions/core/load3d/components/modelThumbnail.deferredImport.test.ts",
+          "src/extensions/core/load3d/components/modelThumbnail.test.ts",
+          "src/extensions/core/load3d/components/modelThumbnail.ts",
+          "src/extensions/core/load3d/composables/useLoad3d.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3d.ts",
+          "src/extensions/core/load3d/composables/useLoad3dDrag.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3dDrag.ts",
+          "src/extensions/core/load3d/composables/useLoad3dViewer.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3dViewer.ts",
+          "src/extensions/core/load3d/services/load3dService.test.ts",
+          "src/extensions/core/load3d/services/load3dService.ts"
         ]
       },
       {
@@ -2141,21 +2145,21 @@
       {
         "name": "model-3d/integration",
         "patterns": [
-          "src/extensions/core/load3d.test.ts",
-          "src/extensions/core/load3d.ts",
+          "src/extensions/core/load3d/load3d.test.ts",
+          "src/extensions/core/load3d/load3d.ts",
           "src/extensions/core/load3d/Load3DConfiguration.test.ts",
           "src/extensions/core/load3d/Load3DConfiguration.ts",
           "src/extensions/core/load3d/exportMenuHelper.test.ts",
           "src/extensions/core/load3d/exportMenuHelper.ts",
           "src/extensions/core/load3d/load3dSerialize.test.ts",
           "src/extensions/core/load3d/load3dSerialize.ts",
-          "src/extensions/core/load3dAdvanced.ts",
-          "src/extensions/core/load3dLazy.test.ts",
-          "src/extensions/core/load3dLazy.ts",
-          "src/extensions/core/load3dPreviewExtensions.test.ts",
-          "src/extensions/core/load3dPreviewExtensions.ts",
-          "src/extensions/core/saveMesh.test.ts",
-          "src/extensions/core/saveMesh.ts"
+          "src/extensions/core/load3d/load3dAdvanced.ts",
+          "src/extensions/core/load3d/load3dLazy.test.ts",
+          "src/extensions/core/load3d/load3dLazy.ts",
+          "src/extensions/core/load3d/load3dPreviewExtensions.test.ts",
+          "src/extensions/core/load3d/load3dPreviewExtensions.ts",
+          "src/extensions/core/load3d/saveMesh.test.ts",
+          "src/extensions/core/load3d/saveMesh.ts"
         ]
       },
       {
@@ -3023,16 +3027,16 @@
       {
         "name": "viewport-3d/presentation",
         "patterns": [
-          "src/components/load3d/ViewportWidgetShell.test.ts",
-          "src/components/load3d/ViewportWidgetShell.vue",
-          "src/components/load3d/menubar/menuBarStyles.ts"
+          "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
+          "src/extensions/core/load3d/components/ViewportWidgetShell.vue",
+          "src/extensions/core/load3d/components/menubar/menuBarStyles.ts"
         ]
       },
       {
         "name": "viewport-3d/integration",
         "patterns": [
-          "src/composables/useViewportNodeWiring.test.ts",
-          "src/composables/useViewportNodeWiring.ts"
+          "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts",
+          "src/extensions/core/load3d/composables/useViewportNodeWiring.ts"
         ]
       },
       {
@@ -3738,10 +3742,6 @@
         "patterns": ["src/platform/keybindings/**"]
       },
       {
-        "name": "light-authoring/presentation/outer-1",
-        "patterns": ["src/components/lightInfo/**"]
-      },
-      {
         "name": "linear-mode/presentation/outer-1",
         "patterns": ["src/renderer/extensions/linearMode/**"]
       },
@@ -3759,7 +3759,7 @@
       },
       {
         "name": "model-3d/presentation/outer-1",
-        "patterns": ["src/components/load3d/**"]
+        "patterns": ["src/extensions/core/load3d/components/**"]
       },
       {
         "name": "navigation/domain/outer-1",
@@ -5371,11 +5371,19 @@
         "allow": ["light-authoring/application", "unclassified"]
       },
       {
+        "from": "light-authoring/presentation",
+        "allow": [
+          "light-authoring/application",
+          "light-authoring/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "light-authoring/integration",
         "allow": [
           "light-authoring/application",
+          "light-authoring/presentation",
           "light-authoring/integration",
-          "light-authoring/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -7193,14 +7201,6 @@
         ]
       },
       {
-        "from": "light-authoring/presentation/outer-1",
-        "allow": [
-          "light-authoring/application",
-          "light-authoring/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "linear-mode/presentation/outer-1",
         "allow": [
           "linear-mode/domain",
@@ -7831,6 +7831,7 @@
           "keybindings/domain",
           "keybindings/presentation",
           "light-authoring/application",
+          "light-authoring/presentation",
           "light-authoring/integration",
           "linear-mode/domain",
           "linear-mode/application",
@@ -8031,7 +8032,6 @@
           "job-queue/infrastructure/outer-1",
           "job-queue/presentation/outer-1",
           "keybindings/application/outer-1",
-          "light-authoring/presentation/outer-1",
           "linear-mode/presentation/outer-1",
           "media-metadata/infrastructure/outer-1",
           "minimap/infrastructure/outer-1",

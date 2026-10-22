@@ -16,7 +16,7 @@ import './imageCrop'
 import './layerEditor'
 // load3d and saveMesh are loaded on-demand to defer THREE.js (~1.8MB)
 // The lazy loader triggers loading when a 3D node is used
-import './load3dLazy'
+import '@/extensions/core/load3d/load3dLazy'
 import './maskeditor'
 if (!isCloud) {
   await import('./nodeTemplates')
