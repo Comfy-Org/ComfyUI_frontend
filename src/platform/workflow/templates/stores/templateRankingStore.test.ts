@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 
 vi.mock(import('axios'))
 

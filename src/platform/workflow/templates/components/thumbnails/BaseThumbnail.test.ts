@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { describe, expect, it } from 'vitest'
 
-import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import BaseThumbnail from '@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'
 
 describe('BaseThumbnail', () => {
   function renderThumbnail(

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import WorkflowTemplateDownloadStatus from '@/components/custom/widget/WorkflowTemplateDownloadStatus.vue'
+import WorkflowTemplateDownloadStatus from '@/platform/workflow/templates/components/WorkflowTemplateDownloadStatus.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 

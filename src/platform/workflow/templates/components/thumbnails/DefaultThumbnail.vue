@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import LazyImage from '@/components/common/LazyImage.vue'
-import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import BaseThumbnail from '@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'
 
 const { src, isVideo } = defineProps<{
   src: string

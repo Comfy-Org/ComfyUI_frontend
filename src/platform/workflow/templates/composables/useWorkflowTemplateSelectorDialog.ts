@@ -1,4 +1,4 @@
-import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
+import WorkflowTemplateSelectorDialog from '@/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'

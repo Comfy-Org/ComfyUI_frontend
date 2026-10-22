@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTemplateModelStatus from '@/components/custom/widget/WorkflowTemplateModelStatus.vue'
+import WorkflowTemplateModelStatus from '@/platform/workflow/templates/components/WorkflowTemplateModelStatus.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 

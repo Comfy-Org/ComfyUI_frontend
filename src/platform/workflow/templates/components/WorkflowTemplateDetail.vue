@@ -2,8 +2,8 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
-import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
+import WorkflowTemplateDescription from '@/platform/workflow/templates/components/WorkflowTemplateDescription.vue'
+import WorkflowTemplateDetailGroup from '@/platform/workflow/templates/components/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   TemplateDetailGroup,
