@@ -349,7 +349,15 @@ async function driveThroughToolCallDone(
   // the composer is free again and the turn's own "Worked for Xs" summary is
   // up -- while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
-  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+  await expect(
+    panel.getByRole('button', {
+      name:
+        order === 'docUpdateBeforeToolCall'
+          ? enMessages.agent.worked
+          : enMessages.agent.workedNotConfirmedOnCanvas,
+      exact: true
+    })
+  ).toBeVisible()
 
   return {
     vueNodes,
@@ -384,7 +392,10 @@ test.describe(
       // the fix under test lives one level down, on the tool call's OWN
       // displayed state inside that summary: expand it to look.
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
@@ -412,6 +423,12 @@ test.describe(
         0
       )
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.worked,
+          exact: true
+        })
+      ).toBeVisible()
     })
 
     test('an unrelated doc_update does not settle the correlated tool call', async ({
@@ -421,7 +438,10 @@ test.describe(
         await driveThroughToolCallDone(page, 'toolCallBeforeDocUpdate', true)
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
@@ -458,7 +478,10 @@ test.describe(
         )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.workedNotConfirmedOnCanvas,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
@@ -515,7 +538,10 @@ test.describe(
       )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', {
+        name: enMessages.agent.worked,
+        exact: true
+      })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 

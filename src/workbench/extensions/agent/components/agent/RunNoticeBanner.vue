@@ -11,7 +11,7 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch' | 'unavailable'
+  context?: 'following' | 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
@@ -19,7 +19,8 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 const contextMessages = {
   following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
-  unavailable: 'agent.targetWorkflowUnavailable'
+  unavailable: 'agent.targetWorkflowUnavailable',
+  emptyCanvas: 'agent.canvasIsEmptyAfterTurn'
 } as const satisfies Record<NonNullable<typeof context>, string>
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
@@ -30,6 +31,7 @@ const defaultNotice = computed(() =>
   <div
     v-if="context || !dismissed"
     role="note"
+    :data-testid="context ? `agent-run-notice-${context}` : undefined"
     :aria-live="context ? 'polite' : undefined"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"
   >
