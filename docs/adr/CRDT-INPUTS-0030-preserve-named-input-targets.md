@@ -37,11 +37,13 @@ The durable rule is to resolve document input targets onto live nodes by
 **name** when their input orders differ. This rule does not require store-first
 application or a separate reconciliation layer.
 
-The rule lives in one place: `LiveGraphApplier.#connectLink`
-(`src/workbench/extensions/agent/crdt/liveGraphApplier.ts`) resolves a document
+The rule lives in one place, `src/core/graph/widgets/documentSlots.ts`, which
+both directions call: `LiveGraphApplier.#connectLink` resolves a document
 link's `targetSlot` by reading the slot's `name` from the document node's
 `inputs` entry and looking that name up in the live node's current `inputs`
-(`resolveSlot`). A document that names the slot is never resolved positionally:
+(`resolveLiveInputSlot`), and `docOpMinter` addresses a live input by its name
+in the document's input list (`documentInputSlot`). A document that names the
+slot is never resolved positionally:
 a name the live node lacks is a real mismatch, and the link is left unresolved
 (and reported once) rather than connected to whatever occupies that index. Only
 a document entry without a name falls back to its index, and only when that

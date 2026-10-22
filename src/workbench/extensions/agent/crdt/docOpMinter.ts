@@ -20,7 +20,8 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 
-import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
+import { documentInputSlot } from '@/core/graph/widgets/documentSlots'
+import type { DocumentSlotNames } from '@/core/graph/widgets/documentSlots'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -133,9 +134,38 @@ function heldWriteKey(event: IntentOf<'set_widget'>): string {
   return JSON.stringify([event.graphId, String(event.nodeId), event.name])
 }
 
+interface LinkTarget {
+  graphId: string
+  nodeId: NodeId
+  node: LGraphNode | undefined
+  input: INodeInputSlot | undefined
+  liveSlot: number
+}
+
+type PendingLinkOp =
+  | {
+      kind: 'connect'
+      operation: Omit<
+        Extract<GraphOperation, { op: 'connect' }>,
+        'to_slot' | 'grow'
+      >
+      target: LinkTarget
+    }
+  | {
+      kind: 'disconnect'
+      operation: Omit<Extract<GraphOperation, { op: 'disconnect' }>, 'to_slot'>
+      target: LinkTarget
+    }
+
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
+  | PendingLinkOp
+
+interface UnechoedGrows {
+  base: number
+  names: readonly string[]
+}
 
 /** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
@@ -361,60 +391,26 @@ function withoutCancelledAdd(
 ): PendingOp[] {
   const cancelledLinkIds = new Set<WireNodeId>()
   for (const entry of pending) {
-    if (entry.kind !== 'op' || entry.operation.op !== 'connect') continue
+    if (entry.kind !== 'connect') continue
     const { from_node, to_node, link_id } = entry.operation
     if (from_node === nodeId || to_node === nodeId)
       cancelledLinkIds.add(link_id)
   }
   return pending.filter((entry) => {
-    if (entry.kind === 'add_node') return entry.node.id !== nodeId
-    const { operation } = entry
-    switch (operation.op) {
+    switch (entry.kind) {
+      case 'add_node':
+        return entry.node.id !== nodeId
       case 'connect':
-        return !cancelledLinkIds.has(operation.link_id)
+        return !cancelledLinkIds.has(entry.operation.link_id)
       case 'disconnect':
         return (
-          operation.to_node !== nodeId &&
-          !cancelledLinkIds.has(operation.link_id)
+          entry.operation.to_node !== nodeId &&
+          !cancelledLinkIds.has(entry.operation.link_id)
         )
-      default:
+      case 'op':
         return true
     }
   })
-}
-
-/**
- * The document input register a live link's target slot names, resolved by
- * NAME against the bound document's own input order: the live order drifts
- * from it (an autogrow slot disconnected and regrown lands at the tail of
- * its group live, while the document keeps its order), and the applier
- * indexes the document's array. The live index stands in only while the
- * document has no such node yet. Undefined when the document has the node
- * but no slot by that name.
- */
-export function docInputIndex(
-  docNames: readonly (string | undefined)[] | null,
-  input: Pick<INodeInputSlot, 'name'> | undefined,
-  liveIndex: number
-): number | undefined {
-  if (docNames === null || input === undefined) return liveIndex
-  const index = docNames.indexOf(input.name)
-  return index === -1 ? undefined : index
-}
-
-function growForMissingSlot(
-  target: LGraphNode | null | undefined,
-  input: INodeInputSlot | undefined
-): { name: string; type: string; widget?: string } | undefined {
-  if (!target || !input) return undefined
-  const widgetBacked = !!input.widget && !target.isSubgraphNode()
-  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
-    return undefined
-  return {
-    name: input.name,
-    type: String(input.type),
-    ...(input.widget ? { widget: input.widget.name } : {})
-  }
 }
 
 function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
@@ -430,6 +426,7 @@ function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
+  const unechoedGrows = new Map<string, UnechoedGrows>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
   const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
@@ -525,12 +522,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pendingAdds.clear()
     if (detached) return
     const hosts: SubgraphNode[] = []
-    const operations = batch.flatMap((entry) => {
-      if (entry.kind === 'op') return [entry.operation]
-      const operation = mintAddNodeOperation(entry.graph, entry.node)
-      if (!operation) return []
-      if (entry.node.isSubgraphNode()) hosts.push(entry.node)
-      return [operation]
+    const operations = batch.flatMap((entry): GraphOperation[] => {
+      switch (entry.kind) {
+        case 'op':
+          return [entry.operation]
+        case 'connect':
+        case 'disconnect':
+          return addressLinkOperation(entry)
+        case 'add_node': {
+          const operation = mintAddNodeOperation(entry.graph, entry.node)
+          if (!operation) return []
+          if (entry.node.isSubgraphNode()) hosts.push(entry.node)
+          return [operation]
+        }
+      }
     })
     operations.push(...mintMissingDefinitions(hosts))
     if (operations.length > 0) deps.enqueue(operations)
@@ -781,6 +786,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
     const key = nodeKey(event.graph.id, event.node.id)
+    unechoedGrows.delete(key)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
       pending = withoutCancelledAdd(pending, event.node.id)
@@ -797,71 +803,103 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function reportSlotNotInDoc(
-    action: 'connect' | 'disconnect',
-    link: LLink,
+    { kind: action, operation }: PendingLinkOp,
     input: INodeInputSlot
   ): void {
+    const { link_id: linkId, to_node: nodeId } = operation
     reportOnce(
-      `${action}:${link.target_id}:${input.name}`,
-      `${action} targets input ${input.name} of node ${String(link.target_id)}, which the bound document does not carry; the bound doc diverges from the local graph`,
+      `${action}:${nodeId}:${input.name}`,
+      `${action} targets input ${input.name} of node ${String(nodeId)}, which the bound document does not carry; the bound doc diverges from the local graph`,
       'agent_crdt_link_slot_not_in_doc',
-      { action, linkId: link.id, nodeId: link.target_id, input: input.name }
+      { action, linkId, nodeId, input: input.name }
     )
+  }
+
+  function expectedDocInputNames(
+    key: string,
+    docNames: DocumentSlotNames | null
+  ): DocumentSlotNames | null {
+    const grows = unechoedGrows.get(key)
+    if (docNames === null || grows === undefined) return docNames
+    const echoed = docNames.slice(grows.base)
+    const onlyOurEchoes =
+      docNames.length >= grows.base &&
+      echoed.length < grows.names.length &&
+      echoed.every((name, index) => name === grows.names[index])
+    if (!onlyOurEchoes) {
+      unechoedGrows.delete(key)
+      return docNames
+    }
+    return [...docNames, ...grows.names.slice(echoed.length)]
+  }
+
+  function recordUnechoedGrow(key: string, docLength: number, name: string) {
+    const grows = unechoedGrows.get(key)
+    unechoedGrows.set(key, {
+      base: grows?.base ?? docLength,
+      names: [...(grows?.names ?? []), name]
+    })
+  }
+
+  function addressLinkOperation(entry: PendingLinkOp): GraphOperation[] {
+    const { target } = entry
+    const key = nodeKey(target.graphId, target.nodeId)
+    const docNames = deps.docInputNames(target.nodeId)
+    const address = documentInputSlot(
+      expectedDocInputNames(key, docNames),
+      target.node,
+      target.input,
+      target.liveSlot
+    )
+    if (address.kind === 'slot')
+      return [{ ...entry.operation, to_slot: address.slot }]
+    if (address.kind === 'grow' && entry.kind === 'connect' && docNames) {
+      recordUnechoedGrow(key, docNames.length, address.grow.name)
+      return [{ ...entry.operation, to_slot: null, grow: address.grow }]
+    }
+    if (target.input) reportSlotNotInDoc(entry, target.input)
+    return []
+  }
+
+  function linkTarget(graph: LGraph, link: LLink): LinkTarget {
+    const node = graph.getNodeById(link.target_id) ?? undefined
+    return {
+      graphId: graph.id,
+      nodeId: link.target_id,
+      node,
+      input: node?.inputs[link.target_slot],
+      liveSlot: link.target_slot
+    }
   }
 
   function mintConnect(event: IntentOf<'connect'>): void {
     if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
     const { link } = event
-    const target = event.graph.getNodeById(link.target_id)
-    const input = target?.inputs[link.target_slot]
-    const docNames = deps.docInputNames(link.target_id)
-    const toSlot = docInputIndex(docNames, input, link.target_slot)
-    const connect = {
-      op: 'connect',
-      link_id: link.id,
-      from_node: link.origin_id,
-      from_slot: link.origin_slot,
-      to_node: link.target_id,
-      link_type: String(link.type)
-    } as const
-    if (toSlot !== undefined) {
-      schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
-      return
-    }
-    const grow = growForMissingSlot(target, input)
-    if (grow) {
-      schedule({
-        kind: 'op',
-        operation: { ...connect, to_slot: null, grow }
-      })
-      return
-    }
-    if (input) reportSlotNotInDoc('connect', link, input)
+    schedule({
+      kind: 'connect',
+      operation: {
+        op: 'connect',
+        link_id: link.id,
+        from_node: link.origin_id,
+        from_slot: link.origin_slot,
+        to_node: link.target_id,
+        link_type: String(link.type)
+      },
+      target: linkTarget(event.graph, link)
+    })
   }
 
   function mintDisconnect(event: IntentOf<'disconnect'>): void {
     if (!isMintableRootScope(event.graph, 'disconnect', event.link.id)) return
     const { link } = event
-    const input = event.graph.getNodeById(link.target_id)?.inputs[
-      link.target_slot
-    ]
-    const toSlot = docInputIndex(
-      deps.docInputNames(link.target_id),
-      input,
-      link.target_slot
-    )
-    if (toSlot === undefined) {
-      if (input) reportSlotNotInDoc('disconnect', link, input)
-      return
-    }
     schedule({
-      kind: 'op',
+      kind: 'disconnect',
       operation: {
         op: 'disconnect',
         link_id: link.id,
-        to_node: link.target_id,
-        to_slot: toSlot
-      }
+        to_node: link.target_id
+      },
+      target: linkTarget(event.graph, link)
     })
   }
 
@@ -877,6 +915,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       )
       return
     }
+    for (const nodeId of event.nodeIds)
+      unechoedGrows.delete(nodeKey(event.graphId, nodeId))
     schedule({
       kind: 'op',
       operation: { op: 'clear', removed_nodes: [...event.nodeIds] }
@@ -942,6 +982,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      unechoedGrows.clear()
       heldPromotedWrites.clear()
       if (heldRetryTimer !== null) clearTimeout(heldRetryTimer)
       heldRetryTimer = null
