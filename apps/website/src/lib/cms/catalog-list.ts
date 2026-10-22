@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zListCccWebsiteCardsQuery } from '@comfyorg/ingest-types/zod'
 
-import { USE_CASES } from '@/config/models-catalogue'
+import { USE_CASES, addressCapabilities } from '@/config/models-catalogue'
 import type { UseCase, SortOrder } from '@/config/models-catalogue'
 import { modelSchema } from '@/config/models-catalogue-data'
 import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
@@ -75,7 +75,7 @@ function cardQuery(
     ),
     modality: params.getAll('modality'),
     provider: params.getAll('provider'),
-    capability: params.getAll('capability')
+    capability: addressCapabilities(params)
   })
 }
 

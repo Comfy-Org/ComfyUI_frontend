@@ -459,6 +459,17 @@ export function catalogSearch(filter: CatalogLocation): string {
   return search ? `?${search}` : ''
 }
 
+export function addressCapabilities(params: URLSearchParams): string[] {
+  return [
+    ...new Set(
+      params
+        .getAll('capability')
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  ]
+}
+
 export function catalogueAddress(
   base: string,
   {
