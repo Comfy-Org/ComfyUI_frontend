@@ -1,4 +1,7 @@
-import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentPostMessageRequest,
+  zGlobalSettingValue
+} from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
@@ -7,6 +10,7 @@ import type {
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
@@ -26,6 +30,7 @@ import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
@@ -733,3 +738,25 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   }
 })
+
+/**
+ * A single node on an otherwise empty canvas, placed left of the floating
+ * Agent panel so its title stays clickable.
+ */
+export async function addNodeBesideAgentPanel(
+  comfyPage: ComfyPage,
+  type: string
+): Promise<NodeReference> {
+  await comfyPage.nodeOps.clearGraph()
+  const node = await comfyPage.nodeOps.addNode(type, undefined, {
+    x: 100,
+    y: 150
+  })
+  await comfyPage.nextFrame()
+  return node
+}
+
+/** The parsed turn body the composer posted, in send order. */
+export function sentTurn(postedMessages: string[], index = 0) {
+  return zAgentPostMessageRequest.parse(JSON.parse(postedMessages[index]))
+}
