@@ -7,8 +7,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 
-import type { ComposerAttachment } from '../../../types/composerAttachment'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 import AttachmentChip from './AttachmentChip.vue'
 
 const { attachments, highlightedIds = [] } = defineProps<{
@@ -70,7 +70,7 @@ function scrollPage(direction: -1 | 1): void {
       :aria-label="
         t('g.asset', { count: attachments.length }, attachments.length)
       "
-      class="flex scrollbar-custom max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden p-3 focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+      class="flex scrollbar-custom max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overflow-y-hidden p-3 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
     >
       <AttachmentChip
         v-for="item in attachments"
@@ -80,6 +80,7 @@ function scrollPage(direction: -1 | 1): void {
         :media-url="item.mediaUrl"
         :media-kind="item.mediaKind"
         :uploading="item.uploading"
+        :validation-error="item.validationError"
         :highlighted="highlightedIds.includes(item.id)"
         :preview-mode="
           activePreview?.id === item.id ? activePreview.mode : 'closed'
@@ -93,8 +94,7 @@ function scrollPage(direction: -1 | 1): void {
         :class="
           cn(
             'pointer-events-none absolute inset-y-0 left-0 z-10 flex w-12 items-center pl-2',
-            hasMoreLeft &&
-              'bg-linear-to-r from-secondary-background to-transparent'
+            hasMoreLeft && 'bg-linear-to-r from-secondary to-transparent'
           )
         "
       >
@@ -103,7 +103,7 @@ function scrollPage(direction: -1 | 1): void {
           size="icon"
           :aria-label="t('g.scrollLeft')"
           :disabled="!hasMoreLeft"
-          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border-subtle"
+          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
           @click="scrollPage(-1)"
         >
           <span aria-hidden="true" class="icon-[lucide--chevron-left] size-4" />
@@ -113,8 +113,7 @@ function scrollPage(direction: -1 | 1): void {
         :class="
           cn(
             'pointer-events-none absolute inset-y-0 right-0 z-10 flex w-12 items-center justify-end pr-2',
-            hasMoreRight &&
-              'bg-linear-to-l from-secondary-background to-transparent'
+            hasMoreRight && 'bg-linear-to-l from-secondary to-transparent'
           )
         "
       >
@@ -123,7 +122,7 @@ function scrollPage(direction: -1 | 1): void {
           size="icon"
           :aria-label="t('g.scrollRight')"
           :disabled="!hasMoreRight"
-          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border-subtle"
+          class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
           @click="scrollPage(1)"
         >
           <span

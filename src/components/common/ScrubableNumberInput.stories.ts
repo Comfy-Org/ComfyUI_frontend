@@ -147,9 +147,9 @@ export const WithControlButton: Story = {
             <Button
               variant="textonly"
               size="sm"
-              class="h-4 w-7 self-center rounded-xl bg-primary-background/30 p-0 hover:bg-primary-background-hover/30"
+              class="h-4 w-7 self-center rounded-xl bg-primary/30 p-0 hover:bg-primary/27"
             >
-              <i class="icon-[lucide--shuffle] w-full text-xs text-primary-background" />
+              <i class="icon-[lucide--shuffle] w-full text-xs text-primary" />
             </Button>
           </template>
           <div class="p-4 text-sm">Control popover content</div>

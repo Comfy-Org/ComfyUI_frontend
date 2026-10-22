@@ -2,7 +2,7 @@ import { reportError } from './reportError'
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SECRET_KEY_PATTERN =
-  /(token|secret|password|passwd|credential|api[-_]?key|apikey|auth|bearer|session|cookie|private)/i
+  /(token|secret|password|passwd|credential|api[-_]?key|auth|bearer|session|cookie|private)/i
 export const REDACTED = '[redacted by the debug report]'
 export function sanitizeSecrets(
   value: Readonly<Record<string, unknown>>
@@ -41,7 +41,7 @@ const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
 const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
 const SECRET_VALUE_PATTERN =
-  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
+  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
 function sanitizePrivateValue(value: string): string {
   if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
   return value
@@ -103,6 +103,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'doc_id',
   'failed',
   'frame_type',
+  'graph_id',
   'id',
   'kind',
   'level',
@@ -111,6 +112,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'op',
   'op_id',
   'op_ids',
+  'operations',
   'outcome',
   'phase',
   'prompt_id',

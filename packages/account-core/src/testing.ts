@@ -2,16 +2,16 @@
  * The test seam for fakes: a hand-written port becomes an identity the
  * session client accepts. Production hosts use `@comfyorg/account-core/firebase`.
  */
-import type { WebSessionUser } from './core/sessionContracts.js'
+import type { WebSessionUser } from './core/sessionContracts'
 
-export type { IdentityPort } from './core/identity.js'
-export { brandIdentity as createTestIdentity } from './core/identity.js'
+export type { IdentityPort } from './core/identity'
+export { brandIdentity as createTestIdentity } from './core/identity'
 
 // Enumerating wording (CWE-204) each host asserts its copy never matches; shared so the two suites can't drift.
 export const ENUMERATION_ORACLE =
   /\bexists?\b|already (?:registered|in use|have|exists)|wrong password|no account|not found|is registered|different (?:sign-in method|credential)/i
 
-export type { WebSessionUser } from './core/sessionContracts.js'
+export type { WebSessionUser } from './core/sessionContracts'
 
 export function fakeWebSessionUser(
   overrides: Partial<WebSessionUser> = {}

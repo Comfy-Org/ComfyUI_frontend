@@ -15,7 +15,7 @@
           :class="[
             'pi',
             playing ? 'pi-pause' : 'pi-play',
-            'text-lg text-base-foreground'
+            'text-lg text-foreground'
           ]"
         />
       </Button>
@@ -68,7 +68,7 @@
         class="flex-1"
         @update:model-value="handleSliderChange"
       />
-      <span class="min-w-16 text-xs text-base-foreground">
+      <span class="min-w-16 text-xs text-foreground">
         {{ formatAnimationTime(currentTime) }} /
         {{ formatAnimationTime(animationDuration) }}
       </span>

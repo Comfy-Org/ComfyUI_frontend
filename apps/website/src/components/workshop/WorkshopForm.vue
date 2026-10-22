@@ -43,7 +43,7 @@ if (Object.keys(values.value).length === 0) {
         disabled
         class="mt-2 rounded-full bg-primary-comfy-yellow px-5 py-3 font-medium text-primary-comfy-ink opacity-50"
       >
-        {{ t('workshop.model.runNext') }}
+        {{ t('workshop.run.run') }}
       </button>
     </form>
   </section>

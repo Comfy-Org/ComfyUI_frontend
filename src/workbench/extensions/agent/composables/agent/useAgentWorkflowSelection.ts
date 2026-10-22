@@ -8,13 +8,13 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 import type {
   CloudWorkflowLifecycle,
   useAgentWorkflowResolver

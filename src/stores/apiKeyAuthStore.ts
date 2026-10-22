@@ -5,7 +5,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 
@@ -15,7 +15,7 @@ type ComfyApiUser =
 const STORAGE_KEY = 'comfy_api_key'
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
-  const authStore = useAuthStore()
+  const authStore = useAuthStoreAccess()
   const apiKey = useLocalStorage<string | null>(STORAGE_KEY, null)
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()

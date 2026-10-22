@@ -5,10 +5,8 @@
         v-bind="$attrs"
         :class="
           cn(
-            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors select-none',
-            active
-              ? 'bg-interface-menu-component-surface-selected'
-              : 'hover:bg-interface-menu-component-surface-hovered'
+            'flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm text-foreground transition-colors select-none',
+            active ? 'bg-muted' : 'hover:bg-accent'
           )
         "
         role="button"
@@ -18,18 +16,19 @@
         <NavIcon v-if="icon" :icon="icon" />
         <i
           v-else
-          class="icon-[lucide--folder] size-3.5 shrink-0 text-base-foreground"
+          class="icon-[lucide--folder] size-3.5 shrink-0 text-foreground"
         />
         <span ref="textRef" class="min-w-0 truncate">
           <slot />
         </span>
-        <StatusBadge
+        <Badge
           v-if="badge !== undefined"
-          :label="String(badge)"
           severity="contrast"
           variant="circle"
-          class="ml-auto min-h-5 min-w-5 px-1 text-base-background"
-        />
+          class="ml-auto min-h-5 min-w-5 px-1"
+        >
+          {{ badge }}
+        </Badge>
         <i
           v-else-if="suffixIcon"
           :class="cn('ml-auto size-4 shrink-0', suffixIcon)"
@@ -46,7 +45,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'

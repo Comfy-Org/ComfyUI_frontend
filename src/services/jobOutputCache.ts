@@ -19,17 +19,24 @@ import {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
+/** The part of `TaskItemImpl` this cache reads; `queueStore` imports this module. */
+interface OutputsTask {
+  readonly jobId: string
+  readonly outputsCount: number | undefined
+  readonly previewableOutputs: readonly AugmentedResultItem[]
+  loadFullOutputs(): Promise<OutputsTask>
+}
+
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
 const MAX_JOB_ASSETS_CACHE_SIZE = 50
 
-const taskCache = new QuickLRU<string, TaskItemImpl>({
+const taskCache = new QuickLRU<string, OutputsTask>({
   maxSize: MAX_TASK_CACHE_SIZE
 })
 const jobDetailCache = new QuickLRU<string, JobDetail>({
@@ -57,7 +64,7 @@ export function findActiveIndex(
  * Returns null if a newer request superseded this one while loading.
  */
 export async function getOutputsForTask(
-  task: TaskItemImpl
+  task: OutputsTask
 ): Promise<AugmentedResultItem[] | null> {
   const requestId = task.jobId
   latestTaskRequestId = requestId

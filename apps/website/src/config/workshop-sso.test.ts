@@ -67,6 +67,10 @@ describe('createSsoStartResolver', () => {
   it.for([
     { case: 'not an SSO domain', discover: () => json({ sso: false }) },
     {
+      case: 'an organization in optional mode',
+      discover: () => json({ sso: true, required: false })
+    },
+    {
       case: 'rejected as invalid',
       discover: () => json({ code: 'INVALID_EMAIL', message: 'bad' }, 400)
     },

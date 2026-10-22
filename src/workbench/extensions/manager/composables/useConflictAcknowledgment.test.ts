@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -29,6 +29,31 @@ describe('useConflictAcknowledgment', () => {
       new StorageEvent('storage', { key: null, storageArea: localStorage })
     )
     await nextTick()
+  })
+
+  it('touches no storage on import and shares one state once called', async () => {
+    vi.resetModules()
+    const { useConflictAcknowledgment: useFreshAcknowledgment } =
+      await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
+
+    expect(localStorage.length).toBe(0)
+
+    const first = useFreshAcknowledgment()
+    const second = useFreshAcknowledgment()
+
+    expect(localStorage.getItem('Comfy.ConflictModalDismissed')).toBe('false')
+    expect(localStorage.getItem('Comfy.ConflictRedDotDismissed')).toBe('false')
+    expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).toBe(
+      'false'
+    )
+
+    first.markConflictsAsSeen()
+
+    expect(second.acknowledgmentState.value).toEqual({
+      modal_dismissed: true,
+      red_dot_dismissed: true,
+      warning_banner_dismissed: true
+    })
   })
 
   it('loads default state', () => {

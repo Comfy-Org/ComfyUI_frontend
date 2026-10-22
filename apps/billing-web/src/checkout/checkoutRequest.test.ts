@@ -35,8 +35,16 @@ describe('teamCheckoutPlan', () => {
               {
                 id: 'stop_700',
                 credits: 147_700n,
-                monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
-                yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+                monthly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 66_500n
+                },
+                yearly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 63_000n
+                }
               }
             ]
           },

@@ -9,7 +9,11 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelWorkflowData } from '@/platform/missingModel/missingModelScan'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -25,11 +29,6 @@ import {
   isCandidateScopeActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
-
-export interface MissingModelPipelineResult {
-  missingModels: ModelFile[]
-  confirmedCandidates: MissingModelCandidate[]
-}
 
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
@@ -121,7 +120,8 @@ export async function runMissingModelPipeline({
   const candidates = scanAllModelCandidates(
     graph,
     isAssetBrowserWidget,
-    getDirectory
+    getDirectory,
+    cloudReleaseModelOptions()
   )
 
   const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)

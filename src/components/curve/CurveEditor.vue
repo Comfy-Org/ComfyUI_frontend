@@ -6,7 +6,7 @@
     preserveAspectRatio="xMidYMid meet"
     :class="
       cn(
-        'aspect-square w-full rounded-[5px] bg-node-component-surface',
+        'aspect-square w-full rounded-[5px] bg-node',
         disabled ? 'cursor-default' : 'cursor-crosshair'
       )
     "
@@ -109,12 +109,17 @@ const modelValue = defineModel<CurvePoint[]>({
   required: true
 })
 
+const emit = defineEmits<{
+  editEnd: []
+}>()
+
 const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
   modelValue,
-  interpolation: toRef(() => interpolation)
+  interpolation: toRef(() => interpolation),
+  onEditEnd: () => emit('editEnd')
 })
 
 function onSvgPointerDown(e: PointerEvent) {

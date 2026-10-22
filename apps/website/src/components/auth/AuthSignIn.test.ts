@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, readonly, ref } from 'vue'
@@ -335,10 +335,12 @@ describe('AuthSignIn', () => {
       .setup()
       .click(screen.getByRole('button', { name: /^sign in with github$/i }))
 
-    const alert = await screen.findByRole('alert')
+    const toast = await within(
+      await screen.findByRole('region', { name: /^Notifications/ })
+    ).findByRole('listitem')
     expect(toasts.value[0].kind).toBe('warning')
-    expect(alert.textContent).toContain('Warning')
-    expect(alert.textContent).toContain(
+    expect(toast.textContent).toContain('Warning')
+    expect(toast.textContent).toContain(
       t('auth.errors.auth/popup-closed-by-user', {}, { locale: 'en' })
     )
     expect(toasts.value).toHaveLength(1)
@@ -729,9 +731,10 @@ describe('AuthSignIn', () => {
       .setup()
       .click(screen.getByRole('button', { name: /sign up with google/i }))
 
-    expect((await screen.findByRole('alert')).textContent).toContain(
-      "couldn't create your account"
-    )
+    const toast = await within(
+      await screen.findByRole('region', { name: /^Notifications/ })
+    ).findByRole('listitem')
+    expect(toast.textContent).toContain("couldn't create your account")
   })
 
   it('advertises the free runs on the login page, as the cloud app does', () => {
@@ -955,10 +958,12 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
 
-    const alert = await screen.findByRole('alert')
+    const toast = await within(
+      await screen.findByRole('region', { name: /^Notifications/ })
+    ).findByRole('listitem')
     expect(toasts.value[0].kind).toBe('error')
     expect(
-      alert.textContent,
+      toast.textContent,
       'user-not-found collapses to the neutral invalid-credential line so the toast never confirms whether the email has an account'
     ).toContain(t('auth.errors.auth/invalid-credential', {}, { locale: 'en' }))
     expect(toasts.value[0].duration).toBe(Number.POSITIVE_INFINITY)
@@ -975,7 +980,10 @@ describe('AuthSignIn', () => {
 
     await clickGoogle()
 
-    expect((await screen.findByRole('alert')).textContent).toContain(
+    const toast = await within(
+      await screen.findByRole('region', { name: /^Notifications/ })
+    ).findByRole('listitem')
+    expect(toast.textContent).toContain(
       `Your domain ${window.location.hostname} is not authorized`
     )
   })
@@ -1703,7 +1711,9 @@ describe('AuthSignIn when a closed pop-up’s result arrives late', () => {
     render(AuthSignIn)
     render(AuthToast)
     await clickGoogle()
-    await screen.findByRole('alert')
+    await within(
+      await screen.findByRole('region', { name: /^Notifications/ })
+    ).findByRole('listitem')
     expect(googleButton()).toHaveProperty('disabled', false)
 
     popup.finishLate()

@@ -6,25 +6,16 @@
   </TooltipProvider>
   <div
     v-show="isLoading"
-    ref="loadingOverlay"
     data-testid="app-loading-overlay"
-    class="fixed inset-0 bg-black/10"
+    class="fixed inset-0 z-blocking bg-black/10"
     :aria-busy="isLoading"
   />
 </template>
 
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
-import {
-  computed,
-  onMounted,
-  useTemplateRef,
-  watch,
-  watchPostEffect
-} from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -46,15 +37,6 @@ app.extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const loadingOverlay = useTemplateRef<HTMLDivElement>('loadingOverlay')
-
-watchPostEffect((onCleanup) => {
-  const overlay = loadingOverlay.value
-  if (!isLoading.value || !overlay) return
-
-  ZIndex.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
-  onCleanup(() => ZIndex.clear(overlay))
-})
 
 watch(
   isLoading,

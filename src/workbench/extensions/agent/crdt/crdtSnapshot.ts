@@ -7,7 +7,7 @@ import {
 import type * as Y from 'yjs'
 import { sanitizeSecrets } from '@/platform/telemetry/redact'
 
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 /** Live CRDT internals, read from the follower at the moment Copy is pressed. */
 export interface CrdtDebugSnapshot {

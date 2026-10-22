@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
 import type {
   NodeGroupingStrategy,

@@ -1,0 +1,12 @@
+:root {
+  --base-background: var(--background);
+  --base-foreground: var(--foreground);
+  --border-default: var(--border);
+  --primary-background: var(--primary);
+  --secondary-background: var(--secondary);
+  --secondary-background-hover: var(--accent);
+  --component-node-widget-background: var(--input);
+  --component-node-widget-background-hovered: var(--accent);
+  --border-subtle: var(--border);
+  --component-node-background: var(--node);
+}
