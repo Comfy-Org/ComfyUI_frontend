@@ -37,7 +37,7 @@ import { DocFrameClient } from './docFrameClient'
 import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import {
   readDocPromotedWidgets,
@@ -194,9 +194,8 @@ function notifyAgentMaterialization(
     const nodeId = parseNodeId(id)
     if (nodeId) pendingLiveNodeIds.delete(nodeId)
   }
-  const isLiveAgentUpdate =
-    !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate) {
+  const liveAgentUpdate = isLiveAgentUpdate(update)
+  if (liveAgentUpdate) {
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
@@ -209,7 +208,7 @@ function notifyAgentMaterialization(
   ])
   emitPendingMaterializations(
     update.workflowId,
-    isLiveAgentUpdate ? update.actor : undefined,
+    liveAgentUpdate ? update.actor : undefined,
     available,
     pendingLiveNodeIds,
     events
