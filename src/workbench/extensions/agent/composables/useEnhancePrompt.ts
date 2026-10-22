@@ -5,8 +5,6 @@ import { computed, onScopeDispose, shallowRef } from 'vue'
 import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 
-export type EnhancePromptPhase = 'idle' | 'processing' | 'revealing'
-
 export type EnhancePromptState =
   | { phase: 'idle' }
   | { phase: 'processing'; original: string }
@@ -37,7 +35,7 @@ function wait(ms: number, signal: AbortSignal): Promise<boolean> {
   })
 }
 
-export async function revealPromptText({
+async function revealPromptText({
   text,
   write,
   signal

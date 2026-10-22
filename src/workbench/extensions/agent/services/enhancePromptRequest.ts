@@ -18,7 +18,7 @@ function wait(ms: number): Promise<void> {
   })
 }
 
-export function stubEnhancedPrompt(prompt: string): string {
+function stubEnhancedPrompt(prompt: string): string {
   return `${prompt.trim()} — enhanced with richer lighting, camera language, and material detail.`
 }
 
