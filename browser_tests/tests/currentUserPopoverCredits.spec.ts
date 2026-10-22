@@ -11,6 +11,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -243,19 +244,21 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
 
       const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
       await expect(workspaceSelector).toBeVisible()
-      await expect(workspaceSelector).toHaveScreenshot(
+      await expectElementScreenshot(
+        workspaceSelector,
         'workspace-selector-menu-item.png'
       )
 
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()
-      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+      await expectElementScreenshot(managePlan, 'manage-plan-menu-item.png')
 
       await managePlan.focus()
       await page.keyboard.press('Shift+Tab')
       await page.keyboard.press('Tab')
       await expect(managePlan).toBeFocused()
-      await expect(managePlan).toHaveScreenshot(
+      await expectElementScreenshot(
+        managePlan,
         'manage-plan-menu-item-focused.png'
       )
     }

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
@@ -82,11 +83,22 @@ const stubs = {
   ContextMenu: ContextMenuStub
 }
 
+const global = {
+  stubs,
+  plugins: [
+    createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { contextMenu: { new: 'New' } } }
+    })
+  ]
+}
+
 describe('QueueOverlayExpanded', () => {
   it('renders JobAssetsList', () => {
     const { container } = render(QueueOverlayExpanded, {
       props: defaultProps,
-      global: { stubs }
+      global
     })
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.job-assets-list-stub')).toBeTruthy()
@@ -100,7 +112,7 @@ describe('QueueOverlayExpanded', () => {
 
     render(QueueOverlayExpanded, {
       props: { ...defaultProps, onCancelItem, onDeleteItem, onViewItem },
-      global: { stubs }
+      global
     })
 
     await user.click(screen.getByTestId('stub-cancel'))
@@ -116,7 +128,7 @@ describe('QueueOverlayExpanded', () => {
     const user = userEvent.setup()
     render(QueueOverlayExpanded, {
       props: defaultProps,
-      global: { stubs }
+      global
     })
 
     await user.click(screen.getByTestId('stub-menu-first'))

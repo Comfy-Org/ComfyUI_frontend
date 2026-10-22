@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionState } from '../testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
-import { COMFY_CLIENT } from './requestAuth.js'
-import type { WebSessionOptions } from './webSession.js'
+import type { FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT } from './requestAuth'
+import type { WebSessionOptions } from './webSession'
 import {
   createWebSession,
   deleteWebSession,
   readWebSession,
   revokeAllWebSessions
-} from './webSession.js'
+} from './webSession'
 
 const API = 'https://cloud.example/api'
 const NOW = Date.parse('2024-06-15T12:00:00Z')

@@ -194,6 +194,7 @@ import type {
   ExposedWidget,
   ISerialisedGraph,
   ISerialisedNode,
+  RendererType,
   Serialisable,
   SerialisableGraph,
   SerialisableReroute
@@ -242,8 +243,6 @@ function copyUnhandledCanonicalFields(
     target[key] = source[key]
   }
 }
-
-export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 /**
  * Unique identifier for a subgraph definition. Structurally a {@link UUID};

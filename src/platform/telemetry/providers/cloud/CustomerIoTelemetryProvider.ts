@@ -8,7 +8,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
-import { TelemetryEvents } from '../../types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 import type {
   AuthMetadata,
   ExecutionSuccessMetadata,
@@ -19,7 +19,7 @@ import type {
   TelemetryProvider,
   TemplateLibraryMetadata,
   TemplateMetadata
-} from '../../types'
+} from '@/platform/telemetry/types'
 
 export const EVENT_SOURCE = 'web-sdk'
 

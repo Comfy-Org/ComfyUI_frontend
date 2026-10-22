@@ -7,10 +7,12 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   expanded = false,
   workflowName,
+  genericNoticeReady = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
+  genericNoticeReady?: boolean
   context?: 'following' | 'mismatch' | 'unavailable'
 }>()
 
@@ -24,11 +26,16 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const visible = computed(
+  () =>
+    Boolean(context) ||
+    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
+)
 </script>
 
 <template>
   <div
-    v-if="context || !dismissed"
+    v-if="visible"
     role="note"
     :aria-live="context ? 'polite' : undefined"
     class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"

@@ -247,7 +247,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -461,9 +461,7 @@ const closeWorkspaceSwitcherFromKeyboard = () => {
   isWorkspaceNameTooltipOpen.value = false
 }
 
-const refreshBalance = () => {
+onMounted(() => {
   if (!accountActionsOnly) void fetchBalance()
-}
-
-defineExpose({ refreshBalance })
+})
 </script>

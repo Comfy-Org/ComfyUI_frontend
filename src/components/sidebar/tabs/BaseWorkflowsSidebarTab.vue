@@ -41,6 +41,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />

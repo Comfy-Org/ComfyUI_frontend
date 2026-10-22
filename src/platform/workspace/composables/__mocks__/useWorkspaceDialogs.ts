@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useWorkspaceDialogs as realUseWorkspaceDialogs } from '../useWorkspaceDialogs'
+import type { useWorkspaceDialogs as realUseWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 type WorkspaceDialogs = ReturnType<typeof realUseWorkspaceDialogs>
 

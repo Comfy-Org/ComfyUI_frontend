@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Loader from '@/components/loader/Loader.vue'
-import { WidgetInputBaseClass } from '../../layout'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import type { FormDropdownInputProps } from './types'
 
 const {

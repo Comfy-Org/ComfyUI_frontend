@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import '../../../agentPanel.css'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import AttachmentChip from './AttachmentChip.vue'
 
