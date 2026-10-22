@@ -44,6 +44,18 @@ describe('cloudFeedbackTopbarButton', () => {
     expect(openFeedbackDialog).toHaveBeenCalledWith('action-bar')
   })
 
+  it('labels the button in the locale active when the action bar reads it', async () => {
+    vi.mocked(useSettingStore().get).mockReturnValue('Legacy')
+    await import('./cloudFeedbackTopbarButton')
+    const { t } = await import('@/i18n')
+    vi.mocked(t).mockImplementation((key) => `fr:${String(key)}`)
+
+    expect(getRegisteredButtons()[0]).toMatchObject({
+      label: 'fr:actionbar.feedback',
+      tooltip: 'fr:actionbar.feedbackTooltip'
+    })
+  })
+
   it('only registers the action bar button when the tab bar is Legacy', async () => {
     vi.mocked(useSettingStore().get).mockReturnValue('Default')
     await import('./cloudFeedbackTopbarButton')
