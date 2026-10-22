@@ -44,7 +44,7 @@ const { t } = useI18n()
         <img
           :src
           :alt
-          class="max-h-[85vh] max-w-full rounded-sm object-contain"
+          class="max-h-[90vh] max-w-[90vw] rounded-sm object-contain"
         />
       </DialogContent>
     </DialogPortal>
