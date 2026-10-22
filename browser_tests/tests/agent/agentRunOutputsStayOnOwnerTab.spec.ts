@@ -42,10 +42,11 @@ test.describe(
         )
       })
 
-      await test.step('the user opens another workflow mid-run', async () => {
-        await topbar.newWorkflowButton.click()
-        await expect(topbar.tabs).toHaveCount(2)
-        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
+      await test.step('the user opens a copy of the workflow mid-run, with the same node ids', async () => {
+        await harness.duplicateWorkflowIntoNewTab()
+        await expect(
+          harness.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
+        ).toBeVisible()
       })
 
       await test.step('the second output lands while its tab is hidden, before the queue refresh it precedes', async () => {
@@ -56,6 +57,10 @@ test.describe(
         })
         execution.status(1)
         await handled
+      })
+
+      await test.step("the copy does not show the run's output", async () => {
+        await expect(harness.outputImage(SOURCE_NODE_ID)).toHaveCount(0)
       })
 
       await test.step('the run tab shows the output that landed while hidden', async () => {
