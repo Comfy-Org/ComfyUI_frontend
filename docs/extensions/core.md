@@ -25,10 +25,12 @@ ComfyUI's extension system follows these key principles:
 
 ## Core Extensions List
 
-Core extensions live in `src/extensions/core/`. `index.ts` is the entry point
-that decides which ones load — some are unconditional, some are gated on the
-build distribution, and the 3D stack is deferred behind a lazy loader. The
-tables below follow that grouping.
+Core extensions live in `src/extensions/core/`. Each module exports its
+extension object and registers nothing when imported. `registerCoreExtensions()`
+in `index.ts` registers them from an explicit ordered list and decides which
+ones load — some are unconditional, some are gated on the build distribution,
+and the 3D stack is deferred behind a lazy loader. The tables below follow that
+grouping.
 
 ### Always Loaded
 

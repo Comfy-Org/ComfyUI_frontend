@@ -117,7 +117,7 @@ The alternative would have been breaking all existing extensions or staying with
    import { app } from '../../scripts/app'
    import { api } from '../../scripts/api'
    ```
-3. Add to `src/extensions/core/index.ts`
+3. Export the extension object instead of calling `app.registerExtension`, and add it to the ordered list in `src/extensions/core/index.ts`
 4. Test with hot reload working
 5. Move back when complete
 

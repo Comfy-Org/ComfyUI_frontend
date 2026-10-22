@@ -8,7 +8,7 @@ import {
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Partial<ImageFileRef>[]
@@ -18,7 +18,7 @@ type ImageCompositorOutput = NodeOutputWith<{
   compositor_state_stale?: boolean[]
 }>
 
-useExtensionService().registerExtension({
+export const imageCompositorExtension: ComfyExtension = {
   name: 'Comfy.ImageCompositor',
 
   nodeCreated(node: LGraphNode) {
@@ -64,4 +64,4 @@ useExtensionService().registerExtension({
       clearCompositorLayers(node)
     }
   }
-})
+}

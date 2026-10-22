@@ -9,6 +9,7 @@ import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import type { ComfyExtension } from '@/types/comfy'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -45,7 +46,7 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   store.setBrushSize(newBrushSize)
 }
 
-app.registerExtension({
+export const maskEditorExtension: ComfyExtension = {
   name: 'Comfy.MaskEditor',
   settings: [
     {
@@ -170,4 +171,4 @@ app.registerExtension({
         'Plugins should migrate to using the command system or direct node context menu integration.'
     )
   }
-})
+}
