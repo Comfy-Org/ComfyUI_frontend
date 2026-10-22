@@ -117,6 +117,26 @@ describe('releaseModelOptions', () => {
     expect(options).toBeUndefined()
   })
 
+  it('does not wait on a listing still in flight once the boot settled on Comfy Cloud', async () => {
+    loadCatalog()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    vi.spyOn(workspaceApi, 'listDeployments').mockReturnValue(
+      new Promise(() => {})
+    )
+    const store = useDeploymentPickStore()
+    void store.loadOnce()
+    store.bootOnComfyCloud()
+    let options: readonly (string | number)[] | undefined | 'pending' =
+      'pending'
+    void releaseModelOptions('LoraLoader', 'lora_name').then((result) => {
+      options = result
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(options).toBeUndefined()
+  })
+
   it('waits for a listing that answers just inside the request timeout', async () => {
     loadCatalog()
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })

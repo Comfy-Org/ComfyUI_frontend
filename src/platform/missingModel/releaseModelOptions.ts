@@ -21,11 +21,13 @@ export const releaseModelOptions: ReleaseModelOptions = async (
   signal
 ) => {
   const deploymentPick = useDeploymentPickStore()
-  await settledWithin(
-    deploymentPick.loadOnce(),
-    DEPLOYMENT_LISTING_BACKSTOP_MS,
-    signal
-  )
+  if (deploymentPick.bootDeployment === undefined) {
+    await settledWithin(
+      deploymentPick.loadOnce(),
+      DEPLOYMENT_LISTING_BACKSTOP_MS,
+      signal
+    )
+  }
   if (signal?.aborted || !deploymentPick.bootDeployment) return undefined
   const input = useNodeDefStore().getNodeDefByName(nodeType)?.inputs[widgetName]
   return input && isComboInputSpec(input) ? input.options : undefined

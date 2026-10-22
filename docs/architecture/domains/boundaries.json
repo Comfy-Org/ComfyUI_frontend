@@ -1413,6 +1413,7 @@
           "src/lib/litegraph/src/draw.ts",
           "src/lib/litegraph/src/nodeBadgeDraw.test.ts",
           "src/lib/litegraph/src/nodeBadgeDraw.ts",
+          "src/lib/litegraph/src/nodeEmphasis.ts",
           "src/lib/litegraph/src/utils/linkColors.ts",
           "src/lib/litegraph/src/utils/textMeasureCache.test.ts",
           "src/lib/litegraph/src/utils/textMeasureCache.ts",

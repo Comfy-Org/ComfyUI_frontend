@@ -74,7 +74,7 @@
           id="workspace-switcher-panel"
           ref="workspaceSwitcherPanel"
           role="menu"
-          class="absolute top-0 right-full z-10 mr-4 rounded-lg border bg-background shadow-md"
+          class="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border bg-background shadow-md md:inset-x-auto md:top-0 md:right-full md:mt-0 md:mr-4"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
@@ -105,6 +105,16 @@
       </Button>
       <Button
         v-if="canTopUp"
+        variant="secondary"
+        size="sm"
+        data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="paymentRecoveryAvailable"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
@@ -281,7 +291,8 @@ const {
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
+  useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const isWorkspaceNameTooltipOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')

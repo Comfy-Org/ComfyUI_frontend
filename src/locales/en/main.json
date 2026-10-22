@@ -1337,7 +1337,8 @@
   },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
-    "enterName": "Enter name"
+    "enterName": "Enter name",
+    "notLoaded": "Saved templates could not be loaded, so changes were not saved to avoid overwriting them. Reload the page and try again."
   },
   "logsTerminal": {
     "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
@@ -3687,6 +3688,10 @@
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
+      "lowCredits": {
+        "title": "Credits are low",
+        "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."
+      },
       "ending": {
         "title": "Your Team plan ends on {date}",
         "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
@@ -3773,13 +3778,10 @@
         "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
-      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
       "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
-      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
       "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",

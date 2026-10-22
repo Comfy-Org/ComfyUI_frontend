@@ -45,6 +45,17 @@ vi.mock(import('@/platform/telemetry'))
 const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
   useRemoteConfigCache()
 
+function persistFromAnotherTab(key: string, value: string) {
+  localStorage.setItem(key, value)
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: value,
+      storageArea: localStorage
+    })
+  )
+}
+
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
     it('should provide reactive readonly flags', () => {
@@ -377,9 +388,12 @@ describe('useFeatureFlags', () => {
   })
 
   describe.for([
-    { flag: 'unifiedBillingSettingsEnabled' as const },
-    { flag: 'autoTopUpEnabled' as const }
-  ])('$flag', ({ flag }) => {
+    {
+      flag: 'unifiedBillingSettingsEnabled' as const,
+      offCloudTrue: true
+    },
+    { flag: 'autoTopUpEnabled' as const, offCloudTrue: false }
+  ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
     })
@@ -399,7 +413,25 @@ describe('useFeatureFlags', () => {
         expected: false
       },
       { case: 'true on cloud', cloud: true, value: true, expected: true },
-      { case: 'true off cloud', cloud: false, value: true, expected: false }
+      {
+        case: 'missing off cloud',
+        cloud: false,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false off cloud', cloud: false, value: false, expected: false },
+      {
+        case: 'malformed off cloud',
+        cloud: false,
+        value: 'true',
+        expected: false
+      },
+      {
+        case: 'true off cloud',
+        cloud: false,
+        value: true,
+        expected: offCloudTrue
+      }
     ])('is $expected when $case', ({ cloud, value, expected }) => {
       vi.mocked(distributionTypes).isCloud = cloud
       vi.mocked(api.getServerFeature).mockReturnValue(value)
@@ -710,19 +742,25 @@ describe('useFeatureFlags', () => {
       cachedV1PaymentRecovery.value = undefined
     })
 
-    it('reads the cached values from storage on first use, not at import', async () => {
-      vi.resetModules()
-      const getItem = vi.spyOn(localStorage, 'getItem')
+    it.for([
+      { stored: 'false', expected: false },
+      { stored: 'true', expected: true }
+    ])(
+      'resolves a persisted $stored as a boolean during the auth window',
+      ({ stored, expected }) => {
+        onTestFinished(() => {
+          localStorage.removeItem('billing_control_enabled')
+          localStorage.removeItem('v1_payment_recovery')
+        })
+        persistFromAnotherTab('billing_control_enabled', stored)
+        persistFromAnotherTab('v1_payment_recovery', stored)
 
-      const freshRemoteConfig =
-        await import('@/platform/remoteConfig/remoteConfig')
-      expect(getItem).not.toHaveBeenCalled()
+        const { flags } = useFeatureFlags()
 
-      const cache = freshRemoteConfig.useRemoteConfigCache()
-      expect(getItem).toHaveBeenCalledWith('billing_control_enabled')
-      expect(getItem).toHaveBeenCalledWith('v1_payment_recovery')
-      expect(freshRemoteConfig.useRemoteConfigCache()).toBe(cache)
-    })
+        expect(flags.billingControlEnabled).toBe(expected)
+        expect(flags.v1PaymentRecovery).toBe(expected)
+      }
+    )
 
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true

@@ -8,8 +8,13 @@ import { deriveCreditsCard } from '@/platform/workspace/components/dialogs/setti
 import type { PlanRowState } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 
 export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
-  const { balance, billingStatus, subscription, currentTeamCreditStop } =
-    useBillingContext()
+  const {
+    balance,
+    billingStatus,
+    subscription,
+    currentTeamCreditStop,
+    renewalDate
+  } = useBillingContext()
 
   const planPoolCredits = computed(
     () =>
@@ -26,7 +31,8 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       planKind: planRow.value.kind,
       billingStatus: billingStatus.value,
       planPoolCredits: planPoolCredits.value,
-      isCloud
+      isCloud,
+      renewalDate: renewalDate.value
     })
   )
 

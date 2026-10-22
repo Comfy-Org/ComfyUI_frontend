@@ -100,12 +100,12 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   }
 }
 
-/** The plan action for a state, shown only when the server grants `can_subscribe_self_serve`. */
+/** The plan action for a state, shown only when the server grants `can_open_plans`. */
 export function planRowAction(
   state: PlanRowState,
-  { canSubscribeSelfServe }: { canSubscribeSelfServe: boolean }
+  { canOpenPlans }: { canOpenPlans: boolean }
 ): PlanRowAction | null {
-  if (!canSubscribeSelfServe) return null
+  if (!canOpenPlans) return null
   switch (state.kind) {
     case 'activating':
     case 'active':
