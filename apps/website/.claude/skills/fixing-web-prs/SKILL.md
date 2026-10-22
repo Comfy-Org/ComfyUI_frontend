@@ -10,7 +10,10 @@ argument-hint: '<PR number or link>'
 `Comfy-Org/comfy-website`, and this copy is frozen. Do not fix, update or
 merge a website pull request here. Tell the designer the website moved to
 `Comfy-Org/comfy-website`, that website pull requests still open here will not
-be moved, and that the change has to be made again there. Then stop.
+be moved, and that the change has to be made again there. Then stop. The only
+website change still made here is a mechanical fix that a change to
+`packages/` forces on this copy; that is not a designer request, and it
+follows `apps/website/AGENTS.md`.
 
 You are working for a designer who cannot read a failing check. The work ends
 when the pull request they named is merged, or when every blocker that remains
