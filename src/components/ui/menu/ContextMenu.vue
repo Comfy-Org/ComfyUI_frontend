@@ -34,6 +34,7 @@ const generatedId = useId()
 const ownerId = `context-menu-${generatedId}`
 const anchorPosition = ref({ x: 0, y: 0 })
 let showRequest = 0
+let shownFrom: EventTarget | null = null
 let dismissingPressTarget: Node | null = null
 
 function setOpen(value: boolean) {
@@ -47,6 +48,7 @@ function setOpen(value: boolean) {
 
 function show(event: Event) {
   if (event.type === 'contextmenu') event.preventDefault()
+  shownFrom = event.currentTarget ?? event.target
   anchorPosition.value = getMenuAnchorPosition(event)
   if (!visible.value) {
     setOpen(true)
@@ -85,13 +87,12 @@ useEventListener(
 )
 
 function isClickFromDismissingPress(event: Event) {
-  const clicked = event.currentTarget ?? event.target
   return (
     event instanceof MouseEvent &&
     event.detail > 0 &&
-    clicked instanceof Node &&
+    shownFrom instanceof Node &&
     dismissingPressTarget !== null &&
-    clicked.contains(dismissingPressTarget)
+    shownFrom.contains(dismissingPressTarget)
   )
 }
 

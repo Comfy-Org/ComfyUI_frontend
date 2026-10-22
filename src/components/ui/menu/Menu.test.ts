@@ -643,6 +643,32 @@ describe('Menu', () => {
     )
   })
 
+  it('reopens at another toggle trigger when its press dismisses the menu', async () => {
+    const menu = ref<InstanceType<typeof ContextMenu>>()
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup: () => ({ menu }),
+        template:
+          '<div role="region" aria-label="Canvas" @contextmenu.prevent="menu?.show($event)">Canvas</div><button @click="menu?.toggle($event)">More options</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('region', { name: 'Canvas' })
+    })
+    await screen.findByRole('menu')
+    await user.click(
+      screen.getByRole('button', { name: 'More options', hidden: true })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'Inspect' })
+    ).toBeVisible()
+  })
+
   it('dismisses only the context menu that owns the clicked content', async () => {
     const first = ref<InstanceType<typeof ContextMenu>>()
     const second = ref<InstanceType<typeof ContextMenu>>()
