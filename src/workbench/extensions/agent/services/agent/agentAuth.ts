@@ -14,25 +14,28 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
-async function workspaceRunToken(header: AuthHeader): Promise<string | null> {
-  if ('X-API-KEY' in header) return null
+async function workspaceAuthHeader(): Promise<AuthHeader | null> {
   try {
-    return (await useAuthStore().getWorkspaceAuthToken()) ?? null
+    return (await useAuthStore().getWorkspaceAuthHeader()) ?? null
   } catch {
     return null
   }
+}
+
+async function agentAuthHeader(): Promise<AuthHeader | null> {
+  return (
+    (await workspaceAuthHeader()) ?? (await useAuthStore().getUserAuthHeader())
+  )
 }
 
 export async function withAgentAuth(
   init: AgentRequestInit
 ): Promise<AgentRequestInit> {
   if (isCloud) return init
-  const header = await useAuthStore().getUserAuthHeader()
+  const header = await agentAuthHeader()
   if (!header) return init
   const headers = new Headers(init.headers)
   for (const [name, value] of Object.entries(header)) headers.set(name, value)
-  const runToken = await workspaceRunToken(header)
-  if (runToken) headers.set('X-Comfy-Run-Token', runToken)
   const attached = authCredentialOf(header)
   return {
     ...init,
@@ -46,7 +49,7 @@ export async function withAgentAuth(
 export async function agentSocketAuthParams(): Promise<URLSearchParams | null> {
   if (isCloud) return api.socketAuthParams()
   const params = new URLSearchParams()
-  const header = await useAuthStore().getUserAuthHeader()
+  const header = await agentAuthHeader()
   if (header) params.set('token', credentialValue(header))
   return params
 }

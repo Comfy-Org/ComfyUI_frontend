@@ -1521,7 +1521,6 @@ describe('user auth on agent requests', () => {
     vi.mocked(withAgentAuth).mockImplementation(async (init) => {
       const headers = new Headers(init.headers)
       headers.set('Authorization', 'Bearer id-token')
-      headers.set('X-Comfy-Run-Token', 'workspace-run-token')
       return { ...init, headers }
     })
   })
@@ -1546,15 +1545,15 @@ describe('user auth on agent requests', () => {
   ]
 
   it.for(calls)(
-    'sends the user auth header and workspace run token with %s',
+    'sends the user auth header with %s',
     async ([, call, body]) => {
       respond(jsonResponse(200, body))
 
       await call(makeClient())
 
-      const headers = new Headers(lastCall().init.headers)
-      expect(headers.get('Authorization')).toBe('Bearer id-token')
-      expect(headers.get('X-Comfy-Run-Token')).toBe('workspace-run-token')
+      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+        'Bearer id-token'
+      )
     }
   )
 

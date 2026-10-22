@@ -24,11 +24,19 @@ function userHeader(header: AuthHeader | null): void {
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue(header)
 }
 
-function workspaceRunToken(token: string | undefined | Error): void {
-  const spy = vi.spyOn(useAuthStore(), 'getWorkspaceAuthToken')
-  if (token instanceof Error) spy.mockRejectedValue(token)
-  else spy.mockResolvedValue(token)
+function workspaceHeader(header: AuthHeader | null | Error): void {
+  const spy = vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader')
+  if (header instanceof Error) spy.mockRejectedValue(header)
+  else spy.mockResolvedValue(header)
 }
+
+const workspaceFallbacks = [
+  { label: 'no workspace token', workspace: null },
+  {
+    label: 'a workspace token that failed to resolve',
+    workspace: new Error('token exchange failed')
+  }
+]
 
 describe('withAgentAuth', () => {
   it.for<{
@@ -78,48 +86,30 @@ describe('withAgentAuth', () => {
     }
   )
 
-  it('sends the workspace run token the queue uses, so agent runs bill that workspace', async () => {
+  it("sends the active workspace's token, so agent runs bill that workspace", async () => {
     userHeader({ Authorization: 'Bearer id-token' })
-    workspaceRunToken('workspace-run-token')
+    workspaceHeader({ Authorization: 'Bearer workspace-token' })
 
     const headers = new Headers(
       (await withAgentAuth({ method: 'POST' })).headers
     )
 
-    expect(headers.get('Authorization')).toBe('Bearer id-token')
-    expect(headers.get('X-Comfy-Run-Token')).toBe('workspace-run-token')
+    expect(headers.get('Authorization')).toBe('Bearer workspace-token')
   })
 
-  it.for<{
-    label: string
-    header: AuthHeader
-    token: string | undefined | Error
-  }>([
-    {
-      label: 'no workspace token',
-      header: { Authorization: 'Bearer id-token' },
-      token: undefined
-    },
-    {
-      label: 'a workspace token that failed to resolve',
-      header: { Authorization: 'Bearer id-token' },
-      token: new Error('token exchange failed')
-    },
-    {
-      label: 'an API-key session',
-      header: { 'X-API-KEY': 'comfyui-key' },
-      token: 'workspace-run-token'
+  it.for(workspaceFallbacks)(
+    'sends the user auth header for $label',
+    async ({ workspace }) => {
+      userHeader({ Authorization: 'Bearer id-token' })
+      workspaceHeader(workspace)
+
+      const headers = new Headers(
+        (await withAgentAuth({ method: 'POST' })).headers
+      )
+
+      expect(headers.get('Authorization')).toBe('Bearer id-token')
     }
-  ])('sends no run token for $label', async ({ header, token }) => {
-    userHeader(header)
-    workspaceRunToken(token)
-
-    const headers = new Headers(
-      (await withAgentAuth({ method: 'POST' })).headers
-    )
-
-    expect(headers.has('X-Comfy-Run-Token')).toBe(false)
-  })
+  )
 
   it('leaves a cloud request to fetchApi, never attaching the personal token', async () => {
     distribution.isCloud = true
@@ -160,6 +150,25 @@ describe('agentSocketAuthParams', () => {
       userHeader(header)
 
       expect((await agentSocketAuthParams())?.get('token')).toBe(token)
+    }
+  )
+
+  it("passes the active workspace's token off-cloud", async () => {
+    userHeader({ Authorization: 'Bearer id-token' })
+    workspaceHeader({ Authorization: 'Bearer workspace-token' })
+
+    expect((await agentSocketAuthParams())?.get('token')).toBe(
+      'workspace-token'
+    )
+  })
+
+  it.for(workspaceFallbacks)(
+    'passes the user credential for $label',
+    async ({ workspace }) => {
+      userHeader({ Authorization: 'Bearer id-token' })
+      workspaceHeader(workspace)
+
+      expect((await agentSocketAuthParams())?.get('token')).toBe('id-token')
     }
   )
 
