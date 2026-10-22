@@ -117,7 +117,7 @@ const options: {
       align="end"
       :side-offset="8"
       :aria-describedby="descriptionId"
-      class="agent-scope flex w-80 flex-col gap-2.5 bg-secondary p-2.5"
+      class="agent-scope flex w-80 flex-col gap-2.5 bg-secondary p-2.5 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
     >
       <div class="flex flex-col gap-0.5">
         <div aria-hidden="true" class="text-sm/5 text-foreground">
