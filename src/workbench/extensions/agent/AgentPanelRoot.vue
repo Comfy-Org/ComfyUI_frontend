@@ -156,7 +156,8 @@ import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
   isCrdtDebugEnabled,
-  resolveDebugPanelEnabled
+  resolveDebugPanelEnabled,
+  startCrdtDebugGate
 } from './crdt/crdtDebugGate'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
@@ -217,6 +218,8 @@ const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
+
+onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
