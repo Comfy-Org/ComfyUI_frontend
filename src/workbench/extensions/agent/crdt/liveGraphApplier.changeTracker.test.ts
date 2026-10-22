@@ -263,7 +263,6 @@ beforeEach(() => {
       }
     }
   })
-  ChangeTracker.isLoadingGraph = false
 })
 
 async function trackedCanvas(graph: LGraph, open: 'root' | 'subgraph') {

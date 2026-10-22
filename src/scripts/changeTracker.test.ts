@@ -51,6 +51,7 @@ vi.mock(import('@/scripts/app'))
 vi.mock(import('@/scripts/api'))
 
 import { app } from '@/scripts/app'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
@@ -193,7 +194,7 @@ describe('ChangeTracker', () => {
   beforeEach(() => {
     resetSubgraphFixtureState()
     nodeIdCounter = 0
-    ChangeTracker.isLoadingGraph = false
+    endGraphLoad(app.rootGraph)
     ChangeTracker.resetCheckStateWarningForTest()
     ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
@@ -547,7 +548,7 @@ describe('ChangeTracker', () => {
       {
         name: 'a graph is loading',
         block: () => {
-          ChangeTracker.isLoadingGraph = true
+          beginGraphLoad(app.rootGraph)
         }
       }
     ])('leaves the workflow alone when $name', ({ block }) => {
@@ -605,9 +606,9 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       })
 
-      it('is a no-op when isLoadingGraph is true', () => {
+      it('is a no-op while the graph is loading', () => {
         const tracker = createTracker()
-        ChangeTracker.isLoadingGraph = true
+        beginGraphLoad(app.rootGraph)
 
         tracker.captureCanvasState()
 
@@ -910,7 +911,7 @@ describe('ChangeTracker', () => {
         {
           name: 'graph loading starts',
           blockSquash: () => {
-            ChangeTracker.isLoadingGraph = true
+            beginGraphLoad(app.rootGraph)
           }
         }
       ])(
