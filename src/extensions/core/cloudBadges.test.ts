@@ -25,7 +25,7 @@ const watchersStartedAtImport = vi.mocked(watch).mock.calls.length
 const extension: ComfyExtension = registerExtension.mock.calls[0][0]
 
 describe('cloudBadges', () => {
-  it('registers without an active Pinia and starts no watcher at import', () => {
+  it('reads no canvas store and starts no watcher at import', () => {
     expect(extension.name).toBe('Comfy.Cloud.Badges')
     expect(watchersStartedAtImport).toBe(0)
   })
