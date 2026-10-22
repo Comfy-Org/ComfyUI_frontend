@@ -28,7 +28,7 @@ const searches = models.flatMap(({ slug, displayName, hubSearch }) =>
   hubSearch ? [{ slug, displayName, term: hubSearch }] : []
 )
 
-describe('model hubSearch terms over the 610 raw hubTemplates.json templates', () => {
+describe(`model hubSearch terms over the ${hubTemplates.length} raw hubTemplates.json templates`, () => {
   it.for(searches)(
     '$slug: "$term" names the model, and every hit (most hits for a fuzzy-prefix term) contains it',
     ({ slug, displayName, term }) => {

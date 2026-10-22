@@ -8,7 +8,7 @@ import hubTemplateDetails from '@/data/hubTemplateDetails.json'
 import hubTemplates from '@/data/hubTemplates.json'
 import { tagDisplayName } from './tag-aliases'
 import type { HubTemplate } from './types'
-import { HUB_WORKFLOWS_PATH } from '@/config/hub-models'
+import { HUB_WORKFLOWS_PATH } from '@/config/hub-paths'
 
 interface HubIoPort {
   readonly nodeType?: string

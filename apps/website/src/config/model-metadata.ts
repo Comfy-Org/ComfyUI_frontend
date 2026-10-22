@@ -35,30 +35,9 @@ export const modelMetadata: Record<string, ModelOverride> = {
     hubSearch: 'openai',
     featured: true
   },
-  'ltxv-api': {
-    docsUrl: 'https://docs.comfy.org/tutorials/video/ltxv',
-    hubSearch: 'ltx',
-    featured: true
-  },
   'wan-api': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
     hubSearch: 'wan',
-    featured: true
-  },
-  'wan-2-2': {
-    docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
-    hubSearch: 'wan',
-    featured: true
-  },
-  'wan-2-1': {
-    docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan-video',
-    hubSearch: 'wan',
-    featured: true
-  },
-  'flux-1-kontext-dev': {
-    docsUrl:
-      'https://docs.comfy.org/tutorials/partner-nodes/black-forest-labs/flux-1-kontext',
-    hubSearch: 'flux',
     featured: true
   },
   'flux1-dev': {
@@ -68,11 +47,6 @@ export const modelMetadata: Record<string, ModelOverride> = {
   },
   'flux1-schnell': {
     hubSearch: 'flux',
-    featured: true
-  },
-  'hunyuan-video': {
-    docsUrl: 'https://docs.comfy.org/tutorials/video/hunyuan/hunyuan-video',
-    hubSearch: 'hunyuan video',
     featured: true
   },
   'hunyuan-3d': {
@@ -86,10 +60,6 @@ export const modelMetadata: Record<string, ModelOverride> = {
   },
   runway: {
     hubSearch: 'runway',
-    featured: true
-  },
-  'stability-ai': {
-    hubSearch: 'stability',
     featured: true
   },
   'seedance-bytedance': {
