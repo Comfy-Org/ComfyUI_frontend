@@ -313,7 +313,8 @@ function removeChip(key: string) {
     selected.value = selected.value.filter((id) => id !== value)
   else if (kind === 'capability')
     capabilities.value = capabilities.value.filter((name) => name !== value)
-  else runsOn.value = runsOn.value.filter((name) => name !== value)
+  else if (kind === 'model')
+    runsOn.value = runsOn.value.filter((name) => name !== value)
 }
 
 function clearFilters() {

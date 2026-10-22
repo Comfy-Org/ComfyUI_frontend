@@ -470,6 +470,11 @@ export function addressCapabilities(params: URLSearchParams): string[] {
   ]
 }
 
+/**
+ * Rewrites the filters in `base` and drops `p` and `cursor`. Unlike
+ * `catalogSearch`, it returns no leading `?`. Callers compare the result to
+ * the current search as a string, so the key order of `filters` matters.
+ */
 export function catalogueAddress(
   base: string,
   {
