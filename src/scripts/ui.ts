@@ -67,7 +67,10 @@ function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
     ensureInBounds()
   })
   resizeObserver.observe(dragEl)
-  signal.addEventListener('abort', () => resizeObserver.disconnect())
+  signal.addEventListener('abort', () => {
+    resizeObserver.disconnect()
+    if (document.onmousemove === elementDrag) closeDragElement()
+  })
 
   function ensureInBounds() {
     try {

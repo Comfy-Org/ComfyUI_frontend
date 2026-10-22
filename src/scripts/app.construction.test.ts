@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { ComfyApp, attachLegacyUI } from '@/scripts/app'
@@ -25,20 +25,25 @@ describe('app and api construction', () => {
     })
   })
 
-  it('stops the legacy auto-queue and removes its menu once detached', () => {
+  it('stops the legacy auto-queue, an active menu drag, and removes its menu once detached', () => {
     const app = new ComfyApp()
     const queuePrompt = vi.spyOn(app, 'queuePrompt').mockResolvedValue(true)
     const detach = attachLegacyUI(app)
+    onTestFinished(detach)
     const { menuContainer } = app.ui
     app.ui.autoQueueEnabled = true
     app.ui.autoQueueMode = 'change'
 
+    menuContainer
+      .querySelector('.drag-handle')
+      ?.dispatchEvent(new MouseEvent('mousedown'))
     api.dispatchCustomEvent('autoQueueGraphChanged')
     detach()
     api.dispatchCustomEvent('autoQueueGraphChanged')
 
     expect(queuePrompt).toHaveBeenCalledOnce()
     expect(menuContainer.isConnected).toBe(false)
+    expect(document.onmousemove).toBeNull()
     expect(document.getElementById('comfy-file-input')).toBeNull()
   })
 })
