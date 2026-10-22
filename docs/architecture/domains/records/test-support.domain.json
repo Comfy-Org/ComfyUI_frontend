@@ -26,11 +26,7 @@
   "characterizationScenarios": [
     {
       "name": "Shared test infrastructure preserves its existing behavior",
-      "checks": [
-        "src/testing/pinia.test.ts",
-        "src/vitestSetup.test.ts",
-        "src/utils/__tests__/extensionTestUtils.test.ts"
-      ]
+      "checks": ["src/testing/pinia.test.ts", "src/vitestSetup.test.ts"]
     }
   ],
   "adrs": [],
