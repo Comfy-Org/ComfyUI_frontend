@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, useTemplateRef } from 'vue'
+import { computed, inject, ref, useId, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import SpokenText from '@/components/SpokenText/SpokenText.vue'
@@ -91,13 +91,17 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@/types/widgetId'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { useEnhancePrompt } from '@/workbench/extensions/agent/composables/useEnhancePrompt'
+import {
+  EnhancePromptStateKey,
+  useEnhancePrompt
+} from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import EnhancePromptButton from '@/workbench/extensions/agent/components/EnhancePromptButton.vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { canEnhancePromptOnNode } from '@/workbench/extensions/agent/utils/canEnhancePromptOnNode'
@@ -107,11 +111,15 @@ import { WidgetInputBaseClass } from './layout'
 const {
   widget,
   placeholder = '',
-  nodeType
+  nodeType,
+  widgetId,
+  hideEnhance = false
 } = defineProps<{
   widget: SimplifiedWidget<string>
   placeholder?: string
   nodeType?: string
+  widgetId?: WidgetId
+  hideEnhance?: boolean
 }>()
 
 const textAreaRef = useTemplateRef('textAreaRef')
@@ -140,9 +148,17 @@ const isReadOnly = computed(() =>
 const agentPanelStore = useAgentPanelStore()
 const { enabled: agentEnabled } = storeToRefs(agentPanelStore)
 const nodeDefStore = useNodeDefStore()
+const panelEnhance = inject(EnhancePromptStateKey, null)
 const resolvedNodeType = computed(() => nodeType ?? widget.nodeType)
 const showEnhance = computed(() => {
-  if (hideLayoutField || !agentEnabled.value || isReadOnly.value) return false
+  if (
+    hideEnhance ||
+    hideLayoutField ||
+    panelEnhance ||
+    !agentEnabled.value ||
+    isReadOnly.value
+  )
+    return false
   const type = resolvedNodeType.value
   return canEnhancePromptOnNode({
     nodeType: type,
@@ -156,16 +172,33 @@ function promptTextarea() {
 }
 
 const {
-  isLocked,
-  isProcessing,
-  isRevealing,
-  revealText,
-  revealStaggerMs,
+  isLocked: ownedLocked,
+  isProcessing: ownedProcessing,
+  isRevealing: ownedRevealing,
+  revealText: ownedRevealText,
+  revealStaggerMs: ownedRevealStaggerMs,
   enhance
 } = useEnhancePrompt({
   prompt: modelValue,
+  widgetId: () => widgetId,
   textarea: promptTextarea
 })
+
+const isLocked = computed(
+  () => panelEnhance?.isLocked.value ?? ownedLocked.value
+)
+const isProcessing = computed(
+  () => panelEnhance?.isProcessing.value ?? ownedProcessing.value
+)
+const isRevealing = computed(
+  () => panelEnhance?.isRevealing.value ?? ownedRevealing.value
+)
+const revealText = computed(
+  () => panelEnhance?.revealText.value ?? ownedRevealText.value
+)
+const revealStaggerMs = computed(
+  () => panelEnhance?.revealStaggerMs.value ?? ownedRevealStaggerMs.value
+)
 
 function handleContextMenu(e: MouseEvent) {
   if (isNodeOptionsOpen() || isFocused.value) {

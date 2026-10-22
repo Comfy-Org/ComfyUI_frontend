@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -10,12 +10,19 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/utils/widgetUtil'
+import * as useEnhancePromptModule from '@/workbench/extensions/agent/composables/useEnhancePrompt'
+import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { widgetId } from '@/types/widgetId'
 
 import WidgetItem from './WidgetItem.vue'
@@ -27,9 +34,16 @@ beforeEach(() => {
 const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
-    props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
+    props: [
+      'widget',
+      'modelValue',
+      'nodeId',
+      'nodeType',
+      'widgetId',
+      'hideEnhance'
+    ],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" :data-widget-id="widgetId ?? \'\'" :data-hide-enhance="hideEnhance ? \'true\' : \'\'" />'
   }
 }))
 
@@ -50,11 +64,29 @@ vi.mock<unknown>(
   })
 )
 
+const enhancePromptRequest = vi.hoisted(() =>
+  vi.fn<EnhancePromptFn>(async ({ prompt }) => ({
+    ok: true,
+    prompt: `${prompt} rewritten`
+  }))
+)
+
+vi.mock(
+  import('@/workbench/extensions/agent/services/enhancePromptRequest'),
+  () => ({
+    enhancePromptRequest
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
+      agent: {
+        enhancePrompt: 'Enhance prompt',
+        enhancingPrompt: 'Enhancing prompt'
+      },
       rightSidePanel: {
         fallbackNodeTitle: 'Untitled'
       }
@@ -62,7 +94,9 @@ const i18n = createI18n({
   }
 })
 
-function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
+function createMockNode(
+  overrides: Partial<LGraphNode> | Record<string, unknown> = {}
+): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
@@ -87,10 +121,17 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
 
 function renderWidgetItem(
   widget: IBaseWidget,
-  node: LGraphNode = createMockNode()
+  node: LGraphNode = createMockNode(),
+  onUpdateWidgetValue?: (value: WidgetValue) => void
 ) {
   return render(WidgetItem, {
-    props: { widget, node },
+    props: {
+      widget,
+      node,
+      ...(onUpdateWidgetValue
+        ? { 'onUpdate:widgetValue': onUpdateWidgetValue }
+        : {})
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -109,7 +150,9 @@ function getStubWidget(container: Element) {
     options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
-    value: el.getAttribute('data-widget-value')
+    value: el.getAttribute('data-widget-value'),
+    widgetId: el.getAttribute('data-widget-id'),
+    hideEnhance: el.getAttribute('data-hide-enhance') === 'true'
   }
 }
 
@@ -290,6 +333,310 @@ describe('WidgetItem', () => {
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)
+    })
+  })
+
+  describe('enhance prompt', () => {
+    function enhanceButton() {
+      return screen.queryByRole('button', { name: 'Enhance prompt' })
+    }
+
+    it.for([
+      {
+        type: 'customtext',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'multiline',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'textarea',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'combo',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: false
+      },
+      {
+        type: 'customtext',
+        nodeType: 'KSampler',
+        agent: true,
+        visible: false
+      },
+      {
+        type: 'customtext',
+        nodeType: 'CLIPTextEncode',
+        agent: false,
+        visible: false
+      }
+    ])(
+      '$type on $nodeType with agent=$agent → visible=$visible',
+      ({ type, nodeType, agent, visible }) => {
+        useAgentPanelStore().enabled = agent
+        renderWidgetItem(
+          createMockWidget({ type, name: 'prompt', value: 'a cat' }),
+          createMockNode({ type: nodeType })
+        )
+
+        expect(Boolean(enhanceButton())).toBe(visible)
+      }
+    )
+
+    it('shows the button on partner API nodes', () => {
+      useAgentPanelStore().enabled = true
+      vi.spyOn(useNodeDefStore(), 'getNodeDefByName').mockReturnValue(
+        fromPartial({ api_node: true })
+      )
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'ByteDanceSeedance' })
+      )
+
+      expect(enhanceButton()).toBeInTheDocument()
+    })
+
+    it('hides the button when the prompt field is read-only', () => {
+      useAgentPanelStore().enabled = true
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat',
+          options: { read_only: true }
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      expect(enhanceButton()).not.toBeInTheDocument()
+    })
+
+    it('does not start an enhance session or bind enhance attrs on combo widgets', () => {
+      const spy = vi.spyOn(useEnhancePromptModule, 'useEnhancePrompt')
+      const { container } = renderWidgetItem(
+        createMockWidget({ type: 'combo', name: 'seed', value: 'option_a' })
+      )
+      const stub = getStubWidget(container)
+
+      expect(spy).not.toHaveBeenCalled()
+      expect(stub.widgetId).toBe('')
+      expect(stub.hideEnhance).toBe(false)
+      spy.mockRestore()
+    })
+
+    it('binds enhance attrs only on prompt textarea widgets', () => {
+      useAgentPanelStore().enabled = true
+      const { container } = renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+      const stub = getStubWidget(container)
+
+      expect(stub.widgetId).toBe(
+        widgetId('test-graph-id', toNodeId(1), 'prompt')
+      )
+      expect(stub.hideEnhance).toBe(true)
+    })
+
+    it('uses the library icon button size and muted-textonly variant', () => {
+      useAgentPanelStore().enabled = true
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      const button = screen.getByRole('button', { name: 'Enhance prompt' })
+      expect(button).toHaveClass('size-8')
+      expect(button.dataset.variant).toBe('muted-textonly')
+      expect(button.innerHTML).toContain('size-4')
+    })
+
+    it('keeps enhance on the label row and hides the in-field button', () => {
+      useAgentPanelStore().enabled = true
+      vi.mocked(getComponent).mockReturnValue(WidgetTextarea)
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      expect(
+        screen.getAllByRole('button', { name: 'Enhance prompt' })
+      ).toHaveLength(1)
+      const button = screen.getByRole('button', { name: 'Enhance prompt' })
+      expect(button).toHaveClass('size-8')
+      expect(button.innerHTML).toContain('size-4')
+    })
+
+    it('replaces the prompt in place when enhance succeeds', async () => {
+      useAgentPanelStore().enabled = true
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'a cat'
+      })
+      const onUpdate = vi.fn((value: WidgetValue) => {
+        widget.value = value
+      })
+      renderWidgetItem(
+        widget,
+        createMockNode({ type: 'CLIPTextEncode' }),
+        onUpdate
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+
+      await waitFor(() => {
+        expect(onUpdate).toHaveBeenCalledWith('a cat rewritten')
+      })
+      expect(onUpdate).toHaveBeenCalledOnce()
+      expect(widget.value).toBe('a cat rewritten')
+    })
+
+    it('leaves the original prompt unchanged when enhance fails', async () => {
+      useAgentPanelStore().enabled = true
+      enhancePromptRequest.mockResolvedValueOnce({
+        ok: false,
+        reason: 'failed'
+      })
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'keep this wording'
+      })
+      const onUpdate = vi.fn((value: WidgetValue) => {
+        widget.value = value
+      })
+      renderWidgetItem(
+        widget,
+        createMockNode({ type: 'CLIPTextEncode' }),
+        onUpdate
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+      await nextTick()
+
+      expect(widget.value).toBe('keep this wording')
+      expect(onUpdate).not.toHaveBeenCalled()
+    })
+
+    it('locks the prompt field while the enhance request is in flight', async () => {
+      useAgentPanelStore().enabled = true
+      let resolveRequest: (result: { ok: true; prompt: string }) => void = () =>
+        undefined
+      enhancePromptRequest.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRequest = resolve
+          })
+      )
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'original prompt'
+      })
+      renderWidgetItem(widget, createMockNode({ type: 'CLIPTextEncode' }))
+
+      const pending = userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Enhancing prompt' })
+        ).toBeDisabled()
+      })
+
+      resolveRequest({ ok: true, prompt: 'rewritten prompt' })
+      await pending
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Enhance prompt' })
+        ).toBeEnabled()
+      })
+    })
+
+    it('shares processing with a canvas prompt box for the same widget', async () => {
+      useAgentPanelStore().enabled = true
+      vi.mocked(getComponent).mockReturnValue(WidgetTextarea)
+      const id = widgetId('test-graph-id', toNodeId(1), 'prompt')
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'a prompt',
+        widgetId: id
+      })
+      enhancePromptRequest.mockReturnValue(new Promise(() => {}))
+
+      render(WidgetItem, {
+        props: {
+          widget,
+          node: createMockNode({ type: 'CLIPTextEncode' })
+        },
+        global: {
+          plugins: [i18n],
+          provide: { [HideLayoutFieldKey as symbol]: true },
+          stubs: {
+            EditableText: { template: '<span />' },
+            WidgetActions: { template: '<span />' }
+          }
+        }
+      })
+      render(WidgetTextarea, {
+        props: {
+          widget: {
+            name: 'prompt',
+            type: 'customtext',
+            value: 'a prompt'
+          },
+          modelValue: 'a prompt',
+          nodeType: 'CLIPTextEncode',
+          widgetId: id
+        },
+        global: {
+          plugins: [i18n]
+        }
+      })
+
+      const buttons = screen.getAllByRole('button', { name: 'Enhance prompt' })
+      await userEvent.click(buttons[0])
+
+      await waitFor(() => {
+        for (const field of screen.getAllByRole('textbox')) {
+          expect(field).toHaveAttribute('readonly')
+          expect(field).toHaveClass('agent-shimmer-text')
+        }
+      })
+      expect(enhancePromptRequest).toHaveBeenCalledOnce()
+
+      await userEvent.click(buttons[1] ?? buttons[0])
+      expect(enhancePromptRequest).toHaveBeenCalledOnce()
     })
   })
 })

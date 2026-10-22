@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -26,12 +27,26 @@ import type {
   WidgetValue as SimplifiedWidgetValue
 } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { canEnhancePromptOnNode } from '@/workbench/extensions/agent/utils/canEnhancePromptOnNode'
+
 import WidgetActions from './WidgetActions.vue'
+import WidgetItemEnhancePrompt from './WidgetItemEnhancePrompt.vue'
+
+function isPromptTextareaWidget(type: string): boolean {
+  const canonical = type.toLowerCase()
+  return (
+    canonical === 'textarea' ||
+    canonical === 'multiline' ||
+    canonical === 'customtext'
+  )
+}
 
 const {
   widget,
@@ -65,6 +80,8 @@ const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const linkStore = useLinkStore()
+const agentPanelStore = useAgentPanelStore()
+const { enabled: agentEnabled } = storeToRefs(agentPanelStore)
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -131,6 +148,49 @@ const widgetValue = computed({
   }
 })
 
+const promptValue = computed({
+  get: () => (typeof widgetValue.value === 'string' ? widgetValue.value : ''),
+  set: (value: string) => {
+    widgetValue.value = value
+  }
+})
+
+const enhanceWidgetId = computed((): WidgetId | undefined => {
+  if (widget.widgetId) return widget.widgetId
+  const graphId = node.graph?.rootGraph.id
+  const bareNodeId = stripGraphPrefix(node.id)
+  if (!graphId || !bareNodeId) return undefined
+  return widgetId(graphId, bareNodeId, widget.name)
+})
+
+const showEnhance = computed(() => {
+  if (
+    !agentEnabled.value ||
+    !isPromptTextareaWidget(simplifiedWidget.value.type)
+  )
+    return false
+  if (
+    isLinked.value ||
+    widget.disabled ||
+    widget.options?.read_only ||
+    widget.options?.disabled
+  ) {
+    return false
+  }
+  return canEnhancePromptOnNode({
+    nodeType: node.type,
+    isApiNode: nodeDefStore.getNodeDefByName(node.type)?.api_node === true
+  })
+})
+
+const promptWidgetBindings = computed(() => {
+  if (!isPromptTextareaWidget(simplifiedWidget.value.type)) return {}
+  return {
+    widgetId: enhanceWidgetId.value,
+    hideEnhance: true
+  }
+})
+
 const displayLabel = customRef((track, trigger) => {
   return {
     get() {
@@ -192,6 +252,11 @@ const displayLabel = customRef((track, trigger) => {
         v-if="!hiddenWidgetActions"
         class="pointer-events-auto flex shrink-0 items-center gap-1"
       >
+        <WidgetItemEnhancePrompt
+          v-if="showEnhance"
+          v-model="promptValue"
+          :widget-id="enhanceWidgetId"
+        />
         <WidgetActions
           v-model:label="displayLabel"
           :widget
@@ -217,6 +282,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
+      v-bind="promptWidgetBindings"
       :node-id="node.id"
       :node-type="node.type"
       :class="
