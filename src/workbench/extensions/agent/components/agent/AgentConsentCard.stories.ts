@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -21,6 +22,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   title: 'Agent/ConsentCard',
   component: AgentConsentCard,
   tags: ['autodocs'],
+  parameters: { layout: 'fullscreen' },
   // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
@@ -28,12 +30,14 @@ const meta: Meta<typeof AgentConsentCard> = {
     paragraphs,
     videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
-    docsUrl: AGENT_DOCS_URL
+    docsUrl: AGENT_DOCS_URL,
+    onAccept: fn(),
+    onReject: fn()
   },
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-background p-8"><story /></div>'
+        '<div class="grid min-h-dvh place-items-center bg-background p-4"><story /></div>'
     })
   ]
 }
@@ -41,6 +45,16 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const SignedOut: Story = {
+  args: {
+    requiresSignIn: true,
+    paragraphs: [
+      enMessages.agent.consent.body1,
+      enMessages.agent.consent.body2BeforeSignIn
+    ]
+  }
+}
 
 export const Loading: Story = {
   args: { accepting: true }

@@ -14,8 +14,11 @@ afterEach(() => {
   window.history.replaceState(null, '', '/')
 })
 
-function mount(markup: string) {
-  window.history.replaceState(null, '', '/solutions/vfx/?utm_source=linkedin')
+function mount(
+  markup: string,
+  pagePath = '/solutions/vfx/?utm_source=linkedin'
+) {
+  window.history.replaceState(null, '', pagePath)
   const root = document.createElement('div')
   root.innerHTML = markup
   document.body.append(root)
@@ -100,6 +103,7 @@ describe('VFX campaign journey', () => {
 
   it.for([
     { attribute: 'data-campaign-hero', placement: 'hero' },
+    { attribute: 'data-vfx-hero', placement: 'hero' },
     { attribute: 'id="workflows"', placement: 'workflows' },
     { attribute: 'id="studio"', placement: 'studio' },
     { attribute: '', placement: 'page' }
@@ -157,4 +161,43 @@ describe('VFX campaign journey', () => {
     link.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(captureVfxLinkClick).not.toHaveBeenCalled()
   })
+})
+
+it('keeps only the marked V3 nav cloud link free of UTMs across decoration and updates', async () => {
+  const root = mount(
+    '<nav><a data-vfx-nav-no-utm href="https://cloud.comfy.org/?share=keep&utm_source=old">Try Comfy Cloud</a></nav><a href="/contact/?interest=vfx">Contact</a>',
+    '/solutions/vfx/v3/?utm_source=linkedin'
+  )
+  const nav = within(root).getByRole('link', { name: 'Try Comfy Cloud' })
+  expect(nav).toHaveAttribute('href', 'https://cloud.comfy.org/?share=keep')
+  expect(within(root).getByRole('link', { name: 'Contact' })).toHaveAttribute(
+    'href',
+    '/contact/?interest=vfx&utm_source=linkedin'
+  )
+  nav.setAttribute(
+    'href',
+    'https://cloud.comfy.org/?share=keep&utm_campaign=readded'
+  )
+  await vi.waitFor(() =>
+    expect(nav).toHaveAttribute('href', 'https://cloud.comfy.org/?share=keep')
+  )
+})
+it('does not apply the nav exception to VFX v2', () => {
+  const root = mount(
+    '<nav><a data-vfx-nav-no-utm href="https://cloud.comfy.org/">Try Comfy Cloud</a></nav>'
+  )
+  expect(
+    within(root).getByRole('link', { name: 'Try Comfy Cloud' })
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?utm_source=linkedin')
+})
+
+it('keeps attribution on a non-nav V3 link even if it has the nav marker', () => {
+  const root = mount(
+    '<a data-vfx-nav-no-utm href="https://cloud.comfy.org/?share=keep">Workflow</a>',
+    '/solutions/vfx/v3/?utm_source=linkedin'
+  )
+  expect(within(root).getByRole('link', { name: 'Workflow' })).toHaveAttribute(
+    'href',
+    'https://cloud.comfy.org/?share=keep&utm_source=linkedin'
+  )
 })

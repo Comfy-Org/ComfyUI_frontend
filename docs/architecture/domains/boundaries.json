@@ -619,8 +619,6 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/components/common/UserCredit.test.ts",
-          "src/components/common/UserCredit.vue",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
           "src/components/dialog/content/credit/**",
@@ -1793,7 +1791,6 @@
           "src/stores/queueStore.loadWorkflow.test.ts",
           "src/stores/queueStore.test.ts",
           "src/stores/queueStore.ts",
-          "src/storybook/mocks/useJobActions.ts",
           "src/storybook/mocks/useJobList.ts"
         ]
       },
@@ -3479,10 +3476,6 @@
         "name": "workspace/domain",
         "patterns": [
           "src/platform/workspace/api/workspaceApiError.ts",
-          "src/platform/workspace/utils/badgeColor.test.ts",
-          "src/platform/workspace/utils/badgeColor.ts",
-          "src/platform/workspace/utils/relativeTime.test.ts",
-          "src/platform/workspace/utils/relativeTime.ts",
           "src/platform/workspace/workspaceConstants.ts",
           "src/platform/workspace/workspaceTypes.ts"
         ]
@@ -3492,8 +3485,6 @@
         "patterns": [
           "src/platform/workspace/composables/useMembersPanel.test.ts",
           "src/platform/workspace/composables/useMembersPanel.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.test.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.ts",
           "src/platform/workspace/composables/useWorkspaceDialogs.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.test.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.ts",
@@ -3535,13 +3526,9 @@
           "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue",
           "src/platform/workspace/components/InviteMembersForm.test.ts",
           "src/platform/workspace/components/InviteMembersForm.vue",
-          "src/platform/workspace/components/RoleBadge.test.ts",
-          "src/platform/workspace/components/RoleBadge.vue",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
           "src/platform/workspace/components/WorkspaceSwitcherPopover.test.ts",
-          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue",
-          "src/platform/workspace/composables/useAutoPageSize.test.ts",
-          "src/platform/workspace/composables/useAutoPageSize.ts"
+          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue"
         ]
       },
       {
@@ -4425,14 +4412,37 @@
       },
       {
         "from": "bounding-boxes/domain",
-        "allow": ["bounding-boxes/domain", "unclassified"]
+        "allow": [
+          "bounding-boxes/domain",
+          "color-conversion/domain",
+          "design-system/domain",
+          "dialog-host/domain",
+          "graph-model/domain",
+          "vue-node-widgets/domain",
+          "design-system/domain/outer-1",
+          "graph-model/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "bounding-boxes/application",
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
+          "color-conversion/domain",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
           "bounding-boxes/application/outer-1",
+          "design-system/domain/outer-1",
+          "graph-model/domain/outer-1",
           "unclassified"
         ]
       },
@@ -4442,7 +4452,23 @@
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
+          "color-conversion/domain",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "graph-model/domain",
+          "graph-model/application",
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "vue-node-widgets/presentation",
           "bounding-boxes/application/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "vue-node-widgets/presentation/outer-1",
+          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4453,7 +4479,30 @@
           "bounding-boxes/application",
           "bounding-boxes/presentation",
           "bounding-boxes/integration",
+          "color-conversion/domain",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
+          "vue-node-widgets/presentation",
+          "vue-node-widgets/integration",
           "bounding-boxes/application/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
+          "vue-node-widgets/presentation/outer-1",
+          "vue-node-widgets/integration/outer-1",
+          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6846,7 +6895,20 @@
         "allow": [
           "bounding-boxes/domain",
           "bounding-boxes/application",
+          "color-conversion/domain",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "vue-node-widgets/domain",
+          "vue-node-widgets/application",
           "bounding-boxes/application/outer-1",
+          "design-system/domain/outer-1",
+          "graph-model/domain/outer-1",
           "unclassified"
         ]
       },

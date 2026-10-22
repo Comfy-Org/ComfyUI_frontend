@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   update-locales:
-    if: github.ref_type == 'branch'
+    if: github.ref_type == 'branch' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

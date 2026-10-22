@@ -7,6 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
@@ -158,8 +159,10 @@ const displayLabel = customRef((track, trigger) => {
     :class="
       cn(
         'widget-item group col-span-full grid grid-cols-subgrid rounded-lg',
-        isDraggable &&
-          'draggable-item drag-handle cursor-grab bg-background outline-background will-change-auto! [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+        isDraggable && [
+          draggableItemClass,
+          'draggable-item drag-handle cursor-grab bg-background outline-background will-change-auto [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+        ]
       )
     "
   >

@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -316,6 +317,24 @@ export class NodeReference {
       width,
       height
     }
+  }
+  /** Page-space bounds of the node's current pos and size, title bar included. */
+  async getClientBounding(): Promise<Position & Size> {
+    return this.comfyPage.page.evaluate((id) => {
+      const app = window.app!
+      const node = app.canvas.graph!.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+
+      const bounds: Rect = [0, 0, 0, 0]
+      if (node.flags.collapsed) node.getBounding(bounds)
+      else node.measure(bounds)
+
+      const [x, y, width, height] = bounds
+      const [left, top] = app.canvasPosToClientPos([x, y])
+      const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
+
+      return { x: left, y: top, width: right - left, height: bottom - top }
+    }, this.id)
   }
   async getSize(): Promise<Size> {
     const size = await this.getProperty<[number, number]>('size')

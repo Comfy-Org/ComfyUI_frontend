@@ -1,33 +1,81 @@
-<!-- One row of the deployment switcher's list (FE-2434): a label, a caption,
-     and a check on the row this browser runs on. `checked: null` makes it an
-     action row rather than a choice. -->
 <template>
-  <button
-    type="button"
-    :role="checked === null ? 'menuitem' : 'menuitemradio'"
-    :aria-checked="checked ?? undefined"
+  <MenuRadioItem
+    :value
+    :disabled
     :class="
       cn(
-        'flex w-full cursor-pointer appearance-none items-center gap-2 border-0 border-b bg-transparent px-4 py-3 text-left',
-        'hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
-        checked && 'bg-secondary'
+        switcherItemClass,
+        'data-[state=checked]:bg-secondary data-[state=checked]:data-highlighted:bg-accent'
       )
     "
+    @select="emit('select', $event)"
   >
-    <div class="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-      <span class="truncate text-sm text-foreground">{{ label }}</span>
-      <span class="text-xs text-muted-foreground">{{ caption }}</span>
-    </div>
-    <i v-if="checked" class="pi pi-check shrink-0 text-sm text-foreground" />
-  </button>
+    <DeploymentStatusIcon
+      :tone
+      icon-class="size-3.5 text-muted-foreground"
+      ring-class="ring-1 ring-background group-data-highlighted:ring-accent group-data-[state=checked]:ring-secondary group-data-[state=checked]:group-data-highlighted:ring-accent"
+    />
+    <span class="min-w-0 truncate text-foreground">{{ title }}</span>
+    <span v-if="subtitle" class="shrink-0 text-muted-foreground">
+      {{ subtitle }}
+    </span>
+    <span
+      class="ml-auto flex shrink-0 items-center gap-1.5 pl-4 text-muted-foreground tabular-nums"
+    >
+      <template v-if="switching">
+        <i
+          class="icon-[lucide--loader-circle] size-3.5 animate-spin"
+          aria-hidden="true"
+        />
+        {{ $t('deploymentSwitcher.switching') }}
+      </template>
+      <template v-else>
+        <span v-if="meta">{{ meta }}</span>
+        <span :class="switcherTrailingSlotClass">
+          <DropdownMenuItemIndicator class="flex">
+            <i
+              class="icon-[lucide--check] size-3.5 text-foreground"
+              aria-hidden="true"
+            />
+          </DropdownMenuItemIndicator>
+        </span>
+      </template>
+    </span>
+  </MenuRadioItem>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { DropdownMenuItemIndicator } from 'reka-ui'
 
-const { label, caption, checked } = defineProps<{
-  label: string
-  caption: string
-  checked: boolean | null
+import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
+import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
+import {
+  switcherItemClass,
+  switcherTrailingSlotClass
+} from '@/platform/workspace/components/deploymentSwitcherStyles'
+import type { DeploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
+
+const {
+  value,
+  title,
+  subtitle = null,
+  tone,
+  meta = null,
+  switching = false,
+  disabled = false
+} = defineProps<{
+  value: string
+  title: string
+  subtitle?: string | null
+  /** The deployment's status; leave it out for Comfy Cloud. */
+  tone?: DeploymentStatusTone
+  meta?: string | null
+  switching?: boolean
+  disabled?: boolean
+}>()
+
+const emit = defineEmits<{
+  select: [event: Event]
 }>()
 </script>
