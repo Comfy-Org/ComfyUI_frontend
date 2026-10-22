@@ -33,17 +33,19 @@ function isAppRoute(url: string): boolean {
   )
 }
 
-/** A download of `url` that carries the app's authorization when the URL is one of our own routes. */
+/** A cloud download of `url`, authorized when the URL is one of our own routes. */
 export function createFileDownload(
   url: string,
   filename: string
 ): AssetDownload {
-  if (!isCloud || !isAppRoute(url)) return { mode: 'direct', url, filename }
+  if (!isCloud) return { mode: 'direct', url, filename }
   return {
     mode: 'fetch',
     url,
     filename,
-    fetch: (route) => api.fetchApi(route)
+    fetch: isAppRoute(url)
+      ? (route) => api.fetchApi(route)
+      : (route) => fetch(route, { credentials: 'omit' })
   }
 }
 

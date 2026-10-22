@@ -23,6 +23,8 @@ beforeEach(() => {
   vi.mocked(api.apiURL).mockImplementation(
     (path) => `http://localhost:8188/api${path}`
   )
+  vi.mocked(fetch).mockReset()
+  vi.mocked(fetch).mockImplementation(async () => new Response())
 })
 
 describe('createFileDownload', () => {
@@ -45,19 +47,22 @@ describe('createFileDownload', () => {
       await download.fetch?.(url)
 
       expect(api.fetchApi).toHaveBeenCalledWith(url)
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
   it.for(['https://cdn.example.com/image.png', 'blob:http://localhost:3000/1'])(
-    'leaves %s on the plain download path on cloud',
-    (url) => {
+    'fetches %s on cloud without credentials',
+    async (url) => {
       distribution.isCloud = true
+      const download = createFileDownload(url, 'a.png')
+      if (download.mode !== 'fetch')
+        throw new Error('expected a fetch download')
 
-      expect(createFileDownload(url, 'a.png')).toEqual({
-        mode: 'direct',
-        url,
-        filename: 'a.png'
-      })
+      await download.fetch?.(url)
+
+      expect(fetch).toHaveBeenCalledWith(url, { credentials: 'omit' })
+      expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
 })
