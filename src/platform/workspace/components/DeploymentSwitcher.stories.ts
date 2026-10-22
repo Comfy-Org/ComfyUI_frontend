@@ -6,13 +6,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
-/**
- * The engine button in the Run bar: which deployment this editor runs on,
- * and the list it may pick from. Each story seeds the store's state
- * directly; the Storybook team-workspace stub has no active workspace, so
- * the store never calls the listing route here. Click the button to open
- * the list.
- */
+/** The Run bar's engine button and its Run on list; click it to open. */
 const meta: Meta<typeof DeploymentSwitcher> = {
   title: 'Components/DeploymentSwitcher',
   component: DeploymentSwitcher,
@@ -103,10 +97,7 @@ export const Picked: Story = seeded({
   buildsVisible: true
 })
 
-/**
- * An owner set a workspace default (BE-17480) and this browser has no pick
- * of its own, so it follows it; the list tags that row Default.
- */
+/** No pick of its own, so this browser follows the workspace default. */
 export const FollowingWorkspaceDefault: Story = seeded({
   phase: 'ready',
   deployments: [studioProd, experiments, studioStaging],
@@ -118,10 +109,7 @@ export const FollowingWorkspaceDefault: Story = seeded({
   buildsVisible: true
 })
 
-/**
- * This browser picked for itself while the workspace has a default: the
- * picking the default's row goes back to following it.
- */
+/** An own pick; choosing the default's row follows the default again. */
 export const OwnPickOverWorkspaceDefault: Story = seeded({
   phase: 'ready',
   deployments: [studioProd, experiments, studioStaging],

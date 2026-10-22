@@ -6,7 +6,7 @@
   >
     <EngineMenu
       v-model:open="isOpen"
-      :disabled="isSwitching || isSettling"
+      :disabled="isSwitching"
       :tooltip="hoverTooltip"
       :label="triggerLabel"
       trigger-testid="deployment-switcher-trigger"
@@ -17,11 +17,11 @@
           <DeploymentStatusIcon
             :tone="currentTone"
             icon-class="size-4"
-            ring-class="ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
+            ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
           <span
             v-if="isNew"
-            class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-base-foreground ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
+            class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-foreground ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
             aria-hidden="true"
             data-testid="deployment-switcher-new"
           />
@@ -33,7 +33,7 @@
         @follow="follow"
         @set-default="changeDefault"
         @reload="reload"
-        @create-custom-deployment="openCreateCustomDeploymentDialog"
+        @create-custom-deployment="createCustomDeployment"
       />
     </EngineMenu>
   </div>
@@ -46,10 +46,9 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import EngineMenu from '@/platform/workspace/components/EngineMenu.vue'
@@ -58,13 +57,13 @@ import {
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
-import type { DiscardedWork } from '@/platform/workspace/deploymentSwitchReload'
 import {
-  NOTHING_DISCARDED,
-  reloadForDeploymentSwitch
-} from '@/platform/workspace/deploymentSwitchReload'
+  confirmUnsavedWorkBeforeSwitch,
+  unsavedWorkflows
+} from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
-import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
@@ -72,15 +71,12 @@ const store = useDeploymentPickStore()
 const {
   deployments,
   pickedDeployment,
-  changeSinceBoot,
   isVisible,
   isSwitching,
   listingRefused
 } = storeToRefs(store)
-const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
-const { isApiKeyLogin } = useCurrentUser()
-const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
+const isOffered = useDeploymentSwitcherOffered()
 const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
 
 const isOpen = ref(false)
@@ -103,12 +99,31 @@ useEventListener(window, 'focus', () => {
   })
 })
 
-const isNew = computed(() => !settingStore.get('Comfy.DeploymentSwitcher.Seen'))
+const markedUntilClose = ref(false)
+const isNew = computed(
+  () =>
+    markedUntilClose.value || !settingStore.get('Comfy.DeploymentSwitcher.Seen')
+)
+
+function rememberSeen() {
+  markedUntilClose.value = true
+  settingStore
+    .set('Comfy.DeploymentSwitcher.Seen', true)
+    .catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_saving_deployment_switcher_seen',
+        surface: 'platform'
+      })
+    )
+}
 
 function onOpenChange(open: boolean) {
-  if (open) void store.load()
-  else if (isNew.value)
-    void settingStore.set('Comfy.DeploymentSwitcher.Seen', true)
+  if (!open) {
+    markedUntilClose.value = false
+    return
+  }
+  void store.load()
+  if (!settingStore.get('Comfy.DeploymentSwitcher.Seen')) rememberSeen()
 }
 
 const currentTone = computed(() =>
@@ -170,77 +185,57 @@ function targetLabel(deploymentId: string | null): string {
   )
 }
 
-const isSettling = ref(false)
-
-async function settleBeforeSwitch(
-  deployment: string
-): Promise<DiscardedWork | null> {
-  if (isSettling.value) return null
-  if (workflowStore.modifiedWorkflows.length > 0) isOpen.value = false
-  isSettling.value = true
-  try {
-    return await settleUnsavedWorkBeforeSwitch(deployment)
-  } finally {
-    isSettling.value = false
-  }
+async function confirmSwitchTo(deployment: string): Promise<boolean> {
+  if (unsavedWorkflows().length > 0) isOpen.value = false
+  return confirmUnsavedWorkBeforeSwitch(deployment)
 }
 
-function reloadOnto(discarded: DiscardedWork) {
-  reloadForDeploymentSwitch(discarded, () => void store.load())
-}
-
-function landWhenNothingSwitched(discarded: DiscardedWork) {
-  if (isSwitching.value) return
-  switchingTo.value = null
-  isOpen.value = false
-  if (changeSinceBoot.value !== null) reloadOnto(discarded)
-}
-
-async function switchTo(
-  deploymentId: string | null,
-  discarded: DiscardedWork,
+async function withoutLeavePrompt(
   start: () => Promise<string | null>
-) {
-  switchingTo.value = deploymentId ?? COMFY_CLOUD_ROW
+): Promise<string | null> {
+  const keepLeavePrompt = skipLeavePromptOnce()
   const refusal = await start()
-  report(t('deploymentSwitcher.failedToSwitch'), refusal)
-  if (refusal === null) landWhenNothingSwitched(discarded)
+  if (!isSwitching.value) keepLeavePrompt()
+  return refusal
 }
 
 async function choose(deploymentId: string | null) {
-  const discarded = await settleBeforeSwitch(targetLabel(deploymentId))
-  if (discarded === null) return
-  await switchTo(deploymentId, discarded, () =>
-    store.pick(deploymentId, discarded)
+  if (!(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = deploymentId ?? COMFY_CLOUD_ROW
+  report(
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.pick(deploymentId))
   )
 }
 
 async function follow(deploymentId: string) {
-  const discarded =
-    deploymentId === pickedDeployment.value?.deployment_id
-      ? NOTHING_DISCARDED
-      : await settleBeforeSwitch(targetLabel(deploymentId))
-  if (discarded === null) return
-  await switchTo(deploymentId, discarded, () =>
-    store.followWorkspace(discarded)
+  const reloads = deploymentId !== pickedDeployment.value?.deployment_id
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = deploymentId
+  report(
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.followWorkspace())
   )
 }
 
 async function changeDefault(deploymentId: string | null) {
-  const discarded = store.defaultMovesThisBrowser(deploymentId)
-    ? await settleBeforeSwitch(targetLabel(deploymentId))
-    : NOTHING_DISCARDED
-  if (discarded === null) return
+  const reloads = store.defaultMovesThisBrowser(deploymentId)
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
   switchingTo.value = null
   report(
     t('deploymentSwitcher.failedToSetDefault'),
-    await store.setDefault(deploymentId, discarded)
+    await withoutLeavePrompt(() => store.setDefault(deploymentId))
   )
+}
+
+function createCustomDeployment() {
+  void openCreateCustomDeploymentDialog()
 }
 
 async function reload() {
   if (isSwitching.value) return
-  const discarded = await settleBeforeSwitch(currentLabel.value)
-  if (discarded !== null) reloadOnto(discarded)
+  if (!(await confirmSwitchTo(currentLabel.value)) || isSwitching.value) return
+  skipLeavePromptOnce()
+  reloadForDeploymentSwitch(() => void store.load())
 }
 </script>

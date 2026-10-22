@@ -20,7 +20,7 @@
   <div class="@container w-[min(640px,calc(100vw-2rem))]">
     <div
       data-testid="custom-deployment-card"
-      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
+      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
     >
       <Button
         variant="muted-textonly"
@@ -45,10 +45,10 @@
         >
           <template #fallback>
             <div
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
             >
               <span
-                class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-base-foreground"
+                class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10"
                 aria-hidden="true"
               >
                 <i class="icon-[lucide--play] size-6" />
@@ -70,7 +70,7 @@
             <li
               v-for="point in pitch.points"
               :key="point"
-              class="flex items-start gap-2.5 text-sm/5 text-base-foreground/75"
+              class="flex items-start gap-2.5 text-sm/5 text-foreground/75"
             >
               <i
                 class="mt-0.75 icon-[lucide--check] size-3.5 shrink-0 text-muted-foreground"

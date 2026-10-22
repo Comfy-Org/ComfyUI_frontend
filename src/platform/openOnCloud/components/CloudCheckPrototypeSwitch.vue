@@ -3,7 +3,7 @@
     <div
       role="group"
       :aria-label="$t('openOnCloud.prototype.label')"
-      class="fixed right-4 bottom-4 z-3000 flex flex-col gap-1.5 rounded-lg border border-border-default bg-base-background p-2 text-xs shadow-lg"
+      class="fixed right-4 bottom-4 z-3000 flex flex-col gap-1.5 rounded-lg border border-border bg-background p-2 text-xs shadow-lg"
       data-testid="cloud-check-prototype-switch"
     >
       <span class="px-1 text-muted-foreground">

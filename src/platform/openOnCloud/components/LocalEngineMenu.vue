@@ -62,14 +62,14 @@
               <path
                 d="M5 17.743A7 7 0 1 1 15.71 10h1.79a4.5 4.5 0 0 1 1.5 8.742"
               />
-              <path class="stroke-success-background" d="m17 15-5.5 5.5L9 18" />
+              <path class="stroke-success" d="m17 15-5.5 5.5L9 18" />
             </svg>
             <i
               v-else
               class="icon-[lucide--cloud] size-3.5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             />
-            <span class="min-w-0 truncate text-base-foreground">
+            <span class="min-w-0 truncate text-foreground">
               {{ $t('deploymentSwitcher.comfyCloud') }}
             </span>
             <span
@@ -84,7 +84,7 @@
               </template>
               <span
                 v-else-if="canOpen"
-                class="-mr-1.5 flex h-5 items-center gap-1 rounded-sm bg-secondary-background pr-1.5 pl-2 font-medium text-base-foreground group-data-highlighted:bg-secondary-background-hover"
+                class="-mr-1.5 flex h-5 items-center gap-1 rounded-sm bg-secondary pr-1.5 pl-2 font-medium text-foreground group-data-highlighted:bg-accent"
               >
                 {{ $t('openOnCloud.open') }}
                 <i

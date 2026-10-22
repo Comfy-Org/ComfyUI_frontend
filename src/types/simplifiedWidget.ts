@@ -10,6 +10,9 @@ import type {
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetValue } from '@/types/widgetValue'
+
+export type { WidgetValue } from '@/types/widgetValue'
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -22,9 +25,6 @@ export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 export function isControlOption(value: unknown): value is ControlOptions {
   return CONTROL_OPTIONS.some((option) => option === value)
 }
-
-/** Valid types for widget values */
-export type WidgetValue = string | number | boolean | object | undefined | null
 
 function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val

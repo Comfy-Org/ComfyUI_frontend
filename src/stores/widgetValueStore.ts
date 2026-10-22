@@ -11,7 +11,7 @@ import {
   widgetId as createWidgetId
 } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 import {
   applyLegacyHiddenWrite,

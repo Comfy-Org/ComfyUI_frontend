@@ -71,6 +71,6 @@ export const OpenedOnCloud: Story = {
         description: t('openOnCloud.openedFromLocalDetail')
       })
     },
-    template: '<div class="h-screen bg-base-background"><Toaster /></div>'
+    template: '<div class="h-screen bg-background"><Toaster /></div>'
   })
 }

@@ -6,6 +6,7 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -304,11 +305,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
+    name: 'Agent consent offer declined',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.DeploymentSwitcher.Seen',
     name: 'Running on button opened at least once',
     type: 'hidden',
     defaultValue: false,
-    versionAdded: '1.58.0'
+    versionAdded: '1.59.0'
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',

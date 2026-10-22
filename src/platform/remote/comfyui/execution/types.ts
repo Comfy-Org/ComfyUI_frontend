@@ -120,6 +120,11 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
+/** ComfyUI's `agent` server feature, pushed again on every change. */
+export interface AgentStatusWsMessage {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
+}
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
@@ -141,6 +146,14 @@ export interface AssetExportWsMessage {
   progress: number
   status: TaskStatus
   error?: string
+}
+export interface AssetSeedCompletedWsMessage {
+  created: number
+  elapsed: number
+  enriched: number
+  phase: 'fast' | 'enrich' | 'full'
+  skipped: number
+  total: number
 }
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)

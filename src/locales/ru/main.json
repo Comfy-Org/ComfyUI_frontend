@@ -18,6 +18,7 @@
     "assetNotAttachable": "Можно прикреплять изображения, видео, аудио, 3D-модели и текстовые файлы",
     "attach": "Прикрепить файл",
     "attachFiles": "Загрузить изображения или файлы",
+    "attachmentInvalidVideo": "{name} не является допустимым видеофайлом. Удалите его и попробуйте другой файл.",
     "attachmentTooLarge": "{name} больше {limit}",
     "attachmentUploadFailed": "Не удалось загрузить {name}",
     "attachmentsAlreadyAdded": "{name} уже находится в панели ресурсов | Пропущено повторяющихся ресурсов: {count}",
@@ -173,6 +174,7 @@
     "selectWorkflowForNodes": "Сначала выберите рабочий процесс",
     "selectWorkflowToGenerate": "Выберите рабочий процесс для генерации",
     "send": "Отправить",
+    "sendBlockedByInvalidVideo": "{name} не является допустимым видео. Удалите его, чтобы отправить. | {count} файлов не являются допустимыми видео. Удалите их, чтобы отправить.",
     "sendBusy": "Сообщение уже отправляется",
     "sendFailed": "Не удалось отправить сообщение",
     "sendTurnInProgress": "В этом чате всё ещё выполняется ответ. Дождитесь его завершения или остановите его, затем отправьте сообщение снова.",
@@ -3415,6 +3417,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -4390,7 +4393,6 @@
     "viewControls": "Управление видом"
   },
   "sideToolbar": {
-    "activeJobStatus": "Активная задача: {status}",
     "assets": "Ассеты",
     "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",
@@ -5547,22 +5549,6 @@
     "retry": "Попробовать снова"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "Кредиты",
-        "date": "Дата",
-        "eventDetails": "Детали события",
-        "eventType": "Тип события",
-        "user": "Пользователь"
-      },
-      "empty": "Активность отсутствует.",
-      "fullActivity": "Вся активность",
-      "hoverCard": {
-        "lastActivity": "Последняя активность",
-        "partnerNodeUsed": "Использован партнерский узел",
-        "totalCreditsUsed": "Всего использовано кредитов"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "С вас больше не будет взиматься плата. До этого момента участники сохраняют полный доступ. Возобновите тариф, чтобы сохранить общие кредиты вашей команды.",
@@ -5698,12 +5684,6 @@
         "removeMember": "Удалить участника",
         "resendInvite": "Повторно отправить приглашение",
         "setCreditLimit": "Установить лимит кредитов"
-      },
-      "activity": {
-        "daysAgo": "{count} день назад | {count} дней назад",
-        "hoursAgo": "{n} ч назад",
-        "justNow": "только что",
-        "minutesAgo": "{n} мин назад"
       },
       "columns": {
         "creditsUsed": "Кредитов использовано в этом месяце",

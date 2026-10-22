@@ -3,7 +3,7 @@ import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { startDesktopHostSession } from '@/platform/auth/desktopHost/desktopHostSession'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
-import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
+import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
 import { reportError } from '@/platform/telemetry/reportError'
 
 /**
@@ -14,6 +14,12 @@ const LOOPBACK_HOSTNAMES: ReadonlySet<string> = new Set([
   '127.0.0.1',
   'localhost'
 ])
+
+const REFRESH_LOCK_NAME = 'Comfy.LocalWebSignIn.Refresh'
+
+function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
+  return navigator.locks.request(REFRESH_LOCK_NAME, task)
+}
 
 function browserEnvironment(): LocalWebAuthEnvironment {
   return {
@@ -27,7 +33,15 @@ function browserEnvironment(): LocalWebAuthEnvironment {
       setItem: (key, value) => window.sessionStorage.setItem(key, value),
       removeItem: (key) => window.sessionStorage.removeItem(key)
     },
-    tokens: createMemoryTokenStore(),
+    tokens: createStorageTokenStore(
+      {
+        getItem: (key) => window.localStorage.getItem(key),
+        setItem: (key, value) => window.localStorage.setItem(key, value),
+        removeItem: (key) => window.localStorage.removeItem(key)
+      },
+      window
+    ),
+    withRefreshLock: withOriginLock,
     fetchImpl: (input, init) => fetch(input, init),
     now: () => Date.now()
   }

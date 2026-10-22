@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_CAMERA_INFO_STATE } from './types'
+import { DEFAULT_CAMERA_INFO_STATE } from '@comfyorg/viewport3d/cameraInfo/types'
 import { readStateFromWidgets, writeWidgetValue } from './widgetBridge'
 import type { NodeWithWidgets } from './widgetBridge'
 

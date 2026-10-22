@@ -2,8 +2,11 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0
 
-ARG COMFYUI_VERSION=v0.30.0
-ARG COMFYUI_COMMIT=b1693ecba9f5b65f8c80ab36b195ab963ec92413
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64
+
+ARG COMFYUI_VERSION=v0.42.1
+ARG COMFYUI_COMMIT=63be2f9b82ad0dac88a7ceaa28a9cf3154125a18
 
 # Clone ComfyUI
 RUN apt-get update && apt-get install -y git && \
@@ -13,10 +16,10 @@ RUN apt-get update && apt-get install -y git && \
 
 # Create venv and install all Python dependencies
 ENV VIRTUAL_ENV=/opt/venv
+COPY requirements.lock /tmp/requirements.lock
 RUN uv venv $VIRTUAL_ENV
-RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && \
-    uv pip install -r /ComfyUI/requirements.txt && \
-    uv pip install wait-for-it
+RUN uv pip sync --require-hashes --only-binary :all: --torch-backend cpu /tmp/requirements.lock && \
+    uv pip check
 
 RUN rm -rf /ComfyUI/.git && \
     rm /opt/venv/lib/python3.12/site-packages/comfy_kitchen/backends/cuda/_C.abi3.so && \

@@ -83,8 +83,20 @@
                 <i class="icon-[comfy--extensions-blocks] size-4" />
                 <span
                   v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
+              </Button>
+              <Button
+                v-if="isDeployButtonShown"
+                :tooltip="t('deployToComfyApi.buttonLabel')"
+                tooltip-side="bottom"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('deployToComfyApi.buttonLabel')"
+                data-testid="run-bar-deploy"
+                @click="openDeployInstallationDialog"
+              >
+                <i class="icon-[lucide--rocket] size-4" />
               </Button>
               <Button
                 v-if="isCloud"
@@ -105,7 +117,7 @@
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
+                        'outline-1 outline-destructive'
                     )
                   "
                   variant="secondary"
@@ -115,7 +127,7 @@
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
-                <StatusBadge
+                <Badge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
                   severity="danger"
@@ -180,15 +192,17 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -198,6 +212,7 @@ import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -217,9 +232,21 @@ const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
 const deploymentPickStore = useDeploymentPickStore()
+const deploymentSwitcherOffered = useDeploymentSwitcherOffered()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const isDeployButtonShown = computed(() => flags.deployToCloud)
+function openDeployInstallationDialog() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_bar_deploy_clicked',
+    element_group: 'top_menu'
+  })
+  openDeployToComfyApiDialog({ deploysInstallation: true }).catch(
+    toastErrorHandler
+  )
+}
 const executionErrorStore = useExecutionErrorStore()
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
@@ -236,16 +263,12 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
-/**
- * Whether the actionbar container has any visible docked buttons
- * (excluding ComfyActionbar, which uses position:fixed when floating
- * and does not contribute to the container's visual layout).
- */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
+  if (isDeployButtonShown.value) return true
   if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
@@ -350,10 +373,16 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
+async function pitchDeployingCustomNodes(): Promise<boolean> {
+  if (!deploymentSwitcherOffered.value) return false
+  await deploymentPickStore.loadOnce()
+  if (!deploymentPickStore.buildsVisible) return false
+  return openDeployCustomNodesDialog()
+}
+
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    if (deploymentPickStore.isVisible) await openDeployCustomNodesDialog()
-    else managerSurveyDialog.show()
+    if (!(await pitchDeployingCustomNodes())) managerSurveyDialog.show()
     return
   }
   try {

@@ -200,7 +200,7 @@ describe('CurrentUserPopoverLegacy', () => {
         name: /We've unified payments across Comfy/
       })
       await user.hover(helpButton)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
         enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })

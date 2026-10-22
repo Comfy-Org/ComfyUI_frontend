@@ -4,11 +4,11 @@
   "description": "Product-analytics event dispatch: the TelemetryRegistry fan-out and useTelemetry accessor, event names and metadata types, the desktop host telemetry sink and its enablement gate, host user-id sync, store-readiness gating for store-backed providers, node-added and search-query tracking, and the metadata builders that enrich events (execution context, shell layout, checkout attribution, payment intent source, survey normalization, billing failure categories). Cloud vendor providers and initTelemetry belong to the cloud record; error reporting and startup tracing are separate records.",
   "modules": [
     {
-      "path": "src/platform/telemetry/types.ts",
-      "role": "domain"
+      "path": "src/composables/useRunButtonTelemetry.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/platform/telemetry/TelemetryRegistry.ts",
+      "path": "src/composables/useRunButtonTelemetry.ts",
       "role": "application"
     },
     {
@@ -16,11 +16,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/index.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/useTelemetry.test.ts",
+      "path": "src/platform/telemetry/TelemetryRegistry.ts",
       "role": "application"
     },
     {
@@ -32,19 +28,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/storeReadiness.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/storeReadiness.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/initHostTelemetry.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/telemetry/initHostTelemetry.test.ts",
+      "path": "src/platform/telemetry/hostUserIdSync.test.ts",
       "role": "integration"
     },
     {
@@ -52,19 +36,19 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/telemetry/hostUserIdSync.test.ts",
+      "path": "src/platform/telemetry/index.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/initHostTelemetry.test.ts",
       "role": "integration"
     },
     {
-      "path": "src/platform/telemetry/providers/host/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/nodeAdded/installNodeAddedTelemetry.ts",
+      "path": "src/platform/telemetry/initHostTelemetry.ts",
       "role": "integration"
     },
     {
-      "path": "src/platform/telemetry/nodeAdded/installNodeAddedTelemetry.test.ts",
+      "path": "src/platform/telemetry/nodeAdded/**",
       "role": "integration"
     },
     {
@@ -72,75 +56,39 @@
       "role": "application"
     },
     {
+      "path": "src/platform/telemetry/providers/host/**",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/platform/telemetry/searchQuery/**",
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/utils/billingFailureCategory.ts",
+      "path": "src/platform/telemetry/storeReadiness.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/storeReadiness.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/types.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/utils/billingFailureCategory.test.ts",
+      "path": "src/platform/telemetry/useTelemetry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/**",
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/utils/groupMissingNodesByPack.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/groupMissingNodesByPack.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/normalizeEmail.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/normalizeEmail.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/paymentIntentSource.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/paymentIntentSource.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/surveyNormalization.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/__tests__/surveyNormalization.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/workflowExecutionContext.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/workflowExecutionContext.test.ts",
-      "role": "domain"
+      "path": "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
+      "role": "infrastructure"
     },
     {
       "path": "src/platform/telemetry/utils/billingPortalTelemetry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getExecutionContext.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getExecutionContext.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
       "role": "application"
     },
     {
@@ -148,7 +96,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
+      "path": "src/platform/telemetry/utils/getActionbarDockState.test.ts",
       "role": "infrastructure"
     },
     {
@@ -156,7 +104,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getActionbarDockState.test.ts",
+      "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
       "role": "infrastructure"
     },
     {
@@ -164,15 +112,19 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useRunButtonTelemetry.test.ts",
+      "path": "src/platform/telemetry/utils/getExecutionContext.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useRunButtonTelemetry.ts",
+      "path": "src/platform/telemetry/utils/getExecutionContext.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
       "role": "application"
     }
   ],

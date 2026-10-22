@@ -153,7 +153,7 @@ for (const width of [1440, 390]) {
         )
         await page.getByRole('button', { name: 'Close', exact: true }).click()
         await expect(
-          page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
+          page.locator('[data-slot="announcement-banner"]')
         ).toBeHidden()
         const observation = await observeHubNavigation(page)
 

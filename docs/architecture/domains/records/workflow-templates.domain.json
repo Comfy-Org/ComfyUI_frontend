@@ -4,38 +4,6 @@
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
   "modules": [
     {
-      "path": "src/platform/workflow/templates/types/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/schemas/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/templates/services/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/templates/stores/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/templates/repositories/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/components/templates/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/actionbar/PartnerNodesEducationCard.test.ts",
       "role": "presentation"
     },
@@ -44,71 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/custom/widget/PaidTemplateBadge.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/PaidTemplateBadge.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/TemplateFilterControls.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/TemplateFilterControls.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDescription.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDetail.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDetail.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDetail.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDetailGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDownloadFailure.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDownloadFailure.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateDownloadStatus.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateModelStatus.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateModelStatus.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateSelectorDialog.detail.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateSelectorDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue",
+      "path": "src/components/custom/**",
       "role": "presentation"
     },
     {
@@ -120,20 +24,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/stores/templateRankingStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateRankingStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateInputDownloadStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateInputDownloadStore.test.ts",
-      "role": "application"
+      "path": "src/components/templates/**",
+      "role": "presentation"
     },
     {
       "path": "src/composables/useLazyPagination.test.ts",
@@ -157,6 +49,42 @@
     },
     {
       "path": "src/composables/useWorkflowTemplateSelectorDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/types/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/templates/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/stores/templateInputDownloadStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/templateInputDownloadStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/templateRankingStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/templateRankingStore.ts",
       "role": "application"
     }
   ],

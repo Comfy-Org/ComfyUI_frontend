@@ -7,7 +7,7 @@
           <DialogTitle :id="titleId">
             {{ $t('g.customizeFolder') }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <div class="flex flex-col gap-4 px-4 py-2">
           <div class="flex flex-col gap-2">
@@ -35,7 +35,7 @@
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <hr class="border-t border-border-subtle" />
+          <hr class="border-t border-border/50" />
           <div class="flex flex-col gap-2">
             <label for="customization-color" class="text-sm font-medium">
               {{ $t('g.color') }}

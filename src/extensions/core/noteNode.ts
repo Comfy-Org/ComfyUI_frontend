@@ -4,8 +4,8 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
-import { ComfyWidgets } from '../../scripts/widgets'
+import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
 
 // Node that add notes to your project
 

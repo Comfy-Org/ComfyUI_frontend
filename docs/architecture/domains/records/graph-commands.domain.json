@@ -4,16 +4,16 @@
   "description": "Graph mutation intents announced from the LGraph and widget-value funnels with caller provenance, plus the probe that tells id allocation whether a root graph is bound to a collaborative document. The agent CRDT minter and applier consume these seams from outside this domain.",
   "modules": [
     {
+      "path": "src/lib/litegraph/src/docBoundGraphs.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/lib/litegraph/src/graphIntents.test.ts",
       "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/graphIntents.ts",
       "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/docBoundGraphs.ts",
-      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

@@ -13,7 +13,7 @@
         :tooltip
         tooltip-side="bottom"
         :aria-label="label"
-        class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-secondary-background-hover"
+        class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
         :data-testid="triggerTestid"
       >
         <slot name="icon" />
