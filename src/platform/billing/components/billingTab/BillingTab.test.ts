@@ -84,6 +84,7 @@ interface Scenario {
   canTopUp?: boolean
   topUpDenial?: string
   isPaused?: boolean
+  hasParkedBillingOperation?: boolean
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -159,6 +160,12 @@ function arrange(scenario: Scenario = {}) {
       ),
       paymentRecoveryAvailable: computed(() =>
         receiveServerFact('payment_recovery_available', false)
+      ),
+      hasParkedBillingOperation: computed(() =>
+        receiveServerFact(
+          'has_parked_billing_operation',
+          scenario.hasParkedBillingOperation ?? false
+        )
       ),
       runDeniedPaymentPastDue: computed(() =>
         receiveServerFact('denied_reasons.can_run_workflows', false)
@@ -254,6 +261,29 @@ describe('BillingTab', () => {
 
       expect(
         screen.queryByTestId('billing-paused-banner')
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('parked payment banner', () => {
+    it('shows Contact support when a payment is parked', () => {
+      arrange({ hasParkedBillingOperation: true })
+
+      const banner = screen.getByTestId('billing-parked-banner')
+      expect(banner).toHaveTextContent(
+        'Something went wrong with a recent payment'
+      )
+      expect(banner).toHaveTextContent('Contact support so we can fix it.')
+      expect(
+        within(banner).getByRole('link', { name: 'Contact support' })
+      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    })
+
+    it('hides the parked banner when the fact is absent', () => {
+      arrange()
+
+      expect(
+        screen.queryByTestId('billing-parked-banner')
       ).not.toBeInTheDocument()
     })
   })

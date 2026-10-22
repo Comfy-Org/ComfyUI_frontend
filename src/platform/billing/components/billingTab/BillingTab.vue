@@ -8,6 +8,9 @@
       :banner="planCheckout.banner.value"
       @dismiss="planCheckout.dismiss"
     />
+    <BillingParkedBanner
+      :parked="capabilities.hasParkedBillingOperation.value"
+    />
     <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
     <div
       v-if="load === 'loading'"
@@ -88,6 +91,7 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
 import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
+import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'

@@ -48,6 +48,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),
+  hasParkedBillingOperation: computed(() =>
+    receiveServerFact('has_parked_billing_operation', false)
+  ),
   runWorkflowsDenial: runWorkflowsDenialFact(undefined),
   runDeniedPaymentPastDue: computed(() => false),
   isReady: computed(() => true),
