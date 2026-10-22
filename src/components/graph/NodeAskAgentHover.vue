@@ -30,7 +30,7 @@
         side="right"
         align="start"
         data-testid="node-ask-agent-composer"
-        class="flex flex-col gap-1 p-1"
+        class="flex flex-col gap-1 rounded-lg border-border/50 p-1"
         @open-auto-focus.prevent="focusComposerInput"
       >
         <form @submit.prevent="onSend">
