@@ -392,11 +392,12 @@ described above is not needed:
   (`getWorkspaceAuthToken`, the credential `queuePrompt` uses) and the socket
   carries the same credential as `?token=`; a running turn re-sends it. Model
   calls and the runs the local agent starts then bill the active workspace, as
-  on cloud. An API-key session sends its key. Like `queuePrompt`, a selected
-  workspace whose token is missing or fails to mint fails closed: the request
-  errors and the socket retries, and the personal session is never sent in its
-  place, because that session is what comfy-api bills through the legacy funds
-  check.
+  on cloud. An API-key session sends its key. A signed-in session whose
+  workspace token is missing or fails to mint fails closed
+  (`getWorkspaceAuthTokenOrThrow`): the request errors and the socket retries.
+  The personal session is never sent in its place, because that session is
+  what comfy-api bills through the legacy funds check. A signed-out user sends
+  nothing.
 - **Development exception.** In development mode, a signed-out send skips the
   sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
   tells the browser so with the build-time flag

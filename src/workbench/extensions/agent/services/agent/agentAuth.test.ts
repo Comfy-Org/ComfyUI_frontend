@@ -29,8 +29,10 @@ function userHeader(header: AuthHeader | null): void {
 }
 
 function workspaceToken(token: string | undefined | Error): void {
-  const spy = vi.spyOn(useAuthStore(), 'getWorkspaceAuthToken')
+  const spy = vi.spyOn(useAuthStore(), 'getWorkspaceAuthTokenOrThrow')
   if (token instanceof Error) spy.mockRejectedValue(token)
+  else if (token === undefined)
+    spy.mockRejectedValue(new AuthStoreError('not authenticated'))
   else spy.mockResolvedValue(token)
 }
 
@@ -47,23 +49,23 @@ function signInPersonal(): void {
 }
 
 const missingWorkspaceTokens = [
-  { label: 'no token', token: undefined, apiKey: false },
+  { label: 'no workspace token', token: undefined, apiKey: false },
   {
-    label: 'a token that failed to mint',
+    label: 'a workspace token that failed to mint',
     token: new Error('token exchange failed'),
     apiKey: false
   },
-  { label: 'no token and a stored API key', token: undefined, apiKey: true }
+  {
+    label: 'no workspace token and a stored API key',
+    token: undefined,
+    apiKey: true
+  }
 ]
 
-function selectWorkspaceWithout(token: undefined | Error, apiKey: boolean) {
+function signInWithout(token: undefined | Error, apiKey: boolean) {
   signInPersonal()
   if (apiKey) storedApiKey('comfyui-key')
-  Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
   workspaceToken(token)
-  vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockRejectedValue(
-    new AuthStoreError('not authenticated')
-  )
 }
 
 describe('withAgentAuth', () => {
@@ -118,26 +120,15 @@ describe('withAgentAuth', () => {
   )
 
   it.for(missingWorkspaceTokens)(
-    'fails closed for a selected workspace with $label',
+    'fails closed for a signed-in session with $label',
     async ({ token, apiKey }) => {
-      selectWorkspaceWithout(token, apiKey)
+      signInWithout(token, apiKey)
 
       await expect(withAgentAuth({ method: 'POST' })).rejects.toThrow(
         token ?? AuthStoreError
       )
     }
   )
-
-  it('never sends the personal session for a user with no workspace', async () => {
-    signInPersonal()
-    workspaceToken(undefined)
-
-    const headers = new Headers(
-      (await withAgentAuth({ method: 'POST' })).headers
-    )
-
-    expect(headers.has('Authorization')).toBe(false)
-  })
 
   it('sends nothing for a signed-out user whose last workspace is still selected', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
@@ -194,9 +185,9 @@ describe('agentSocketAuthParams', () => {
   })
 
   it.for(missingWorkspaceTokens)(
-    'fails closed for a selected workspace with $label',
+    'fails closed for a signed-in session with $label',
     async ({ token, apiKey }) => {
-      selectWorkspaceWithout(token, apiKey)
+      signInWithout(token, apiKey)
 
       await expect(agentSocketAuthParams()).rejects.toThrow(
         token ?? AuthStoreError
