@@ -7,8 +7,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
@@ -22,9 +22,9 @@ const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 

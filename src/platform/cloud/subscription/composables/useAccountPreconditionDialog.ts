@@ -1,8 +1,8 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */

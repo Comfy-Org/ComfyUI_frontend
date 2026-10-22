@@ -3,15 +3,15 @@ import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@/components/ui/menu/types'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDeleteWorkspaceGate } from '@/platform/workspace/composables/useDeleteWorkspaceGate'
 import { useLeaveWorkspaceGate } from '@/platform/workspace/composables/useLeaveWorkspaceGate'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 interface GatedItem {

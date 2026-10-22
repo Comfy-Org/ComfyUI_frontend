@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getPlanCreditGrant } from '@/platform/cloud/subscription/utils/planCreditGrant'
 import { isCloud } from '@/platform/distribution/types'
 import { deriveCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'

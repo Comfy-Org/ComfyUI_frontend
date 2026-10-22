@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -151,24 +151,27 @@ const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
   subscriptionTier: null as string | null
 }))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      get value() {
-        return mockBillingState.canAccessSubscriptionFeatures
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: vi.fn(() => ({
+      canAccessSubscriptionFeatures: {
+        get value() {
+          return mockBillingState.canAccessSubscriptionFeatures
+        }
+      },
+      subscription: {
+        get value() {
+          return mockBillingState.subscriptionTier
+            ? { tier: mockBillingState.subscriptionTier }
+            : null
+        }
       }
-    },
-    subscription: {
-      get value() {
-        return mockBillingState.subscriptionTier
-          ? { tier: mockBillingState.subscriptionTier }
-          : null
-      }
-    }
-  }))
-}))
+    }))
+  })
+)
 
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {

@@ -262,7 +262,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   TIER_PRICING,
   amountForBillingCycle,

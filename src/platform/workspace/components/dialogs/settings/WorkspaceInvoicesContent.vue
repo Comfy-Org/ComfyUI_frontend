@@ -67,8 +67,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useNextInvoice } from '@/composables/billing/useNextInvoice'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useNextInvoice } from '@/platform/billing/composables/useNextInvoice'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { formatUsdCents } from '@/utils/numberUtil'
 

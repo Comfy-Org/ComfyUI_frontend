@@ -5,9 +5,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
@@ -23,9 +26,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 

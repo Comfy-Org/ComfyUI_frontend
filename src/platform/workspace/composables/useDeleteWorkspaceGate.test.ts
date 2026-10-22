@@ -18,11 +18,14 @@ const subscription = vi.hoisted(() => ({
   value: { endDate: null, isCancelled: false } as TestSubscription
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => subscription.value)
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      subscription: computed(() => subscription.value)
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 

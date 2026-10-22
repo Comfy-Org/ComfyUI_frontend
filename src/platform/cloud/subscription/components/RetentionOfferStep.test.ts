@@ -5,8 +5,8 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -15,7 +15,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
 

@@ -4,7 +4,7 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
@@ -26,7 +26,7 @@ const overlayMock = vi.hoisted(() => ({
 
 const distributionMock = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), { spy: true })
 

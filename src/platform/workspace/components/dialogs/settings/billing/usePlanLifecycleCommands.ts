@@ -1,6 +1,6 @@
 import { delay } from 'es-toolkit'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   WorkspaceApiError,

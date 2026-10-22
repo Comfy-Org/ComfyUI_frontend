@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,7 +12,7 @@ const mockInviteSubmit = vi.hoisted(() => vi.fn())
 const mockMaxSeats = ref(73)
 const mockOccupiedSeats = ref(1)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
   default: {

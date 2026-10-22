@@ -269,16 +269,6 @@
       "count": 3
     }
   },
-  "src/composables/billing/useBillingContext.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/composables/billing/useBillingDialogs.downgrade.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
-    }
-  },
   "src/composables/canvas/useFocusNode.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -678,6 +668,16 @@
   "src/platform/auth/unified/remintRetry.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
+    }
+  },
+  "src/platform/billing/composables/useBillingContext.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 4
     }
   },
   "src/platform/billing/customerAttention.ts": {

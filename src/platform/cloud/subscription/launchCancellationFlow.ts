@@ -3,8 +3,8 @@ import type {
   RetentionFlowResponse
 } from '@comfyorg/ingest-types'
 
-import { supportsInAppCancellation } from '@/composables/billing/billingRail'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { supportsInAppCancellation } from '@/platform/billing/composables/billingRail'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'

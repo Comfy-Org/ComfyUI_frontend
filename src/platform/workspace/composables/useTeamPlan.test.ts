@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 
 const {
   mockIsActiveSubscription,
@@ -25,7 +25,7 @@ const {
   }
 })
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 async function setup() {
   const { useTeamPlan } = await import('./useTeamPlan')

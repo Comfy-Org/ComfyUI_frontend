@@ -34,7 +34,7 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 describe('showSubscriptionRequiredDialog', () => {
   const originalConfig = window.__CONFIG__

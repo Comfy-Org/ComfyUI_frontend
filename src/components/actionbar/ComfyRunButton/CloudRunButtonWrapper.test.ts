@@ -6,7 +6,7 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -22,7 +22,7 @@ const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 const showPaymentRecoveryDialog = vi.fn()
 const refreshCapabilities = vi.fn(async () => undefined)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

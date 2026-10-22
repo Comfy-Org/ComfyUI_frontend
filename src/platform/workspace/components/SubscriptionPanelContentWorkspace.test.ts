@@ -1,10 +1,10 @@
 import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { getActivePinia } from 'pinia'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { computed, nextTick, ref, toRef } from 'vue'
@@ -15,7 +15,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BillingType,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
@@ -49,7 +52,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -205,7 +208,7 @@ const mockIsTeamPlan = computed(
 const mockIsLoading = ref(false)
 const mockError = ref<string | null>(null)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const mockIsTeamPlanCancelled = computed(
   () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
@@ -218,9 +221,9 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(

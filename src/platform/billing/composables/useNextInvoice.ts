@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type {
   Plan,
   SubscriptionDuration,

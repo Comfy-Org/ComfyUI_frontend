@@ -5,7 +5,7 @@ import {
   centsToCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 /**
  * Composable for handling subscription credit calculations and formatting.

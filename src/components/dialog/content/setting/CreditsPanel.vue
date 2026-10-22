@@ -64,7 +64,7 @@ import { ref, watch } from 'vue'
 
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useTelemetry } from '@/platform/telemetry'

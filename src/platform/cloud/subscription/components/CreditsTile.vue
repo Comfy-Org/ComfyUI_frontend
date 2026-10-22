@@ -232,7 +232,7 @@ import {
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import {
@@ -245,10 +245,10 @@ import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/credits
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Hides the plan breakdown. The total stays the server balance. */

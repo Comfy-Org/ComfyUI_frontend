@@ -1,5 +1,5 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -8,9 +8,9 @@ import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 describe('useAccountPreconditionDialog', () => {
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {

@@ -8,7 +8,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import SubscriptionRequiredDialogContent from './SubscriptionRequiredDialogContent.vue'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))

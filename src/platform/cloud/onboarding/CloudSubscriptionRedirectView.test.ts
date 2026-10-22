@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
@@ -30,7 +30,7 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')

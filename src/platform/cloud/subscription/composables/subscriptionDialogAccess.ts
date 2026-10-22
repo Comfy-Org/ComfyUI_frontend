@@ -1,4 +1,4 @@
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
+import type { SubscriptionDialogOptions } from '@/platform/billing/composables/types'
 
 interface SubscriptionDialogAccess {
   show(options?: SubscriptionDialogOptions): void

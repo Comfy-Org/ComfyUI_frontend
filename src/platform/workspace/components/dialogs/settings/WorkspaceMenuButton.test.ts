@@ -12,15 +12,18 @@ import type { Ref } from 'vue'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => ({
-      endDate: '2026-08-01T00:00:00Z',
-      isCancelled: false,
-      tier: 'PRO'
-    }))
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      subscription: computed(() => ({
+        endDate: '2026-08-01T00:00:00Z',
+        isCancelled: false,
+        tier: 'PRO'
+      }))
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))

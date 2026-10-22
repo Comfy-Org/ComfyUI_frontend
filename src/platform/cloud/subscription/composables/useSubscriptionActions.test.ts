@@ -1,5 +1,5 @@
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,9 +18,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const mockIsCloud = vi.hoisted(() => ({ value: true }))

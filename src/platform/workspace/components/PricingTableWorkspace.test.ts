@@ -6,14 +6,14 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 function apiPlan(
   tier: Plan['tier'],

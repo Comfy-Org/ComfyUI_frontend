@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
@@ -9,7 +9,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
 
 import { useRetentionOffer } from './useRetentionOffer'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry/reportError'))
 

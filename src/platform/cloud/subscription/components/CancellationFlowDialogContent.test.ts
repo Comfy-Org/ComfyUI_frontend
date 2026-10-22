@@ -7,7 +7,7 @@ import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { CancellationSurveyExit } from '@/platform/cloud/subscription/utils/cancellationSurvey'
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
@@ -17,7 +17,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import CancellationFlowDialogContent from './CancellationFlowDialogContent.vue'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 

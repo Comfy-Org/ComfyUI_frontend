@@ -302,36 +302,42 @@ async function previewSubscribe(...args: unknown[]) {
   return response
 }
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscribe: mockSubscribe,
-    previewSubscribe,
-    plans: mockPlans,
-    fetchPlans: mockFetchPlans,
-    fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance,
-    isTeamPlan: computed(() => mockIsTeamPlan.value),
-    resubscribe: mockResubscribe,
-    subscription: {
-      get value() {
-        return mockSubscription.value
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      subscribe: mockSubscribe,
+      previewSubscribe,
+      plans: mockPlans,
+      fetchPlans: mockFetchPlans,
+      fetchStatus: mockFetchStatus,
+      fetchBalance: mockFetchBalance,
+      isTeamPlan: computed(() => mockIsTeamPlan.value),
+      resubscribe: mockResubscribe,
+      subscription: {
+        get value() {
+          return mockSubscription.value
+        }
+      },
+      billingStatus: {
+        get value() {
+          return mockBillingStatus.value
+        }
       }
-    },
-    billingStatus: {
-      get value() {
-        return mockBillingStatus.value
-      }
-    }
+    })
   })
-}))
+)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(
-      () => mockShouldUseWorkspaceBilling.value
-    )
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingRouting'),
+  () => ({
+    useBillingRouting: () => ({
+      shouldUseWorkspaceBilling: computed(
+        () => mockShouldUseWorkspaceBilling.value
+      )
+    })
   })
-}))
+)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -358,11 +364,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingDialogs'), () => ({
-  useBillingDialogs: () => ({
-    showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingDialogs'),
+  () => ({
+    useBillingDialogs: () => ({
+      showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+    })
   })
-}))
+)
 
 provideBillingDialogs(() => ({
   showSubscriptionRequiredDialog: vi.fn(),

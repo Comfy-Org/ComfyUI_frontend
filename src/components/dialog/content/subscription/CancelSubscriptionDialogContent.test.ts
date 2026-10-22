@@ -1,8 +1,11 @@
 import { computed, nextTick, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import type { CancelRail, SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import type {
+  CancelRail,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import userEvent from '@testing-library/user-event'
@@ -78,9 +81,9 @@ function setSubscription(value: SubscriptionInfo | null) {
   useBillingContext().subscription = computed(() => value)
 }
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 

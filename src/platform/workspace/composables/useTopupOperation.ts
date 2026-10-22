@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { BillingClient } from '@comfyorg/account-core/billing'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'

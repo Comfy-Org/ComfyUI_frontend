@@ -13,13 +13,13 @@ import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type {
   BillingSubscriptionStatus,
   TeamCreditStops,
@@ -67,7 +67,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 // The store is real; only the composition root it builds is faked, so the
@@ -82,7 +82,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import * as comfyCredits from '@/base/credits/comfyCredits'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 
 let mockBillingBalance: {
@@ -23,7 +23,7 @@ const i18n = createI18n({
   }
 })
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 function mountComposable(): ReturnType<typeof useSubscriptionCredits> {
   const billing = useBillingContext()

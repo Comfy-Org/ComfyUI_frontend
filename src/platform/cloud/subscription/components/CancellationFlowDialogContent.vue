@@ -26,7 +26,7 @@ import { useI18n } from 'vue-i18n'
 
 import CancelSubscriptionDialogContent from '@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import CancellationSurveyStep from '@/platform/cloud/subscription/components/CancellationSurveyStep.vue'
 import RetentionOfferStep from '@/platform/cloud/subscription/components/RetentionOfferStep.vue'
 import { recordRetentionFlowEvent } from '@/platform/cloud/subscription/launchCancellationFlow'

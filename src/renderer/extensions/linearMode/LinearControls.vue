@@ -14,7 +14,7 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'

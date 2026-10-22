@@ -23,7 +23,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'

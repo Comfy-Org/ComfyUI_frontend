@@ -14,8 +14,8 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'

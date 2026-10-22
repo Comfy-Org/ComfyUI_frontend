@@ -26,7 +26,7 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 beforeEach(() => {

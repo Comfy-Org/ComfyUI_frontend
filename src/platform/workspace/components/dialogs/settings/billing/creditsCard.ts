@@ -1,4 +1,4 @@
-import type { BalanceInfo } from '@/composables/billing/types'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import type { PlanRowState } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 

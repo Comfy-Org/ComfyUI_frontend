@@ -30,7 +30,7 @@
 <script setup lang="ts">
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { useDialogStore } from '@/stores/dialogStore'
 

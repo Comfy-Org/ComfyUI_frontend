@@ -1,4 +1,4 @@
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +13,7 @@ import SubscribeToRun from './SubscribeToRun.vue'
 const mockCanManageSubscription = ref(true)
 const mockIsMdOrLarger = ref(true)
 
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 

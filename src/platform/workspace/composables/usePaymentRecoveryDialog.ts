@@ -1,7 +1,7 @@
 import { computed, shallowRef } from 'vue'
 
-import type { BillingPortalOutcome } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { BillingPortalOutcome } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import SubscriptionPausedDialog from '@/platform/workspace/components/SubscriptionPausedDialog.vue'

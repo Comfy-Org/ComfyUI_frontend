@@ -21,8 +21,8 @@ import type { User } from 'firebase/auth'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -46,7 +46,7 @@ import {
 
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))

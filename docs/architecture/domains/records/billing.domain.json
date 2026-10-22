@@ -32,91 +32,91 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/billing/__mocks__/**",
+      "path": "src/platform/billing/composables/__mocks__/**",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/billingRail.test.ts",
+      "path": "src/platform/billing/composables/billingRail.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/billing/billingRail.ts",
+      "path": "src/platform/billing/composables/billingRail.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/billing/topupBalanceRefresh.test.ts",
+      "path": "src/platform/billing/composables/topupBalanceRefresh.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/topupBalanceRefresh.ts",
+      "path": "src/platform/billing/composables/topupBalanceRefresh.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/types.ts",
+      "path": "src/platform/billing/composables/types.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/billing/useBillingContext.test.ts",
+      "path": "src/platform/billing/composables/useBillingContext.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingContext.ts",
+      "path": "src/platform/billing/composables/useBillingContext.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.cancelSubscription.test.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.cancelSubscription.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.comingSoon.test.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.comingSoon.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.downgrade.test.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.subscriptionRequired.test.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.topUpCredits.test.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingDialogs.ts",
+      "path": "src/platform/billing/composables/useBillingDialogs.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingRouting.test.ts",
+      "path": "src/platform/billing/composables/useBillingRouting.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useBillingRouting.ts",
+      "path": "src/platform/billing/composables/useBillingRouting.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useLegacyBilling.test.ts",
+      "path": "src/platform/billing/composables/useLegacyBilling.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useLegacyBilling.ts",
+      "path": "src/platform/billing/composables/useLegacyBilling.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useNextInvoice.test.ts",
+      "path": "src/platform/billing/composables/useNextInvoice.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/useNextInvoice.ts",
+      "path": "src/platform/billing/composables/useNextInvoice.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/usePendingTopup.test.ts",
+      "path": "src/platform/billing/composables/usePendingTopup.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/billing/usePendingTopup.ts",
+      "path": "src/platform/billing/composables/usePendingTopup.ts",
       "role": "application"
     },
     {
@@ -535,10 +535,10 @@
     {
       "name": "Billing context routes reads and actions to the legacy or workspace billing rail",
       "checks": [
-        "src/composables/billing/useBillingContext.test.ts",
-        "src/composables/billing/useBillingRouting.test.ts",
-        "src/composables/billing/billingRail.test.ts",
-        "src/composables/billing/useLegacyBilling.test.ts",
+        "src/platform/billing/composables/useBillingContext.test.ts",
+        "src/platform/billing/composables/useBillingRouting.test.ts",
+        "src/platform/billing/composables/billingRail.test.ts",
+        "src/platform/billing/composables/useLegacyBilling.test.ts",
         "src/platform/workspace/composables/useWorkspaceBilling.test.ts",
         "src/platform/workspace/composables/useWorkspaceBilling.sdk.test.ts",
         "src/platform/workspace/composables/useWorkspaceBilling.subscriptionRail.test.ts",
@@ -570,8 +570,8 @@
         "src/platform/billing/sdk/operationRecordView.test.ts",
         "src/platform/workspace/stores/billingOperationStore.test.ts",
         "src/platform/workspace/composables/useTopupOperation.test.ts",
-        "src/composables/billing/usePendingTopup.test.ts",
-        "src/composables/billing/topupBalanceRefresh.test.ts",
+        "src/platform/billing/composables/usePendingTopup.test.ts",
+        "src/platform/billing/composables/topupBalanceRefresh.test.ts",
         "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts"
       ]
     },
@@ -588,9 +588,9 @@
         "src/platform/billing/hostedBillingRoutes.test.ts",
         "src/platform/billing/openHostedBillingTab.test.ts",
         "src/platform/billing/refreshOnReturn.test.ts",
-        "src/composables/billing/useBillingDialogs.topUpCredits.test.ts",
-        "src/composables/billing/useBillingDialogs.subscriptionRequired.test.ts",
-        "src/composables/billing/useNextInvoice.test.ts",
+        "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
+        "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
+        "src/platform/billing/composables/useNextInvoice.test.ts",
         "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts"
       ]
     },

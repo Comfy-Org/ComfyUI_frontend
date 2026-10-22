@@ -435,7 +435,7 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,

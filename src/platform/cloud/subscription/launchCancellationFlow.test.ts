@@ -2,8 +2,8 @@ import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { BillingType } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { BillingType } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -32,7 +32,7 @@ const mocks = vi.hoisted(
   })
 )
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/i18n'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))

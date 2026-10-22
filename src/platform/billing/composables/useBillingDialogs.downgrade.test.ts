@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
@@ -60,7 +60,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),
@@ -76,7 +76,7 @@ vi.mock<unknown>(
   () => ({ default: { name: 'DowngradeRemoveMembersDialogContent' } })
 )
 
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 describe('showDowngradeToPersonalDialog', () => {
   beforeEach(() => {

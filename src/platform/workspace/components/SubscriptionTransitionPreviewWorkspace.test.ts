@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type {
   PreviewSubscribeResponse,
   SubscriptionDuration,
@@ -14,7 +14,7 @@ import type {
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 beforeEach(() => {
   const billingContext = useBillingContext()

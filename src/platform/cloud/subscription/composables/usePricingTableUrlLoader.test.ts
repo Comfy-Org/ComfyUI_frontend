@@ -1,6 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { computed, ref } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
@@ -34,7 +34,7 @@ const mockPermissions = vi.hoisted(() => ({
 }))
 const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 

@@ -4,7 +4,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { BalanceInfo } from '@/composables/billing/types'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -66,7 +66,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
@@ -84,12 +84,15 @@ vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
 vi.mock(import('firebase/auth'), { spy: true })
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({
-    clearPendingTopup: mockClearPendingTopup,
-    startPendingTopup: mockStartPendingTopup
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => ({
+      clearPendingTopup: mockClearPendingTopup,
+      startPendingTopup: mockStartPendingTopup
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

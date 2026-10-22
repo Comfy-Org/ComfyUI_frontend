@@ -9,8 +9,8 @@ import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -93,7 +93,7 @@ vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
   getAgentPanelOpen: () => hoisted.agentPanelOpen
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 

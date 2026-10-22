@@ -8,10 +8,13 @@ import { createI18n } from 'vue-i18n'
 import type { SubscriptionState } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
-import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
@@ -30,9 +33,9 @@ import BillingTab from './BillingTab.vue'
 vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
   spy: true
 })
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))

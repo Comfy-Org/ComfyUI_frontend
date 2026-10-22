@@ -5,7 +5,7 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { AuthStoreError } from '@/stores/authStore'
@@ -19,9 +19,9 @@ const state = vi.hoisted(() => ({
   canReactivatePlan: true
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 

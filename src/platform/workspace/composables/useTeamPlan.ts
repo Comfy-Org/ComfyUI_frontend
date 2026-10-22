@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 
 export function useTeamPlan() {
   const {

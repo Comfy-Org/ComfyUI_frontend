@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'

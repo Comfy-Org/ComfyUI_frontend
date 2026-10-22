@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type {
   BillingStatus,
@@ -35,20 +35,23 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler })
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    isLoading: computed(() => state.isLoading),
-    error: computed(() => state.error),
-    billingStatus: computed(() => state.billingStatus),
-    subscription: computed(() => state.subscription),
-    plans: computed(() => state.plans),
-    currentPlanSlug: computed(() => state.currentPlanSlug),
-    teamCreditStops: computed(() => state.teamCreditStops),
-    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
-    initialize: state.initialize,
-    manageSubscription: state.manageSubscription
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      isLoading: computed(() => state.isLoading),
+      error: computed(() => state.error),
+      billingStatus: computed(() => state.billingStatus),
+      subscription: computed(() => state.subscription),
+      plans: computed(() => state.plans),
+      currentPlanSlug: computed(() => state.currentPlanSlug),
+      teamCreditStops: computed(() => state.teamCreditStops),
+      currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
+      initialize: state.initialize,
+      manageSubscription: state.manageSubscription
+    })
   })
-}))
+)
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}

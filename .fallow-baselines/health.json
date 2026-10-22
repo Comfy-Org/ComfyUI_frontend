@@ -1269,7 +1269,7 @@
         "count": 1
       }
     },
-    "src/composables/billing/useBillingDialogs.ts": {
+    "src/platform/billing/composables/useBillingDialogs.ts": {
       "crap_high": {
         "count": 1
       }

@@ -92,9 +92,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { CancelRail } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import type { CancelRail } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import { useCancellationPlan } from '@/platform/cloud/subscription/composables/useCancellationPlan'
 import {

@@ -1,5 +1,5 @@
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionDialogOptions } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogsAccess } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 

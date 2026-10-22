@@ -4,12 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { BalanceInfo } from '@/composables/billing/types'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const refreshActivity = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {

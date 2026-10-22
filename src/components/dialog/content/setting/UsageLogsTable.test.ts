@@ -11,7 +11,7 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -29,11 +29,14 @@ const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
 const mockPendingTopup = vi.hoisted(() => ({
   consumeCompletedTopup: vi.fn().mockReturnValue({ startedAtMs: Date.now() })
 }))
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => mockPendingTopup
-}))
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => mockPendingTopup
+  })
+)
 
-vi.mock(import('@/composables/billing/useBillingRouting'))
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 

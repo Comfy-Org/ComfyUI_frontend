@@ -1,4 +1,4 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
@@ -23,7 +23,7 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
 )

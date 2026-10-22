@@ -1,5 +1,5 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canManageBillingFact,
@@ -14,7 +14,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   BillingPortalOutcome,
   SubscriptionInfo
-} from '@/composables/billing/types'
+} from '@/platform/billing/composables/types'
 import type {
   BillingStatus,
   WorkspaceType
@@ -53,34 +53,42 @@ const state = vi.hoisted(() => ({
   showSubscriptionDialog: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingRouting'),
+  () => ({
+    useBillingRouting: () => ({
+      shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: computed(
-      () => state.canAccessSubscriptionFeatures
-    ),
-    isTeamPlan: computed(() => state.isTeamPlan),
-    billingStatus: computed(() => state.billingStatus as BillingStatus | null),
-    subscriptionStatus: computed(() => state.subscriptionStatus),
-    subscription: computed(() => state.subscription),
-    plans: computed(() => [
-      { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
-    ]),
-    renewalDate: computed(() => state.renewalDate),
-    manageSubscription: state.manageSubscription,
-    fetchStatus: vi.fn(),
-    fetchBalance: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      canAccessSubscriptionFeatures: computed(
+        () => state.canAccessSubscriptionFeatures
+      ),
+      isTeamPlan: computed(() => state.isTeamPlan),
+      billingStatus: computed(
+        () => state.billingStatus as BillingStatus | null
+      ),
+      subscriptionStatus: computed(() => state.subscriptionStatus),
+      subscription: computed(() => state.subscription),
+      plans: computed(() => [
+        { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
+      ]),
+      renewalDate: computed(() => state.renewalDate),
+      manageSubscription: state.manageSubscription,
+      fetchStatus: vi.fn(),
+      fetchBalance: vi.fn()
+    })
   })
-}))
+)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -105,7 +113,7 @@ vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   })
 }))
 
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),

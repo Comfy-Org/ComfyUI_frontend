@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import type { BillingType } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import type { BillingType } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import { useSubscriptionPaywall } from './useSubscriptionPaywall'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )

@@ -8,7 +8,7 @@ import {
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
-import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
@@ -25,7 +25,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import type {

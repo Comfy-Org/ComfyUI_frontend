@@ -1,7 +1,7 @@
 import { readonly, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
 import { recordRetentionFlowEvent } from '@/platform/cloud/subscription/launchCancellationFlow'
 import type {

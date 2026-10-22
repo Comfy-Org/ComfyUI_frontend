@@ -52,7 +52,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -271,7 +271,9 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 vi.mock(import('./crdt/devPanelLog'), { spy: true })
-vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
+vi.mock(import('@/platform/billing/composables/useBillingContext'), {
+  spy: true
+})
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })

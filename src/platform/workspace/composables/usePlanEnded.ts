@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 

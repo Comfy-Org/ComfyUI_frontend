@@ -1,4 +1,4 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -13,8 +13,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import SubscribeButton from './SubscribeButton.vue'
 
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 function renderComponent() {

@@ -31,7 +31,7 @@ import { CheckoutTransitionConfirm } from '@comfyorg/account-ui/billing/checkout
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import {

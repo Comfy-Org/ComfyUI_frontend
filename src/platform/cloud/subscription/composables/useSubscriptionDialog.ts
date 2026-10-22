@@ -2,8 +2,8 @@ import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   getStopDiscountedMonthlyUsd,
@@ -15,7 +15,7 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type {
   SubscriptionCheckoutSelection,
   SubscriptionDialogOptions
-} from '@/composables/billing/types'
+} from '@/platform/billing/composables/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'

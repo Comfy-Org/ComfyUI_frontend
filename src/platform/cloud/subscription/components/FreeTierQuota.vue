@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 
 const DOT_COLORS = ['bg-destructive', 'bg-warning', 'bg-success']

@@ -57,7 +57,7 @@ import type {
   BillingPortalOutcome,
   BillingState,
   SubscriptionInfo
-} from '@/composables/billing/types'
+} from '@/platform/billing/composables/types'
 
 export class CancellationScopeChangedError extends Error {
   constructor(message: string) {

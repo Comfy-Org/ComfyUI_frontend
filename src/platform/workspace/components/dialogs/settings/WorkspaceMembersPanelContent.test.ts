@@ -16,7 +16,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(

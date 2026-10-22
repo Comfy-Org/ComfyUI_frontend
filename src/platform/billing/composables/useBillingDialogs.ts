@@ -7,8 +7,8 @@ import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
-} from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+} from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
 import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'

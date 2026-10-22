@@ -397,8 +397,8 @@ import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/Su
 import Menu from '@/components/ui/menu/Menu.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {

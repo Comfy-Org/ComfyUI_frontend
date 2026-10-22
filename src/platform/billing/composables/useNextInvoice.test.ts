@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type {
   Plan,
   TeamCreditStops

@@ -1,4 +1,4 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -9,8 +9,8 @@ import FreeTierQuota from './FreeTierQuota.vue'
 const mockIsFreeTier = ref(true)
 const mockAvailable = ref(3)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useFreeTierQuota'),
