@@ -150,14 +150,19 @@ test.describe(
       ).toBe(nodeCount)
     })
 
-    for (const { code, detail } of [
+    for (const { code, message, detail, requiredText } of [
       {
         code: 'schema_version_mismatch',
-        detail: enMessages.agent.workflowSyncFailedDetail
+        message: 'Expected schema 2, found 1',
+        detail: `${enMessages.agent.workflowSyncFailedDetail} (Expected schema 2, found 1)`,
+        requiredText: 'Your canvas has been left unchanged.'
       },
       {
         code: 'catalog_mismatch',
-        detail: enMessages.agent.workflowSyncFailedDetailCatalogMismatch
+        message:
+          'the document was minted under a different widget catalog; retrying will not help',
+        detail: enMessages.agent.workflowSyncFailedDetailCatalogMismatch,
+        requiredText: 'Your next message sends your canvas'
       }
     ] as const) {
       test(`second turn still carries the populated graph when the follower is refused the bound document (${code})`, async ({
@@ -181,16 +186,13 @@ test.describe(
         await agentPanel.expectTurnSettled()
 
         await test.step('the host permanently refuses the bound document and the user is told', async () => {
-          refuseDocSubscribePermanently(ws, code)
-          await expect(
-            comfyPage.toast.withText(enMessages.agent.workflowSyncFailedTitle)
-          ).toHaveCount(1)
-          await expect(comfyPage.toast.withText(detail)).toHaveCount(1)
-          if (code === 'catalog_mismatch') {
-            await expect(
-              comfyPage.toast.withText('Your next message sends your canvas')
-            ).toHaveCount(1)
-          }
+          refuseDocSubscribePermanently(ws, code, message)
+          const toast = comfyPage.toast.toastErrors.filter({
+            hasText: enMessages.agent.workflowSyncFailedTitle
+          })
+          await expect(toast).toHaveCount(1)
+          await expect(toast.getByText(detail, { exact: true })).toHaveCount(1)
+          await expect(toast).toContainText(requiredText)
           await comfyPage.toast.closeToasts()
         })
 

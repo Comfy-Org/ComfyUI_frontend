@@ -54,11 +54,18 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
 
 export function refuseDocSubscribePermanently(
   ws: WebSocketRoute,
-  code: PermanentDocSubscribeRefusalCode = 'schema_version_mismatch'
+  code: PermanentDocSubscribeRefusalCode = 'schema_version_mismatch',
+  message?: string
 ): void {
   const frame = {
     type: 'doc_subscribed',
-    data: { v: DOC_PROTOCOL_VERSION, workflow_id: WORKFLOW_ID, ok: false, code }
+    data: {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code,
+      message
+    }
   } satisfies DocSubscribedFrame
   ws.send(JSON.stringify(frame))
 }
