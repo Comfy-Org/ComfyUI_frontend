@@ -435,12 +435,22 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('skips malformed persisted thinking and keeps an entry whose call is missing after the calls', () => {
+  it('rejects non-string persisted thinking at the API boundary', () => {
+    const input: unknown = [
+      {
+        ...row(1, 'assistant', 'turn-a', 'Done', 'row-1'),
+        content: { text: 'Done', thinking: [{ text: 42 }] }
+      }
+    ]
+
+    expect(zAgentMessages.safeParse(input).success).toBe(false)
+  })
+
+  it('skips blank persisted thinking and keeps an entry whose call is missing after the calls', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
       thinking: [
-        { text: 42 },
         { text: '   ' },
         { text: 'Looking it up.', tool_call_id: 'call-1' },
         { text: 'The audit row is gone.', tool_call_id: 'call-missing' }
