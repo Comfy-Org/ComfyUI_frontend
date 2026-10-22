@@ -313,11 +313,46 @@ describe('example source images', () => {
     }
   )
 
+  it.for([
+    '/catalog-media/example-use/exact-bytes',
+    '/preview-media/7/example-use/exact-bytes'
+  ])(
+    'loads the catalog reference file %s with the visitor’s same-origin session',
+    async (source) => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response('reference bytes', {
+          headers: { 'Content-Type': 'image/webp' }
+        })
+      )
+      const value = workshopExampleFile(source, 'image/png')
+      expect(value).toMatchObject({
+        name: 'exact-bytes',
+        type: 'image/png',
+        previewUrl: source,
+        sourceUrl: source
+      })
+      if (!value) throw new Error('Missing example')
+
+      const file = await loadWorkshopExampleFile(
+        value,
+        new AbortController().signal
+      )
+      expect(file.type).toBe('image/webp')
+      expect(fetch).toHaveBeenCalledWith(
+        source,
+        expect.objectContaining({ credentials: 'same-origin' })
+      )
+    }
+  )
+
   it('does not fetch invalid schemes, credentialed URLs, or after cancellation', async () => {
     for (const url of [
       'file:///source.png',
       'javascript:alert(1)',
-      'https://user:password@example.com/image.png'
+      'https://user:password@example.com/image.png',
+      '/catalog-media/../secret',
+      '/preview-media/draft/use/version',
+      '/assets/logo.png'
     ])
       expect(workshopExampleFile(url)).toBeUndefined()
     const value = workshopExampleFile('https://example.com/source.png')

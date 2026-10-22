@@ -72,42 +72,67 @@ describe('Workflow input upload grants', () => {
     }
   )
 
-  it('downloads a URL without caller credentials before uploading its bytes', async () => {
-    const f = fixture()
-    const source = 'https://media.example/source.png'
-    f.fetch
-      .mockReset()
-      .mockResolvedValueOnce(
-        new Response(bytes, {
-          headers: { 'Content-Type': 'image/png; charset=binary' }
-        })
-      )
-      .mockResolvedValueOnce(Response.json(grant))
-      .mockResolvedValueOnce(Response.json(result))
+  it.for([
+    { source: 'https://media.example/source.png', credentials: 'omit' },
+    {
+      source: '/catalog-media/example-use/exact-bytes',
+      credentials: 'same-origin'
+    },
+    {
+      source: '/preview-media/7/example-use/exact-bytes',
+      credentials: 'same-origin'
+    }
+  ])(
+    'downloads $source with $credentials credentials before uploading its bytes',
+    async ({ source, credentials }) => {
+      const f = fixture()
+      f.fetch
+        .mockReset()
+        .mockResolvedValueOnce(
+          new Response(bytes, {
+            headers: { 'Content-Type': 'image/png; charset=binary' }
+          })
+        )
+        .mockResolvedValueOnce(Response.json(grant))
+        .mockResolvedValueOnce(Response.json(result))
 
-    expect(await f.upload(source, new AbortController().signal)).toBe(
-      'input-hash'
-    )
-    const [url, get] = f.fetch.mock.calls[0]
-    expect(url).toBe(source)
-    expect(get).toMatchObject({
-      credentials: 'omit',
-      redirect: 'error',
-      cache: 'no-store',
-      referrerPolicy: 'no-referrer'
-    })
-    expect(new Headers(get?.headers).has('Authorization')).toBe(false)
-    expect(new Headers(get?.headers).has('X-API-Key')).toBe(false)
-    expect(JSON.parse(String(f.fetch.mock.calls[1][1]?.body))).toEqual({
-      content_type: 'image/png'
-    })
-    const body = f.fetch.mock.calls[2][1]?.body
-    assert(body instanceof File)
-    expect(new Uint8Array(await body.arrayBuffer())).toEqual(bytes)
-    expect(body.type).toBe('image/png')
-    expect(
-      new Headers(f.fetch.mock.calls[2][1]?.headers).has('Authorization')
-    ).toBe(false)
+      expect(await f.upload(source, new AbortController().signal)).toBe(
+        'input-hash'
+      )
+      const [url, get] = f.fetch.mock.calls[0]
+      expect(url).toBe(source)
+      expect(get).toMatchObject({
+        credentials,
+        redirect: 'error',
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer'
+      })
+      expect(new Headers(get?.headers).has('Authorization')).toBe(false)
+      expect(new Headers(get?.headers).has('X-API-Key')).toBe(false)
+      expect(JSON.parse(String(f.fetch.mock.calls[1][1]?.body))).toEqual({
+        content_type: 'image/png'
+      })
+      const body = f.fetch.mock.calls[2][1]?.body
+      assert(body instanceof File)
+      expect(new Uint8Array(await body.arrayBuffer())).toEqual(bytes)
+      expect(body.type).toBe('image/png')
+      expect(
+        new Headers(f.fetch.mock.calls[2][1]?.headers).has('Authorization')
+      ).toBe(false)
+    }
+  )
+
+  it.for([
+    '/catalog-media/../secret',
+    '/preview-media/draft/use/version',
+    '//evil.example/catalog-media/use/version',
+    '/catalog-media/use'
+  ])('rejects %s without fetching it', async (source) => {
+    const f = fixture()
+    await expect(
+      f.upload(source, new AbortController().signal)
+    ).rejects.toMatchObject({ code: 'invalid_input' })
+    expect(f.fetch).not.toHaveBeenCalled()
   })
 
   it.for([

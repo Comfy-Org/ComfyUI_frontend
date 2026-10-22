@@ -3,6 +3,7 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
 import { validateWorkshopInput } from './workshop-json-schema'
+import { isCatalogMediaPath } from './workshop-example-file'
 import type { WorkflowMediaUploader } from './workshop-workflow-upload'
 import type { WorkflowApi, WorkflowApiOptions } from './workshop-workflow-api'
 import {
@@ -81,7 +82,10 @@ function validateMediaSelection(
 
 function mediaInputBytes(name: string, value: FormValues[string]): number {
   if (typeof value === 'string') {
-    if (!workflowHttpsUrl.safeParse(value).success)
+    if (
+      !isCatalogMediaPath(value) &&
+      !workflowHttpsUrl.safeParse(value).success
+    )
       throw new WorkshopWorkflowError('invalid_input', { [name]: 'badType' })
     return 0
   }
@@ -135,7 +139,10 @@ export async function prepareWorkflowRender(
   const validation = Object.fromEntries(
     Object.entries(values).map(([name, value]) => [
       name,
-      typeof value === 'object' ? 'https://upload.invalid/input' : value
+      typeof value === 'object' ||
+      (typeof value === 'string' && isCatalogMediaPath(value))
+        ? 'https://upload.invalid/input'
+        : value
     ])
   )
   if (!validateWorkshopInput(validation, model.workflow.inputSchema))

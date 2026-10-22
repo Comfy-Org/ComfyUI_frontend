@@ -5,6 +5,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 
 import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
+import { isCatalogMediaPath } from './workshop-example-file'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import { outputExtension } from './workshop-output-media'
 import type { WorkflowApi } from './workshop-workflow-api'
@@ -41,11 +42,12 @@ async function downloadInput(
   signal: AbortSignal,
   transport: typeof fetch
 ): Promise<File> {
-  if (!workflowHttpsUrl.safeParse(source).success)
+  const catalogPath = isCatalogMediaPath(source)
+  if (!catalogPath && !workflowHttpsUrl.safeParse(source).success)
     throw new WorkshopWorkflowError('invalid_input')
   const response = await transport(source, {
     signal,
-    credentials: 'omit',
+    credentials: catalogPath ? 'same-origin' : 'omit',
     redirect: 'error',
     cache: 'no-store',
     referrerPolicy: 'no-referrer'

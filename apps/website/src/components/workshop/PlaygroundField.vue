@@ -18,7 +18,6 @@ import {
   validateForm
 } from '@/config/workshop-playground'
 import { formatWorkshopUploadLimit } from '@/config/workshop-limits'
-import { isHttpImageSource } from '@/config/workshop-image-source'
 import { workshopExampleFile } from '@/config/workshop-example-file'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -188,17 +187,8 @@ const selectedFiles = computed({
   get() {
     const value = values.value[field.name]
     const upload = urlUploadField(field)
-    if (typeof value === 'string' && upload && isHttpImageSource(value)) {
-      return (
-        workshopExampleFile(value, upload.accept[0]) ?? {
-          name: new URL(value).pathname.split('/').at(-1) || field.label,
-          type: upload.accept[0] ?? 'application/octet-stream',
-          size: 0,
-          previewUrl: value,
-          sourceUrl: value
-        }
-      )
-    }
+    if (typeof value === 'string' && upload)
+      return workshopExampleFile(value, upload.accept[0])
     return typeof value === 'object' ? value : undefined
   },
   set

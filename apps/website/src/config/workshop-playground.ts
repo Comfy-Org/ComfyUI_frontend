@@ -1,7 +1,10 @@
 import type { Locale } from '@/i18n/translations'
 import { t, translationsFor } from '@/i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
-import { workshopExampleFiles } from './workshop-example-file'
+import {
+  isCatalogMediaPath,
+  workshopExampleFiles
+} from './workshop-example-file'
 import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import {
@@ -402,6 +405,14 @@ export function defaultValues(
   )
 }
 
+function uploadsCatalogMedia(field: FieldSchema, value: FormValues[string]) {
+  return (
+    typeof value === 'string' &&
+    isCatalogMediaPath(value) &&
+    urlUploadField(field) !== undefined
+  )
+}
+
 export function validateForm(
   schema: readonly FieldSchema[],
   values: FormValues
@@ -476,7 +487,8 @@ export function validateForm(
     if (
       !Object.hasOwn(errors, field.name) &&
       field.inputSchema &&
-      field.kind !== 'file'
+      field.kind !== 'file' &&
+      !uploadsCatalogMedia(field, value)
     ) {
       const result =
         field.kind === 'text' && field.valueType === 'json'
