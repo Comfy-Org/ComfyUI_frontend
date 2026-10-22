@@ -484,6 +484,39 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
+/** Rows the document carries values for under the DynamicGroup `name`. */
+function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
+  if (widgets === undefined || Array.isArray(widgets)) return 0
+  const prefix = `${name}.`
+  const rows = new Set<string>()
+  for (const key of Object.keys(widgets)) {
+    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
+  }
+  return rows.size
+}
+
+function deferredRowCounts(
+  node: LGraphNode,
+  constructed: readonly IBaseWidget[],
+  widgets: DocNode['widgets']
+): ReadonlySet<string> {
+  if (
+    widgets === undefined ||
+    Array.isArray(widgets) ||
+    supportsDynamicWidgetOverflow(node)
+  )
+    return new Set()
+  return new Set(
+    constructed
+      .filter(
+        (widget) =>
+          isDynamicGroupController(widget) &&
+          Object.hasOwn(widgets, widget.name)
+      )
+      .map((widget) => widget.name)
+  )
+}
+
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
  * the constructed list, and names the constructor did not build but the node
@@ -494,13 +527,14 @@ function mountedWidgetValues(
   node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[],
-  constructedNames: ReadonlySet<string>
+  constructedNames: ReadonlySet<string>,
+  deferred: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name)
+      ? !constructedNames.has(name) || deferred.has(name)
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -514,7 +548,8 @@ function mountedWidgetValues(
  */
 function positionalWidgetValues(
   node: LGraphNode,
-  widgets: DocNode['widgets']
+  widgets: DocNode['widgets'],
+  deferred: ReadonlySet<string>
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
@@ -523,6 +558,7 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
+    if (deferred.has(widget.name)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
@@ -646,20 +682,15 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * One frame is one change: the same `before-change`/`after-change` bracket
-   * a multi-step human edit emits, so the change tracker records a single
-   * undo entry and flips `isModified` once.
-   */
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      graph.canvasAction((canvas) => canvas.emitBeforeChange())
+      this.deps.getCanvas?.()?.emitBeforeChange()
       try {
         return withGraphIntentSource('agent-remote', fn)
       } finally {
         graph.setDirtyCanvas(true, true)
-        graph.canvasAction((canvas) => canvas.emitAfterChange())
+        this.deps.getCanvas?.()?.emitAfterChange()
       }
     })
   }
@@ -831,15 +862,21 @@ export class LiveGraphApplier {
         const constructedNames = new Set(
           node.widgets?.map((widget) => widget.name)
         )
+        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         node.configure({
           ...info,
-          widgets_values: positionalWidgetValues(node, docNode.widgets)
+          widgets_values: positionalWidgetValues(
+            node,
+            docNode.widgets,
+            deferred
+          )
         })
         const mounted = mountedWidgetValues(
           node,
           docNode.widgets,
           constructed,
-          constructedNames
+          constructedNames,
+          deferred
         )
         if (mounted)
           this.applyWidgets(node, mounted, mode, {
@@ -1099,7 +1136,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value)
+        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1231,12 +1268,25 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue
+    value: WidgetValue,
+    documentWidgets: DocNode['widgets']
   ) {
-    applyRemoteDynamicGroupRowCount(node, () =>
-      this.setWidgetValue(node, widget, value)
-    )
-    if (reachesDynamicGroupRowCount(widget, value)) return
+    const { max } = widget.options
+    const growsAboveMax =
+      typeof value === 'number' &&
+      max !== undefined &&
+      Math.trunc(value) >
+        Math.max(
+          max,
+          Number(widget.value),
+          documentedRowCount(widget.name, documentWidgets)
+        )
+    if (!growsAboveMax) {
+      applyRemoteDynamicGroupRowCount(node, () =>
+        this.setWidgetValue(node, widget, value)
+      )
+      if (reachesDynamicGroupRowCount(widget, value)) return
+    }
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,

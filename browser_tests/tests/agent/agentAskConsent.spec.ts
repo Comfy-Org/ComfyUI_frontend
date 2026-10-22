@@ -14,6 +14,7 @@ import {
   runApprovalAsk,
   toolCall
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
@@ -195,11 +196,12 @@ test.describe(
         ])
         await expect(deleteButton).toBeEnabled()
         await expect(keepButton).toBeEnabled()
-        await expect(
+        await expectElementScreenshot(
           panel.getByRole('group', {
             name: enMessages.agent.deleteApproval.card
-          })
-        ).toHaveScreenshot('agent-delete-approval-card.png')
+          }),
+          'agent-delete-approval-card.png'
+        )
       })
 
       await test.step('the click posts once, to that ask, and locks the card', async () => {

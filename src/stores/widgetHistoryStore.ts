@@ -7,10 +7,14 @@ import type { WidgetId } from '@/types/widgetId'
 export const WIDGET_HISTORY_LIMIT = 10
 
 const NODE_HISTORY_WIDGET_TYPES: ReadonlySet<string> = new Set([
+  'boundingbox',
   'boundingboxes',
+  'colors',
   'curve',
+  'imagecrop',
   'lightinfo',
-  'range'
+  'range',
+  'videoedit'
 ])
 
 export function ownsNodeHistory(widget: { type?: string }): boolean {

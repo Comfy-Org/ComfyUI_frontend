@@ -1,4 +1,4 @@
-import type { BillingTelemetryEventName } from './billingTelemetryEvent.js'
+import type { BillingTelemetryEventName } from './billingTelemetryEvent'
 
 export const BILLING_TELEMETRY_EVENTS = {
   BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:

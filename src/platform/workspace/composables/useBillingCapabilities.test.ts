@@ -394,6 +394,25 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: false }
+  ])(
+    'renders payment_recovery_available $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.payment_recovery_available = served
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.paymentRecoveryAvailable.value).toBe(expected)
+    }
+  )
+
   it('offers workspace editing only when the server does', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(
@@ -1493,6 +1512,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
     expect(readCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
+
+  it.for([
+    { denial: 'payment_past_due', expected: true },
+    { denial: 'no_funds', expected: false },
+    { denial: undefined, expected: false }
+  ])(
+    'reads a can_run_workflows denial of $denial as payment past due: $expected',
+    async ({ denial, expected }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_run_workflows: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.runDeniedPaymentPastDue.value).toBe(expected)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {

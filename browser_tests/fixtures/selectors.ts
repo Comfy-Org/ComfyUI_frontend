@@ -183,6 +183,7 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button',
     hideLinks: 'hide-links-button',
+    showLinks: 'show-links-button',
     deleteLinks: 'delete-links-button'
   },
   helpCenter: {
