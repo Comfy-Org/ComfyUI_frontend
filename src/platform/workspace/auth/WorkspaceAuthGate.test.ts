@@ -306,7 +306,8 @@ describe('WorkspaceAuthGate', () => {
 
       expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
         useAuth: true,
-        signal: expect.any(AbortSignal)
+        signal: expect.any(AbortSignal),
+        timeoutMs: 12_000
       })
     })
 
@@ -424,7 +425,8 @@ describe('WorkspaceAuthGate', () => {
 
       expect(mockRefreshRemoteConfig).toHaveBeenCalledWith({
         useAuth: true,
-        signal: expect.any(AbortSignal)
+        signal: expect.any(AbortSignal),
+        timeoutMs: 12_000
       })
       expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
@@ -581,12 +583,36 @@ describe('WorkspaceAuthGate', () => {
         screen.queryByText("Couldn't load your workspace")
       ).not.toBeInTheDocument()
 
-      // Advance past the 10 second timeout
-      await vi.advanceTimersByTimeAsync(10_001)
+      await vi.advanceTimersByTimeAsync(13_001)
 
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
+    })
+
+    it('retries once when a slow authenticated read does not authenticate, then loads', async () => {
+      remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig
+        .mockImplementationOnce(
+          () => new Promise<void>((resolve) => setTimeout(resolve, 12_000))
+        )
+        .mockImplementationOnce(async () => {
+          remoteConfigState.value = 'authenticated'
+        })
+
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(11_999)
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(1)
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(
+        screen.queryByText("Couldn't load your workspace")
+      ).not.toBeInTheDocument()
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
@@ -598,7 +624,26 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
       expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+    })
+
+    it('gives the authenticated config read its own budget and retries it once', async () => {
+      remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig
+        .mockResolvedValueOnce(undefined)
+        .mockImplementationOnce(async () => {
+          remoteConfigState.value = 'authenticated'
+        })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
+      expect(mockRefreshRemoteConfig).toHaveBeenLastCalledWith(
+        expect.objectContaining({ useAuth: true, timeoutMs: 12_000 })
+      )
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
     it('requires sign out when authenticated config rejects the credential', async () => {
@@ -608,6 +653,8 @@ describe('WorkspaceAuthGate', () => {
 
       mountComponent()
       await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
 
       expect(
         screen.queryByRole('button', { name: 'Try again' })

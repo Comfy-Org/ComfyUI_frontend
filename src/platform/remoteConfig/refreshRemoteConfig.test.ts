@@ -365,6 +365,25 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
+    it('aborts after the caller-provided timeoutMs', async () => {
+      vi.useFakeTimers()
+      try {
+        let signal: AbortSignal | undefined
+        vi.mocked(global.fetch).mockImplementation((_url, init) => {
+          signal = init?.signal ?? undefined
+          return new Promise(() => {})
+        })
+
+        void refreshRemoteConfig({ useAuth: false, timeoutMs: 12_000 })
+        await vi.advanceTimersByTimeAsync(5_001)
+        expect(signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(7_000)
+        expect(signal?.aborted).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('falls back to empty config when the request aborts', async () => {
       vi.mocked(global.fetch).mockRejectedValue(
         new DOMException('Aborted', 'AbortError')

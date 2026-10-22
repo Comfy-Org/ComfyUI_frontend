@@ -26,6 +26,7 @@ interface RefreshRemoteConfigOptions {
    */
   useAuth?: boolean
   signal?: AbortSignal
+  timeoutMs?: number
 }
 
 let refreshGeneration = 0
@@ -190,7 +191,11 @@ function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
-  const { useAuth = true, signal } = options
+  const {
+    useAuth = true,
+    signal,
+    timeoutMs = FEATURES_FETCH_TIMEOUT_MS
+  } = options
   const generation = ++refreshGeneration
   const previousAuthenticatedState = authenticatedRemoteConfigState.value
   if (useAuth && previousAuthenticatedState !== 'authenticated') {
@@ -203,10 +208,7 @@ export async function refreshRemoteConfig(
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) abort()
 
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    FEATURES_FETCH_TIMEOUT_MS
-  )
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const { response, authenticated } = await fetchRemoteConfig(

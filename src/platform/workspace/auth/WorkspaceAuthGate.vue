@@ -115,7 +115,8 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
-const CONFIG_REFRESH_TIMEOUT_MS = 10_000
+const CONFIG_REFRESH_TIMEOUT_MS = 12_000
+const CONFIG_REFRESH_ATTEMPTS = 2
 
 const initializationState = ref<
   'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
@@ -179,16 +180,7 @@ async function initialize(): Promise<void> {
       return
     }
 
-    let timeoutId: ReturnType<typeof setTimeout>
-    await Promise.race([
-      refreshRemoteConfig({ useAuth: true, signal: controller.signal }),
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          controller.abort()
-          reject(new Error('Config refresh timeout'))
-        }, CONFIG_REFRESH_TIMEOUT_MS)
-      })
-    ]).finally(() => clearTimeout(timeoutId))
+    await loadAuthenticatedRemoteConfig(controller)
     if (generation !== initializationGeneration) return
     if (remoteConfigState.value !== 'authenticated') {
       throw new Error('Failed to load authenticated remote config')
@@ -233,6 +225,35 @@ async function initialize(): Promise<void> {
     await nextTick()
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
+  }
+}
+
+async function loadAuthenticatedRemoteConfig(
+  controller: AbortController
+): Promise<void> {
+  for (let attempt = 1; attempt <= CONFIG_REFRESH_ATTEMPTS; attempt++) {
+    let timeoutId: ReturnType<typeof setTimeout>
+    await Promise.race([
+      refreshRemoteConfig({
+        useAuth: true,
+        signal: controller.signal,
+        timeoutMs: CONFIG_REFRESH_TIMEOUT_MS
+      }),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          controller.abort()
+          reject(new Error('Config refresh timeout'))
+        }, CONFIG_REFRESH_TIMEOUT_MS + 1_000)
+      })
+    ]).finally(() => clearTimeout(timeoutId))
+    if (
+      remoteConfigState.value === 'authenticated' ||
+      controller.signal.aborted ||
+      remoteConfigErrorStatus.value === 401 ||
+      remoteConfigErrorStatus.value === 403
+    ) {
+      return
+    }
   }
 }
 
