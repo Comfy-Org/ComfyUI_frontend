@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { z } from 'astro/zod'
 
 import { detailSchema } from '@/config/models-page-data'
 import { workflowCloudRequest } from '@/config/workshop-workflow-api'
@@ -130,8 +131,18 @@ describe('static Run form fallback on a Workshop slug', () => {
 })
 
 describe('media upload kind of a catalog workflow input', () => {
-  function imageInput(mediaKind: string, hint: Record<string, unknown> = {}) {
-    const view = detailSchema.parse(
+  const cloudAsset = runFields.inputBindings.image
+  const scalar = runFields.inputBindings.prompt
+  const presentedInputs = z.object({
+    workflow: z.object({ inputs: z.record(z.string(), z.looseObject({})) })
+  })
+
+  function imageInput(
+    hint: Record<string, unknown>,
+    binding: Record<string, unknown> | null
+  ) {
+    const { image: _image, ...otherBindings } = runFields.inputBindings
+    return presentedInputs.parse(
       catalogPresentation(
         workflowRecord('catalog-media', {
           ...runFields,
@@ -139,27 +150,46 @@ describe('media upload kind of a catalog workflow input', () => {
             ...runFields.inputs,
             image: { ...runFields.inputs.image, ...hint }
           },
-          inputBindings: {
-            ...runFields.inputBindings,
-            image: { ...runFields.inputBindings.image, mediaKind }
-          }
+          inputBindings: binding
+            ? { ...otherBindings, image: binding }
+            : otherBindings
         })
       )
-    )
-    if (view.type !== 'CLOUD') throw new Error('Not a workflow page')
-    return view.workflow.inputs.image
+    ).workflow.inputs.image
   }
 
   it.for(['image', 'video', 'audio'])(
     'uploads the %s kind of its cloud-asset binding',
-    (kind) => {
-      expect(imageInput(kind).urlUpload).toBe(kind)
+    (mediaKind) => {
+      expect(imageInput({}, { ...cloudAsset, mediaKind })).toHaveProperty(
+        'urlUpload',
+        mediaKind
+      )
     }
   )
 
   it('keeps the upload kind the input sets itself', () => {
-    expect(imageInput('video', { urlUpload: 'image-or-video' }).urlUpload).toBe(
-      'image-or-video'
-    )
+    expect(
+      imageInput(
+        { urlUpload: 'image-or-video' },
+        { ...cloudAsset, mediaKind: 'video' }
+      )
+    ).toHaveProperty('urlUpload', 'image-or-video')
+  })
+
+  it.for([
+    {
+      input: 'a text control with a cloud-asset binding',
+      hint: { control: 'text-area' },
+      binding: cloudAsset
+    },
+    {
+      input: 'a media control with a scalar binding',
+      hint: {},
+      binding: scalar
+    },
+    { input: 'a media control with no binding', hint: {}, binding: null }
+  ])('sets no upload kind on $input', ({ hint, binding }) => {
+    expect(imageInput(hint, binding)).not.toHaveProperty('urlUpload')
   })
 })
