@@ -1,7 +1,8 @@
 import { app } from '@/scripts/app'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import type { ComfyExtension } from '@/types/comfy'
 
-app.registerExtension({
+export const layerEditorExtension: ComfyExtension = {
   name: 'Comfy.LayerEditor',
   commands: [
     {
@@ -19,4 +20,4 @@ app.registerExtension({
       }
     }
   ]
-})
+}

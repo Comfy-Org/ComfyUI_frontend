@@ -123,6 +123,36 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).toHaveBeenCalledOnce()
   })
 
+  it('reports the wall-clock time no phase covers, counting overlaps once', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const tracer = new BootstrapTracer()
+
+    await vi.advanceTimersByTimeAsync(10)
+    tracer.recordSinceTimeOrigin('startup/entry-modules')
+    const settings = tracer.startPhase('bootstrap/settings')
+    await vi.advanceTimersByTimeAsync(50)
+    const workflows = tracer.startPhase('bootstrap/workflows')
+    await vi.advanceTimersByTimeAsync(50)
+    settings.stop()
+    await vi.advanceTimersByTimeAsync(50)
+    workflows.stop()
+    await vi.advanceTimersByTimeAsync(40)
+    tracer.complete()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      untraced_ms: 40,
+      phases: {
+        'startup/entry-modules': 10,
+        'bootstrap/settings': 100,
+        'bootstrap/workflows': 100
+      }
+    })
+  })
+
   it('reports a failed startup, closing phases still open', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')

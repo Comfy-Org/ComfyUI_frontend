@@ -8,8 +8,9 @@ import {
 } from 'vue-router'
 import type {
   LocationQueryRaw,
-  NavigationGuardNext,
-  RouteLocationNormalized
+  NavigationGuardReturn,
+  RouteLocationNormalized,
+  Router
 } from 'vue-router'
 
 import { readSsoError, ssoStartUrl } from '@comfyorg/account-core/sso'
@@ -26,6 +27,7 @@ import {
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -44,13 +46,6 @@ import { installPreservedQueryTracker } from '@/platform/navigation/preservedQue
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
-const cloudOnboardingRoutes = isCloud
-  ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
-      .cloudOnboardingRoutes
-  : []
-
-const isFileProtocol = window.location.protocol === 'file:'
-
 /**
  * Determine base path for the router.
  * - Electron: always root
@@ -64,75 +59,81 @@ function getBasePath(): string {
   return window.location.pathname
 }
 
-const basePath = getBasePath()
-
 function trackPageView(): void {
   useTelemetry()?.trackPageView(document.title, {
     path: window.location.href
   })
 }
 
-const router = createRouter({
-  history: isFileProtocol
-    ? createWebHashHistory()
-    : // Base path must be specified to ensure correct relative paths
-      // Example: For URL 'http://localhost:7801/ComfyBackendDirect',
-      // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
-      createWebHistory(basePath),
-  routes: [
-    ...(isCloud ? cloudOnboardingRoutes : []),
-    {
-      path: '/',
-      component: LayoutDefault,
-      children: [
-        {
-          path: '',
-          name: 'GraphView',
-          component: () => import('@/views/GraphView.vue'),
-          beforeEnter: async (_to, _from, next) => {
-            // Then check user store
-            const userStore = useUserStore()
-            await userStore.initialize()
-            if (userStore.needsLogin) {
-              next('/user-select')
-            } else {
-              next()
+/** Creates the app router with its routes and navigation guards. */
+export async function createAppRouter(): Promise<Router> {
+  const cloudOnboardingRoutes = isCloud
+    ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
+        .cloudOnboardingRoutes
+    : []
+
+  const router = createRouter({
+    history:
+      window.location.protocol === 'file:'
+        ? createWebHashHistory()
+        : createWebHistory(getBasePath()),
+    routes: [
+      ...cloudOnboardingRoutes,
+      {
+        path: '/',
+        component: LayoutDefault,
+        children: [
+          {
+            path: '',
+            name: 'GraphView',
+            component: () =>
+              bootstrapTracer.settle(
+                'bootstrap/graph-view-chunk',
+                () => import('@/views/GraphView.vue')
+              ),
+            beforeEnter: async () => {
+              const userStore = useUserStore()
+              await userStore.initialize()
+              if (userStore.needsLogin) return '/user-select'
             }
+          },
+          {
+            path: 'user-select',
+            name: 'UserSelectView',
+            component: () => import('@/views/UserSelectView.vue')
           }
-        },
-        {
-          path: 'user-select',
-          name: 'UserSelectView',
-          component: () => import('@/views/UserSelectView.vue')
-        }
-      ]
-    },
-    { path: '/:pathMatch(.*)*', redirect: unmatchedRouteRedirect }
-  ],
+        ]
+      },
+      { path: '/:pathMatch(.*)*', redirect: unmatchedRouteRedirect }
+    ],
 
-  scrollBehavior(_to, _from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition
-    } else {
-      return { top: 0 }
+    scrollBehavior(_to, _from, savedPosition) {
+      if (savedPosition) {
+        return savedPosition
+      } else {
+        return { top: 0 }
+      }
     }
-  }
-})
+  })
 
-installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
+  installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-router.beforeEach((to, _from, next) => {
-  captureOAuthRequestId(to.query)
-  next()
-})
+  router.beforeEach((to) => {
+    captureOAuthRequestId(to.query)
+  })
 
-router.afterEach(() => {
-  trackPageView()
-})
+  router.afterEach(() => {
+    trackPageView()
+  })
+
+  if (isCloud) installCloudAuthGuards(router)
+
+  return router
+}
 
 const PUBLIC_ROUTE_SIGN_IN_TIMEOUT_MS = 3_000
 
-if (isCloud) {
+function installCloudAuthGuards(router: Router): void {
   const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
@@ -179,9 +180,8 @@ if (isCloud) {
   /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
-    query: LocationQueryRaw,
-    next: NavigationGuardNext
-  ): void {
+    query: LocationQueryRaw
+  ): NavigationGuardReturn {
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -200,32 +200,29 @@ if (isCloud) {
           origin: window.location.origin
         })
       )
-      return next(false)
+      return false
     }
-    next({
+    return {
       name: 'cloud-login',
       query: {
         ...query,
         ...(reentry.kind !== 'login' && SSO_ENTRY_OPEN_QUERY),
         ...(ssoError && { sso_error: ssoError })
       }
-    })
+    }
   }
 
-  // Global authentication guard
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to, from) => {
     rerouteWhenSignedOutElsewhere()
     const authStore = useAuthStore()
 
-    // Wait for Firebase auth to initialize
-    // Timeout after 16 seconds
     if (!authStore.isInitialized) {
       try {
         const { isInitialized } = storeToRefs(authStore)
         await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
-        return next({ name: 'cloud-auth-timeout' })
+        return { name: 'cloud-auth-timeout' }
       }
     }
 
@@ -244,23 +241,19 @@ if (isCloud) {
     const isLoggedIn = signIn === 'signed_in' && !needsFirebaseForDesktopCode
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
-    // Allow public routes
     if (isPublicRoute(to)) {
-      return next()
+      return
     }
 
-    // Special handling for user-check
-    // These routes need auth but handle their own routing logic
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: 'cloud-login' })
+        return { name: 'cloud-login' }
       }
-      return next()
+      return
     }
 
-    // Prevent redirect loop when coming from user-check
-    if (_from.name === 'cloud-user-check' && to.path === '/') {
-      return next()
+    if (from.name === 'cloud-user-check' && to.path === '/') {
+      return
     }
 
     const query = {
@@ -270,53 +263,41 @@ if (isCloud) {
       ...(needsFirebaseForDesktopCode && { switchAccount: 'true' })
     }
 
-    // Check if route requires authentication
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
-    // Handle other protected routes
     if (!isLoggedIn) {
-      // For Electron, use dialog
       if (isDesktop) {
         const loginSuccess = await useAuthDialogs().showSignInDialog()
-        return loginSuccess ? next() : next(false)
+        return loginSuccess
       }
 
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
-    // User is logged in - check if they need onboarding (when enabled)
-    // For root path, check actual user status to handle waitlisted users
     if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
-        return next()
+        return
       }
-      // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
         await import('@/platform/cloud/onboarding/auth')
       try {
-        // Check user's actual status
         const surveyCompleted = await getSurveyCompletedStatus(
           useAuthStore().userId
         )
 
-        // Survey is required for all users (when feature flag enabled)
         if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
+          return { name: 'cloud-survey' }
         }
       } catch (error) {
         console.error('Failed to check user status:', error)
-        // On error, redirect to user-check as fallback
-        return next({ name: 'cloud-user-check' })
+        return { name: 'cloud-user-check' }
       }
     }
 
-    // User is logged in and accessing protected route
-    return next()
+    return
   })
 
   installDesktopLoginRedemption(router)
 }
-
-export default router

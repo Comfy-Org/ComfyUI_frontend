@@ -5,6 +5,7 @@ import { app } from '@/scripts/app'
 
 import { canvasOrReport } from './touchCanvasAccess'
 import { touchGesture } from './touchPointerGuards'
+import type { ComfyExtension } from '@/types/comfy'
 
 type TouchPoint = { clientX: number; clientY: number }
 
@@ -50,7 +51,7 @@ function zoomCanvasAroundPinch(
   canvas.setDirty(true, true)
 }
 
-app.registerExtension({
+export const simpleTouchSupportExtension: ComfyExtension = {
   name: 'Comfy.SimpleTouchSupport',
   setup() {
     let touchDist: number | null = null
@@ -175,4 +176,4 @@ app.registerExtension({
       true
     )
   }
-})
+}
