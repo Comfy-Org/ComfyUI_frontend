@@ -92,6 +92,12 @@ const CANONICAL_ASKS: Record<AgentAskKind, CanonicalAsk> = {
   }
 }
 
+const CARD_BACKED_ASK_KINDS = [
+  'run_approval',
+  'ask_user',
+  'delete_approval'
+] as const satisfies readonly AgentAskKind[]
+
 interface AnswerControl {
   role: 'button' | 'radio'
   name: string
@@ -149,6 +155,12 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     expect(renderable).toHaveLength(ADVERTISED_ASK_KINDS.length)
   })
 
+  it('advertises every kind the panel has built a card for', () => {
+    expect(ADVERTISED_ASK_KINDS).toEqual(
+      expect.arrayContaining([...CARD_BACKED_ASK_KINDS])
+    )
+  })
+
   it('leaves paused unadvertised, because cloud raises it for every client', () => {
     expect(ADVERTISED_ASK_KINDS).not.toContain('paused')
   })
@@ -158,11 +170,16 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     (kind) => {
       const { container } = renderAsk(kind)
       const card = within(container as HTMLElement)
+      const expected = ANSWER_CONTROLS[kind]
 
       expect(card.queryByText(ASK_UNAVAILABLE)).not.toBeInTheDocument()
-      for (const { role, name } of ANSWER_CONTROLS[kind]) {
-        expect(card.getByRole(role, { name })).toBeInTheDocument()
-      }
+      expect(
+        expected.map(({ role, name }) => ({
+          role,
+          name,
+          rendered: card.queryByRole(role, { name }) !== null
+        }))
+      ).toEqual(expected.map((control) => ({ ...control, rendered: true })))
     }
   )
 
