@@ -1,6 +1,12 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { ModelPageLaunch } from '@/config/model-page-launch'
+import {
+  hubAppHref,
+  hubAppSlugs,
+  hubWorkflowHref,
+  hubWorkflowSlugs
+} from '@/config/hub-models'
 import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
 import { modelsUrlKind, modelsUrlPaths } from '@/config/models-url-registry'
 import { workshopModels } from '@/config/workshop-browse-content'
@@ -268,10 +274,17 @@ describe('modelsHubJsonLd', () => {
 })
 
 describe('hubSectionJsonLd', () => {
-  const records = [
-    { name: 'Product Photo Relight', href: '/hub/workflows/product-relight/' },
-    { name: 'Sketch to Render', href: '/hub/workflows/sketch-to-render/' }
-  ]
+  const records = hubWorkflowSlugs.slice(0, 2).map((slug) => ({
+    name: slug,
+    href: hubWorkflowHref(slug)
+  }))
+
+  function launchWorkflowPages() {
+    launch.launchedWorkflowPages = true
+    onTestFinished(() => {
+      launch.launchedWorkflowPages = false
+    })
+  }
 
   function sectionHtml(pathname: string, locale: 'en' | 'zh-CN') {
     const url = `${siteUrl}${pathname}`
@@ -307,6 +320,7 @@ describe('hubSectionJsonLd', () => {
   ] as const)(
     'lists each $locale record as a valid ItemList on a CollectionPage',
     ({ locale, prefix }) => {
+      launchWorkflowPages()
       const pathname = `${prefix}/hub/workflows/`
       const { jsonLd, html } = sectionHtml(pathname, locale)
       expect(validateHtml(html, pathname)).toEqual([])
@@ -325,6 +339,36 @@ describe('hubSectionJsonLd', () => {
           }))
         })
       ])
+    }
+  )
+
+  it.for([
+    { workflowsLaunched: false, listed: [] },
+    { workflowsLaunched: true, listed: records }
+  ])(
+    'lists only records whose page is indexable (workflows launched $workflowsLaunched)',
+    ({ workflowsLaunched, listed }) => {
+      if (workflowsLaunched) launchWorkflowPages()
+      const jsonLd = hubSectionJsonLd({
+        name: 'ComfyUI workflows',
+        homeName: 'Home',
+        items: [
+          ...records,
+          { name: 'App', href: hubAppHref(hubAppSlugs[0]) },
+          { name: 'CMS only', href: '/hub/workflows/not-in-the-registry/' }
+        ],
+        url: `${siteUrl}/hub/workflows/`,
+        siteUrl,
+        locale: 'en',
+        search: ''
+      })
+      expect(
+        jsonLd.extraJsonLd.flatMap(({ itemListElement }) =>
+          Array.isArray(itemListElement)
+            ? itemListElement.map((element: { url: string }) => element.url)
+            : []
+        )
+      ).toEqual(listed.map(({ href }) => `${siteUrl}${href}`))
     }
   )
 
