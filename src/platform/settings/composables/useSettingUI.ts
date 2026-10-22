@@ -166,6 +166,18 @@ export function useSettingUI(
     props: { section: 'planCredits' }
   }
 
+  const billingPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Billing',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () =>
+        import('@/platform/workspace/components/dialogs/settings/billing/BillingTab.vue')
+    )
+  }
+
   const membersPanel: SettingPanelItem = {
     node: {
       key: 'workspace-members',
@@ -197,9 +209,10 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    const workspacePanels = isCloud
-      ? [planCreditsPanel, membersPanel]
-      : [planCreditsPanel]
+    const planPanel = flags.unifiedBillingSettingsEnabled
+      ? billingPanel
+      : planCreditsPanel
+    const workspacePanels = isCloud ? [planPanel, membersPanel] : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels

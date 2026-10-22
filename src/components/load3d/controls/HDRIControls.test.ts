@@ -7,7 +7,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import HDRIControls from '@/components/load3d/controls/HDRIControls.vue'
-import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
+import type { HDRIConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,
@@ -54,8 +54,7 @@ function renderComponent(opts: RenderOpts = {}) {
       onUpdateHdriFile: opts.onUpdateHdriFile
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

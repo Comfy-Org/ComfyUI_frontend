@@ -1,12 +1,13 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 
+import { registerElectronAdapterExtension } from './electronAdapter'
+
 import './clipspace'
 import './contextMenuFilter'
 import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
-import './electronAdapter'
 import './groupNode'
 import './groupOptions'
 import './imageCompare'
@@ -35,20 +36,19 @@ import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
 
+await registerElectronAdapterExtension()
+
 // Cloud-only extensions - tree-shaken in OSS builds
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
 // dead-code-eliminates this block from OSS builds.
 if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-} else if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
-  // The local agent harness mounts the panel in any distribution.
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
 }
+
+const { registerAgentPanelExtension } = await import('./agentPanel')
+registerAgentPanelExtension()
 
 // Feedback button for cloud and nightly builds
 if (isCloud || isNightly) {

@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
 import {
   ScriptKind,
   ScriptTarget,
@@ -10,6 +7,8 @@ import {
 } from 'typescript'
 import type { Node } from 'typescript'
 
+import { readText } from './outcome'
+import type { Outcome } from './outcome'
 import type { ArchitectureException } from './schema'
 
 const DIRECTIVES = [
@@ -118,13 +117,19 @@ export function findSuppressions(
 export function censusSuppressions(
   repositoryRoot: string,
   sourceFiles: string[]
-): Suppression[] {
-  return sourceFiles.flatMap((filename) =>
-    findSuppressions(
-      filename,
-      readFileSync(join(repositoryRoot, filename), 'utf8')
+): Outcome<Suppression[]> {
+  const sources = sourceFiles.map((filename) => ({
+    filename,
+    text: readText(repositoryRoot, filename)
+  }))
+  const errors = sources.flatMap(({ text }) => (text.ok ? [] : text.errors))
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: sources.flatMap(({ filename, text }) =>
+      text.ok ? findSuppressions(filename, text.value) : []
     )
-  )
+  }
 }
 
 export function ledgerErrors(

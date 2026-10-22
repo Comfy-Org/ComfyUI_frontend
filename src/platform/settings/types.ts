@@ -1,4 +1,3 @@
-import type { ServerConfigValue } from '@/constants/serverConfig'
 import type { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -13,6 +12,7 @@ export type BookmarkCustomization = {
 export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 
 export type Settings = {
+  'Comfy.AgentPanel.ConsentOfferDeclined': boolean
   'Comfy.ColorPalette': string
   'Comfy.CustomColorPalettes': ColorPalettes
   'Comfy.Canvas.BackgroundImage'?: string
@@ -246,6 +246,8 @@ export interface SettingParams<TValue = unknown> extends FormItem {
 /**
  * The base form item for rendering in a form.
  */
+export type ServerConfigValue = string | number | boolean | null | undefined
+
 export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer

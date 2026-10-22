@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   captureInputLayout,
   inputHasLink,

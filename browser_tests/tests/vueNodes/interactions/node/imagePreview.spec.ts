@@ -8,6 +8,8 @@ import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 const wstest = mergeTests(test, webSocketFixture)
@@ -57,7 +59,9 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+    ).toBeVisible()
   })
 
   test('hides mask and download buttons when image is missing', async ({
@@ -142,7 +146,11 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
       await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+      await fitToViewInstant(comfyPage, { zoom: 0.6 })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [firstSubgraphNode, secondSubgraphNode],
         'vue-node-multiple-promoted-previews.png'
       )
     }

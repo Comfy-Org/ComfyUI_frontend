@@ -2,11 +2,7 @@ import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { useExtensionService } from '@/services/extensionService'
 
-/**
- * Cloud-only extension that manages session cookies for authentication.
- * Creates session cookie on login, refreshes it when token refreshes, and deletes on logout.
- */
-useExtensionService().registerExtension({
+const disposeSessionCookieExtension = useExtensionService().registerExtension({
   name: 'Comfy.Cloud.SessionCookie',
 
   onAuthUserResolved: async () => {
@@ -25,3 +21,5 @@ useExtensionService().registerExtension({
     await deleteSession()
   }
 })
+
+import.meta.hot?.dispose(disposeSessionCookieExtension)

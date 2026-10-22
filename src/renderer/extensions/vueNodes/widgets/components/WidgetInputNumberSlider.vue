@@ -4,7 +4,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-component-node-widget-background-hovered',
+          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-muted',
           useWidgetHeight()
         )
       "
@@ -49,7 +49,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { useNumberStepCalculation } from '../composables/useNumberStepCalculation'
+import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

@@ -7,12 +7,10 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-// Capture the initial title injected by Vite (e.g. for SEO on cloud.comfy.org)
-const DEFAULT_TITLE =
-  typeof document !== 'undefined' && document.title ? document.title : 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 
 export const useBrowserTabTitle = () => {
+  const defaultTitle = document.title || 'ComfyUI'
   const executionStore = useExecutionStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
@@ -54,11 +52,10 @@ export const useBrowserTabTitle = () => {
     const workflowName = workflowStore.activeWorkflow?.filename
     return workflowName
       ? isUnsavedText.value + workflowName + TITLE_SUFFIX
-      : DEFAULT_TITLE
+      : defaultTitle
   })
 
   const nodeExecutionTitle = computed(() => {
-    // Check if any nodes are in progress
     const nodeProgressEntries = Object.entries(
       executionStore.nodeProgressStates
     )
@@ -70,12 +67,10 @@ export const useBrowserTabTitle = () => {
       return ''
     }
 
-    // If multiple nodes are running
     if (runningNodes.length > 1) {
       return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
     }
 
-    // If only one node is running
     const [, state] = runningNodes[0]
     const progress = Math.round((state.value / state.max) * 100)
     const nodeLabel =
@@ -89,7 +84,7 @@ export const useBrowserTabTitle = () => {
   const workflowTitle = computed(
     () =>
       executionText.value +
-      (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+      (newMenuEnabled.value ? workflowNameText.value : defaultTitle)
   )
 
   const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)

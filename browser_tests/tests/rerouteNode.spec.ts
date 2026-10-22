@@ -2,6 +2,9 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+const INSERTED_NODE_COUNT = 3
 
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -17,7 +20,6 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.setup()
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
-    // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
@@ -27,12 +29,18 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     })
     await insertButton.click()
 
-    // Close the sidebar tab
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(INSERTED_NODE_COUNT)
 
-    await expect(comfyPage.canvas).toHaveScreenshot('reroute_inserted.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'reroute_inserted.png'
+    )
   })
 })
 
@@ -49,7 +57,11 @@ test.describe(
 
     test('loads from workflow', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
-      await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'native_reroute.png'
+      )
     })
 
     test('@2x @0.5x Can add reroute by alt clicking on link', async ({
@@ -73,7 +85,9 @@ test.describe(
       await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
       await comfyPage.page.keyboard.up('Alt')
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [loadCheckpointNode, clipEncodeNode, middlePoint],
         'native_reroute_alt_click.png'
       )
     })
@@ -100,7 +114,9 @@ test.describe(
         .locator('.litecontextmenu .litemenu-entry', { hasText: 'Add Reroute' })
         .click()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [loadCheckpointNode, clipEncodeNode, middlePoint],
         'native_reroute_context_menu.png'
       )
     })
