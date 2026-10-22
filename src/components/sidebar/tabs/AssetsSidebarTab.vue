@@ -436,8 +436,6 @@ const showEmptyState = computed(
 )
 
 watch(visibleAssets, (newAssets) => {
-  // Alternative: keep hidden selections and surface them in UI; for now prune
-  // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
 })
 
