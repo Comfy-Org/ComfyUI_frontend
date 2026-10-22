@@ -520,6 +520,7 @@ describe('ChangeTracker', () => {
 
           expect(trackerB.activeState).toBe(originalB)
           expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+          expect(mockAssert).not.toHaveBeenCalled()
         })
 
         it('captures the canvas once the tracker is bound to the canvas', () => {
@@ -2142,6 +2143,21 @@ describe('ChangeTracker', () => {
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       expect(tracker.activeState).toBe(original)
+    })
+
+    it('does not capture when the active tracker does not own the canvas', () => {
+      const trackerA = createTracker(createState(2))
+      bindCanvasTracker(trackerA)
+      mockCanvasState(createState(2))
+
+      const originalB = createState(0)
+      const trackerB = createTracker(originalB)
+
+      trackerB.prepareForSave()
+
+      expect(trackerB.activeState).toBe(originalB)
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+      expect(mockAssert).not.toHaveBeenCalled()
     })
   })
 

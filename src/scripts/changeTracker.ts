@@ -432,7 +432,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
-    if (!this._restoringState) this.captureCanvasState()
+    if (!this._restoringState && canCaptureCanvas(this)) {
+      this.captureCanvasState()
+    }
     this.store()
   }
 
@@ -444,7 +446,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * @internal Not part of the public extension API.
    */
   prepareForSave() {
-    if (isActiveTracker(this)) this.captureCanvasState()
+    if (isActiveTracker(this) && canCaptureCanvas(this)) {
+      this.captureCanvasState()
+    }
   }
 
   restore() {
