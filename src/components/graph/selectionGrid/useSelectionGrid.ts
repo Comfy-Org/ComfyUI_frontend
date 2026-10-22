@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import {
   computeTidyLayout,
+  detectSelectionGrid,
   tidyGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
@@ -121,9 +122,9 @@ export function useSelectionGrid() {
     nodes: LGraphNode[] = gridNodes.value,
     { gap, captureUndo = true }: { gap?: number; captureUndo?: boolean } = {}
   ): number => {
-    const boxes = measure(nodes)
-    const tidyGap = gap ?? tidyGapOf(boxes)
-    moveBoxes(nodes, computeTidyLayout(boxes, tidyGap), { captureUndo })
+    const grid = detectSelectionGrid(measure(nodes))
+    const tidyGap = gap ?? tidyGapOf(grid)
+    moveBoxes(nodes, computeTidyLayout(grid, tidyGap), { captureUndo })
     return tidyGap
   }
 
@@ -132,7 +133,6 @@ export function useSelectionGrid() {
     canTidy,
     measure,
     capturePositions,
-    placeBoxes,
     moveBoxes,
     recordUndoStep,
     tidyUp

@@ -22,8 +22,6 @@ export interface BoxPosition {
 
 export type GapAxis = 'x' | 'y'
 
-export type SelectionLayoutKind = 'row' | 'column' | 'grid' | 'scattered'
-
 interface GridCell {
   box: LayoutBox
   row: number
@@ -31,7 +29,7 @@ interface GridCell {
 }
 
 export interface SelectionGrid {
-  kind: SelectionLayoutKind
+  canAdjustGaps: boolean
   cells: GridCell[]
   rowCount: number
   columnCount: number
@@ -163,7 +161,12 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
 }
 
 function cumulativeStarts(counts: number[]): number[] {
-  return counts.map((_, i) => counts.slice(0, i).reduce((sum, n) => sum + n, 0))
+  let total = 0
+  return counts.map((count) => {
+    const start = total
+    total += count
+    return start
+  })
 }
 
 function assignCells(
@@ -251,44 +254,39 @@ function isAlignedAlong(
   )
 }
 
-function classify(
+function canAdjustGaps(
   cells: GridCell[],
   rowCount: number,
   columnCount: number
-): SelectionLayoutKind {
-  if (cells.length < 2) return 'scattered'
+): boolean {
+  if (cells.length < 2) return false
   if (
     anyPair(
       cells.map((cell) => cell.box),
       boxesIntersect
     )
   )
-    return 'scattered'
-  if (rowCount === 1) return 'row'
-  if (columnCount === 1) return 'column'
+    return false
+  if (rowCount === 1 || columnCount === 1) return true
   const aligned =
     isAlignedAlong(cells, 'x', columnCount) &&
     isAlignedAlong(cells, 'y', rowCount)
   const linkedBothWays =
     neighbourPairs(cells, 'x').length > 0 &&
     neighbourPairs(cells, 'y').length > 0
-  return aligned && linkedBothWays ? 'grid' : 'scattered'
+  return aligned && linkedBothWays
 }
 
 function hasUsableGeometry({ x, y, width, height }: LayoutBox): boolean {
   return [x, y, width, height].every(Number.isFinite) && width > 0 && height > 0
 }
 
-/**
- * Groups boxes that have a finite position and a positive size into rows and
- * columns, and says whether they form a row, column, aligned grid or scatter.
- */
 export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
   const placed = boxes.filter(hasUsableGeometry)
   const rows = clusterAlong(placed, 'y')
   const { cells, columnCount } = assignCells(rows, clusterAlong(placed, 'x'))
   return {
-    kind: classify(cells, rows.length, columnCount),
+    canAdjustGaps: canAdjustGaps(cells, rows.length, columnCount),
     cells,
     rowCount: rows.length,
     columnCount
@@ -518,9 +516,9 @@ function isFinitePosition({ x, y }: BoxPosition): boolean {
   return Number.isFinite(x) && Number.isFinite(y)
 }
 
-/** The default Tidy up gap for `boxes`, clamped to the slider range. */
-export function tidyGapOf(boxes: LayoutBox[]): number {
-  return clamp(gapOf(detectSelectionGrid(boxes)), MIN_TIDY_GAP, MAX_TIDY_GAP)
+/** The default Tidy up gap, clamped to the slider range. */
+export function tidyGapOf(grid: SelectionGrid): number {
+  return clamp(gapOf(grid), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
 
 /** The one gap `boxes` are tidied at, or undefined when their gaps differ. */
@@ -532,22 +530,14 @@ export function tidiedGapOf(boxes: LayoutBox[]): number | undefined {
 }
 
 export function computeTidyLayout(
-  boxes: LayoutBox[],
-  gap?: number
+  grid: SelectionGrid,
+  gap: number
 ): BoxPosition[] {
-  const grid = detectSelectionGrid(boxes)
   if (grid.cells.length < 2) return []
-  const positions = layoutOf(
-    grid,
-    gap === undefined ? gapOf(grid) : safeGapOf(gap)
-  )
+  const positions = layoutOf(grid, safeGapOf(gap))
   return positions.every(isFinitePosition) ? positions : []
 }
 
-/**
- * Moves every row or column after `boundary` along the axis by `shift`, so one
- * gap changes and every other gap stays the same.
- */
 export function computeGapLayout(
   grid: SelectionGrid,
   axis: GapAxis,
@@ -624,7 +614,7 @@ function barBetween(
 }
 
 export function computeGapBars(grid: SelectionGrid): GapBar[] {
-  if (grid.kind === 'scattered') return []
+  if (!grid.canAdjustGaps) return []
   return AXES.flatMap((axis) => {
     const clearances = Array.from(
       { length: Math.max(0, trackCountOf(grid, axis) - 1) },

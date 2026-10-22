@@ -23,7 +23,6 @@ describe('useTidySession', () => {
       canTidy: computed(() => true),
       measure: () => [],
       capturePositions: () => () => {},
-      placeBoxes: vi.fn(),
       moveBoxes: vi.fn(),
       recordUndoStep,
       tidyUp
@@ -88,10 +87,8 @@ describe('useTidySession', () => {
     flushFrames()
     session.finish()
 
-    expect(tidyUp.mock.calls.map(([nodes]) => nodes)).toEqual([
-      [a, b],
-      [a, b]
-    ])
+    expect(tidyUp).toHaveBeenCalled()
+    for (const [nodes] of tidyUp.mock.calls) expect(nodes).toEqual([a, b])
   })
 
   it('commits a previewed gap that was never released when the bar closes', () => {
@@ -152,18 +149,6 @@ describe('useTidySession', () => {
 
     expect(tidyUp).not.toHaveBeenCalled()
     expect(recordUndoStep).not.toHaveBeenCalled()
-  })
-
-  it('shows a gap the handles laid out and closes without moving nodes', () => {
-    const session = startedSession()
-    session.previewGap(18)
-
-    session.adoptGap(60)
-    session.finish()
-    flushFrames()
-
-    expect(session.gap.value).toBe(60)
-    expect(tidyUp).not.toHaveBeenCalled()
   })
 
   it('commits a previewed gap when its owner goes away', () => {

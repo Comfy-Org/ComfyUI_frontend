@@ -39,9 +39,7 @@
   <Teleport to="body">
     <SelectionGapHandles
       v-if="isOpen && canTidy"
-      v-model:dragging="isDraggingGap"
-      @edit-start="finish"
-      @edited="showLaidOutGap"
+      :session="handles"
       @dismiss="isOpen = false"
     />
   </Teleport>
@@ -62,12 +60,10 @@ import { useI18n } from 'vue-i18n'
 import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import {
   MAX_TIDY_GAP,
-  MIN_TIDY_GAP,
-  tidiedGapOf
+  MIN_TIDY_GAP
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
-import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 
@@ -79,23 +75,15 @@ const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
 const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
-const { canTidy, gridNodes, measure } = useSelectionGrid()
-const { gap, start, previewGap, commitGap, adoptGap, finish } = useTidySession()
-const { lift } = useSelectionToolboxLift()
+const { canTidy, gridNodes } = useSelectionGrid()
+const { gap, hasMixedGaps, handles, start, previewGap, commitGap, finish } =
+  useTidySession()
+const lift = defineModel<number>('lift', { default: 0 })
 
 const isOpen = ref(false)
-const hasMixedGaps = ref(false)
-const isDraggingGap = ref(false)
-
-const showLaidOutGap = () => {
-  const tidiedGap = tidiedGapOf(measure())
-  hasMixedGaps.value = tidiedGap === undefined
-  if (tidiedGap !== undefined) adoptGap(tidiedGap)
-}
 
 watch(isOpen, (open) => {
   lift.value = open ? LIFT_WHILE_OPEN : 0
-  hasMixedGaps.value = false
   if (open) start()
   else finish()
 })
@@ -133,9 +121,7 @@ const applySliderGap = (
   apply: (gap: number) => void
 ) => {
   const next = value?.[0]
-  if (next === undefined || isDraggingGap.value) return
-  hasMixedGaps.value = false
-  apply(next)
+  if (next !== undefined) apply(next)
 }
 
 const onSliderUpdate = (value: number[] | undefined) =>

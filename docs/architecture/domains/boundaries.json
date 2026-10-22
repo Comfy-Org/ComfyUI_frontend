@@ -2654,8 +2654,7 @@
           "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
           "src/components/graph/selectionToolbox/TidyUpButton.test.ts",
           "src/components/graph/selectionToolbox/TidyUpButton.vue",
-          "src/components/graph/selectionToolbox/VerticalDivider.vue",
-          "src/components/graph/selectionToolbox/useSelectionToolboxLift.ts"
+          "src/components/graph/selectionToolbox/VerticalDivider.vue"
         ]
       },
       {

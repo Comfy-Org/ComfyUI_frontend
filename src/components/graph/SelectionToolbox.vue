@@ -23,7 +23,7 @@
               <InfoButton v-if="canOpenNodeInfo" />
 
               <ColorPickerButton v-if="showColorPicker" />
-              <TidyUpButton v-if="showTidyUp" />
+              <TidyUpButton v-if="showTidyUp" v-model:lift="lift" />
               <FrameNodes v-if="showFrameNodes" />
               <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
               <ConfigureSubgraph v-if="showSubgraphButtons" />
@@ -90,7 +90,8 @@ const canvasInteractions = useCanvasInteractions()
 const linkSelectionStore = useLinkSelectionStore()
 
 const toolboxRef = ref<HTMLElement | undefined>()
-const { visible } = useSelectionToolboxPosition(toolboxRef)
+const lift = ref(0)
+const { visible } = useSelectionToolboxPosition(toolboxRef, lift)
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(

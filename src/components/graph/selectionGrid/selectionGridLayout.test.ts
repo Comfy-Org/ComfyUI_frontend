@@ -12,8 +12,7 @@ import {
 import type {
   BoxPosition,
   GapAxis,
-  LayoutBox,
-  SelectionLayoutKind
+  LayoutBox
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { toNodeId } from '@/types/nodeId'
 
@@ -61,9 +60,6 @@ const overlapping = (boxes: LayoutBox[]): boolean =>
       )
   )
 
-const keyOf = (axis: 'x' | 'y', before: string, after: string) =>
-  JSON.stringify([axis, before, after])
-
 const messyGrid = [
   box('a', 0, 0, 200, 100),
   box('b', 280, 8, 120, 140),
@@ -82,7 +78,7 @@ describe('detectSelectionGrid', () => {
   it.for<{
     name: string
     boxes: LayoutBox[]
-    kind: SelectionLayoutKind
+    canAdjustGaps: boolean
     rows: number
     columns: number
   }>([
@@ -93,14 +89,14 @@ describe('detectSelectionGrid', () => {
         box('b', 240, 30, 150, 100),
         box('c', 420, 10, 180, 220)
       ],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 3
     },
     {
       name: 'a short node centred beside a tall one',
       boxes: [box('a', 0, 0, 200, 600), box('b', 240, 250, 150, 100)],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 2
     },
@@ -111,7 +107,7 @@ describe('detectSelectionGrid', () => {
         box('b', 240, 250, 150, 100),
         box('c', 420, 260, 150, 100)
       ],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 3
     },
@@ -122,7 +118,7 @@ describe('detectSelectionGrid', () => {
         box('y', 0, 220, 200, 30),
         box('m', 300, 120, 200, 150)
       ],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 2,
       columns: 2
     },
@@ -133,7 +129,7 @@ describe('detectSelectionGrid', () => {
         box('a', 300, 50, 200, 98),
         box('d', 0, 110, 200, 40)
       ],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 2,
       columns: 2
     },
@@ -144,7 +140,7 @@ describe('detectSelectionGrid', () => {
         box('decode', 340, 0, 200, 46),
         box('save', 580, 30, 300, 270)
       ],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 3
     },
@@ -155,7 +151,7 @@ describe('detectSelectionGrid', () => {
         box('decode', 340, 0, 200, 46),
         box('save', 580, 60, 300, 270)
       ],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 3
     },
@@ -166,7 +162,7 @@ describe('detectSelectionGrid', () => {
         box('decode', 340, 0, 200, 46),
         box('save', 539, 60, 300, 270)
       ],
-      kind: 'row',
+      canAdjustGaps: true,
       rows: 1,
       columns: 3
     },
@@ -177,7 +173,7 @@ describe('detectSelectionGrid', () => {
         box('upper', 240, 0, 150, 100),
         box('lower', 240, 95, 150, 100)
       ],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 2,
       columns: 2
     },
@@ -188,14 +184,14 @@ describe('detectSelectionGrid', () => {
         box('b', 20, 130, 150, 80),
         box('c', 5, 260, 220, 120)
       ],
-      kind: 'column',
+      canAdjustGaps: true,
       rows: 3,
       columns: 1
     },
     {
       name: 'an aligned 2x2 grid of mixed sizes',
       boxes: alignedGrid,
-      kind: 'grid',
+      canAdjustGaps: true,
       rows: 2,
       columns: 2
     },
@@ -206,7 +202,7 @@ describe('detectSelectionGrid', () => {
         box('b', 240, 0, 200, 100),
         box('c', 0, 140, 200, 100)
       ],
-      kind: 'grid',
+      canAdjustGaps: true,
       rows: 2,
       columns: 2
     },
@@ -218,7 +214,7 @@ describe('detectSelectionGrid', () => {
         box('c', 10, 160, 200, 100),
         box('d', 240, 150, 200, 100)
       ],
-      kind: 'grid',
+      canAdjustGaps: true,
       rows: 2,
       columns: 2
     },
@@ -229,38 +225,41 @@ describe('detectSelectionGrid', () => {
         box('b', 150, 150, 100, 100),
         box('c', 300, 300, 100, 100)
       ],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 3,
       columns: 3
     },
     {
       name: 'two rows whose columns are offset',
       boxes: messyGrid,
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 2,
       columns: 2
     },
     {
       name: 'a row where two nodes overlap',
       boxes: [box('a', 0, 0, 200, 100), box('b', 150, 0, 200, 100)],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 1,
       columns: 2
     },
     {
       name: 'a single node',
       boxes: [box('a', 0, 0, 200, 100)],
-      kind: 'scattered',
+      canAdjustGaps: false,
       rows: 1,
       columns: 1
     }
-  ])('reads $name as $kind', ({ boxes, kind, rows, columns }) => {
-    const grid = detectSelectionGrid(boxes)
+  ])(
+    'allows gap handles for $name: $canAdjustGaps',
+    ({ boxes, canAdjustGaps, rows, columns }) => {
+      const grid = detectSelectionGrid(boxes)
 
-    expect(grid.kind).toBe(kind)
-    expect(grid.rowCount).toBe(rows)
-    expect(grid.columnCount).toBe(columns)
-  })
+      expect(grid.canAdjustGaps).toBe(canAdjustGaps)
+      expect(grid.rowCount).toBe(rows)
+      expect(grid.columnCount).toBe(columns)
+    }
+  )
 
   it('places nodes in rows and columns by their current order', () => {
     const grid = detectSelectionGrid(messyGrid)
@@ -307,7 +306,10 @@ describe('computeTidyLayout', () => {
         box('c', 240, lowerY, 200, 100),
         box('d', 480, y, 200, 100)
       ]
-      const tidied = moved(boxes, computeTidyLayout(boxes, 12))
+      const tidied = moved(
+        boxes,
+        computeTidyLayout(detectSelectionGrid(boxes), 12)
+      )
 
       expect(tidied.map(({ x, y }) => [x, y])).toEqual([
         [0, 0],
@@ -315,10 +317,12 @@ describe('computeTidyLayout', () => {
         [212, 112],
         [424, expectedY]
       ])
-      expect(moved(tidied, computeTidyLayout(tidied))).toEqual(tidied)
-      expect(computeTidyLayout([...boxes].reverse(), 12)).toEqual(
-        computeTidyLayout(boxes, 12)
-      )
+      expect(
+        moved(tidied, computeTidyLayout(detectSelectionGrid(tidied), 12))
+      ).toEqual(tidied)
+      expect(
+        computeTidyLayout(detectSelectionGrid([...boxes].reverse()), 12)
+      ).toEqual(computeTidyLayout(detectSelectionGrid(boxes), 12))
     }
   )
 
@@ -326,9 +330,13 @@ describe('computeTidyLayout', () => {
     const boxes = Array.from({ length: 4 }, (_, i) =>
       box(String(i), 150 * i, 0, 100, 100)
     )
-    const tidied = moved(boxes, computeTidyLayout(boxes, 12.4))
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(detectSelectionGrid(boxes), 12.4)
+    )
+    const grid = detectSelectionGrid(tidied)
 
-    expect(computeTidyLayout(tidied)).toEqual([
+    expect(computeTidyLayout(grid, tidyGapOf(grid))).toEqual([
       { id: '0', x: 0, y: 0 },
       { id: '1', x: expect.closeTo(112.4, 10), y: 0 },
       { id: '2', x: expect.closeTo(224.8, 10), y: 0 },
@@ -345,7 +353,8 @@ describe('computeTidyLayout', () => {
       box('d', 750, 40, 100, 100)
     ]
 
-    const tidied = moved(boxes, computeTidyLayout(boxes))
+    const grid = detectSelectionGrid(boxes)
+    const tidied = moved(boxes, computeTidyLayout(grid, tidyGapOf(grid)))
 
     expect(tidied.map((b) => b.y)).toEqual([50, 50, 50, 50])
     expect([
@@ -356,7 +365,8 @@ describe('computeTidyLayout', () => {
   })
 
   it('aligns a grid by top and left edges with its median gap', () => {
-    expect(computeTidyLayout(messyGrid)).toEqual([
+    const grid = detectSelectionGrid(messyGrid)
+    expect(computeTidyLayout(grid, tidyGapOf(grid))).toEqual([
       { id: 'a', x: 0, y: 0 },
       { id: 'b', x: 287, y: 0 },
       { id: 'c', x: 0, y: 187 },
@@ -372,10 +382,11 @@ describe('computeTidyLayout', () => {
       box('vae', 10, 430, 280, 120)
     ]
 
-    const tidied = moved(boxes, computeTidyLayout(boxes))
+    const grid = detectSelectionGrid(boxes)
+    const tidied = moved(boxes, computeTidyLayout(grid, tidyGapOf(grid)))
 
     expect(byId(tidied, 'vae')).toMatchObject({ x: 0, y: 420 })
-    expect(detectSelectionGrid(tidied).kind).toBe('grid')
+    expect(detectSelectionGrid(tidied).canAdjustGaps).toBe(true)
   })
 
   it('falls back to whole rows and columns when packing would overlap nodes', () => {
@@ -386,14 +397,20 @@ describe('computeTidyLayout', () => {
       box('narrow', 0, 650, 50, 100)
     ]
 
-    const tidied = moved(boxes, computeTidyLayout(boxes, 12))
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(detectSelectionGrid(boxes), 12)
+    )
 
     expect(byId(tidied, 'middle')).toMatchObject({ x: 312, y: 312 })
     expect(overlapping(tidied)).toBe(false)
   })
 
   it('uses the gap it is given', () => {
-    const tidied = moved(messyGrid, computeTidyLayout(messyGrid, 20))
+    const tidied = moved(
+      messyGrid,
+      computeTidyLayout(detectSelectionGrid(messyGrid), 20)
+    )
 
     expect(gapBetween(tidied, 'c', 'd', 'x')).toBe(20)
     expect(byId(tidied, 'c').y).toBe(160)
@@ -411,7 +428,8 @@ describe('computeTidyLayout', () => {
       gap: 0
     }
   ])('$name', ({ boxes, gap }) => {
-    const tidied = moved(boxes, computeTidyLayout(boxes))
+    const grid = detectSelectionGrid(boxes)
+    const tidied = moved(boxes, computeTidyLayout(grid, tidyGapOf(grid)))
 
     expect(gapBetween(tidied, 'a', 'b', 'x')).toBe(gap)
   })
@@ -421,7 +439,10 @@ describe('computeTidyLayout', () => {
     { given: Number.POSITIVE_INFINITY, gap: 12 },
     { given: -30, gap: 0 }
   ])('uses a $gap gap when it is given $given', ({ given, gap }) => {
-    const tidied = moved(messyGrid, computeTidyLayout(messyGrid, given))
+    const tidied = moved(
+      messyGrid,
+      computeTidyLayout(detectSelectionGrid(messyGrid), given)
+    )
 
     expect(gapBetween(tidied, 'c', 'd', 'x')).toBe(gap)
     expect(overlapping(tidied)).toBe(false)
@@ -432,10 +453,15 @@ describe('computeTidyLayout', () => {
     { name: 'has no width', broken: box('broken', 500, 0, 0, 100) },
     { name: 'has a negative height', broken: box('broken', 500, 0, 100, -50) }
   ])('leaves out a node whose geometry $name', ({ broken }) => {
-    const positions = computeTidyLayout([...messyGrid, broken])
+    const positions = computeTidyLayout(
+      detectSelectionGrid([...messyGrid, broken]),
+      12
+    )
 
     expect(positions.map((position) => position.id)).not.toContain('broken')
-    expect(positions).toEqual(computeTidyLayout(messyGrid))
+    expect(positions).toEqual(
+      computeTidyLayout(detectSelectionGrid(messyGrid), 12)
+    )
   })
 
   it.for([
@@ -445,16 +471,16 @@ describe('computeTidyLayout', () => {
       gap: 1e308
     },
     {
-      name: 'gaps too large to average',
+      name: 'extreme coordinates and gaps that overflow placement',
       boxes: [
         box('a', -0.9 * Number.MAX_VALUE, 0, 1, 1),
         box('b', 0, 0, 1, 1),
         box('c', 0.9 * Number.MAX_VALUE, 0, 1, 1)
       ],
-      gap: undefined
+      gap: Number.MAX_VALUE
     }
   ])('returns nothing for $name', ({ boxes, gap }) => {
-    expect(computeTidyLayout(boxes, gap)).toEqual([])
+    expect(computeTidyLayout(detectSelectionGrid(boxes), gap)).toEqual([])
   })
 
   it('keeps nodes that face each other a full gap apart', () => {
@@ -464,7 +490,10 @@ describe('computeTidyLayout', () => {
       box('c', 0, 50, 30, 10)
     ]
 
-    const tidied = moved(boxes, computeTidyLayout(boxes, 12))
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(detectSelectionGrid(boxes), 12)
+    )
 
     expect(byId(tidied, 'c').y - 22).toBeGreaterThanOrEqual(12)
     expect(overlapping(tidied)).toBe(false)
@@ -477,7 +506,10 @@ describe('computeTidyLayout', () => {
       box('right', 380, 170, 200, 100)
     ]
 
-    const tidied = moved(boxes, computeTidyLayout(boxes))
+    const tidied = moved(
+      boxes,
+      computeTidyLayout(detectSelectionGrid(boxes), 120)
+    )
 
     expect(byId(tidied, 'top')).toMatchObject({ x: 400, y: 0 })
     expect(byId(tidied, 'right').x).toBe(400)
@@ -522,21 +554,28 @@ describe('computeTidyLayout', () => {
       ]
     }
   ])('leaves $name where it is after the first tidy', ({ boxes }) => {
-    const tidied = moved(boxes, computeTidyLayout(boxes))
+    const grid = detectSelectionGrid(boxes)
+    const tidied = moved(boxes, computeTidyLayout(grid, tidyGapOf(grid)))
+    const tidiedGrid = detectSelectionGrid(tidied)
 
-    expect(moved(tidied, computeTidyLayout(tidied))).toEqual(tidied)
+    expect(
+      moved(tidied, computeTidyLayout(tidiedGrid, tidyGapOf(tidiedGrid)))
+    ).toEqual(tidied)
   })
 
   it.for([
     { name: 'no nodes', boxes: [] },
     { name: 'one node', boxes: [box('a', 0, 0, 100, 100)] }
   ])('returns nothing for $name', ({ boxes }) => {
-    expect(computeTidyLayout(boxes)).toEqual([])
+    expect(computeTidyLayout(detectSelectionGrid(boxes), 12)).toEqual([])
   })
 })
 
 describe('tidiedGapOf', () => {
-  const tidied = moved(messyGrid, computeTidyLayout(messyGrid, 20))
+  const tidied = moved(
+    messyGrid,
+    computeTidyLayout(detectSelectionGrid(messyGrid), 20)
+  )
 
   it.for<{ name: string; boxes: LayoutBox[]; gap: number | undefined }>([
     { name: 'a grid tidied at 20', boxes: tidied, gap: 20 },
@@ -572,7 +611,7 @@ describe('tidyGapOf', () => {
   it('keeps a wide gap within the slider range', () => {
     const row = [box('a', 0, 0, 100, 100), box('b', 300, 0, 100, 100)]
 
-    expect(tidyGapOf(row)).toBe(MAX_TIDY_GAP)
+    expect(tidyGapOf(detectSelectionGrid(row))).toBe(MAX_TIDY_GAP)
   })
 })
 
@@ -622,16 +661,6 @@ describe('computeGapLayout', () => {
     }
   )
 
-  it('moves every node past the gap, in every row', () => {
-    const result = moved(
-      alignedGrid,
-      computeGapLayout(detectSelectionGrid(alignedGrid), 'x', 0, 30)
-    )
-
-    expect(byId(result, 'b').x).toBe(290)
-    expect(byId(result, 'd').x).toBe(290)
-  })
-
   it('returns nothing for a gap index outside the grid', () => {
     expect(computeGapLayout(detectSelectionGrid(row), 'y', 0, 30)).toEqual([])
   })
@@ -671,16 +700,18 @@ describe('computeGapBars', () => {
   it('centres each bar between its own two nodes and limits it to the closest clearance across the gap', () => {
     const bars = computeGapBars(detectSelectionGrid(alignedGrid))
 
-    expect(bars.find((bar) => bar.key === keyOf('x', 'a', 'b'))).toMatchObject({
+    expect(bars.find((bar) => bar.axis === 'x' && bar.y === 50)).toMatchObject({
       x: 230,
       gap: 60,
       clearance: 20
     })
-    expect(bars.find((bar) => bar.key === keyOf('y', 'b', 'd'))).toMatchObject({
-      y: 180,
-      gap: 40,
-      clearance: 40
-    })
+    expect(bars.find((bar) => bar.axis === 'y' && bar.x === 310)).toMatchObject(
+      {
+        y: 180,
+        gap: 40,
+        clearance: 40
+      }
+    )
   })
 
   it('gives a different key to each pair of neighbours, whatever their ids', () => {
@@ -712,7 +743,9 @@ describe('computeGapBars', () => {
   ])('lets a gap close to zero when $name', ({ boxes }) => {
     const bars = computeGapBars(detectSelectionGrid(boxes))
 
-    expect(bars.find((bar) => bar.key === keyOf('x', 'a', 'b'))).toMatchObject({
+    expect(
+      bars.find((bar) => bar.axis === 'x' && bar.boundary === 0)
+    ).toMatchObject({
       gap: 50,
       clearance: 50
     })

@@ -17,14 +17,12 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 interface GapDrag {
-  barKey: string
   gap: number
   bar: GapBar
   grid: SelectionGrid
   nodes: LGraphNode[]
   restore: () => void
   finish: () => void
-  startGap: number
   previewed: boolean
 }
 
@@ -98,10 +96,8 @@ export function useGapDragSession() {
     const nodes = [...gridNodes.value]
     const current = currentBar(nodes, bar.key)
     if (!current) return
-    const startGap = Math.round(current.bar.gap)
     drag.value = {
-      barKey: current.bar.key,
-      gap: startGap,
+      gap: Math.round(current.bar.gap),
       bar: current.bar,
       grid: current.grid,
       nodes,
@@ -109,7 +105,6 @@ export function useGapDragSession() {
       finish:
         workflowStore.activeWorkflow?.changeTracker.beginPreview(cancel) ??
         recordUndoStep,
-      startGap,
       previewed: false
     }
   }
@@ -117,7 +112,10 @@ export function useGapDragSession() {
   const preview = (delta: number) => {
     const current = drag.value
     if (!current || !Number.isFinite(delta)) return
-    const gap = clampBarGap(current.bar, current.startGap + Math.round(delta))
+    const gap = clampBarGap(
+      current.bar,
+      Math.round(current.bar.gap) + Math.round(delta)
+    )
     if (gap === current.gap) return
     const updated = { ...current, gap }
     drag.value = updated
@@ -137,7 +135,7 @@ export function useGapDragSession() {
 
   const commit = () => {
     const current = drag.value
-    if (!current || current.gap === current.startGap) {
+    if (!current || current.gap === Math.round(current.bar.gap)) {
       cancel()
       return
     }

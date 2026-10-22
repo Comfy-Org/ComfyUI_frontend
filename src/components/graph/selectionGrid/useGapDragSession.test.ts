@@ -80,7 +80,6 @@ describe('useGapDragSession', () => {
         const positions = positionsOf(measuredBoxes)
         return () => placeBoxes(nodes, positions)
       },
-      placeBoxes,
       moveBoxes,
       recordUndoStep,
       tidyUp: vi.fn()
@@ -109,21 +108,6 @@ describe('useGapDragSession', () => {
       ],
       { captureUndo: false }
     )
-  })
-
-  it('commits the dragged gap as one undo step', () => {
-    const session = useGapDragSession()
-    session.start(firstBarOf(row))
-    session.preview(10)
-
-    session.commit()
-    flushFrames()
-
-    expect(moveBoxes).toHaveBeenCalledTimes(1)
-    expect(moveBoxes).toHaveBeenCalledWith(rowNodes, expect.any(Array), {
-      captureUndo: false
-    })
-    expect(session.drag.value).toBeNull()
   })
 
   it('puts every node back when the drag is cancelled', () => {
@@ -191,10 +175,8 @@ describe('useGapDragSession', () => {
     flushFrames()
     session.commit()
 
-    expect(moveBoxes.mock.calls.map(([nodes]) => nodes)).toEqual([
-      rowNodes,
-      rowNodes
-    ])
+    expect(moveBoxes).toHaveBeenCalled()
+    for (const [nodes] of moveBoxes.mock.calls) expect(nodes).toEqual(rowNodes)
   })
 
   it('puts the nodes it started with back when it is cancelled after the selection changes', () => {

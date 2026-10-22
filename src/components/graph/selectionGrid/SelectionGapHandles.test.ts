@@ -2,12 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import type { LayoutBox } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
+import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import en from '@/locales/en/main.json'
@@ -72,17 +73,31 @@ describe('SelectionGapHandles', () => {
         const positions = row.map(({ id, x, y }) => ({ id, x, y }))
         return () => placeBoxes(nodes, positions)
       },
-      placeBoxes,
       moveBoxes,
       recordUndoStep,
       tidyUp: vi.fn()
     }))
   })
 
-  const renderHandles = async () => {
-    const view = render(SelectionGapHandles, {
-      global: { plugins: [i18n] }
+  const renderSession = () => {
+    const dismiss = vi.fn()
+    const Harness = defineComponent({
+      setup() {
+        const { handles } = useTidySession()
+        return () =>
+          h(SelectionGapHandles, { session: handles, onDismiss: dismiss })
+      }
     })
+    return {
+      ...render(Harness, {
+        global: { plugins: [i18n] }
+      }),
+      dismiss
+    }
+  }
+
+  const renderHandles = async () => {
+    const view = renderSession()
     const handle = await screen.findByRole('spinbutton', {
       name: 'Gap between nodes'
     })
@@ -164,7 +179,7 @@ describe('SelectionGapHandles', () => {
         { id: toNodeId('d'), x: 350, y: 200, width: 150, height: 100 }
       ]
     })
-    render(SelectionGapHandles, { global: { plugins: [i18n] } })
+    renderSession()
 
     const handles = await screen.findAllByRole('spinbutton')
     const wideGap = handles.find(
@@ -187,16 +202,13 @@ describe('SelectionGapHandles', () => {
 
     expect(handle).toHaveTextContent('40')
     await user.pointer({ keys: '[/MouseLeft]', target: document.body })
-    expect(moveBoxes).toHaveBeenLastCalledWith(
-      expect.any(Array),
-      expect.any(Array),
-      { captureUndo: false }
-    )
+    expect(handle).not.toHaveTextContent('40')
+    expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
 
   it('commits when a move arrives with no button pressed after a release it never saw', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
 
     await user.pointer([press(handle, 215), moveTo(225)])
     window.dispatchEvent(
@@ -213,23 +225,25 @@ describe('SelectionGapHandles', () => {
       expect.any(Array),
       { captureUndo: false }
     )
-    expect(emitted()).toHaveProperty('edited')
+    await waitFor(() => expect(handle).not.toHaveTextContent('40'))
+    expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
 
-  it('takes focus and reports the drag while it runs', async () => {
+  it('takes focus and shows the gap while dragging', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
 
     await user.pointer(press(handle, 215))
     expect(handle).toHaveFocus()
+    expect(handle).toHaveTextContent('30')
     await user.pointer({ keys: '[/MouseLeft]', target: document.body })
 
-    expect(emitted('update:dragging')).toEqual([[true], [false]])
+    expect(handle).not.toHaveTextContent('30')
   })
 
   it('cancels a drag on any other key and keeps that key from the canvas', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
     const keyReachingCanvas = vi.fn()
     window.addEventListener('keydown', keyReachingCanvas)
     onTestFinished(() => {
@@ -245,8 +259,7 @@ describe('SelectionGapHandles', () => {
       { id: 'b', x: 230, y: 0 }
     ])
     expect(keyReachingCanvas).toHaveBeenCalledTimes(1)
-    expect(emitted()).not.toHaveProperty('edited')
-    expect(emitted('update:dragging').at(-1)).toEqual([false])
+    expect(handle).not.toHaveTextContent('40')
   })
 
   it.for([
@@ -255,14 +268,14 @@ describe('SelectionGapHandles', () => {
     { key: 'AltGr', keys: '{AltGraph}' }
   ])('leaves a drag running when $key is pressed', async ({ keys }) => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
 
     await user.pointer([press(handle, 215), moveTo(225)])
     vi.advanceTimersToNextFrame()
     await user.keyboard(keys)
 
     expect(placeBoxes).not.toHaveBeenCalled()
-    expect(emitted('update:dragging')).toEqual([[true]])
+    expect(handle).toHaveTextContent('40')
   })
 
   it('keeps the gap under the pointer when the canvas zooms during a drag', async () => {
@@ -294,19 +307,19 @@ describe('SelectionGapHandles', () => {
 
   it('records held-arrow nudges when focus leaves the handle before the key is released', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
     handle.focus()
 
     await user.keyboard('{ArrowRight>2}')
     await user.tab()
 
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
-    expect(emitted()).toHaveProperty('edited')
+    expect(handle).not.toHaveFocus()
   })
 
   it('does not nudge for an arrow released during a drag', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle } = await renderHandles()
     handle.focus()
 
     await user.pointer([press(handle, 215), moveTo(225)])
@@ -316,17 +329,18 @@ describe('SelectionGapHandles', () => {
 
     vi.advanceTimersToNextFrame()
     expect(moveBoxes).not.toHaveBeenCalled()
-    expect(emitted()).not.toHaveProperty('edited')
+    expect(handle).not.toHaveTextContent('40')
+    expect(placeBoxes).toHaveBeenCalledTimes(1)
   })
 
   it('asks to close the bar when Escape is pressed on a handle', async () => {
     const user = userEvent.setup()
-    const { handle, emitted } = await renderHandles()
+    const { handle, dismiss } = await renderHandles()
     handle.focus()
 
     await user.keyboard('{Escape}')
 
-    expect(emitted()).toHaveProperty('dismiss')
+    expect(dismiss).toHaveBeenCalledTimes(1)
   })
 
   it('keeps Escape on a handle away from the global Escape keybinding', async () => {

@@ -27,7 +27,7 @@
       @pointerdown="onPointerDown($event, bar)"
       @keydown="onKeyDown($event, bar)"
       @keyup="onKeyUp($event, bar)"
-      @focusout="commitPendingNudges"
+      @focusout="commitNudges"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <span
@@ -69,7 +69,7 @@ import type {
   GapBar,
   LayoutBox
 } from '@/components/graph/selectionGrid/selectionGridLayout'
-import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
+import type { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -119,11 +119,11 @@ const MODIFIER_KEYS = new Set([
   'CapsLock'
 ])
 
-const isDragging = defineModel<boolean>('dragging', { default: false })
+const { session } = defineProps<{
+  session: ReturnType<typeof useTidySession>['handles']
+}>()
 
 const emit = defineEmits<{
-  editStart: []
-  edited: []
   dismiss: []
 }>()
 
@@ -131,8 +131,7 @@ const { t } = useI18n()
 const canvas = useCanvasStore().getCanvas()
 const canvasInteractions = useCanvasInteractions()
 const { gridNodes, measure } = useSelectionGrid()
-const { drag, start, preview, commit, cancel, nudge, commitNudges } =
-  useGapDragSession()
+const { drag, start, preview, commit, cancel, nudge, commitNudges } = session
 
 const canvasBounds = useElementBounding(canvas.canvas)
 
@@ -226,7 +225,7 @@ const screenBars = computed((): ScreenBar[] => {
       left: (bar.x + offsetX) * scale + left.value,
       top: (bar.y + offsetY) * scale + top.value,
       draggedGap:
-        drag.value?.barKey === bar.key ? Math.round(drag.value.gap) : null
+        drag.value?.bar.key === bar.key ? Math.round(drag.value.gap) : null
     }))
     .filter(
       (bar) =>
@@ -247,7 +246,6 @@ const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
 const stopDragListeners = () => {
   dragListeners?.abort()
   dragListeners = undefined
-  isDragging.value = false
 }
 
 const cancelDrag = () => {
@@ -258,7 +256,6 @@ const cancelDrag = () => {
 const commitDrag = () => {
   stopDragListeners()
   commit()
-  emit('edited')
 }
 
 const cancelsDrag = (event: KeyboardEvent) =>
@@ -267,7 +264,6 @@ const cancelsDrag = (event: KeyboardEvent) =>
 function followDrag(pointerId: number, axis: GapAxis, origin: number) {
   stopDragListeners()
   dragListeners = new AbortController()
-  isDragging.value = true
   const { signal } = dragListeners
   const isDragPointer = (pointerEvent: PointerEvent) =>
     pointerEvent.pointerId === pointerId
@@ -317,7 +313,6 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   }
 
   const origin = graphPointAlong(event, bar.axis)
-  emit('editStart')
   start(bar)
   if (drag.value) followDrag(event.pointerId, bar.axis, origin)
 }
@@ -339,17 +334,12 @@ function onKeyDown(event: KeyboardEvent, bar: ScreenBar) {
   if (direction === 0) return
   event.preventDefault()
   event.stopPropagation()
-  if (!event.repeat) emit('editStart')
   const step = event.shiftKey ? 10 : 1
   nudge(bar, direction * step)
 }
 
-const commitPendingNudges = () => {
-  if (commitNudges()) emit('edited')
-}
-
 function onKeyUp(event: KeyboardEvent, bar: ScreenBar) {
-  if (nudgeDirectionOf(event.key, bar.axis) !== 0) commitPendingNudges()
+  if (nudgeDirectionOf(event.key, bar.axis) !== 0) commitNudges()
 }
 
 const unregisterEscapeOverride = registerEscapeOverride(
@@ -360,6 +350,7 @@ const unregisterEscapeOverride = registerEscapeOverride(
 
 onBeforeUnmount(() => {
   unregisterEscapeOverride()
-  stopDragListeners()
+  cancelDrag()
+  commitNudges()
 })
 </script>

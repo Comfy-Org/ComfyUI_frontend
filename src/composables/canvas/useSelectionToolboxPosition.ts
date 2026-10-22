@@ -9,7 +9,6 @@ import {
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type {
@@ -72,7 +71,8 @@ const LIFT_DURATION_MS = 200
 const LINK_ANCHOR_GAP = 10
 
 export function useSelectionToolboxPosition(
-  toolboxRef: Ref<HTMLElement | undefined>
+  toolboxRef: Ref<HTMLElement | undefined>,
+  lift: Ref<number>
 ) {
   const canvasStore = useCanvasStore()
   const lgCanvas = canvasStore.getCanvas()
@@ -80,7 +80,6 @@ export function useSelectionToolboxPosition(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
   const linkSelectionStore = useLinkSelectionStore()
-  const { lift } = useSelectionToolboxLift()
   const motionPreference = usePreferredReducedMotion()
   const easedLift = useTransition(lift, {
     duration: computed(() =>

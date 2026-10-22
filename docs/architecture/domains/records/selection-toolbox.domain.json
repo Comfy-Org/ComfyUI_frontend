@@ -148,10 +148,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/graph/selectionToolbox/useSelectionToolboxLift.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/composables/canvas/**",
       "role": "integration"
     },

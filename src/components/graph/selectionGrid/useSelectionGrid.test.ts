@@ -16,6 +16,36 @@ const nodeIn = (graph: LGraph, title: string) => {
 
 describe('useSelectionGrid', () => {
   it.for([
+    { start: 90, gap: 12 },
+    { start: 100, gap: 0 },
+    { start: 112.4, gap: 12.4 },
+    { start: 300, gap: 48 }
+  ])(
+    'chooses a $gap default gap for nodes starting $start apart',
+    ({ start, gap }) => {
+      const graph = new LGraph()
+      const a = nodeIn(graph, 'A')
+      const b = nodeIn(graph, 'B')
+      a.pos = [0, 0]
+      b.pos = [start, 0]
+      a.size = [100, 100]
+      b.size = [100, 100]
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = fromPartial<LGraphCanvas>({
+        graph,
+        setDirty: vi.fn()
+      })
+      canvasStore.currentGraph = graph
+
+      expect(
+        useSelectionGrid().tidyUp([a, b], { captureUndo: false })
+      ).toBeCloseTo(gap)
+      expect(b.pos[0]).toBeCloseTo(100 + gap)
+      expect(b.pos[1]).toBe(0)
+    }
+  )
+
+  it.for([
     { canvas: 'an editable canvas', isReadOnly: false, canTidy: true },
     { canvas: 'a read-only canvas', isReadOnly: true, canTidy: false }
   ])(

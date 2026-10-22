@@ -1,23 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, markRaw, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { tidiedGapOf } from '@/components/graph/selectionGrid/selectionGridLayout'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
-import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-
-vi.mock(import('@/components/graph/selectionGrid/selectionGridLayout'), {
-  spy: true
-})
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -40,32 +34,45 @@ const nodeWithId = (id: number) => {
   return node
 }
 
-const handlesThatEmitOnMount = (event: 'edited' | 'update:dragging') =>
-  defineComponent({
-    emits: ['edited', 'update:dragging'],
-    setup(_, { emit }) {
-      if (event === 'edited') emit('edited')
-      else emit('update:dragging', true)
-      return () => null
-    }
-  })
+function selectRow() {
+  const graph = new LGraph()
+  const first = markRaw(nodeWithId(1))
+  const second = markRaw(nodeWithId(2))
+  first.pos = [100, 200]
+  second.pos = [290, 200]
+  first.size = second.size = [160, 80]
+  graph.add(first)
+  graph.add(second)
+  const element = createTestCanvasElement({ cssSize: [1000, 800] })
+  const canvas = new LGraphCanvas(element, graph, { skip_render: true })
+  const store = useCanvasStore()
+  store.canvas = markRaw(canvas)
+  store.currentGraph = graph
+  setCanvasSelection([first, second])
+  return { first, second }
+}
 
 function renderButton(
   SelectionGapHandles: Component | boolean = true,
   Slider: Component | boolean = false
 ) {
-  return render(
+  const lift = ref(0)
+  const view = render(
     defineComponent({
       render: () =>
         h(TooltipProvider, () =>
           h('div', { 'data-selection-toolbox': '' }, [
-            h(TidyUpButton),
+            h(TidyUpButton, {
+              lift: lift.value,
+              'onUpdate:lift': (value: number) => (lift.value = value)
+            }),
             h('button', 'Bypass')
           ])
         )
     }),
     { global: { plugins: [i18n], stubs: { SelectionGapHandles, Slider } } }
   )
+  return { ...view, lift }
 }
 
 const openBar = async () => {
@@ -118,8 +125,7 @@ describe('TidyUpButton', () => {
   )
 
   it('stays open and lifted for a press on another toolbox button', async () => {
-    const { unmount } = renderButton()
-    const { lift } = useSelectionToolboxLift()
+    const { unmount, lift } = renderButton()
     const { user } = await openBar()
 
     expect(screen.getByRole('slider')).toHaveAccessibleName('Gap between nodes')
@@ -137,46 +143,56 @@ describe('TidyUpButton', () => {
   })
 
   it('ignores the slider while a gap handle is being dragged', async () => {
-    const { unmount } = renderButton(handlesThatEmitOnMount('update:dragging'))
-    const { user, slider } = await openBar()
+    selectRow()
+    const InputSlider = defineComponent({
+      props: { modelValue: { type: Array, required: true } },
+      emits: ['update:modelValue'],
+      setup(props, { emit }) {
+        return () =>
+          h('input', {
+            role: 'slider',
+            'aria-valuenow': props.modelValue[0],
+            onInput: () => emit('update:modelValue', [48])
+          })
+      }
+    })
+    const { unmount } = renderButton(false, InputSlider)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const slider = await screen.findByRole('slider')
+    const handle = await screen.findByRole('spinbutton')
     const shownGap = slider.getAttribute('aria-valuenow')
 
+    await user.pointer({ keys: '[MouseLeft>]', target: handle })
     slider.focus()
-    await user.keyboard('{ArrowRight}')
+    await user.paste('48')
 
     expect(slider).toHaveAttribute('aria-valuenow', shownGap)
+    await user.pointer({ keys: '[/MouseLeft]', target: handle })
+    slider.focus()
+    await user.paste('48')
+    expect(slider).toHaveAttribute('aria-valuenow', '48')
     unmount()
   })
 
   it('keeps the slider in its range when the handles leave a wider gap', async () => {
-    vi.mocked(tidiedGapOf).mockReturnValue(60)
-    const { unmount } = renderButton(handlesThatEmitOnMount('edited'))
-    const { slider } = await openBar()
+    const { first, second } = selectRow()
+    const { unmount } = renderButton(false)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const slider = await screen.findByRole('slider')
+    const handle = await screen.findByRole('spinbutton')
+    handle.focus()
+    await user.keyboard('{Shift>}{ArrowRight}{ArrowRight}{ArrowRight}{/Shift}')
 
     await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '48'))
     expect(screen.getByText('60')).toBeInTheDocument()
+    expect(second.pos[0] - first.pos[0] - 160).toBe(60)
     unmount()
   })
 
   it('finishes a pending slider preview before the handles measure their edit', async () => {
-    const graph = new LGraph()
-    const first = markRaw(nodeWithId(1))
-    const second = markRaw(nodeWithId(2))
-    first.pos = [100, 200]
-    second.pos = [290, 200]
-    first.size = second.size = [160, 80]
-    graph.add(first)
-    graph.add(second)
-    const element = document.createElement('canvas')
-    element.getBoundingClientRect = () => new DOMRect(0, 0, 1000, 800)
-    element.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
-    const canvas = new LGraphCanvas(element, graph, { skip_render: true })
-    const store = useCanvasStore()
-    store.canvas = markRaw(canvas)
-    store.currentGraph = graph
-    setCanvasSelection([first, second])
+    const { first, second } = selectRow()
     const PreviewSlider = defineComponent({
       props: { modelValue: { type: Array, required: true } },
       emits: ['update:modelValue'],

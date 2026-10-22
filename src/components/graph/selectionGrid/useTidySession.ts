@@ -1,16 +1,23 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { readonly, ref } from 'vue'
 
-import { DEFAULT_TIDY_GAP } from '@/components/graph/selectionGrid/selectionGridLayout'
+import {
+  DEFAULT_TIDY_GAP,
+  tidiedGapOf
+} from '@/components/graph/selectionGrid/selectionGridLayout'
+import type { GapBar } from '@/components/graph/selectionGrid/selectionGridLayout'
+import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 export function useTidySession() {
-  const { gridNodes, tidyUp, recordUndoStep } = useSelectionGrid()
+  const { gridNodes, measure, tidyUp, recordUndoStep } = useSelectionGrid()
   const workflowStore = useWorkflowStore()
+  const handles = useGapDragSession()
 
   const gap = ref(DEFAULT_TIDY_GAP)
+  const hasMixedGaps = ref(false)
   let nodes: LGraphNode[] = []
   let finishPreview: (() => void) | undefined
   let pendingFrame: number | null = null
@@ -27,11 +34,14 @@ export function useTidySession() {
 
   const start = () => {
     finish()
+    hasMixedGaps.value = false
     nodes = [...gridNodes.value]
     gap.value = tidyUp(nodes)
   }
 
   const previewGap = (nextGap: number) => {
+    if (handles.drag.value) return
+    hasMixedGaps.value = false
     finishPreview ??=
       workflowStore.activeWorkflow?.changeTracker.beginPreview(finish) ??
       recordUndoStep
@@ -44,6 +54,8 @@ export function useTidySession() {
   }
 
   const commitGap = (nextGap: number) => {
+    if (handles.drag.value) return
+    hasMixedGaps.value = false
     dropPendingPreview()
     gap.value = nextGap
     applyGap(nextGap)
@@ -52,12 +64,10 @@ export function useTidySession() {
     settle()
   }
 
-  const adoptGap = (laidOutGap: number) => {
-    dropPendingPreview()
-    const settle = finishPreview
-    finishPreview = undefined
-    settle?.()
-    gap.value = laidOutGap
+  const showLaidOutGap = () => {
+    const laidOutGap = tidiedGapOf(measure())
+    hasMixedGaps.value = laidOutGap === undefined
+    if (laidOutGap !== undefined) gap.value = laidOutGap
   }
 
   const finish = () => {
@@ -69,10 +79,28 @@ export function useTidySession() {
 
   return {
     gap: readonly(gap),
+    hasMixedGaps: readonly(hasMixedGaps),
     start,
     previewGap,
     commitGap,
-    adoptGap,
-    finish
+    finish,
+    handles: {
+      ...handles,
+      start(bar: GapBar) {
+        finish()
+        handles.start(bar)
+      },
+      commit() {
+        handles.commit()
+        showLaidOutGap()
+      },
+      nudge(bar: GapBar, step: number) {
+        finish()
+        handles.nudge(bar, step)
+      },
+      commitNudges() {
+        if (handles.commitNudges()) showLaidOutGap()
+      }
+    }
   }
 }
