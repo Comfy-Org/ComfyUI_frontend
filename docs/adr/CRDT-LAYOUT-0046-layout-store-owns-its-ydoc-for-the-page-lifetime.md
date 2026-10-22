@@ -76,8 +76,9 @@ Three facts on main shape the answer:
 
 A cold-import unit test pins the parts of clause 4 it can observe. It
 re-evaluates the module with no active Pinia and fake timers, then asserts that
-the store is empty, that no timer, `window` or `document` listener, or fetch is
-left behind, and that no Pinia was activated. A Pinia store lookup throws
+the store is empty, that no timer is pending, that the import made no
+`window.addEventListener`, `document.addEventListener`, or `fetch` call, and
+that no Pinia was activated. A Pinia store lookup throws
 without an active Pinia, so the import would fail. Other application state is
 not covered: the unit-test setup mocks `@/scripts/appInstance`, so a
 constructor calling `useApp()` would still pass, and review has to catch it.
