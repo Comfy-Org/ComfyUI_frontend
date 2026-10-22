@@ -2,7 +2,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 
 const SWITCH_LANDING_KEY = 'Comfy.DeploymentSwitch.Reloading'
 
-/** Unsaved workflows the user chose to drop on a switch, each with the serialized state they agreed to lose. */
+/** Workflows a switch may drop, each with the state the user agreed to lose. */
 export type DiscardedWork = ReadonlyMap<ComfyWorkflow, string | null>
 
 export const NOTHING_DISCARDED: DiscardedWork = new Map()
@@ -60,7 +60,7 @@ export function reloadForDeploymentSwitch(
   window.location.reload()
 }
 
-/** The work a switch reload let go, once, for the unload it caused; null for any other unload. */
+/** The work a switch reload drops, taken once; null for any other unload. */
 export function takeDeploymentSwitchDiscard(): DiscardedWork | null {
   const discarded = pendingDiscard
   pendingDiscard = null

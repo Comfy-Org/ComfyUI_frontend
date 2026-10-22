@@ -35,7 +35,7 @@ function isStillOpen(workflow: ComfyWorkflow): boolean {
   )
 }
 
-/** Loaded workflows a switch reload would lose changes in, counting edits the canvas has not captured yet. */
+/** Loaded workflows a switch reload would lose changes in. */
 export function unsavedWorkBeforeSwitch(): ComfyWorkflow[] {
   captureActiveEdits()
   return useWorkflowStore().modifiedWorkflows.filter(
@@ -60,8 +60,8 @@ async function saveEach(
 }
 
 /**
- * Asks to save modified workflows before a deployment switch reloads the tab.
- * Resolves to the work the user chose to drop, or null when they cancelled or a save did not finish.
+ * Asks to save modified workflows before a switch reloads the tab. Resolves to
+ * the work to drop, or null when cancelled or a save did not finish.
  */
 export async function settleUnsavedWorkBeforeSwitch(
   deployment: string

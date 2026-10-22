@@ -291,14 +291,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   /**
-   * Pick a deployment for this browser, or null for Comfy Cloud, then reload so
-   * the editor boots on it. Resolves to the server's refusal, or null when
-   * the pick took (the page is reloading) or there was nothing to do.
-   * Choosing what this browser already runs on does nothing, so a browser
-   * that follows the workspace default keeps following it. Picking Comfy
-   * Cloud while following a default is this browser's own choice: it wins
-   * over the default, until `followWorkspace` drops it. `discarded` is the
-   * unsaved work the user chose to drop, so the reload need not ask about it.
+   * Picks a deployment, or null for Comfy Cloud, and reloads without asking
+   * about `discarded`. Resolves to the server's refusal, or null.
    */
   async function pick(
     deploymentId: string | null,
@@ -410,8 +404,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   /**
-   * Drop this browser's own pick so it runs on whatever the workspace says
-   * (its default deployment, or Comfy Cloud), then reload. Resolves like `pick`.
+   * Drops this browser's own pick to follow the workspace, reloading unless
+   * the pick was the default itself. Resolves like `pick`.
    */
   async function followWorkspace(
     discarded: DiscardedWork = NOTHING_DISCARDED
@@ -433,16 +427,14 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return null
   }
 
-  /** True when making this the workspace default changes what this browser runs on. */
+  /** True when this default would change what this browser runs on. */
   function defaultMovesThisBrowser(deploymentId: string | null): boolean {
     return followsWorkspace.value && deploymentId !== pickedDeploymentId.value
   }
 
   /**
    * Sets the workspace default (owner only; null clears it), then reloads with
-   * `reloadWith` or shows it and refreshes the listing. `reloadWith` defaults
-   * to whether the new default moves this browser, decided before the request.
-   * Resolves to the server's refusal, or null when the default took.
+   * `reloadWith`, or shows it and refreshes. Resolves like `pick`.
    */
   async function setDefault(
     deploymentId: string | null,
