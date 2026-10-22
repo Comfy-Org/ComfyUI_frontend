@@ -724,6 +724,30 @@ describe('useFeatureFlags', () => {
       expect(freshRemoteConfig.useRemoteConfigCache()).toBe(cache)
     })
 
+    it.for([
+      { stored: 'false', expected: false },
+      { stored: 'true', expected: true }
+    ])(
+      'resolves a persisted $stored as a boolean during the auth window',
+      async ({ stored, expected }) => {
+        localStorage.setItem('billing_control_enabled', stored)
+        localStorage.setItem('v1_payment_recovery', stored)
+        onTestFinished(() => {
+          localStorage.removeItem('billing_control_enabled')
+          localStorage.removeItem('v1_payment_recovery')
+        })
+        vi.resetModules()
+        vi.mocked(await import('@/platform/distribution/types')).isCloud = true
+        const { useFeatureFlags: freshUseFeatureFlags } =
+          await import('@/composables/useFeatureFlags')
+
+        const { flags } = freshUseFeatureFlags()
+
+        expect(flags.billingControlEnabled).toBe(expected)
+        expect(flags.v1PaymentRecovery).toBe(expected)
+      }
+    )
+
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true
       cachedV1PaymentRecovery.value = true

@@ -1,4 +1,4 @@
-import { useStorage } from '@vueuse/core'
+import { StorageSerializers, useStorage } from '@vueuse/core'
 import { once } from 'es-toolkit'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
@@ -70,11 +70,15 @@ function createRemoteConfigCache() {
   return {
     cachedBillingControlEnabled: useStorage<boolean | undefined>(
       'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
-      undefined
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
     ),
     cachedV1PaymentRecovery: useStorage<boolean | undefined>(
       'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,
-      undefined
+      undefined,
+      undefined,
+      { serializer: StorageSerializers.boolean }
     )
   }
 }
