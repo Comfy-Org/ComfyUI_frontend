@@ -153,7 +153,6 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-/** The bound document's view of `graph`, as the host holds it. */
 function mintDocFrom(graph: LGraph, catalog: WidgetCatalog = CATALOG) {
   const serialized = graph.serialize() as unknown as WorkflowJSON
   return mint(serialized, catalog)
@@ -295,7 +294,7 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
-  let docWidgetValue: NonNullable<DocOpMinterDeps['docWidgetValue']>
+  let docWidgetValue: DocOpMinterDeps['docWidgetValue']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
   let docDefinitionIds: Set<string>
@@ -662,6 +661,7 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
       docHasSubgraphDefinition: () => true,
@@ -1066,7 +1066,6 @@ describe('attachDocOpMinter', () => {
       ])
       minted.length = 0
 
-      vi.useFakeTimers()
       resize.disconnectInput(match)
       await afterFlush()
       expect(minted).toEqual([])
@@ -1084,6 +1083,146 @@ describe('attachDocOpMinter', () => {
         link: null
       })
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('grows a dynamic-combo child after a settled local selection is overwritten', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+
+      selector.value = 'scale by multiplier'
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied'])
+      minted.length = 0
+
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog,
+          2
+        )
+      ).toEqual(['applied'])
+      withGraphIntentSource('agent-remote', () => {
+        selector.value = 'match size'
+      })
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('replays a deferred dynamic-combo rewire after the grow echo lands', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      const grow = [...minted]
+      expect(grow).toHaveLength(1)
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      source.connect(0, resize, match)
+      await afterFlush()
+      const rewired = resize.inputs[match].link
+      expect(minted).toEqual([])
+
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied', 'applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toContainEqual({
+        name: 'resize_type.match',
+        link: rewired
+      })
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('drops a deferred dynamic-combo disconnect when another document binds', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      const grow = [...minted]
+      expect(grow).toHaveLength(1)
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      rootGraphId = toRootGraphId(new LGraph().id)
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_workflow_changed'
+        })
+      )
     })
 
     it('cancels an unsent dynamic-combo grow when disconnected in the same tick', async () => {
@@ -1117,7 +1256,6 @@ describe('attachDocOpMinter', () => {
     })
 
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: false })
       const { source, resize, doc, catalog, match } =
         registeredDynamicComboScenario()
       expect(
@@ -1173,7 +1311,6 @@ describe('attachDocOpMinter', () => {
     })
 
     it('drops pending dynamic-combo state when its node is removed', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: false })
       const { source, resize, doc, catalog, match } =
         registeredDynamicComboScenario()
       expect(
