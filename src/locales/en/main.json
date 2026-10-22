@@ -2498,7 +2498,11 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid"
+    "grid": "Grid",
+    "openFullscreen": "Open fullscreen editor",
+    "editorTitle": "Bounding Boxes",
+    "drawRegionHint": "Drag on the canvas to add a region.",
+    "deleteRegion": "Delete region {tag}"
   },
   "widgetHistory": {
     "undo": "Undo",
