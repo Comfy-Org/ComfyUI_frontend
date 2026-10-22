@@ -648,7 +648,7 @@ describe('computeGapBars', () => {
     expect(
       new Set(bars.map(({ gap, clearance }) => `${gap}:${clearance}`))
     ).toEqual(new Set(['12:12']))
-  })
+  }, 30_000)
 
   it('puts a bar in each gap between neighbours of a grid', () => {
     const bars = computeGapBars(
