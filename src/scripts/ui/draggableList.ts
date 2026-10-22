@@ -23,21 +23,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-const styleElement = document.createElement('style')
-styleElement.textContent = `
-        .draggable-item {
-            position: relative;
-            will-change: transform;
-            user-select: none;
-        }
-        .draggable-item.is-idle {
-            transition: 0.25s ease transform;
-        }
-        .draggable-item.is-draggable {
-            z-index: 10;
-        }
-    `
-document.head.append(styleElement)
+import './draggableList.css'
 
 export class DraggableList extends EventTarget {
   listContainer: HTMLElement
