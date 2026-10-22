@@ -20,7 +20,6 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 
-import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -411,18 +410,10 @@ export function docInputIndex(
  * a slot without having diverged.
  */
 function isSelectionDependentInput(node: LGraphNode, name: string): boolean {
-  const inputs = useNodeDefStore().fromLGraphNode(node)?.input
-  if (!inputs) return false
-  if (Object.hasOwn(inputs.required ?? {}, name)) return false
-  if (Object.hasOwn(inputs.optional ?? {}, name)) return false
-  return (
-    resolveDynamicInputSpec(
-      inputs,
-      name,
-      (widgetName) =>
-        node.widgets?.find((widget) => widget.name === widgetName)?.value
-    ) !== undefined
-  )
+  const nodeDefStore = useNodeDefStore()
+  const definition = nodeDefStore.fromLGraphNode(node)
+  if (!definition || Object.hasOwn(definition.inputs, name)) return false
+  return nodeDefStore.getInputSpecForWidget(node, name) !== undefined
 }
 
 function growForMissingSlot(
