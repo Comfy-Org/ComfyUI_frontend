@@ -273,6 +273,14 @@ describe('HostTelemetrySink', () => {
       properties: { source: 'close_button', open_duration_ms: 1234 }
     },
     {
+      name: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelRenderStalled({
+          stage: 'root_resolved_not_mounted'
+        }),
+      properties: { stage: 'root_resolved_not_mounted' }
+    },
+    {
       name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
@@ -338,6 +346,7 @@ describe('HostTelemetrySink', () => {
           prompt_id: 'slot_4',
           prompt_index: 3,
           prompt_count: 5,
+          visible_prompt_count: 3,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -347,6 +356,7 @@ describe('HostTelemetrySink', () => {
         prompt_id: 'slot_4',
         prompt_index: 3,
         prompt_count: 5,
+        visible_prompt_count: 3,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',

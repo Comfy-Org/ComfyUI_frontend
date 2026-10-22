@@ -1,0 +1,30 @@
+{
+  "id": "error-catalog",
+  "capability": "Error message catalog",
+  "description": "Stable catalog ids and resolvers that turn prompt, validation, execution, runtime, and missing-resource errors into localized user-facing messages, plus routing of account preconditions (sign-in, subscription, credits).",
+  "modules": [
+    {
+      "path": "src/platform/errorCatalog/**",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Run and missing-resource errors resolve to catalog messages and account preconditions",
+      "checks": [
+        "src/platform/errorCatalog/errorMessageResolver.test.ts",
+        "src/platform/errorCatalog/accountPreconditionRouting.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Catalog ids remain stable because telemetry and error-panel UI key on them.",
+    "The resolvers typing against missing-media, missing-model, and node-replacement types and counting their groups remain visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

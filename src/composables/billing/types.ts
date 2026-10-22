@@ -1,3 +1,4 @@
+import type { SubscriptionState } from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -98,9 +99,22 @@ export interface BalanceInfo {
   amountMicros: number
   currency: string
   effectiveBalanceMicros?: number
+  effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Server-suggested top-up that covers a negative balance; null otherwise. */
+  suggestedTopupAmountCents?: number | null
+  /** Served `low_balance`. Absent when the balance response omits it. */
+  lowBalance?: boolean
 }
+
+/** Whether the billing portal opened, and why not when it did not. */
+export type BillingPortalOutcome =
+  | { ok: true }
+  | {
+      ok: false
+      reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
+    }
 
 export interface BillingActions {
   initialize: () => Promise<void>
@@ -114,7 +128,7 @@ export interface BillingActions {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
-  manageSubscription: () => Promise<void>
+  manageSubscription: () => Promise<BillingPortalOutcome>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
@@ -139,17 +153,6 @@ export interface BillingActions {
    */
   topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
-  /**
-   * Ensures billing is initialized and subscription is active.
-   * Shows subscription dialog if not subscribed.
-   * Use this in extensions/entry points that require active subscription.
-   */
-  requireActiveSubscription: () => Promise<void>
-  /**
-   * Shows the subscription dialog. Pass a reason so the paywall open and any
-   * downstream checkout stay attributed to the triggering product moment.
-   */
-  showSubscriptionDialog: (options?: SubscriptionDialogOptions) => void
 }
 
 export interface BillingState {
@@ -175,6 +178,7 @@ export interface BillingState {
   billingStatus: ComputedRef<BillingStatus | null>
   /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  subscriptionState: ComputedRef<SubscriptionState | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */
@@ -189,8 +193,12 @@ export interface BillingContext
   type: ComputedRef<BillingType>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
-  /** Reads the checkout rail's status; true once its pending operation is adopted. */
-  readCheckoutOperation: () => Promise<boolean>
+  /**
+   * Waits up to ten seconds for the workspace type to load. False when the
+   * wait timed out (reported once) or the active workspace changed meanwhile,
+   * so the caller drops the action.
+   */
+  whenRoutingKnown: () => Promise<boolean>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.

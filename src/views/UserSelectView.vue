@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <main
       id="comfy-user-selection"
-      class="relative min-w-84 rounded-lg bg-(--comfy-menu-bg) p-5 px-10 shadow-lg"
+      class="relative min-w-84 rounded-lg bg-background p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">
@@ -15,12 +15,12 @@
             @keyup.enter="login"
           />
         </div>
-        <div class="my-4 w-full border-t border-interface-stroke" />
+        <div class="my-4 w-full border-t" />
         <div class="flex w-full flex-col gap-2">
           <label id="existing-user-label" for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
           >
-          <SingleSelect
+          <AppSingleSelect
             id="existing-user-select"
             v-model="selectedUserId"
             aria-labelledby="existing-user-label"
@@ -48,7 +48,7 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'

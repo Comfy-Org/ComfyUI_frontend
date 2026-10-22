@@ -35,10 +35,7 @@ function renderComponent(initialBatchCount = 1) {
 
   render(BatchCountEdit, {
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: () => {}
-      }
+      plugins: [i18n]
     }
   })
 

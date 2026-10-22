@@ -63,7 +63,7 @@ test.describe(
       await page.route('**/api/experiment/models', (route) =>
         route.fulfill(jsonRoute([]))
       )
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threads))
       )
       await page.route('**/api/agent/run-mode', (route) =>

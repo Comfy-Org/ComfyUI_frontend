@@ -10,7 +10,10 @@ import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  provideWorkflowService,
+  useSubgraphNavigationStore
+} from '@/stores/subgraphNavigationStore'
 
 const ids = vi.hoisted(() => ({
   root: '00000000-0000-4000-8000-000000000000',
@@ -88,6 +91,8 @@ vi.mock<unknown>(
     useWorkflowService: () => workflowServiceMocks
   })
 )
+
+provideWorkflowService(() => workflowServiceMocks)
 
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({

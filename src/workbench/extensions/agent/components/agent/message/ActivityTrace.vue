@@ -4,13 +4,16 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ActivityRow } from '../../../services/agent/agentActivityRows'
-import { foldActivity } from '../../../services/agent/agentActivityRows'
+import type { ActivityRow } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
+import { foldActivity } from '@/workbench/extensions/agent/services/agent/agentActivityRows'
 import type {
   ActivityPart,
   PartState
-} from '../../../services/agent/agentMessageParts'
-import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  toolGlyph,
+  toolLabel
+} from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 
 const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
@@ -81,7 +84,7 @@ function rowSignature(row: ActivityRow): string {
         />
         <span
           v-if="index < rows.length - 1"
-          class="mt-1 w-px flex-1 bg-component-node-border"
+          class="mt-1 w-px flex-1 bg-border"
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">

@@ -40,7 +40,7 @@ function getCssVar(name: string): string {
 }
 
 function getDefaultOptions(type: SupportedChartType): ChartOptions {
-  const foreground = getCssVar('--color-base-foreground') || '#ffffff'
+  const foreground = getCssVar('--color-foreground') || '#ffffff'
   const muted = getCssVar('--color-muted-foreground') || '#8a8a8a'
 
   return {

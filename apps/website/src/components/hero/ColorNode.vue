@@ -30,7 +30,7 @@ const saturationTrack = computed(
 
 <template>
   <div
-    class="relative flex size-full flex-col rounded-[1.25em] border border-white/12 bg-[#242428]"
+    class="relative flex size-full flex-col rounded-[1.25em] border border-white/12 bg-secondary-charcoal"
   >
     <div class="flex h-[2.25em] shrink-0 items-center px-[1.05em]">
       <span

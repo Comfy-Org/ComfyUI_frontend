@@ -1,4 +1,4 @@
-import { useReleaseStore } from '../common/releaseStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
     recentRelease: null as ReleaseNote | null
@@ -19,7 +19,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useErrorHandling } from '@/composables/useErrorHandling'
 
-import type { ReleaseNote } from '../common/releaseService'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
 vi.hoisted(() => {

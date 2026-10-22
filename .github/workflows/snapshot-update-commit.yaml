@@ -1,0 +1,322 @@
+name: 'Snapshot update: commit'
+
+on:
+  workflow_call:
+    inputs:
+      ready:
+        description: '`true` when the E2E run or the full rerun produced snapshots to commit'
+        type: boolean
+        required: true
+      unavailable:
+        description: Why the E2E run could not supply the snapshots, if it could not
+        type: string
+        default: ''
+      missing:
+        description: Comma-separated E2E jobs that left no snapshot updates to commit
+        type: string
+        default: ''
+      pr-number:
+        type: string
+        required: true
+      branch:
+        type: string
+        required: true
+      head-sha:
+        description: PR head the snapshots were produced for
+        type: string
+        required: true
+      run-id:
+        description: E2E run to take the artifacts from; empty for the full rerun in this run
+        type: string
+        default: ''
+      artifact-prefix:
+        description: Prefix of the artifacts to merge, e.g. snapshot-updates-
+        type: string
+        required: true
+      config-dir:
+        description: Directory Playwright runs from, relative to the repository root
+        type: string
+        required: true
+      label:
+        description: Label that triggers the update, removed when the update ends
+        type: string
+        required: true
+      section-name:
+        description: Section of the PR report comment that tracks the update
+        type: string
+        required: true
+      title:
+        description: Heading of that section
+        type: string
+        required: true
+    secrets:
+      PR_GH_TOKEN:
+        required: true
+
+jobs:
+  commit:
+    if: inputs.ready
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      has-changes: ${{ steps.commit.outputs.has-changes }}
+      changed-count: ${{ steps.commit.outputs.changed-count }}
+    env:
+      SNAPSHOTS: ':(glob)${{ inputs.config-dir }}/**/*-snapshots/**/*.png'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Verify the branch is still at the PR head
+        env:
+          HEAD_SHA: ${{ inputs.head-sha }}
+        run: |
+          set -euo pipefail
+
+          checked_out=$(git rev-parse HEAD)
+          if [ "$checked_out" != "$HEAD_SHA" ]; then
+            echo "::error::The branch is at ${checked_out}, but the snapshots were produced for ${HEAD_SHA}. Trigger the update again for the new head."
+            exit 1
+          fi
+
+      - name: Download snapshot updates
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ inputs.artifact-prefix }}*
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ inputs.run-id && github.token || '' }}
+          path: ${{ runner.temp }}/snapshot-updates
+          merge-multiple: true
+
+      - name: Merge snapshot updates
+        env:
+          CONFIG_DIR: ${{ inputs.config-dir }}
+          DOWNLOAD_DIR: ${{ runner.temp }}/snapshot-updates
+        run: |
+          set -euo pipefail
+
+          if [ -d "$DOWNLOAD_DIR" ]; then
+            rsync -a --ignore-times --prune-empty-dirs --include='*/' --include='**-snapshots/**.png' --exclude='*' \
+              "$DOWNLOAD_DIR/" "$CONFIG_DIR/"
+          fi
+
+      - name: Report snapshot diff magnitudes
+        env:
+          REPORT: ${{ runner.temp }}/diff-report.md
+        run: |
+          set -uo pipefail
+
+          : > "$REPORT"
+
+          mapfile -t changed < <(
+            git status --porcelain=v1 --untracked-files=all -- "$SNAPSHOTS" |
+              sed -e 's/^...//' -e 's/^"//' -e 's/"$//'
+          )
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "No snapshot changes to measure"
+            exit 0
+          fi
+
+          if command -v compare >/dev/null 2>&1; then
+            echo "Measuring ${#changed[@]} updated snapshot(s) with ImageMagick"
+          else
+            echo "::warning::ImageMagick 'compare' unavailable; falling back to byte sizes, which cannot distinguish a real visual change from rasterization noise."
+          fi
+
+          small=0
+          {
+            echo "| snapshot | status | changed pixels |"
+            echo "| --- | --- | --- |"
+          } >> "$REPORT"
+
+          tmp_old="$(mktemp)"
+          for f in "${changed[@]}"; do
+            [ -f "$f" ] || continue
+
+            if ! git show "HEAD:$f" > "$tmp_old" 2>/dev/null; then
+              echo "| \`${f}\` | new | n/a |" >> "$REPORT"
+              continue
+            fi
+
+            px=''
+            if command -v compare >/dev/null 2>&1; then
+              px=$(compare -metric AE "$tmp_old" "$f" null: 2>&1 >/dev/null)
+              case "$px" in
+                ''|*[!0-9]*) px='' ;;
+              esac
+            fi
+
+            if [ -n "$px" ]; then
+              echo "| \`${f}\` | modified | ${px} |" >> "$REPORT"
+              if [ "$px" -gt 0 ] && [ "$px" -le 2000 ]; then
+                small=$((small + 1))
+              fi
+            else
+              old_b=$(wc -c < "$tmp_old" | tr -d ' ')
+              new_b=$(wc -c < "$f" | tr -d ' ')
+              echo "| \`${f}\` | modified | ${old_b}B -> ${new_b}B |" >> "$REPORT"
+            fi
+          done
+          rm -f "$tmp_old"
+
+          if [ "$small" -gt 0 ]; then
+            echo "::warning::${small} updated baseline(s) changed by <=2000 pixels. Screenshot capture is not bit-deterministic - small diffs are usually text rasterization noise, not an intended change. Confirm each update corresponds to a test you expected to change before merging."
+          fi
+
+          cat "$REPORT"
+          {
+            echo "### Updated snapshots (${#changed[@]})"
+            echo
+            cat "$REPORT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit updated snapshots
+        id: commit
+        env:
+          BRANCH: ${{ inputs.branch }}
+          RUN_ID: ${{ inputs.run-id }}
+          REPORT: ${{ runner.temp }}/diff-report.md
+          COMMIT_MESSAGE_FILE: ${{ runner.temp }}/commit-msg.txt
+        run: |
+          set -euo pipefail
+
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+          changed_count=$(git status --porcelain=v1 --untracked-files=all -- "$SNAPSHOTS" | wc -l)
+          echo "changed-count=${changed_count}" >> "$GITHUB_OUTPUT"
+          if [ "$changed_count" -eq 0 ]; then
+            echo "No changes to commit"
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has-changes=true" >> "$GITHUB_OUTPUT"
+
+          git add -- "$SNAPSHOTS"
+
+          {
+            echo '[automated] Update screenshot expectations'
+            if [ -n "$RUN_ID" ]; then
+              echo
+              echo "Taken from the failed screenshot assertions of ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+              echo 'without rerunning Playwright.'
+            fi
+            if [ -s "$REPORT" ]; then
+              echo
+              cat "$REPORT"
+              echo
+              echo 'Screenshot capture is not bit-deterministic; small pixel'
+              echo 'deltas are usually text rasterization noise. Confirm each'
+              echo 'update corresponds to a test expected to change.'
+            fi
+          } > "$COMMIT_MESSAGE_FILE"
+
+          git commit -F "$COMMIT_MESSAGE_FILE"
+
+          echo "Pushing ${changed_count} file(s) to ${BRANCH}..."
+          git push origin "HEAD:refs/heads/${BRANCH}"
+
+  result:
+    needs: commit
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Build the section content
+        id: content
+        uses: actions/github-script@v9
+        env:
+          TITLE: ${{ inputs.title }}
+          UNAVAILABLE: ${{ inputs.unavailable }}
+          MISSING: ${{ inputs.missing }}
+          RUN_ID: ${{ inputs.run-id }}
+          COMMIT_RESULT: ${{ needs.commit.result }}
+          HAS_CHANGES: ${{ needs.commit.outputs.has-changes }}
+          CHANGED_COUNT: ${{ needs.commit.outputs.changed-count }}
+        with:
+          script: |
+            const { TITLE, UNAVAILABLE, MISSING, RUN_ID, COMMIT_RESULT, HAS_CHANGES, CHANGED_COUNT } = process.env
+            const repoUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`
+            const runUrl = `${repoUrl}/actions/runs/${context.runId}`
+            const e2eRunUrl = `${repoUrl}/actions/runs/${RUN_ID}`
+            const changedCount = parseInt(CHANGED_COUNT) || 0
+            const retry = `Push to the branch for a new E2E run and trigger the update again, or add \`full\` after the update command to rerun Playwright.`
+            const unchecked = `These jobs in the [E2E run](${e2eRunUrl}) left no snapshot updates, so their screenshots were not checked: ${MISSING}.`
+
+            const lines = [`## ${TITLE}`, '']
+            if (UNAVAILABLE) {
+              lines.push(
+                '> [!CAUTION]',
+                `> ${UNAVAILABLE} ${retry} [View workflow run](${runUrl})`
+              )
+            } else if (COMMIT_RESULT !== 'success') {
+              lines.push('> [!CAUTION]', `> Screenshot update failed. [View workflow run](${runUrl})`)
+            } else if (HAS_CHANGES !== 'true' && MISSING) {
+              lines.push('> [!CAUTION]', `> No screenshot updates to commit, but the screenshots cannot be confirmed up to date. ${unchecked} ${retry} [View workflow run](${runUrl})`)
+            } else if (HAS_CHANGES !== 'true') {
+              lines.push('> [!TIP]', '> All screenshots are already up to date.')
+            } else {
+              const s = changedCount === 1 ? '' : 's'
+              const source = RUN_ID
+                ? ` taken from the [E2E run](${e2eRunUrl}) without rerunning Playwright`
+                : ''
+              const updated = `Updated ${changedCount} screenshot${s}${source} and pushed to the branch.`
+              if (MISSING) {
+                lines.push('> [!WARNING]', `> ${updated} ${unchecked} ${retry}`)
+              } else {
+                lines.push('> [!TIP]', `> ${updated}`)
+              }
+            }
+            core.setOutput('section-content', lines.join('\n'))
+
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/upsert-comment-section
+          persist-credentials: false
+
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ inputs.pr-number }}
+          section-name: ${{ inputs.section-name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: ${{ steps.content.outputs.section-content }}
+
+      - name: Remove label
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ inputs.pr-number }}
+          LABEL: ${{ inputs.label }}
+        with:
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                ...context.repo,
+                issue_number: Number(process.env.PR_NUMBER),
+                name: process.env.LABEL
+              })
+            } catch (e) {
+              if (e.status !== 404) throw e
+            }
+
+      - name: Fail when the E2E run could not supply the snapshots
+        if: inputs.unavailable != ''
+        env:
+          UNAVAILABLE: ${{ inputs.unavailable }}
+        run: |
+          echo "::error::${UNAVAILABLE}"
+          exit 1
+
+      - name: Fail when missing jobs leave the screenshots unconfirmed
+        if: inputs.missing != '' && needs.commit.result == 'success' && needs.commit.outputs.has-changes != 'true'
+        env:
+          MISSING: ${{ inputs.missing }}
+        run: |
+          echo "::error::No snapshot updates to commit, but these jobs left none to check: ${MISSING}"
+          exit 1

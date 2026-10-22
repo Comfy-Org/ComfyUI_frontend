@@ -5,8 +5,8 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
-import type { AssetItem } from '../schemas/assetSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
 /**
