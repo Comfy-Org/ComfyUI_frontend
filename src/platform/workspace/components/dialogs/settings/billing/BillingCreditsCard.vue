@@ -93,7 +93,7 @@
             class="text-sm font-semibold text-foreground"
             data-testid="billing-credits-plan"
           >
-            {{ planAmount(state.planCents, state.planPoolCredits) }}
+            {{ planLine() }}
           </span>
         </div>
         <div class="flex flex-1 items-start justify-between gap-4 p-4">
@@ -159,7 +159,7 @@ const emit = defineEmits<{
   addCredits: []
 }>()
 
-const { t, locale } = useI18n()
+const { t, d, locale } = useI18n()
 
 const HINT_KEYS = {
   subscribe: 'workspacePanel.billingTab.credits.subscribe',
@@ -186,6 +186,20 @@ function planAmount(cents: number, poolCredits: number | null) {
       numberOptions: WHOLE
     })
   })
+}
+
+function longDate(raw: string | null): string {
+  const date = raw ? new Date(raw) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function planLine() {
+  if (state.kind !== 'plan') return ''
+  const amount = planAmount(state.planCents, state.planPoolCredits)
+  const date = longDate(state.renewalDate)
+  if (!date) return amount
+  return `${amount} ${t('subscription.refillsDate', { date })}`
 }
 
 const overdrawnCredits = computed(() =>

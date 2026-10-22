@@ -1337,7 +1337,8 @@
   },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
-    "enterName": "Enter name"
+    "enterName": "Enter name",
+    "notLoaded": "Saved templates could not be loaded, so changes were not saved to avoid overwriting them. Reload the page and try again."
   },
   "logsTerminal": {
     "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
@@ -3704,6 +3705,18 @@
       },
       "paused": {
         "body": "This workspace's subscription is paused. Update payment to resume."
+      },
+      "planCheckout": {
+        "dismiss": "Dismiss",
+        "paymentReceived": {
+          "body": "Your plan is activating. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "verifyPayment": {
+          "action": "Verify your payment",
+          "body": "Your bank requires additional verification to complete this payment.",
+          "title": "Verify your payment"
+        }
       },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",

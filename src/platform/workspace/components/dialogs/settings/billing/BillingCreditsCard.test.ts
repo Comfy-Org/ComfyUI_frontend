@@ -30,7 +30,8 @@ const activeFacts: CreditsCardFacts = {
   planKind: 'active',
   billingStatus: 'paid',
   planPoolCredits: 1000,
-  isCloud: true
+  isCloud: true,
+  renewalDate: null
 }
 
 const CARD_NOTES = [
@@ -211,6 +212,17 @@ describe('BillingCreditsCard', () => {
     )
     expect(CARD_NOTES.filter((note) => screen.queryByText(note))).toEqual(
       row.notes
+    )
+  })
+
+  it('ends the plan line with the renewal date', () => {
+    renderCard({
+      ...activeFacts,
+      renewalDate: '2026-10-01T00:00:00Z'
+    })
+
+    expect(screen.getByTestId('billing-credits-plan').textContent.trim()).toBe(
+      '844 of 1,000 Refills October 1, 2026'
     )
   })
 
