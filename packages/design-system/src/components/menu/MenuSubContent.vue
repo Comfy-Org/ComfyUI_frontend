@@ -3,12 +3,20 @@ import type {
   DropdownMenuSubContentEmits,
   DropdownMenuSubContentProps
 } from 'reka-ui'
-import { DropdownMenuSubContent, useForwardPropsEmits } from 'reka-ui'
+import {
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
+  useForwardPropsEmits
+} from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
+import { inject, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { menuContentClass } from './menuStyles'
+import { menuSubOpenKey } from './menuSubContext'
+
+defineOptions({ inheritAttrs: false })
 
 const {
   class: className,
@@ -24,22 +32,25 @@ const {
 >()
 const emits = defineEmits<DropdownMenuSubContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
+const open = inject(menuSubOpenKey, ref(false))
 </script>
 
 <template>
-  <DropdownMenuSubContent
-    v-bind="forwarded"
-    :class="
-      cn(
-        menuContentClass,
-        width === 'compact' && 'min-w-46.5',
-        maxHeight === 'available' &&
-          'max-h-(--reka-dropdown-menu-content-available-height)',
-        maxHeight === 'compact' && 'max-h-64',
-        className
-      )
-    "
-  >
-    <slot />
-  </DropdownMenuSubContent>
+  <DropdownMenuPortal :key="Number(open)">
+    <DropdownMenuSubContent
+      v-bind="{ ...forwarded, ...$attrs }"
+      :class="
+        cn(
+          menuContentClass,
+          width === 'compact' && 'min-w-46.5',
+          maxHeight === 'available' &&
+            'max-h-(--reka-dropdown-menu-content-available-height)',
+          maxHeight === 'compact' && 'max-h-64',
+          className
+        )
+      "
+    >
+      <slot />
+    </DropdownMenuSubContent>
+  </DropdownMenuPortal>
 </template>

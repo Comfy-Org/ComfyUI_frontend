@@ -4,7 +4,6 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import MenuPortal from './MenuPortal.vue'
 import type { DropdownMenuContentProps } from 'reka-ui'
 
 import MenuContent from './MenuContent.vue'
@@ -42,33 +41,32 @@ const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <MenuPortal :to>
-      <MenuContent
-        :align
-        :collision-padding
-        :side
-        :side-offset
-        v-bind="$attrs"
-        :class="$attrs.class"
+    <MenuContent
+      :to
+      :align
+      :collision-padding
+      :side
+      :side-offset
+      v-bind="$attrs"
+      :class="$attrs.class"
+    >
+      <DropdownMenuLabel
+        v-if="label"
+        class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
       >
-        <DropdownMenuLabel
-          v-if="label"
-          class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+        {{ label }}
+      </DropdownMenuLabel>
+      <slot>
+        <MenuItems
+          :items
+          @select="open = false"
+          @activate="emit('activate', $event)"
         >
-          {{ label }}
-        </DropdownMenuLabel>
-        <slot>
-          <MenuItems
-            :items
-            @select="open = false"
-            @activate="emit('activate', $event)"
-          >
-            <template v-if="$slots.item" #item="slotProps">
-              <slot name="item" v-bind="slotProps" />
-            </template>
-          </MenuItems>
-        </slot>
-      </MenuContent>
-    </MenuPortal>
+          <template v-if="$slots.item" #item="slotProps">
+            <slot name="item" v-bind="slotProps" />
+          </template>
+        </MenuItems>
+      </slot>
+    </MenuContent>
   </DropdownMenuRoot>
 </template>

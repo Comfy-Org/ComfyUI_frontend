@@ -5,7 +5,6 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import MenuPortal from '@comfyorg/design-system/menu/MenuPortal'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -113,93 +112,86 @@ const options: {
         />
       </Button>
     </DropdownMenuTrigger>
-    <MenuPortal>
-      <MenuContent
-        side="top"
-        align="end"
-        :side-offset="8"
-        :aria-describedby="descriptionId"
-        class="agent-scope flex w-80 flex-col gap-2.5 bg-secondary p-2.5"
-      >
-        <div class="flex flex-col gap-0.5">
-          <div aria-hidden="true" class="text-sm/5 text-foreground">
-            {{ t('agent.runPermissions') }}
-          </div>
-          <div
-            :id="descriptionId"
-            aria-hidden="true"
-            class="text-xs/4 text-muted-foreground"
-          >
-            {{ t('agent.runPermissionsDescription') }}
-          </div>
+    <MenuContent
+      side="top"
+      align="end"
+      :side-offset="8"
+      :aria-describedby="descriptionId"
+      class="agent-scope flex w-80 flex-col gap-2.5 bg-secondary p-2.5"
+    >
+      <div class="flex flex-col gap-0.5">
+        <div aria-hidden="true" class="text-sm/5 text-foreground">
+          {{ t('agent.runPermissions') }}
         </div>
-
-        <DropdownMenuRadioGroup
-          :model-value="store.mode"
-          :aria-label="t('agent.runPermissions')"
-          class="flex flex-col gap-1"
-          @update:model-value="
-            typeof $event === 'string' && onSelectMode($event)
-          "
+        <div
+          :id="descriptionId"
+          aria-hidden="true"
+          class="text-xs/4 text-muted-foreground"
         >
-          <DropdownMenuRadioItem
-            v-for="option in options"
-            :key="option.mode"
-            :value="option.mode"
-            :disabled="savingMode !== null"
-            :aria-busy="savingMode === option.mode || undefined"
-            as-child
-            @select.prevent
+          {{ t('agent.runPermissionsDescription') }}
+        </div>
+      </div>
+
+      <DropdownMenuRadioGroup
+        :model-value="store.mode"
+        :aria-label="t('agent.runPermissions')"
+        class="flex flex-col gap-1"
+        @update:model-value="typeof $event === 'string' && onSelectMode($event)"
+      >
+        <DropdownMenuRadioItem
+          v-for="option in options"
+          :key="option.mode"
+          :value="option.mode"
+          :disabled="savingMode !== null"
+          :aria-busy="savingMode === option.mode || undefined"
+          as-child
+          @select.prevent
+        >
+          <Button
+            :variant="
+              store.mode === option.mode ? 'tertiary' : 'muted-textonly'
+            "
+            size="unset"
+            :class="
+              cn(
+                'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
+                savingMode !== null &&
+                  savingMode !== option.mode &&
+                  'opacity-50'
+              )
+            "
           >
-            <Button
-              :variant="
-                store.mode === option.mode ? 'tertiary' : 'muted-textonly'
+            <span
+              :class="
+                cn('mt-0.5 size-4 shrink-0 text-muted-foreground', option.icon)
               "
-              size="unset"
+            />
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm/5 text-foreground">
+                {{ t(option.title) }}
+              </span>
+              <span class="mt-0.5 block text-xs/4 text-muted-foreground">
+                {{ t(option.description) }}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
               :class="
                 cn(
-                  'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
-                  savingMode !== null &&
-                    savingMode !== option.mode &&
-                    'opacity-50'
+                  'mt-0.5 size-4 shrink-0',
+                  savingMode === option.mode
+                    ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
+                    : store.mode === option.mode &&
+                        'icon-[lucide--check] text-foreground'
                 )
               "
-            >
-              <span
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
-                    option.icon
-                  )
-                "
-              />
-              <span class="min-w-0 flex-1">
-                <span class="block text-sm/5 text-foreground">
-                  {{ t(option.title) }}
-                </span>
-                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
-                  {{ t(option.description) }}
-                </span>
-              </span>
-              <span
-                aria-hidden="true"
-                :class="
-                  cn(
-                    'mt-0.5 size-4 shrink-0',
-                    savingMode === option.mode
-                      ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
-                      : store.mode === option.mode &&
-                          'icon-[lucide--check] text-foreground'
-                  )
-                "
-              />
-            </Button>
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </MenuContent>
-      <span v-if="open" role="status" class="sr-only">
-        {{ savingMode === null ? '' : t('g.saving') }}
-      </span>
-    </MenuPortal>
+            />
+          </Button>
+        </DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup>
+    </MenuContent>
+    <span v-if="open" role="status" class="sr-only">
+      {{ savingMode === null ? '' : t('g.saving') }}
+    </span>
   </DropdownMenuRoot>
 </template>

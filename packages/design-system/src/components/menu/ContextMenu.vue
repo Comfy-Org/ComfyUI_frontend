@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
-import MenuPortal from './MenuPortal.vue'
+import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import MenuContent from './MenuContent.vue'
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
-import { menuContentClass } from './menuStyles'
 import type { MenuItem } from './types'
 
 defineOptions({ inheritAttrs: false })
@@ -130,30 +123,22 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <MenuPortal>
-      <DropdownMenuContent
-        :id="providedId ?? generatedId"
-        :reference
-        :data-menu-owner="ownerId"
-        :class="
-          cn(
-            menuContentClass,
-            'max-h-(--reka-dropdown-menu-content-available-height)',
-            $attrs.class
-          )
-        "
-        :side-offset="2"
-        align="start"
-        :update-position-strategy="reference ? 'always' : 'optimized'"
-        @close-auto-focus.prevent
-        @focus-outside.prevent
-      >
-        <MenuItems :items="model" :owner-id @select="hide">
-          <template v-if="$slots.item" #item="slotProps">
-            <slot name="item" v-bind="slotProps" />
-          </template>
-        </MenuItems>
-      </DropdownMenuContent>
-    </MenuPortal>
+    <MenuContent
+      :id="providedId ?? generatedId"
+      :reference
+      :data-menu-owner="ownerId"
+      :class="$attrs.class"
+      :side-offset="2"
+      align="start"
+      :update-position-strategy="reference ? 'always' : 'optimized'"
+      @close-auto-focus.prevent
+      @focus-outside.prevent
+    >
+      <MenuItems :items="model" :owner-id @select="hide">
+        <template v-if="$slots.item" #item="slotProps">
+          <slot name="item" v-bind="slotProps" />
+        </template>
+      </MenuItems>
+    </MenuContent>
   </DropdownMenuRoot>
 </template>
