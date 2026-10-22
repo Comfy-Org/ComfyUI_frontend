@@ -29,13 +29,13 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-async function importNodeTemplates(getUserData: Promise<Response>) {
+async function importNodeTemplates(getUserData: () => Promise<Response>) {
   vi.resetModules()
   document.body.replaceChildren()
   const { api } = await import('@/scripts/api')
   const { app } = await import('@/scripts/app')
   const { reportError } = await import('@/platform/telemetry/reportError')
-  vi.mocked(api.getUserData).mockReturnValue(getUserData)
+  vi.mocked(api.getUserData).mockImplementation(getUserData)
   await import('./nodeTemplates')
   const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
   return { api, app, reportError, extension }
@@ -43,7 +43,7 @@ async function importNodeTemplates(getUserData: Promise<Response>) {
 
 it('defers loading templates and creating the import input until setup', async () => {
   const { api, app, extension } = await importNodeTemplates(
-    Promise.resolve(new Response(null))
+    async () => new Response(null)
   )
 
   expect(api.getUserData).not.toHaveBeenCalled()
@@ -59,7 +59,7 @@ it('defers loading templates and creating the import input until setup', async (
 it('reports invalid persisted node templates before falling back to empty', async () => {
   const response = createDeferred<Response>()
   const { app, reportError, extension } = await importNodeTemplates(
-    response.promise
+    () => response.promise
   )
   await extension.setup?.(app)
   const error = new Error('invalid template JSON')
@@ -94,4 +94,19 @@ it('reports invalid persisted node templates before falling back to empty', asyn
       }
     }
   ])
+})
+
+it('does not overwrite stored templates after the initial load fails', async () => {
+  const { api, app, reportError, extension } = await importNodeTemplates(() =>
+    Promise.reject(new Error('offline'))
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+  await extension.setup?.(app)
+  await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+
+  const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+  await saveItem?.callback?.call(fromAny({}))
+
+  expect(api.storeUserData).not.toHaveBeenCalled()
 })

@@ -49,8 +49,8 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
     const res = await api.getUserData(file)
     if (res.status === 200)
       return { ok: true, templates: (await res.json()) ?? [] }
-    if (res.status !== 404) console.error(res.status + ' ' + res.statusText)
-    return { ok: true, templates: [] }
+    if (res.status === 404) return { ok: true, templates: [] }
+    return { ok: false, cause: `${res.status} ${res.statusText}` }
   } catch (cause) {
     return { ok: false, cause }
   }
@@ -58,6 +58,7 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
 
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
+  loaded = false
   draggedEl: HTMLElement | null
   saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
@@ -115,6 +116,7 @@ class ManageTemplates extends ComfyDialog {
     const result = await fetchTemplates()
     if (result.ok) {
       this.templates = result.templates
+      this.loaded = true
       return
     }
     reportError(result.cause, {
@@ -131,6 +133,12 @@ class ManageTemplates extends ComfyDialog {
   }
 
   async store() {
+    if (!this.loaded) {
+      useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
+        description: t('nodeTemplates.notLoaded')
+      })
+      return
+    }
     const templates = JSON.stringify(this.templates, undefined, 4)
     try {
       await api.storeUserData(file, templates, { stringify: false })
