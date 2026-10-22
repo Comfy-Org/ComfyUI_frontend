@@ -177,6 +177,11 @@ interface PendingDynamicSlot {
   deferred: DeferredDynamicOperation[]
 }
 
+interface PendingWidgetValue {
+  value: unknown
+  documentValueAtWrite: unknown
+}
+
 type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
 /** Returns the node's save-format snapshot for a semantic add operation. */
@@ -489,7 +494,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const pendingDynamicSlots = new Map<string, PendingDynamicSlot>()
-  const pendingWidgetValues = new Map<string, unknown>()
+  const pendingWidgetValues = new Map<string, PendingWidgetValue>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
   const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
@@ -512,15 +517,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   ): boolean {
     const key = widgetValueKey(nodeId, selection.widget)
     const documentValue = deps.docWidgetValue?.(nodeId, selection.widget)
+    const pendingValue = pendingWidgetValues.get(key)
     if (isEqual(documentValue, selection.value)) {
-      if (isEqual(pendingWidgetValues.get(key), selection.value))
+      if (isEqual(pendingValue?.value, selection.value))
         pendingWidgetValues.delete(key)
       return true
     }
-    return (
-      pendingWidgetValues.has(key) &&
-      isEqual(pendingWidgetValues.get(key), selection.value)
-    )
+    if (!pendingValue || !isEqual(pendingValue.value, selection.value))
+      return false
+    if (isEqual(documentValue, pendingValue.documentValueAtWrite)) return true
+    pendingWidgetValues.delete(key)
+    return false
   }
 
   function resolvedDynamicSlot(state: PendingDynamicSlot): number | undefined {
@@ -776,10 +783,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       'promoted' in operation
     )
       return
-    pendingWidgetValues.set(
-      widgetValueKey(event.nodeId, event.name),
-      event.value
-    )
+    pendingWidgetValues.set(widgetValueKey(event.nodeId, event.name), {
+      value: event.value,
+      documentValueAtWrite: deps.docWidgetValue?.(event.nodeId, event.name)
+    })
   }
 
   function reportUnresolvedWidgetOwner(
