@@ -69,6 +69,48 @@ describe('placementOffset', () => {
     ).toEqual({ dx: 200 + PLACEMENT_GUTTER_PX - 9000, dy: -9000 })
   })
 
+  it.for([
+    { name: 'no viewport known', viewport: null },
+    {
+      name: 'the collision visible on screen',
+      viewport: rect(0, 0, 2000, 1500)
+    }
+  ])(
+    'moves a batch that lands on an existing node beside existing content, $name',
+    ({ viewport }) => {
+      expect(
+        placementOffset({
+          existing: [rect(0, 0), rect(300, 0)],
+          viewport,
+          incoming: [rect(-400, 50), rect(350, 60), rect(1000, 400)],
+          moveCollisions: true
+        })
+      ).toEqual({ dx: 980, dy: -50 })
+    }
+  )
+
+  it.for([
+    {
+      name: 'inside the existing hull without touching a node',
+      existing: [rect(0, 0), rect(600, 400)],
+      incoming: [rect(300, 150)]
+    },
+    {
+      name: 'touching an existing node at its edge',
+      existing: [rect(0, 0)],
+      incoming: [rect(200, 0)]
+    }
+  ])('leaves a batch $name', ({ existing, incoming }) => {
+    expect(
+      placementOffset({
+        existing,
+        viewport: null,
+        incoming,
+        moveCollisions: true
+      })
+    ).toBeNull()
+  })
+
   it('fires at exactly the gap threshold', () => {
     expect(
       placementOffset({
