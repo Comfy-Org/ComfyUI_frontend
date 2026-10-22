@@ -28,8 +28,13 @@ function reduceScopedRead(
 ): CreditTransitionNoticeState {
   if (state === null || state.identity !== identity || scopedHasFunds)
     return { identity, scopedHasFunds, phase: 'idle' }
-  if (state.phase === 'dismissed') return { ...state, scopedHasFunds }
+  if (state.phase === 'dismissed')
+    return state.scopedHasFunds === scopedHasFunds
+      ? state
+      : { ...state, scopedHasFunds }
   const phase = state.scopedHasFunds ? 'armed' : state.phase
+  if (state.scopedHasFunds === scopedHasFunds && state.phase === phase)
+    return state
   return { ...state, scopedHasFunds, phase }
 }
 
@@ -44,9 +49,12 @@ export function reduceCreditTransitionNotice(
     case 'shown':
       return state.phase === 'armed' ? { ...state, phase: 'shown' } : state
     case 'dismissed':
-      return { ...state, phase: 'dismissed' }
+      return state.phase === 'armed' || state.phase === 'shown'
+        ? { ...state, phase: 'dismissed' }
+        : state
     default:
-      return event satisfies never
+      event satisfies never
+      return state
   }
 }
 

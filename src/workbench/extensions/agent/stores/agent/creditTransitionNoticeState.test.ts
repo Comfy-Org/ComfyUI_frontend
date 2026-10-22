@@ -151,17 +151,25 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   describe('dismissed', () => {
-    it.for(['idle', 'armed', 'shown'] as const)(
-      'closes a %s episode',
-      (phase) => {
-        expect(
-          reduceCreditTransitionNotice(episode(phase, false), {
-            type: 'dismissed',
-            identity: IDENTITY
-          })
-        ).toEqual(episode('dismissed', false))
-      }
-    )
+    it.for(['armed', 'shown'] as const)('closes a %s episode', (phase) => {
+      expect(
+        reduceCreditTransitionNotice(episode(phase, false), {
+          type: 'dismissed',
+          identity: IDENTITY
+        })
+      ).toEqual(episode('dismissed', false))
+    })
+
+    it('does not dismiss an episode that was never shown', () => {
+      const state = episode('idle', false)
+
+      expect(
+        reduceCreditTransitionNotice(state, {
+          type: 'dismissed',
+          identity: IDENTITY
+        })
+      ).toBe(state)
+    })
   })
 
   describe('events for an identity the state does not hold', () => {

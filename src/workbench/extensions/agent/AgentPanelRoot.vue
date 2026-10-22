@@ -443,8 +443,9 @@ const showCreditTransitionNotice = computed(
 )
 
 function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
