@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, effectScope, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -14,10 +14,13 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { activateBillingScope } from '@/platform/workspace/composables/activateBillingScope.testUtils'
+import { useBillingAutoTopUpCard } from '@/platform/workspace/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
 
+vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
@@ -66,6 +69,7 @@ function renderCard(
   settings: AutoReloadSettings,
   setup: AutoTopUpSetup | null = null
 ) {
+  activateBillingScope('actor-a', 'workspace-a')
   vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(settings)
   const setupRef = ref(setup)
   vi.mocked(useBillingCapabilities)().autoTopUpSetup = computed(
@@ -114,6 +118,25 @@ async function returnToTab() {
 }
 
 describe('BillingAutoTopUpCard', () => {
+  it('reports no view while the read is shared with a banner that mounted first', async () => {
+    activateBillingScope('actor-a', 'workspace-a')
+    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    const banner = effectScope()
+    const read = banner.run(() => useBillingAutoTopUpCard())!
+    read.ensureRead()
+    await vi.waitFor(() => expect(read.isReady.value).toBe(true))
+
+    renderCard(configured, {
+      state: 'unavailable',
+      reason: 'billing_rail_not_supported'
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
+    expect(trackedEvents()).not.toHaveBeenCalled()
+    banner.stop()
+  })
+
   it.for<{
     status: AutoReloadSettings['status']
     settings?: AutoReloadSettings

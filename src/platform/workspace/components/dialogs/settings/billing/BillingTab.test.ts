@@ -22,11 +22,13 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { activateBillingScope } from '@/platform/workspace/composables/activateBillingScope.testUtils'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
+vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
   spy: true
 })
@@ -88,6 +90,7 @@ function correlationIdOf(link: HTMLElement) {
 }
 
 function arrange(scenario: Scenario = {}) {
+  activateBillingScope('actor-a', 'workspace-a')
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})

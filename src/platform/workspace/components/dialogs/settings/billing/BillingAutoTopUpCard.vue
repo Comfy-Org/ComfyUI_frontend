@@ -90,7 +90,8 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
+import { useBillingAutoTopUpCard } from '@/platform/workspace/composables/useBillingAutoTopUpCard'
+import { useAutoTopUpCardViewed } from '@/platform/workspace/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
@@ -171,9 +172,17 @@ const STATUS = {
 
 const { t, locale } = useI18n()
 const { autoTopUpSetup } = useBillingCapabilities()
-const { state, retry } = useBillingAutoTopUpCard(
-  () => autoTopUpSetup.value?.state !== 'unavailable'
-)
+const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+ensureRead()
+
+useAutoTopUpCardViewed(() => {
+  const current = state.value
+  return autoTopUpSetup.value?.state !== 'unavailable' &&
+    isReady.value &&
+    current.kind === 'loaded'
+    ? current.settings.status
+    : undefined
+})
 
 function usd(cents: number) {
   return formatUsdFromCents({

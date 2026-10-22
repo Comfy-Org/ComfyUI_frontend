@@ -1,9 +1,9 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
+import { useBillingAutoTopUpCard } from '@/platform/workspace/composables/useBillingAutoTopUpCard'
 import { deriveAutoTopUpBanner } from '@/platform/workspace/composables/deriveAutoTopUpBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
@@ -11,16 +11,20 @@ import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanne
 export function useAutoTopUpBannerKind() {
   const billing = useBillingContext()
   const { flags } = useFeatureFlags()
-  const { canManageAutoTopUp, autoTopUpSetup } = useBillingCapabilities()
+  const { canManageAutoTopUp } = useBillingCapabilities()
   const { isPaused } = usePausedBanner()
 
   const readEnabled = computed(() => {
     if (!flags.autoTopUpEnabled) return false
     return canManageAutoTopUp.value
   })
-  const { state } = useBillingAutoTopUpCard(
-    () => autoTopUpSetup.value?.state !== 'unavailable',
-    readEnabled
+  const { state, ensureRead } = useBillingAutoTopUpCard()
+  watch(
+    readEnabled,
+    (enabled) => {
+      if (enabled) ensureRead()
+    },
+    { immediate: true }
   )
 
   return computed(() => {
