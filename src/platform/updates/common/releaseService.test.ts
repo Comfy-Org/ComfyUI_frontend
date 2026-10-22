@@ -92,11 +92,11 @@ describe('useReleaseService', () => {
       expect(result).toEqual(mockReleases)
     })
 
-    it('sends the request to the base URL configured after import', async () => {
+    it('sends the request to the base URL configured after service creation', async () => {
       remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
 
-      await useReleaseService().getReleases({ project: 'comfyui' })
+      await service.getReleases({ project: 'comfyui' })
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
         baseURL: 'https://changed.example.com',

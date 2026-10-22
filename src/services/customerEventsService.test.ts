@@ -137,11 +137,11 @@ describe('useCustomerEventsService', () => {
       expect(service.error.value).toBeNull()
     })
 
-    it('sends the request to the base URL configured after import', async () => {
+    it('sends the request to the base URL configured after service creation', async () => {
       remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
       mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
 
-      await useCustomerEventsService().getMyEvents()
+      await service.getMyEvents()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
         baseURL: 'https://changed.example.com',
