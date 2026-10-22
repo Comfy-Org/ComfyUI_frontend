@@ -113,12 +113,10 @@ export const HiddenLabel: Story = {
 }
 
 export const EnhancePrompt: Story = {
-  beforeEach() {
-    useAgentPanelStore().enabled = true
-  },
   render: () => ({
     components: { WidgetTextarea },
     setup() {
+      useAgentPanelStore().enabled = true
       const value = ref(
         'Cinematic drone perspective shot, smooth camera movement: drone flies forward from behind the character.'
       )

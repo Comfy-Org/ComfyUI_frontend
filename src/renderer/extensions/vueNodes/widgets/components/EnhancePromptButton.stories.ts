@@ -4,7 +4,6 @@ import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import EnhancePromptButton from '@/workbench/extensions/agent/components/EnhancePromptButton.vue'
-import * as enhancePromptRequestModule from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -40,6 +39,7 @@ function renderPromptBox(prompt: string): Story['render'] {
   return () => ({
     components: { WidgetTextarea },
     setup() {
+      useAgentPanelStore().enabled = true
       const value = ref(prompt)
       const widget = promptWidget()
       return { value, widget }
@@ -49,30 +49,11 @@ function renderPromptBox(prompt: string): Story['render'] {
   })
 }
 
-function hangEnhancePromptRequest() {
-  const original = enhancePromptRequestModule.enhancePromptRequest
-  Reflect.set(
-    enhancePromptRequestModule,
-    'enhancePromptRequest',
-    () => new Promise(() => {})
-  )
-  return () => {
-    Reflect.set(enhancePromptRequestModule, 'enhancePromptRequest', original)
-  }
-}
-
 export const InPromptBox: Story = {
-  beforeEach() {
-    useAgentPanelStore().enabled = true
-  },
   render: renderPromptBox(SAMPLE_PROMPT)
 }
 
 export const InPromptBoxProcessing: Story = {
-  beforeEach() {
-    useAgentPanelStore().enabled = true
-    return hangEnhancePromptRequest()
-  },
   render: renderPromptBox(SAMPLE_PROMPT),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(
@@ -84,8 +65,5 @@ export const InPromptBoxProcessing: Story = {
 }
 
 export const InPromptBoxEnhanced: Story = {
-  beforeEach() {
-    useAgentPanelStore().enabled = true
-  },
   render: renderPromptBox(ENHANCED_PROMPT)
 }
