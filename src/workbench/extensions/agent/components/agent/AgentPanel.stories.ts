@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
@@ -68,6 +69,37 @@ export const WithHistory: Story = {
       earlier: []
     }
   }
+}
+
+export const OneNodeChip: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        const composer = useAgentComposerStore()
+        composer.setNodeScope('story-workflow')
+        composer.setNodes([{ id: '5', title: 'KSampler' }])
+        return {}
+      },
+      template: '<story />'
+    })
+  ]
+}
+
+export const MultipleNodeChips: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        const composer = useAgentComposerStore()
+        composer.setNodeScope('story-workflow')
+        composer.setNodes([
+          { id: '5', title: 'KSampler' },
+          { id: '12', title: 'VAE Decode' }
+        ])
+        return {}
+      },
+      template: '<story />'
+    })
+  ]
 }
 
 export const ChipStates: Story = {

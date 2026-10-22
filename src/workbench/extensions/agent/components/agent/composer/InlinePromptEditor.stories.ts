@@ -60,3 +60,41 @@ export const Default: Story = {}
 export const References: Story = {
   args: { modelValue: prompt }
 }
+
+export const OneNodeChip: Story = {
+  args: {
+    modelValue: {
+      text: ' ',
+      references: [
+        {
+          kind: 'node',
+          node: { id: '5', title: 'KSampler' },
+          scope: 'story-workflow',
+          textOffset: 0
+        }
+      ]
+    }
+  }
+}
+
+export const MultipleNodeChips: Story = {
+  args: {
+    modelValue: {
+      text: '  ',
+      references: [
+        {
+          kind: 'node',
+          node: { id: '5', title: 'KSampler' },
+          scope: 'story-workflow',
+          textOffset: 0
+        },
+        {
+          kind: 'node',
+          node: { id: '12', title: 'VAE Decode' },
+          scope: 'story-workflow',
+          textOffset: 1
+        }
+      ]
+    }
+  }
+}
