@@ -100,7 +100,6 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
-import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -191,9 +190,8 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
-import { ComfyUI } from './ui'
-import { $el } from './ui/utils'
-import { ComfyAppMenu } from './ui/menu/index'
+import type { ComfyUI } from './ui'
+import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
@@ -2754,30 +2752,3 @@ export class ComfyApp implements IComfyApp {
 
 export const app = new ComfyApp()
 registerApp(app)
-
-/**
- * Builds the legacy menu, dialogs, and placeholder body elements on an app.
- * Returns a function that removes them and their listeners.
- */
-export function attachLegacyUI(target: ComfyApp = app): () => void {
-  target.ui = new ComfyUI(target, {
-    resetView: () => useLitegraphService().resetView(),
-    restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
-    trackRunButton: (intent) => useRunButtonTelemetry().trackRunButton(intent),
-    enterFocusMode: () => {
-      useWorkspaceStore().focusMode = true
-    }
-  })
-  target.bodyTop = $el('div.comfyui-body-top')
-  target.bodyLeft = $el('div.comfyui-body-left')
-  target.bodyRight = $el('div.comfyui-body-right')
-  target.bodyBottom = $el('div.comfyui-body-bottom')
-  target.canvasContainer = $el('div.graph-canvas-container')
-  target.menu = new ComfyAppMenu()
-
-  const { ui, menu } = target
-  return () => {
-    ui.dispose()
-    menu.element.remove()
-  }
-}

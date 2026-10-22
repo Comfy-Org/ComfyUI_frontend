@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ComfyApp, attachLegacyUI, app as singletonApp } from './app'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { ComfyApp, app as singletonApp } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'

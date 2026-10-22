@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { ComfyApp, attachLegacyUI } from '@/scripts/app'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { ComfyApp } from '@/scripts/app'
 
 function attachToFreshApp() {
   const app = new ComfyApp()

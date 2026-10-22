@@ -1,7 +1,8 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import { ComfyApp, attachLegacyUI } from '@/scripts/app'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { ComfyApp } from '@/scripts/app'
 
 const bodyAfterImport = document.body.innerHTML
 
@@ -10,9 +11,12 @@ describe('app and api construction', () => {
     expect(bodyAfterImport).toBe('')
   })
 
-  it('reads the page location and stored client id on first use, not at import', () => {
+  it('snapshots the page location and stored client id when captured, not at import', () => {
     window.history.replaceState({}, '', '/mounted/comfy/index.html')
     sessionStorage.setItem('clientId', 'stored-client')
+    api.captureLaunchContext()
+    window.history.replaceState({}, '', '/routed/elsewhere/page')
+    sessionStorage.setItem('clientId', 'later-client')
 
     expect({
       base: api.api_base,
@@ -45,5 +49,21 @@ describe('app and api construction', () => {
     expect(menuContainer.isConnected).toBe(false)
     expect(document.onmousemove).toBeNull()
     expect(document.getElementById('comfy-file-input')).toBeNull()
+    expect(document.querySelector('.comfy-modal')).toBeNull()
+  })
+
+  it('replaces an earlier attachment instead of duplicating the legacy DOM', () => {
+    const app = new ComfyApp()
+    const detachFirst = attachLegacyUI(app)
+    const detachSecond = attachLegacyUI(app)
+    onTestFinished(detachSecond)
+
+    detachFirst()
+
+    expect({
+      fileInputs: document.querySelectorAll('#comfy-file-input').length,
+      modals: document.querySelectorAll('.comfy-modal').length,
+      menuAttached: app.ui.menuContainer.isConnected
+    }).toEqual({ fileInputs: 1, modals: 2, menuAttached: true })
   })
 })

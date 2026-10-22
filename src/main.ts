@@ -29,8 +29,8 @@ import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/pa
 import { useToast } from '@/components/ui/toast/toastStore'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
-import { attachLegacyUI } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)

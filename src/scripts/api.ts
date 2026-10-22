@@ -549,34 +549,38 @@ export class ComfyApi extends EventTarget {
    * Snapshots the page host, base path, and stored client id. Runs on first
    * use; the bootstrap calls it before routing can change the location.
    */
-  captureLaunchContext(): LaunchContext {
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
     this.launchContext ??= readLaunchContext()
     return this.launchContext
   }
 
   get api_host(): string {
-    return this.captureLaunchContext().host
+    return this.capturedLaunchContext.host
   }
 
   set api_host(host: string) {
-    this.launchContext = { ...this.captureLaunchContext(), host }
+    this.launchContext = { ...this.capturedLaunchContext, host }
   }
 
   get api_base(): string {
-    return this.captureLaunchContext().base
+    return this.capturedLaunchContext.base
   }
 
   set api_base(base: string) {
-    this.launchContext = { ...this.captureLaunchContext(), base }
+    this.launchContext = { ...this.capturedLaunchContext, base }
   }
 
   /** The client id from the initial session storage. */
   get initialClientId(): string | null {
-    return this.captureLaunchContext().initialClientId
+    return this.capturedLaunchContext.initialClientId
   }
 
   set initialClientId(initialClientId: string | null) {
-    this.launchContext = { ...this.captureLaunchContext(), initialClientId }
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
