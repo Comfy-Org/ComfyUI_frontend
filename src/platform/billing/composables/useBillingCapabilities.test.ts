@@ -477,6 +477,17 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.hasParkedBillingOperation.value).toBe(false)
   })
 
+  it('maps an explicit parked-payment fact to parked', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(true),
+      has_parked_billing_operation: true
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.hasParkedBillingOperation.value).toBe(true)
+  })
+
   it('applies changed capabilities when the current scope is refreshed', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities)
       .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-1', true))
