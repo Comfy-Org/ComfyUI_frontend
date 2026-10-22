@@ -8,6 +8,7 @@
       :items="renderedRoot.children ?? []"
       :get-key="(node) => node.key"
       :get-children="(node) => (node.leaf ? undefined : (node.children ?? []))"
+      @pointerdown.capture="menuTargetNode = null"
       @contextmenu.capture="menuTargetNode = null"
     >
       <template #default="{ flattenItems }">

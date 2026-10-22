@@ -36,6 +36,7 @@
     <ContextMenu :model="rowMenuItems" @close-auto-focus="restoreRowFocus">
       <Table
         data-testid="keybinding-table-container"
+        @pointerdown.capture="contextMenuTarget = null"
         @contextmenu.capture="contextMenuTarget = null"
       >
         <TableHeader>
