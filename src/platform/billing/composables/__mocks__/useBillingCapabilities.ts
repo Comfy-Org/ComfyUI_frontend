@@ -63,6 +63,10 @@ export function canManageBillingFact(granted: boolean) {
   return computed(() => receiveServerFact('can_manage_billing', granted))
 }
 
+export function canManageAutoTopUpFact(granted: boolean) {
+  return computed(() => receiveServerFact('can_manage_auto_top_up', granted))
+}
+
 export function paymentRecoveryAvailableFact(
   available: MaybeRefOrGetter<boolean>
 ) {

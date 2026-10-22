@@ -313,6 +313,9 @@ export default defineConfig({
   server: {
     host: devAgentConfig.host,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
+    warmup: {
+      clientFiles: ['./src/main.ts', './src/views/GraphView.vue']
+    },
     watch: {
       ignored: [
         './browser_tests/**',

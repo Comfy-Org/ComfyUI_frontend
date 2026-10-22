@@ -90,11 +90,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
-import { useBillingAutoTopUpCard } from '@/platform/billing/components/billingTab/useBillingAutoTopUpCard'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
+import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
+type ViewKey = Status | 'turnedOff'
 
 interface Line {
   text: string
@@ -130,6 +132,12 @@ const STATUS = {
     dot: 'bg-destructive-background',
     action: UPDATE_PAYMENT
   },
+  turnedOff: {
+    ...DANGER,
+    label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
+    dot: 'bg-destructive-background',
+    action: UPDATE_PAYMENT
+  },
   off: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.off',
@@ -159,7 +167,7 @@ const STATUS = {
     action: MANAGE
   }
 } as const satisfies Record<
-  Status,
+  ViewKey,
   {
     label: string
     dot: string
@@ -171,9 +179,17 @@ const STATUS = {
 
 const { t, locale } = useI18n()
 const { autoTopUpSetup } = useBillingCapabilities()
-const { state, retry } = useBillingAutoTopUpCard(
-  () => autoTopUpSetup.value?.state !== 'unavailable'
-)
+const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+ensureRead()
+
+useAutoTopUpCardViewed(() => {
+  const current = state.value
+  return autoTopUpSetup.value?.state !== 'unavailable' &&
+    isReady.value &&
+    current.kind === 'loaded'
+    ? current.settings.status
+    : undefined
+})
 
 function usd(cents: number) {
   return formatUsdFromCents({
@@ -251,8 +267,11 @@ function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
   }
 }
 
-const LINES: Record<Status, (settings: AutoReloadSettings) => Line[]> = {
+const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
   failed: () => [{ text: t('workspacePanel.billingTab.autoTopUp.failed') }],
+  turnedOff: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
+  ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
   on_hold: (settings) => [
     ...ruleLines(settings),
@@ -269,11 +288,22 @@ function isStatus(status: string): status is Status {
   return Object.hasOwn(STATUS, status)
 }
 
+function viewKey(settings: AutoReloadSettings): ViewKey {
+  if (!isStatus(settings.status)) return 'off'
+  if (
+    settings.status === 'failed' &&
+    settings.disabled_reason === 'consecutive_declines'
+  ) {
+    return 'turnedOff'
+  }
+  return settings.status
+}
+
 const view = computed(() => {
   if (state.value.kind !== 'loaded') return null
   const { settings } = state.value
-  const status = isStatus(settings.status) ? settings.status : 'off'
-  return { status: STATUS[status], lines: LINES[status](settings) }
+  const key = viewKey(settings)
+  return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
 const { href, track } = usePlatformHandoff('/profile/billing', () => ({

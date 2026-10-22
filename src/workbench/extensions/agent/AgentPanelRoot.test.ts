@@ -5280,6 +5280,12 @@ describe('AgentPanelRoot history', () => {
     )
   }
 
+  it('shows the server-assigned title in the open chat header without a rename (PM-2098)', async () => {
+    await renderWithActiveThread()
+
+    expect(screen.getByRole('button', { name: 'build a duck' })).toBeVisible()
+  })
+
   it('keeps a new chat rename when the first turn creates its thread', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
       threadListRoute.test(String(input))
@@ -5338,6 +5344,7 @@ describe('AgentPanelRoot history', () => {
     expect(input).toHaveFocus()
     expect(input.selectionStart).toBe(0)
     expect(input.selectionEnd).toBe(input.value.length)
+    await userEvent.clear(input)
     await userEvent.type(input, 'my masterpiece{Enter}')
 
     expect(await screen.findByText('my masterpiece')).toBeInTheDocument()
@@ -5346,9 +5353,7 @@ describe('AgentPanelRoot history', () => {
       title: 'my masterpiece'
     })
     expect(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.chatOptions')
-      })
+      screen.getByRole('button', { name: 'my masterpiece' })
     ).toBeInTheDocument()
   })
 
@@ -5364,6 +5369,7 @@ describe('AgentPanelRoot history', () => {
     const input = await screen.findByRole<HTMLInputElement>('textbox', {
       name: i18n.global.t('g.rename')
     })
+    await userEvent.clear(input)
     await userEvent.type(input, 'renamed by blur')
     input.blur()
 
@@ -5377,11 +5383,7 @@ describe('AgentPanelRoot history', () => {
   it('starts renaming from a single click on the current title', async () => {
     await renderWithActiveThread()
 
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.newChatTitle')
-      })
-    )
+    await userEvent.click(screen.getByRole('button', { name: 'build a duck' }))
 
     const input = await screen.findByRole<HTMLInputElement>('textbox', {
       name: i18n.global.t('g.rename')
@@ -7998,6 +8000,7 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByTestId('user-message-bubble')
       ).toHaveTextContent(`Transcript of ${threadId}`)
       expect(useAgentChatHistoryStore().activeId).toBe(threadId)
+      expect(screen.getByRole('button', { name: threadId })).toBeInTheDocument()
     }
 
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)

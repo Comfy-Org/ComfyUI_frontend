@@ -372,6 +372,38 @@
       "role": "domain"
     },
     {
+      "path": "src/platform/billing/composables/activateBillingScope.testUtils.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpBannerKind.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useAutoTopUpCardViewed.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingAutoTopUpCard.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/composables/useBillingAutoTopUpCard.ts",
+      "role": "application"
+    },
+    {
       "path": "src/platform/billing/composables/billingOperationTestUtils.ts",
       "role": "application"
     },

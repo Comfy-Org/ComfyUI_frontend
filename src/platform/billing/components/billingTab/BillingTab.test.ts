@@ -25,11 +25,13 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { activateBillingScope } from '@/platform/billing/composables/activateBillingScope.testUtils'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
+vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
   spy: true
 })
@@ -91,6 +93,7 @@ function correlationIdOf(link: HTMLElement) {
 }
 
 function arrange(scenario: Scenario = {}) {
+  activateBillingScope('actor-a', 'workspace-a')
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
@@ -764,23 +767,36 @@ describe('BillingTab', () => {
       ).toHaveTextContent('Off')
     })
 
-    it.for<{ case: string; scenario: Scenario }>([
-      { case: 'the flag is off', scenario: { autoTopUpFlag: false } },
+    it.for<{ case: string; scenario: Scenario; reads: number }>([
+      {
+        case: 'the flag is off',
+        scenario: { autoTopUpFlag: false },
+        reads: 0
+      },
       {
         case: 'a member without can_manage_auto_top_up',
-        scenario: { canManageAutoTopUp: false }
+        scenario: { canManageAutoTopUp: false },
+        reads: 0
       },
       {
         case: 'top-up is paused (can_top_up false)',
-        scenario: { canTopUp: false }
+        scenario: { canTopUp: false },
+        reads: 1
       }
-    ])('hides the card when $case', ({ scenario }) => {
+    ])('hides the card when $case', ({ scenario, reads }) => {
       arrange(scenario)
 
       expect(
         screen.queryByTestId('billing-auto-top-up-card')
       ).not.toBeInTheDocument()
-      expect(workspaceApi.getBillingAutoReload).not.toHaveBeenCalled()
+      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(reads)
+    })
+
+    it('reads the auto top-up settings once for the card and the banner', async () => {
+      arrange({})
+      await screen.findByTestId('billing-auto-top-up-status')
+
+      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     })
   })
 })

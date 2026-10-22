@@ -3589,6 +3589,7 @@
           "updatePayment": "Update payment"
         },
         "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "turnedOff": "Turned off after 3 declined charges. Update your payment method, then turn it back on.",
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
@@ -3599,6 +3600,7 @@
         "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
         "status": {
           "failed": "Failed",
+          "turnedOff": "Turned off",
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
@@ -3687,6 +3689,14 @@
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
+      },
+      "autoTopUpFailed": {
+        "title": "Auto top-up failed",
+        "body": "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
+      },
+      "autoTopUpOff": {
+        "title": "Auto top-up turned off",
+        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",
@@ -6047,7 +6057,7 @@
     "targetNavigationUnavailable": "This workflow target is no longer available.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
-    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
     "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
