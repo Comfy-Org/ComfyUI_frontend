@@ -19,7 +19,7 @@ Extensions in ComfyUI are modular JavaScript modules that extend and enhance the
 
 ComfyUI's extension system follows these key principles:
 
-1. **Registration-based:** Extensions must register themselves with the application using `app.registerExtension()`
+1. **Registration-based:** Custom extensions register themselves with `app.registerExtension()`; core extensions are registered by `registerCoreExtensions()`
 2. **Hook-driven:** Extensions interact with the system through predefined hooks
 3. **Non-intrusive:** Extensions should avoid directly modifying core objects where possible
 
@@ -29,8 +29,10 @@ Core extensions live in `src/extensions/core/`. Each module exports its
 extension object and registers nothing when imported. `registerCoreExtensions()`
 in `index.ts` registers them from an explicit ordered list and decides which
 ones load — some are unconditional, some are gated on the build distribution,
-and the 3D stack is deferred behind a lazy loader. The tables below follow that
-grouping.
+and the 3D stack is deferred behind a lazy loader. Two modules export a
+registration function instead of an object: `electronAdapter.ts` and
+`agentPanel.ts`. `load3dLazy.ts` registers the 3D extensions from its own list
+when the first 3D node appears. The tables below follow that grouping.
 
 ### Always Loaded
 
@@ -123,7 +125,7 @@ When developing or modifying extensions, follow these best practices:
 
 ### Extension Registration
 
-Extensions are registered using the `app.registerExtension()` method:
+Custom extensions are registered using the `app.registerExtension()` method:
 
 ```javascript
 app.registerExtension({
