@@ -388,12 +388,15 @@ described above is not needed:
   or the cloud token; no socket when no one is signed in). Ingest prefers a
   header credential over the session cookie, so adding the user's own header
   there would move a request out of its workspace. Off-cloud, `fetchApi`
-  attaches nothing, so REST requests carry the active workspace's auth header
-  (`getWorkspaceAuthHeader`, the workspace `queuePrompt` bills) and the socket
+  attaches nothing, so REST requests carry the active workspace's token
+  (`getWorkspaceAuthToken`, the credential `queuePrompt` uses) and the socket
   carries the same credential as `?token=`; a running turn re-sends it. Model
   calls and the runs the local agent starts then bill the active workspace, as
-  on cloud. When the workspace header is unavailable or fails to resolve, both
-  fall back to the user's personal auth header (`getUserAuthHeader`).
+  on cloud. An API-key session sends its key. Like `queuePrompt`, a selected
+  workspace whose token is missing or fails to mint fails closed: the request
+  errors and the socket retries, and the personal session is never sent in its
+  place, because that session is what comfy-api bills through the legacy funds
+  check.
 - **Development exception.** In development mode, a signed-out send skips the
   sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
   tells the browser so with the build-time flag

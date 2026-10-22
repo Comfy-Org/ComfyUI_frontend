@@ -1,6 +1,8 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { authCredentialOf } from '@/platform/auth/authCredential'
+import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,18 +16,24 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
-async function workspaceAuthHeader(): Promise<AuthHeader | null> {
-  try {
-    return (await useAuthStore().getWorkspaceAuthHeader()) ?? null
-  } catch {
-    return null
-  }
+function isApiKeySession(): boolean {
+  const authStore = useAuthStore()
+  return (
+    !isDesktopHostSignedIn() &&
+    !authStore.currentUser &&
+    !authStore.sessionOnlyUser &&
+    useApiKeyAuthStore().isAuthenticated
+  )
 }
 
 async function agentAuthHeader(): Promise<AuthHeader | null> {
-  return (
-    (await workspaceAuthHeader()) ?? (await useAuthStore().getUserAuthHeader())
-  )
+  const workspaceToken = await useAuthStore().getWorkspaceAuthToken()
+  if (workspaceToken) return { Authorization: `Bearer ${workspaceToken}` }
+  if (isApiKeySession()) return useApiKeyAuthStore().getAuthHeader()
+  if (useTeamWorkspaceStore().activeWorkspaceId) {
+    return useAuthStore().getWorkspaceAuthHeaderOrThrow()
+  }
+  return null
 }
 
 export async function withAgentAuth(
