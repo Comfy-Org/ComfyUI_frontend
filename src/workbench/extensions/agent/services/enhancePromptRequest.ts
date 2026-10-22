@@ -11,6 +11,8 @@ export type EnhancePromptFn = (
 ) => Promise<EnhancePromptResult>
 
 const STUB_DELAY_MS = 1200
+const STUB_SUFFIX =
+  ' — enhanced with richer lighting, camera language, and material detail.'
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -19,7 +21,11 @@ function wait(ms: number): Promise<void> {
 }
 
 function stubEnhancedPrompt(prompt: string): string {
-  return `${prompt.trim()} — enhanced with richer lighting, camera language, and material detail.`
+  let base = prompt.trim()
+  while (base.endsWith(STUB_SUFFIX)) {
+    base = base.slice(0, -STUB_SUFFIX.length)
+  }
+  return `${base}${STUB_SUFFIX}`
 }
 
 /**
