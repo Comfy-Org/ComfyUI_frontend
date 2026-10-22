@@ -18,7 +18,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const RESIZE_TYPE = 'TestResizeImageMask'
 const SOURCE_TYPE = 'TestImageSource'
@@ -248,10 +247,7 @@ export const dynamicComboChildLinkTest =
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      await agentPanel.composer.fill('hello')
-      await agentPanel.root
-        .getByRole('button', { name: enMessages.agent.send })
-        .click()
+      await agentPanel.sendMessage('hello')
       await expect(agentPanel.root.getByText('hello').first()).toBeVisible()
       await hostSocket.waitForSubscribe()
       hostSocket.send({
