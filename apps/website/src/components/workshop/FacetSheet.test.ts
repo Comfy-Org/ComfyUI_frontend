@@ -34,6 +34,29 @@ const groups = [
 ]
 
 describe('FacetSheet', () => {
+  it('closes without clearing filters when public result counts are unavailable', async () => {
+    const user = userEvent.setup()
+    const view = render(FacetSheet, {
+      props: {
+        groups: [
+          {
+            key: 'model',
+            label: 'Models',
+            selected: ['uid'],
+            options: [{ value: 'uid', label: 'Model name' }]
+          }
+        ],
+        labels: { ...labels, showAll: 'Show results' }
+      }
+    })
+    expect(screen.getByTestId('filter-model-uid')).toHaveTextContent(
+      'Model name'
+    )
+    await user.click(screen.getByRole('button', { name: 'Show results' }))
+    expect(view.emitted().close).toHaveLength(1)
+    expect(view.emitted().clearAll).toBeUndefined()
+  })
+
   it('toggles the sheet height from the keyboard', async () => {
     const user = userEvent.setup()
     render(FacetSheet, { props: { groups, labels, resultCount: 2 } })

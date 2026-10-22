@@ -236,7 +236,7 @@ export function workshopModelAnalytics(
     page_type:
       model.type === 'APP'
         ? 'app'
-        : model.routerId === undefined
+        : model.type === 'CLOUD' || model.type === 'SERVERLESS'
           ? 'workflow'
           : 'model',
     ...(model.type === 'APP' ? { app_slug: model.slug } : {}),

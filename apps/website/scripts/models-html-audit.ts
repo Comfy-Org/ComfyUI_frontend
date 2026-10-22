@@ -39,6 +39,34 @@ export function auditModelPage(html: string, modelName: string): string[] {
   return errors
 }
 
+/**
+ * A catalog detail page's server HTML must carry the record itself: exactly
+ * one h1 naming it, its summary, and no loader standing in for the content.
+ */
+export function auditCatalogDetailBody(
+  html: string,
+  record: { name: string; summary?: string }
+): string[] {
+  const errors: string[] = []
+  const live = withoutHiddenMarkup(html)
+  const h1s = [...live.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/g)].map(
+    ([, inner]) => textOf(inner)
+  )
+  if (h1s.length !== 1 || h1s[0] !== record.name)
+    errors.push(
+      `expected one h1 "${record.name}", found ${JSON.stringify(h1s)}`
+    )
+  const summary = record.summary?.trim()
+  if (summary && !textOf(live).includes(textOf(summary)))
+    errors.push('server HTML is missing the summary')
+  if (
+    live.includes('data-testid="catalog-detail-loading"') ||
+    live.includes('data-testid="workshop-loading"')
+  )
+    errors.push('paints a loader in place of the record')
+  return errors
+}
+
 const PLACEHOLDER_LABEL = /^(?:Output|Sample \d+)$/
 
 function attributeOf(tag: string, name: string): string | undefined {

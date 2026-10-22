@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Music2 } from '@lucide/vue'
+import { Check, Music2, Pause, Play } from '@lucide/vue'
 import { useElementVisibility, useMounted, whenever } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
@@ -19,13 +19,22 @@ const {
   galleryLabel,
   activeId,
   locale = 'en',
-  disabled = false
+  disabled = false,
+  videoPoster,
+  playable = false
 } = defineProps<{
   examples: readonly PlaygroundExample[]
   galleryLabel: string
   activeId?: string
   locale?: Locale
   disabled?: boolean
+  /** A still image shown on video examples before they play. Never pass a
+   * video here: a clip's bytes are not a poster, and without a still each
+   * example paints its own first frame instead. */
+  videoPoster?: string
+  /** Give video examples a play/pause control of their own, beside the
+   * button that picks the example, so watching a clip never changes inputs. */
+  playable?: boolean
 }>()
 const { t } = translationsFor(locale)
 const headingId = useId()
@@ -33,6 +42,34 @@ const headingId = useId()
 const emit = defineEmits<{ open: [example: PlaygroundExample] }>()
 
 const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
+const isVideo = (example: PlaygroundExample) =>
+  example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
+// With a still to show, the clip loads from its start; without one, the
+// fragment asks for a frame the card can paint before playback.
+const videoSrc = (example: PlaygroundExample) =>
+  videoPoster ? example.outputUrl : videoPosterUrl(example.outputUrl)
+
+const videos = new Map<string, HTMLVideoElement>()
+const playingId = ref<string>()
+function bindVideo(id: string, element: unknown) {
+  if (element instanceof HTMLVideoElement) videos.set(id, element)
+  else videos.delete(id)
+}
+function stopped(id: string) {
+  if (playingId.value === id) playingId.value = undefined
+}
+async function togglePlayback(example: PlaygroundExample) {
+  const video = videos.get(example.id)
+  if (!video) return
+  if (!video.paused) {
+    video.pause()
+    return
+  }
+  for (const [id, other] of videos) if (id !== example.id) other.pause()
+  // A refused play (codec, policy) leaves the clip paused and the control
+  // still reading Play, which is the truth.
+  await video.play().catch(() => undefined)
+}
 const altOf = (example: PlaygroundExample) =>
   exampleAlt(galleryLabel, example.title, locale)
 // No posters yet: first frames load near the screen, not ahead of the LCP.
@@ -117,91 +154,113 @@ function actionFor(example: PlaygroundExample, active = false) {
         data-testid="example-item"
       >
         <figure class="flex flex-col gap-2">
-          <button
-            type="button"
-            :aria-label="`${example.title}: ${
-              example.sampleOnly
-                ? actionFor(example)
-                : t('workshop.examples.open')
-            }`"
-            :aria-current="example.id === activeId ? 'true' : undefined"
-            :disabled
-            class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            data-testid="example-card"
-            :title="`${example.title} · ${actionFor(
-              example,
-              example.id === activeId
-            )}`"
-            @click="emit('open', example)"
-          >
-            <span
-              :class="
-                cn(
-                  'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
-                  example.id === activeId
-                    ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-warm-white'
-                    : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
-                )
-              "
-              data-testid="example-thumbnail"
+          <div class="relative">
+            <button
+              type="button"
+              :aria-label="`${example.title}: ${
+                example.sampleOnly
+                  ? actionFor(example)
+                  : t('workshop.examples.open')
+              }`"
+              :aria-current="example.id === activeId ? 'true' : undefined"
+              :disabled
+              class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="example-card"
+              :title="`${example.title} · ${actionFor(
+                example,
+                example.id === activeId
+              )}`"
+              @click="emit('open', example)"
             >
-              <video
-                v-if="
-                  example.mediaKind === 'video' || isVideoUrl(example.outputUrl)
+              <span
+                :class="
+                  cn(
+                    'relative block aspect-video overflow-hidden rounded-lg bg-primary-comfy-ink-light ring-1 transition-all',
+                    example.id === activeId
+                      ? 'ring-2 ring-primary-comfy-yellow group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary-warm-white'
+                      : 'ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110 group-focus-visible:ring-primary-comfy-yellow'
+                  )
                 "
-                :src="videoPosterUrl(example.outputUrl)"
-                :aria-label="altOf(example)"
-                class="size-full object-cover"
-                muted
-                playsinline
-                :preload="videoPreload"
-                data-testid="example-video"
-              />
-              <Music2
-                v-else-if="example.mediaKind === 'audio'"
-                class="size-full px-3"
-                aria-hidden="true"
-              />
-              <img
-                v-else-if="example.outputUrl"
-                :src="example.outputUrl"
-                :alt="altOf(example)"
-                class="size-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
+                data-testid="example-thumbnail"
+              >
+                <video
+                  v-if="isVideo(example)"
+                  :ref="(element) => bindVideo(example.id, element)"
+                  :src="videoSrc(example)"
+                  :poster="videoPoster"
+                  :aria-label="altOf(example)"
+                  class="size-full object-cover"
+                  muted
+                  playsinline
+                  :preload="videoPreload"
+                  data-testid="example-video"
+                  @play="playingId = example.id"
+                  @pause="stopped(example.id)"
+                  @ended="stopped(example.id)"
+                />
+                <Music2
+                  v-else-if="example.mediaKind === 'audio'"
+                  class="size-full px-3"
+                  aria-hidden="true"
+                />
+                <img
+                  v-else-if="example.outputUrl"
+                  :src="example.outputUrl"
+                  :alt="altOf(example)"
+                  class="size-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
 
-              <span
-                v-if="example.id === activeId"
-                class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
-                data-testid="example-chosen"
-              >
-                <Check class="size-3" :stroke-width="3" aria-hidden="true" />
-              </span>
-              <span
-                v-else
-                class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                aria-hidden="true"
-              >
-                {{ actionFor(example) }}
-              </span>
-
-              <span
-                class="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-linear-to-t from-black/85 to-transparent px-2 pt-6 pb-1.5"
-              >
-                <span class="line-clamp-1 text-xs text-primary-warm-white">
-                  {{ example.title }}
+                <span
+                  v-if="example.id === activeId"
+                  class="absolute top-1.5 right-1.5 grid size-5 place-items-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
+                  data-testid="example-chosen"
+                >
+                  <Check class="size-3" :stroke-width="3" aria-hidden="true" />
                 </span>
                 <span
-                  v-if="specsOf(example)"
-                  class="line-clamp-1 text-[11px] text-primary-comfy-canvas/70"
-                  data-testid="example-specs"
+                  v-else
+                  class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                  aria-hidden="true"
                 >
-                  {{ specsOf(example) }}
+                  {{ actionFor(example) }}
+                </span>
+
+                <span
+                  class="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-linear-to-t from-black/85 to-transparent px-2 pt-6 pb-1.5"
+                >
+                  <span class="line-clamp-1 text-xs text-primary-warm-white">
+                    {{ example.title }}
+                  </span>
+                  <span
+                    v-if="specsOf(example)"
+                    class="line-clamp-1 text-[11px] text-primary-comfy-canvas/70"
+                    data-testid="example-specs"
+                  >
+                    {{ specsOf(example) }}
+                  </span>
                 </span>
               </span>
-            </span>
-          </button>
+            </button>
+            <button
+              v-if="playable && isVideo(example)"
+              type="button"
+              :aria-label="`${example.title}: ${t(
+                playingId === example.id ? 'player.pause' : 'player.play'
+              )}`"
+              class="absolute top-1/2 left-1/2 grid size-10 -translate-1/2 cursor-pointer place-items-center rounded-full bg-black/70 text-primary-warm-white transition-colors outline-none hover:bg-black/85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+              data-testid="example-playback"
+              @click="togglePlayback(example)"
+            >
+              <Pause
+                v-if="playingId === example.id"
+                class="size-4"
+                aria-hidden="true"
+              />
+              <Play v-else class="ml-0.5 size-4" aria-hidden="true" />
+            </button>
+          </div>
           <audio
             v-if="example.mediaKind === 'audio'"
             :src="example.outputUrl"

@@ -1,8 +1,10 @@
 import { z } from 'astro/zod'
+import { workflowCatalogDetailsSchema } from './workflow-catalog-details'
 
 import {
   modelSchema,
   routerModelSchema,
+  localModelSchema,
   workflowModelSchema,
   readModelsData
 } from './models-catalogue-data'
@@ -26,18 +28,33 @@ const routerDetailSchema = generatedModelSchema
 
 const workflowDetailSchema = generatedModelSchema
   .extend(workflowModelSchema.shape)
-  .extend({ workflow: workshopWorkflowDefinitionSchema })
+  .extend({
+    workflow: workshopWorkflowDefinitionSchema,
+    catalogDetails: workflowCatalogDetailsSchema.optional()
+  })
   .refine((model) => model.workflowId === model.workflow.id)
-  .transform((model) => ({
-    ...model,
-    form: formForWorkflow(model.workflow)
-  }))
+  .transform((model, ctx) => {
+    try {
+      return { ...model, form: formForWorkflow(model.workflow) }
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: String(error) })
+      return z.NEVER
+    }
+  })
 
-const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
+const localDetailSchema = generatedModelSchema
+  .extend(localModelSchema.shape)
+  .extend({ catalogDetails: workflowCatalogDetailsSchema.optional() })
+
+export const detailSchema = z.union([
+  routerDetailSchema,
+  workflowDetailSchema,
+  localDetailSchema
+])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
-const modelsPageDataSchema = z.object({
+export const modelsPageDataSchema = z.object({
   kind: z.literal('page'),
   model: detailSchema,
   related: z.array(modelSchema),
@@ -48,7 +65,9 @@ const modelsPageDataSchema = z.object({
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),
-  restTagCount: z.number()
+  restTagCount: z.number(),
+  catalogUID: z.uuid().optional(),
+  canEdit: z.boolean().optional()
 })
 
 export type ModelsPageData = z.output<typeof modelsPageDataSchema>

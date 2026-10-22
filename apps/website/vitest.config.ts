@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
     alias: {
+      'astro:middleware': 'astro/middleware',
       'astro:env/client': fileURLToPath(
         new URL('./src/test/astroEnv.ts', import.meta.url)
       )

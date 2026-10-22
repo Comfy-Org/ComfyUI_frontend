@@ -56,7 +56,7 @@ export function hubItemOf(
   const kind =
     model.type === 'APP'
       ? 'app'
-      : model.routerId === undefined
+      : model.type === 'CLOUD' || model.type === 'SERVERLESS'
         ? 'workflow'
         : 'model'
   return { kind, slug: model.slug }

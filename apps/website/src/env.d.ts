@@ -1,10 +1,14 @@
 import 'astro/client'
 import type { t } from './i18n/translations'
+import type { AuthoringSession } from './lib/cms/authoring-session'
+import type { CatalogLocale } from './config/catalog-locales'
 
 declare global {
   namespace App {
     interface Locals {
       t: typeof t
+      catalogAuthoring?: AuthoringSession
+      catalogLocale?: CatalogLocale
     }
   }
 

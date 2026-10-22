@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
+    "@astrojs/vercel": "catalog:",
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
@@ -122,6 +123,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "undici": "catalog:",
+    "uuid": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:"
   }

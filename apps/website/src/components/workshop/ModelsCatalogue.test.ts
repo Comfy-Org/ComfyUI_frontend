@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+// @vitest-environment-options {"settings":{"navigation":{"disableMainFrameNavigation":true,"disableChildPageNavigation":true}}}
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -94,6 +96,107 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  it('includes local models in their authored category without a router ID', async () => {
+    render(ModelsCatalogue, {
+      props: {
+        section: 'models',
+        models: [
+          {
+            type: 'MODEL',
+            slug: 'local-model',
+            name: 'Local model',
+            href: '/hub/models/local-model/',
+            workflowCount: 0,
+            capabilities: [],
+            useCases: ['generate-images']
+          }
+        ]
+      }
+    })
+    expect(
+      await screen.findByRole('link', { name: /Local model/ })
+    ).toHaveAttribute('href', '/hub/models/local-model/')
+  })
+  it.for(['models', 'workflows', 'apps'] as const)(
+    'keeps all native tab hrefs in Chinese for the selected CMS %s section',
+    async (section) => {
+      render(ModelsCatalogue, {
+        props: {
+          models: launchModels,
+          section,
+          locale: 'zh-CN',
+          optimisticNavigation: true
+        }
+      })
+      await screen.findByTestId('catalogue-tab-models')
+      for (const tab of ['models', 'workflows', 'apps']) {
+        expect(screen.getByTestId(`catalogue-tab-${tab}`)).toHaveAttribute(
+          'href',
+          `/zh-CN/hub/${tab}/`
+        )
+      }
+    }
+  )
+
+  it('preserves the Apps visibility flag when optimistic navigation is enabled', () => {
+    appsEnabled.value = false
+    render(ModelsCatalogue, {
+      props: { models: launchModels, optimisticNavigation: true }
+    })
+    expect(screen.queryByTestId('catalogue-tab-apps')).toBeNull()
+    expect(screen.getByTestId('catalogue-tab-workflows')).toBeVisible()
+  })
+
+  it('displays the intended section before navigation completes and replaces it with authoritative props', async () => {
+    const fetchData = vi.fn<typeof fetch>()
+    vi.mocked(fetch).mockImplementation(fetchData)
+    const view = render(ModelsCatalogue, {
+      props: { models: launchModels, optimisticNavigation: true }
+    })
+    await userEvent.setup().click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(screen.queryByTestId('workshop-sections')).toBeNull()
+    expect(view.emitted('displayedSection')).toContainEqual(['workflows'])
+    expect(fetchData).not.toHaveBeenCalled()
+    await view.rerender({
+      section: 'apps',
+      models: launchModels.filter((model) => model.type === 'APP')
+    })
+    expect(await screen.findByTestId('apps-catalogue')).toBeVisible()
+    expect(screen.queryByTestId('workflow-catalogue')).toBeNull()
+    expect(view.emitted('displayedSection')).toContainEqual(['apps'])
+  })
+
+  it('keeps ordinary section links as navigation without locally changing the catalogue', async () => {
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    await userEvent.setup().click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(screen.getByTestId('workshop-search')).toBeVisible()
+    expect(screen.queryByTestId('workflow-catalogue')).toBeNull()
+  })
+
+  it('rolls back the local section when navigation does not replace the page', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, optimisticNavigation: true }
+    })
+    await userEvent.setup().click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(await screen.findByTestId('workshop-search')).toBeVisible()
+    expect(screen.queryByTestId('workflow-catalogue')).toBeNull()
+  })
+
+  it('does not switch an opted-in catalogue for a modified click', async () => {
+    render(ModelsCatalogue, {
+      props: { models: launchModels, optimisticNavigation: true }
+    })
+    const user = userEvent.setup()
+    await user.keyboard('{Control>}')
+    await user.click(screen.getByTestId('catalogue-tab-workflows'))
+    await user.keyboard('{/Control}')
+    expect(screen.getByTestId('workshop-search')).toBeVisible()
+    expect(screen.queryByTestId('workflow-catalogue')).toBeNull()
+  })
+
   it.for([
     {
       locale: 'en',

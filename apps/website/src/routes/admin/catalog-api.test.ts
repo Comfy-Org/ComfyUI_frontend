@@ -1,0 +1,572 @@
+// @vitest-environment node
+import { createContext } from 'astro/middleware'
+import { describe, expect, it, vi } from 'vitest'
+import { AUTHORING_CSRF_COOKIE } from '@/lib/cms/authoring-session'
+import { CONTEXT_COOKIE } from '@/lib/cms/admin'
+import { fixtureReview } from '@/lib/cms/staging-fixture'
+import { fixtureReceipt } from '@/lib/cms/review-receipt-fixture'
+import {
+  stagePayload,
+  discardPayload,
+  checkedReviewPayload
+} from '@/lib/cms/staging-review'
+import { GET, POST } from './catalog-api'
+
+function context(
+  operation: string,
+  options: {
+    method?: string
+    apply?: boolean
+    anonymous?: boolean
+    origin?: string
+    query?: string
+    body?: unknown
+  } = {}
+) {
+  const ctx = createContext({
+    request: new Request(
+      `https://website.example/admin/catalog-api/${operation}${options.query ?? ''}`,
+      {
+        method: options.method ?? 'POST',
+        headers: {
+          Origin: options.origin ?? 'https://website.example',
+          'X-Comfy-CSRF': 'a'.repeat(64),
+          'Idempotency-Key': 'review-fixture-key',
+          'Content-Type': 'application/json'
+        },
+        body:
+          options.body === undefined ? undefined : JSON.stringify(options.body)
+      }
+    ),
+    defaultLocale: 'en',
+    clientAddress: '127.0.0.1'
+  })
+  ctx.params.operation = operation
+  ctx.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+  if (!options.anonymous)
+    ctx.locals.catalogAuthoring = {
+      csrf: 'a'.repeat(64),
+      credential: 'server-only-fixture',
+      actor_uid: '00000000-0000-4000-8000-000000000004',
+      owner_uid: '00000000-0000-4000-8000-000000000001',
+      can_edit: true,
+      can_apply: options.apply ?? true,
+      state: fixtureReview().state
+    }
+  return ctx
+}
+function backend(status = 200, body: unknown = fixtureReview()) {
+  vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+  vi.stubEnv('VERCEL_ENV', 'preview')
+  const fetcher = vi.fn<typeof fetch>(async () =>
+    Response.json(body, { status })
+  )
+  vi.mocked(fetch).mockImplementation(fetcher)
+  return fetcher
+}
+describe('catalog staging same-origin facade', () => {
+  it('forwards a bounded generated receipt without fetching full records or requiring a write retry key', async () => {
+    const snapshot = fixtureReview()
+    const ids = snapshot.items.map((item) => item.content.uid)
+    const receipt = await fixtureReceipt(snapshot, ids)
+    const fetcher = backend(200, receipt)
+    const body = checkedReviewPayload(snapshot, ids)
+    const ctx = context('review-receipt', { body })
+    ctx.request.headers.delete('Idempotency-Key')
+    const response = await POST(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(receipt)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(fetcher).toHaveBeenCalledOnce()
+    const [url, request] = fetcher.mock.calls[0] ?? []
+    expect(String(url)).toBe(
+      'http://catalog.example/api/v1/catalog/draft/final-review/receipt'
+    )
+    expect(JSON.parse(String(request?.body))).toEqual(body)
+  })
+  it.for([
+    { label: 'anonymous', options: { anonymous: true }, expected: 404 },
+    { label: 'no apply permission', options: { apply: false }, expected: 404 },
+    {
+      label: 'cross origin',
+      options: { origin: 'https://evil.example' },
+      expected: 403
+    },
+    { label: 'unknown query', options: { query: '?all=true' }, expected: 400 }
+  ])(
+    'refuses receipt $label before forwarding',
+    async ({ options, expected }) => {
+      const snapshot = fixtureReview()
+      const fetcher = backend()
+      const body = checkedReviewPayload(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      expect(
+        (await POST(context('review-receipt', { ...options, body }))).status
+      ).toBe(expected)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it.for(['full records', 'oversized', 'truncated', 'future receipt'] as const)(
+    'refuses %s instead of falling back to full review',
+    async (variant) => {
+      const snapshot = fixtureReview()
+      const receipt = await fixtureReceipt(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      const responses = {
+        'full records': Response.json({ ...receipt, changes: snapshot.items }),
+        oversized: new Response('x'.repeat((16 << 10) + 1)),
+        truncated: new Response('{"receipt_version":'),
+        'future receipt': Response.json({ ...receipt, receipt_version: 2 })
+      }
+      const fetcher = backend()
+      fetcher.mockResolvedValueOnce(responses[variant])
+      const body = checkedReviewPayload(
+        snapshot,
+        snapshot.items.map((item) => item.content.uid)
+      )
+      expect((await POST(context('review-receipt', { body }))).status).toBe(503)
+      expect(fetcher).toHaveBeenCalledOnce()
+    }
+  )
+  it.for([
+    {
+      operation: 'final-review',
+      body: {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids: ['00000000-0000-4000-8000-000000000001']
+      }
+    },
+    {
+      operation: 'publish',
+      body: {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids: ['00000000-0000-4000-8000-000000000001'],
+        expected_selection_digest: 'b'.repeat(64)
+      }
+    }
+  ])(
+    'preserves only bounded validation details for $operation',
+    async ({ operation, body }) => {
+      backend(422, {
+        field_errors: [
+          { path: '$.workflow_versions[0].download', message: 'Missing media' }
+        ],
+        debug_secret: 'never forward'
+      })
+      const response = await POST(context(operation, { body }))
+      expect(response.status).toBe(422)
+      expect(await response.json()).toEqual({
+        field_errors: [
+          { path: '$.workflow_versions[0].download', message: 'Missing media' }
+        ]
+      })
+      expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    }
+  )
+
+  it.for(['final-review', 'review-receipt', 'publish', 'discard-changes'])(
+    'does not forward malformed or oversized authority errors for %s',
+    async (operation) => {
+      const snapshot = fixtureReview()
+      const body =
+        operation === 'discard-changes'
+          ? discardPayload(
+              snapshot,
+              snapshot.items.map((item) => item.content.uid)
+            )
+          : {
+              review: {
+                expected_live_rev: 1,
+                expected_draft_rev: 7,
+                expected_draft_generation: 5
+              },
+              selected_uids: ['00000000-0000-4000-8000-000000000001'],
+              ...(operation === 'publish'
+                ? { expected_selection_digest: 'b'.repeat(64) }
+                : {})
+            }
+      for (const error of [
+        { field_errors: [{ path: 3, message: 'never forward' }] },
+        { field_errors: [{ path: '$', message: 'x'.repeat(65537) }] },
+        { field_errors: [{ path: '$', message: 'x'.repeat(1001) }] }
+      ]) {
+        backend(422, error)
+        const response = await POST(context(operation, { body }))
+        expect([422, 503]).toContain(response.status)
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+        const text = await response.text()
+        expect(text).not.toContain('field_errors')
+        expect(text).not.toContain('never forward')
+      }
+    }
+  )
+
+  it.for([
+    { edit: false, apply: false, staging: 404, exit: 404 },
+    { edit: true, apply: false, staging: 200, exit: 204 },
+    { edit: false, apply: true, staging: 200, exit: 204 },
+    { edit: true, apply: true, staging: 200, exit: 204 }
+  ])(
+    'opens the facade with either capability (edit=$edit apply=$apply)',
+    async ({ edit, apply, staging, exit }) => {
+      backend()
+      const read = context('staging', { method: 'GET', apply })
+      const leave = context('exit', { apply })
+      for (const ctx of [read, leave])
+        if (ctx.locals.catalogAuthoring)
+          ctx.locals.catalogAuthoring.can_edit = edit
+      expect((await GET(read)).status).toBe(staging)
+      expect((await POST(leave)).status).toBe(exit)
+    }
+  )
+  it('forwards read-only checked review with CSRF but no mutation retry key', async () => {
+    const r = fixtureReview()
+    const final = {
+      state: r.state,
+      changes: r.items,
+      deferred: [],
+      selection_digest: 'b'.repeat(64),
+      publish_enabled: true
+    }
+    const fetcher = backend(200, final)
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      selected_uids: [r.items[0].content.uid]
+    }
+    const ctx = context('final-review', { body })
+    ctx.request.headers.delete('Idempotency-Key')
+    const response = await POST(ctx)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(final)
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/draft/final-review'
+    )
+    expect(fetcher.mock.calls[0]?.[1]?.method).toBe('POST')
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+  it('does not forward checked review from an unauthorized account or cross-origin request', async () => {
+    const fetcher = backend()
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      selected_uids: [fixtureReview().items[0].content.uid]
+    }
+    expect(
+      (await POST(context('final-review', { body, apply: false }))).status
+    ).toBe(404)
+    expect(
+      (
+        await POST(
+          context('final-review', { body, origin: 'https://evil.example' })
+        )
+      ).status
+    ).toBe(403)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it.for([
+    [],
+    null,
+    ['bad'],
+    [
+      '00000000-0000-4000-8000-000000000010',
+      '00000000-0000-4000-8000-000000000010'
+    ]
+  ])(
+    'refuses invalid checked review selection %j before forwarding',
+    async (selected_uids) => {
+      const fetcher = backend()
+      const body = {
+        review: {
+          expected_live_rev: 1,
+          expected_draft_rev: 7,
+          expected_draft_generation: 5
+        },
+        selected_uids
+      }
+      expect((await POST(context('final-review', { body }))).status).toBe(400)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it('preserves the checked IDs in publication instead of stripping them to the legacy body', async () => {
+    const state = {
+      ...fixtureReview().state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9,
+      previous_live_rev: 1,
+      draft_generation: 0
+    }
+    const fetcher = backend(200, state)
+    const body = {
+      review: {
+        expected_live_rev: 1,
+        expected_draft_rev: 7,
+        expected_draft_generation: 5
+      },
+      expected_selection_digest: 'b'.repeat(64),
+      selected_uids: [fixtureReview().items[0].content.uid]
+    }
+    expect((await POST(context('publish', { body }))).status).toBe(200)
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual(body)
+  })
+  it('retries an ambiguous publish with the same key and selection without legacy follow-up writes', async () => {
+    const state = {
+      ...fixtureReview().state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9
+    }
+    const body = {
+      ...checkedReviewPayload(fixtureReview(), [
+        fixtureReview().items[0].content.uid
+      ]),
+      expected_selection_digest: 'b'.repeat(64)
+    }
+    const fetcher = backend(200, state)
+    fetcher.mockRejectedValueOnce(new TypeError('Connection lost after commit'))
+    expect((await POST(context('publish', { body }))).status).toBe(503)
+    const retried = await POST(context('publish', { body }))
+    expect(retried.status).toBe(200)
+    expect(await retried.json()).toEqual(state)
+    const expected = {
+      path: '/api/v1/catalog/draft/publish',
+      key: 'review-fixture-key',
+      body
+    }
+    expect(
+      fetcher.mock.calls.map(([url, init]) => ({
+        path: new URL(String(url)).pathname,
+        key: new Headers(init?.headers).get('Idempotency-Key'),
+        body: JSON.parse(String(init?.body))
+      }))
+    ).toEqual([expected, expected])
+  })
+
+  it('never treats a publication conflict as successful approval', async () => {
+    const body = {
+      ...checkedReviewPayload(fixtureReview(), [
+        fixtureReview().items[0].content.uid
+      ]),
+      expected_selection_digest: 'b'.repeat(64)
+    }
+    const fetcher = backend(409, {
+      message: 'Submission changed or already reviewed'
+    })
+    const response = await POST(context('publish', { body }))
+    expect(response.status).toBe(409)
+    expect(fetcher).toHaveBeenCalledOnce()
+    expect(response.headers.get('Location')).toBeNull()
+  })
+
+  it('requires publisher authority and CSRF for temporary publication', async () => {
+    const r = fixtureReview()
+    const payload = {
+      review: {
+        expected_live_rev: r.state.live_rev,
+        expected_draft_rev: r.state.draft_rev,
+        expected_draft_generation: r.state.draft_generation
+      },
+      expected_selection_digest: r.selection_digest
+    }
+    const state = {
+      ...r.state,
+      live_rev: 7,
+      draft_rev: 8,
+      next_rev: 9,
+      previous_live_rev: 1,
+      draft_generation: 0
+    }
+    const fetcher = backend(200, state)
+    expect(
+      (await POST(context('publish', { apply: false, body: payload }))).status
+    ).toBe(404)
+    expect(
+      (
+        await POST(
+          context('publish', { origin: 'https://evil.example', body: payload })
+        )
+      ).status
+    ).toBe(403)
+    expect(
+      (
+        await POST(
+          context('publish', { body: { ...payload, publish_enabled: true } })
+        )
+      ).status
+    ).toBe(400)
+    expect(fetcher).not.toHaveBeenCalled()
+    const response = await POST(context('publish', { body: payload }))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(state)
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/draft/publish'
+    )
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+  it('requires edit, not apply, for explicit discard and preserves dependency errors', async () => {
+    const initial = fixtureReview()
+    const payload = discardPayload(
+      initial,
+      initial.items.map((item) => item.content.uid)
+    )
+    const fetcher = backend(422, {
+      field_errors: [{ path: '$.workflow_uid', message: 'Missing target' }]
+    })
+    const response = await POST(
+      context('discard-changes', { apply: false, body: payload })
+    )
+    expect(response.status).toBe(422)
+    expect(await response.json()).toEqual({
+      field_errors: [{ path: '$.workflow_uid', message: 'Missing target' }]
+    })
+    expect(String(fetcher.mock.calls[0]?.[0])).toBe(
+      'http://catalog.example/api/v1/catalog/draft/discard-changes'
+    )
+    const applyOnly = context('discard-changes', { body: payload })
+    if (applyOnly.locals.catalogAuthoring)
+      applyOnly.locals.catalogAuthoring.can_edit = false
+    expect((await POST(applyOnly)).status).toBe(404)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+  it('rejects discard without confirmation, duplicate exact targets, unknown fields or cross-origin', async () => {
+    const initial = fixtureReview()
+    const payload = discardPayload(
+      initial,
+      initial.items.map((item) => item.content.uid)
+    )
+    const fetcher = backend()
+    for (const body of [
+      { ...payload, confirm_discard: false },
+      { ...payload, targets: [] },
+      { ...payload, targets: [...payload.targets, ...payload.targets] },
+      { ...payload, query: '$.title' }
+    ]) {
+      expect((await POST(context('discard-changes', { body }))).status).toBe(
+        400
+      )
+    }
+    expect(
+      (
+        await POST(
+          context('discard-changes', {
+            body: payload,
+            origin: 'https://evil.example'
+          })
+        )
+      ).status
+    ).toBe(403)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it.for([{ anonymous: true }, { apply: false }])(
+    'refuses unauthorized staging mutations',
+    async (options) => {
+      const fetcher = backend()
+      expect(
+        (
+          await POST(
+            context('staging', {
+              ...options,
+              body: stagePayload(fixtureReview(), 'APPROVED', true)
+            })
+          )
+        ).status
+      ).toBe(404)
+      expect(fetcher).not.toHaveBeenCalled()
+    }
+  )
+  it('rejects cross-origin, arbitrary query and unsupported JSON before contacting the backend', async () => {
+    const fetcher = backend()
+    expect(
+      (await POST(context('staging', { origin: 'https://evil.example' })))
+        .status
+    ).toBe(403)
+    expect(
+      (await GET(context('staging', { method: 'GET', query: '?json_path=x' })))
+        .status
+    ).toBe(400)
+    expect(
+      (
+        await POST(
+          context('staging', {
+            body: {
+              ...stagePayload(fixtureReview(), 'APPROVED', true),
+              extra: true
+            }
+          })
+        )
+      ).status
+    ).toBe(400)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+  it('forwards frozen selection and idempotency using server-only credentials, private responses', async () => {
+    const fetcher = backend()
+    const payload = stagePayload(fixtureReview(), 'DEFERRED', true)
+    const response = await POST(context('staging', { body: payload }))
+    expect(response.status).toBe(200)
+    const [url, init] = fetcher.mock.calls[0] ?? []
+    expect(String(url)).toBe(
+      'http://catalog.example/api/v1/catalog/draft/staging'
+    )
+    expect(new Headers(init?.headers).get('Authorization')).toBe(
+      'Bearer server-only-fixture'
+    )
+    expect(new Headers(init?.headers).get('Idempotency-Key')).toBe(
+      'review-fixture-key'
+    )
+    expect(
+      typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
+    ).toEqual(payload)
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(await response.text()).not.toContain('server-only-fixture')
+  })
+  it('preserves backend stale-review refusal instead of returning success', async () => {
+    backend(409, {})
+    expect(
+      (
+        await POST(
+          context('staging', {
+            body: stagePayload(fixtureReview(), 'APPROVED', true)
+          })
+        )
+      ).status
+    ).toBe(409)
+  })
+  it('hides final review from edit-only accounts and rejects malformed upstream success', async () => {
+    const fetcher = backend(200, {})
+    expect(
+      (await GET(context('final-review', { method: 'GET', apply: false })))
+        .status
+    ).toBe(404)
+    expect(fetcher).not.toHaveBeenCalled()
+    expect((await GET(context('staging', { method: 'GET' }))).status).toBe(503)
+  })
+  it('clears Preview only after a same-origin verified exit, without clearing authoring cookies', async () => {
+    const fetcher = backend()
+    const ctx = context('exit')
+    ctx.cookies.set(CONTEXT_COOKIE, 'legacy-preview')
+    expect((await POST(ctx)).status).toBe(204)
+    expect(ctx.cookies.get(CONTEXT_COOKIE)).toBeUndefined()
+    expect(ctx.cookies.get(AUTHORING_CSRF_COOKIE)?.value).toBe('a'.repeat(64))
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+})

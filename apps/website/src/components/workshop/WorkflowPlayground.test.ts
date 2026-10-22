@@ -20,6 +20,10 @@ import type { WorkflowState } from '@/config/workshop-workflow-state'
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
 import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '@/test/fakeIntersectionObserver'
+import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
@@ -333,6 +337,102 @@ describe('WorkflowPlayground primary action', () => {
 })
 
 describe('WorkflowPlayground examples', () => {
+  it.for([
+    {
+      name: 'image hero',
+      thumbnail: {
+        kind: 'image' as const,
+        url: '/preview-media/6/image/exact'
+      },
+      poster: '/preview-media/6/image/exact',
+      preload: 'metadata',
+      src: '/preview-media/6/video/exact'
+    },
+    {
+      name: 'video hero with a still poster',
+      thumbnail: {
+        kind: 'video' as const,
+        url: '/preview-media/6/hero-video/exact',
+        poster: '/preview-media/6/still/exact'
+      },
+      poster: '/preview-media/6/still/exact',
+      preload: 'metadata',
+      src: '/preview-media/6/video/exact'
+    },
+    {
+      name: 'video hero without a still poster',
+      thumbnail: {
+        kind: 'video' as const,
+        url: '/preview-media/6/hero-video/exact'
+      },
+      poster: null,
+      preload: 'metadata',
+      src: '/preview-media/6/video/exact#t=0.1'
+    }
+  ])(
+    'shows a video example with $name without using video bytes as a poster',
+    async ({ thumbnail, poster, preload, src }) => {
+      stubIntersectionObserver()
+      const original = workflowDetailsBySlug.get('workflows/remove-background')
+      assert(original)
+      const model = {
+        ...original,
+        thumbnail,
+        thumbnailUrl: thumbnail.url,
+        examples: [
+          {
+            ...original.examples[0],
+            name: 'product-video',
+            title: 'Product video example',
+            thumbnailUrl: '/preview-media/6/video/exact',
+            mediaKind: 'video' as const
+          }
+        ]
+      }
+      render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+      await setAllIntersecting(true)
+      const video = screen.getByTestId('example-video')
+      expect(video.getAttribute('poster')).toBe(poster)
+      expect(video.getAttribute('preload')).toBe(preload)
+      expect(video.getAttribute('src')).toBe(src)
+    }
+  )
+
+  it('plays a video example without loading its inputs', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue()
+    const original = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(original)
+    const model = {
+      ...original,
+      examples: [
+        original.examples[0],
+        {
+          ...original.examples[0],
+          name: 'product-video',
+          title: 'Product video example',
+          thumbnailUrl: '/preview-media/6/video/exact',
+          mediaKind: 'video' as const
+        }
+      ]
+    }
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole('button', { name: 'Product video example: Play' })
+      )
+
+    expect(play).toHaveBeenCalledOnce()
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
   it.for([{ tab: 'Details' }, { tab: 'API' }])(
     'keeps the examples to the Playground tab, not $tab',
     async ({ tab }) => {

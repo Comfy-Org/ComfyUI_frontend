@@ -1,0 +1,20 @@
+---
+import CatalogPreviewController from '@/components/cms/preview/CatalogPreviewController.vue'
+interface Props {
+  bare: boolean
+}
+const { bare } = Astro.props
+const session = Astro.locals.catalogAuthoring
+---
+
+{session && (
+  <CatalogPreviewController
+    csrf={session.csrf}
+    view={session.preview?.view ?? 'LIVE'}
+    now={session.preview?.now}
+    locale={Astro.locals.catalogLocale ?? 'en'}
+    currentPath={Astro.url.pathname + Astro.url.search}
+    showEntry={!bare}
+    client:load
+  />
+)}

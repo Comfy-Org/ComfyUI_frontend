@@ -44,3 +44,26 @@ it.for([
 
   await expect(GET(context)).rejects.toThrow(error)
 })
+
+it.for([
+  { locale: 'ja', status: 200 },
+  { locale: 'zh-CN', status: 200 },
+  { locale: 'ko', status: 400 },
+  { locale: 'zh-cn', status: 400 }
+])(
+  'accepts every catalog locale and rejects others: $locale',
+  async ({ locale, status }) => {
+    const response = await GET(
+      createContext({
+        request: new Request(
+          `https://comfy.org/models/${modelSlug}/page.json?locale=${locale}`
+        ),
+        params: { slug: modelSlug },
+        defaultLocale: 'en'
+      })
+    )
+    expect(response.status).toBe(status)
+    if (status === 400)
+      expect(await response.text()).toBe('Invalid content locale')
+  }
+)

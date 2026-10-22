@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
+import vercel from '@astrojs/vercel'
 import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap, isIndexableBuild } from './src/config/indexing'
 import { DEFAULT_LOCALE, LOCALE_CODES } from './src/config/locales'
@@ -10,10 +11,33 @@ import { indexNowManifest } from './src/integrations/indexnow-manifest'
 import { markdownTwins } from './src/integrations/markdown-twins'
 import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
+import { cmsEnabled } from './src/lib/cms/cms-enabled'
 
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  adapter: cmsEnabled() ? vercel() : undefined,
+  security: {
+    checkOrigin: true,
+    allowedDomains: cmsEnabled()
+      ? (process.env.SITE_CATALOG_WEBSITE_ORIGINS ?? '')
+          .split(',')
+          .filter(Boolean)
+          .map((origin) => {
+            const url = new URL(origin)
+            return {
+              hostname: url.hostname,
+              protocol: url.protocol.slice(0, -1),
+              port: url.port
+            }
+          })
+      : []
+  },
+  server: {
+    allowedHosts: process.env.SITE_CATALOG_PREVIEW_HOST
+      ? [process.env.SITE_CATALOG_PREVIEW_HOST]
+      : []
+  },
   prefetch: { prefetchAll: true },
   // Astro 7 changed the compressHTML default to JSX-style whitespace stripping.
   // Keep the v6 HTML-aware behavior so inline spacing across the site is unchanged.
@@ -43,6 +67,9 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     resolve: { noExternal: ['three'] },
+    // gsap ships ESM files in a package Node reads as CommonJS, which the
+    // Vercel function cannot import by name; bundle it into server output.
+    ...(cmsEnabled() ? { ssr: { noExternal: ['gsap'] } } : {}),
     define: {
       'import.meta.env.PUBLIC_LAUNCH_DRAFTS':
         process.env.VERCEL_ENV === 'preview',

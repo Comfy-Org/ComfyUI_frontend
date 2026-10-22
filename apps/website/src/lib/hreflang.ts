@@ -1,6 +1,7 @@
 import { isNoindexPathname } from '@/config/indexing'
 import type { Hreflang, Locale } from '@/config/locales'
 import {
+  DEFAULT_LOCALE,
   LOCALE_CODES,
   LOCALES,
   NON_DEFAULT_LOCALE_PREFIXES,
@@ -8,6 +9,7 @@ import {
   withRouteSlash
 } from '@/config/locales'
 import { supportsLocaleRoute } from '@/config/routes'
+import { CATALOG_LOCALES } from '@/config/catalog-locales'
 
 export interface Alternate {
   hreflang: Hreflang | 'x-default'
@@ -28,10 +30,35 @@ export interface LocaleAlternate {
   path: string
 }
 
-export function localeAlternates(pathname: string): LocaleAlternate[] {
+export interface AlternateOptions {
+  /**
+   * True when the CMS serves the Hub: `/hub/*` then exists under every catalog
+   * locale prefix. The static (production) Hub is English-only.
+   */
+  localizedHub?: boolean
+}
+
+function isHubPath(path: string): boolean {
+  return path === '/hub' || path.startsWith('/hub/')
+}
+
+function hasLocaleRoute(
+  locale: Locale,
+  path: string,
+  options: AlternateOptions
+): boolean {
+  if (options.localizedHub && isHubPath(path))
+    return CATALOG_LOCALES.includes(locale)
+  return supportsLocaleRoute(locale, path)
+}
+
+export function localeAlternates(
+  pathname: string,
+  options: AlternateOptions = {}
+): LocaleAlternate[] {
   const en = englishPath(pathname)
   return LOCALE_CODES.flatMap((locale) => {
-    if (!supportsLocaleRoute(locale, en)) return []
+    if (!hasLocaleRoute(locale, en, options)) return []
     const path = withRouteSlash(
       `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
     )
@@ -39,12 +66,21 @@ export function localeAlternates(pathname: string): LocaleAlternate[] {
   })
 }
 
+export interface HreflangOptions extends AlternateOptions {
+  /** Locales whose version of this page is indexable; every locale when unset. */
+  indexableLocales?: readonly Locale[]
+}
+
 export function hreflangAlternates(
   pathname: string,
-  origin: string
+  origin: string,
+  options: HreflangOptions = {}
 ): Alternate[] {
-  const locales = localeAlternates(pathname).filter(
-    ({ path }) => !isNoindexPathname(path)
+  const { indexableLocales } = options
+  const locales = localeAlternates(pathname, options).filter(
+    ({ locale, path }) =>
+      !isNoindexPathname(path) &&
+      (!indexableLocales || indexableLocales.includes(locale))
   )
   // A cluster needs at least one translation to link to; a lone indexable
   // page has nothing to pair with, so hreflang has nothing to say.
@@ -54,10 +90,11 @@ export function hreflangAlternates(
     hreflang: LOCALES[locale].hreflang,
     href: new URL(path, origin).href
   }))
-  alternates.push({
-    hreflang: 'x-default',
-    href: new URL(withRouteSlash(englishPath(pathname)), origin).href
-  })
+  if (!indexableLocales || indexableLocales.includes(DEFAULT_LOCALE))
+    alternates.push({
+      hreflang: 'x-default',
+      href: new URL(withRouteSlash(englishPath(pathname)), origin).href
+    })
   return alternates
 }
 

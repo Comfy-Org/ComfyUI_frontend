@@ -397,6 +397,13 @@ function start() {
       :gallery-label="model.name"
       :active-id="activeExampleId"
       :disabled="formDisabled"
+      :locale="model.catalogDetails?.locale"
+      :video-poster="
+        model.thumbnail?.kind === 'image'
+          ? model.thumbnail.url
+          : model.thumbnail?.poster
+      "
+      playable
       @open="openExample"
     />
   </section>

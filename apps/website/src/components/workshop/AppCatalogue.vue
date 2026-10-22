@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
-import { computed, nextTick, watch } from 'vue'
+import { ChevronLeft, ChevronRight, Search } from '@lucide/vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -13,17 +13,54 @@ import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
 import CardRow from './CardRow.vue'
 import HubRowSeen from './HubRowSeen.vue'
 import WorkshopAppCard from './WorkshopAppCard.vue'
+import type { CatalogListPages } from '@/lib/cms/catalog-list'
 
 const ROW_LIMIT = 8
 
-const { apps, locale = 'en' } = defineProps<{
+const {
+  apps,
+  initialSearch,
+  serverPage,
+  locale = 'en'
+} = defineProps<{
   apps: readonly CatalogueApp[]
+  initialSearch?: string
+  serverPage?: CatalogListPages['apps']
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; search: [string] }>()
+const query = ref(new URLSearchParams(initialSearch).get('q') ?? '')
+let pending: ReturnType<typeof setTimeout> | undefined
+let requestedQuery: string | undefined
+watch(
+  () => initialSearch,
+  (search) => {
+    const received = new URLSearchParams(search).get('q') ?? ''
+    if (received !== requestedQuery || query.value === received)
+      query.value = received
+  }
+)
+watch(query, () => {
+  if (!serverPage) return
+  clearTimeout(pending)
+  if (
+    query.value.trim() === (new URLSearchParams(initialSearch).get('q') ?? '')
+  )
+    return
+  pending = setTimeout(() => {
+    requestedQuery = query.value.trim()
+    const params = new URLSearchParams(initialSearch)
+    params.delete('cursor')
+    params.set('p', '1')
+    if (query.value.trim()) params.set('q', query.value.trim())
+    else params.delete('q')
+    emit('search', params.toString())
+  }, 250)
+})
+onBeforeUnmount(() => clearTimeout(pending))
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 watch(browseAll, () => void nextTick(() => window.scrollTo({ top: 0 })))
 
@@ -57,7 +94,7 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
         {{ ac('allApps', locale) }}
         <span
           class="text-base font-normal text-primary-warm-gray tabular-nums"
-          >{{ apps.length }}</span
+          >{{ serverPage?.total ?? apps.length }}</span
         >
       </h2>
     </template>
@@ -67,6 +104,19 @@ function openApp(app: CatalogueApp, source: HubItemSource, position: number) {
       data-testid="workshop-toolbar"
     >
       <slot name="tabs" />
+      <label v-if="serverPage" class="relative ml-auto block w-full sm:w-96">
+        <Search
+          class="pointer-events-none absolute top-3 left-3.5 size-5 text-primary-warm-gray"
+          aria-hidden="true"
+        />
+        <input
+          v-model="query"
+          type="search"
+          :aria-label="t('cccCatalogPage.searchApps')"
+          :placeholder="t('cccCatalogPage.searchApps')"
+          class="h-11 w-full rounded-2xl bg-transparency-white-t4 pr-4 pl-11 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        />
+      </label>
     </div>
 
     <ul

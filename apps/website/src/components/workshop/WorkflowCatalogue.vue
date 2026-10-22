@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -12,6 +20,10 @@ import type {
 } from '@/config/models-catalogue'
 import { sortWorkshopModels } from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
+import type {
+  CatalogListPages,
+  CatalogListFacets
+} from '@/lib/cms/catalog-list'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { HUB_TOOLBAR_ID } from '@/scripts/hubToolbar'
@@ -27,6 +39,7 @@ import FeaturedBanner from './FeaturedBanner.vue'
 import type { FeaturedSlide } from './FeaturedBanner.vue'
 import { CARD_GRID, SHELF_CARD } from '@/lib/workshop/card-layout'
 import { modelSlides } from '@/lib/workshop/featured-slides'
+import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
 import type { FilterChip } from './WorkshopFilterChips.vue'
 import WorkshopFilterChips from './WorkshopFilterChips.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -37,10 +50,14 @@ import WorkshopSortMenu from './WorkshopSortMenu.vue'
 const {
   models,
   initialSearch,
+  serverPage,
+  serverFacets,
   locale = 'en'
 } = defineProps<{
   models: readonly WorkflowWorkshopModel[]
   initialSearch?: string
+  serverPage?: CatalogListPages['workflows']
+  serverFacets?: CatalogListFacets['workflows']
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -52,7 +69,7 @@ const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-const emit = defineEmits<{ section: [boolean] }>()
+const emit = defineEmits<{ section: [boolean]; search: [string] }>()
 watch(browseAll, (value) => emit('section', value), { immediate: true })
 // Browsing them all, the tabs give up the row and the search takes it.
 const searchClass = computed(() =>
@@ -64,25 +81,13 @@ watch(browseAll, () => {
 })
 const { submitSearch, quietly } = useHubCatalogueTracking('workflows', {
   query,
-  resultsCount: () => visible.value.length,
+  resultsCount: () => serverPage?.total ?? visible.value.length,
   filters: [
     ['category', () => selected.value],
     ['model', () => runsOn.value],
     ['sort', () => sort.value]
   ]
 })
-onMounted(() =>
-  quietly(() => {
-    const params = new URLSearchParams(initialSearch ?? location.search)
-    query.value = params.get('q') ?? ''
-    selected.value = params
-      .getAll('category')
-      .filter((id) => models.some((model) => model.category === id))
-    runsOn.value = params
-      .getAll('model')
-      .filter((name) => models.some((model) => model.models?.includes(name)))
-  })
-)
 
 function openWorkflow(model: WorkshopModel, position: number, row?: string) {
   if (row === undefined) submitSearch()
@@ -101,22 +106,90 @@ function openFeatured(slide: FeaturedSlide, position: number) {
     { surface: 'workflows', source: 'featured_banner', position }
   )
 }
+function readAddress(search: string, preserveQuery = false) {
+  const params = new URLSearchParams(search)
+  if (!preserveQuery) query.value = params.get('q') ?? ''
+  selected.value = params
+    .getAll('category')
+    .filter((id) =>
+      serverFacets
+        ? serverFacets.categories.some((category) => category.value === id)
+        : models.some((model) => (model.category ?? '') === id)
+    )
+  runsOn.value = params
+    .getAll('model')
+    .filter((name) =>
+      serverFacets
+        ? serverFacets.models.some((model) => model.value === name)
+        : models.some((model) => model.models?.includes(name))
+    )
+  if (serverPage)
+    sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
+}
+let searchReady = false
+let requestedQuery: string | undefined
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+onMounted(() => {
+  quietly(() => readAddress(initialSearch ?? location.search))
+  void nextTick(() => {
+    searchReady = true
+  })
+})
+watch(
+  () => initialSearch,
+  (search) => {
+    if (serverPage) {
+      const receivedQuery = new URLSearchParams(search).get('q') ?? ''
+      quietly(() =>
+        readAddress(
+          search ?? '',
+          receivedQuery === requestedQuery && query.value !== receivedQuery
+        )
+      )
+    }
+  }
+)
+watch(
+  [query, selected, runsOn, sort],
+  () => {
+    if (!serverPage || !searchReady) return
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      const params = new URLSearchParams(initialSearch ?? location.search)
+      for (const key of ['q', 'category', 'model', 'sort', 'p', 'cursor'])
+        params.delete(key)
+      if (query.value) params.set('q', query.value)
+      for (const value of selected.value) params.append('category', value)
+      for (const value of runsOn.value) params.append('model', value)
+      if (sort.value !== 'popular') params.set('sort', sort.value)
+      const search = params.toString()
+      const current = new URLSearchParams(initialSearch ?? location.search)
+      current.delete('p')
+      current.delete('cursor')
+      if (search !== current.toString()) {
+        requestedQuery = query.value
+        emit('search', search)
+      }
+    }, 200)
+  },
+  { deep: true }
+)
+onBeforeUnmount(() => clearTimeout(searchTimer))
 
 const rows = computed(() =>
   models
     .filter(
       (model, index) =>
-        models.findIndex((other) => other.category === model.category) === index
+        models.findIndex(
+          (other) => (other.category ?? '') === (model.category ?? '')
+        ) === index
     )
     .map((category) => ({
       id: category.category ?? '',
-      label:
-        category.categoryLabel?.[locale === 'zh-CN' ? locale : 'en'] ??
-        category.category ??
-        '',
+      label: workflowCategoryLabel(category, locale),
       order: category.categoryOrder ?? Infinity,
       models: models
-        .filter((model) => model.category === category.category)
+        .filter((model) => (model.category ?? '') === (category.category ?? ''))
         .sort((a, b) =>
           sort.value === 'name'
             ? a.name.localeCompare(b.name)
@@ -125,16 +198,28 @@ const rows = computed(() =>
     }))
     .sort((a, b) => a.order - b.order)
 )
-const options = computed(() =>
-  rows.value.map((category) => ({
-    value: category.id,
-    label: category.label,
-    count: category.models.length
-  }))
+const options = computed(
+  () =>
+    serverFacets?.categories.map((category) => ({
+      ...category,
+      label:
+        category.label.trim() ||
+        workflowCategoryLabel({ category: category.value }, locale)
+    })) ??
+    rows.value.map((category) => ({
+      value: category.id,
+      label: category.label,
+      count: category.models.length
+    }))
 )
 // An outcome is reached through the model it runs on as often as through the
 // task it performs, and one workflow can stand on several.
 const modelOptions = computed(() => {
+  if (serverFacets)
+    return serverFacets.models.map((model) => ({
+      ...model,
+      label: model.label ?? model.value
+    }))
   const counts = new Map<string, number>()
   for (const model of models)
     for (const name of model.models ?? [])
@@ -158,6 +243,7 @@ const searched = computed(
   () => new Set(searchWorkshopModels(models, { query: query.value }))
 )
 const visible = computed(() => {
+  if (serverPage?.mode === 'cursor') return models
   const matching = matchingCategories.value.filter((model) =>
     searched.value.has(model)
   )
@@ -188,7 +274,11 @@ const chips = computed<FilterChip[]>(() => [
   })),
   ...runsOn.value.map((name) => ({
     key: `model:${name}`,
-    label: t('workshop.filter.runsOn', { model: name })
+    label: t('workshop.filter.runsOn', {
+      model:
+        modelOptions.value.find((option) => option.value === name)?.label ??
+        name
+    })
   }))
 ])
 
@@ -262,7 +352,7 @@ function leaveSection() {
           kind="workflows"
           :use-case-options="options"
           :model-options="modelOptions"
-          :result-count="visible.length"
+          :result-count="serverPage ? serverPage.total : visible.length"
           :locale
         />
         <WorkshopSortMenu

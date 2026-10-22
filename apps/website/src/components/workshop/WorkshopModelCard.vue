@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
+import { cccCatalogueComponents } from './ccc-catalogue-components'
+import { catalogDetailNavigation } from '@/lib/cms/detail-route'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -27,6 +29,8 @@ const {
   underHeading?: boolean
 }>()
 const { t } = translationsFor(locale)
+const cmsCatalogue = inject(cccCatalogueComponents, undefined)
+const openDetail = inject(catalogDetailNavigation, undefined)
 
 const workflow = computed(() =>
   model.type === 'CLOUD' || model.type === 'SERVERLESS' ? model : undefined
@@ -83,10 +87,12 @@ const pillClass =
 <template>
   <a
     :href="model.href"
+    :data-astro-prefetch="cmsCatalogue ? 'false' : undefined"
     class="group flex cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
     :aria-labelledby="labelledBy"
     data-testid="workshop-model-card"
     :data-kind="model.type === 'APP' ? 'app' : workflow ? 'workflow' : 'model'"
+    @click="openDetail?.($event, model)"
   >
     <div class="relative aspect-4/3 overflow-hidden rounded-2xl bg-hub-surface">
       <!-- First in the link, so the reader hears who answers for the card

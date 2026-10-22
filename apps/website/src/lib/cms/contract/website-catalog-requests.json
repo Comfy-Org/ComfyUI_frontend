@@ -1,0 +1,105 @@
+{
+  "requests": [
+    {
+      "name": "create item",
+      "method": "POST",
+      "path": "/api/v1/catalog/draft/items",
+      "query": [],
+      "headers": {
+        "content-type": "application/json",
+        "idempotency-key": "{{idempotency_key}}"
+      },
+      "body": {
+        "title": "Website contract fixture",
+        "description": "Created by the website contract test",
+        "slug": "website-contract-fixture",
+        "enabled": true,
+        "visibility": "public",
+        "available_surfaces": ["hub"],
+        "tags": ["contract"],
+        "type": "workflow",
+        "schema_version": 2,
+        "expected_draft_rev": "{{draft_rev}}"
+      }
+    },
+    {
+      "name": "replace item",
+      "method": "PUT",
+      "path": "/api/v1/catalog/draft/items/{{uid}}",
+      "query": [],
+      "headers": {
+        "content-type": "application/json",
+        "idempotency-key": "{{idempotency_key}}"
+      },
+      "body": {
+        "title": "Website contract fixture",
+        "description": "Edited by the contract test",
+        "slug": "website-contract-fixture",
+        "enabled": true,
+        "visibility": "public",
+        "available_surfaces": ["hub"],
+        "tags": ["contract"],
+        "type": "workflow",
+        "schema_version": 2,
+        "expected_draft_rev": "{{draft_rev}}",
+        "expected_revision_uid": "{{revision_uid}}"
+      }
+    },
+    {
+      "name": "final review",
+      "method": "POST",
+      "path": "/api/v1/catalog/draft/final-review",
+      "query": [],
+      "headers": {
+        "content-type": "application/json",
+        "idempotency-key": "{{idempotency_key}}"
+      },
+      "body": {
+        "review": {
+          "expected_live_rev": "{{live_rev}}",
+          "expected_draft_rev": "{{draft_rev}}",
+          "expected_draft_generation": "{{draft_generation}}"
+        },
+        "selected_uids": ["{{uid}}"]
+      }
+    },
+    {
+      "name": "publish",
+      "method": "POST",
+      "path": "/api/v1/catalog/draft/publish",
+      "query": [],
+      "headers": {
+        "content-type": "application/json",
+        "idempotency-key": "{{idempotency_key}}"
+      },
+      "body": {
+        "review": {
+          "expected_live_rev": "{{live_rev}}",
+          "expected_draft_rev": "{{draft_rev}}",
+          "expected_draft_generation": "{{draft_generation}}"
+        },
+        "expected_selection_digest": "{{selection_digest}}",
+        "selected_uids": ["{{uid}}"]
+      }
+    },
+    {
+      "name": "cards list",
+      "method": "GET",
+      "path": "/api/v1/catalog/cards",
+      "query": [
+        ["kind", "WORKFLOW"],
+        ["limit", "24"],
+        ["locale", "en"],
+        ["sort", "popular"]
+      ],
+      "headers": {}
+    },
+    {
+      "name": "item detail",
+      "method": "GET",
+      "path": "/api/v1/catalog/items",
+      "query": [["workflow_slug", "/hub/workflows/website-contract-fixture"]],
+      "headers": {}
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
+import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import CinematicStudioPage from '@/components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import OpenjutsuPage from '@/components/workshop/openjutsu/OpenjutsuPage.vue'
 import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
@@ -12,6 +14,11 @@ import { priceCinematicModels } from '@/lib/workshop/cinematic-studio/pricing'
 import { appModels, appPagePaths } from '@/config/workshop-app-content'
 import type { AppWorkshopModel } from '@/config/models-catalogue'
 import { modelOgImage } from './model-page'
+import {
+  cmsEnabled,
+  loadSiteCatalog,
+  catalogUnavailable
+} from '@/lib/cms/catalog'
 
 export const getStaticPaths: GetStaticPaths = () => appPagePaths()
 
@@ -19,7 +26,33 @@ interface Props {
   readonly model: AppWorkshopModel
 }
 
-const { model } = Astro.props
+const catalog = cmsEnabled()
+  ? await loadSiteCatalog(
+      Astro.locals.catalogAuthoring,
+      Astro.locals.catalogLocale,
+      withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
+    )
+  : undefined
+const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+if (failure) return failure
+const liveApps = catalog?.ok
+  ? catalog.models.filter((item) => item.type === 'APP')
+  : appModels
+const model = catalog?.ok
+  ? liveApps.find(
+      (item) =>
+        item.href.replace(/\/$/, '') ===
+        withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
+    )
+  : Astro.props.model
+if (!model) return new Response('Not found', { status: 404 })
+const current = catalog?.ok
+  ? catalog.projection.items.find(
+      (item) =>
+        item.slug ===
+        withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
+    )
+  : undefined
 const app = model.appId
 
 // Video models carry no estimate: the pricing rules have none that match a
@@ -44,11 +77,19 @@ const models = app === 'openjutsu' ? [] : await cinematicModels()
   ogImage={modelOgImage(model)}
   noindex
 >
+  <StaffContentActions uid={current?.uid} />
   {app === 'openjutsu' ? (
     <OpenjutsuPage model={model} client:load />
   ) : (
     <CinematicStudioPage
-      apps={appModels}
+      apps={
+        catalog?.ok
+          ? [model, ...liveApps.filter((app) => app.slug !== model.slug)].slice(
+              0,
+              24
+            )
+          : liveApps
+      }
       models={models}
       initialApp={app}
       client:load

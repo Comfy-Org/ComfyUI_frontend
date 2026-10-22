@@ -291,3 +291,62 @@ describe('the emitter agrees with the page tree', () => {
     }
   )
 })
+
+describe('CMS Hub alternates', () => {
+  const hub = '/hub/workflows/image-to-video/'
+
+  it('keeps the static (production) Hub English-only', () => {
+    expect(hreflangAlternates(hub, ORIGIN)).toEqual([])
+    expect(localeAlternates(hub)).toEqual([])
+  })
+
+  it('pairs every catalog locale when the CMS serves the Hub', () => {
+    const options = { localizedHub: true }
+    for (const path of [hub, `/zh-CN${hub}`, `/ja${hub}`]) {
+      expect(hreflangAlternates(path, ORIGIN, options)).toEqual([
+        { hreflang: 'en', href: `${ORIGIN}${hub}` },
+        { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${hub}` },
+        { hreflang: 'ja', href: `${ORIGIN}/ja${hub}` },
+        { hreflang: 'x-default', href: `${ORIGIN}${hub}` }
+      ])
+    }
+    expect(
+      localeAlternates('/ja/hub/models/', options).map(({ path }) => path)
+    ).toEqual(['/hub/models/', '/zh-CN/hub/models/', '/ja/hub/models/'])
+  })
+
+  it.for([
+    {
+      indexableLocales: ['en', 'ja'],
+      expected: [
+        { hreflang: 'en', href: `${ORIGIN}${hub}` },
+        { hreflang: 'ja', href: `${ORIGIN}/ja${hub}` },
+        { hreflang: 'x-default', href: `${ORIGIN}${hub}` }
+      ]
+    },
+    {
+      indexableLocales: ['zh-CN', 'ja'],
+      expected: [
+        { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${hub}` },
+        { hreflang: 'ja', href: `${ORIGIN}/ja${hub}` }
+      ]
+    },
+    { indexableLocales: ['en'], expected: [] }
+  ] satisfies { indexableLocales: Locale[]; expected: Alternate[] }[])(
+    'lists only the indexable locales $indexableLocales',
+    ({ indexableLocales, expected }) => {
+      expect(
+        hreflangAlternates(hub, ORIGIN, {
+          localizedHub: true,
+          indexableLocales
+        })
+      ).toEqual(expected)
+    }
+  )
+
+  it('does not localize non-Hub pages through the Hub option', () => {
+    expect(
+      hreflangAlternates('/login/', ORIGIN, { localizedHub: true })
+    ).toEqual(hreflangAlternates('/login/', ORIGIN))
+  })
+})

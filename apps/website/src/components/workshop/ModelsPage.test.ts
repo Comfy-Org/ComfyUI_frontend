@@ -1,3 +1,5 @@
+// @vitest-environment happy-dom
+// @vitest-environment-options {"settings":{"navigation":{"disableMainFrameNavigation":true,"disableChildPageNavigation":true}}}
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
@@ -7,6 +9,7 @@ import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '@/config/workshop-browse-content'
+import type { WorkshopModel } from '@/config/models-catalogue'
 import { workshopPages } from '@/config/workshop-page-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
@@ -46,8 +49,341 @@ beforeEach(() => {
 const CATALOGUE_URL = '/models/catalogue.json'
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
+const selectedWorkflowPage = await prepareModelPage('workflows/change-material')
+if (
+  selectedWorkflowPage.kind !== 'page' ||
+  selectedWorkflowPage.model.workflowId === undefined
+)
+  throw new Error('Missing workflow detail fixture')
+const selectedWorkflow = selectedWorkflowPage.model
 
 describe('Models page entry', () => {
+  it('shows a server-selected workflow independently of browse flags without fetching twice', async () => {
+    enabled.value = true
+    render(ModelsPage, {
+      props: {
+        slug: selectedWorkflow.slug,
+        workflowId: selectedWorkflow.workflowId,
+        initialWorkflow: {
+          ...selectedWorkflow,
+          name: 'Selected Draft workflow'
+        }
+      },
+      slots: { fallback: '<h1>Public Models</h1>' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeVisible()
+    workflowsEnabled.value = true
+    expect(
+      await screen.findByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('textbox', { name: 'What should change?' })
+    ).toBeVisible()
+    expect(fetch).not.toHaveBeenCalled()
+    workflowsEnabled.value = false
+    await nextTick()
+    expect(
+      screen.getByRole('heading', { name: 'Selected Draft workflow' })
+    ).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
+  })
+
+  it('replaces a selected workflow snapshot without reusing stale detail data', async () => {
+    enabled.value = true
+    workflowsEnabled.value = true
+    const view = render(ModelsPage, {
+      props: {
+        slug: selectedWorkflow.slug,
+        workflowId: selectedWorkflow.workflowId,
+        initialWorkflow: {
+          ...selectedWorkflow,
+          name: 'First selected workflow'
+        }
+      }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'First selected workflow' })
+    ).toBeVisible()
+    await view.rerender({
+      initialWorkflow: { ...selectedWorkflow, name: 'Fresh selected workflow' }
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Fresh selected workflow' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'First selected workflow' })
+    ).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      slug: 'workflows/another-route',
+      workflowId: 'workflows/change-material'
+    },
+    {
+      slug: 'workflows/change-material',
+      workflowId: 'workflows/another-workflow'
+    }
+  ])(
+    'refuses initial workflow data with mismatched identity $slug / $workflowId',
+    async (identity) => {
+      enabled.value = true
+      workflowsEnabled.value = true
+      respondToFetch('/models/workflows/change-material/page.json', () =>
+        Response.json(selectedWorkflowPage)
+      )
+      render(ModelsPage, {
+        props: {
+          slug: selectedWorkflow.slug,
+          workflowId: selectedWorkflow.workflowId,
+          initialWorkflow: {
+            ...selectedWorkflow,
+            ...identity,
+            name: 'Wrong workflow'
+          }
+        }
+      })
+      expect(
+        await screen.findByRole('heading', { name: 'Change a material' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('heading', { name: 'Wrong workflow' })
+      ).toBeNull()
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(
+        '/models/workflows/change-material/page.json'
+      )
+    }
+  )
+  it('replaces a persisted selected snapshot reactively and keeps its catalogue mounted across sections', async () => {
+    const selected = workshopModels
+      .slice(0, 1)
+      .map((model) => ({ ...model, name: 'Original selected model' }))
+    const view = render(ModelsPage, {
+      props: { initialModels: selected, initialCatalogAvailable: true }
+    })
+    await screen.findAllByText('Original selected model')
+    const hero = screen.getByTestId('workshop-hero')
+    await view.rerender({
+      initialModels: selected.map((model) => ({
+        ...model,
+        name: 'Fresh server model'
+      }))
+    })
+    expect(await screen.findAllByText('Fresh server model')).not.toHaveLength(0)
+    expect(screen.queryByText('Original selected model')).toBeNull()
+    expect(screen.getByTestId('workshop-hero')).toBe(hero)
+    await view.rerender({ section: 'workflows' })
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(screen.getByTestId('workshop-hero')).toBe(hero)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('removes private selected rows when a persisted island receives public non-CMS props', async () => {
+    const pending = Promise.withResolvers<Response>()
+    vi.mocked(fetch).mockReturnValue(pending.promise)
+    const selected = workshopModels
+      .slice(0, 1)
+      .map((model) => ({ ...model, name: 'Private Draft model' }))
+    const view = render(ModelsPage, {
+      props: { initialModels: selected, initialCatalogAvailable: true }
+    })
+    await screen.findAllByText('Private Draft model')
+    await view.rerender({
+      initialModels: undefined,
+      initialCatalogAvailable: false
+    })
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Private Draft model')).toBeNull()
+    )
+    await vi.waitFor(() =>
+      expect(fetch).toHaveBeenCalledExactlyOnceWith('/models/catalogue.json')
+    )
+    pending.resolve(
+      Response.json(
+        workshopModels
+          .slice(0, 1)
+          .map((model) => ({ ...model, name: 'Public catalogue model' }))
+      )
+    )
+    expect(
+      await screen.findAllByText('Public catalogue model')
+    ).not.toHaveLength(0)
+    expect(screen.queryByText('Private Draft model')).toBeNull()
+  })
+
+  it('changes the heading with the selected snapshot tab before fresh navigation data arrives', async () => {
+    render(ModelsPage, {
+      props: {
+        initialModels: workshopPages,
+        initialCatalogAvailable: true,
+        initialHeadings: {
+          models: 'Models heading',
+          workflows: 'Workflows heading',
+          apps: 'Apps heading'
+        },
+        heading: 'Models heading'
+      }
+    })
+    await screen.findByTestId('catalogue-tab-workflows')
+    await userEvent.setup().click(screen.getByTestId('catalogue-tab-workflows'))
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Workflows heading'
+      })
+    ).toBeVisible()
+    expect(await screen.findByTestId('workflow-catalogue')).toBeVisible()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('keeps an existing authorized Add action aligned with the intended tab and restores it on rollback', async () => {
+    const create = document.createElement('a')
+    create.dataset.cccCreateContent = ''
+    create.href = '/admin/content/new?type=model'
+    document.body.append(create)
+    try {
+      render(ModelsPage, {
+        props: { initialModels: workshopPages, initialCatalogAvailable: true }
+      })
+      await screen.findByTestId('catalogue-tab-workflows')
+      await userEvent
+        .setup()
+        .click(screen.getByTestId('catalogue-tab-workflows'))
+      await vi.waitFor(() =>
+        expect(create).toHaveAttribute(
+          'href',
+          '/admin/content/new?type=workflow'
+        )
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() =>
+        expect(create).toHaveAttribute('href', '/admin/content/new?type=model')
+      )
+    } finally {
+      create.remove()
+    }
+  })
+
+  it.for([
+    { section: 'models' },
+    { section: 'workflows' },
+    { section: 'apps' }
+  ] as const)(
+    'server-renders the selected initial $section catalogue without a second data fetch',
+    async ({ section }) => {
+      const catalogues: Record<typeof section, WorkshopModel[]> = {
+        models: [
+          {
+            routerId: 'selected-model',
+            slug: 'selected-model',
+            href: '/hub/models/selected-model/',
+            name: 'Selected model',
+            workflowCount: 0,
+            capabilities: [],
+            useCases: ['generate-images']
+          }
+        ],
+        workflows: [
+          {
+            type: 'CLOUD',
+            workflowId: 'selected-workflow',
+            slug: 'workflows/selected-workflow',
+            href: '/hub/workflows/selected-workflow/',
+            name: 'Selected workflow',
+            workflowCount: 1,
+            capabilities: [],
+            category: 'cleanup'
+          }
+        ],
+        apps: [
+          {
+            type: 'APP',
+            appId: 'studio',
+            slug: 'apps/selected-app',
+            href: '/hub/apps/selected-app/',
+            name: 'Selected app',
+            workflowCount: 0,
+            capabilities: []
+          }
+        ]
+      }
+      const selected = catalogues[section]
+      settled.value = false
+      const html = await renderToString(
+        createSSRApp({
+          render: () =>
+            h(ModelsPage, {
+              section,
+              initialModels: selected,
+              initialCatalogAvailable: true
+            })
+        })
+      )
+      expect(html).toContain(selected[0].name)
+      expect(html).not.toContain('workshop-loading')
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it('hydrates the server-selected catalogue without fetching another selection', async () => {
+    const selected = workshopModels.slice(0, 1).map((model) => ({
+      ...model,
+      name: 'Selected Draft model'
+    }))
+    const props = {
+      initialModels: selected,
+      initialCatalogAvailable: true
+    }
+    const container = document.createElement('div')
+    container.innerHTML = await renderToString(createSSRApp(ModelsPage, props))
+    document.body.append(container)
+    const app = createSSRApp(ModelsPage, props)
+    try {
+      app.mount(container)
+      expect(
+        await screen.findAllByText('Selected Draft model')
+      ).not.toHaveLength(0)
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('workshop-search')).toBeEnabled()
+      )
+      expect(screen.queryByTestId('models-loading')).toBeNull()
+      expect(fetch).not.toHaveBeenCalled()
+    } finally {
+      app.unmount()
+      container.remove()
+    }
+  })
+
+  it('does not treat unverified initial data as an available catalogue', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        render: () => h(ModelsPage, { initialModels: workshopModels })
+      })
+    )
+    expect(html).toContain('workshop-loading')
+    expect(html).not.toContain('workshop-search')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('server-renders an empty selected catalogue without falling back to static records', async () => {
+    const html = await renderToString(
+      createSSRApp({
+        render: () =>
+          h(ModelsPage, {
+            initialModels: [],
+            initialCatalogAvailable: true
+          })
+      })
+    )
+    expect(html).toContain('workshop-search')
+    expect(html).not.toContain(workshopModels[0].name)
+    expect(html).not.toContain('workshop-loading')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('gates workflow data and mounts the shared controls when enabled', async () => {
     const slug = 'workflows/change-material'
     const page = await prepareModelPage(slug)

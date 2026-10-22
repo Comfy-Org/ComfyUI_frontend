@@ -1,96 +1,109 @@
 <script setup lang="ts">
-import { Box } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
-import type { TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
+import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import SectionHeading from './SectionHeading.vue'
+import WorkflowFacts from './WorkflowFacts.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
-const { t } = translationsFor('en')
-const { model, active = true } = defineProps<{
+const {
+  model,
+  standalone = false,
+  active = true
+} = defineProps<{
   model: WorkflowWorkshopModelDetail
+  /** Shown as the page's body when the workflow has no Run panel. */
+  standalone?: boolean
   /** Whether this tab is showing; the graph waits until it first is. */
   active?: boolean
 }>()
+const t = computed(
+  () => translationsFor(model.catalogDetails?.locale ?? 'en').t
+)
+
+const enabled = useWorkshopEnabled()
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const modelAnalytics = workshopModelAnalytics(model)
+
+// The page header downloads the default file; only a workflow offering
+// several versions picks one here, and the graph follows the pick.
+function captureWorkflowDownload() {
+  if (enabled.value && workflowsEnabled.value)
+    captureWorkshopEvent({
+      name: 'workflow_download_clicked',
+      properties: modelAnalytics
+    })
+}
 
 const template = computed(() => model.workflow.template)
+const files = computed(() => model.catalogDetails?.workflowFiles)
+const selectedFile = ref<string>()
+const downloadHref = computed(() =>
+  files.value
+    ? (files.value.find((file) => file.href === selectedFile.value)?.href ??
+      files.value.at(-1)?.href)
+    : template.value?.downloadUrl
+)
+watch(
+  () => model.slug,
+  () => {
+    selectedFile.value = undefined
+  }
+)
+function selectFile(event: Event) {
+  if (!(event.target instanceof HTMLSelectElement)) return
+  const value = event.target.value
+  const file = files.value?.find((item) => item.href === value)
+  selectedFile.value = file?.href
+}
 // What the workflow makes, hung in the node that hands it back. The samples
 // beneath it are results too, so there is no before to hang at the way in, and
 // a node cannot play a video.
 const samples = computed(() =>
   model.thumbnail?.kind === 'image' ? [model.thumbnail.url] : []
 )
-
-const OUTPUT_LABEL: Record<string, TranslationKey> = {
-  image: 'workshop.task.image',
-  video: 'workshop.task.video',
-  audio: 'workshop.task.audio'
-}
-
-// What a run gives back. Naming the medium only where every output is the same
-// one, because a mixed set has no single name and a count on its own is still
-// true.
-const produces = computed(() => {
-  const outputs = model.workflow.outputs ?? []
-  if (!outputs.length) return undefined
-  const perRun = t('workshop.workflow.perRun', {
-    count: outputs.length
-  })
-  const kinds = new Set(outputs.map((output) => output.kind))
-  const only = kinds.size === 1 ? [...kinds][0] : undefined
-  const label = only ? OUTPUT_LABEL[only] : undefined
-  return label ? `${t(label)}, ${perRun}` : perRun
-})
-
-const facts = computed(() => {
-  const rows: { label: TranslationKey; value: string }[] = [
-    {
-      label: 'workshop.workflow.factWhere',
-      value: t(
-        model.type === 'CLOUD'
-          ? 'workshop.workflow.runsCloud'
-          : 'workshop.workflow.runsOwn'
-      )
-    }
-  ]
-  if (produces.value)
-    rows.push({
-      label: 'workshop.workflow.factOutput',
-      value: produces.value
-    })
-  if (model.author)
-    rows.push({ label: 'workshop.workflow.factAuthor', value: model.author })
-  return rows
-})
 </script>
 
 <template>
   <section
     id="workflow-panel-workflow"
-    role="tabpanel"
-    aria-labelledby="workflow-tab-workflow"
+    :role="standalone ? undefined : 'tabpanel'"
+    :aria-labelledby="standalone ? undefined : 'workflow-tab-workflow'"
   >
     <SectionHeading
+      v-if="!standalone"
       class="mb-8"
       :title="t('workshop.workflow.inside')"
       :subtitle="t('workshop.workflow.previewHint')"
     />
 
-    <div class="grid gap-10 lg:grid-cols-12">
-      <div class="lg:col-span-8">
+    <div
+      :class="
+        standalone
+          ? 'grid gap-8 lg:grid-cols-[22.5rem_minmax(0,1fr)] lg:gap-16'
+          : 'grid gap-10 lg:grid-cols-12'
+      "
+    >
+      <div :class="standalone ? 'min-w-0 lg:order-2' : 'lg:col-span-8'">
         <WorkflowGraph
-          v-if="template?.downloadUrl"
-          :key="model.slug"
-          :source="template.downloadUrl"
+          v-if="downloadHref"
+          :key="downloadHref"
+          :source="downloadHref"
           :samples
-          :fallback="template.previewUrl"
-          :full-href="template.previewUrl"
+          :fallback="files ? undefined : template?.previewUrl"
+          :full-href="files ? downloadHref : template?.previewUrl"
           :active
         />
         <a
-          v-else-if="template?.previewUrl"
+          v-else-if="!files && template?.previewUrl"
           :href="template.previewUrl"
           target="_blank"
           rel="noopener"
@@ -106,61 +119,41 @@ const facts = computed(() => {
         </a>
       </div>
 
-      <div class="lg:col-span-4">
+      <div :class="standalone ? 'min-w-0 lg:order-1' : 'lg:col-span-4'">
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
           <div
-            class="overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
-            data-testid="workflow-facts"
+            v-if="files && files.length > 1"
+            class="flex flex-col gap-3"
+            data-testid="workflow-versions"
           >
-            <section
-              v-if="template?.models.length"
-              class="px-5 py-4"
-              data-testid="workflow-runs-on"
-            >
-              <h3
-                class="text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
+            <label class="grid gap-2 text-sm text-primary-warm-gray">
+              {{ t('cccWorkflow.version') }}
+              <select
+                :value="downloadHref"
+                class="min-h-11 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-primary-comfy-canvas"
+                @change="selectFile"
               >
-                {{ t('workshop.workflow.runsOn') }}
-              </h3>
-              <ul class="mt-2 flex flex-col gap-1">
-                <li
-                  v-for="name in template.models"
-                  :key="name"
-                  class="flex items-center gap-2.5 py-1.5"
+                <option
+                  v-for="file in files"
+                  :key="file.href"
+                  :value="file.href"
                 >
-                  <Box
-                    class="size-4 shrink-0 text-primary-warm-gray"
-                    aria-hidden="true"
-                  />
-                  <span
-                    class="min-w-0 flex-1 truncate text-base text-primary-comfy-canvas"
-                  >
-                    {{ name }}
-                  </span>
-                </li>
-              </ul>
-            </section>
-
-            <section
-              class="border-t border-transparency-white-t8 px-5 py-4 first:border-t-0"
-              data-testid="workflow-details"
+                  {{ file.name }}
+                </option>
+              </select>
+            </label>
+            <Button
+              as="a"
+              :href="downloadHref"
+              :download="`${model.slug.split('/').pop()}.json`"
+              variant="outline"
+              class="h-auto min-h-11 max-w-full whitespace-normal"
+              @click="captureWorkflowDownload"
+              >{{ t('workshop.workflow.download') }}</Button
             >
-              <dl class="flex flex-col gap-1 text-sm">
-                <div
-                  v-for="fact in facts"
-                  :key="fact.label"
-                  class="grid grid-cols-[6rem_1fr] gap-4"
-                >
-                  <dt class="text-primary-warm-gray">{{ t(fact.label) }}</dt>
-                  <dd
-                    class="min-w-0 truncate text-primary-comfy-canvas tabular-nums"
-                  >
-                    {{ fact.value }}
-                  </dd>
-                </div>
-              </dl>
-            </section>
           </div>
+
+          <WorkflowFacts :model />
         </div>
       </div>
     </div>
