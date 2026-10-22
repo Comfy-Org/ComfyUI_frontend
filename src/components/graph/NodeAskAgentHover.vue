@@ -4,7 +4,7 @@
     data-testid="node-ask-agent-hover"
     :class="
       cn(
-        'absolute top-0 left-full z-20 ml-2',
+        'absolute top-0 left-full z-20 pl-2',
         composerOpen || alwaysVisible
           ? 'pointer-events-auto'
           : 'pointer-events-none opacity-0 group-hover/node:pointer-events-auto group-hover/node:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'

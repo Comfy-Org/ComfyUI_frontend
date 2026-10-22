@@ -79,10 +79,12 @@ describe('NodeAskAgentHover', () => {
     const hidden = screen.getByTestId('node-ask-agent-hover')
     expect(hidden).toHaveClass(
       'pointer-events-none',
+      'pl-2',
       'group-hover/node:pointer-events-auto',
       'focus-within:pointer-events-auto'
     )
     expect(hidden).not.toHaveClass('pointer-events-auto')
+    expect(hidden).not.toHaveClass('ml-2')
 
     await userEvent
       .setup()
