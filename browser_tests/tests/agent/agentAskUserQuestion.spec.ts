@@ -13,6 +13,7 @@ import {
   pausedAskFrame,
   singleChoiceQuestionFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Agent ask_user question',
@@ -36,7 +37,7 @@ test.describe(
         await expect(
           choices.getByRole('checkbox', { name: 'Oil painting' })
         ).toBeVisible()
-        await expect(card).toHaveScreenshot('agent-ask-user-card.png')
+        await expectElementScreenshot(card, 'agent-ask-user-card.png')
       })
 
       await test.step('answering posts once, to that ask', async () => {
@@ -60,7 +61,7 @@ test.describe(
             enMessages.agent.askUser.otherAnswer.replace('{text}', 'watercolor')
           ]
         )
-        await expect(card).toHaveScreenshot('agent-ask-user-card-answered.png')
+        await expectElementScreenshot(card, 'agent-ask-user-card-answered.png')
       })
     })
 
@@ -77,7 +78,8 @@ test.describe(
             name: 'Oil painting'
           })
         ).toBeEnabled()
-        await expect(questionCard('Which first?')).toHaveScreenshot(
+        await expectElementScreenshot(
+          questionCard('Which first?'),
           'agent-ask-user-card-radio.png'
         )
       })
@@ -90,7 +92,8 @@ test.describe(
             name: enMessages.g.submit
           })
         ).toBeDisabled()
-        await expect(questionCard('Which first?')).toHaveScreenshot(
+        await expectElementScreenshot(
+          questionCard('Which first?'),
           'agent-ask-user-card-in-flight.png'
         )
         release()
@@ -104,7 +107,8 @@ test.describe(
         await expect(questionCard('Which palette?')).toContainText(
           enMessages.agent.askUser.closed
         )
-        await expect(questionCard('Which palette?')).toHaveScreenshot(
+        await expectElementScreenshot(
+          questionCard('Which palette?'),
           'agent-ask-user-card-closed.png'
         )
       })
@@ -116,7 +120,8 @@ test.describe(
         await expect(questionCard('Which size?')).toContainText(
           enMessages.agent.askUser.retired
         )
-        await expect(questionCard('Which size?')).toHaveScreenshot(
+        await expectElementScreenshot(
+          questionCard('Which size?'),
           'agent-ask-user-card-retired.png'
         )
       })
@@ -133,7 +138,8 @@ test.describe(
         await expect(questionCard('Which light?')).toContainText(
           enMessages.agent.askUser.unconfirmed
         )
-        await expect(questionCard('Which light?')).toHaveScreenshot(
+        await expectElementScreenshot(
+          questionCard('Which light?'),
           'agent-ask-user-card-unconfirmed.png'
         )
       })
@@ -144,7 +150,8 @@ test.describe(
           .getByRole('status')
           .filter({ hasText: enMessages.agent.askUnavailable })
         await expect(notice).toBeVisible()
-        await expect(notice).toHaveScreenshot(
+        await expectElementScreenshot(
+          notice,
           'agent-ask-unavailable-notice.png'
         )
       })

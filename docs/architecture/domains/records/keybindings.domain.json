@@ -4,83 +4,11 @@
   "description": "Key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, and the keybinding settings panel and edit dialogs. Commands, settings persistence, dialogs, and the bottom-panel shortcuts list remain external.",
   "modules": [
     {
-      "path": "src/platform/keybindings/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/reserved.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/defaults.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/keyCombo.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/keyCombo.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/keybinding.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/escapeOverride.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/escapeOverride.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingService.canvas.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingService.dialog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingService.escape.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/keybindingService.registerUserKeybindings.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/presetService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/presetService.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/keybindings/__fixtures__/registerCoreKeybindingCommands.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/dialog/content/setting/KeybindingPanel.vue",
+      "path": "src/components/dialog/content/setting/KeybindingPanel.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/setting/KeybindingPanel.test.ts",
+      "path": "src/components/dialog/content/setting/KeybindingPanel.vue",
       "role": "presentation"
     },
     {
@@ -90,6 +18,34 @@
     {
       "path": "src/composables/useEditKeybindingDialog.ts",
       "role": "presentation"
+    },
+    {
+      "path": "src/platform/keybindings/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/keybindings/defaults.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keybinding.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/reserved.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/types.ts",
+      "role": "domain"
     },
     {
       "path": "src/utils/modalUtil.ts",

@@ -4,63 +4,11 @@
   "description": "Video trim and crop widget presentation and model, crop handles, aspect-ratio locking, playback and scrubbing, filmstrip extraction, frame timing, metadata, and format options.",
   "modules": [
     {
-      "path": "src/components/videoEdit/VideoCropOverlay.test.ts",
+      "path": "src/components/videoEdit/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/videoEdit/VideoCropOverlay.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/VideoEditPanel.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/VideoEditPanel.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/VideoFilmstripTrim.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/VideoFilmstripTrim.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/WidgetVideoEdit.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/videoEdit/WidgetVideoEdit.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/composables/video/useCropBoxEditor.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useCropBoxEditor.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useCropRatioLock.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useCropRatioLock.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useTimelineScrub.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useTrimPlayback.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useTrimPlayback.ts",
+      "path": "src/composables/video/**",
       "role": "application"
     },
     {
@@ -70,14 +18,6 @@
     {
       "path": "src/composables/video/useVideoEditFormats.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/composables/video/useVideoEditModel.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/video/useVideoEditModel.ts",
-      "role": "application"
     },
     {
       "path": "src/composables/video/useVideoFilmstrip.test.ts",

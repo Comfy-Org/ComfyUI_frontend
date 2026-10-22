@@ -1,22 +1,17 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
-  const previousSocket = api.socket
-  const send = vi.fn<(frame: string) => void>()
-  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
-  onTestFinished(() => {
-    api.socket = previousSocket
-  })
+  const agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
 
   const store = useAgentPanelStore()
   store.enabled = false
@@ -25,7 +20,9 @@ it('gates real document transport and removes reconnect listeners on revocation'
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(workflowId)
+        follower = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport
+        })
         return () => null
       }
     })
@@ -53,8 +50,7 @@ it('gates real document transport and removes reconnect listeners on revocation'
     type: 'doc_unsubscribe',
     data: { workflow_id: 'wf-1' }
   })
-  api.dispatchCustomEvent('reconnected')
-  api.dispatchCustomEvent('status', null)
+  agentSocket.open()
   workflowId.value = 'wf-2'
   await nextTick()
   vi.advanceTimersByTime(60_000)

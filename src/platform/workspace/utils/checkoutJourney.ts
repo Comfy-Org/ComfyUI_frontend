@@ -11,7 +11,6 @@ import {
   isContractIdentifier
 } from '@comfyorg/billing-contract'
 
-import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
@@ -26,11 +25,7 @@ import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/p
 
 const CHECKOUT_JOURNEY_MAX_AGE_MS = 24 * 60 * 60 * 1000
 const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
-// Typed to the enum member's value so a future correction of the flag key (or
-// its `checked`/`checkout` typo) fails to compile here instead of silently
-// reading a stale key. Type-only, so consumers' test mocks need no runtime enum.
-const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
-  'embedded_checked_enabled'
+const EMBEDDED_CHECKOUT_FLAG_KEY = 'embedded_checked_enabled'
 
 const ENTRY_FLOWS = {
   initial_subscription: true,

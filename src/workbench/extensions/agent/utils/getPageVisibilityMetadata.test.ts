@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '../stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { getPageVisibilityMetadata } from './getPageVisibilityMetadata'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

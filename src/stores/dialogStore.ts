@@ -32,7 +32,6 @@ export interface DialogComponentProps {
    */
   showCloseButton?: boolean
   size?: DialogContentSize
-  useAutomaticLabeling?: boolean
 }
 
 export interface DialogInstance {

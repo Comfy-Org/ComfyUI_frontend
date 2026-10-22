@@ -4,6 +4,22 @@
   "description": "Subgraph definitions, subgraph nodes, IO nodes and slots, conversion to and from subgraphs, definition deduplication, execution flattening DTOs, and lifting inner node errors to the subgraph boundary. The Subgraph class itself is defined in LGraph.ts (graph-model) and re-exported here; widget promotion lives in subgraph-promotion.",
   "modules": [
     {
+      "path": "src/components/breadcrumb/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/constants/groupNodeConstants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
+      "role": "application"
+    },
+    {
       "path": "src/core/graph/subgraph/resolveSubgraphInputLink.test.ts",
       "role": "domain"
     },
@@ -20,6 +36,14 @@
       "role": "domain"
     },
     {
+      "path": "src/extensions/core/groupNode.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/groupNode.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/lib/litegraph/src/constants.ts",
       "role": "domain"
     },
@@ -32,128 +56,8 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/EmptySubgraphInput.ts",
+      "path": "src/lib/litegraph/src/subgraph/**",
       "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/EmptySubgraphOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/Subgraph.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/Subgraph.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphConversion.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphDuplicateDeleteOrder.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphEdgeCases.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphEvents.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphIO.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphIONodeBase.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphInput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphMemory.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.titleButton.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphNode.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphOutputNode.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphSerialization.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotBase.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotConnections.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphSlotVisualFeedback.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/SubgraphWidgetPromotion.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/subgraphDeduplication.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/subgraphUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/subgraphUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/unpackSubgraph.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/core/graph/subgraph/liftNodeErrorsToBoundary.ts",
-      "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.test.ts",
@@ -164,6 +68,10 @@
       "role": "application"
     },
     {
+      "path": "src/lib/litegraph/src/subgraph/__fixtures__/**",
+      "role": "integration"
+    },
+    {
       "path": "src/lib/litegraph/src/subgraph/svgBitmapCache.test.ts",
       "role": "presentation"
     },
@@ -172,35 +80,15 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphComplexPromotion1.ts",
-      "role": "integration"
+      "path": "src/schemas/subgraphIdSchema.test.ts",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphFixtures.ts",
-      "role": "integration"
+      "path": "src/schemas/subgraphIdSchema.ts",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/breadcrumb/SubgraphBreadcrumb.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/breadcrumb/SubgraphBreadcrumb.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/breadcrumb/SubgraphBreadcrumbItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/stores/subgraphNavigationStore.ts",
+      "path": "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
       "role": "application"
     },
     {
@@ -208,7 +96,7 @@
       "role": "application"
     },
     {
-      "path": "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
+      "path": "src/stores/subgraphNavigationStore.ts",
       "role": "application"
     },
     {
@@ -218,26 +106,6 @@
     {
       "path": "src/utils/blueprintUtils.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/schemas/subgraphIdSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/subgraphIdSchema.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/constants/groupNodeConstants.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/groupNode.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/groupNode.test.ts",
-      "role": "integration"
     }
   ],
   "publicEntryPoints": [],

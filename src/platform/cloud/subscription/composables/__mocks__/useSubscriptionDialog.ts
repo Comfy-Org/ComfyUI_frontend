@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 
 import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 
-import type { useSubscriptionDialog as realUseSubscriptionDialog } from '../useSubscriptionDialog'
+import type { useSubscriptionDialog as realUseSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 const subscriptionDialog: ReturnType<typeof realUseSubscriptionDialog> = {
   show: vi.fn(),

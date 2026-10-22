@@ -1,13 +1,16 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { RerouteId } from '@/types/rerouteId'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { zeroUuid } from '@/utils/uuid'
 
 import { SubgraphInput } from './SubgraphInput'
-import type { SubgraphInputNode } from './SubgraphInputNode'
 
 /**
  * A virtual slot that simply creates a new input slot when connected to.

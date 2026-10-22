@@ -5,8 +5,8 @@ import {
   getNodeSource,
   isCustomNode,
   isEssentialNode
-} from '../classifiers/nodeSource'
-import type { NodeSource } from '../classifiers/nodeSource'
+} from '#/classifiers/nodeSource'
+import type { NodeSource } from '#/classifiers/nodeSource'
 
 describe('getNodeSource', () => {
   it('should return UNKNOWN_NODE_SOURCE when python_module is undefined', () => {

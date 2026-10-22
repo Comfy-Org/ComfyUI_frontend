@@ -1,9 +1,12 @@
-import type { LGraphCanvas } from '../LGraphCanvas'
-import type { LGraphGroup } from '../LGraphGroup'
-import { LLink } from '../LLink'
-import { Reroute } from '../Reroute'
-import type { LinkSegment } from '../interfaces'
-import { LinkRenderType } from '../types/globalEnums'
+import type {
+  LGraphCanvas,
+  LGraphGroup
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
@@ -11,13 +14,17 @@ import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
 } from './hitTesting'
-import { queryHiddenLinkBadgeAtPoint } from './linkBadgeRenderer'
+import {
+  queryHiddenLinkBadgeAtPoint,
+  queryHiddenLinkStackAtPoint
+} from './linkBadgeRenderer'
 import { getVisibleRerouteLink } from './linkVisibility'
 
 interface CanvasContextMenuTarget {
   reroute?: Reroute
   linkSegment?: LinkSegment
   link?: LLink
+  stackedLinks?: LLink[]
   group?: LGraphGroup
 }
 
@@ -64,6 +71,9 @@ export function getCanvasContextMenuTarget(
     canvas.renderedPaths
   )
   if (reroute) return { reroute, group }
+
+  const stack = queryHiddenLinkStackAtPoint(canvas, graph, x, y)
+  if (stack) return { stackedLinks: stack.links, group }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(canvas, graph, x, y)
   if (badgeLink) return { link: badgeLink, group }

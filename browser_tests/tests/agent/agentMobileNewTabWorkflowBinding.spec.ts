@@ -77,7 +77,7 @@ test.describe(
     test('follows the tab on screen rather than a saved workflow, and holds a hand-picked target across the next turn', async ({
       page,
       workflowSelection,
-      getWebSocket
+      getAgentSocket
     }) => {
       test.setTimeout(60_000)
 
@@ -103,7 +103,7 @@ test.describe(
       // waited 101s and 121s for a first reply). Close each turn over the
       // socket the way the server would.
       const finishTurn = async (messageId: string): Promise<void> => {
-        const socket = await getWebSocket()
+        const socket = await getAgentSocket()
         socket.send(
           JSON.stringify({
             type: 'agent_message_done',

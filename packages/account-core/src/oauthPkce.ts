@@ -11,7 +11,7 @@ import {
   zOAuthTokenResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { timedSignal } from './core/requestTimeout.js'
+import { timedSignal } from './core/requestTimeout'
 
 export const LOCAL_WEB_CLIENT_ID = 'comfy-local-web'
 

@@ -64,7 +64,7 @@ const src = computed(() => resultItemUrl(output))
       v-else-if="mediaType === 'text'"
       :class="
         cn(
-          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary-background overflow-y-auto rounded-lg bg-secondary-background p-4 whitespace-pre-wrap',
+          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary overflow-y-auto rounded-lg bg-secondary p-4 whitespace-pre-wrap',
           attrs.class as string
         )
       "

@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { ComfyApp, app as singletonApp } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -1310,6 +1311,7 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      onTestFinished(attachLegacyUI(app))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -1700,6 +1702,7 @@ describe('ComfyApp', () => {
       }
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      onTestFinished(attachLegacyUI(app))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -3530,6 +3533,78 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
+    it('keeps outputs and previews of a background run off the visible workflow', () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      useWorkflowStore().activeWorkflow = workflowA
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-a',
+        promptOutput: {},
+        workflow: workflowA,
+        mode: 'graph'
+      })
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      function handlerFor(event: string) {
+        return addEventListener.mock.calls.find(
+          ([name]) => name === event
+        )?.[1] as EventListener | undefined
+      }
+      function executedEvent(jobId: string) {
+        return new CustomEvent('executed', {
+          detail: {
+            node: '1',
+            display_node: '1',
+            prompt_id: jobId,
+            output: { text: [jobId] }
+          }
+        })
+      }
+      function previewEvent(jobId: string, blobText: string) {
+        return new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob([blobText]),
+            nodeId: '1',
+            parentNodeId: '1',
+            displayNodeId: '1',
+            realNodeId: '1',
+            jobId
+          }
+        })
+      }
+
+      handlerFor('executed')?.(executedEvent('job-a'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-a', 'a'))
+      handlerFor('executed')?.(executedEvent('job-b'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-b', 'bb'))
+
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = createNodeExecutionId([1])
+      expect(nodeOutputStore.getNodeOutputByExecutionId(executionId)).toEqual({
+        text: ['job-a']
+      })
+      expect(
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
+      ).toEqual(['blob:1'])
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
@@ -4434,7 +4509,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true
@@ -4463,7 +4541,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true

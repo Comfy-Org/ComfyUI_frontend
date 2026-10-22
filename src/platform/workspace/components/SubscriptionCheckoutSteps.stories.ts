@@ -54,7 +54,7 @@ const creatorAnnual = plan('CREATOR', 'ANNUAL', 33_600, NEXT_YEAR)
 const proMonthly = plan('PRO', 'MONTHLY', 10_000, PERIOD_END)
 
 const shell =
-  '<div class="mx-auto flex h-[680px] w-[460px] flex-col rounded-2xl border border-border-default bg-secondary-background p-12">'
+  '<div class="mx-auto flex h-[680px] w-[460px] flex-col rounded-2xl border border-border bg-secondary p-12">'
 
 function transitionStory(previewData: PreviewSubscribeResponse): Story {
   return {

@@ -9,7 +9,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
-import type { UpdateFlags } from '../types'
+import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
 
 interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void

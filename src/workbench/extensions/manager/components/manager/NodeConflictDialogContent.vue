@@ -4,7 +4,7 @@
     <div class="flex size-full flex-col gap-2 px-4 py-6">
       <!-- Description -->
       <div v-if="showAfterWhatsNew">
-        <p class="m-0 mb-4 text-sm/4 text-base-foreground">
+        <p class="m-0 mb-4 text-sm/4">
           {{ $t('manager.conflicts.description') }}
           <br /><br />
           {{ $t('manager.conflicts.info') }}
@@ -14,26 +14,21 @@
       <!-- Import Failed List Wrapper -->
       <div
         v-if="importFailedConflicts.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleImportFailedPanel"
         >
-          <div class="flex flex-1">
-            <span class="mr-2 text-xs font-bold text-warning-background">{{
+          <div class="flex flex-1 text-xs font-bold">
+            <span class="mr-2 text-warning">{{
               importFailedConflicts.length
             }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
-              $t('manager.conflicts.importFailedExtensions')
-            }}</span>
+            <span>{{ $t('manager.conflicts.importFailedExtensions') }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="muted-textonly">
               <i
                 :class="
                   importFailedExpanded
@@ -54,7 +49,7 @@
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
             :aria-label="`Import failed package: ${packageName}`"
-            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-accent"
           >
             <span class="text-xs text-muted-foreground">
               {{ packageName }}
@@ -66,26 +61,21 @@
       <!-- Conflict List Wrapper -->
       <div
         v-if="allConflictDetails.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleConflictsPanel"
         >
-          <div class="flex flex-1">
-            <span class="mr-2 text-xs font-bold text-warning-background">{{
+          <div class="flex flex-1 text-xs font-bold">
+            <span class="mr-2 text-warning">{{
               allConflictDetails.length
             }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
-              $t('manager.conflicts.conflicts')
-            }}</span>
+            <span>{{ $t('manager.conflicts.conflicts') }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="muted-textonly">
               <i
                 :class="
                   conflictsExpanded
@@ -106,7 +96,7 @@
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
             :aria-label="`Conflict: ${getConflictMessage(conflict, t)}`"
-            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-accent"
           >
             <span class="text-xs text-muted-foreground">{{
               getConflictMessage(conflict, t)
@@ -118,26 +108,19 @@
       <!-- Extension List Wrapper -->
       <div
         v-if="conflictData.length > 0"
-        class="flex min-h-8 w-full flex-col rounded-lg bg-base-background"
+        class="flex min-h-8 w-full flex-col rounded-lg bg-background"
       >
         <div
           data-testid="conflict-dialog-panel-toggle"
           class="flex h-8 w-full items-center justify-between gap-2 pl-4"
           @click="toggleExtensionsPanel"
         >
-          <div class="flex flex-1">
-            <span class="mr-2 text-xs font-bold text-warning-background">{{
-              conflictData.length
-            }}</span>
-            <span class="text-xs font-bold text-base-foreground">{{
-              $t('manager.conflicts.extensionAtRisk')
-            }}</span>
+          <div class="flex flex-1 text-xs font-bold">
+            <span class="mr-2 text-warning">{{ conflictData.length }}</span>
+            <span>{{ $t('manager.conflicts.extensionAtRisk') }}</span>
           </div>
           <div>
-            <Button
-              variant="textonly"
-              class="bg-transparent text-muted-foreground"
-            >
+            <Button variant="muted-textonly">
               <i
                 :class="
                   extensionsExpanded
@@ -157,7 +140,7 @@
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-accent"
           >
             <span class="text-xs text-muted-foreground">
               {{ conflictResult.package_name }}

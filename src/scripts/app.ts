@@ -11,6 +11,7 @@ import {
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -99,7 +100,6 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
-import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -190,9 +190,8 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
-import { ComfyUI } from './ui'
-import { $el } from './ui/utils'
-import { ComfyAppMenu } from './ui/menu/index'
+import type { ComfyUI } from './ui'
+import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
@@ -203,7 +202,7 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
@@ -356,7 +355,7 @@ export class ComfyApp implements IComfyApp {
 
   vueAppReady: boolean
   api: ComfyApi
-  ui: ComfyUI
+  ui!: ComfyUI
   extensionManager!: ExtensionManager
   private readonly nodeOutputsData: Partial<
     Record<string, NodeExecutionOutput>
@@ -440,12 +439,12 @@ export class ComfyApp implements IComfyApp {
     return this.configuringGraphLevel > 0
   }
   ctx!: CanvasRenderingContext2D
-  bodyTop: HTMLElement
-  bodyLeft: HTMLElement
-  bodyRight: HTMLElement
-  bodyBottom: HTMLElement
-  canvasContainer: HTMLElement
-  menu: ComfyAppMenu
+  bodyTop!: HTMLElement
+  bodyLeft!: HTMLElement
+  bodyRight!: HTMLElement
+  bodyBottom!: HTMLElement
+  canvasContainer!: HTMLElement
+  menu!: ComfyAppMenu
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
@@ -547,35 +546,8 @@ export class ComfyApp implements IComfyApp {
 
   constructor() {
     this.vueAppReady = false
-    this.ui = new ComfyUI(this, {
-      resetView: () => useLitegraphService().resetView(),
-      restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
-      trackRunButton: (intent) =>
-        useRunButtonTelemetry().trackRunButton(intent),
-      enterFocusMode: () => {
-        useWorkspaceStore().focusMode = true
-      }
-    })
     this.api = api
-    // Dummy placeholder elements before GraphCanvas is mounted.
-    this.bodyTop = $el('div.comfyui-body-top')
-    this.bodyLeft = $el('div.comfyui-body-left')
-    this.bodyRight = $el('div.comfyui-body-right')
-    this.bodyBottom = $el('div.comfyui-body-bottom')
-    this.canvasContainer = $el('div.graph-canvas-container')
-
-    this.menu = new ComfyAppMenu()
-
-    /**
-     * Stores the execution output data for each node
-     * @type {Record<string, any>}
-     */
     this.nodeOutputs = {}
-
-    /**
-     * Stores the preview image data for each node
-     * @type {Record<string, Image>}
-     */
     this.nodePreviewImages = {}
   }
 
@@ -782,6 +754,7 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
+      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -816,7 +789,6 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
@@ -824,9 +796,11 @@ export class ComfyApp implements IComfyApp {
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      // Ensure clean up if `executing` event is missed.
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
       revokePreviewsByExecutionId(displayNodeExecutionId)
-      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       for (const executionId of getAncestorExecutionIds(
         displayNodeExecutionId
       )) {
@@ -1139,8 +1113,7 @@ export class ComfyApp implements IComfyApp {
       // Move mouse position down to paste the next template below
       let maxY: number | undefined
 
-      for (const i in app.canvas.selected_nodes) {
-        const node = app.canvas.selected_nodes[i]
+      for (const node of selectedCanvasNodes(app.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
         if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom

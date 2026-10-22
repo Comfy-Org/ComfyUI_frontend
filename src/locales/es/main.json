@@ -18,6 +18,7 @@
     "assetNotAttachable": "Se pueden adjuntar imágenes, vídeo, audio, modelos 3D y archivos de texto",
     "attach": "Adjuntar un archivo",
     "attachFiles": "Sube imágenes o archivos",
+    "attachmentInvalidVideo": "{name} no es un archivo de vídeo válido. Elimínalo e inténtalo con otro archivo.",
     "attachmentTooLarge": "{name} es más grande que {limit}",
     "attachmentUploadFailed": "No se pudo cargar {name}",
     "attachmentsAlreadyAdded": "{name} ya está en la bandeja de recursos | Se omitieron {count} recursos duplicados",
@@ -173,6 +174,7 @@
     "selectWorkflowForNodes": "Primero selecciona un flujo de trabajo",
     "selectWorkflowToGenerate": "Selecciona un flujo de trabajo en el que generar",
     "send": "Enviar",
+    "sendBlockedByInvalidVideo": "{name} no es un vídeo válido. Elimínalo para enviarlo. | {count} archivos no son vídeos válidos. Elimínalos para enviarlos.",
     "sendBusy": "Ya se está enviando un mensaje",
     "sendFailed": "No se pudo enviar el mensaje",
     "sendTurnInProgress": "Este chat todavía tiene una respuesta en curso. Espera a que termine o detenla y vuelve a enviar el mensaje.",
@@ -3415,6 +3417,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -4390,7 +4393,6 @@
     "viewControls": "Controles de vista"
   },
   "sideToolbar": {
-    "activeJobStatus": "Trabajo activo: {status}",
     "assets": "Recursos",
     "backToAssets": "Volver a todos los recursos",
     "browseTemplates": "Explorar plantillas de ejemplo",
@@ -5547,22 +5549,6 @@
     "retry": "Intentar de nuevo"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "Créditos",
-        "date": "Fecha",
-        "eventDetails": "Detalles del evento",
-        "eventType": "Tipo de evento",
-        "user": "Usuario"
-      },
-      "empty": "Aún no hay actividad.",
-      "fullActivity": "Actividad completa",
-      "hoverCard": {
-        "lastActivity": "Última actividad",
-        "partnerNodeUsed": "Nodo de socio usado",
-        "totalCreditsUsed": "Total de créditos usados"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "No se te volverá a cobrar. Los miembros conservarán acceso completo hasta entonces. Reanuda tu plan para conservar los créditos compartidos de tu equipo.",
@@ -5698,12 +5684,6 @@
         "removeMember": "Eliminar miembro",
         "resendInvite": "Reenviar invitación",
         "setCreditLimit": "Establecer límite de crédito"
-      },
-      "activity": {
-        "daysAgo": "hace {count} día | hace {count} días",
-        "hoursAgo": "hace {n} h",
-        "justNow": "justo ahora",
-        "minutesAgo": "hace {n} min"
       },
       "columns": {
         "creditsUsed": "Créditos usados este mes",

@@ -112,6 +112,10 @@ describe('indexing policy', () => {
     '/agent/',
     '/zh-CN/agent',
     '/zh-CN/agent/',
+    '/solutions/vfx/',
+    '/zh-CN/solutions/vfx/',
+    '/solutions/vfx/v3/',
+    '/zh-CN/solutions/vfx/v3/',
     '/hub/models/local/',
     '/hub/models/local/4x-ultrasharp/',
     '/demos/image-to-video'

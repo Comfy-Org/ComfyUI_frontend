@@ -7,17 +7,16 @@ import {
   useAccountScope,
   useAccountStorage
 } from '@/platform/workflow/persistence/composables/useAccountStorage'
-
-import { zAgentRunMode } from '../../schemas/agentApiSchema'
+import { zAgentRunMode } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentRunModePreference,
   AgentRunModeValue
-} from '../../schemas/agentApiSchema'
-export type { AgentRunModeValue } from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+export type { AgentRunModeValue } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   createAgentRestClient
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAgentSendGateStore } from './agentSendGateStore'
 
 const DEFAULT_PREFERENCE: AgentRunModePreference = {

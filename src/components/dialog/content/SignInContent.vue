@@ -54,11 +54,11 @@
       </template>
 
       <div class="my-8 flex items-center gap-3">
-        <div class="grow border-t border-interface-stroke" />
+        <div class="grow border-t" />
         <span class="shrink-0 text-muted-foreground">{{
           t('auth.login.orContinueWith')
         }}</span>
-        <div class="grow border-t border-interface-stroke" />
+        <div class="grow border-t" />
       </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
@@ -140,6 +140,7 @@
         </template>
         <Message
           v-model:visible="authActions.accessError.value"
+          :close-label="$t('g.close')"
           severity="info"
           closable
         >

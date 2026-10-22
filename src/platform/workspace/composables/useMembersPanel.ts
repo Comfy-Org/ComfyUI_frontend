@@ -122,15 +122,18 @@ export function useMembersPanel() {
     () => activeWorkspace.value?.totalMembers ?? members.value.length
   )
   const { resendInvite } = workspaceStore
-  const { permissions: workspacePermissions, uiConfig: workspaceUiConfig } =
-    useWorkspaceUI()
+  const {
+    permissions: workspacePermissions,
+    uiConfig: workspaceUiConfig,
+    isWorkspaceMenuInHeader
+  } = useWorkspaceUI()
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats } = useBillingContext()
   const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
-  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
+  const { isPlanEnded, isSalesManagedPlan } = usePlanEnded()
 
   const permissions = computed((): MembersPanelPermissions => {
     const canManage = canManageMembers.value
@@ -213,6 +216,7 @@ export function useMembersPanel() {
   )
 
   const showInviteButton = computed(() => canInviteMembers.value)
+  const showWorkspaceMenu = computed(() => !isWorkspaceMenuInHeader.value)
 
   function handleInviteMember() {
     if (canInviteMembers.value) void showInviteMemberDialog()
@@ -364,13 +368,13 @@ export function useMembersPanel() {
     isOnTeamPlan,
     isPlanEnded,
     isSalesManagedPlan,
-    isEnterprisePlan,
     hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,
     showSearch,
     showViewTabs,
     showInviteButton,
+    showWorkspaceMenu,
     handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,
