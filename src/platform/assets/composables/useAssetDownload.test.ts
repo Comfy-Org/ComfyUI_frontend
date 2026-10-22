@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import { createFileDownload } from './useAssetDownload'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -10,25 +12,52 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-describe('createFileDownload', () => {
-  beforeEach(() => {
-    distribution.isCloud = false
-  })
+vi.mock(import('@/scripts/api'))
 
+const CONTENT_ROUTE = '/api/assets/1/content'
+const CONTENT_URL = 'http://localhost:8188/api/assets/1/content'
+
+beforeEach(() => {
+  distribution.isCloud = false
+  vi.mocked(api.fetchApi).mockImplementation(async () => new Response())
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
+
+describe('createFileDownload', () => {
   it('downloads directly when not on cloud', () => {
-    expect(createFileDownload('/api/assets/1/content', 'a.png')).toEqual({
+    expect(createFileDownload(CONTENT_ROUTE, 'a.png')).toEqual({
       mode: 'direct',
-      url: '/api/assets/1/content',
+      url: CONTENT_ROUTE,
       filename: 'a.png'
     })
   })
 
-  it('fetches cloud downloads through the app fetch rather than the global one', () => {
-    distribution.isCloud = true
-    const download = createFileDownload('/api/assets/1/content', 'a.png')
-    if (download.mode !== 'fetch') throw new Error('expected a fetch download')
+  it.for([CONTENT_ROUTE, CONTENT_URL])(
+    'fetches %s on cloud through the app authorization',
+    async (url) => {
+      distribution.isCloud = true
+      const download = createFileDownload(url, 'a.png')
+      if (download.mode !== 'fetch')
+        throw new Error('expected a fetch download')
 
-    expect(download.fetch).toBeTypeOf('function')
-    expect(download.fetch).not.toBe(globalThis.fetch)
-  })
+      await download.fetch?.(url)
+
+      expect(api.fetchApi).toHaveBeenCalledWith(url)
+    }
+  )
+
+  it.for(['https://cdn.example.com/image.png', 'blob:http://localhost:3000/1'])(
+    'leaves %s on the plain download path on cloud',
+    (url) => {
+      distribution.isCloud = true
+
+      expect(createFileDownload(url, 'a.png')).toEqual({
+        mode: 'direct',
+        url,
+        filename: 'a.png'
+      })
+    }
+  )
 })

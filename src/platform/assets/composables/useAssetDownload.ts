@@ -22,12 +22,23 @@ export interface FetchedAssetDownload {
 
 export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
 
-/** A download of `url` that carries the app's authorization, not only its session cookie. */
+function isAppRoute(url: string): boolean {
+  if (url.startsWith('blob:')) return false
+  const candidate = URL.parse(url, window.location.origin)
+  const apiBase = URL.parse(api.apiURL(''), window.location.origin)
+  if (!candidate || !apiBase) return false
+  return (
+    candidate.origin === window.location.origin ||
+    candidate.origin === apiBase.origin
+  )
+}
+
+/** A download of `url` that carries the app's authorization when the URL is one of our own routes. */
 export function createFileDownload(
   url: string,
   filename: string
 ): AssetDownload {
-  if (!isCloud) return { mode: 'direct', url, filename }
+  if (!isCloud || !isAppRoute(url)) return { mode: 'direct', url, filename }
   return {
     mode: 'fetch',
     url,
