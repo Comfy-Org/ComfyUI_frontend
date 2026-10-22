@@ -4,10 +4,10 @@
     data-testid="node-ask-agent-hover"
     :class="
       cn(
-        'pointer-events-auto absolute top-0 left-full z-20 ml-2',
-        !composerOpen &&
-          !alwaysVisible &&
-          'opacity-0 group-hover/node:opacity-100 focus-within:opacity-100'
+        'absolute top-0 left-full z-20 ml-2',
+        composerOpen || alwaysVisible
+          ? 'pointer-events-auto'
+          : 'pointer-events-none opacity-0 group-hover/node:pointer-events-auto group-hover/node:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100'
       )
     "
     @pointerdown.stop

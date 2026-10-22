@@ -69,9 +69,39 @@ describe('NodeAskAgentHover', () => {
     expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
   })
 
+  it('ignores pointer events while hidden and restores them on hover, focus, or an open composer', async () => {
+    useAgentPanelStore().enabled = true
+    render(NodeAskAgentHover, {
+      props: { nodeId: toNodeId(12) },
+      global: { plugins: [i18n] }
+    })
+
+    const hidden = screen.getByTestId('node-ask-agent-hover')
+    expect(hidden).toHaveClass(
+      'pointer-events-none',
+      'group-hover/node:pointer-events-auto',
+      'focus-within:pointer-events-auto'
+    )
+    expect(hidden).not.toHaveClass('pointer-events-auto')
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Ask agent' }))
+
+    expect(screen.getByTestId('node-ask-agent-hover')).toHaveClass(
+      'pointer-events-auto'
+    )
+    expect(screen.getByTestId('node-ask-agent-hover')).not.toHaveClass(
+      'pointer-events-none'
+    )
+  })
+
   it('renders the outline icon button with a token border and foreground icon', () => {
     renderHover()
 
+    expect(screen.getByTestId('node-ask-agent-hover')).toHaveClass(
+      'pointer-events-auto'
+    )
     const button = screen.getByRole('button', { name: 'Ask agent' })
     expect(button).toHaveAttribute('data-variant', 'outline')
     expect(button).toHaveClass(
