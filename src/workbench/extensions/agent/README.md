@@ -31,9 +31,10 @@ The panel speaks one contract on the cloud and on the local agent:
   unrelated reconnect in that window refreshes too and leaves the restart's
   own reconnect to refresh again. The refresh shows its own "Update requested"
   and "Node definitions updated" toasts. A failed refresh runs again on the
-  next reconnect in the window; after that, or if ComfyUI never restarts, the
-  store does nothing, and **Refresh Node Definitions** recovers definitions. A
-  restart made while the panel is closed is not observed.
+  next reconnect in the window. A reconnect outside the window does nothing, so
+  if none comes within it the store does nothing, and **Refresh Node
+  Definitions** recovers definitions. A restart made while the panel is closed
+  is not observed.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests

@@ -17,6 +17,49 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false, objectInfo: 'server' })
 
+    let restarted = false
+
+    test.beforeEach(async ({ comfyPage }) => {
+      const page = comfyPage.page
+      restarted = false
+      await page.route('**/object_info', async (route) => {
+        await route.fulfill(
+          jsonRoute(
+            restarted
+              ? {
+                  ...agentReplayNodeDefs,
+                  BrowserProofNode: {
+                    ...agentReplayNodeDefs.KSampler,
+                    name: 'BrowserProofNode',
+                    display_name: 'Browser Proof Node'
+                  }
+                }
+              : agentReplayNodeDefs
+          )
+        )
+      })
+
+      await comfyPage.workflow.loadWorkflow('agent/restart_node_refresh')
+      await expect
+        .poll(() =>
+          page.evaluate((nodeId) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            return {
+              type: node?.type,
+              hasErrors: node?.has_errors === true,
+              hasStepsWidget: node?.widgets?.some(
+                (widget) => widget.name === 'steps'
+              )
+            }
+          }, browserProofNodeId)
+        )
+        .toEqual({
+          type: 'BrowserProofNode',
+          hasErrors: true,
+          hasStepsWidget: false
+        })
+    })
+
     // The restart report and ComfyUI's reconnect travel on different sockets,
     // so the page must recover in either order.
     for (const reportFirst of [true, false]) {
@@ -31,46 +74,6 @@ test.describe(
       }) => {
         test.setTimeout(60_000)
         const page = comfyPage.page
-
-        await test.step('load workflow with a missing node', async () => {
-          await comfyPage.workflow.loadWorkflow('agent/restart_node_refresh')
-          await expect
-            .poll(() =>
-              page.evaluate((nodeId) => {
-                const node = window.app!.graph.getNodeById(nodeId)
-                return {
-                  type: node?.type,
-                  hasErrors: node?.has_errors === true,
-                  hasStepsWidget: node?.widgets?.some(
-                    (widget) => widget.name === 'steps'
-                  )
-                }
-              }, browserProofNodeId)
-            )
-            .toEqual({
-              type: 'BrowserProofNode',
-              hasErrors: true,
-              hasStepsWidget: false
-            })
-        })
-
-        let restarted = false
-        await page.route('**/object_info', async (route) => {
-          await route.fulfill(
-            jsonRoute(
-              restarted
-                ? {
-                    ...agentReplayNodeDefs,
-                    BrowserProofNode: {
-                      ...agentReplayNodeDefs.KSampler,
-                      name: 'BrowserProofNode',
-                      display_name: 'Browser Proof Node'
-                    }
-                  }
-                : agentReplayNodeDefs
-            )
-          )
-        })
 
         await agentPanel.open()
         await agentPanel.selectWorkflow('restart_node_refresh')
@@ -94,11 +97,22 @@ test.describe(
         const restartComfy = () =>
           test.step('restart ComfyUI with the new node loaded', async () => {
             const comfySocket = await getWebSocket()
+            // Armed before the close so the page cannot reconnect unobserved.
+            const pageReconnected = await page.evaluateHandle(() => ({
+              done: new Promise<void>((resolve) =>
+                window.app!.api.addEventListener(
+                  'reconnected',
+                  () => resolve(),
+                  { once: true }
+                )
+              )
+            }))
             const reconnected = nextWebSocket().then(() => {
               restarted = true
             })
             await comfySocket.close()
             await reconnected
+            await pageReconnected.evaluate(({ done }) => done)
           })
 
         if (reportFirst) {
