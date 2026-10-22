@@ -304,7 +304,8 @@ export class AgentConversationHarness {
     agentFlag: boolean,
     vueNodes: boolean,
     bootAssets: ListAssetsResponse,
-    telemetryEnabled: boolean
+    telemetryEnabled: boolean,
+    crdtDebugEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
@@ -314,15 +315,15 @@ export class AgentConversationHarness {
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
-      features: { enable_telemetry: telemetryEnabled },
+      features: {
+        enable_telemetry: telemetryEnabled,
+        'Comfy.Agent.CrdtDebug': crdtDebugEnabled
+      },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
         'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
-      // Replayed nodes materialize from registered node types; the recordings use
-      // core nodes only, so a case needing another node supplies its definition
-      // here rather than routing /object_info a second time behind this one.
       objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs },
       assets: bootAssets
     })
@@ -1359,6 +1360,7 @@ interface ConversationFixtures {
   bootAssets: ListAssetsResponse
   // Opt in only for cases that assert telemetry through hostTelemetryFixture.
   telemetryEnabled: boolean
+  crdtDebugEnabled: boolean
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1374,6 +1376,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   workflowTarget: ['saved-via-picker', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   telemetryEnabled: [false, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1396,7 +1399,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       humanOpsHost,
       workflowTarget,
       bootAssets,
-      telemetryEnabled
+      telemetryEnabled,
+      crdtDebugEnabled
     },
     use,
     testInfo
@@ -1418,7 +1422,13 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       humanOpsHost,
       workflowTarget
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
+    await harness.boot(
+      agentFlagEnabled,
+      vueNodes,
+      bootAssets,
+      telemetryEnabled,
+      crdtDebugEnabled
+    )
     await use(harness)
   }
 })

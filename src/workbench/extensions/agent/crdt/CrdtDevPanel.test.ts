@@ -21,7 +21,7 @@ const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
@@ -66,7 +66,7 @@ describe('CrdtDevPanel', () => {
     vi.mocked(api.getSettings).mockRejectedValue(new Error('offline'))
     vi.mocked(api.apiURL).mockImplementation((path) => `http://backend${path}`)
     localStorage.clear()
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     reportError.mockClear()
   })
@@ -76,6 +76,20 @@ describe('CrdtDevPanel', () => {
 
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
+  })
+
+  it('emits the newly selected verbosity level', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    expect(emitted('update:level')).toEqual([['trace']])
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('trace')
   })
 
   it('smoke-renders follower and document status from a live snapshot', async () => {
@@ -172,7 +186,7 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
     expect(restore()).toBeTruthy()
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe('true')
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
 
     await user.click(restore()!)
 
@@ -181,7 +195,7 @@ describe('CrdtDevPanel', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDevPanel.hidden')).toBe(
       'false'
     )
-    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.enabled')).toBe('true')
+    expect(remoteConfig.value['Comfy.Agent.CrdtDebug']).toBe(true)
   })
 
   it('keeps the restore affordance across a remount', async () => {

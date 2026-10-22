@@ -1,0 +1,3 @@
+export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
+export const STALE_AFTER_MS = 30_000
+export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000

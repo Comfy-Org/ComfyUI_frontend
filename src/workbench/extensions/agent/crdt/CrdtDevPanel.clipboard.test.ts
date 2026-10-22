@@ -20,7 +20,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
@@ -71,7 +71,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     api.clientId = 'client-test-1'
     api.api_host = 'localhost:8188'
     vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     localStorage.clear()
     writeText.mockClear()

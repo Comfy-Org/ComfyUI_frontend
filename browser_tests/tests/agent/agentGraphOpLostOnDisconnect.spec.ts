@@ -5,7 +5,7 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import {
   agentTest as test,

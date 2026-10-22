@@ -1406,11 +1406,6 @@
       "count": 1
     }
   },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
     "regexp/no-dupe-disjunctions": {
       "count": 2

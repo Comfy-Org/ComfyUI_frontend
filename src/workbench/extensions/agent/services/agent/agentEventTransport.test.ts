@@ -15,7 +15,7 @@ import {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {

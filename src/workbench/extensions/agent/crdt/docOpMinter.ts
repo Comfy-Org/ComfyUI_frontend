@@ -47,12 +47,10 @@ import {
   traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
-import {
-  SUBSCRIBE_ACK_MAX_TIMEOUTS,
-  SUBSCRIBE_ACK_TIMEOUT_MS
-} from './agentCrdtDocLifecycle'
+import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {

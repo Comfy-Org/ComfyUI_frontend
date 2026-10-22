@@ -36,5 +36,6 @@ export enum ServerFeatureFlag {
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
+  AGENT_CRDT_DEBUG = 'Comfy.Agent.CrdtDebug',
   AGENT = 'agent'
 }

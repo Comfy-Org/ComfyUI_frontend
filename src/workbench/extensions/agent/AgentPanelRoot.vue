@@ -154,11 +154,8 @@ import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNo
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
-import {
-  isCrdtDebugEnabled,
-  resolveDebugPanelEnabled,
-  startCrdtDebugGate
-} from './crdt/crdtDebugGate'
+import { startCrdtLog } from './crdt/crdtLog'
+import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -219,7 +216,7 @@ const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-onBeforeUnmount(startCrdtDebugGate())
+onBeforeUnmount(startCrdtLog())
 
 const rest = createAgentRestClient()
 
@@ -528,6 +525,18 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const crdtLogLevel = computed({
+  get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
+  set: (level: CrdtLogLevel) => {
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).then(() => {
+      try {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
+      } catch {
+        return
+      }
+    })
+  }
+})
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -1083,9 +1092,9 @@ const restoreOpMinter = attachRestoreOpMinter({
   isRestoringState: () =>
     workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 })
-const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
-  agentPanelStore.enabled,
-  isCrdtDebugEnabled()
+const { flags } = useFeatureFlags()
+const isCrdtDevPanelEnabled = computed(
+  () => agentPanelStore.enabled && flags.agentCrdtDebugEnabled
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
@@ -1824,7 +1833,6 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
-const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -2142,7 +2150,11 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @copy-history="onCopyMarkdown"
     >
       <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+        <CrdtDevPanel
+          v-model:level="crdtLogLevel"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
       <template #composerNotice>
         <AgentCreditTransitionNotice

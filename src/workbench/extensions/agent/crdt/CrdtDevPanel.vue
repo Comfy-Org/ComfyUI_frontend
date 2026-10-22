@@ -24,10 +24,10 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import type { CrdtLogLevel } from './crdtDebugGate'
-import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
+
+import type { CrdtLogLevel } from './crdtLogLevel'
+import { CRDT_LOG_LEVELS } from './crdtLogLevel'
 import type {
   CrdtDebugReportInput,
   ReportIdentifiers,
@@ -335,12 +335,7 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     })
 )
 
-const level = ref<CrdtLogLevel>(crdtLogLevel())
-
-function onLevelChange(next: CrdtLogLevel) {
-  level.value = next
-  setCrdtLogLevel(next)
-}
+const level = defineModel<CrdtLogLevel>('level', { default: 'info' })
 
 // ── merge lab ─────────────────────────────────────────────────────────────
 const mergeScenarios = getMergeScenarios()
@@ -738,7 +733,6 @@ function fmtTime(at: number): string {
             v-model="level"
             class="rounded-sm border bg-secondary px-1 py-0.5"
             data-testid="crdt-dev-panel-verbosity"
-            @change="onLevelChange(level)"
           >
             <option
               v-for="option in CRDT_LOG_LEVELS"
