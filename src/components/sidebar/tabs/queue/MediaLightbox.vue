@@ -75,6 +75,30 @@
       >
         <i class="icon-[lucide--chevron-right] size-6" />
       </Button>
+
+      <!-- File name and download -->
+      <div
+        v-if="activeItem"
+        class="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm"
+      >
+        <span
+          class="min-w-0 truncate text-xs text-white/90"
+          data-testid="lightbox-filename"
+          :title="activeItem.filename"
+        >
+          {{ activeItem.filename }}
+        </span>
+        <Button
+          variant="secondary"
+          size="icon"
+          class="shrink-0 rounded-full"
+          :title="$t('g.download')"
+          :aria-label="$t('g.download')"
+          @click="downloadActiveItem"
+        >
+          <i class="icon-[lucide--download] size-4" />
+        </Button>
+      </div>
     </div>
   </Teleport>
 </template>
@@ -82,6 +106,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -139,6 +164,13 @@ function navigateImage(direction: number) {
     (props.activeIndex + direction + props.allGalleryItems.length) %
     props.allGalleryItems.length
   emit('update:activeIndex', newIndex)
+}
+
+/* Saves the media being viewed under its own file name, at full resolution. */
+function downloadActiveItem() {
+  const item = activeItem.value
+  if (!item) return
+  downloadFile(resultItemUrl(item), item.filename)
 }
 
 let maskMouseDownTarget: EventTarget | null = null
