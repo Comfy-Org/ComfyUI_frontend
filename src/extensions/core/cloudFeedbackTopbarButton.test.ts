@@ -8,8 +8,6 @@ import type { useExtensionService } from '@/services/extensionService'
 
 const registerExtension = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/i18n'))
-
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
@@ -42,6 +40,25 @@ describe('cloudFeedbackTopbarButton', () => {
     buttons[0].onClick()
 
     expect(openFeedbackDialog).toHaveBeenCalledWith('action-bar')
+  })
+
+  it('labels the button in the locale active when the action bar reads it', async () => {
+    vi.mocked(useSettingStore().get).mockReturnValue('Legacy')
+    await import('./cloudFeedbackTopbarButton')
+    const { i18n } = await import('@/i18n')
+    i18n.global.mergeLocaleMessage('fr', {
+      actionbar: { feedback: 'Avis', feedbackTooltip: 'Donner votre avis' }
+    })
+
+    expect(getRegisteredButtons()[0]).toMatchObject({
+      label: 'Feedback',
+      tooltip: 'Feedback'
+    })
+    i18n.global.locale.value = 'fr'
+    expect(getRegisteredButtons()[0]).toMatchObject({
+      label: 'Avis',
+      tooltip: 'Donner votre avis'
+    })
   })
 
   it('only registers the action bar button when the tab bar is Legacy', async () => {

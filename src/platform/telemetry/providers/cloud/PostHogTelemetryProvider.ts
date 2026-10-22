@@ -53,6 +53,7 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -790,6 +791,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_RENDER_STALLED, metadata)
   }
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {

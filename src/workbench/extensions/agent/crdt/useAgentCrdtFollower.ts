@@ -42,7 +42,7 @@ import { DocFrameClient } from './docFrameClient'
 import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
 import {
   readDocPromotedWidgets,
@@ -158,9 +158,8 @@ function notifyAgentMaterialization(
     const nodeId = parseNodeId(id)
     if (nodeId) pendingLiveNodeIds.delete(nodeId)
   }
-  const isLiveAgentUpdate =
-    !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate) {
+  const liveAgentUpdate = isLiveAgentUpdate(update)
+  if (liveAgentUpdate) {
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
@@ -173,7 +172,7 @@ function notifyAgentMaterialization(
   ])
   emitPendingMaterializations(
     update.workflowId,
-    isLiveAgentUpdate ? update.actor : undefined,
+    liveAgentUpdate ? update.actor : undefined,
     available,
     pendingLiveNodeIds,
     events
@@ -259,31 +258,6 @@ type AgentCrdtApplierDeps = Omit<
   LiveGraphApplierDeps,
   'getGraph' | 'holdsLocalWrite'
 >
-
-function reportRejectedHumanOps(
-  workflowId: string | null,
-  ops: readonly Op[],
-  result: OpsResultView
-): void {
-  const settled = new Set([...result.applied, ...result.skipped])
-  const rejected = ops.filter((op) => !settled.has(op.op_id))
-  const { failed } = result
-  reportError(
-    new Error(
-      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
-    ),
-    {
-      surface: 'agent',
-      errorType: 'agent_crdt_human_ops_rejected',
-      context: {
-        workflowId,
-        opId: failed?.op_id ?? rejected[0]?.op_id,
-        code: failed?.code,
-        rejectedOps: rejected.map((op) => op.op)
-      }
-    }
-  )
-}
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
@@ -513,8 +487,6 @@ function startAgentCrdtFollower(
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
     const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
     if (workflowId === null) return
 
     const applied = new Set(outcome.result.applied)
@@ -534,8 +506,10 @@ function startAgentCrdtFollower(
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
-    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
-    recordDevEvent('human_ops_settled', outcome)
+    if (outcome.state === 'acknowledged') {
+      trackAcknowledgedDeletes(outcome)
+      recordDevEvent('human_ops_settled', outcome)
+    }
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
@@ -556,7 +530,9 @@ function startAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
-    tab: tabId,
+    get tab() {
+      return tabId
+    },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
@@ -1148,7 +1124,6 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
-      () => rejectedOpNotifier.cancel(),
       () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => {

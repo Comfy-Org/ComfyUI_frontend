@@ -3322,6 +3322,8 @@
     },
     "pricing": {
       "billedPerSecond": "按 GPU 秒计费",
+      "commercialUse": "所有可用模型均可用于商业用途。",
+      "containerDiskIncluded": "GPU 价格已包含容器磁盘费用。",
       "creditsColumn": "Comfy 积分",
       "gpuColumn": "GPU",
       "heading": "定价",

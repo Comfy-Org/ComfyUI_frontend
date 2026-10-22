@@ -2,9 +2,6 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 const MAX_SCRIPT_PATHS = 250
 
-// FE-3163: remove after a recurrence identifies the failing asset graph.
-performance.setResourceTimingBufferSize(1000)
-
 function eventMessages(event: ErrorEvent, hint: EventHint): string[] {
   const messages = [event.message]
   const originalException = hint.originalException
