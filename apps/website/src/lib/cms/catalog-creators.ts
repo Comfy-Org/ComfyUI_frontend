@@ -78,20 +78,22 @@ export async function loadCatalogCreators() {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items = await everyCursorPage(async (cursor) => {
+  const items = await everyCursorPage(async (cursor, pageNumber) => {
     const url = new URL(CREATORS_PATH, origin)
     url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
     if (cursor) url.searchParams.set('cursor', cursor)
     const page = creatorsPageSchema.safeParse(
       (await fetchCatalogJson(url)).data
     )
-    return page.success
-      ? {
-          items: page.data.items,
-          nextCursor: page.data.next_cursor ?? undefined
-        }
-      : undefined
-  }, MAX_DIRECTORY_PAGES)
+    if (!page.success) return undefined
+    return {
+      items: page.data.items,
+      nextCursor:
+        pageNumber < MAX_DIRECTORY_PAGES
+          ? (page.data.next_cursor ?? undefined)
+          : undefined
+    }
+  })
   return items
     ? ({ ok: true, creators: mergedByUsername(items) } as const)
     : unavailable
