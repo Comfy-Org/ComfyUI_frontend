@@ -8,6 +8,7 @@ import { useAgentPanelRenderStore } from './agentPanelRenderStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 type RenderStore = ReturnType<typeof useAgentPanelRenderStore>
 

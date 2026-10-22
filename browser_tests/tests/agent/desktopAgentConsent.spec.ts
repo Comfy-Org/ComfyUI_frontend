@@ -63,6 +63,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     })
 
     await test.step('Send requests consent while preserving the original draft', async () => {
+      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Keep this Desktop draft until consent')
       await agentPanel.sendButton.click()
       await expect(agentPanel.consentDialog).toBeVisible()
@@ -95,6 +96,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       await test.step('Skip the introduction and submit a draft', async () => {
         await expect(agentPanel.consentDialog).toBeVisible()
         await agentPanel.consentRejectButton.click()
+        await agentPanel.selectWorkflow()
         await agentPanel.composer.fill(message)
         await agentPanel.sendButton.click()
         await expect(agentPanel.consentDialog).toBeVisible()
