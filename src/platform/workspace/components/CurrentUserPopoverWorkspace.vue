@@ -120,6 +120,16 @@
       >
         {{ $t('subscription.addCredits') }}
       </Button>
+      <Button
+        v-else-if="paymentRecoveryAvailable"
+        variant="secondary"
+        size="sm"
+        data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
         v-if="showSubscribeAction && isPersonalWorkspace"
@@ -289,7 +299,8 @@ const {
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
+  useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const isWorkspaceNameTooltipOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
