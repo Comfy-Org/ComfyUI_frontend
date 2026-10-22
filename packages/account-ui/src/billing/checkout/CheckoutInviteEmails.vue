@@ -7,8 +7,8 @@
     :convert-value="normalizeEmail"
     :class="
       cn(
-        'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
-        'focus-within:bg-tertiary-background hover:bg-tertiary-background',
+        'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-foreground',
+        'focus-within:bg-muted hover:bg-muted',
         'max-h-48 overflow-y-auto',
         inputClass
       )
@@ -85,8 +85,7 @@ const emit = defineEmits<{
 function itemClass(email: string): string {
   return cn(
     'rounded-full',
-    !isValidEmail(email) &&
-      'bg-destructive-background/20 text-destructive-background'
+    !isValidEmail(email) && 'bg-destructive/20 text-destructive'
   )
 }
 </script>

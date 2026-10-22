@@ -1,11 +1,9 @@
 import type { Component } from 'vue'
 
-import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
-import type { DialogComponentProps } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 interface ShowOptions {
@@ -28,9 +26,6 @@ interface BrowseOptions {
 }
 
 const DIALOG_KEY = 'global-asset-browser'
-const ASSET_BROWSER_DIALOG_PROPS = {
-  contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
-} satisfies DialogComponentProps
 
 let assetBrowserModalComponent: Component<AssetBrowserModalProps> | undefined
 
@@ -58,8 +53,7 @@ export const useAssetBrowserDialog = () => {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: assetBrowserModalComponent,
-      props,
-      dialogComponentProps: ASSET_BROWSER_DIALOG_PROPS
+      props
     })
   }
 

@@ -333,6 +333,7 @@ describe('TelemetryRegistry', () => {
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
+      visible_prompt_count: 5,
       locale: 'en',
       click_id: 'click-1',
       draft_was_empty: true
@@ -428,6 +429,12 @@ describe('TelemetryRegistry', () => {
         expected: { ...panelClosedMetadata },
         invoke: (registry) =>
           registry.trackAgentPanelClosed(panelClosedMetadata)
+      },
+      {
+        method: 'trackAgentPanelRenderStalled',
+        expected: { stage: 'root_unresolved' },
+        invoke: (registry) =>
+          registry.trackAgentPanelRenderStalled({ stage: 'root_unresolved' })
       },
       {
         method: 'trackAgentEntryButtonClicked',

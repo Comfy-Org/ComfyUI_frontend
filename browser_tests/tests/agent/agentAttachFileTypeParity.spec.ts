@@ -3,9 +3,9 @@ import { truncate, writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { formatSize } from '@/utils/formatUtil'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -42,11 +42,11 @@ test.describe(
 
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)video\/\*(,|$)/
+        /(^|,)\.mp4(,|$)/
       )
       await expect(agentPanel.fileInput).toHaveAttribute(
         'accept',
-        /(^|,)audio\/\*(,|$)/
+        /(^|,)\.wav(,|$)/
       )
 
       await agentPanel.fileInput.setInputFiles([
@@ -123,8 +123,6 @@ test.describe(
       )
 
       expect(dropped).not.toBe('ignored')
-
-      test.fail()
       expect(
         dropped,
         `the file browser answered "${picked}"; a drop of the same file must answer the same`

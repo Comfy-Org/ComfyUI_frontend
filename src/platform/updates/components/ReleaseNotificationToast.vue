@@ -13,7 +13,7 @@
 
       <template #footer-start>
         <a
-          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -28,7 +28,7 @@
         <Button
           variant="link"
           size="unset"
-          class="h-6 px-0 text-sm font-normal"
+          class="h-6 px-0 font-normal"
           @click="handleSkip"
         >
           {{ $t('releaseToast.skip') }}
@@ -61,8 +61,8 @@ import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'

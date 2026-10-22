@@ -4,20 +4,26 @@ import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type {
-  BillingStatus,
-  RenewalInvoice
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 import { useBillingBanner as createBillingBanner } from './useBillingBanner'
 
@@ -35,7 +41,6 @@ describe('useBillingBanner', () => {
       canAccessSubscriptionFeatures: ref(true),
       isTeamPlan: ref(true),
       billingStatus: ref<BillingStatus | null>('paid'),
-      renewalInvoice: ref<RenewalInvoice | null>(null),
       tier: ref<SubscriptionInfo['tier']>(null),
       subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
         hasFunds: true
@@ -47,14 +52,9 @@ describe('useBillingBanner', () => {
     )
     billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
-    billingContext.renewalInvoice = computed(() => billing.renewalInvoice.value)
-    // Mirrors useLegacyBilling: an inactive, tierless status with no renewal
-    // invoice collapses to a null subscription.
     billingContext.subscription = computed(() =>
       billing.subscription.value &&
-      (billing.canAccessSubscriptionFeatures.value ||
-        billing.tier.value ||
-        billing.renewalInvoice.value)
+      (billing.canAccessSubscriptionFeatures.value || billing.tier.value)
         ? {
             isActive: billing.canAccessSubscriptionFeatures.value,
             tier: billing.tier.value,
@@ -74,6 +74,7 @@ describe('useBillingBanner', () => {
   }
 
   beforeEach(() => {
+    distribution.isCloud = true
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -103,6 +104,20 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBeNull()
   })
 
+  it('stays quiet off cloud, including when unified billing settings is on', async () => {
+    distribution.isCloud = false
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const billing = setupBilling()
+    const { kind } = useBillingBanner()
+
+    billing.tier.value = 'PRO'
+    billing.billingStatus.value = 'paused'
+    billing.subscription.value = { hasFunds: false }
+    await nextTick()
+
+    expect(kind.value).toBeNull()
+  })
+
   it('re-shows the out-of-credits banner after a top-up and a later exhaustion', async () => {
     const billing = setupBilling()
     const { kind, dismiss } = useBillingBanner()
@@ -122,103 +137,41 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBe('outOfCredits')
   })
 
-  it('refreshes status and balance on focus while payment recovery is visible', async () => {
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'payment_failed'
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
-  })
-
-  it('refreshes status and balance on focus while the workspace is paused', async () => {
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'paused'
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
-  })
-
-  it('does not refresh payment recovery on focus when the flag is off', async () => {
-    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
-
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'payment_failed'
-    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
-  })
-
-  describe('payment recovery for past-due legacy subscribers', () => {
-    const invoice: RenewalInvoice = {
-      hosted_invoice_url: 'https://invoice.stripe.com/i/acct_1/test_123',
-      amount_due: 5000,
-      currency: 'usd'
-    }
-
-    function setupPastDue(opts: {
-      tier: SubscriptionInfo['tier']
-      withInvoice: boolean
-    }) {
+  it.for<{
+    status: BillingStatus
+    canAccess: boolean
+    kind: 'paused' | null
+  }>([
+    { status: 'paused', canAccess: false, kind: 'paused' },
+    { status: 'paused', canAccess: true, kind: 'paused' },
+    { status: 'payment_failed', canAccess: false, kind: null },
+    { status: 'payment_failed', canAccess: true, kind: null }
+  ])(
+    'reads the $status billing status with access $canAccess as $kind',
+    async ({ status, canAccess, kind: expected }) => {
       const billing = setupBilling()
-      billing.isTeamPlan.value = false
-      // The backend pairs a past-due status with is_active=false.
-      billing.canAccessSubscriptionFeatures.value = false
-      billing.tier.value = opts.tier
-      billing.billingStatus.value = 'payment_failed'
-      billing.renewalInvoice.value = opts.withInvoice ? invoice : null
-      return useBillingBanner().kind
+      const { kind } = useBillingBanner()
+
+      billing.tier.value = 'PRO'
+      billing.billingStatus.value = status
+      billing.canAccessSubscriptionFeatures.value = canAccess
+      await nextTick()
+
+      expect(kind.value).toBe(expected)
     }
+  )
 
-    it.for(['FREE', null] as const)(
-      'offers recovery for tier %s when a renewal invoice is outstanding',
-      (tier) => {
-        expect(setupPastDue({ tier, withInvoice: true }).value).toBe(
-          'paymentFailed'
-        )
-      }
-    )
+  it('keeps the out-of-credits banner when run is denied for a past-due payment and access is locked', async () => {
+    const billing = setupBilling()
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    const { kind } = useBillingBanner()
 
-    it('stays quiet for a FREE tier without a renewal invoice', () => {
-      expect(
-        setupPastDue({ tier: 'FREE', withInvoice: false }).value
-      ).toBeNull()
-    })
+    billing.tier.value = 'PRO'
+    billing.subscription.value = { hasFunds: false }
+    billing.canAccessSubscriptionFeatures.value = false
+    await nextTick()
 
-    it('gives a past-due tierless owner without an invoice no banner', () => {
-      expect(setupPastDue({ tier: null, withInvoice: false }).value).toBeNull()
-    })
-
-    it('does not grant the invoice path to an unrecognized tier', () => {
-      expect(
-        setupPastDue({
-          tier: 'FUTURE_TIER' as SubscriptionInfo['tier'],
-          withInvoice: true
-        }).value
-      ).toBeNull()
-    })
-
-    it('never offers recovery to Enterprise, even with an invoice', () => {
-      expect(
-        setupPastDue({ tier: 'ENTERPRISE', withInvoice: true }).value
-      ).not.toBe('paymentFailed')
-    })
-
-    it('stays quiet with an invoice when the recovery flag is off', () => {
-      vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
-      expect(setupPastDue({ tier: 'FREE', withInvoice: true }).value).toBeNull()
-    })
+    expect(kind.value).toBe('outOfCredits')
   })
 })

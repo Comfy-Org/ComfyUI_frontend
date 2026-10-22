@@ -19,9 +19,9 @@
               WidgetInputBaseClass,
               'flex w-full min-w-0 items-center overflow-hidden',
               useWidgetHeight(),
-              !disabled && 'hover:bg-component-node-widget-background-hovered',
+              !disabled && 'hover:bg-muted',
               disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive-background'
+              isInvalid && 'ring-1 ring-destructive'
             )
           "
         >
@@ -38,9 +38,7 @@
               data-testid="widget-select-default-trigger"
               class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
             >
-              <span
-                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
-              >
+              <span class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left">
                 {{ selectedLabel || placeholder || '\u00a0' }}
               </span>
             </button>
@@ -58,9 +56,7 @@
               :class="
                 cn(
                   'icon-[lucide--chevron-down] size-4',
-                  disabled
-                    ? 'bg-component-node-foreground-secondary'
-                    : 'bg-muted-foreground'
+                  disabled ? 'bg-muted-foreground' : 'bg-muted-foreground'
                 )
               "
               aria-hidden="true"
@@ -69,7 +65,7 @@
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal>
+      <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -78,17 +74,18 @@
           align="start"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
+              'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
+          @keydown.capture="replayNavigationAfterPendingHighlight"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-primary"
           >
             <i
               class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
@@ -107,7 +104,7 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
+            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
@@ -130,8 +127,8 @@
                 :class="
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                    'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                    'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                    'hover:bg-secondary data-highlighted:bg-secondary',
+                    'data-[state=checked]:bg-primary/20 data-[state=checked]:hover:bg-primary/20 data-[state=checked]:data-highlighted:bg-primary/30'
                   )
                 "
               >
@@ -142,7 +139,7 @@
                   class="flex shrink-0 items-center justify-center"
                 >
                   <i
-                    class="icon-[lucide--check] size-3.5 text-base-foreground"
+                    class="icon-[lucide--check] size-3.5 text-foreground"
                     aria-hidden="true"
                   />
                 </ComboboxItemIndicator>
@@ -166,12 +163,12 @@
 
 <script setup lang="ts">
 import {
+  ComboboxPortal,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxVirtualizer
@@ -368,6 +365,27 @@ function focusSearchInput() {
 
   input.focus({ preventScroll: true })
   return true
+}
+
+const NAVIGATION_KEYS = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'Home',
+  'End',
+  'PageDown',
+  'PageUp',
+  'Enter'
+])
+
+function replayNavigationAfterPendingHighlight(event: KeyboardEvent) {
+  if (!event.isTrusted || event.isComposing || !NAVIGATION_KEYS.has(event.key))
+    return
+  const { target } = event
+  event.preventDefault()
+  event.stopPropagation()
+  requestAnimationFrame(() =>
+    target?.dispatchEvent(new KeyboardEvent(event.type, event))
+  )
 }
 
 function handleOpenChange(open: boolean) {

@@ -26,6 +26,7 @@ export interface ReshootQuote {
   /** Credits per second of output, by the priced input's value; replaces a flat price. */
   readonly price_per_second?: {
     readonly tier_input: string
+    readonly tier_match?: 'exact' | 'at_most'
     readonly credits: Readonly<Record<string, number>>
   }
   readonly next_run: 'free' | 'paid' | 'blocked'

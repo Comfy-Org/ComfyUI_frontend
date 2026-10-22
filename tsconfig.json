@@ -23,16 +23,16 @@
       "@/*": ["./src/*"],
       "@e2e/*": ["./browser_tests/*"],
       "@/utils/formatUtil": [
-        "./packages/shared-frontend-utils/src/formatUtil.ts"
+        "./packages/shared-frontend-utils/dist-types/formatUtil.d.ts"
       ],
       "@/utils/networkUtil": [
-        "./packages/shared-frontend-utils/src/networkUtil.ts"
+        "./packages/shared-frontend-utils/dist-types/networkUtil.d.ts"
       ],
       "@/utils/urlSafety": [
-        "./packages/shared-frontend-utils/src/urlSafety.ts"
+        "./packages/shared-frontend-utils/dist-types/urlSafety.d.ts"
       ],
       "@/base/credits/comfyCredits": [
-        "./packages/shared-frontend-utils/src/creditsUtil.ts"
+        "./packages/shared-frontend-utils/dist-types/creditsUtil.d.ts"
       ]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],

@@ -2,19 +2,12 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import TagsInput from './TagsInput.vue'
 import TagsInputInput from './TagsInputInput.vue'
 import TagsInputItem from './TagsInputItem.vue'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { removeTag: 'Remove tag' } } }
-})
 
 describe('TagsInput', () => {
   function renderTagsInput(props = {}, slots = {}) {
@@ -46,7 +39,6 @@ describe('TagsInput with child components', () => {
     const user = userEvent.setup()
 
     const result = render(TagsInput, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: tags,
         ...extraProps
@@ -56,7 +48,7 @@ describe('TagsInput with child components', () => {
           ...tags.map((tag) =>
             h(TagsInputItem, { key: tag, value: tag }, () => [
               h(TagsInputItemText),
-              h(TagsInputItemDelete)
+              h(TagsInputItemDelete, { 'aria-label': `Remove ${tag}` })
             ])
           ),
           h(TagsInputInput, { placeholder: 'Add tag...' })
@@ -75,7 +67,7 @@ describe('TagsInput with child components', () => {
     expect(screen.getByText('tag2')).toBeInTheDocument()
 
     const deleteButtons = tags.map((tag) =>
-      screen.getByRole('button', { name: tag })
+      screen.getByRole('button', { name: `Remove ${tag}` })
     )
     expect(deleteButtons).toHaveLength(tags.length)
   })
@@ -88,7 +80,7 @@ describe('TagsInput with child components', () => {
 
     await user.click(screen.getByText('first'))
     await nextTick()
-    await user.click(screen.getByRole('button', { name: 'first' }))
+    await user.click(screen.getByRole('button', { name: 'Remove first' }))
 
     expect(onUpdate).toHaveBeenCalledWith(['second'])
   })

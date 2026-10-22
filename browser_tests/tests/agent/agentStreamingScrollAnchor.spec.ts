@@ -30,14 +30,14 @@ test.describe(
 
     test('keeps an earlier paragraph in view while more text streams', async ({
       agentPanel,
-      getWebSocket,
+      getAgentSocket,
       page,
       postedMessages
     }) => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      const socket = await getWebSocket()
+      const socket = await getAgentSocket()
       await agentPanel.sendMessage('Explain this workflow in detail')
       await expect.poll(() => postedMessages).toHaveLength(1)
       await expect(

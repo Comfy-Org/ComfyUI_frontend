@@ -18,8 +18,8 @@ import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -650,6 +650,7 @@ describe('PostHogTelemetryProvider', () => {
         prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
+        visible_prompt_count: 5,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
@@ -662,6 +663,7 @@ describe('PostHogTelemetryProvider', () => {
           prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
+          visible_prompt_count: 5,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -1081,6 +1083,12 @@ describe('PostHogTelemetryProvider', () => {
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
         properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPanelRenderStalled({ stage: 'dock_unresolved' }),
+        properties: { stage: 'dock_unresolved' }
       },
       {
         event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,

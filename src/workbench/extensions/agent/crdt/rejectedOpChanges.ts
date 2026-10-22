@@ -11,8 +11,9 @@ import { docLinksIncident } from './liveGraphApplier'
  * register it claimed; replaying those registers from the document undoes the
  * live edit without touching anything else. A node the document lacks is
  * removed live along with its links; one it holds is restored with the
- * document links incident to it. Interior (`path`) writes address subgraph
- * definitions the applier never projects, so they have nothing to undo here.
+ * document links incident to it. Interior (`path`) writes are skipped: a
+ * rejected op never reached the document, so the live interior already
+ * holds the document value and there is nothing to undo here.
  */
 export function changesForRejectedOps(
   doc: Y.Doc,

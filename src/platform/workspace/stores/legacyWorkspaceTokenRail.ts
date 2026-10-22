@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -32,6 +33,7 @@ const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
+  user_id: z.string().optional(),
   workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
   role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
@@ -401,9 +403,7 @@ export function createLegacyWorkspaceTokenRail({
     error.value = null
 
     try {
-      const { useSessionCookie } =
-        await import('@/platform/auth/session/useSessionCookie')
-      await useSessionCookie().ensureSessionCookie()
+      await ensureSessionCookie()
       if (isStaleWorkspaceRequest(capturedRequestId, capturedOwnerUid)) return
 
       const { token, expiresAt, workspace, ownerUid } =

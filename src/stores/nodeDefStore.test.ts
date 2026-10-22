@@ -9,7 +9,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -428,9 +429,7 @@ describe('useNodeDefStore', () => {
       const frequencyStore = useNodeFrequencyStore()
       await frequencyStore.loadNodeFrequencies()
 
-      expect(frequencyStore.topNodeDefs.map(({ name }) => name)).toEqual([
-        'TestNode'
-      ])
+      expect(store.topNodeDefs.map(({ name }) => name)).toEqual(['TestNode'])
     })
   })
 })

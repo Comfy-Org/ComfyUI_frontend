@@ -1,13 +1,12 @@
 <template>
-  <Teleport to="body">
+  <Teleport v-if="galleryVisible" to="body">
     <div
-      v-if="galleryVisible"
       ref="dialogRef"
       role="dialog"
       aria-modal="true"
       :aria-label="$t('g.gallery')"
       tabindex="-1"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
+      class="fixed inset-0 z-overlay flex items-center justify-center bg-black/90 outline-none"
       data-mask
       @mousedown="onMaskMouseDown"
       @mouseup="onMaskMouseUp"
