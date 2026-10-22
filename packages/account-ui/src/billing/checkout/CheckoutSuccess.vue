@@ -138,7 +138,7 @@ const displayPrice = computed(() => {
   if (plan.pricedByQuote) return '0'
   return String(
     isYearly.value
-      ? plan.monthlyPriceUsd.yearly * 12
+      ? (plan.yearlyChargeUsd ?? plan.monthlyPriceUsd.yearly * 12)
       : plan.monthlyPriceUsd.monthly
   )
 })

@@ -249,7 +249,8 @@ describe('usePricingTableUrlLoader', () => {
           id: 'team_700',
           credits: 147700,
           usd: 700,
-          discountedUsd: 680
+          discountedUsd: 680,
+          periodChargeUsd: { monthly: 690, yearly: 8160 }
         },
         billingCycle: 'yearly'
       }
@@ -369,7 +370,11 @@ describe('usePricingTableUrlLoader', () => {
             id: catalogStop.id,
             credits: catalogStop.credits,
             usd: catalogStop[billingCycle].list_price_cents / 100,
-            discountedUsd: catalogStop[billingCycle].price_cents / 100
+            discountedUsd: catalogStop[billingCycle].price_cents / 100,
+            periodChargeUsd: {
+              monthly: catalogStop.monthly.period_charge_cents / 100,
+              yearly: catalogStop.yearly.period_charge_cents / 100
+            }
           },
           billingCycle
         }

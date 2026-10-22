@@ -83,7 +83,11 @@ export function getPricingCheckoutSelection(
       credits: catalogStop.credits,
       usd: catalogStop[teamCheckoutRequest.billingCycle].list_price_cents / 100,
       discountedUsd:
-        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100
+        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100,
+      periodChargeUsd: {
+        monthly: catalogStop.monthly.period_charge_cents / 100,
+        yearly: catalogStop.yearly.period_charge_cents / 100
+      }
     },
     billingCycle: teamCheckoutRequest.billingCycle
   }
