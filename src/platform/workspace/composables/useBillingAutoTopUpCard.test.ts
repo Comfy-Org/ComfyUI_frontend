@@ -157,6 +157,8 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     await nextTick()
 
     expect(card.state.value.kind).not.toBe('loaded')
+
+    await reads.answer(1, 'on')
   })
 
   it('shows loading while a failed read is retried', async () => {
@@ -168,11 +170,12 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     card.ensureRead()
     await vi.waitFor(() => expect(card.state.value.kind).toBe('unavailable'))
 
-    vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValue(
-      new Promise(() => {})
-    )
-    void card.retry()
+    const retried = heldReads()
+    const retry = card.retry()
     await vi.waitFor(() => expect(card.state.value.kind).toBe('loading'))
+
+    await retried.answer(0, 'on')
+    await retry
   })
 
   it('starts no second read for workspace B when workspace A finishes while B is reading', async () => {
@@ -188,6 +191,8 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     card.ensureRead()
 
     expect(reads.count()).toBe(2)
+
+    await reads.answer(1, 'on')
   })
 
   it('keeps the last settings when a refresh of the same workspace fails', async () => {
