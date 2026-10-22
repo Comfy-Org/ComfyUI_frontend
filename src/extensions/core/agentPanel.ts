@@ -31,6 +31,10 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  clearPendingSignInAccept,
+  hasPendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -166,7 +170,7 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
-      const { withConsent } = useAgentConsent()
+      const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
@@ -484,6 +488,29 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let resumingAccept = false
+      // While `acceptAfterSignIn` is waiting in this page the record is its
+      // own; only a record that outlived a reload is resumed here.
+      function resumePendingAccept(): boolean {
+        if (
+          !isAuthInitialized.value ||
+          introductionStore.isContinuingSignIn ||
+          !hasPendingSignInAccept()
+        )
+          return false
+        if (!isLoggedIn.value) {
+          clearPendingSignInAccept()
+          return false
+        }
+        if (!resolvedUserInfo.value) return false
+        resumingAccept = true
+        void resumeAcceptAfterReload().finally(() => {
+          resumingAccept = false
+          loadConsentIfEligible()
+        })
+        return true
+      }
+
       const loadConsentIfEligible = (): void => {
         const { introduceBeforeSignIn } = agentPanelStore.onboarding
         if (
@@ -491,6 +518,7 @@ export function registerAgentPanelExtension(): void {
           (introduceBeforeSignIn && !isAuthInitialized.value)
         )
           return
+        if (resumingAccept || resumePendingAccept()) return
         if (introduceBeforeSignIn && !isLoggedIn.value) {
           offerWhenStartupDecided()
           return

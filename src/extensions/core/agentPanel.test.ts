@@ -98,7 +98,8 @@ vi.mock(
           hooks?.onShown?.()
           onAccept()
         }
-      )
+      ),
+      resumeAcceptAfterReload: vi.fn(async () => {})
     })
     const CONSENT_DIALOG_KEY = 'agent-consent' as const
     return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
@@ -2221,6 +2222,59 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterLoadGraph!(fromPartial({ rootGraph: graph }))
 
     expect(composer.nodes).toEqual([{ id: '12', title: 'Original title' }])
+  })
+
+  describe('an accept the sign-in reload interrupted', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+      )
+      setAgentReady(true)
+    })
+
+    afterEach(() => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = false
+    })
+
+    it('is finished before consent is read', async () => {
+      const resume = vi.mocked(useAgentConsent().resumeAcceptAfterReload)
+      resume.mockImplementationOnce(async () => {
+        sessionStorage.removeItem(PENDING_KEY)
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(resume).toHaveBeenCalledOnce()
+      expect(consentStore.load).toHaveBeenCalledOnce()
+      expect(resume.mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(consentStore.load).mock.invocationCallOrder[0]
+      )
+    })
+
+    it('is dropped when the page comes back signed out', async () => {
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('is left to the sign-in still waiting in this page', async () => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = true
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
   })
 
   it('does not self-register when its module is imported', () => {

@@ -15,6 +15,12 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
+import {
+  clearPendingSignInAccept,
+  takePendingSignInAccept,
+  writePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -50,6 +56,7 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
   const agentPanelStore = useAgentPanelStore()
+  const composerStore = useAgentComposerStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
@@ -236,6 +243,38 @@ export function useAgentConsent() {
     })
   }
 
+  async function saveAcceptanceAfterSignIn(): Promise<string | null> {
+    try {
+      const decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
+        return null
+      }
+      useTelemetry()?.trackAgentConsentResolved({
+        decision: 'accepted',
+        save_error_shown: false
+      })
+      return decisionIdentity
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      toast.error(t('g.error'), {
+        description: t('agent.consent.saveError')
+      })
+      return null
+    }
+  }
+
+  function heldDraftText(): string {
+    const held = composerStore.submission
+    return held?.phase === 'pending' ? held.snapshot.prompt.text : ''
+  }
+
   async function acceptAfterSignIn(
     trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
@@ -244,8 +283,10 @@ export function useAgentConsent() {
       return null
     introductionStore.isContinuingSignIn = true
     try {
+      writePendingSignInAccept(heldDraftText())
+      let signedIn: boolean
       try {
-        if (!(await showSignInDialog())) return null
+        signedIn = await showSignInDialog()
       } catch (error) {
         reportError(error, {
           surface: 'agent',
@@ -255,35 +296,30 @@ export function useAgentConsent() {
           description: t('agent.consent.signInError')
         })
         return null
+      } finally {
+        clearPendingSignInAccept()
       }
+      if (!signedIn) return null
+      return await saveAcceptanceAfterSignIn()
+    } finally {
+      introductionStore.isContinuingSignIn = false
+    }
+  }
 
-      try {
-        const decisionIdentity = await consentStore.ensureScope()
-        if (
-          !decisionIdentity ||
-          !(await consentStore.accept(decisionIdentity))
-        ) {
-          useTelemetry()?.trackAgentConsentResolved({
-            decision: 'accept_not_persisted',
-            save_error_shown: false
-          })
-          return null
-        }
-        useTelemetry()?.trackAgentConsentResolved({
-          decision: 'accepted',
-          save_error_shown: false
-        })
-        return decisionIdentity
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_consent_setting_write_failure'
-        })
-        toast.error(t('g.error'), {
-          description: t('agent.consent.saveError')
-        })
-        return null
-      }
+  /**
+   * Finishes an accept that `acceptAfterSignIn` was waiting on when the page
+   * reloaded mid sign-in, as Desktop does after completing sign-in in the
+   * system browser. Puts the held draft back but never sends it: the account
+   * that signed in may not be the one the user expected.
+   */
+  async function resumeAcceptAfterReload(): Promise<void> {
+    const pending = takePendingSignInAccept()
+    if (!pending || !isLoggedIn.value) return
+    if (pending.draft && !composerStore.draft)
+      composerStore.restorePrompt({ text: pending.draft, references: [] }, [])
+    introductionStore.isContinuingSignIn = true
+    try {
+      await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false
     }
@@ -361,5 +397,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, isChecking, withConsent }
+  return { accepted, isChecking, withConsent, resumeAcceptAfterReload }
 }
