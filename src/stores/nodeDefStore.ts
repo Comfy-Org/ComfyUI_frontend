@@ -137,6 +137,15 @@ export interface NodeDefFilter {
   predicate: (nodeDef: ComfyNodeDefImpl) => boolean
 }
 
+/**
+ * The selector widget a dynamic-combo child input hangs off, and the widget's
+ * value that selected it.
+ */
+export interface DynamicComboSelection {
+  widget: string
+  value: unknown
+}
+
 const TOP_NODE_DEF_LIMIT = 64
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
@@ -284,7 +293,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   function getDynamicComboSelectionForInput(
     node: LGraphNode,
     inputName: string
-  ): { widget: string; value: unknown } | undefined {
+  ): DynamicComboSelection | undefined {
     const separator = inputName.indexOf('.')
     if (separator <= 0 || inputName.indexOf('.', separator + 1) !== -1)
       return undefined
