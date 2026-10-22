@@ -40,19 +40,24 @@ test.describe('Properties panel - Node selection', () => {
         const node = window.app!.graph.nodes.find(
           (candidate) => candidate.type === 'KSampler'
         )
-        const widget = node?.widgets?.find(
-          (candidate) => candidate.name === 'steps'
-        )
-        if (!widget) throw new Error('KSampler steps widget not found')
-
+        if (!node) throw new Error('KSampler node not found')
+        const widget = {
+          name: 'typeless_legacy',
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0,
+          draw() {}
+        }
         Reflect.deleteProperty(widget, 'type')
+        node.addCustomWidget(widget)
       })
 
       await panel.getTab('Info').click()
       await panel.getTab('Parameters').click()
-      await panel.searchWidgets('steps')
+      await panel.searchWidgets('typeless_legacy')
       await expect(
-        panel.contentArea.getByText('steps', { exact: true })
+        panel.contentArea.getByText('typeless_legacy', { exact: true })
       ).toBeVisible()
     })
 
