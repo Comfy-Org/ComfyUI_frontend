@@ -22,6 +22,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { emitGraphRestored } from '@/scripts/graphRestore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -184,6 +187,14 @@ function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
 
 function afterFlush(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve))
+}
+
+async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
+  const state = await validateComfyWorkflow(graph.serialize(), (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('graph did not serialize to a valid workflow')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
 }
 
 function seedGraph(graph: LGraph) {
@@ -429,6 +440,162 @@ describe('attachDocOpMinter', () => {
       await afterFlush()
 
       expect(minted).toEqual([expected])
+    })
+  })
+
+  describe('an undo/redo restore mints what the restored change would', () => {
+    type Seeded = ReturnType<typeof seedGraph>
+
+    async function restoreThrough(change: (seeded: Seeded) => unknown) {
+      const seeded = seedGraph(graph)
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => change(seeded))
+      emitGraphRestored({ previous, next: await workflowJson(graph) })
+      await afterFlush()
+      return expected
+    }
+
+    it.for([
+      {
+        change: 'a node move',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          return []
+        }
+      },
+      {
+        change: 'a node move and rename',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          source.title = 'Renamed'
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'title',
+              value: 'Renamed'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a node removal',
+        act: ({ sink, link }: Seeded) => {
+          graph.remove(sink)
+          return [
+            { op: 'delete_node', node_id: sink.id, removed_links: [link.id] }
+          ]
+        }
+      },
+      {
+        change: 'a node addition and its link',
+        act: ({ source }: Seeded) => {
+          const sink = new TestSink()
+          sink.pos = [40, 0]
+          graph.add(sink)
+          source.connect(0, sink, 0)
+          return [
+            {
+              op: 'add_node',
+              node_id: sink.id,
+              class_type: 'TestSink',
+              pos: [40, 0],
+              node: expect.objectContaining({ type: 'TestSink' })
+            },
+            {
+              op: 'connect',
+              link_id: sink.inputs[0].link,
+              from_node: source.id,
+              from_slot: 0,
+              to_node: sink.id,
+              to_slot: 0,
+              link_type: 'IMAGE'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a link removal between surviving nodes',
+        act: ({ sink, link }: Seeded) => {
+          sink.disconnectInput(0)
+          return [
+            { op: 'disconnect', link_id: link.id, to_node: sink.id, to_slot: 0 }
+          ]
+        }
+      },
+      {
+        change: 'a widget value',
+        act: ({ source }: Seeded) => {
+          source.widgets![0].value = 42
+          return [
+            {
+              op: 'set_widget',
+              node_id: source.id,
+              widget: 'steps',
+              value: 42,
+              old: 20
+            }
+          ]
+        }
+      },
+      {
+        change: 'a mode',
+        act: ({ source }: Seeded) => {
+          source.mode = LGraphEventMode.BYPASS
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'mode',
+              value: LGraphEventMode.BYPASS
+            }
+          ]
+        }
+      },
+      {
+        change: 'a collapse',
+        act: ({ source }: Seeded) => {
+          source.collapse()
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.collapsed',
+              value: true
+            }
+          ]
+        }
+      },
+      {
+        change: 'a pin',
+        act: ({ source }: Seeded) => {
+          source.pin(true)
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.pinned',
+              value: true
+            }
+          ]
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const expected = await restoreThrough(act)
+
+      expect(minted).toEqual(expected)
+    })
+
+    it.for([
+      { gate: 'the product is disabled', disable: () => (enabled = false) },
+      { gate: 'no document is bound', disable: () => (bound = false) },
+      { gate: 'the minter is detached', disable: () => minter.detach() }
+    ])('mints nothing while $gate', async ({ disable }) => {
+      disable()
+
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      expect(minted).toEqual([])
     })
   })
 
