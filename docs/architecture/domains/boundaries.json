@@ -6,6 +6,10 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "keybindings/integration/public",
+        "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
@@ -673,12 +677,6 @@
       {
         "name": "billing/integration",
         "patterns": ["src/utils/__tests__/mockBillingContext.ts"]
-      },
-      {
-        "name": "bottom-panel/application",
-        "patterns": [
-          "src/composables/bottomPanelTabs/useCommandSubcategories.ts"
-        ]
       },
       {
         "name": "bottom-panel/infrastructure",
@@ -1829,11 +1827,13 @@
       {
         "name": "keybindings/presentation",
         "patterns": [
-          "src/components/dialog/content/setting/KeybindingPanel.test.ts",
-          "src/components/dialog/content/setting/KeybindingPanel.vue",
-          "src/components/dialog/content/setting/keybinding/**",
-          "src/composables/useEditKeybindingDialog.ts"
+          "src/platform/keybindings/components/**",
+          "src/platform/keybindings/composables/useEditKeybindingDialog.ts"
         ]
+      },
+      {
+        "name": "keybindings/integration",
+        "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
         "name": "light-authoring/application",
@@ -3989,6 +3989,17 @@
         ]
       },
       {
+        "from": "keybindings/integration/public",
+        "allow": [
+          "keybindings/integration/public",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
+          "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "node-definition/domain/public",
         "allow": [
           "node-definition/domain/public",
@@ -4388,26 +4399,21 @@
         ]
       },
       {
-        "from": "bottom-panel/application",
-        "allow": [
-          "bottom-panel/application",
-          "bottom-panel/infrastructure",
-          "unclassified"
-        ]
-      },
-      {
         "from": "bottom-panel/infrastructure",
         "allow": [
-          "bottom-panel/application",
           "bottom-panel/infrastructure",
+          "keybindings/domain",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "bottom-panel/presentation",
         "allow": [
-          "bottom-panel/application",
           "bottom-panel/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -5362,6 +5368,17 @@
         "allow": [
           "keybindings/domain",
           "keybindings/presentation",
+          "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/integration",
+        "allow": [
+          "keybindings/integration/public",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6884,10 +6901,14 @@
       {
         "from": "bottom-panel/integration/outer-1",
         "allow": [
-          "bottom-panel/application",
+          "keybindings/integration/public",
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "bottom-panel/integration/outer-1",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -7702,6 +7723,7 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
+          "keybindings/integration/public",
           "node-definition/domain/public",
           "agent/domain",
           "agent/application",
@@ -7735,7 +7757,6 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
-          "bottom-panel/application",
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
           "bounding-boxes/domain",
@@ -7830,6 +7851,7 @@
           "job-queue/integration",
           "keybindings/domain",
           "keybindings/presentation",
+          "keybindings/integration",
           "light-authoring/application",
           "light-authoring/integration",
           "linear-mode/domain",

@@ -36,8 +36,8 @@ import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
-import { EDIT_KEYBINDING_DIALOG_KEY } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
+import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
+import { EDIT_KEYBINDING_DIALOG_KEY } from '@/platform/keybindings/components/editKeybindingDialogState'
 
 const { dialogState, existingKeybindingOnCombo } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>

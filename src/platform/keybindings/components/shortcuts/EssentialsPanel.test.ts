@@ -10,7 +10,7 @@ beforeEach(() => {
 
 // Mock ShortcutsList component
 vi.mock<unknown>(
-  import('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'),
+  import('@/platform/keybindings/components/shortcuts/ShortcutsList.vue'),
   () => ({
     default: {
       name: 'ShortcutsList',
@@ -53,7 +53,7 @@ const mockCommands: ComfyCommandImpl[] = [
 describe('EssentialsPanel', () => {
   it('should render ShortcutsList with essentials commands', async () => {
     const { default: EssentialsPanel } =
-      await import('@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue')
+      await import('@/platform/keybindings/components/shortcuts/EssentialsPanel.vue')
     render(EssentialsPanel)
 
     expect(screen.getByTestId('shortcuts-list')).toBeTruthy()
@@ -61,7 +61,7 @@ describe('EssentialsPanel', () => {
 
   it('should categorize commands into subcategories', async () => {
     const { default: EssentialsPanel } =
-      await import('@/components/bottomPanel/tabs/shortcuts/EssentialsPanel.vue')
+      await import('@/platform/keybindings/components/shortcuts/EssentialsPanel.vue')
     render(EssentialsPanel)
 
     const el = screen.getByTestId('shortcuts-list')

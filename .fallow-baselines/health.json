@@ -834,7 +834,7 @@
         "count": 1
       }
     },
-    "src/components/dialog/content/setting/KeybindingPanel.vue": {
+    "src/platform/keybindings/components/KeybindingPanel.vue": {
       "crap_moderate": {
         "count": 1
       }
@@ -3589,7 +3589,7 @@
     "browser_tests/fixtures/ComfyPage.ts:circular dependency",
     "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts:circular dependency",
     "src/components/error/useErrorOverlayState.ts:high impact",
-    "src/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue:circular dependency",
+    "src/platform/keybindings/components/EditKeybindingFooter.vue:circular dependency",
     "src/renderer/extensions/vueNodes/components/ImagePreview.vue:complexity",
     "src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts:complexity",
     "src/stores/subgraphNavigationStore.ts:circular dependency",
@@ -3691,7 +3691,7 @@
     "src/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
     "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
     "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
-    "src/composables/useEditKeybindingDialog.ts:circular dependency",
+    "src/platform/keybindings/composables/useEditKeybindingDialog.ts:circular dependency",
     "src/stores/maskEditorStore.ts:circular dependency",
     "apps/website/src/components/blocks/FeaturedCarousel01.vue:complexity",
     "src/components/videoEdit/VideoFilmstripTrim.vue:complexity",

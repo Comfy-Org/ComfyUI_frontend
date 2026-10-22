@@ -113,7 +113,7 @@ import TableRow from '@/components/ui/table/TableRow.vue'
 import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
-import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -123,8 +123,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import KeybindingCommandRows from './keybinding/KeybindingCommandRows.vue'
-import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
+import KeybindingCommandRows from './KeybindingCommandRows.vue'
+import KeybindingPresetToolbar from './KeybindingPresetToolbar.vue'
 
 type KeybindingCommand = ComponentProps<typeof KeybindingCommandRows>['command']
 

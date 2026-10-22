@@ -3,7 +3,7 @@ import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
 
-import ShortcutsList from '@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'
+import ShortcutsList from '@/platform/keybindings/components/shortcuts/ShortcutsList.vue'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 const i18n = createI18n({

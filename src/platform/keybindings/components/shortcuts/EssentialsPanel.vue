@@ -15,7 +15,7 @@ import { computed } from 'vue'
 import {
   ESSENTIALS_CONFIG,
   useCommandSubcategories
-} from '@/composables/bottomPanelTabs/useCommandSubcategories'
+} from '@/platform/keybindings/composables/useCommandSubcategories'
 import { useCommandStore } from '@/stores/commandStore'
 
 import ShortcutsList from './ShortcutsList.vue'

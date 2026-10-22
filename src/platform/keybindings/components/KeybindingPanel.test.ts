@@ -16,9 +16,12 @@ import KeybindingPanel from './KeybindingPanel.vue'
 
 const editKeybinding = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/composables/useEditKeybindingDialog'), () => ({
-  useEditKeybindingDialog: () => ({ show: editKeybinding })
-}))
+vi.mock(
+  import('@/platform/keybindings/composables/useEditKeybindingDialog'),
+  () => ({
+    useEditKeybindingDialog: () => ({ show: editKeybinding })
+  })
+)
 
 vi.mock(import('@/platform/keybindings/presetService'), () => ({
   useKeybindingPresetService: () =>

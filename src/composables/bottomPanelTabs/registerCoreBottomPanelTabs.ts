@@ -1,4 +1,4 @@
-import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
+import { useShortcutsTab } from '@/platform/keybindings/composables/useShortcutsTab'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
