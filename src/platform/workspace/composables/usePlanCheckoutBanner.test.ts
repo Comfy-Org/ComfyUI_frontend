@@ -39,9 +39,6 @@ describe('usePlanCheckoutBanner', () => {
 
   beforeEach(() => {
     distribution.isCloud = true
-    Object.assign(useTeamWorkspaceStore(), {
-      workspaceTransitionGeneration: 0
-    })
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
     vi.mocked(workspaceApi.getBillingStatus).mockReset()
     vi.mocked(workspaceApi.getBillingOpStatus).mockReset()
@@ -166,9 +163,10 @@ describe('usePlanCheckoutBanner', () => {
       expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-a')
     )
 
-    Object.assign(useTeamWorkspaceStore(), {
-      workspaceTransitionGeneration: 1
-    })
+    const workspace = useTeamWorkspaceStore()
+    const generation = workspace.workspaceTransitionGeneration
+    workspace.resetForIdentityChange()
+    expect(workspace.workspaceTransitionGeneration).toBe(generation + 1)
     await vi.waitFor(() =>
       expect(checkout.banner.value?.kind).toBe('paymentReceived')
     )
