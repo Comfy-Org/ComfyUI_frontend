@@ -1833,7 +1833,10 @@
       },
       {
         "name": "keybindings/integration",
-        "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
+        "patterns": [
+          "src/platform/keybindings/composables/useShortcutsTab.test.ts",
+          "src/platform/keybindings/composables/useShortcutsTab.ts"
+        ]
       },
       {
         "name": "light-authoring/application",
