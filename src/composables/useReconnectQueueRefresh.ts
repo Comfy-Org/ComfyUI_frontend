@@ -251,19 +251,17 @@ export function useReconnectQueueRefresh() {
       leftQueue.map((jobId) => jobOutcome(jobId, historyByJobId.get(jobId)))
     )
 
-    leftQueue.forEach((jobId, i) => {
-      if (outcomes[i].state === 'live') activeJobIds.add(jobId)
-    })
-
     const unreadable: JobId[] = []
     leftQueue.forEach((jobId, i) => {
       const outcome = outcomes[i]
       if (outcome.state === 'live') {
+        activeJobIds.add(jobId)
         unreadableRefreshes.delete(jobId)
         return
       }
       if (outcome.state === 'unknown') {
         if (giveUpOnUnreadable(jobId)) unreadable.push(jobId)
+        else activeJobIds.add(jobId)
         return
       }
       unreadableRefreshes.delete(jobId)

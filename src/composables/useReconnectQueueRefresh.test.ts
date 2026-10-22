@@ -602,24 +602,42 @@ describe('useReconnectQueueRefresh', () => {
         ])
       })
 
-      it('stops following a run that stays unreadable across reconnects', async () => {
-        const executionStore = useExecutionStore()
-        executionStore.queuedJobs['job-0'] = { nodes: {} }
-        const refresh = useReconnectQueueRefresh()
+      it.for([
+        {
+          name: 'a queued run',
+          follow: (jobId: string) => {
+            useExecutionStore().queuedJobs[jobId] = { nodes: {} }
+          },
+          expectedActiveJobId: null
+        },
+        {
+          name: 'the active run',
+          follow: followRun,
+          expectedActiveJobId: 'job-0'
+        }
+      ])(
+        'stops following $name only after it stays unreadable across three reconnects',
+        async ({ follow, expectedActiveJobId }) => {
+          const executionStore = useExecutionStore()
+          follow('job-0')
+          const refresh = useReconnectQueueRefresh()
 
-        const first = refresh()
-        await vi.runAllTimersAsync()
-        await first
-        const second = refresh()
-        await vi.runAllTimersAsync()
-        await second
-        expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
+          const first = refresh()
+          await vi.runAllTimersAsync()
+          await first
+          const second = refresh()
+          await vi.runAllTimersAsync()
+          await second
+          expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
+          expect(executionStore.activeJobId).toBe(expectedActiveJobId)
 
-        const third = refresh()
-        await vi.runAllTimersAsync()
-        await third
-        expect(executionStore.queuedJobs).toEqual({})
-      })
+          const third = refresh()
+          await vi.runAllTimersAsync()
+          await third
+          expect(executionStore.queuedJobs).toEqual({})
+          expect(executionStore.activeJobId).toBeNull()
+        }
+      )
     })
   })
 })
