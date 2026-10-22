@@ -11,12 +11,11 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, registered } = vi.hoisted(() => {
+const { canvasEl, container } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  const registered: ComfyExtension[] = []
-  return { container, canvasEl, registered }
+  return { container, canvasEl }
 })
 
 const processMouseDown = vi.fn()
@@ -31,10 +30,7 @@ vi.mock(import('@/scripts/app'), () => {
   }
   return {
     app: fromPartial<typeof comfyApp>({
-      registerExtension: (ext: ComfyExtension) => {
-        registered.push(ext)
-        return ext.setup?.(fromPartial({}))
-      },
+      registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
       canvasEl,
       canvas: fromPartial({
         ds,
@@ -53,10 +49,11 @@ function canvasPointerHandlers() {
   return { processMouseDown, processMouseMove }
 }
 
-const { installTouchPointerGuards } = await import('./simpleTouchSupport')
+await import('./simpleTouchSupport')
+const { installTouchPointerGuards } = await import('./touchPointerGuards')
 const handlersAtImport = canvasPointerHandlers()
-await registered[0].init?.(fromPartial({}))
-const handlersAfterInit = canvasPointerHandlers()
+installTouchPointerGuards()
+const handlersAfterInstall = canvasPointerHandlers()
 
 let nextTouchId = 0
 
@@ -149,16 +146,20 @@ describe('touch pointer guards', () => {
     expect(handlersAtImport.processMouseMove).toBe(processMouseMove)
   })
 
-  it('wraps the canvas pointer handlers when the extension initialises', () => {
-    expect(handlersAfterInit.processMouseDown).not.toBe(processMouseDown)
-    expect(handlersAfterInit.processMouseMove).not.toBe(processMouseMove)
+  it('wraps the canvas pointer handlers when installed', () => {
+    expect(handlersAfterInstall.processMouseDown).not.toBe(processMouseDown)
+    expect(handlersAfterInstall.processMouseMove).not.toBe(processMouseMove)
   })
 
   it('wraps the canvas pointer handlers only once when installed again', () => {
     installTouchPointerGuards()
 
     const handlers = canvasPointerHandlers()
-    expect(handlers.processMouseDown).toBe(handlersAfterInit.processMouseDown)
-    expect(handlers.processMouseMove).toBe(handlersAfterInit.processMouseMove)
+    expect(handlers.processMouseDown).toBe(
+      handlersAfterInstall.processMouseDown
+    )
+    expect(handlers.processMouseMove).toBe(
+      handlersAfterInstall.processMouseMove
+    )
   })
 })

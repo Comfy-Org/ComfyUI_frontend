@@ -1,3 +1,4 @@
+import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -119,6 +120,7 @@ export async function loadExtensions() {
   const extensions = await api.getExtensions()
 
   installErrorNodeWidgets()
+  installTouchPointerGuards()
   await bootstrapTracer.settle(
     'bootstrap/extensions-load-core',
     () => import('@/extensions/core/index')

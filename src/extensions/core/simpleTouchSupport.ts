@@ -1,46 +1,11 @@
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '@/scripts/app'
 
-let touchZooming = false
-let touchCount = 0
-let pointerGuardsInstalled = false
-
-/**
- * Wraps `LGraphCanvas.prototype.processMouseDown` and `processMouseMove` so
- * canvas pointer handling yields to touch gestures. Later calls are no-ops.
- */
-export function installTouchPointerGuards() {
-  if (pointerGuardsInstalled) return
-  pointerGuardsInstalled = true
-
-  const processMouseDown = LGraphCanvas.prototype.processMouseDown
-  LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
-    const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
-    if (startsFreshTouch) {
-      touchCount = 0
-      touchZooming = false
-    }
-
-    if (touchZooming || touchCount) {
-      return
-    }
-    app.canvas.pointer.isDown = false
-    return processMouseDown.apply(this, [e])
-  }
-
-  const processMouseMove = LGraphCanvas.prototype.processMouseMove
-  LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
-    if (touchZooming || touchCount > 1) {
-      return
-    }
-    return processMouseMove.apply(this, [e])
-  }
-}
+import { touchGesture } from './touchPointerGuards'
 
 app.registerExtension({
   name: 'Comfy.SimpleTouchSupport',
-  init: installTouchPointerGuards,
   setup() {
     let touchDist: number | null = null
     let touchTime: Date | null = null
@@ -63,18 +28,16 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
-        touchCount += e.changedTouches.length
+        touchGesture.count += e.changedTouches.length
 
         lastTouch = null
         lastScale = null
         if (e.touches.length === 1) {
-          // Store start time for press+hold for context menu
           touchTime = new Date()
           lastTouch = e.touches[0]
         } else {
           touchTime = null
           if (e.touches.length === 2) {
-            // Store center pos for zoom
             lastScale = app.canvas.ds.scale
             lastTouch = getMultiTouchCenter(e)
 
@@ -89,22 +52,20 @@ app.registerExtension({
     app.canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchCount -= e.changedTouches.length
+        touchGesture.count -= e.changedTouches.length
 
-        if (e.touches.length !== 1) touchZooming = false
+        if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
               const touch = {
-                button: 2, // Right click
+                button: 2,
                 clientX: e.changedTouches[0].clientX,
                 clientY: e.changedTouches[0].clientY,
-                pointerId: 1, // changedTouches' id is 0, set it to any number
-                isPrimary: true // changedTouches' isPrimary is false, so set it to true
+                pointerId: 1,
+                isPrimary: true
               }
-              // context menu info set in 'pointerdown' event
               app.canvasEl.dispatchEvent(new PointerEvent('pointerdown', touch))
-              // then, context menu open after 'pointerup' event
               setTimeout(() => {
                 app.canvasEl.dispatchEvent(new PointerEvent('pointerup', touch))
               })
@@ -117,29 +78,25 @@ app.registerExtension({
     )
 
     const resetTouchState = () => {
-      touchCount = 0
-      touchZooming = false
+      touchGesture.count = 0
+      touchGesture.zooming = false
       touchTime = null
       lastTouch = null
       lastScale = null
       touchDist = null
     }
 
-    // Reset touch state when page loses visibility (e.g., switching apps on iPad)
-    // This prevents touchCount from getting stuck when touchend events are missed
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         resetTouchState()
       }
     })
 
-    // Also handle touchcancel which fires when touch is interrupted
     app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
 
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
-        // make a threshold for touchmove to prevent clear touchTime for long press
         if (touchTime && lastTouch && e.touches.length === 1) {
           const onlyTouch = e.touches[0]
           const deltaX = onlyTouch.clientX - lastTouch.clientX
@@ -149,9 +106,9 @@ app.registerExtension({
           }
         }
         if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
-          e.preventDefault() // Prevent browser from zooming when two textareas are touched
+          e.preventDefault()
           app.canvas.pointer.isDown = false
-          touchZooming = true
+          touchGesture.zooming = true
 
           LiteGraph.closeAllContextMenus(window)
           app.canvas.search_box?.close()
@@ -165,7 +122,6 @@ app.registerExtension({
           const newX = (center.clientX - lastTouch.clientX) / scale
           const newY = (center.clientY - lastTouch.clientY) / scale
 
-          // Code from LiteGraph
           if (scale < app.canvas.ds.min_scale) {
             scale = app.canvas.ds.min_scale
           } else if (scale > app.canvas.ds.max_scale) {
@@ -176,7 +132,6 @@ app.registerExtension({
 
           app.canvas.ds.scale = scale
 
-          // Code from LiteGraph
           if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
             app.canvas.ds.scale = 1
           }
