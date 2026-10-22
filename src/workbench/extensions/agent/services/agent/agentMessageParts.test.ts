@@ -398,31 +398,42 @@ describe('retireAskParts', () => {
     ])
   })
 
-  it.for<{ kind: string; part: MessagePart }>([
+  const dismissedRun: MessagePart = {
+    type: 'runApproval',
+    askId: 'x',
+    dismissed: true
+  }
+  const dismissedQuestion: MessagePart = {
+    ...question,
+    askId: 'x',
+    dismissed: true
+  }
+  const dismissedDeletion: MessagePart = {
+    type: 'deleteApproval',
+    askId: 'x',
+    prompt: 'Delete 1 node?',
+    nodes: [{ id: '12', name: 'Hero sampler' }],
+    hiddenNodeCount: 0,
+    dismissed: true
+  }
+  const closed: AskUserResolution = { status: 'closed' }
+  const answered: AskUserResolution = { status: 'answered', selected: ['run'] }
+
+  it.for<{ name: string; part: MessagePart; resolution: AskUserResolution }>([
+    { name: 'run approval, closed', part: dismissedRun, resolution: closed },
+    { name: 'run approval, answered', part: dismissedRun, resolution: answered },
+    { name: 'question, closed', part: dismissedQuestion, resolution: closed },
+    { name: 'question, answered', part: dismissedQuestion, resolution: answered },
+    { name: 'delete approval, closed', part: dismissedDeletion, resolution: closed },
     {
-      kind: 'run approval',
-      part: { type: 'runApproval', askId: 'x', dismissed: true }
-    },
-    { kind: 'question', part: { ...question, askId: 'x', dismissed: true } },
-    {
-      kind: 'delete approval',
-      part: {
-        type: 'deleteApproval',
-        askId: 'x',
-        prompt: 'Delete 1 node?',
-        nodes: [{ id: '12', name: 'Hero sampler' }],
-        hiddenNodeCount: 0,
-        dismissed: true
-      }
+      name: 'delete approval, answered',
+      part: dismissedDeletion,
+      resolution: answered
     }
-  ])('keeps a dismissed $kind dismissed through a later answer', ({ part }) => {
-    for (const resolution of [
-      { status: 'closed' },
-      { status: 'answered', selected: ['run'] }
-    ] satisfies AskUserResolution[])
-      expect(retireAskParts([part], 'x', resolution)).toEqual([
-        expect.objectContaining({ type: part.type, dismissed: true })
-      ])
+  ])('keeps a dismissed card dismissed: $name', ({ part, resolution }) => {
+    expect(retireAskParts([part], 'x', resolution)).toEqual([
+      expect.objectContaining({ type: part.type, dismissed: true })
+    ])
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
