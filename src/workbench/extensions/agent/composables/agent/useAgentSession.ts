@@ -367,25 +367,16 @@ const turnStartedAt = new Map<TurnId, number>()
 /**
  * Module-level like `turnStartedAt`: a POST outlives the panel that sent it,
  * so a stop clicked from a remounted panel before the acknowledgement must
- * reach the send it belongs to. Each send owns its record and settles only
- * its own stop; an unsent conversation is keyed by a token newChat renews.
+ * reach the continuation that acks. One owner: armed while a send is in
+ * flight, consumed exactly once at ack.
  */
-interface PendingSend {
-  conversation: string | symbol
-  threadId: string | null
-  stop: { method: AgentStopMethod | undefined; turnId: TurnId | null } | null
-}
-let pendingSend: PendingSend | null = null
-let unsentConversation = Symbol('unsent conversation')
+let sendInFlight = false
+let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
 
-function conversationKey(threadId: string | null): string | symbol {
-  return threadId ?? unsentConversation
-}
-
-function takeSendStop(send: PendingSend): PendingSend['stop'] {
-  const stop = send.stop
-  send.stop = null
-  return stop
+function consumeStopPendingAck() {
+  const pending = stopPendingAck
+  stopPendingAck = null
+  return pending
 }
 
 const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
@@ -1141,16 +1132,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
+    stopPendingActiveTurn()
   }
 
-  function settleSendStop(
-    send: PendingSend,
-    threadId: string | null,
-    turnId: TurnId | null
-  ): void {
-    const stop = takeSendStop(send)
-    if (stop === null || threadId === null || turnId === null) return
-    void cancelTurn(threadId, turnId, stop.method)
+  function stopPendingActiveTurn(): void {
+    const pendingStop = consumeStopPendingAck()
+    if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
   function recordSendError(
@@ -1232,7 +1219,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function reattachRefusedTurn(
-    send: PendingSend,
     error: unknown,
     threadAtSend: string,
     generation: number
@@ -1257,12 +1243,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) settleSendStop(send, threadAtSend, activeTurnId)
+    if (adoptedActiveTurn) stopPendingActiveTurn()
     return adoptedActiveTurn
   }
 
   async function performSend(
-    send: PendingSend,
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
@@ -1301,19 +1286,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      const shown = observeAcceptedTurn(generation, onAccepted)
-      if (shown)
-        acceptTurn(
-          ack,
-          text,
-          wfContext,
-          attachments,
-          tags,
-          workflowReferences,
-          skillScopeAtSend
-        )
-      settleSendStop(send, ack.thread_id, toTurnId(ack.message_id))
-      return shown
+      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      acceptTurn(
+        ack,
+        text,
+        wfContext,
+        attachments,
+        tags,
+        workflowReferences,
+        skillScopeAtSend
+      )
+      return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
       // persisted, so a refusal that lands after newChat()/loadThread() has
@@ -1321,7 +1304,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
-        send,
         error,
         threadAtSend,
         generation
@@ -1368,15 +1350,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
-    const send: PendingSend = {
-      conversation: conversationKey(conversationStore.threadId),
-      threadId: conversationStore.threadId,
-      stop: null
-    }
-    pendingSend = send
+    sendInFlight = true
+    stopPendingAck = null
     try {
       const sent = await performSend(
-        send,
         text,
         attachments,
         tags,
@@ -1385,12 +1362,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId,
         onAccepted
       )
-      if (!sent) settleSendStop(send, send.threadId, send.stop?.turnId ?? null)
+      if (!sent) stopPendingAck = null
       return sent
     } finally {
       sending.value = false
       releaseSendGate()
-      if (pendingSend === send) pendingSend = null
+      sendInFlight = false
     }
   }
 
@@ -1512,24 +1489,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    if (pendingSend?.conversation === conversationKey(threadId)) {
-      pendingSend.stop = { method, turnId }
+    if (threadId === null || turnId === null) {
+      // The POST has not acked yet; remember the intent and cancel on ack.
+      // sendInFlight, not this instance's sending: the panel that posted may
+      // have been remounted, and the stop arrives through the new instance.
+      if (sendInFlight) stopPendingAck = { method }
       return
     }
-    if (threadId === null || turnId === null) return
-    await cancelTurn(threadId, turnId, method)
-  }
-
-  async function cancelTurn(
-    threadId: string,
-    turnId: TurnId,
-    method: AgentStopMethod | undefined
-  ): Promise<void> {
     if (isStoppingTurn(turnId)) return
-    const shown = turnId === conversationStore.activeTurnId
-    if (shown) promptEditState.value = { phase: 'stopping', turnId }
+    promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(
-      shown ? (conversationStore.activeMessageId ?? turnId) : turnId,
+      conversationStore.activeMessageId ?? turnId,
       method
     )
     try {
@@ -1656,7 +1626,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     readyThreadId.value = null
     loadGeneration++
-    unsentConversation = Symbol('unsent conversation')
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()

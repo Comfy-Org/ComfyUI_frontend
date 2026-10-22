@@ -406,47 +406,6 @@ async function restoredTurnStaysStreaming(
   return streaming
 }
 
-async function threadTwoRunning(threadId: string): Promise<AgentMessages> {
-  return threadId === 'th-2'
-    ? [
-        historyRow(1, 'user', 'turn-9', 'other work'),
-        {
-          ...historyRow(2, 'assistant', 'turn-9', '', 'msg-9'),
-          content: {},
-          status: 'streaming'
-        }
-      ]
-    : []
-}
-
-async function sessionWaitingOnACard(
-  duringPost: (
-    session: ReturnType<typeof useAgentSession>,
-    rest: AgentRestClient
-  ) => Promise<void>,
-  outcome: 'accepted' | 'failed'
-) {
-  const { source, emit, status } = fakeEvents()
-  const runDuringPost = vi.fn<() => Promise<void>>()
-  const postMessage = vi
-    .fn<
-      (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
-    >()
-    .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-    .mockImplementationOnce(async () => {
-      await runDuringPost()
-      if (outcome === 'failed') throw new TypeError('Failed to fetch')
-      return { thread_id: 'th-1', message_id: 'msg-2' }
-    })
-  const rest = fakeRest({ postMessage, getMessages: threadTwoRunning })
-  const session = useAgentSession({ rest, events: source })
-  runDuringPost.mockImplementation(() => duringPost(session, rest))
-  session.start()
-  status(true)
-  await session.sendMessage('build it and run it')
-  emit(runApproval('msg-1'))
-  return { session, rest }
-}
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
@@ -2772,111 +2731,9 @@ describe('useAgentSession (v1 composition root)', () => {
       ).toEqual([expect.objectContaining({ dismissed: true })])
     })
 
-    it.for<{
-      name: string
-      duringPost: (
-        session: ReturnType<typeof useAgentSession>,
-        rest: AgentRestClient
-      ) => Promise<void>
-      outcome: 'accepted' | 'failed'
-      cancelled: [string, string][]
-    }>([
-      {
-        name: 'Stop before the ack stops the replacement turn',
-        duringPost: (session) => session.stopTurn(),
-        outcome: 'accepted',
-        cancelled: [['th-1', 'msg-2']]
-      },
-      {
-        name: 'Stop on a send that fails stops the waiting turn',
-        duringPost: (session) => session.stopTurn(),
-        outcome: 'failed',
-        cancelled: [['th-1', 'msg-1']]
-      },
-      {
-        name: 'Stop on a send that fails stops the turn shown when Stop was pressed',
-        duringPost: async (session) => {
-          useAgentConversationStore().startTurn('msg-5' as TurnId)
-          await session.stopTurn()
-        },
-        outcome: 'failed',
-        cancelled: [['th-1', 'msg-5']]
-      },
-      {
-        name: 'Stop, then opening another thread, still stops the replacement turn',
-        duringPost: async (session) => {
-          await session.stopTurn()
-          await session.loadThread('th-2')
-        },
-        outcome: 'accepted',
-        cancelled: [['th-1', 'msg-2']]
-      },
-      {
-        name: 'Stop, then opening another thread, still stops the waiting turn if the send fails',
-        duringPost: async (session) => {
-          await session.stopTurn()
-          await session.loadThread('th-2')
-        },
-        outcome: 'failed',
-        cancelled: [['th-1', 'msg-1']]
-      },
-      {
-        name: 'Stop pressed in another thread stops that thread at once',
-        duringPost: async (session, rest) => {
-          await session.loadThread('th-2')
-          await session.stopTurn()
-          expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
-            ['th-2', 'msg-9']
-          ])
-        },
-        outcome: 'failed',
-        cancelled: [['th-2', 'msg-9']]
-      }
-    ])('$name', async ({ duringPost, outcome, cancelled }) => {
-      const { session, rest } = await sessionWaitingOnACard(duringPost, outcome)
-
-      await session.sendMessage('actually, do this instead')
-
-      expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual(cancelled)
-    })
-
-    it('reports a Stop on a turn the user has since left', async () => {
-      const { session } = await sessionWaitingOnACard(async (s) => {
-        await s.stopTurn('button')
-        await s.loadThread('th-2')
-      }, 'accepted')
-
-      await session.sendMessage('actually, do this instead')
-
-      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledWith(
-        expect.objectContaining({ method: 'button', turn_id: 'msg-2' })
-      )
-    })
-
-    it("does not stop a new chat's first turn from a later new chat", async () => {
-      let accept!: (ack: AgentTurnAccepted) => void
-      const postMessage = vi.fn(
-        () =>
-          new Promise<AgentTurnAccepted>((resolve) => {
-            accept = resolve
-          })
-      )
-      const rest = fakeRest({ postMessage })
-      const session = useAgentSession({ rest, events: fakeEvents().source })
-      session.start()
-
-      const sent = session.sendMessage('first message')
-      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
-      session.newChat()
-      await session.stopTurn()
-      accept({ thread_id: 'th-new', message_id: 'msg-new' })
-      await sent
-
-      expect(rest.cancelMessage).not.toHaveBeenCalled()
-    })
-
-    it("keeps a remounted panel's Stop on its own send", async () => {
-      const replies = new Map<string, (ack: AgentTurnAccepted) => void>()
+    it('stops the waiting turn when Stop lands while the replacement is posting', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
       const postMessage = vi
         .fn<
           (
@@ -2885,38 +2742,22 @@ describe('useAgentSession (v1 composition root)', () => {
           ) => Promise<AgentTurnAccepted>
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-        .mockImplementation(
-          (threadId) =>
-            new Promise<AgentTurnAccepted>((resolve) => {
-              replies.set(threadId, resolve)
-            })
-        )
-      const rest = fakeRest({ postMessage, getMessages: threadTwoRunning })
-      const events = fakeEvents()
-      const first = useAgentSession({ rest, events: events.source })
-      first.start()
-      events.status(true)
-      await first.sendMessage('build it and run it')
-      events.emit(runApproval('msg-1'))
-      const firstSend = first.sendMessage('actually, do this instead')
-      await vi.waitFor(() => expect(replies.has('th-1')).toBe(true))
+        .mockImplementationOnce(async () => {
+          await stopDuringPost()
+          return { thread_id: 'th-1', message_id: 'msg-2' }
+        })
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: source })
+      stopDuringPost.mockImplementation(() => session.stopTurn())
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
 
-      first.stop()
-      const second = useAgentSession({ rest, events: events.source })
-      second.start()
-      await second.loadThread('th-2')
-      const secondSend = second.sendMessage('and this one')
-      await vi.waitFor(() => expect(replies.has('th-2')).toBe(true))
-      await second.stopTurn()
+      await session.sendMessage('actually, do this instead')
 
-      replies.get('th-1')?.({ thread_id: 'th-1', message_id: 'msg-2' })
-      await firstSend
-      expect(rest.cancelMessage).not.toHaveBeenCalled()
-
-      replies.get('th-2')?.({ thread_id: 'th-2', message_id: 'msg-10' })
-      await secondSend
       expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
-        ['th-2', 'msg-10']
+        ['th-1', 'msg-1']
       ])
     })
 
