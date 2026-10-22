@@ -35,6 +35,7 @@ test.describe(
         await comfyPage.searchBoxV2.addNodeAndGetId('KSampler', {
           position: { x: 400, y: 300 }
         })
+        await comfyPage.nextFrame()
 
         await expect(agentPanel.composer).toBeEmpty()
         await expect(
