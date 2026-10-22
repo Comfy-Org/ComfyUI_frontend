@@ -17,7 +17,7 @@ import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import {
   clearPendingSignInAccept,
-  takePendingSignInAccept,
+  readPendingSignInAccept,
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -306,21 +306,21 @@ export function useAgentConsent() {
     }
   }
 
-  /**
-   * Finishes an accept that `acceptAfterSignIn` was waiting on when the page
-   * reloaded mid sign-in, as Desktop does after completing sign-in in the
-   * system browser. Puts the held draft back but never sends it: the account
-   * that signed in may not be the one the user expected.
-   */
   async function resumeAcceptAfterReload(): Promise<void> {
-    const pending = takePendingSignInAccept()
-    if (!pending || !isLoggedIn.value) return
-    if (pending.draft && !composerStore.draft)
-      composerStore.restorePrompt({ text: pending.draft, references: [] }, [])
+    if (introductionStore.isContinuingSignIn) return
+    const pending = readPendingSignInAccept()
+    if (!pending) return
+    if (!isLoggedIn.value) {
+      clearPendingSignInAccept()
+      return
+    }
     introductionStore.isContinuingSignIn = true
     try {
+      if (pending.draft && !composerStore.draft)
+        composerStore.restorePrompt({ text: pending.draft, references: [] }, [])
       await saveAcceptanceAfterSignIn()
     } finally {
+      clearPendingSignInAccept()
       introductionStore.isContinuingSignIn = false
     }
   }
