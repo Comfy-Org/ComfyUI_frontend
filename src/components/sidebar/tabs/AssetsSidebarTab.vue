@@ -441,9 +441,6 @@ watch(visibleAssets, (newAssets) => {
   reconcileSelection(newAssets)
 })
 
-// Assets are newest-first, so every new output shifts the list under the open
-// gallery. Re-anchor on the asset that is actually on screen rather than on a
-// remembered id, so navigating with the arrows survives the next generation.
 watch(previewableVisibleAssets, (nextAssets, previousAssets) => {
   const index = galleryActiveIndex.value
   if (index === -1) return
@@ -465,7 +462,8 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
+      url: asset.preview_url || '',
+      downloadUrl: getAssetFileUrl(asset)
     }
   })
 })

@@ -76,7 +76,6 @@
         <i class="icon-[lucide--chevron-right] size-6" />
       </Button>
 
-      <!-- File name and download -->
       <div
         v-if="activeItem"
         class="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm"
@@ -166,11 +165,10 @@ function navigateImage(direction: number) {
   emit('update:activeIndex', newIndex)
 }
 
-/* Saves the media being viewed under its own file name, at full resolution. */
 function downloadActiveItem() {
   const item = activeItem.value
   if (!item) return
-  downloadFile(resultItemUrl(item), item.filename)
+  downloadFile(item.downloadUrl ?? resultItemUrl(item), item.filename)
 }
 
 let maskMouseDownTarget: EventTarget | null = null
