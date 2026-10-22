@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -258,6 +259,7 @@ type AgentCrdtApplierDeps = Omit<
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
+  diagnosticsEnabled?: () => boolean
   userId?: () => string | null
   isTargetActive?: Ref<boolean>
   /**
@@ -275,6 +277,7 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled = () => useFeatureFlags().flags.agentCrdtDebugEnabled,
     userId = () => null,
     isTargetActive = ref(true),
     getGraph = () => null,
@@ -323,7 +326,8 @@ export function useAgentCrdtFollower(
           getGraph,
           events,
           applierDeps,
-          canvasFor
+          canvasFor,
+          diagnosticsEnabled
         })
       )
     },
@@ -360,6 +364,7 @@ function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId,
     isTargetActive,
     getGraph,
@@ -390,7 +395,9 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(transport))
+  const client = new DocFrameClient(
+    createLoggedTransport(transport, diagnosticsEnabled)
+  )
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,

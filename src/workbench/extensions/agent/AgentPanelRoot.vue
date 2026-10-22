@@ -155,6 +155,7 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { startCrdtLog } from './crdt/crdtLog'
+import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -524,6 +525,12 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const crdtLogLevel = computed({
+  get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
+  set: (level: CrdtLogLevel) => {
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level)
+  }
+})
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -2137,7 +2144,11 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @copy-history="onCopyMarkdown"
     >
       <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+        <CrdtDevPanel
+          v-model:level="crdtLogLevel"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
       <template #composerNotice>
         <AgentCreditTransitionNotice

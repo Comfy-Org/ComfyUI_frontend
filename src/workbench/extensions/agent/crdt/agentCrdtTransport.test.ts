@@ -22,16 +22,25 @@ describe('createLoggedTransport.send', () => {
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
     const parse = vi.spyOn(JSON, 'parse')
 
-    expect(createLoggedTransport(base).send(frame)).toBe(true)
+    expect(createLoggedTransport(base, () => false).send(frame)).toBe(true)
 
     expect(parse).not.toHaveBeenCalled()
     parse.mockRestore()
   })
 
-  it('records the parsed frame while the instrument is on', () => {
+  it('reads the diagnostic flag for each outgoing frame', () => {
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    let enabled = false
+    const transport = createLoggedTransport(base, () => enabled)
+    transport.send(frame)
+    expect(devEvents.value.at(-1)?.detail).toEqual({
+      delivered: true,
+      frame: null,
+      unparsed_chars: 18
+    })
+    enabled = true
 
-    expect(createLoggedTransport(base).send(frame)).toBe(true)
+    expect(transport.send(frame)).toBe(true)
 
     expect(devEvents.value.at(-1)?.detail).toEqual({
       delivered: true,
@@ -48,7 +57,9 @@ describe('createLoggedTransport.send', () => {
       data: { value: 'secret-prompt', signed_url: 'secret-url' }
     })
 
-    expect(createLoggedTransport(base).send(sensitiveFrame)).toBe(true)
+    expect(createLoggedTransport(base, () => true).send(sensitiveFrame)).toBe(
+      true
+    )
 
     expect(vi.mocked(console.debug).mock.calls.at(-1)?.at(-1)).toEqual({
       delivered: true,
@@ -72,7 +83,7 @@ describe('createLoggedTransport.send', () => {
 
   it('keeps an unparsed outbound frame out of the buffer and the copied report', () => {
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
-    const transport = createLoggedTransport(base)
+    const transport = createLoggedTransport(base, () => true)
 
     expect(transport.send('not json')).toBe(true)
     expect(transport.send('[1,2]')).toBe(true)

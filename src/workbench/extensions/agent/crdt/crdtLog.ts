@@ -1,18 +1,12 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
 
+import type { CrdtLogLevel } from './crdtLogLevel'
+import { CRDT_LOG_LEVELS } from './crdtLogLevel'
 import type { CrdtLogScope, DevEventKind } from './devPanelLog'
 import { recordDevEvent, sanitizeDevEventDetail } from './devPanelLog'
 
 const { flags } = useFeatureFlags()
-export type CrdtLogLevel = Settings['Comfy.Agent.CrdtDebug.Level']
-export const CRDT_LOG_LEVELS: readonly CrdtLogLevel[] = [
-  'warn',
-  'info',
-  'debug',
-  'trace'
-]
 
 export function startCrdtLog(): () => void {
   const settingStore = useSettingStore()

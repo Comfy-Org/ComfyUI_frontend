@@ -1,18 +1,7 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-
 import { wireLog } from './crdtLog'
 import type { DocFrameTransport } from './docFrameClient'
 
-const { flags } = useFeatureFlags()
-
-/**
- * Both of `wireLog.trace`'s sinks drop the detail unless the debug instrument
- * is on, so an ungated parse costs every user edit a full `JSON.parse` of the
- * `doc_ops` batch `DocFrameClient.send` just serialised, on the main thread,
- * for a value nothing reads.
- */
 function traceableFrame(frame: string): Record<string, unknown> | null {
-  if (!flags.agentCrdtDebugEnabled) return null
   try {
     const parsed: unknown = JSON.parse(frame)
     return parsed !== null &&
@@ -26,12 +15,13 @@ function traceableFrame(frame: string): Record<string, unknown> | null {
 }
 
 export function createLoggedTransport(
-  base: DocFrameTransport
+  base: DocFrameTransport,
+  diagnosticsEnabled: () => boolean
 ): DocFrameTransport {
   return {
     send(frame) {
       const delivered = base.send(frame)
-      const parsed = traceableFrame(frame)
+      const parsed = diagnosticsEnabled() ? traceableFrame(frame) : null
       wireLog.trace('ws_out', 'outbound frame', {
         delivered,
         frame: parsed,

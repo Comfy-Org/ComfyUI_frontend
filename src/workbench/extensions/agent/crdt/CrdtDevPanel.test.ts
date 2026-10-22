@@ -78,6 +78,20 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toBeNull()
   })
 
+  it('emits the newly selected verbosity level', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    expect(emitted('update:level')).toEqual([['trace']])
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('trace')
+  })
+
   it('smoke-renders follower and document status from a live snapshot', async () => {
     const user = userEvent.setup()
     render(CrdtDevPanel, {
