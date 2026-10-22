@@ -11,6 +11,8 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
+import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
@@ -38,6 +40,7 @@ type UrlActionLoaders = {
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
   assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
+  localHandoffUrlLoader: ReturnType<typeof useLocalHandoffUrlLoader> | null
 }
 
 /**
@@ -70,6 +73,7 @@ const HANDLED_PARAMS = [
   'topup',
   'settings',
   'assets',
+  LOCAL_HANDOFF_PARAM,
   ...STRIPE_RETURN_PARAMS,
   ...BILLING_WEB_RETURN_PARAMS
 ]
@@ -128,7 +132,6 @@ function buildUrlActionSteps(
       run: () => loader.loadPricingTableFromUrl()
     })
   }
-  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     steps.push({
@@ -148,6 +151,13 @@ function buildUrlActionSteps(
     steps.push({
       failureMessage: 'Failed to open assets panel from URL:',
       run: () => loader.loadAssetsFromUrl()
+    })
+  }
+  if (loaders.localHandoffUrlLoader) {
+    const loader = loaders.localHandoffUrlLoader
+    steps.push({
+      failureMessage: 'Failed to open the workflow handed over from local:',
+      run: () => loader.loadLocalHandoffFromUrl()
     })
   }
 
@@ -230,6 +240,7 @@ export function useUrlActionLoaders() {
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
+  const localHandoffUrlLoader = useIfCloud(useLocalHandoffUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
   const steps = isCloud
@@ -242,7 +253,8 @@ export function useUrlActionLoaders() {
           pricingTableUrlLoader,
           topUpUrlLoader,
           settingsUrlLoader,
-          assetsUrlLoader
+          assetsUrlLoader,
+          localHandoffUrlLoader
         },
         router
       )
@@ -250,10 +262,6 @@ export function useUrlActionLoaders() {
 
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
-    // A switch reload is already in flight: activeWorkspaceId and its auth
-    // context are already stale, so starting recovery here could adopt or
-    // poll the old workspace's pending checkout. The next boot, once the
-    // reload lands, gets a clean pass at it.
     if (reloading) return
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }

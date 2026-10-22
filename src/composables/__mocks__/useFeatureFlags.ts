@@ -24,6 +24,7 @@ const defaultFlags: FeatureFlags = {
   nodeReplacementsEnabled: false,
   deployToCloud: false,
   nodeLibraryEssentialsEnabled: false,
+  openOnCloudEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
   hostedBillingDestination: 'stripe',

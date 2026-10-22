@@ -4,42 +4,28 @@
     class="flex shrink-0 items-center"
     data-testid="deployment-switcher"
   >
-    <Menu
+    <EngineMenu
       v-model:open="isOpen"
-      :modal="false"
-      :side-offset="8"
-      :class="cn('max-w-100 min-w-56', switcherMenuMotionClass)"
+      :disabled="isSwitching"
+      :tooltip="hoverTooltip"
+      :label="triggerLabel"
+      trigger-testid="deployment-switcher-trigger"
       @update:open="onOpenChange"
     >
-      <template #trigger>
-        <Button
-          variant="secondary"
-          size="unset"
-          :disabled="isSwitching"
-          :tooltip="hoverTooltip"
-          tooltip-side="bottom"
-          :aria-label="triggerLabel"
-          class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
-          data-testid="deployment-switcher-trigger"
-        >
-          <span class="relative flex">
-            <DeploymentStatusIcon
-              :tone="currentTone"
-              icon-class="size-4"
-              ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
-            />
-            <span
-              v-if="isNew"
-              class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-foreground ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
-              aria-hidden="true"
-              data-testid="deployment-switcher-new"
-            />
-          </span>
-          <i
-            class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
-            aria-hidden="true"
+      <template #icon>
+        <span class="relative flex">
+          <DeploymentStatusIcon
+            :tone="currentTone"
+            icon-class="size-4"
+            ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
-        </Button>
+          <span
+            v-if="isNew"
+            class="absolute -top-0.75 -right-0.75 size-2 rounded-full bg-foreground ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
+            aria-hidden="true"
+            data-testid="deployment-switcher-new"
+          />
+        </span>
       </template>
       <DeploymentSwitcherList
         :switching-to
@@ -49,26 +35,23 @@
         @reload="reload"
         @create-custom-deployment="createCustomDeployment"
       />
-    </Menu>
+    </EngineMenu>
   </div>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
-import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import EngineMenu from '@/platform/workspace/components/EngineMenu.vue'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
