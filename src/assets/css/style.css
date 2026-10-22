@@ -123,6 +123,11 @@
   animation: agent-shimmer 1.8s linear infinite;
 }
 
+textarea.agent-shimmer-text:not(:disabled) {
+  background-clip: text;
+  background-color: transparent;
+}
+
 .disable-animations .agent-shimmer-text {
   animation: none;
   color: var(--muted-foreground);

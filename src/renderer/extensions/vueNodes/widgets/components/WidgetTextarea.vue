@@ -4,6 +4,7 @@
       cn(
         'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
         !isReadOnly && 'hover:bg-muted',
+        isProcessing && 'bg-input',
         widget.borderStyle
       )
     "
@@ -26,7 +27,7 @@
           'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           'overflow-hidden hover:overflow-auto focus:overflow-auto',
-          isProcessing && 'text-transparent caret-transparent'
+          isProcessing && 'agent-shimmer-text caret-transparent'
         )
       "
       :placeholder
@@ -37,18 +38,6 @@
       @pointerup.capture.stop
       @contextmenu.capture="handleContextMenu"
     />
-    <p
-      v-if="isProcessing"
-      aria-hidden="true"
-      :class="
-        cn(
-          'agent-shimmer-text pointer-events-none absolute inset-0 overflow-hidden px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
-          !hideLayoutField && 'pt-5'
-        )
-      "
-    >
-      {{ modelValue }}
-    </p>
     <EnhancePromptButton
       v-if="showEnhance"
       class="absolute top-1.5 right-1.5 z-10"
