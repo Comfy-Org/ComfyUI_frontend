@@ -778,7 +778,9 @@ export default defineConfig({
             // Catch-all for remaining node_modules
             {
               name: 'vendor-other',
-              test: /[\\/]node_modules[\\/]/,
+              test: (id) =>
+                /[\\/]node_modules[\\/]/.test(id) &&
+                !/[\\/]node_modules[\\/](shiki|@shikijs)[\\/]/.test(id),
               priority: 0,
               minSize: 10000
             }
