@@ -1,4 +1,5 @@
 import type { AxiosInstance, AxiosResponse } from 'axios'
+import axios from 'axios'
 import { computed, ref } from 'vue'
 
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -49,7 +50,8 @@ export function useApiRequest({
       const response = await apiCall(client)
       return response.data
     } catch (err) {
-      if (isAbortError(err) || isCurrent?.() === false) return null
+      if (isAbortError(err) || axios.isCancel(err) || isCurrent?.() === false)
+        return null
 
       error.value = mapError(err, errorContext, routeSpecificErrors)
       return null

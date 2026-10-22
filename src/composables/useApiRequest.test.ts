@@ -1,5 +1,5 @@
 import type { AxiosResponse } from 'axios'
-import axios, { AxiosHeaders } from 'axios'
+import axios, { AxiosHeaders, CanceledError } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useApiRequest } from '@/composables/useApiRequest'
@@ -84,13 +84,19 @@ describe('useApiRequest', () => {
     expect(error.value).toBe('mapped message')
   })
 
-  it('swallows cancellations without mapping an error', async () => {
+  it.for([
+    {
+      kind: 'DOM AbortError',
+      cancellation: new DOMException('aborted', 'AbortError')
+    },
+    { kind: 'axios CanceledError', cancellation: new CanceledError() }
+  ])('swallows a $kind without mapping an error', async ({ cancellation }) => {
     const mapError = vi.fn(() => 'should not run')
     const { error, executeRequest } = useApiRequest({ client, mapError })
 
     const result = await executeRequest(
       () => {
-        throw new DOMException('aborted', 'AbortError')
+        throw cancellation
       },
       { errorContext: 'ctx' }
     )
