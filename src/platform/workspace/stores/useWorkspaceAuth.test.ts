@@ -115,6 +115,7 @@ const mockWorkspaceWithRole = {
 const mockTokenResponse = {
   token: 'workspace-token-abc',
   expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
+  user_id: 'uid-1',
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
@@ -1935,6 +1936,7 @@ describe('useWorkspaceAuthStore', () => {
     const personalTokenResponse = {
       token: 'unified-token-1',
       expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+      user_id: 'uid-1',
       workspace: {
         id: 'workspace-personal',
         name: 'Personal',
@@ -3606,6 +3608,7 @@ describe('useWorkspaceAuthStore constructed before authStore', () => {
       Response.json({
         token: 'unified-token-1',
         expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: 'workspace-personal',
           name: 'Personal',
