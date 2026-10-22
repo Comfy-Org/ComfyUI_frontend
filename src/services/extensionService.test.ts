@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { WatchHandle } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { useExtensionService } from './extensionService'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -401,5 +405,57 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
+  })
+})
+
+describe('registerExtension auth hooks', () => {
+  function createAuthEvents() {
+    const listeners = {
+      resolved: new Set<(user: { id: string }) => void>(),
+      refreshed: new Set<() => void>(),
+      logout: new Set<() => void>()
+    }
+    function subscribe<T>(set: Set<T>, callback: T): WatchHandle {
+      set.add(callback)
+      const stop = () => void set.delete(callback)
+      return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
+    }
+    const currentUser = useCurrentUser()
+    vi.mocked(currentUser.onUserResolved).mockImplementation((callback) =>
+      subscribe(listeners.resolved, callback)
+    )
+    vi.mocked(currentUser.onTokenRefreshed).mockImplementation((callback) =>
+      subscribe(listeners.refreshed, callback)
+    )
+    vi.mocked(currentUser.onUserLogout).mockImplementation((callback) =>
+      subscribe(listeners.logout, callback)
+    )
+    return {
+      emit() {
+        listeners.resolved.forEach((callback) => callback({ id: 'user-1' }))
+        listeners.refreshed.forEach((callback) => callback())
+        listeners.logout.forEach((callback) => callback())
+      }
+    }
+  }
+
+  it('installs exactly one of each auth hook after dispose and re-registration', () => {
+    const authEvents = createAuthEvents()
+    const extension = {
+      name: 'auth-hooks',
+      onAuthUserResolved: vi.fn(),
+      onAuthTokenRefreshed: vi.fn(),
+      onAuthUserLogout: vi.fn()
+    }
+    const service = useExtensionService()
+
+    const dispose = service.registerExtension(extension)
+    dispose()
+    service.registerExtension(extension)
+    authEvents.emit()
+
+    expect(extension.onAuthUserResolved).toHaveBeenCalledOnce()
+    expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
+    expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
   })
 })
