@@ -5,6 +5,7 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -195,6 +196,19 @@ function useBillingCapabilitiesInternal() {
   )
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
+  )
+  const paymentRecoveryAvailable = computed(() =>
+    receiveServerFact(
+      'payment_recovery_available',
+      resolvedResponse.value?.payment_recovery_available ?? false
+    )
+  )
+  const runDeniedPaymentPastDue = computed(() =>
+    pendingServerFact<'denied_reasons.can_run_workflows', boolean>(
+      'BE-21535',
+      resolvedResponse.value?.denied_reasons?.can_run_workflows ===
+        'payment_past_due'
+    )
   )
   const isReady = computed(() => {
     const state = readState.value
@@ -539,6 +553,8 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     canManageAutoTopUp,
     autoTopUpSetup,
+    paymentRecoveryAvailable,
+    runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,
     snapshotAuthoritative,

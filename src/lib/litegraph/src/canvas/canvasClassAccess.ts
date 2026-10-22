@@ -3,11 +3,11 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/types/entityRegistry'
 
-import type { ColorOption } from '../interfaces'
+import type { ColorOption } from '@/lib/litegraph/src/interfaces'
 import type {
   IContextMenuOptions,
   IContextMenuValue
-} from '../types/contextMenu'
+} from '@/lib/litegraph/src/types/contextMenu'
 
 interface CanvasClassAccess {
   [Symbol.hasInstance](value: unknown): boolean

@@ -10,7 +10,7 @@ import type {
   CurrentWorkspaceResponse,
   ListMembersResponse
 } from '@comfyorg/ingest-types'
-import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { formatCreditsFromCents } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'

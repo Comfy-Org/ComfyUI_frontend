@@ -34,7 +34,7 @@
       >
         <DialogHeader>
           <DialogTitle>{{ copy.title }}</DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <div class="flex flex-col gap-2 px-4 py-2">
           <DialogDescription>{{ copy.body }}</DialogDescription>

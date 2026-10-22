@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
     useWorkflowActionsMenu: () => ({
       menuItems: ref([
         {
-          id: 'test-action',
+          id: 'test-action-id',
           label: 'Test action',
           badge: 'NEW',
           command: spies.action
@@ -191,6 +191,17 @@ describe('WorkflowActionsDropdown', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
 
     expect(spies.action).toHaveBeenCalledOnce()
+    expect(vi.mocked(useTelemetry()?.trackUiButtonClicked)?.mock.calls).toEqual(
+      [
+        [{ button_id: 'test', element_group: 'workflow_actions' }],
+        [
+          {
+            button_id: 'workflow_actions_test_action_id_clicked',
+            element_group: 'workflow_actions'
+          }
+        ]
+      ]
+    )
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {

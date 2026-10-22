@@ -378,8 +378,7 @@
     "events": "イベント",
     "fdct": "導入支援クリエイティブテクノロジスト",
     "home": "ホーム",
-    "pricing": "料金",
-    "supportedNodes": "サポート対象ノード"
+    "pricing": "料金"
   },
   "buildWhat": {
     "row1": "まだ存在しないものを",
@@ -1074,7 +1073,7 @@
         "q": "既存のワークフローをComfy Cloudで使えますか？"
       },
       "7": {
-        "a": "対応している拡張機能とモデルの一覧は、いつでもCloudで無料で確認できます。\n人気の高いものの大半は利用可能で、新しいものも順次追加されています。",
+        "a": "現時点ではすべてではありません。Comfy Cloudには、ComfyUIコミュニティで広く使われているカスタムノードが多数あらかじめインストールされており、需要と互換性に応じて対応を定期的に拡充しています。\n対応している拡張機能とモデルは、いつでもCloudで無料で確認できます。まだ利用できないノードはDesktopにご自身でインストールでき、ワークフローはDesktopとCloudの両方で利用できます。",
         "q": "すべてのComfyUI拡張機能とカスタムノードに対応していますか？"
       },
       "8": {
@@ -1134,59 +1133,6 @@
       },
       "heading": "プロフェッショナルが\n選ぶ理由 ",
       "headingHighlight": "Cloud"
-    }
-  },
-  "cloudNodes": {
-    "card": {
-      "nodeCountOne": "{count}個のノード",
-      "nodeCountOther": "{count}個のノード",
-      "nodesHeading": "含まれるノード",
-      "unavailableDescription": "説明は利用できません。",
-      "viewRepo": "リポジトリを表示"
-    },
-    "detail": {
-      "back": "すべてのパックに戻る",
-      "deprecated": "非推奨",
-      "downloads": "ダウンロード数",
-      "experimental": "実験的",
-      "lastUpdated": "最終更新日",
-      "latestVersion": "最新バージョン",
-      "license": "ライセンス",
-      "metaDescription": "{pack}はComfy Cloudにプリインストール済みで、{nodeCount}個のノードが管理対象GPUでの実行に対応しています。{description}",
-      "metaTitle": "Comfy Cloudの{pack}",
-      "nodesHeading": "このパックのノード",
-      "publisher": "公開元",
-      "stars": "GitHubスター"
-    },
-    "empty": {
-      "body": "別の検索語を試すか、フィルターをクリアしてください。",
-      "heading": "一致するパックはありません"
-    },
-    "hero": {
-      "body": "ディテーラー、ControlNet前処理ツール、アニメーションツール、利便性向上ユーティリティなど、コミュニティが構築した数百のノードがComfy Cloudにプリインストールされています。管理対象GPUですぐにワークフローを実行できます。",
-      "heading": "お気に入りのComfyUIカスタムノードをクラウドで実行",
-      "label": "クラウドノード"
-    },
-    "list": {
-      "ariaLabel": "Comfy Cloudでサポートされているカスタムノードパック"
-    },
-    "meta": {
-      "description": "Comfy Cloudにプリインストールされている数百のComfyUIカスタムノードパックを閲覧できます。ディテーラー、ControlNet前処理ツール、アニメーションツール、サンプラーなどを、パック名またはノード名で検索できます。",
-      "title": "Comfy Cloudのカスタムノードパック - 標準でサポート"
-    },
-    "search": {
-      "label": "カスタムノードパックを検索",
-      "placeholder": "パックまたはノードを検索"
-    },
-    "section": {
-      "heading": "カスタムノードパックを探す"
-    },
-    "sort": {
-      "az": "A → Z",
-      "downloads": "インストール数順",
-      "label": "パックを並べ替え",
-      "mostNodes": "ノード数順",
-      "recentlyUpdated": "最近更新された順"
     }
   },
   "cloudNodesLaunch": {

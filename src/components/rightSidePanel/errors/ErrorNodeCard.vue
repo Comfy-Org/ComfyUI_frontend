@@ -166,7 +166,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import LocateNodeButton from './LocateNodeButton.vue'
-import TransitionCollapse from '../layout/TransitionCollapse.vue'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'

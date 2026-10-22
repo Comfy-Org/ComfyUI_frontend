@@ -7,7 +7,7 @@
  */
 import { toRaw } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import {
   cacheNodeToLoad3dMap,
   getNodeToLoad3dMapSync,
@@ -19,7 +19,7 @@ import type {
   CameraType,
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 

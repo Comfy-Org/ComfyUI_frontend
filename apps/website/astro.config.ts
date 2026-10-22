@@ -66,6 +66,7 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    resolve: { noExternal: ['three'] },
     // gsap ships ESM files in a package Node reads as CommonJS, which the
     // Vercel function cannot import by name; bundle it into server output.
     ...(cmsEnabled() ? { ssr: { noExternal: ['gsap'] } } : {}),

@@ -1,5 +1,5 @@
-import { $el } from '../utils'
-import { prop } from '../../utils'
+import { $el } from '@/scripts/ui/utils'
+import { prop } from '@/scripts/utils'
 import type { ComfyButton } from './button'
 
 export class ComfyButtonGroup {

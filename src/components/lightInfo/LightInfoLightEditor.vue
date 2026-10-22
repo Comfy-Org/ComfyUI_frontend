@@ -27,10 +27,10 @@
       "
     >
       <label :class="FIELD_LABEL_CLASS">{{ $t('lightInfo.color') }}</label>
-      <ColorPicker
+      <AppColorPicker
         :model-value="light.color"
         :alpha="false"
-        :aria-label="$t('lightInfo.color')"
+        :accessible-label="$t('lightInfo.color')"
         @update:model-value="(color) => emit('update', { color })"
       />
       <label :class="FIELD_LABEL_CLASS">
@@ -62,17 +62,17 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   LIGHT_TYPES,
   LIGHT_TYPE_LABEL_KEYS
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import type {
   LightInfoEntry,
   LightInfoType
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type NumberField =

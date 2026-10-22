@@ -7,13 +7,9 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expectTypeOf, it } from 'vitest'
 
-import type {
-  BillingIntent,
-  BillingProduct,
-  BillingSource
-} from './contract.js'
-import type { BillingEntryErrorCode } from './entryParser.js'
-import type { ReturnTarget } from './returnTargets.js'
+import type { BillingIntent, BillingProduct, BillingSource } from './contract'
+import type { BillingEntryErrorCode } from './entryParser'
+import type { ReturnTarget } from './returnTargets'
 
 describe('the billing event vocabulary', () => {
   it('names the same sources as the entry URL contract', () => {

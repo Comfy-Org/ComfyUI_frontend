@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,
