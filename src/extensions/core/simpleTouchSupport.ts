@@ -4,9 +4,43 @@ import { app } from '@/scripts/app'
 
 let touchZooming = false
 let touchCount = 0
+let pointerGuardsInstalled = false
+
+/**
+ * Wraps `LGraphCanvas.prototype.processMouseDown` and `processMouseMove` so
+ * canvas pointer handling yields to touch gestures. Later calls are no-ops.
+ */
+export function installTouchPointerGuards() {
+  if (pointerGuardsInstalled) return
+  pointerGuardsInstalled = true
+
+  const processMouseDown = LGraphCanvas.prototype.processMouseDown
+  LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
+    const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
+    if (startsFreshTouch) {
+      touchCount = 0
+      touchZooming = false
+    }
+
+    if (touchZooming || touchCount) {
+      return
+    }
+    app.canvas.pointer.isDown = false
+    return processMouseDown.apply(this, [e])
+  }
+
+  const processMouseMove = LGraphCanvas.prototype.processMouseMove
+  LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
+    if (touchZooming || touchCount > 1) {
+      return
+    }
+    return processMouseMove.apply(this, [e])
+  }
+}
 
 app.registerExtension({
   name: 'Comfy.SimpleTouchSupport',
+  init: installTouchPointerGuards,
   setup() {
     let touchDist: number | null = null
     let touchTime: Date | null = null
@@ -169,26 +203,3 @@ app.registerExtension({
     )
   }
 })
-
-const processMouseDown = LGraphCanvas.prototype.processMouseDown
-LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
-  const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
-  if (startsFreshTouch) {
-    touchCount = 0
-    touchZooming = false
-  }
-
-  if (touchZooming || touchCount) {
-    return
-  }
-  app.canvas.pointer.isDown = false // Prevent context menu from opening on second tap
-  return processMouseDown.apply(this, [e])
-}
-
-const processMouseMove = LGraphCanvas.prototype.processMouseMove
-LGraphCanvas.prototype.processMouseMove = function (e: PointerEvent) {
-  if (touchZooming || touchCount > 1) {
-    return
-  }
-  return processMouseMove.apply(this, [e])
-}

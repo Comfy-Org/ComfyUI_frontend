@@ -1,5 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -13,7 +14,15 @@ import {
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-vi.mock(import('@/extensions/core/index'), () => ({}))
+const coreLoad = vi.hoisted(() => ({ onConfigure: undefined as unknown }))
+
+vi.mock(import('@/extensions/core/index'), async () => {
+  const { LGraphNode } = await import('@/lib/litegraph/src/litegraph')
+  coreLoad.onConfigure = LGraphNode.prototype.onConfigure
+  return {}
+})
+
+const onConfigureBeforeLoad = LGraphNode.prototype.onConfigure
 
 describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
@@ -253,6 +262,15 @@ describe('extension loading', () => {
       const [cause] = vi.mocked(reportError).mock.calls[0]
       assert(cause instanceof AggregateError)
       expect(cause.message).toBe('Error loading extensions')
+    })
+
+    it('patches LGraphNode.prototype.onConfigure before core extensions load', async () => {
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([])
+
+      await loadExtensions()
+
+      expect(coreLoad.onConfigure).not.toBe(onConfigureBeforeLoad)
+      expect(coreLoad.onConfigure).toBe(LGraphNode.prototype.onConfigure)
     })
 
     it('times the core and custom imports as separate subphases', async () => {
