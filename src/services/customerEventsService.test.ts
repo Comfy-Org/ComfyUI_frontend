@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('firebase/auth'))
 
+import { d } from '@/i18n'
 import {
   EventType,
   useCustomerEventsService
@@ -22,10 +23,6 @@ const mockAxiosInstance = vi.hoisted(() => ({
   interceptors: { response: { use: vi.fn() } }
 }))
 
-const mockI18n = vi.hoisted(() => ({
-  d: vi.fn()
-}))
-
 // Mock dependencies
 vi.mock<unknown>(import('axios'), () => ({
   default: {
@@ -35,10 +32,7 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  d: mockI18n.d,
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'), { spy: true })
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
@@ -90,18 +84,6 @@ describe('useCustomerEventsService', () => {
       mockAuthHeaders
     )
     vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-a')
-    mockI18n.d.mockImplementation((date, options) => {
-      // Mock i18n date formatting
-      if (options?.month === 'short') {
-        return date.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      }
-      return date.toLocaleString()
-    })
 
     service = useCustomerEventsService()
 
@@ -319,7 +301,8 @@ describe('useCustomerEventsService', () => {
       },
       {
         newer: 'noPersonalWorkspace',
-        expectedError: 'toastMessages.noPersonalWorkspace',
+        expectedError:
+          'This account has no personal billing. Manage billing from your team workspace.',
         startNewer: () => {
           Object.assign(useAuthStore(), { hasPersonalWorkspace: false })
         }
@@ -415,18 +398,18 @@ describe('useCustomerEventsService', () => {
 
   describe('formatEventType', () => {
     const expectedByType: Record<string, string> = {
-      credit_added: 'credits.eventTypes.creditAdded',
-      topup_completed: 'credits.eventTypes.creditAdded',
-      account_created: 'credits.eventTypes.accountCreated',
-      api_usage_completed: 'credits.eventTypes.apiUsage',
-      gpu_usage: 'credits.eventTypes.gpuUsage',
-      api_node_usage: 'credits.eventTypes.apiNodeUsage',
-      agent_usage: 'credits.eventTypes.agentUsage'
+      credit_added: 'Credits Added',
+      topup_completed: 'Credits Added',
+      account_created: 'Account Created',
+      api_usage_completed: 'API Usage',
+      gpu_usage: 'GPU Usage',
+      api_node_usage: 'Partner Node Usage',
+      agent_usage: 'Agent Usage'
     }
 
-    it('maps known legacy and unified event types to expected i18n keys', () => {
-      for (const [eventType, expectedKey] of Object.entries(expectedByType)) {
-        expect(service.formatEventType(eventType)).toBe(expectedKey)
+    it('maps known legacy and unified event types to their labels', () => {
+      for (const [eventType, expectedLabel] of Object.entries(expectedByType)) {
+        expect(service.formatEventType(eventType)).toBe(expectedLabel)
       }
     })
 
@@ -478,7 +461,7 @@ describe('useCustomerEventsService', () => {
 
       service.formatDate(dateString)
 
-      expect(mockI18n.d).toHaveBeenCalledWith(new Date(dateString), {
+      expect(d).toHaveBeenCalledWith(new Date(dateString), {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',

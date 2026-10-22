@@ -157,6 +157,22 @@ describe('useReleaseService', () => {
       expect(service.isLoading.value).toBe(false)
     })
 
+    it('shows backend error text verbatim, without HTML escaping', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        response: {
+          status: 403,
+          data: { message: `No module named 'cv2' <&> "x"` }
+        }
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      await service.getReleases({ project: 'comfyui' })
+
+      expect(service.error.value).toBe(
+        `Forbidden: No module named 'cv2' <&> "x"`
+      )
+    })
+
     it('should handle 401 errors', async () => {
       const errorResponse = {
         response: {
@@ -232,7 +248,9 @@ describe('useReleaseService', () => {
       const result = await service.getReleases({ project: 'comfyui' })
 
       expect(result).toBeNull()
-      expect(service.error.value).toBe('Failed to get releases: undefined')
+      expect(service.error.value).toBe(
+        'Failed to get releases: Unknown error occurred'
+      )
     })
 
     it('should set loading state correctly', async () => {

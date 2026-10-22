@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
 import { useApiRequest } from '@/composables/useApiRequest'
+import { t, tPlain } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -15,9 +16,6 @@ type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 type UpdateComfyUIParams = components['schemas']['UpdateComfyUIParams']
 type ManagerTaskHistory = components['schemas']['HistoryResponse']
 type QueueTaskItem = components['schemas']['QueueTaskItem']
-
-const GENERIC_SECURITY_ERR_MSG =
-  'Forbidden: A security error has occurred. Please check the terminal logs'
 
 /**
  * API routes for ComfyUI Manager
@@ -67,11 +65,17 @@ export const useComfyManagerService = () => {
     routeSpecificErrors?: Record<number, string>
   ): string => {
     if (!axios.isAxiosError<{ message?: string }>(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
+      return tPlain('serviceErrors.failedWithMessage', {
+        context,
+        message: err instanceof Error ? err.message : String(err)
+      })
     }
 
     if (!err.response) {
-      return `${context} failed: ${err.message}`
+      return tPlain('serviceErrors.failedWithMessage', {
+        context,
+        message: err.message
+      })
     }
 
     const status = err.response.status
@@ -79,11 +83,12 @@ export const useComfyManagerService = () => {
       return routeSpecificErrors[status]
     }
     if (status === 404) {
-      return 'Could not connect to ComfyUI-Manager'
+      return t('serviceErrors.manager.notConnected')
     }
 
     return (
-      err.response.data.message ?? `${context} failed with status ${status}`
+      err.response.data.message ??
+      tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
 
@@ -102,7 +107,7 @@ export const useComfyManagerService = () => {
   ): Promise<T | null> => {
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
-      error.value = 'Manager service is not available in current mode'
+      error.value = t('serviceErrors.manager.unavailable')
       return Promise.resolve(null)
     }
 
@@ -110,9 +115,9 @@ export const useComfyManagerService = () => {
   }
 
   const startQueue = async (signal?: AbortSignal) => {
-    const errorContext = 'Starting ComfyUI-Manager job queue'
+    const errorContext = t('serviceErrors.context.startingQueue')
     const routeSpecificErrors = {
-      403: GENERIC_SECURITY_ERR_MSG
+      403: t('serviceErrors.manager.securityError')
     }
 
     return executeRequest<string>(
@@ -122,7 +127,7 @@ export const useComfyManagerService = () => {
   }
 
   const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {
-    const errorContext = 'Getting ComfyUI-Manager queue status'
+    const errorContext = t('serviceErrors.context.gettingQueueStatus')
 
     return executeRequest<ManagerQueueStatus>(
       (client) =>
@@ -135,7 +140,7 @@ export const useComfyManagerService = () => {
   }
 
   const listInstalledPacks = async (signal?: AbortSignal) => {
-    const errorContext = 'Fetching installed packs'
+    const errorContext = t('serviceErrors.context.fetchingInstalledPacks')
 
     return executeRequest<InstalledPacksResponse>(
       (client) => client.get(ManagerRoute.LIST_INSTALLED, { signal }),
@@ -144,7 +149,7 @@ export const useComfyManagerService = () => {
   }
 
   const getImportFailInfo = async (signal?: AbortSignal) => {
-    const errorContext = 'Fetching import failure information'
+    const errorContext = t('serviceErrors.context.fetchingImportFailInfo')
 
     return executeRequest<Record<string, unknown>>(
       (client) => client.get(ManagerRoute.IMPORT_FAIL_INFO, { signal }),
@@ -156,7 +161,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['ImportFailInfoBulkRequest'] = {},
     signal?: AbortSignal
   ) => {
-    const errorContext = 'Fetching bulk import failure information'
+    const errorContext = t('serviceErrors.context.fetchingBulkImportFailInfo')
 
     if (!params.cnr_ids?.length && !params.urls?.length) {
       return {}
@@ -184,10 +189,12 @@ export const useComfyManagerService = () => {
       client_id: api.clientId ?? api.initialClientId ?? 'unknown'
     }
 
-    const errorContext = `Queueing ${task.kind} task`
+    const errorContext = tPlain('serviceErrors.context.queueingTask', {
+      kind: task.kind
+    })
     const routeSpecificErrors = {
-      403: GENERIC_SECURITY_ERR_MSG,
-      404: `Not Found: Task could not be queued`
+      403: t('serviceErrors.manager.securityError'),
+      404: t('serviceErrors.route.taskQueueFailed')
     }
 
     return executeRequest<string>(
@@ -241,10 +248,10 @@ export const useComfyManagerService = () => {
     ui_id?: string,
     signal?: AbortSignal
   ) => {
-    const errorContext = 'Updating all packs'
+    const errorContext = t('serviceErrors.context.updatingAllPacks')
     const routeSpecificErrors = {
-      403: 'Forbidden: To use this action, a security_level of `middle or below` is required',
-      401: 'Unauthorized: ComfyUI-Manager job queue is busy'
+      403: t('serviceErrors.route.securityLevelRequired'),
+      401: t('serviceErrors.manager.queueBusy')
     }
 
     const queryParams = {
@@ -268,10 +275,10 @@ export const useComfyManagerService = () => {
     ui_id?: string,
     signal?: AbortSignal
   ) => {
-    const errorContext = 'Updating ComfyUI'
+    const errorContext = t('serviceErrors.context.updatingComfyUI')
     const routeSpecificErrors = {
-      400: 'Bad Request: Missing required parameters',
-      403: 'Forbidden: To use this action, a security_level of `middle or below` is required'
+      400: t('serviceErrors.route.missingParameters'),
+      403: t('serviceErrors.route.securityLevelRequired')
     }
 
     const queryParams = {
@@ -291,9 +298,9 @@ export const useComfyManagerService = () => {
   }
 
   const rebootComfyUI = async (signal?: AbortSignal) => {
-    const errorContext = 'Rebooting ComfyUI'
+    const errorContext = t('serviceErrors.context.rebootingComfyUI')
     const routeSpecificErrors = {
-      403: 'Forbidden: Rebooting ComfyUI requires security_level of middle or below'
+      403: t('serviceErrors.route.rebootSecurityLevel')
     }
 
     return executeRequest<null>(
@@ -303,7 +310,7 @@ export const useComfyManagerService = () => {
   }
 
   const isLegacyManagerUI = async (signal?: AbortSignal) => {
-    const errorContext = 'Checking if user set Manager to use the legacy UI'
+    const errorContext = t('serviceErrors.context.checkingLegacyManagerUi')
 
     return executeRequest<{ is_legacy_manager_ui: boolean }>(
       (client) => client.get(ManagerRoute.IS_LEGACY_MANAGER_UI, { signal }),
@@ -320,7 +327,7 @@ export const useComfyManagerService = () => {
     } = {},
     signal?: AbortSignal
   ) => {
-    const errorContext = 'Getting ComfyUI-Manager task history'
+    const errorContext = t('serviceErrors.context.gettingTaskHistory')
 
     return executeRequest<ManagerTaskHistory>(
       (client) =>
