@@ -12,11 +12,9 @@
         @click="togglePlay"
       >
         <i
-          :class="[
-            'pi',
-            playing ? 'pi-pause' : 'pi-play',
-            'text-lg text-foreground'
-          ]"
+          :class="
+            cn('pi text-lg text-foreground', playing ? 'pi-pause' : 'pi-play')
+          "
         />
       </Button>
 
@@ -77,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { formatAnimationTime } from '@/components/load3d/formatAnimationTime'

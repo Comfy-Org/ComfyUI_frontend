@@ -8,10 +8,12 @@
         @click.stop="handleBookmarkClick"
       >
         <i
-          :class="[
-            isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
-            'size-3.5'
-          ]"
+          :class="
+            cn(
+              isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+              'size-3.5'
+            )
+          "
         />
       </Button>
     </template>
@@ -19,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
