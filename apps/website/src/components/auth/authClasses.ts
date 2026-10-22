@@ -21,7 +21,7 @@ export const AUTH_LINK_BUTTON_CLASS =
  * form-field tokens (zinc borders, blue-400 focus, red-300 invalid).
  */
 export const AUTH_FIELD_CLASS =
-  'h-11 w-full appearance-none rounded-2xl border border-[#52525b] bg-transparency-white-t8 px-4 text-base text-primary-warm-white shadow-[0_0_#0000,0_0_#0000,0_1px_2px_0_rgba(18,18,23,0.05)] transition-[background,color,border-color,outline-color,box-shadow] duration-200 outline-none placeholder:text-transparency-white-t40 hover:border-[#71717a] focus:border-[#60a5fa] aria-invalid:border-[#fca5a5] aria-invalid:placeholder:text-[#f87171] xl:h-12'
+  'h-11 w-full appearance-none rounded-2xl border border-[#52525b] bg-transparency-white-t8 px-4 text-base text-primary-warm-white shadow-[0_0_#0000,0_0_#0000,0_1px_2px_0_rgba(18,18,23,0.05)] transition-[background,color,border-color,outline-color,box-shadow] duration-200 outline-none placeholder:text-white/40 hover:border-[#71717a] focus:border-[#60a5fa] aria-invalid:border-[#fca5a5] aria-invalid:placeholder:text-[#f87171] xl:h-12'
 
 /** PrimeVue Message, severity error, Aura dark. */
 export const AUTH_MESSAGE_ERROR_CLASS =

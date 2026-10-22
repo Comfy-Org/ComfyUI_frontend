@@ -5,13 +5,13 @@ import type { EffectScope } from 'vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { WorkflowReference } from '../../types/workflowReference'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 type ComposerStore = ReturnType<typeof useAgentComposerStore>
 type Send = (

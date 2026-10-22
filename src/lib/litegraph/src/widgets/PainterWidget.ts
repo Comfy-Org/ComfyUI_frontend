@@ -1,4 +1,4 @@
-import type { IPainterWidget } from '../types/widgets'
+import type { IPainterWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

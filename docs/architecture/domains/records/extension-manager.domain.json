@@ -4,43 +4,6 @@
   "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
   "modules": [
     {
-      "path": "src/workbench/extensions/manager/types/compatibility.types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/extensions/manager/types/comfyManagerTypes.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
-      "role": "presentation"
-    },
-    { "path": "src/workbench/extensions/manager/utils/**", "role": "domain" },
-    {
-      "path": "src/workbench/extensions/manager/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/workbench/extensions/manager/stores/**",
-      "role": "application"
-    },
-    {
-      "path": "src/workbench/extensions/manager/services/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/workbench/extensions/manager/components/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/composables/useCachedRequest.test.ts",
       "role": "infrastructure"
     },
@@ -57,6 +20,14 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/constants/searchConstants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/searchServiceTypes.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/utils/mapperUtil.ts",
       "role": "domain"
     },
@@ -69,11 +40,35 @@
       "role": "domain"
     },
     {
-      "path": "src/types/searchServiceTypes.ts",
+      "path": "src/workbench/extensions/manager/**",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/manager/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/workbench/extensions/manager/services/comfyManagerService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/compatibility.types.ts",
       "role": "domain"
     },
     {
-      "path": "src/constants/searchConstants.ts",
+      "path": "src/workbench/extensions/manager/types/conflictDetectionTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/manager/types/importFailedTypes.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/workbench/extensions/manager/utils/**",
       "role": "domain"
     }
   ],

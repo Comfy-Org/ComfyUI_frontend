@@ -36,9 +36,6 @@ const tabs = computed(() => [
     logs: comfyManagerStore.failedTasksLogs
   }
 ])
-const activeTabData = computed(
-  () => tabs.value.find((tab) => tab.value === activeTab.value) ?? tabs.value[0]
-)
 
 const visible = computed(() => comfyManagerStore.taskLogs.length > 0)
 
@@ -101,6 +98,10 @@ const latestTaskLogLines = computed(
   () =>
     tabs.value.find((tab) => tab.value === activeTab.value)?.logs.at(-1)?.logs
 )
+
+function setSectionsContainer(el: Element | ComponentPublicInstance | null) {
+  sectionsContainerRef.value = el instanceof HTMLElement ? el : null
+}
 
 function setLatestLogContainer(el: Element | ComponentPublicInstance | null) {
   latestLogContainerRef.value = el instanceof HTMLElement ? el : null
@@ -194,11 +195,16 @@ onBeforeUnmount(() => {
           </TabsList>
         </div>
 
-        <TabsContent :value="activeTab" class="mt-0">
+        <TabsContent
+          v-for="tab in tabs"
+          :key="tab.value"
+          :value="tab.value"
+          class="mt-0"
+        >
           <div
-            ref="sectionsContainerRef"
+            :ref="setSectionsContainer"
             role="region"
-            :aria-label="activeTabData.label"
+            :aria-label="tab.label"
             class="scroll-container max-h-[450px] overflow-y-auto px-6 py-4"
             :style="{
               scrollbarWidth: 'thin',
@@ -206,10 +212,10 @@ onBeforeUnmount(() => {
             }"
           >
             <details
-              v-for="(log, index) in activeTabData.logs"
+              v-for="(log, index) in tab.logs"
               :key="log.taskId"
               open
-              class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
+              class="group/log mt-2 rounded-lg border bg-background shadow-md"
             >
               <summary
                 class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
@@ -233,7 +239,7 @@ onBeforeUnmount(() => {
               </summary>
               <div
                 :ref="
-                  index === activeTabData.logs.length - 1
+                  index === tab.logs.length - 1
                     ? setLatestLogContainer
                     : undefined
                 "
@@ -242,7 +248,7 @@ onBeforeUnmount(() => {
                 :class="
                   cn(
                     'h-64 overflow-y-auto rounded-lg bg-black',
-                    index === activeTabData.logs.length - 1 && 'grow'
+                    index === tab.logs.length - 1 && 'grow'
                   )
                 "
                 @scroll="handleScroll"
@@ -288,7 +294,7 @@ onBeforeUnmount(() => {
             </template>
             <span
               v-else-if="comfyManagerStore.failedTasksIds.length"
-              class="text-error"
+              class="text-destructive"
               >{{ t('g.failed') }}</span
             >
             <span v-else>{{ t('g.completed') }}</span>
@@ -313,7 +319,7 @@ onBeforeUnmount(() => {
             <Button
               v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
-              class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
+              class="mr-4 rounded-full border-2 border-foreground px-3"
               @click="handleRestart"
             >
               {{ t('manager.applyChanges') }}

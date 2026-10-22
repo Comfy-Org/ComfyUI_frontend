@@ -4,11 +4,7 @@
   "description": "Turning node definitions into LiteGraph node types: litegraphService registers node and subgraph definitions with inputs, outputs, widgets, size, context menu, key and background handlers, and image previews, adds nodes to the graph, and offers canvas centering and node focus; subgraphService loads and registers subgraph definitions from workflows. LiteGraph itself, the node definition catalog, and widget constructors remain external.",
   "modules": [
     {
-      "path": "src/services/litegraphService.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/services/litegraphService.test.ts",
+      "path": "src/services/__mocks__/litegraphService.ts",
       "role": "integration"
     },
     {
@@ -16,7 +12,11 @@
       "role": "integration"
     },
     {
-      "path": "src/services/__mocks__/litegraphService.ts",
+      "path": "src/services/litegraphService.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/litegraphService.ts",
       "role": "integration"
     },
     {

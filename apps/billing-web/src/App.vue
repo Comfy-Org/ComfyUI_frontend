@@ -21,7 +21,8 @@ const router = useRouter()
  * deleted) is sent to sign-in here, where the refusal is explained.
  */
 watch(billingWebLivePhase, (next) => {
-  if (next !== 'error' || route.path === SIGN_IN_PATH) return
+  if (next !== 'error' || route.path === SIGN_IN_PATH || route.meta.public)
+    return
   void router.replace({
     path: SIGN_IN_PATH,
     query: { returnTo: route.fullPath }
@@ -57,8 +58,9 @@ const scopeKey = computed(() =>
 </script>
 
 <template>
+  <RouterView v-if="route.meta.public" />
   <!-- An entry error outranks the session: no account repairs a bad link. -->
-  <EntryErrorView v-if="error && !routeExplainsError" />
+  <EntryErrorView v-else-if="error && !routeExplainsError" />
   <BillingShell v-else-if="scopeKey" :key="scopeKey">
     <RouterView />
   </BillingShell>

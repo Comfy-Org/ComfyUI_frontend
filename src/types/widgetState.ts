@@ -3,7 +3,7 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/widgetValue'
 
 export interface WidgetState<
   TValue = WidgetValue,

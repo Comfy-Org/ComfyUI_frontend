@@ -10,18 +10,17 @@
         :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i class="pi pi-download text-lg text-base-foreground" />
+        <i class="pi pi-download text-lg text-foreground" />
       </Button>
       <div
         v-show="showExportFormats"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button
             v-for="format in exportFormats"
             :key="format.value"
             variant="textonly"
-            class="text-base-foreground"
             @click="exportModel(format.value)"
           >
             {{ format.label }}
@@ -36,7 +35,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 
 const { sourceFormat = null } = defineProps<{
   sourceFormat?: string | null

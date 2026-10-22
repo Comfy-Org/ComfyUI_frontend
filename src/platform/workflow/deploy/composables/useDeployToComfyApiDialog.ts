@@ -7,6 +7,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-deploy-to-comfy-api'
 
+export interface DeployToComfyApiDialogOptions {
+  deploysInstallation?: boolean
+}
+
 export function useDeployToComfyApiDialog() {
   const dialogStore = useDialogStore()
 
@@ -14,13 +18,14 @@ export function useDeployToComfyApiDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show() {
+  function show({ deploysInstallation }: DeployToComfyApiDialogOptions = {}) {
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: DeployToComfyApiCard,
       props: {
         videoSources: DEPLOY_VIDEO_SOURCES,
         posterSrc: DEPLOY_VIDEO_POSTER_SRC,
+        deploysInstallation,
         onDone: hide,
         onDismiss: hide
       },
