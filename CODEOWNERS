@@ -5,7 +5,6 @@
 
 # Workflow Templates
 /src/platform/workflow/templates/                 @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
-/src/components/templates/                        @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
 
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs

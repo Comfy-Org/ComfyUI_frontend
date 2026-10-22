@@ -74,12 +74,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({
-    startPendingTopup: mockStartPendingTopup,
-    clearPendingTopup: mockClearPendingTopup
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => ({
+      startPendingTopup: mockStartPendingTopup,
+      clearPendingTopup: mockClearPendingTopup
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
