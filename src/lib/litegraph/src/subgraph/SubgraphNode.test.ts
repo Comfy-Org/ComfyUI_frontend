@@ -4,7 +4,15 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
@@ -1023,8 +1031,9 @@ describe('SubgraphNode Edge Cases', () => {
 })
 
 describe('SubgraphNode workflow badge icon', () => {
-  it('allocates the icon image on first title box draw and reuses it afterwards', () => {
+  it('allocates the icon image on first title box draw, reuses it afterwards and redraws once it loads', () => {
     const subgraphNode = createTestSubgraphNode(createTestSubgraph())
+    const setDirtyCanvas = vi.spyOn(subgraphNode, 'setDirtyCanvas')
     const ctx = fromPartial<CanvasRenderingContext2D>({
       save: vi.fn(),
       restore: vi.fn(),
@@ -1045,8 +1054,12 @@ describe('SubgraphNode workflow badge icon', () => {
     const [firstIcon, secondIcon] = vi
       .mocked(ctx.drawImage)
       .mock.calls.map(([image]) => image)
-    expect(firstIcon).toBeInstanceOf(HTMLImageElement)
+    assert.instanceOf(firstIcon, HTMLImageElement)
     expect(secondIcon).toBe(firstIcon)
+
+    firstIcon.dispatchEvent(new Event('load'))
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, false)
   })
 })
 
