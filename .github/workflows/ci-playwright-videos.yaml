@@ -74,13 +74,15 @@ jobs:
       - name: Plan recording shards
         id: plan
         if: steps.detect.outputs.files != '[]'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           PLAYWRIGHT_VERSION=$(node -p 'require("@playwright/test/package.json").version')
           export VIDEO_CACHE_INDEX=/tmp/video-cache-index.txt
           VIDEO_CACHE_SALT=$({
             echo "$PLAYWRIGHT_VERSION"
-            git ls-files -s -- browser_tests ':(glob,exclude)browser_tests/**/*.spec.ts' \
-              playwright.config.ts .github/workflows/ci-playwright-videos.yaml
+            git ls-tree -r "$HEAD_SHA" -- browser_tests playwright.config.ts \
+              .github/workflows/ci-playwright-videos.yaml | grep -v '\.spec\.ts$'
           } | sha256sum | cut -c1-32)
           export VIDEO_CACHE_SALT
           mapfile -t FILES < /tmp/video-specs.txt
