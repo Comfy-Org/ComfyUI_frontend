@@ -31,6 +31,7 @@
         :state="planRow"
         :action="action"
         :can-manage-subscription="capabilities.canManageSubscription.value"
+        @open-plan="openPlan"
       />
       <BillingCreditsCard
         :state="creditsCard"
@@ -74,6 +75,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
@@ -97,6 +99,7 @@ const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
 
 const HANDOFF_PATH = {
@@ -129,6 +132,10 @@ const handoffUrl = computed(() =>
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
+}
+
+function openPlan() {
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits() {
