@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 export const useNodeHelpStore = defineStore('nodeHelp', () => {
   const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)

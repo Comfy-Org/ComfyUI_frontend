@@ -48,8 +48,7 @@ describe('JobFilterActions', () => {
     const user = userEvent.setup()
     render(JobFilterActions, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: {} }
+        plugins: [i18n]
       },
       props: {
         selectedWorkflowFilter: 'all',

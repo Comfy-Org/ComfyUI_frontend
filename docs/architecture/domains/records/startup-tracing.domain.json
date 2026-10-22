@@ -1,0 +1,41 @@
+{
+  "id": "startup-tracing",
+  "capability": "Production startup tracing",
+  "description": "Bootstrap phase tracer and performance marks that record named startup phases to the Performance API, Sentry breadcrumbs, Datadog RUM timings, and the bootstrap-complete telemetry event. Lab performance benchmarks live outside src.",
+  "modules": [
+    {
+      "path": "src/platform/telemetry/perf/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/perf/perfMark.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/perf/perfMark.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Bootstrap phases record marks, RUM timings, and one completion event per page load",
+      "checks": [
+        "src/platform/telemetry/perf/bootstrapTracer.test.ts",
+        "src/platform/telemetry/perf/perfMark.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md",
+    "docs/adr/PERF-BENCHMARKS-0022-performance-evidence-and-regression-framework.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "bootstrapTracer emits through the buffered datadogRum API before the telemetry registry exists, so it keeps importing the RUM SDK directly.",
+    "The bootstrapTracer singleton remains importable from bootstrap.ts, main.ts, and GraphView startup code."
+  ],
+  "deepImports": "inventory"
+}

@@ -314,6 +314,28 @@ test.describe('Topbar commands', () => {
         .toBe(true)
     })
 
+    test('Should let a native modal dialog opened over Settings take clicks', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settingDialog.open()
+      await comfyPage.page.evaluate(() => {
+        const dialog = document.createElement('dialog')
+        const option = document.createElement('input')
+        option.type = 'checkbox'
+        option.setAttribute('aria-label', 'Extension option')
+        dialog.append(option)
+        document.body.append(dialog)
+        dialog.showModal()
+      })
+      const option = comfyPage.page.getByRole('checkbox', {
+        name: 'Extension option'
+      })
+
+      await option.click()
+
+      await expect(option).toBeChecked()
+    })
+
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
         ;(window as unknown as Record<string, unknown>)['value'] = 'foo'

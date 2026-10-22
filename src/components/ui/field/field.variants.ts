@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const fieldVariants = cva({
-  base: 'group/field flex w-full gap-3 data-[invalid=true]:text-destructive-background',
+  base: 'group/field flex w-full gap-3 data-[invalid=true]:text-destructive',
   variants: {
     orientation: {
       vertical: 'flex-col *:w-full [&>.sr-only]:w-auto',

@@ -1,10 +1,12 @@
 import { ref, toRaw, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -21,12 +23,15 @@ import type {
   ModelConfig,
   SceneConfig,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { useLoad3dService } from '@/services/load3dService'
+import {
+  copyLoad3dState,
+  handleViewportRefresh
+} from '@/extensions/core/load3d/load3dInstances'
 
 interface Load3dViewerState {
   backgroundColor: string
@@ -374,7 +379,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const hasTargetDimensions = !!(width && height)
 
-      load3d = createLoad3d(containerRef, {
+      load3d = createLoad3d(containerRef, load3dHost, {
         width: width ? (toRaw(width).value as number) : undefined,
         height: height ? (toRaw(height).value as number) : undefined,
         getDimensions: hasTargetDimensions
@@ -390,7 +395,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      await useLoad3dService().copyLoad3dState(source, load3d)
+      await copyLoad3dState(source, load3d)
 
       const sourceCameraState = source.getCameraState()
 
@@ -493,7 +498,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       isStandaloneMode.value = true
 
-      load3d = createLoad3d(containerRef, {
+      load3d = createLoad3d(containerRef, load3dHost, {
         width: 800,
         height: 600,
         isViewerMode: true
@@ -509,8 +514,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       isPreview.value = true
       setupAnimationEvents()
 
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -542,8 +548,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     try {
       saveStandaloneConfig()
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
+      if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
@@ -739,7 +746,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
     }
 
-    await useLoad3dService().copyLoad3dState(load3d, sourceLoad3d)
+    await copyLoad3dState(load3d, sourceLoad3d)
 
     await sourceLoad3d.setBackgroundImage(backgroundImage.value)
     sourceLoad3d.setBackgroundRenderMode(backgroundRenderMode.value)
@@ -757,7 +764,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Refreshes the viewport of the current Load3d instance.
    */
   const refreshViewport = () => {
-    useLoad3dService().handleViewportRefresh(load3d)
+    handleViewportRefresh(load3d)
   }
 
   /**
@@ -835,8 +842,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         )
       )
 
-      const accepted = await load3d.loadModel(modelUrl)
-      if (!accepted) return
+      const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
+      if (outcome !== 'loaded') return
 
       captureAdapterFlags(load3d)
 

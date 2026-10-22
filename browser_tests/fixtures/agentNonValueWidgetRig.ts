@@ -33,7 +33,6 @@ interface NonValueWidgetRigConfig {
   nodeDefs: Record<string, ComfyNodeDef>
   samplerNodeId: number
   seed: WorkflowJSON
-  socketSid: string
   threadId: string
   visibleNodeId: number
   workflowId: string
@@ -65,7 +64,6 @@ export class AgentNonValueWidgetRig {
       page,
       config.workflowId,
       host,
-      config.socketSid,
       'apply'
     )
     await hostSocket.install()

@@ -25,8 +25,7 @@ export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const { showTopUpCreditsDialog } = useBillingDialogs()
-  const { canTopUp, canSubscribeSelfServe, initialize } =
-    useBillingCapabilities()
+  const { canTopUp, initialize } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
@@ -53,11 +52,9 @@ export function useTopUpUrlLoader() {
     // just gets stripped above.
     if (!shouldOpen) return
 
-    if (!canTopUp.value && !canSubscribeSelfServe.value) return
+    if (!canTopUp.value) return
 
-    if (canTopUp.value) {
-      telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
-    }
+    telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
 
     void showTopUpCreditsDialog({
       source: paymentIntentSourceForAddCreditsClick('deep_link')

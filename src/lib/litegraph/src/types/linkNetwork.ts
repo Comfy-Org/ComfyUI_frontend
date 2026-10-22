@@ -1,13 +1,14 @@
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
-
-import type { LGraphNode } from '../LGraphNode'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
-import type { SubgraphInputNode } from '../subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '../subgraph/SubgraphOutputNode'
 
 export interface ReadonlyLinkNetwork {
   readonly rootGraph: { readonly id: UUID }

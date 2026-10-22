@@ -89,6 +89,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -139,6 +140,8 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
+  if (asset.preview_id && isHdrImageFilename(asset.name))
+    return hdrPreviewAssetUrl(asset.preview_id)
   if (mediaType === 'image' || mediaType === 'video') {
     return asset.preview_url || ''
   }
@@ -178,10 +181,9 @@ function getStackCount(asset: AssetItem): number | undefined {
 
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+    'w-full text-foreground transition-colors hover:bg-accent',
     'cursor-pointer',
-    selected &&
-      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
+    selected && 'bg-accent ring-1 ring-muted-foreground ring-inset'
   )
 }
 

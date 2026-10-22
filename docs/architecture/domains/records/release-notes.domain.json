@@ -1,0 +1,56 @@
+{
+  "id": "release-notes",
+  "capability": "Release notes",
+  "description": "Release-note feed client, the release store that compares the feed against the running ComfyUI version, and the release notification toast and What's New popup.",
+  "modules": [
+    {
+      "path": "src/platform/updates/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/updates/common/releaseService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/updates/common/releaseService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/updates/common/releaseStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/updates/common/releaseStore.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Release store fetches the feed and decides when to surface new-release UI",
+      "checks": [
+        "src/platform/updates/common/releaseService.test.ts",
+        "src/platform/updates/common/releaseStore.test.ts"
+      ]
+    },
+    {
+      "name": "Release toast and What's New popup render and dismiss release notes",
+      "checks": [
+        "src/platform/updates/components/ReleaseNotificationToast.test.ts",
+        "src/platform/updates/components/WhatsNewPopup.test.ts",
+        "browser_tests/tests/releaseNotifications.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/RELEASES-CHANGELOG-0012-cloud-release-notes-follow-the-comfyui-version.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Release seen and dismissed setting ids keep their persisted names.",
+    "releaseStore deferring to the onboarding tour and overlay stores and reading system stats remains visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

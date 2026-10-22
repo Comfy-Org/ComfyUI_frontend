@@ -13,13 +13,15 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <i class="pi pi-cog" />
   <i class="pi pi-check text-green-500" />
 
-  <!-- In PrimeVue components -->
-  <button icon="pi pi-save" label="Save" />
-  <button icon="pi pi-times" severity="danger" />
+  <!-- In a design-system Button -->
+  <Button>
+    <i class="pi pi-save" />
+    Save
+  </Button>
 </template>
 ```
 
-[Browse all PrimeIcons →](https://primevue.org/icons/#list)
+[Browse all PrimeIcons →](https://github.com/primefaces/primeicons)
 
 ### 2. Iconify Icons (Recommended)
 
@@ -56,11 +58,9 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <i-comfy:node-tree />
   <i-comfy:my-custom-icon class="text-xl" />
 
-  <!-- In PrimeVue button -->
-  <Button severity="secondary">
-    <template #icon>
-      <i-comfy:workflow />
-    </template>
+  <!-- In a design-system Button -->
+  <Button variant="secondary">
+    <i-comfy:workflow />
   </Button>
 </template>
 ```
@@ -71,14 +71,15 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <!-- PrimeIcon in button (simple) -->
-  <Button icon="pi pi-check" label="Confirm" />
-
-  <!-- Iconify/Custom in button (template) -->
+  <!-- PrimeIcon in button -->
   <Button>
-    <template #icon>
-      <i class="icon-[lucide--save]" />
-    </template>
+    <i class="pi pi-check" />
+    Confirm
+  </Button>
+
+  <!-- Iconify/Custom in button -->
+  <Button>
+    <i class="icon-[lucide--save]" />
     Save File
   </Button>
 </template>
@@ -250,13 +251,13 @@ Always use `currentColor` in SVGs for automatic theme adaptation:
 ```vue
 <template>
   <!-- Before -->
-  <Button icon="pi pi-download" />
+  <Button size="icon">
+    <i class="pi pi-download" />
+  </Button>
 
   <!-- After -->
-  <Button>
-    <template #icon>
-      <i class="icon-[lucide--download]" />
-    </template>
+  <Button size="icon">
+    <i class="icon-[lucide--download]" />
   </Button>
 </template>
 ```
@@ -363,7 +364,7 @@ See the [unplugin-icons documentation](https://github.com/unplugin/unplugin-icon
 
 ## Resources
 
-- [PrimeIcons List](https://primevue.org/icons/#list)
+- [PrimeIcons List](https://github.com/primefaces/primeicons)
 - [Iconify Icon Browser](https://icon-sets.iconify.design/)
 - [Lucide Icons](https://lucide.dev/icons/)
 - [unplugin-icons docs](https://github.com/unplugin/unplugin-icons)

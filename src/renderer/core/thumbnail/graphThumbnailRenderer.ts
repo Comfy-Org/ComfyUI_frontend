@@ -4,7 +4,7 @@ import {
   calculateNodeBounds
 } from '@/renderer/core/spatial/boundsCalculator'
 
-import { renderMinimapToCanvas } from '../../extensions/minimap/minimapCanvasRenderer'
+import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 
 /**
  * Render a graph to a thumbnail data URL.

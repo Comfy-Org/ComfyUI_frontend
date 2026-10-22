@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '@/i18n/translations'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 import en from '@/locales/en/main.json' with { type: 'json' }
 import zhCN from '@/locales/zh-CN/main.json' with { type: 'json' }
 import { seedancePage } from './seedance'
@@ -18,44 +18,48 @@ function stringsIn(value: unknown): string[] {
   return Object.values(value).flatMap(stringsIn)
 }
 
+function localized(text: LocalizedText | undefined, locale: Locale): string {
+  return text?.[locale] || text?.en || ''
+}
+
 function pageCopy(locale: Locale): { label: string; text: string }[] {
   return [
     ...(seedancePage.gallery?.cards ?? []).flatMap((card) => [
       {
         label: `card ${card.id} name`,
-        text: card.name[locale] || card.name.en
+        text: localized(card.name, locale)
       },
       {
         label: `card ${card.id} note`,
-        text: card.note[locale] || card.note.en
+        text: localized(card.note, locale)
       },
       {
         label: `card ${card.id} description`,
-        text: card.description[locale] || card.description.en
+        text: localized(card.description, locale)
       },
       {
         label: `card ${card.id} prompt`,
-        text: card.prompt?.[locale] || card.prompt?.en || ''
+        text: localized(card.prompt, locale)
       }
     ]),
     ...(seedancePage.faq?.items ?? []).flatMap((faq) => [
       {
         label: `faq ${faq.id} question`,
-        text: faq.question[locale] || faq.question.en
+        text: localized(faq.question, locale)
       },
       {
         label: `faq ${faq.id} answer`,
-        text: faq.answer[locale] || faq.answer.en
+        text: localized(faq.answer, locale)
       }
     ]),
     ...(seedancePage.steps?.items ?? []).flatMap((step) => [
       {
         label: `step ${step.id} title`,
-        text: step.title[locale] || step.title.en
+        text: localized(step.title, locale)
       },
       {
         label: `step ${step.id} description`,
-        text: step.description?.[locale] || step.description?.en || ''
+        text: localized(step.description, locale)
       }
     ])
   ]

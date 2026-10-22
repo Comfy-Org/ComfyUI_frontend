@@ -72,12 +72,14 @@ describe('reportError', () => {
 
     reportError(error, {
       surface: 'platform',
-      errorType: 'workspace_auth_gate_initialization_failure'
+      errorType: 'workspace_auth_gate_initialization_failure',
+      fingerprint: ['workspace_auth_gate_initialization_failure']
     })
 
     expect(captureException).toHaveBeenCalledWith(
       error,
       expect.objectContaining({
+        fingerprint: ['workspace_auth_gate_initialization_failure'],
         tags: expect.objectContaining({ bucket: 'canary' })
       })
     )
@@ -177,7 +179,9 @@ describe('reportError', () => {
 
   it('names a Datadog copy without changing the original error', async () => {
     const { reportError } = await loadReportError()
-    const cause = new Error('Connection closed')
+    const cause = new Error(
+      'Connection closed https://example.com/model.glb?token=private'
+    )
     const error = Object.freeze(
       Object.assign(
         new TypeError('Failed to fetch /assets/app-123.js', { cause }),
@@ -200,10 +204,13 @@ describe('reportError', () => {
       name: 'resource_load_error',
       message: error.message,
       stack: error.stack,
-      cause,
       dd_fingerprint: error.dd_fingerprint,
       dd_context: error.dd_context
     })
+    expect(datadogError.cause).toMatchObject({
+      message: 'Connection closed https://example.com/model.glb'
+    })
+    expect(datadogError.cause).not.toBe(cause)
     expect(captureException.mock.calls[0][0]).toBe(error)
     expect(error.name).toBe('TypeError')
   })

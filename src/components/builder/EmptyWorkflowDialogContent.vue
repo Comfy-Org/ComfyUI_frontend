@@ -1,20 +1,19 @@
 <template>
-  <BuilderDialog
+  <AppDialogPanel
+    body-class="flex flex-col gap-2 text-sm text-muted-foreground"
     data-testid="builder-empty-workflow-dialog"
-    :show-close="false"
+    class="w-xl max-w-full min-w-116"
   >
     <template #title>
       {{ $t('builderToolbar.emptyWorkflowTitle') }}
     </template>
 
-    <div class="flex flex-col gap-2">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('linearMode.emptyWorkflowExplanation') }}
-      </p>
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('builderToolbar.emptyWorkflowPrompt') }}
-      </p>
-    </div>
+    <p class="m-0">
+      {{ $t('linearMode.emptyWorkflowExplanation') }}
+    </p>
+    <p class="m-0">
+      {{ $t('builderToolbar.emptyWorkflowPrompt') }}
+    </p>
 
     <template #footer>
       <Button
@@ -34,13 +33,12 @@
         {{ $t('linearMode.loadTemplate') }}
       </Button>
     </template>
-  </BuilderDialog>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
-
-import BuilderDialog from './BuilderDialog.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 
 defineEmits<{
   backToWorkflow: []

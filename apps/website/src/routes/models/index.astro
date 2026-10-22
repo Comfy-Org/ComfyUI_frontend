@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import { challengeBannerConfig } from '@/config/banner'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -33,6 +34,7 @@ const jsonLd = modelsHubJsonLd({
   breadcrumbs={jsonLd.breadcrumbs}
   mainEntityId={jsonLd.mainEntityId}
   extraJsonLd={jsonLd.extraJsonLd}
+  banner={challengeBannerConfig}
 >
   <script>
     import '@/scripts/hubNavigation'

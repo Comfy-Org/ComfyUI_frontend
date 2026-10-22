@@ -1,4 +1,3 @@
-import { SELF_STYLED_PANEL_DIALOG_PROPS } from '@/components/ui/dialog/dialog.variants'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -16,7 +15,7 @@ export function useWorkspaceDialogs() {
       key: 'delete-workspace',
       component,
       props: options,
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
 
@@ -30,7 +29,7 @@ export function useWorkspaceDialogs() {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -49,7 +48,7 @@ export function useWorkspaceDialogs() {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -60,7 +59,7 @@ export function useWorkspaceDialogs() {
     return dialogStore.showDialog({
       key: 'leave-workspace',
       component,
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
 
@@ -71,7 +70,7 @@ export function useWorkspaceDialogs() {
       key: 'edit-workspace',
       component,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -83,7 +82,7 @@ export function useWorkspaceDialogs() {
       key: 'remove-member',
       component,
       props: { memberId },
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
 
@@ -98,7 +97,7 @@ export function useWorkspaceDialogs() {
       key: 'change-member-role',
       component,
       props,
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
 
@@ -114,7 +113,7 @@ export function useWorkspaceDialogs() {
       key: 'set-member-credit-limit',
       component,
       props,
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
 
@@ -125,7 +124,7 @@ export function useWorkspaceDialogs() {
       key: 'invite-member',
       component,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -137,7 +136,7 @@ export function useWorkspaceDialogs() {
       key: 'invite-member-upsell',
       component,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -149,7 +148,7 @@ export function useWorkspaceDialogs() {
       key: 'invite-link-invalid',
       component,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -165,7 +164,7 @@ export function useWorkspaceDialogs() {
       component,
       props,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -177,7 +176,7 @@ export function useWorkspaceDialogs() {
       key: 'revoke-invite',
       component,
       props: { inviteId },
-      dialogComponentProps: SELF_STYLED_PANEL_DIALOG_PROPS
+      dialogComponentProps: { headless: true }
     })
   }
   return {

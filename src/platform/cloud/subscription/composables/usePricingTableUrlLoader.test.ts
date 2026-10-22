@@ -48,10 +48,12 @@ const TEAM_CREDIT_STOPS = {
     id: `team_${usd}`,
     credits: usd * 211,
     monthly: {
+      action: 'subscribe',
       list_price_cents: usd * 100,
       price_cents: usd * 100 - index * 500
     },
     yearly: {
+      action: 'subscribe',
       list_price_cents: usd * 100,
       price_cents: usd * 100 - index * 1000
     }
@@ -133,6 +135,23 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('reads can_manage_subscription only after the capability snapshot resolves', async () => {
+    setRouteQuery({ pricing: '1' })
+    mockPermissions.value = { canManageSubscription: false }
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockPermissions.value = { canManageSubscription: true }
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link' })
+    )
   })
 
   it('opens on the team tab for ?pricing=team', async () => {

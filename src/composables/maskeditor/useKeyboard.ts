@@ -1,7 +1,16 @@
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-export function useKeyboard() {
+function isTextEntryTarget(element: Element | null): boolean {
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
+}
+
+export function useKeyboard(containerRef?: Ref<HTMLElement | undefined>) {
   const store = useMaskEditorStore()
 
   const keysDown = ref<string[]>([])
@@ -14,17 +23,25 @@ export function useKeyboard() {
     keysDown.value = []
   }
 
+  const handleSpaceKey = (event: KeyboardEvent): void => {
+    const activeElement = document.activeElement
+    const isStuckInsideEditor =
+      activeElement !== null && !!containerRef?.value?.contains(activeElement)
+    if (isTextEntryTarget(activeElement) && !isStuckInsideEditor) return
+
+    event.preventDefault()
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur()
+    }
+  }
+
   const handleKeyDown = (event: KeyboardEvent): void => {
     if (!keysDown.value.includes(event.key)) {
       keysDown.value.push(event.key)
     }
 
     if (event.key === ' ') {
-      event.preventDefault()
-      const activeElement = document.activeElement
-      if (activeElement instanceof HTMLElement) {
-        activeElement.blur()
-      }
+      handleSpaceKey(event)
     }
 
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {

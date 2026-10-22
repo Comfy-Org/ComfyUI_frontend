@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '../LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useTelemetry } from '@/platform/telemetry'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'

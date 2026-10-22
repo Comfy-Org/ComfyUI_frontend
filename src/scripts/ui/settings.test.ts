@@ -1,9 +1,7 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyApp } from '@/scripts/app'
 
 import { ComfySettingsDialog } from './settings'
 
@@ -40,7 +38,7 @@ describe('saving a setting that fails to persist', () => {
     }
   ])('shows an alert toast when saving via $caller', async ({ save }) => {
     vi.mocked(useSettingStore().set).mockRejectedValue(new Error('offline'))
-    const dialog = new ComfySettingsDialog(fromPartial<ComfyApp>({}))
+    const dialog = new ComfySettingsDialog()
     const accessor = dialog.addSetting({
       id: 'Comfy.EditAttention.Delta',
       name: 'Delta',

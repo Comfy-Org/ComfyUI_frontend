@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
 
@@ -54,7 +55,9 @@ describe('WorkspaceMembersPanelContent', () => {
   let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
   beforeEach(() => {
-    useBillingCapabilities().canManageMembers = computed(() => true)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', true)
+    )
     const workspaceUI = vi.mocked(useWorkspaceUI())
     workspaceUI.workspaceRole = computed(() => 'owner')
     const ownerPermissions = workspaceUI.permissions.value
@@ -70,7 +73,9 @@ describe('WorkspaceMembersPanelContent', () => {
   it.for([true, false])(
     'uses the members-panel permission when workspace role defaults disagree (management: %s)',
     async (canManage) => {
-      useBillingCapabilities().canManageMembers = computed(() => canManage)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', canManage)
+      )
       const workspaceUI = vi.mocked(useWorkspaceUI())
       const rolePermissions = workspaceUI.permissions.value
       workspaceUI.permissions = computed(() => ({
@@ -123,7 +128,9 @@ describe('WorkspaceMembersPanelContent', () => {
       ...permissions,
       canViewPendingInvites: false
     }))
-    useBillingCapabilities().canManageMembers = computed(() => false)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', false)
+    )
     vi.mocked(workspaceStore.fetchPendingInvites).mockRejectedValue(
       new Error('403')
     )
@@ -140,7 +147,9 @@ describe('WorkspaceMembersPanelContent', () => {
 
   it('loads personal-owner pending invites once management resolves', async () => {
     const canManage = ref(false)
-    useBillingCapabilities().canManageMembers = computed(() => canManage.value)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', canManage.value)
+    )
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const permissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -218,7 +227,9 @@ describe('WorkspaceMembersPanelContent', () => {
 
   it('preserves a member failure when a later invite-only load succeeds', async () => {
     const canManage = ref(false)
-    useBillingCapabilities().canManageMembers = computed(() => canManage.value)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', canManage.value)
+    )
     vi.mocked(workspaceStore.fetchMembers).mockRejectedValueOnce(
       new Error('members failed')
     )
@@ -246,7 +257,9 @@ describe('WorkspaceMembersPanelContent', () => {
 
   it('ignores invite failures after permission is revoked and retries on a new grant', async () => {
     const canManage = ref(true)
-    useBillingCapabilities().canManageMembers = computed(() => canManage.value)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', canManage.value)
+    )
     const initial =
       deferred<Awaited<ReturnType<typeof workspaceStore.fetchPendingInvites>>>()
     vi.mocked(workspaceStore.fetchPendingInvites).mockReturnValueOnce(
