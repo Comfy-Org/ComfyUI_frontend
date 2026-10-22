@@ -16,8 +16,6 @@ import type {
   BillingStatusReader,
   CapabilitiesReader,
   CreditsReader,
-  EmbeddedChallengeOutcome,
-  EmbeddedChallengePort,
   HostedBillingDestination,
   PaymentMethodsReader,
   PlansReader,
@@ -34,7 +32,6 @@ import {
   createPlansReader,
   createSessionBillingTransport,
   createTopupCommand,
-  driveEmbeddedChallenge,
   sessionBillingScopeSource
 } from '@comfyorg/account-core/billing'
 
@@ -46,12 +43,9 @@ export interface BillingSdkOptions {
   /** The target the host's session minted for; must match it or every request re-mints. */
   readonly workspaceId: () => string | undefined
   readonly pointerStorage?: BillingOperationPointerStorage
-  readonly embeddedCheckoutAvailable: () => boolean
   /** Which origin serves a hosted page. */
   readonly hostedDestination: () => HostedBillingDestination
   readonly onTelemetry: (event: BillingOperationTelemetryEvent) => void
-  /** The payment-provider port, loaded on first use; undefined or a rejection when it cannot load. */
-  readonly challengePort: () => Promise<EmbeddedChallengePort | undefined>
   readonly fetchImpl?: typeof fetch
 }
 
@@ -65,15 +59,7 @@ export interface BillingSdk {
   readonly events: BillingEventsReader
   readonly topup: TopupCommand
   readonly commands: BillingCommands
-  readonly driveChallenge: (
-    operationId: string
-  ) => Promise<EmbeddedChallengeOutcome>
   readonly dispose: () => void
-}
-
-/** A port that could not load fails the challenge; the operation stays observed. */
-const UNAVAILABLE_CHALLENGE_PORT: EmbeddedChallengePort = {
-  handleNextAction: () => Promise.resolve({ error: 'port_unavailable' })
 }
 
 export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
@@ -82,10 +68,8 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     resolveUrl,
     workspaceId,
     pointerStorage,
-    embeddedCheckoutAvailable,
     hostedDestination,
     onTelemetry,
-    challengePort,
     fetchImpl
   } = options
 
@@ -107,7 +91,6 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     scopeSource,
     statusReader: status,
     ...(pointerStorage === undefined ? {} : { pointerStorage }),
-    embeddedCheckoutAvailable,
     hostedDestination,
     onTelemetry
   })
@@ -135,15 +118,6 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     events,
     topup,
     commands,
-    driveChallenge: async (operationId) =>
-      driveEmbeddedChallenge(
-        lifecycle,
-        operationId,
-        (await challengePort().catch(() => undefined)) ??
-          UNAVAILABLE_CHALLENGE_PORT
-      ),
-    // Every scope-holder the core exposes, listed a second time next to the
-    // helper in @comfyorg/account-ui; a new core reader has to join both.
     dispose: () => {
       lifecycle.dispose()
       status.dispose()

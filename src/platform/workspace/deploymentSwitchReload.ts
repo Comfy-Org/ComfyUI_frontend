@@ -17,12 +17,11 @@ function forgetSwitchLanding() {
   }
 }
 
-function markSwitchLanding(): boolean {
+function markSwitchLanding() {
   try {
     sessionStorage.setItem(SWITCH_LANDING_KEY, '1')
-    return true
   } catch {
-    return false
+    return
   }
 }
 
@@ -45,9 +44,8 @@ function onNextInteraction(callback: () => void) {
 }
 
 /**
- * Reloads the editor onto what this browser now runs on and marks the reload
- * so the next boot can say where it landed. The leave prompt skips only the
- * work in `discarded`; `onStay` runs on the next interaction if the page stays.
+ * Reloads for a switch; the leave prompt skips only `discarded`, and
+ * `onStay` runs on the next interaction if the page stays.
  */
 export function reloadForDeploymentSwitch(
   discarded: DiscardedWork,

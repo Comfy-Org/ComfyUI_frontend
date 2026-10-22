@@ -11,7 +11,6 @@ import CancellationStepLayout from '@/platform/cloud/subscription/components/Can
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -27,16 +26,11 @@ vi.mock<unknown>(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
-        quoteIsCurrent: ref(false),
-        savedPaymentMethods: ref([]),
-        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
-        authenticationError: ref(null),
-        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -47,10 +41,6 @@ vi.mock<unknown>(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
-        handleSubscriptionPayment: vi.fn(),
-        handleTeamSubscriptionPayment: vi.fn(),
-        applyPromotionCode: vi.fn(),
-        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -424,7 +414,6 @@ describe('shouldPreventRekaDismiss', () => {
     layer.appendChild(inner)
     document.body.appendChild(layer)
     onTestFinished(() => {
-      releaseModalLayer(layer)
       layer.remove()
     })
     return inner
@@ -447,7 +436,6 @@ describe('shouldPreventRekaDismiss', () => {
       mark: (layer: HTMLElement) =>
         layer.setAttribute('data-reka-popper-content-wrapper', '')
     },
-    { name: 'a raised modal layer', mark: raiseModalLayer },
     {
       name: 'a toast',
       mark: (layer: HTMLElement) =>
@@ -469,10 +457,9 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+  it('allows dismiss from a dialog scrim', () => {
     const target = appendLayer((layer) => {
       layer.dataset.slot = 'dialog-overlay'
-      raiseModalLayer(layer)
     })
     expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })

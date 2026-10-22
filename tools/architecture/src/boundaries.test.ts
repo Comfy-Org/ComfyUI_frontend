@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
-import { matchesModulePath } from './records'
+import { claimFiles, matchesModulePath } from './records'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -26,7 +26,11 @@ function domain(
 }
 
 function fallowAllows(records: DomainRecord[], from: string, to: string) {
-  const { zones, rules } = buildBoundaries(records).boundaries
+  const claims = claimFiles(
+    records,
+    records.flatMap(({ publicEntryPoints }) => publicEntryPoints)
+  )
+  const { zones, rules } = buildBoundaries({ records, claims }).boundaries
   const zoneOf = (file: string) =>
     zones.find(({ patterns }) =>
       patterns.some((pattern) => matchesModulePath(file, pattern))
@@ -133,6 +137,50 @@ describe('buildBoundaries', () => {
       from: 'src/editor/app/a.ts',
       to: 'src/images/app/store.ts',
       allowed: false
+    },
+    {
+      name: 'a nested directory claims its files from the enclosing directory',
+      records: [
+        images(),
+        domain('viewer', [
+          { path: 'src/images/ui/viewer/**', role: 'presentation' }
+        ])
+      ],
+      from: 'src/images/ui/viewer/a.vue',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'a file path claims its file from a directory nested inside its own domain',
+      records: [
+        domain('viewer', [
+          { path: 'src/images/ui/viewer/**', role: 'presentation' }
+        ]),
+        images({
+          modules: [
+            ...images().modules,
+            { path: 'src/images/ui/viewer/legacy.ts', role: 'application' }
+          ]
+        })
+      ],
+      from: 'src/images/ui/viewer/legacy.ts',
+      to: 'src/images/app/store.ts',
+      allowed: true
+    },
+    {
+      name: 'a public entry point under a nested path takes that path’s role',
+      records: [
+        images({
+          modules: [
+            ...images().modules,
+            { path: 'src/images/model/view/**', role: 'presentation' }
+          ],
+          publicEntryPoints: ['src/images/model/view/index.ts']
+        })
+      ],
+      from: 'src/images/model/view/index.ts',
+      to: 'src/images/ui/a.vue',
+      allowed: true
     },
     {
       name: 'role direction applies across approved domains',

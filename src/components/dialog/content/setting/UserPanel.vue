@@ -2,7 +2,7 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <div class="mt-4 mb-3 border-t border-interface-stroke" />
+      <div class="mt-4 mb-3 border-t" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
@@ -50,7 +50,7 @@
           </div>
         </div>
 
-        <Spinner v-if="loading" class="mt-4 size-8" />
+        <AppSpinner v-if="loading" class="mt-4 size-8" />
         <div v-else class="mt-4 flex flex-col gap-2">
           <div class="flex flex-wrap items-center gap-2">
             <Button class="w-32" variant="secondary" @click="handleSignOut">
@@ -76,7 +76,7 @@
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-smoke-600">
+        <p class="text-muted-foreground">
           {{ $t('auth.login.title') }}
         </p>
 
@@ -95,7 +95,7 @@ import { useRouter } from 'vue-router'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'

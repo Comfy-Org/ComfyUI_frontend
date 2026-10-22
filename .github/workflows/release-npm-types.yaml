@@ -92,6 +92,9 @@ jobs:
       - name: Build types
         run: pnpm build:types
 
+      - name: Type-check a consumer against the built types
+        run: pnpm check:types-consumer
+
       - name: Verify version matches input
         id: verify
         shell: bash

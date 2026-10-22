@@ -1,6 +1,6 @@
 import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 
-import type { StripePaymentCopy } from '../stripe/stripePaymentPhase'
+import type { StripePaymentCopy } from '#/billing/stripe/stripePaymentPhase'
 
 /**
  * Host-translated strings for the checkout surfaces. Interpolated strings

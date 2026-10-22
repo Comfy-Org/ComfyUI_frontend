@@ -6,12 +6,7 @@ import { useBootDeploymentFullLabel } from '@/platform/workspace/composables/use
 import { takeDeploymentSwitchLanding } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-/**
- * Starts the page's boot listing (FE-2434), so the editor learns which
- * deployment it booted on. Tells the person when their own pick is gone, which
- * ingest says on that one listing only, and where the editor landed after a
- * switch reloaded it.
- */
+/** Starts the boot listing; toasts a gone pick or where a switch landed. */
 export async function useDeploymentPickAtBoot(): Promise<void> {
   const landedFromSwitch = takeDeploymentSwitchLanding()
   const store = useDeploymentPickStore()

@@ -1,5 +1,13 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   cloudReleaseModelOptions,
@@ -11,6 +19,7 @@ import {
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -170,17 +179,64 @@ describe('releaseModelOptions', () => {
 })
 
 describe('cloudReleaseModelOptions', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+  })
+
   afterEach(() => {
     distribution.isCloud = false
   })
 
-  it.for([
-    { runsOn: 'Comfy Cloud', isCloud: true, gives: releaseModelOptions },
-    { runsOn: 'Local', isCloud: false, gives: undefined }
+  it.for<{
+    runsOn: string
+    isCloud: boolean
+    hint: string | null | undefined
+    url: string
+    gives: typeof releaseModelOptions | undefined
+  }>([
+    {
+      runsOn: 'Comfy Cloud, last booted on a deployment',
+      isCloud: true,
+      hint: 'dep-2',
+      url: '/',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud with no hint',
+      isCloud: true,
+      hint: undefined,
+      url: '/',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud from a deployment link, last booted on Comfy Cloud',
+      isCloud: true,
+      hint: null,
+      url: '/?deployment=dep-2',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud, last booted on Comfy Cloud, with no link',
+      isCloud: true,
+      hint: null,
+      url: '/',
+      gives: undefined
+    },
+    {
+      runsOn: 'Local',
+      isCloud: false,
+      hint: 'dep-2',
+      url: '/',
+      gives: undefined
+    }
   ])(
-    'gives releaseModelOptions only on Comfy Cloud: on $runsOn',
-    ({ isCloud, gives }) => {
+    'waits on the listing only where the page may be on a deployment: $runsOn',
+    ({ isCloud, hint, url, gives }) => {
       distribution.isCloud = isCloud
+      if (hint !== undefined) setDeploymentHint('ws-1', hint)
+      window.history.replaceState(null, '', url)
+      onTestFinished(() => window.history.replaceState(null, '', '/'))
 
       expect(cloudReleaseModelOptions()).toBe(gives)
     }

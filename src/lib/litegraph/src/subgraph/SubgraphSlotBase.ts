@@ -1,7 +1,15 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphInputNode,
+  SubgraphOutput,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
+
+import type { LinkId } from '@/types/linkId'
+import type { RerouteId } from '@/types/rerouteId'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -15,7 +23,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
 import type {
   CanvasPointerEvent,
@@ -26,11 +34,6 @@ import type {
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
-
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
@@ -136,7 +139,7 @@ export abstract class SubgraphSlot
   }
 
   measure(): Readonly<Size> {
-    const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
+    const width = canvasClass._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot
     this.measurement.setValues(width + defaultHeight, defaultHeight)

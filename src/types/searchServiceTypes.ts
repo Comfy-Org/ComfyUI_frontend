@@ -21,14 +21,18 @@ export interface SearchPacksResult {
   rawResultsEmpty?: boolean
 }
 
+export type SearchPacksOutcome =
+  | { ok: true; result: SearchPacksResult }
+  | { ok: false; cause: unknown }
+
 export interface NodePackSearchProvider {
   /**
-   * Search for node packs
+   * Search for node packs; a failed search resolves to `ok: false`.
    */
   searchPacks(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult>
+  ): Promise<SearchPacksOutcome>
 
   /**
    * Clear the search cache

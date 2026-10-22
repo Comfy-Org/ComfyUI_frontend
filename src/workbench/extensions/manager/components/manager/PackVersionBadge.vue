@@ -7,7 +7,7 @@
       :class="
         cn(
           'gap-1 rounded-2xl py-1 text-xs font-normal',
-          fill && 'bg-dialog-surface px-1.5',
+          fill && 'bg-muted px-1.5',
           isDisabled && 'cursor-not-allowed opacity-60'
         )
       "

@@ -19,13 +19,13 @@
           :tooltip="hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
-          class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-secondary-background-hover"
+          class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
           data-testid="deployment-switcher-trigger"
         >
           <DeploymentStatusIcon
             :tone="currentTone"
             icon-class="size-4"
-            ring-class="ring-2 ring-secondary-background group-hover:ring-secondary-background-hover group-data-[state=open]:ring-secondary-background-hover"
+            ring-class="ring-2 ring-secondary group-hover:ring-accent group-data-[state=open]:ring-accent"
           />
           <i
             class="icon-[lucide--chevron-down] size-3 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"

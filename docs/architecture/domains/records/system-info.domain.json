@@ -12,10 +12,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/systemStatsColumns.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/components/common/SystemStatsPanel.test.ts",
       "role": "presentation"
     },
@@ -24,19 +20,15 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/common/systemStatsColumns.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/components/dialog/content/setting/AboutPanel.vue",
       "role": "presentation"
     },
     {
-      "path": "src/stores/systemStatsStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/systemStatsStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/aboutPanelStore.ts",
+      "path": "src/composables/useCopySystemInfo.test.ts",
       "role": "application"
     },
     {
@@ -44,7 +36,15 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useCopySystemInfo.test.ts",
+      "path": "src/stores/aboutPanelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/systemStatsStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/systemStatsStore.ts",
       "role": "application"
     }
   ],

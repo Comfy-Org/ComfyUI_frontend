@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -18,6 +17,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -58,9 +58,6 @@ test.describe(
       const staleWorkflowId = workflow.id
       const host = new HostDoc(staleWorkflowId, workflow.seed, workflow.catalog)
 
-      // The previous tab's own in-app cleanup never ran (its browser tab was
-      // simply closed), so the binding cache and the thread pointer survive
-      // untouched into this brand-new page load.
       await page.addInitScript(
         ([bindingKey, threadKey, id, path, threadId]) => {
           localStorage.setItem(bindingKey, JSON.stringify({ [id]: path }))
@@ -75,42 +72,12 @@ test.describe(
         ] as const
       )
 
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        // Answers a doc_subscribe for the abandoned workflow with its real
-        // seeded content, the way the production doc host would.
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== staleWorkflowId ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          ws.send(JSON.stringify(host.subscribed()))
-          ws.send(JSON.stringify(host.catchUp(state_vector_b64)))
-        })
-        // The follower only re-drives a pending subscribe on a status frame,
-        // which every real connect sends.
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        staleWorkflowId,
+        host
+      )
+      await hostSocket.install()
 
       const history: AgentMessage[] = [
         {
@@ -141,14 +108,13 @@ test.describe(
         pagination: { offset: 0, limit: 100, total: 1, has_more: false }
       }
       const posted: unknown[] = []
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threads))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'GET')
           return route.fulfill(jsonRoute(history))
         posted.push(route.request().postDataJSON())
-        // The thread's server-side pointer still names the abandoned workflow.
         const accepted: AgentTurnAccepted = {
           thread_id: THREAD_ID,
           message_id: TURN_ID,
@@ -172,17 +138,13 @@ test.describe(
       )
 
       await bootAgentApp(page, agentFlagEnabled, {
-        // Only the Vue node renderer projects follower edits onto the canvas.
         settings: {
           'Comfy.VueNodes.Enabled': true,
           'Comfy.Graph.CanvasInfo': false
         },
-        // The replayed nodes materialize from registered node types.
         objectInfo: 'server'
       })
 
-      // Re-targeting the fresh tab saves it as a new cloud workflow. These
-      // routes go on after boot so they win over the boot mocks' userdata stub.
       const savedFiles: UserDataFullInfo[] = []
       await page.route('**/api/userdata?*', (route) => {
         const dir = new URL(route.request().url()).searchParams.get('dir')
@@ -224,7 +186,6 @@ test.describe(
         .getByTestId('node-title')
         .allTextContents()
 
-      // A brand-new page on the surviving thread: nobody has sent anything.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
@@ -232,14 +193,11 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      // The Cloud no longer lists the abandoned workflow, so the chat says so.
       const unavailable = panel.getByText(
         enMessages.agent.targetWorkflowUnavailable
       )
       await expect(unavailable).toBeVisible()
-      if (!socket) throw new Error('the app never opened /ws')
 
-      // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
       })

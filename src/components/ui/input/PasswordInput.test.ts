@@ -2,24 +2,18 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import PasswordInput from './PasswordInput.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
 
 it('reveals and hides the password', async () => {
   const user = userEvent.setup()
   render(PasswordInput, {
-    props: { modelValue: 'secret' },
-    attrs: { 'aria-label': 'Password' },
-    global: { plugins: [i18n] }
+    props: {
+      modelValue: 'secret',
+      hidePasswordLabel: 'Hide password',
+      showPasswordLabel: 'Show password'
+    },
+    attrs: { 'aria-label': 'Password' }
   })
 
   const input = screen.getByLabelText('Password')
@@ -40,11 +34,11 @@ it('updates a controlled parent model when edited', async () => {
     components: { PasswordInput },
     setup: () => ({ password: ref('initial') }),
     template: `
-      <PasswordInput v-model="password" aria-label="Password" />
+      <PasswordInput v-model="password" aria-label="Password" hide-password-label="Hide password" show-password-label="Show password" />
       <output>{{ password }}</output>
     `
   })
-  render(Harness, { global: { plugins: [i18n] } })
+  render(Harness)
 
   const input = screen.getByLabelText('Password')
   await user.clear(input)

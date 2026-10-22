@@ -601,12 +601,12 @@ describe('TopMenuSection', () => {
     const { container } = createWrapper()
 
     // Release red dot is mocked as true globally for this test file.
-    expect(container.querySelector('span.bg-red-500')).toBeNull()
+    expect(container.querySelector('span.bg-destructive')).toBeNull()
 
     mockData.setShowConflictRedDot(true)
     await nextTick()
 
-    expect(container.querySelector('span.bg-red-500')).not.toBeNull()
+    expect(container.querySelector('span.bg-destructive')).not.toBeNull()
   })
 
   it('keeps the floating actionbar container open for the extensions button', async () => {
