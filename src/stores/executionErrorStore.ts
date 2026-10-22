@@ -21,7 +21,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { useDialogService } from '@/services/dialogService'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
@@ -282,10 +282,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   whenever(
     () => !missingNodesStore.missingNodesError?.nodeTypes.length,
     () => {
-      if (ChangeTrackerAccess.isLoadingGraph) return
+      if (isGraphLoading(useApp().rootGraphOrUndefined)) return
       retireResolvedMissingNodePromptError()
     },
-    // The missing-node scan and prompt recording share a synchronous block; clear before recording the new error.
     { flush: 'sync' }
   )
 
@@ -319,7 +318,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     previous?: MissingResourceCandidates
   ) {
     if (
-      ChangeTrackerAccess.isLoadingGraph ||
+      isGraphLoading(useApp().rootGraphOrUndefined) ||
       key === null ||
       key !== activeRunErrorKey.value
     )

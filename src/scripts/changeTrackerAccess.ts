@@ -9,7 +9,6 @@ interface ChangeTrackerClass {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
-  readonly isLoadingGraph: boolean
 }
 
 /** `ChangeTracker` for the stores it imports, which cannot import it back. */

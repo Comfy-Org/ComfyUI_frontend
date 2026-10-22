@@ -19,7 +19,7 @@ import {
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -95,7 +95,11 @@ function installNodeHooks(node: LGraphNode): void {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
       queueMicrotask(() => {
-        if (!app.rootGraphOrUndefined || ChangeTracker.isLoadingGraph) return
+        if (
+          !app.rootGraphOrUndefined ||
+          isGraphLoading(app.rootGraphOrUndefined)
+        )
+          return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
       })
@@ -398,7 +402,7 @@ function scanAddedNode(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (app.rootGraphOrUndefined !== rootGraph || ChangeTracker.isLoadingGraph)
+  if (app.rootGraphOrUndefined !== rootGraph || isGraphLoading(rootGraph))
     return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
@@ -444,7 +448,7 @@ function scheduleAddedNodeScan(
   pendingScans: Map<LGraphNode, Set<PendingScanControl>>
 ): void {
   const rootGraph = app.rootGraphOrUndefined
-  if (!rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!rootGraph || isGraphLoading(rootGraph)) return
   if (isNodeInactive(node.mode)) return
 
   const executionId = getExecutionIdByNode(rootGraph, node)
@@ -552,7 +556,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
 /** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
   const rootGraph = app.rootGraphOrUndefined
-  if (!rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!rootGraph || isGraphLoading(rootGraph)) return
 
   const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates

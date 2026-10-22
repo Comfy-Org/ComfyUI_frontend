@@ -13,7 +13,7 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
   createNodeExecutionId,
@@ -1088,6 +1088,8 @@ describe('absorbed-error retirement on candidate resolution', () => {
   it('retires resolved absorbed errors when a workflow is loaded again', async () => {
     const store = useExecutionErrorStore()
     const modelStore = useMissingModelStore()
+    const rootGraph = createTestRootGraph()
+    mockGraphReady(rootGraph)
     const graphA = '11111111-1111-4111-8111-111111111111'
     const graphB = '22222222-2222-4222-8222-222222222222'
     store.setActiveGraph(graphA)
@@ -1097,18 +1099,18 @@ describe('absorbed-error retirement on candidate resolution', () => {
     })
     await nextTick()
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(rootGraph)
     try {
       store.setActiveGraph(graphB)
       modelStore.setMissingModels([])
       await nextTick()
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(rootGraph)
     }
     store.retireResolvedMissingResourceErrors({ models: [], media: [] })
     expect(store.lastNodeErrors).toBeNull()
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(rootGraph)
     try {
       store.setActiveGraph(graphA)
       modelStore.setMissingModels([])
@@ -1118,7 +1120,7 @@ describe('absorbed-error retirement on candidate resolution', () => {
         blockingError()
       ])
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(rootGraph)
     }
     store.retireResolvedMissingResourceErrors({ models: [], media: [] })
 
@@ -1233,18 +1235,20 @@ describe('absorbed-error retirement on candidate resolution', () => {
   it('keeps absorbed errors when candidates reset during a graph load', async () => {
     const store = useExecutionErrorStore()
     const modelStore = useMissingModelStore()
+    const rootGraph = createTestRootGraph()
+    mockGraphReady(rootGraph)
     modelStore.setMissingModels([absorbedModelCandidate()])
     store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
     await nextTick()
 
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(rootGraph)
     try {
       modelStore.setMissingModels([])
       await nextTick()
 
       expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
     } finally {
-      ChangeTracker.isLoadingGraph = false
+      endGraphLoad(rootGraph)
     }
   })
 
