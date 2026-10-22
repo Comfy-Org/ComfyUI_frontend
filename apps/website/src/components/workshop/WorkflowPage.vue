@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
-import { computed } from 'vue'
+import { useMounted } from '@vueuse/core'
+import { computed, watch } from 'vue'
 import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
 
 import WorkflowActions from './WorkflowActions.vue'
@@ -23,7 +24,10 @@ import WorkflowApi from './WorkflowApi.vue'
 import WorkflowInputMismatch from './WorkflowInputMismatch.vue'
 import WorkflowFacts from './WorkflowFacts.vue'
 import WorkflowNodeGraphTabs from './WorkflowNodeGraphTabs.vue'
-import { nodeGraphWorkflowFromModel } from '@/lib/hub/node-graph-workflow'
+import {
+  nodeGraphWorkflowFromModel,
+  paragraphs
+} from '@/lib/hub/node-graph-workflow'
 
 const { model, embedded = false } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -39,11 +43,8 @@ const mismatch = computed(() => model.catalogDetails?.inputMismatch)
 const snippetValues = computed(() => initialWorkshopPageState(model).values)
 const locale = computed(() => model.catalogDetails?.locale ?? 'en')
 const t = computed(() => translationsFor(locale.value).t)
-const paragraphs = computed(() =>
-  (model.catalogDetails?.longDescription ?? '')
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
+const longDescription = computed(() =>
+  paragraphs(model.catalogDetails?.longDescription ?? '')
 )
 const faqs = computed(() =>
   (model.catalogDetails?.faqs ?? []).filter(
@@ -107,6 +108,16 @@ const nodeGraph = computed(() =>
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const modelAnalytics = workshopModelAnalytics(model)
+const mounted = useMounted()
+watch(
+  () =>
+    !runnable.value && mounted.value && enabled.value && workflowsEnabled.value,
+  (visible) => {
+    if (visible)
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
 
 type CtaPlacement = 'header' | 'footer' | 'versions'
 
@@ -213,7 +224,7 @@ function captureTabSwitched(tab: 'overview' | 'workflow' | 'api') {
       </template>
     </WorkflowNodeGraphTabs>
     <section
-      v-if="runnable && paragraphs.length"
+      v-if="runnable && longDescription.length"
       class="mt-16 max-w-4xl"
       aria-labelledby="workflow-about-heading"
     >
@@ -225,7 +236,7 @@ function captureTabSwitched(tab: 'overview' | 'workflow' | 'api') {
       </h2>
       <div class="space-y-5 text-base leading-relaxed text-primary-warm-gray">
         <p
-          v-for="(paragraph, index) in paragraphs"
+          v-for="(paragraph, index) in longDescription"
           :key="index"
           class="wrap-break-word whitespace-pre-line"
         >

@@ -34,7 +34,8 @@ export function sampleMedia(
   return 'image'
 }
 
-function paragraphs(text: string): string[] {
+/** Splits authored copy into its blank-line-separated paragraphs. */
+export function paragraphs(text: string): string[] {
   return text
     .split(/\n\s*\n/)
     .map((paragraph) => paragraph.trim())

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowUpRight, Download } from '@lucide/vue'
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useStickyFooterScrollPadding } from '@/composables/useStickyFooterScrollPadding'
@@ -26,6 +26,12 @@ const {
 }>()
 const emit = defineEmits<{ download: []; tryCloud: [] }>()
 const { t } = translationsFor(locale)
+
+const note = computed(() => {
+  if (cloudHref) return 'workshop.nodeGraph.runsHereCloud'
+  if (worksOnCloud === false) return 'workshop.nodeGraph.runsHereLocal'
+  return 'workshop.nodeGraph.runsHereDownload'
+})
 
 const footer = useTemplateRef<HTMLElement>('footer')
 useStickyFooterScrollPadding(
@@ -53,15 +59,7 @@ useStickyFooterScrollPadding(
       <span class="font-bold text-primary-comfy-canvas">{{
         t('workshop.nodeGraph.runsHereTitle')
       }}</span>
-      {{
-        t(
-          cloudHref
-            ? 'workshop.nodeGraph.runsHereCloud'
-            : worksOnCloud === false
-              ? 'workshop.nodeGraph.runsHereLocal'
-              : 'workshop.nodeGraph.runsHereDownload'
-        )
-      }}
+      {{ t(note) }}
     </p>
     <Button
       v-if="cloudHref"

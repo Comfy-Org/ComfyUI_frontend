@@ -1,6 +1,6 @@
 import { useMounted } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
-import { ref, toValue, watch } from 'vue'
+import { shallowRef, toValue, watch } from 'vue'
 
 import type { NodeGraphInput } from '@/lib/hub/node-graph-inputs'
 import {
@@ -50,7 +50,7 @@ export function useNodeGraphNeeds(
   source: MaybeRefOrGetter<string | undefined>
 ) {
   const mounted = useMounted()
-  const needs = ref<NodeGraphNeeds>({ status: 'loading' })
+  const needs = shallowRef<NodeGraphNeeds>({ status: 'loading' })
   watch(
     [mounted, () => toValue(source)] as const,
     async ([isMounted, current], _previous, onCleanup) => {

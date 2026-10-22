@@ -1,11 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import {
+  captureWorkshopEvent,
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog'
 import WorkflowPreview from './WorkflowPreview.vue'
+
+vi.mock(import('@/scripts/posthog'))
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')
@@ -124,6 +133,39 @@ describe('WorkflowPreview', () => {
       'href',
       first
     )
+  })
+
+  it('reports a version download as coming from the version picker', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    const uid = '00000000-0000-4000-8000-000000000090'
+    render(WorkflowPreview, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [],
+            workflowFiles: [
+              { name: 'Version one', uid, href: `/preview-media/9/${uid}/a` },
+              { name: 'Version two', uid, href: `/preview-media/9/${uid}/b` }
+            ]
+          }
+        }
+      }
+    })
+    const link = screen.getByRole('link', { name: 'Download workflow JSON' })
+    link.addEventListener('click', (click) => click.preventDefault(), {
+      once: true
+    })
+
+    await userEvent.setup().click(link)
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'workflow_download_clicked',
+      properties: expect.objectContaining({ placement: 'versions' })
+    })
   })
 
   it('does not resurrect a legacy download when declared CCC files are unavailable', () => {

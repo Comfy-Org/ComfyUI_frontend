@@ -1084,6 +1084,7 @@
     "nodeGraph": {
       "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
       "tabOverview": "Overview",
+      "tabDetails": "Details",
       "about": "About",
       "readMore": "Read more",
       "readLess": "Show less",

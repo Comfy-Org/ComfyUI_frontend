@@ -112,6 +112,39 @@ describe('WorkflowNodeGraphTabs', () => {
     }
   )
 
+  it.for([
+    { name: 'a bare download', downloadName: undefined, expected: '' },
+    {
+      name: 'the file name it is given',
+      downloadName: 'singing-character.json',
+      expected: 'singing-character.json'
+    }
+  ])(
+    'saves the footer and version downloads under $name',
+    async ({ downloadName, expected }) => {
+      renderTabs({
+        cloudHref: undefined,
+        downloadName,
+        files: [
+          { name: 'Version 1', href: '/v1.json' },
+          { name: 'Version 2', href: '/v2.json' }
+        ]
+      })
+
+      expect(
+        within(screen.getByTestId('node-graph-footer')).getByRole('link', {
+          name: 'Download Workflow'
+        })
+      ).toHaveAttribute('download', expected)
+      await openTab('Details')
+      expect(
+        within(screen.getByTestId('workflow-versions')).getByRole('link', {
+          name: /Download workflow/i
+        })
+      ).toHaveAttribute('download', expected)
+    }
+  )
+
   it('leaves the footer out when there is nothing to open or download', () => {
     renderTabs({ cloudHref: undefined, downloadUrl: undefined })
 

@@ -55,7 +55,7 @@ watch(section, (tab) => emit('tabSwitched', tab))
 const { onKeydown } = useTablist(() => sections, section)
 const sectionLabels = {
   overview: 'workshop.nodeGraph.tabOverview',
-  workflow: 'workshop.model.tabs.details',
+  workflow: 'workshop.nodeGraph.tabDetails',
   api: 'workshop.nodeGraph.tabApi'
 } as const
 </script>

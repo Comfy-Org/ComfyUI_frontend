@@ -400,6 +400,11 @@ describe('WorkflowPage header', () => {
       name: 'tab_switched',
       properties: expect.objectContaining({ tab: 'workflow' })
     })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.filter(([event]) => event.name === 'model_viewed')
+    ).toHaveLength(1)
     expect(screen.getByTestId('workflow-facts')).toHaveTextContent(
       'BRIA RMBG 2.0'
     )
