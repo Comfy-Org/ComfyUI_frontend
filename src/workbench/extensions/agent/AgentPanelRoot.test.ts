@@ -144,6 +144,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     apiURL: vi.fn((route: string) => `/api${route}`),
     fetchApi: (route: string, options?: RequestInit) =>
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+    storeSetting: vi.fn<typeof api.storeSetting>(
+      async () => new Response(null)
+    ),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
     dispatchCustomEvent: vi.fn(),
@@ -701,6 +704,30 @@ describe('AgentPanelRoot first-use experience', () => {
     remoteConfig.value = { 'Comfy.Agent.CrdtDebug': false }
     await nextTick()
     expect(screen.queryByTestId('crdt-dev-panel-chip')).not.toBeInTheDocument()
+  })
+
+  it('preserves a changed diagnostic level across panel remounts', async () => {
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('warn')
+
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await waitFor(() => {
+      expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    })
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
   })
 
   const reportFreeUseNotice = vi.fn()

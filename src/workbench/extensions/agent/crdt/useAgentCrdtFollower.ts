@@ -277,7 +277,7 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
-    diagnosticsEnabled = () => useFeatureFlags().flags.agentCrdtDebugEnabled,
+    diagnosticsEnabled,
     userId = () => null,
     isTargetActive = ref(true),
     getGraph = () => null,
@@ -287,6 +287,7 @@ export function useAgentCrdtFollower(
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
+  const { flags } = useFeatureFlags()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
@@ -327,7 +328,8 @@ export function useAgentCrdtFollower(
           events,
           applierDeps,
           canvasFor,
-          diagnosticsEnabled
+          diagnosticsEnabled:
+            diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled)
         })
       )
     },

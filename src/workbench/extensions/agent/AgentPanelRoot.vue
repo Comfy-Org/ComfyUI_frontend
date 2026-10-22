@@ -528,7 +528,13 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level)
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).then(() => {
+      try {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
+      } catch {
+        return
+      }
+    })
   }
 })
 watch(
