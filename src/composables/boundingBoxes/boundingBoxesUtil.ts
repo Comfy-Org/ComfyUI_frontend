@@ -152,6 +152,16 @@ export function boxesAt(
   return res
 }
 
+const UNCOLORED_REGION = '#8c8c8c'
+
+export function regionColor(region: Pick<Region, 'palette'>): string {
+  return region.palette.find(Boolean) ?? UNCOLORED_REGION
+}
+
+export function regionTag(index: number): string {
+  return String(index + 1).padStart(2, '0')
+}
+
 export function tagRects(
   regions: readonly Region[],
   logW: number,
@@ -169,7 +179,7 @@ export function tagRects(
     const y1 = b.y * logH
     const x2 = (b.x + b.w) * logW
     const y2 = (b.y + b.h) * logH
-    const tag = String(i + 1).padStart(2, '0')
+    const tag = regionTag(i)
     const w = measureWidth(tag) + 8
     let pick: [number, number] = [x1, y1]
     for (const [cx, cy] of [

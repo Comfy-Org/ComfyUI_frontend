@@ -77,7 +77,6 @@ useEventListener(
       target instanceof Node &&
       anchor.value instanceof Node &&
       anchor.value.contains(target)
-    if (anchorPointerDownWhileOpen.value) return
     if (
       !visible.value ||
       !(target instanceof Element) ||

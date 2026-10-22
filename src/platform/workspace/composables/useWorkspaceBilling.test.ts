@@ -748,6 +748,33 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false }
+    ])(
+      'passes low_balance $served through as received',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          low_balance: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value?.lowBalance).toBe(expected)
+      }
+    )
+
+    it('leaves low balance unset when the balance response omits it', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.lowBalance).toBeUndefined()
+    })
+
     it('passes the server-suggested top-up through as received', async () => {
       mockWorkspaceApi.getBillingBalance.mockResolvedValue({
         ...positiveBalance,
@@ -1915,8 +1942,16 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       const result = await billing.topup(500)
 
-      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(500)
+      expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(
+        500,
+        expect.any(String)
+      )
       expect(result).toBe(topupResponse)
+      await billing.topup(500)
+      const keys = mockWorkspaceApi.createTopup.mock.calls.map(
+        (call) => call[1]
+      )
+      expect(keys[0]).not.toBe(keys[1])
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
       expect(billing.error.value).toBeNull()

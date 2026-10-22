@@ -851,6 +851,7 @@ describe('PostHogTelemetryProvider', () => {
         total_ms: 5200,
         outcome: 'timed_out',
         phase_count: 1,
+        untraced_ms: 2700,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1083,6 +1084,12 @@ describe('PostHogTelemetryProvider', () => {
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
         properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPanelRenderStalled({ stage: 'dock_unresolved' }),
+        properties: { stage: 'dock_unresolved' }
       },
       {
         event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,

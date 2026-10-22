@@ -9,6 +9,7 @@
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -18,23 +19,17 @@ import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode, isThreeJsNode } from './load3d/nodeTypes'
 
 let load3dExtensionsLoaded = false
-let load3dExtensionsLoading: Promise<ComfyExtension[]> | null = null
+let load3dExtensionsLoading: Promise<ComfyExtension[] | undefined> | null = null
 
-/**
- * Dynamically load the 3D extensions (and THREE.js) on demand.
- * Returns the list of newly registered extensions so the caller can
- * replay hooks that they missed.
- */
-async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
-  if (load3dExtensionsLoaded) return []
+function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
+  if (load3dExtensionsLoaded) return Promise.resolve([])
+  load3dExtensionsLoading ??= importLoad3dExtensions()
+  return load3dExtensionsLoading
+}
 
-  if (load3dExtensionsLoading) {
-    return load3dExtensionsLoading
-  }
-
-  load3dExtensionsLoading = (async () => {
-    const before = new Set(useExtensionStore().enabledExtensions)
-    // Import extensions - they self-register via useExtensionService()
+async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
+  const before = new Set(useExtensionStore().enabledExtensions)
+  try {
     await Promise.all([
       import('./load3d'),
       import('./load3dAdvanced'),
@@ -44,16 +39,18 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
       import('./cameraAngle'),
       import('./lightInfo')
     ])
-    load3dExtensionsLoaded = true
-    return useExtensionStore().enabledExtensions.filter(
-      (ext) => !before.has(ext)
-    )
-  })()
-
-  return load3dExtensionsLoading
+  } catch (cause) {
+    load3dExtensionsLoading = null
+    reportError(cause, {
+      errorType: 'error_loading_3d_extensions',
+      surface: 'graph'
+    })
+    return undefined
+  }
+  load3dExtensionsLoaded = true
+  return useExtensionStore().enabledExtensions.filter((ext) => !before.has(ext))
 }
 
-// Register a lightweight extension that triggers lazy loading
 useExtensionService().registerExtension({
   name: 'Comfy.Load3DLazy',
 
@@ -64,8 +61,6 @@ useExtensionService().registerExtension({
     if (!isThreeJsNode(nodeData.name)) return
 
     if (isLoad3dNode(nodeData.name)) {
-      // Inject mesh_upload spec flags so WidgetSelect.vue can detect
-      // Load3D's model_file as a mesh upload widget without hardcoding.
       if (nodeData.name === 'Load3D' || nodeData.name === 'Load3DAdvanced') {
         const modelFile = nodeData.input?.required?.model_file
         if (modelFile?.[1]) {
@@ -75,10 +70,8 @@ useExtensionService().registerExtension({
       }
     }
 
-    // Load the 3D extensions and replay their beforeRegisterNodeDef hooks,
-    // since invokeExtensionsAsync already captured the extensions snapshot
-    // before these new extensions were registered.
     const newExtensions = await loadLoad3dExtensions()
+    if (!newExtensions) return
     for (const ext of newExtensions) {
       await ext.beforeRegisterNodeDef?.(nodeType, nodeData, app)
     }

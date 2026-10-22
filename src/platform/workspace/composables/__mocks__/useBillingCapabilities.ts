@@ -12,6 +12,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_billing', true)
   ),
   canSubscribeSelfServe: computed(() => false),
+  canOpenPlans: computed(() => receiveServerFact('can_open_plans', false)),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
   canRevertScheduledChange: computed(() =>
@@ -43,12 +44,12 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_auto_top_up', false)
   ),
   autoTopUpSetup: computed(() => null),
+  canRunWorkflows: computed(() => false),
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),
-  runDeniedPaymentPastDue: computed(() =>
-    receiveServerFact('denied_reasons.can_run_workflows', false)
-  ),
+  runWorkflowsDenial: runWorkflowsDenialFact(undefined),
+  runDeniedPaymentPastDue: computed(() => false),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
@@ -62,6 +63,10 @@ export function canManageBillingFact(granted: boolean) {
   return computed(() => receiveServerFact('can_manage_billing', granted))
 }
 
+export function canManageAutoTopUpFact(granted: boolean) {
+  return computed(() => receiveServerFact('can_manage_auto_top_up', granted))
+}
+
 export function paymentRecoveryAvailableFact(
   available: MaybeRefOrGetter<boolean>
 ) {
@@ -70,15 +75,18 @@ export function paymentRecoveryAvailableFact(
   )
 }
 
+export function runWorkflowsDenialFact(
+  denial: MaybeRefOrGetter<string | undefined>
+) {
+  return computed(() =>
+    receiveServerFact('denied_reasons.can_run_workflows', toValue(denial))
+  )
+}
+
 export function runDeniedPaymentPastDueFact(
   deniedPastDue: MaybeRefOrGetter<boolean>
 ) {
-  return computed(() =>
-    receiveServerFact(
-      'denied_reasons.can_run_workflows',
-      toValue(deniedPastDue)
-    )
-  )
+  return computed(() => toValue(deniedPastDue))
 }
 
 export const useBillingCapabilities = vi.fn(() => {

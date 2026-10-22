@@ -19,15 +19,11 @@
       <BillingPlanLifecycle :state />
       <Button
         v-if="action"
-        as="a"
-        :href="plansUrl"
-        target="_blank"
-        rel="noopener"
         :variant="action === 'manage' ? 'secondary' : 'inverted'"
         class="shrink-0"
+        @click="emit('openPlan')"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -44,7 +40,6 @@ import type {
   PlanRowAction,
   PlanRowState
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const { state, action, canManageSubscription } = defineProps<{
   state: PlanRowState
@@ -52,9 +47,11 @@ const { state, action, canManageSubscription } = defineProps<{
   canManageSubscription: boolean
 }>()
 
-const { t, locale } = useI18n()
+const emit = defineEmits<{
+  openPlan: []
+}>()
 
-const plansUrl = computed(() => platformLink('/profile/billing/plans'))
+const { t, locale } = useI18n()
 
 const title = computed(() => {
   if (state.kind === 'noPlan') {

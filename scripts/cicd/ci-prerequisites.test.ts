@@ -150,11 +150,7 @@ describe('candidate prerequisites', () => {
     ['CLOUD', 'success', 0],
     ['CLOUD', 'failure', 1],
     ['CLOUD', 'cancelled', 1],
-    ['CLOUD', 'skipped', 1],
-    ['NATIVE_LORA', 'success', 0],
-    ['NATIVE_LORA', 'failure', 1],
-    ['NATIVE_LORA', 'cancelled', 1],
-    ['NATIVE_LORA', 'skipped', 1]
+    ['CLOUD', 'skipped', 1]
   ] satisfies [string, string, number][])(
     '%s ending with %s produces E2E exit status %s',
     ([job, status, expected]) => {
@@ -165,7 +161,6 @@ describe('candidate prerequisites', () => {
           SHOULD_RUN: 'true',
           SHARDED: 'success',
           CLOUD: 'success',
-          NATIVE_LORA: 'success',
           BROWSERS: 'success',
           VIDEO: 'skipped',
           [job]: status
@@ -188,7 +183,6 @@ describe('candidate prerequisites', () => {
     'ecosystem',
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
-    'playwright-tests-native-lora',
     'playwright-tests',
     'comment-on-pr-start'
   ])('%s overrides skipped ancestors only after preflight succeeds', (job) => {

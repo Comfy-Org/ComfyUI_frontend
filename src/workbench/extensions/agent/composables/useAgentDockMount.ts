@@ -2,6 +2,7 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useBillingIdentity } from './useBillingIdentity'
@@ -13,6 +14,7 @@ interface AgentDockMount {
 
 export function useAgentDockMount(): AgentDockMount {
   const agentPanelStore = useAgentPanelStore()
+  useAgentPanelRenderStore()
   const { subscription } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the

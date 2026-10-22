@@ -65,11 +65,12 @@
       </div>
       <Button
         as="a"
-        :href="billingUrl"
+        :href
         target="_blank"
         rel="noopener"
         :variant="view.status.action.variant"
         class="shrink-0"
+        @click="track"
       >
         {{ $t(view.status.action.label) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
@@ -79,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -88,11 +90,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
+import { useBillingAutoTopUpCard } from '@/platform/workspace/composables/useBillingAutoTopUpCard'
+import { useAutoTopUpCardViewed } from '@/platform/workspace/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
+type ViewKey = Status | 'turnedOff'
 
 interface Line {
   text: string
@@ -110,11 +114,13 @@ const DANGER = {
 } as const
 
 const MANAGE = {
+  id: 'manage',
   label: 'workspacePanel.billingTab.autoTopUp.actions.manage',
   variant: 'secondary'
 } as const
 
 const UPDATE_PAYMENT = {
+  id: 'update_payment',
   label: 'workspacePanel.billingTab.autoTopUp.actions.updatePayment',
   variant: 'inverted'
 } as const
@@ -126,11 +132,18 @@ const STATUS = {
     dot: 'bg-destructive-background',
     action: UPDATE_PAYMENT
   },
+  turnedOff: {
+    ...DANGER,
+    label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
+    dot: 'bg-destructive-background',
+    action: UPDATE_PAYMENT
+  },
   off: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.off',
     dot: 'bg-muted-foreground',
     action: {
+      id: 'turn_on',
       label: 'workspacePanel.billingTab.autoTopUp.actions.turnOn',
       variant: 'secondary'
     }
@@ -154,20 +167,29 @@ const STATUS = {
     action: MANAGE
   }
 } as const satisfies Record<
-  Status,
+  ViewKey,
   {
     label: string
     dot: string
     border: string
     text: string
-    action: { label: string; variant: string }
+    action: { id: AutoTopUpCardAction; label: string; variant: string }
   }
 >
 
 const { t, locale } = useI18n()
-const { state, retry } = useBillingAutoTopUpCard()
 const { autoTopUpSetup } = useBillingCapabilities()
-const billingUrl = computed(() => platformLink('/profile/billing'))
+const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+ensureRead()
+
+useAutoTopUpCardViewed(() => {
+  const current = state.value
+  return autoTopUpSetup.value?.state !== 'unavailable' &&
+    isReady.value &&
+    current.kind === 'loaded'
+    ? current.settings.status
+    : undefined
+})
 
 function usd(cents: number) {
   return formatUsdFromCents({
@@ -245,8 +267,11 @@ function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
   }
 }
 
-const LINES: Record<Status, (settings: AutoReloadSettings) => Line[]> = {
+const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
   failed: () => [{ text: t('workspacePanel.billingTab.autoTopUp.failed') }],
+  turnedOff: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
+  ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
   on_hold: (settings) => [
     ...ruleLines(settings),
@@ -263,10 +288,26 @@ function isStatus(status: string): status is Status {
   return Object.hasOwn(STATUS, status)
 }
 
+function viewKey(settings: AutoReloadSettings): ViewKey {
+  if (!isStatus(settings.status)) return 'off'
+  if (
+    settings.status === 'failed' &&
+    settings.disabled_reason === 'consecutive_declines'
+  ) {
+    return 'turnedOff'
+  }
+  return settings.status
+}
+
 const view = computed(() => {
   if (state.value.kind !== 'loaded') return null
   const { settings } = state.value
-  const status = isStatus(settings.status) ? settings.status : 'off'
-  return { status: STATUS[status], lines: LINES[status](settings) }
+  const key = viewKey(settings)
+  return { status: STATUS[key], lines: LINES[key](settings) }
 })
+
+const { href, track } = usePlatformHandoff('/profile/billing', () => ({
+  target: 'auto_top_up',
+  action: view.value?.status.action.id ?? 'turn_on'
+}))
 </script>

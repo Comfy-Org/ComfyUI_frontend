@@ -59,6 +59,7 @@ function capabilitiesFor(
       can_edit_workspace: isOwner,
       can_manage_auto_top_up: isOwner,
       can_manage_subscription: isOwner,
+      can_open_plans: isOwner,
       can_run_workflows: isOwner,
       can_upgrade: isOwner
     },

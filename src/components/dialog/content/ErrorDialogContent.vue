@@ -6,10 +6,15 @@
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
-      :title="title"
       :message="message"
       text-class="break-words max-w-[60vw]"
-    />
+    >
+      <template #title>
+        <DialogTitle as="h3" class="mb-2 text-[1.17em] font-bold">
+          {{ title }}
+        </DialogTitle>
+      </template>
+    </NoResultsPlaceholder>
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>
       <br />
@@ -69,6 +74,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
@@ -142,14 +148,13 @@ const resolvedErrors = computed(() =>
 )
 const title = computed(() => {
   const displayTitle =
-    resolvedErrors.value[0]?.title ??
-    error.nodeType ??
-    error.exceptionType ??
-    t('errorDialog.defaultTitle')
+    [resolvedErrors.value[0]?.title, error.nodeType, error.exceptionType].find(
+      (candidate) => candidate?.trim()
+    ) || t('errorDialog.defaultTitle')
 
   if (errorSources[0]?.kind !== 'execution') return displayTitle
 
-  const nodeTitle = error.nodeType ?? displayTitle
+  const nodeTitle = error.nodeType?.trim() ? error.nodeType : displayTitle
   return error.nodeId ? `${nodeTitle} (#${error.nodeId})` : nodeTitle
 })
 const message = computed(
