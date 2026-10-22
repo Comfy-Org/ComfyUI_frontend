@@ -49,21 +49,19 @@
       class="relative z-1 flex min-w-0 flex-1 flex-col gap-1 text-xs leading-none"
     >
       <div v-if="$slots.primary || primaryText" class="min-w-0 text-foreground">
-        <slot name="primary">
-          <span class="block truncate" :title="primaryText">
-            {{ primaryText }}
-          </span>
-        </slot>
+        <slot v-if="$slots.primary" name="primary" />
+        <span v-else class="block truncate" :title="primaryText">
+          {{ primaryText }}
+        </span>
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
         class="min-w-0 text-muted-foreground"
       >
-        <slot name="secondary">
-          <span class="block truncate" :title="secondaryText">
-            {{ secondaryText }}
-          </span>
-        </slot>
+        <slot v-if="$slots.secondary" name="secondary" />
+        <span v-else class="block truncate" :title="secondaryText">
+          {{ secondaryText }}
+        </span>
       </div>
     </div>
 
