@@ -11,7 +11,7 @@ import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
-import { createScopedReader } from './scopedReader'
+import { createFreshRead, createScopedReader } from './scopedReader'
 import { wireCents } from './wireCents'
 
 export const CREDITS_ROUTE = '/billing/balance'
@@ -79,24 +79,8 @@ export function createCreditsReader(
     publish: (value, fenced) => (fenced ? undefined : value)
   })
 
-  let generation = 0
-
-  async function read(
-    options?: CreditsReadOptions
-  ): Promise<BillingResult<CreditsSnapshot>> {
-    if (options?.fresh) {
-      generation++
-      reader.fenceInFlight({ detach: true })
-    }
-    const requestGeneration = generation
-    const result = await reader.read(options)
-    return requestGeneration === generation
-      ? result
-      : { status: 'error', code: 'SUPERSEDED' }
-  }
-
   return {
-    read,
+    read: createFreshRead(reader),
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

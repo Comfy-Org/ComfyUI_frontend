@@ -3,7 +3,7 @@ import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
-import { createScopedReader } from './scopedReader'
+import { createFreshRead, createScopedReader } from './scopedReader'
 
 export const BILLING_STATUS_ROUTE = '/billing/status'
 
@@ -58,24 +58,8 @@ export function createBillingStatusReader(
     publish: (value, fenced) => (fenced ? undefined : value)
   })
 
-  let generation = 0
-
-  async function read(
-    options?: BillingStatusReadOptions
-  ): Promise<BillingResult<BillingStatusSnapshot>> {
-    if (options?.fresh) {
-      generation++
-      reader.fenceInFlight({ detach: true })
-    }
-    const requestGeneration = generation
-    const result = await reader.read(options)
-    return requestGeneration === generation
-      ? result
-      : { status: 'error', code: 'SUPERSEDED' }
-  }
-
   return {
-    read,
+    read: createFreshRead(reader),
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

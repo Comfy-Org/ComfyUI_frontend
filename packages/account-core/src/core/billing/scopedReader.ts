@@ -94,6 +94,29 @@ export interface ScopedReader<TSnapshot, TOptions extends ScopedReadOptions> {
   readonly dispose: () => void
 }
 
+export function createFreshRead<
+  TSnapshot,
+  TOptions extends ScopedReadOptions & { readonly fresh?: boolean }
+>(
+  reader: Pick<ScopedReader<TSnapshot, TOptions>, 'read' | 'fenceInFlight'>
+): ScopedReader<TSnapshot, TOptions>['read'] {
+  let generation = 0
+
+  async function read(options?: TOptions): Promise<BillingResult<TSnapshot>> {
+    if (options?.fresh) {
+      generation++
+      reader.fenceInFlight({ detach: true })
+    }
+    const requestGeneration = generation
+    const result = await reader.read(options)
+    return requestGeneration === generation
+      ? result
+      : { status: 'error', code: 'SUPERSEDED' }
+  }
+
+  return read
+}
+
 interface InFlightRead<TSnapshot> {
   readonly context: BillingScopeContext
   readonly route: string
