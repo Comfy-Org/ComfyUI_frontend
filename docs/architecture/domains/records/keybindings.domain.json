@@ -86,7 +86,8 @@
       "name": "Shortcuts tab lists essential and view-control keybindings",
       "checks": [
         "src/platform/keybindings/components/shortcuts/EssentialsPanel.test.ts",
-        "src/platform/keybindings/components/shortcuts/ShortcutsList.test.ts"
+        "src/platform/keybindings/components/shortcuts/ShortcutsList.test.ts",
+        "src/platform/keybindings/composables/useShortcutsTab.test.ts"
       ]
     }
   ],
