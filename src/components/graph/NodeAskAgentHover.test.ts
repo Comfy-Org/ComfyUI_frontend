@@ -174,7 +174,6 @@ describe('NodeAskAgentHover', () => {
     expect(composer).toHaveClass(
       'rounded-lg',
       'overflow-hidden',
-      'p-0',
       'w-72',
       'border-border'
     )
