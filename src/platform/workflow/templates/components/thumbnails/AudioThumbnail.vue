@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import BaseThumbnail from '@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'
 
 defineProps<{
   src: string

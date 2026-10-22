@@ -78,7 +78,7 @@ import {
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'

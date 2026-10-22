@@ -12,7 +12,7 @@ import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSear
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 import { debounce } from 'es-toolkit/compat'
 
 type TemplateBrowseSort =

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { useLazyPagination } from '@/composables/useLazyPagination'
+import { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
 
 type Item = { id: number }
 

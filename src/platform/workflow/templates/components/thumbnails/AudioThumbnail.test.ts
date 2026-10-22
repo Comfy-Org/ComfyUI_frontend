@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
+import AudioThumbnail from '@/platform/workflow/templates/components/thumbnails/AudioThumbnail.vue'
 
 vi.mock<unknown>(
-  import('@/components/templates/thumbnails/BaseThumbnail.vue'),
+  import('@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'),
   () => ({
     default: {
       name: 'BaseThumbnail',

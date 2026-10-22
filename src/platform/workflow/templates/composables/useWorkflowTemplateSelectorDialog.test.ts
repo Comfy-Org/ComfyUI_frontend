@@ -18,7 +18,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
-  import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),
+  import('@/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue'),
   () => ({
     default: { name: 'MockWorkflowTemplateSelectorDialog' }
   })

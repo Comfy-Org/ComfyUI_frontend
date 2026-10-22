@@ -9,8 +9,8 @@ import type { WorkflowTemplates } from '@/platform/workflow/templates/types/temp
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
-import type { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import type { useLazyPagination } from '@/composables/useLazyPagination'
+import type { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
+import type { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
@@ -242,45 +242,51 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/composables/useTemplateFiltering'), () => ({
-  useTemplateFiltering: ((templates: {
-    value: (typeof fixtures.template)[]
-  }) => {
-    const searchQuery = ref('')
-    const selectedModels = ref<string[]>([])
-    const selectedUseCases = ref<string[]>([])
-    const selectedRunsOn = ref<string[]>([])
-    const sortSelection = ref('default')
+vi.mock(
+  import('@/platform/workflow/templates/composables/useTemplateFiltering'),
+  () => ({
+    useTemplateFiltering: ((templates: {
+      value: (typeof fixtures.template)[]
+    }) => {
+      const searchQuery = ref('')
+      const selectedModels = ref<string[]>([])
+      const selectedUseCases = ref<string[]>([])
+      const selectedRunsOn = ref<string[]>([])
+      const sortSelection = ref('default')
 
-    return {
-      searchQuery,
-      selectedModels,
-      selectedUseCases,
-      selectedRunsOn,
-      sortSelection,
-      hasActiveQuery: computed(() => false),
-      activeModels: computed(() => selectedModels.value),
-      activeUseCases: computed(() => selectedUseCases.value),
-      filteredTemplates: templates,
-      availableModels: computed(() => []),
-      availableUseCases: computed(() => []),
-      availableRunsOn: computed(() => []),
-      filteredCount: computed(() => templates.value.length),
-      totalCount: computed(() => templates.value.length),
-      resetFilters: vi.fn()
-    }
-  }) as unknown as typeof useTemplateFiltering
-}))
+      return {
+        searchQuery,
+        selectedModels,
+        selectedUseCases,
+        selectedRunsOn,
+        sortSelection,
+        hasActiveQuery: computed(() => false),
+        activeModels: computed(() => selectedModels.value),
+        activeUseCases: computed(() => selectedUseCases.value),
+        filteredTemplates: templates,
+        availableModels: computed(() => []),
+        availableUseCases: computed(() => []),
+        availableRunsOn: computed(() => []),
+        filteredCount: computed(() => templates.value.length),
+        totalCount: computed(() => templates.value.length),
+        resetFilters: vi.fn()
+      }
+    }) as unknown as typeof useTemplateFiltering
+  })
+)
 
-vi.mock(import('@/composables/useLazyPagination'), () => ({
-  useLazyPagination: ((items: { value: unknown[] }) => ({
-    paginatedItems: items,
-    isLoading: ref(false),
-    hasMoreItems: computed(() => false),
-    loadNextPage: vi.fn(async () => {}),
-    reset: vi.fn()
-  })) as unknown as typeof useLazyPagination
-}))
+vi.mock(
+  import('@/platform/workflow/templates/composables/useLazyPagination'),
+  () => ({
+    useLazyPagination: ((items: { value: unknown[] }) => ({
+      paginatedItems: items,
+      isLoading: ref(false),
+      hasMoreItems: computed(() => false),
+      loadNextPage: vi.fn(async () => {}),
+      reset: vi.fn()
+    })) as unknown as typeof useLazyPagination
+  })
+)
 
 vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()

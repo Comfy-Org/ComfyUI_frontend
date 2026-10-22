@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
+import CompareSliderThumbnail from '@/platform/workflow/templates/components/thumbnails/CompareSliderThumbnail.vue'
 
 vi.mock<unknown>(
-  import('@/components/templates/thumbnails/BaseThumbnail.vue'),
+  import('@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'),
   () => ({
     default: {
       name: 'BaseThumbnail',

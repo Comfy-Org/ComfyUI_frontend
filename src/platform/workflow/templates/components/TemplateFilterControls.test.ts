@@ -5,7 +5,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SelectOption } from '@/components/ui/select/types'
-import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
+import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 
 import TemplateFilterControls from './TemplateFilterControls.vue'
 
