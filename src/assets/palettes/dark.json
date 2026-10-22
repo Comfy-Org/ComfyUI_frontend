@@ -63,7 +63,24 @@
       "content-fg": "#fff",
       "content-hover-bg": "#222",
       "content-hover-fg": "#fff",
-      "bar-shadow": "rgba(16, 16, 16, 0.5) 0 0 0.5rem"
+      "bar-shadow": "rgb(16 16 16 / 0.5) 0 0 0.5rem"
+    },
+    "theme": {
+      "background": "#171718",
+      "foreground": "#ffffff",
+      "card": "#262729",
+      "primary": "#0b8ce9",
+      "secondary": "#262729",
+      "muted": "#3c3d42",
+      "muted-foreground": "#8a8a8a",
+      "accent": "#313235",
+      "destructive": "#b33a3a",
+      "border": "#494a50",
+      "node-foreground": "#a0a0a0",
+      "node-header": "#202121",
+      "node-border": "#55565e",
+      "warning": "#fd9903",
+      "shadow-color": "rgb(0 0 0 / 0.4)"
     }
   }
 }

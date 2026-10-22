@@ -1,0 +1,40 @@
+{
+  "id": "value-formatting",
+  "capability": "Numeric and date formatting",
+  "description": "Shared technical module for locale-aware number, percentage, currency, and date formatting and tolerant timestamp parsing. Business decisions about credits and queue progress remain outside this module.",
+  "modules": [
+    {
+      "path": "src/utils/dateTimeUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/dateTimeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/numberUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/numberUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Numeric and date formatting preserves its existing behavior",
+      "checks": [
+        "src/utils/numberUtil.test.ts",
+        "src/utils/dateTimeUtil.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

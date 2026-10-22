@@ -27,6 +27,12 @@ function cleanSummary(summary: string | undefined) {
   return text ? text.replace(/(?<![.!?。！？])$/u, '.') : undefined
 }
 
+function unitLabel(unit: string, locale: Locale) {
+  const { t, te } = translationsFor(locale)
+  const key = `workshop.model.meta.units.${unit}`
+  return te(key) ? t(key) : unit
+}
+
 function priceClause(priceEstimate: string | undefined, locale: Locale) {
   const { t } = translationsFor(locale)
   if (!priceEstimate) return undefined
@@ -35,7 +41,10 @@ function priceClause(priceEstimate: string | undefined, locale: Locale) {
   if (!credits) return undefined
   const unit = per?.slice(1).toLowerCase()
   return unit
-    ? t('workshop.model.meta.price', { credits, unit })
+    ? t('workshop.model.meta.price', {
+        credits,
+        unit: unitLabel(unit, locale)
+      })
     : t('workshop.model.meta.priceNoUnit', { credits })
 }
 

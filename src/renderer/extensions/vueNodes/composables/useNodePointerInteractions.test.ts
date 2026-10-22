@@ -134,7 +134,7 @@ describe('useNodePointerInteractions', () => {
       click: 'a plain click replacing the selection',
       modifiers: {},
       preselect: ['Second'],
-      emitted: [[], ['First']]
+      emitted: [['First']]
     },
     {
       click: 'a shift click adding a node',

@@ -1,0 +1,34 @@
+{
+  "id": "witch",
+  "name": "Witch",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/witch-brew.png",
+      "CLEAR_BACKGROUND_COLOR": "#0e0a14",
+      "LINK_COLOR": "#7ee36a",
+      "CONNECTING_LINK_COLOR": "#b8f27a"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#0e0a14",
+      "foreground": "#efe6f7",
+      "card": "#1a1224",
+      "primary": "#2f8a3a",
+      "secondary": "#21172d",
+      "muted": "#382650",
+      "muted-foreground": "#a99bbb",
+      "accent": "#2a1d39",
+      "destructive": "#c0304a",
+      "border": "#43305c",
+      "input": "#120c1a",
+      "ring": "#7ee36a",
+      "node": "#150f1e",
+      "node-foreground": "#cdbfe0",
+      "node-header": "#2a1a3e",
+      "node-border": "#553a78",
+      "warning": "#e3b23c",
+      "shadow-color": "rgb(20 0 40 / 0.6)"
+    }
+  }
+}

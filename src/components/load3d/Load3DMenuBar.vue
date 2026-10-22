@@ -2,7 +2,7 @@
   <div class="flex size-full flex-col">
     <div
       ref="topBarRef"
-      class="flex h-10 shrink-0 items-center gap-1 bg-interface-menu-surface px-2"
+      class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
       @wheel.stop
     >
       <Popover v-model:open="categoryMenuOpen">
@@ -47,7 +47,7 @@
         </PopoverContent>
       </Popover>
 
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
 
       <SceneMenuGroup
         v-if="activeCategory === 'scene' && sceneConfig"
@@ -97,7 +97,7 @@
       <slot />
       <div
         v-if="isRecording"
-        class="pointer-events-none absolute inset-0 border-2 border-node-component-executing"
+        class="pointer-events-none absolute inset-0 border-2 border-primary"
       />
     </div>
 
@@ -114,7 +114,7 @@
     />
 
     <div
-      class="flex h-10 shrink-0 items-center justify-between gap-1 bg-interface-menu-surface px-2"
+      class="flex h-10 shrink-0 items-center justify-between gap-1 bg-popover px-2"
       @wheel.stop
     >
       <div class="flex items-center gap-1">
@@ -220,7 +220,7 @@ import {
   menuButtonClass,
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
-import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   AnimationItem,
@@ -230,7 +230,7 @@ import type {
   MaterialMode,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

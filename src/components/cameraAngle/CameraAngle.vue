@@ -23,7 +23,7 @@
         <i :class="cn('size-4', option.icon)" />
         <span v-if="!compact">{{ option.label }}</span>
       </Button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
       <Button
         variant="textonly"
         size="unset"
@@ -40,7 +40,7 @@
         <span v-if="!compact">{{ $t('cameraAngle.preview') }}</span>
       </Button>
       <span
-        class="ml-auto min-w-0 truncate text-xs text-muted-foreground"
+        class="ml-auto min-w-0 truncate text-muted-foreground"
         :title="prompt"
         data-testid="camera-angle-prompt"
       >
@@ -108,12 +108,12 @@ import {
   distanceTerm,
   horizontalTerm,
   verticalTerm
-} from '@/extensions/core/cameraAngle/cameraAngleMath'
-import type { CameraAngleTerm } from '@/extensions/core/cameraAngle/cameraAngleMath'
+} from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
+import type { CameraAngleTerm } from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
 import type {
   CameraAngleField,
   CameraAngleViewMode
-} from '@/extensions/core/cameraAngle/types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'

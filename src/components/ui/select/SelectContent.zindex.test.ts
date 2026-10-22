@@ -1,6 +1,5 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { StyleValue } from 'vue'
 import { nextTick, ref } from 'vue'
 
@@ -50,27 +49,22 @@ async function openSelect(triggerEl: HTMLElement) {
   await nextTick()
 }
 
-let openModal: HTMLElement | undefined
-
-afterEach(() => {
-  if (openModal) {
-    ZIndex.clear(openModal)
-    openModal = undefined
-  }
-})
-
 describe('SelectContent z-index', () => {
-  it('opens above a dialog registered with the modal z-index counter', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('opens above a dialog already in the document', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const { unmount } = renderSelect()
 
     await openSelect(screen.getByRole('combobox'))
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })
@@ -83,15 +77,17 @@ describe('SelectContent z-index', () => {
     const content = findContentElement()
     expect(content).not.toBeNull()
     expect(content!.style.zIndex).toBe('')
-    expect(content!.className).toContain('z-3000')
+    expect(content!.className).toContain('z-overlay')
 
     unmount()
   })
 
-  it('preserves caller styles while lifting above a dialog', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('preserves caller styles above a dialog', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const { unmount } = renderSelect({ maxWidth: '100px' })
 
     await openSelect(screen.getByRole('combobox'))
@@ -99,7 +95,9 @@ describe('SelectContent z-index', () => {
     const content = findContentElement()
     expect(content).not.toBeNull()
     expect(content!.style.maxWidth).toBe('100px')
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })

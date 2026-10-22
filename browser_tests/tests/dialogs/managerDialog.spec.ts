@@ -627,6 +627,37 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
+  test('Shift+Home and Shift+End select the search query', async ({
+    comfyPage
+  }) => {
+    const query = 'Test Pack'
+    await openManagerDialog(comfyPage)
+    const dialog = comfyPage.page.getByRole('dialog')
+    const searchInput = dialog.getByRole('combobox', { name: 'Search' })
+    await searchInput.fill(query)
+    await expect(dialog.getByText('Test Pack A')).toBeVisible()
+
+    const selection = () =>
+      searchInput.evaluate((input: HTMLInputElement) => [
+        input.selectionStart,
+        input.selectionEnd
+      ])
+
+    await test.step('Shift+Home selects back to the start', async () => {
+      await searchInput.press('ArrowLeft')
+      await expect.poll(selection).toEqual([query.length - 1, query.length - 1])
+      await searchInput.press('Shift+Home')
+      await expect.poll(selection).toEqual([0, query.length - 1])
+    })
+
+    await test.step('Shift+End selects forward to the end', async () => {
+      await searchInput.press('ArrowLeft')
+      await searchInput.press('ArrowRight')
+      await searchInput.press('Shift+End')
+      await expect.poll(selection).toEqual([1, query.length])
+    })
+  })
+
   test.describe('Grid sizing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       const algoliaResponse: AlgoliaSearchResponse = {
@@ -719,6 +750,170 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       // Relational, not the exact 2200px: this pins that the step applies at
       // all, and retuning the cap is a design change, not a regression.
       await expect.poll(panelWidth).toBeGreaterThan(widthBelowBreakpoint)
+    })
+  })
+
+  test.describe('Failed next page', () => {
+    const PAGED_PACKS: RegistryNodePack[] = Array.from(
+      { length: 65 },
+      (_, index) => ({
+        id: `paged-pack-${index}`,
+        name: `Paged Pack ${index}`,
+        description: 'Pack used to fill two result pages',
+        downloads: 1000 - index,
+        status: 'NodeStatusActive',
+        publisher: { id: 'paged-publisher', name: 'Paged Publisher' },
+        latest_version: { version: '1.0.0', status: 'NodeVersionStatusActive' },
+        repository: `https://github.com/test/paged-pack-${index}`
+      })
+    )
+    const PAGE_SIZE = 64
+    const LAST_FIRST_PAGE_PACK = `Paged Pack ${PAGE_SIZE - 1}`
+    const SECOND_PAGE_PACK = `Paged Pack ${PAGE_SIZE}`
+
+    const packsOnPage = (pageNumber: number) =>
+      PAGED_PACKS.slice(pageNumber * PAGE_SIZE, (pageNumber + 1) * PAGE_SIZE)
+
+    let secondPageRequests = 0
+
+    test.beforeEach(async ({ comfyPage }) => {
+      secondPageRequests = 0
+      const respondWithPage = async (
+        route: Parameters<Parameters<ComfyPage['page']['route']>[1]>[0],
+        pageNumber: number,
+        body: () => object
+      ) => {
+        if (pageNumber === 1 && secondPageRequests++ === 0) {
+          await route.fulfill({ status: 503, json: {} })
+          return
+        }
+        await route.fulfill({ json: body() })
+      }
+      for (const pattern of ['**/*.algolia.net/**', '**/*.algolianet.com/**']) {
+        await comfyPage.page.route(pattern, (route) => {
+          const { requests } = route.request().postDataJSON() as {
+            requests: { page?: number }[]
+          }
+          const pageNumber = requests[0]?.page ?? 0
+          return respondWithPage(route, pageNumber, () => ({
+            results: requests.map((_, index) => ({
+              hits:
+                index === 0
+                  ? packsOnPage(pageNumber).map((pack) => ({
+                      objectID: pack.id,
+                      id: pack.id,
+                      name: pack.name,
+                      description: pack.description,
+                      total_install: pack.downloads,
+                      status: pack.status,
+                      publisher_id: 'paged-publisher',
+                      latest_version: '1.0.0',
+                      latest_version_status: 'NodeVersionStatusActive',
+                      repository_url: pack.repository
+                    }))
+                  : [],
+              nbHits: PAGED_PACKS.length,
+              page: pageNumber,
+              nbPages: 2,
+              hitsPerPage: PAGE_SIZE
+            }))
+          }))
+        })
+      }
+      await comfyPage.page.route(
+        (url) =>
+          url.hostname === 'api.comfy.org' &&
+          (url.pathname === '/nodes' || url.pathname === '/nodes/search'),
+        (route) => {
+          const registryPage = Number(
+            new URL(route.request().url()).searchParams.get('page') ?? '1'
+          )
+          return respondWithPage(route, registryPage - 1, () => ({
+            total: PAGED_PACKS.length,
+            nodes: packsOnPage(registryPage - 1),
+            page: registryPage,
+            limit: PAGE_SIZE,
+            totalPages: 2
+          }))
+        }
+      )
+      await comfyPage.page.route(
+        (url) =>
+          url.hostname === 'api.comfy.org' &&
+          url.pathname.startsWith('/nodes/paged-pack-'),
+        (route) => {
+          const { pathname } = new URL(route.request().url())
+          if (pathname.endsWith('/comfy-nodes')) {
+            return route.fulfill({
+              json: {
+                comfy_nodes: [],
+                totalNumberOfPages: 0
+              } satisfies RegistryOperations['ListComfyNodes']['responses'][200]['content']['application/json']
+            })
+          }
+          const id = pathname.split('/')[2]
+          return route.fulfill({
+            json: PAGED_PACKS.find((pack) => pack.id === id)
+          })
+        }
+      )
+    })
+
+    const scrollToEnd = (grid: Locator) =>
+      grid.evaluate((element) => {
+        element.scrollTop = element.scrollHeight
+      })
+
+    test('keeps the loaded packs, scroll and selection and loads the page again on retry', async ({
+      comfyPage
+    }) => {
+      await openManagerDialog(comfyPage)
+      const dialog = comfyPage.page.getByRole('dialog')
+      const grid = dialog.locator('#results-grid')
+      await expect(
+        dialog.getByText('Paged Pack 0', { exact: true })
+      ).toBeVisible()
+
+      await test.step('scroll to the end of the first page', async () => {
+        await scrollToEnd(grid)
+        await expect(
+          dialog.getByText(LAST_FIRST_PAGE_PACK, { exact: true })
+        ).toBeVisible()
+      })
+
+      const failureNotice = dialog.getByRole('alert').filter({
+        hasText: "Couldn't load more results."
+      })
+      await expect(failureNotice).toBeVisible()
+      await expect(
+        dialog.getByText('Error connecting to the Comfy Node Registry.')
+      ).toBeHidden()
+
+      await dialog.getByText(LAST_FIRST_PAGE_PACK, { exact: true }).click()
+      const infoPanel = dialog.getByRole('complementary')
+      await expect(
+        infoPanel.getByText(LAST_FIRST_PAGE_PACK, { exact: true })
+      ).toBeVisible()
+      const scrollTopBeforeRetry = await grid.evaluate(
+        (element) => element.scrollTop
+      )
+      expect(scrollTopBeforeRetry).toBeGreaterThan(0)
+
+      await failureNotice.getByRole('button', { name: 'Retry' }).click()
+
+      await expect(failureNotice).toBeHidden()
+      await expect(
+        infoPanel.getByText(LAST_FIRST_PAGE_PACK, { exact: true })
+      ).toBeVisible()
+      expect(
+        await grid.evaluate((element) => element.scrollTop)
+      ).toBeGreaterThanOrEqual(scrollTopBeforeRetry)
+      await expect.poll(() => secondPageRequests).toBe(2)
+
+      await scrollToEnd(grid)
+      await expect(
+        dialog.getByText(SECOND_PAGE_PACK, { exact: true })
+      ).toBeVisible()
     })
   })
 

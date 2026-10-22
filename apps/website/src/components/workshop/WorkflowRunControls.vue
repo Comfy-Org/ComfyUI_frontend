@@ -47,7 +47,7 @@ const canCancel = computed(() => {
     class="w-full"
     :href="signInHref"
     @click="leaveForSignIn($event, signInHref)"
-    >{{ t('workshop.run.signIn') }}</Button
+    >{{ t('workshop.run.run') }}</Button
   >
   <Button
     v-else

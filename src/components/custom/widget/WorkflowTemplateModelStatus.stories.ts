@@ -131,7 +131,7 @@ export const WithoutRowContext: Story = {
         <div
           v-for="row in rows"
           :key="row.id"
-          class="flex items-center justify-between gap-4 rounded-md border border-border-default px-3 py-2"
+          class="flex items-center justify-between gap-4 rounded-md border border-border px-3 py-2"
         >
           <span class="text-xs text-muted-foreground">{{ row.name }}</span>
           <WorkflowTemplateModelStatus :row="row" />

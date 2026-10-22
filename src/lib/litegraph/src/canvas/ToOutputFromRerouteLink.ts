@@ -1,15 +1,18 @@
+import type {
+  LGraphNode,
+  Reroute,
+  LinkConnector
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork
-} from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
 
-import type { LinkConnector } from './LinkConnector'
 import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'
 
