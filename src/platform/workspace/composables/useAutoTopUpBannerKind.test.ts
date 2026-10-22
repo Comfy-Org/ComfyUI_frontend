@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, effectScope } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -66,7 +66,9 @@ function arrange(scenario: Scenario) {
     ensureRead: vi.fn(),
     retry: vi.fn()
   })
-  return useAutoTopUpBannerKind().value
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  return scope.run(() => useAutoTopUpBannerKind())!.value
 }
 
 const failed = { status: 'failed', disabled_reason: null } as const
