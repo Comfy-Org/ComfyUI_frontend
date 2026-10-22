@@ -19,6 +19,7 @@ import { z } from 'zod'
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
 const bash = '/bin/bash'
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
+const bin = join(import.meta.dirname, '../../node_modules/.bin')
 
 function fixture(
   chromiumCount: number,
@@ -55,6 +56,12 @@ function fixture(
       ].join('\n')
   )
   writeFileSync(join(root, 'unrelated.spec.ts'), imports + source(100))
+  mkdirSync(join(root, 'bin'))
+  writeFileSync(
+    join(root, 'bin', 'pnpm'),
+    `#!/bin/sh\nshift\nexec ${JSON.stringify(bin)}/"$@"\n`,
+    { mode: 0o755 }
+  )
   const extraSpecs = extraChromiumCounts.map((count, i) => {
     const file = join(root, `extra-${i}.spec.ts`)
     writeFileSync(file, imports + source(count))
@@ -69,8 +76,14 @@ function fixture(
         'bash',
         [script, '--config', config, spec, ...extraSpecs],
         {
+          cwd: root,
           encoding: 'utf8',
-          env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: '', ...env }
+          env: {
+            ...process.env,
+            PATH: `${join(root, 'bin')}:${process.env.PATH}`,
+            PLAYWRIGHT_JSON_OUTPUT_NAME: '',
+            ...env
+          }
         }
       )
     },
@@ -177,7 +190,7 @@ describe('Playwright video shard planning', () => {
         {
           key: chromium.specs[0].key,
           project: 'chromium',
-          file: chromium.specs[0].file,
+          file: 'changed.spec.ts',
           sha: 'abc1234'
         }
       ])
@@ -326,12 +339,19 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       ['fresh.zip', 'fresh.pass'],
       0,
       ['fresh.zip', 'hit.zip'],
+      ['fresh.pass', 'fresh.zip', 'hit.zip'],
       'hit\told1234\nfresh\thead567\n'
     ],
-    [['fresh.pass'], 1, ['hit.zip'], 'hit\told1234\n']
-  ] satisfies [string[], number, string[], string][])(
+    [
+      ['fresh.pass'],
+      1,
+      ['hit.zip'],
+      ['fresh.pass', 'hit.zip'],
+      'hit\told1234\n'
+    ]
+  ] satisfies [string[], number, string[], string[], string][])(
     'combines recordings %j with exit status %i',
-    ([recorded, status, cached, index]) => {
+    ([recorded, status, cached, blobs, index]) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -375,6 +395,9 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       const cache = readdirSync(join(root, 'video-cache'))
       expect(cache).toEqual(expect.arrayContaining(cached))
       expect(cache).toHaveLength(cached.length)
+      const merged = readdirSync(join(root, 'video-blobs'))
+      expect(merged).toEqual(expect.arrayContaining(blobs))
+      expect(merged).toHaveLength(blobs.length)
       expect(readFileSync(join(root, 'video-cache-index.txt'), 'utf8')).toBe(
         index
       )
