@@ -5,8 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers' 
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -45,7 +44,7 @@ import { isResultItemType } from '@/utils/typeGuardUtil'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { useAssetDownload } from './useAssetDownload'
+import { createFileDownload, useAssetDownload } from './useAssetDownload'
 import { useAssetZipExport } from './useAssetZipExport'
 import type { AssetDownload } from './useAssetDownload'
 
@@ -125,19 +124,10 @@ export function useMediaAssetActions() {
   }
 
   function createAssetDownload(asset: AssetItem): AssetDownload {
-    const url = getAssetFileUrl(asset)
-    const filename = getAssetDisplayName(asset)
-    if (!isCloud) return { mode: 'direct', url, filename }
-
-    // Required: a bare fetch sends no Authorization header and authenticates by
-    // session cookie, which resolves to the personal workspace — an asset owned
-    // by any other workspace then reads as missing.
-    return {
-      mode: 'fetch',
-      url,
-      filename,
-      fetch: (route) => api.fetchApi(route)
-    }
+    return createFileDownload(
+      getAssetFileUrl(asset),
+      getAssetDisplayName(asset)
+    )
   }
 
   async function expandAssetForDownload(

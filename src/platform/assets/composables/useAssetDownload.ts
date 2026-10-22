@@ -1,7 +1,9 @@
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 interface DirectAssetDownload {
@@ -19,6 +21,20 @@ export interface FetchedAssetDownload {
 }
 
 export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
+
+/** A download of `url` that carries the app's authorization, not only its session cookie. */
+export function createFileDownload(
+  url: string,
+  filename: string
+): AssetDownload {
+  if (!isCloud) return { mode: 'direct', url, filename }
+  return {
+    mode: 'fetch',
+    url,
+    filename,
+    fetch: (route) => api.fetchApi(route)
+  }
+}
 
 export function useAssetDownload() {
   const { t } = useI18n()
