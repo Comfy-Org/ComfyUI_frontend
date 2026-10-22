@@ -859,7 +859,9 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
-    await useWorkspaceStore().workflow.syncWorkflows()
+    await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
+      useWorkspaceStore().workflow.syncWorkflows()
+    )
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
@@ -1068,7 +1070,12 @@ export class ComfyApp implements IComfyApp {
       await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     })
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      const phase = bootstrapTracer.startPhase('bootstrap/vue-node-defs')
+      try {
+        this.updateVueAppNodeDefs(defs)
+      } finally {
+        phase.stop()
+      }
     }
   }
 

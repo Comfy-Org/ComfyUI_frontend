@@ -12,10 +12,13 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { useAutoTopUpBannerKind } from '@/platform/workspace/composables/useAutoTopUpBannerKind'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
 
+const track = vi.fn()
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -23,6 +26,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
+vi.mock(import('@/platform/workspace/composables/useAutoTopUpBannerKind'))
+vi.mock(import('@/platform/workspace/composables/usePlatformHandoff'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
@@ -53,7 +58,15 @@ function arrange(options: {
   topUpDenial?: string
   canManageBilling?: boolean
   canManageSubscription?: boolean
+  autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
 }) {
+  vi.mocked(usePlatformHandoff).mockReturnValue({
+    href: computed(() => 'https://platform.test/profile/billing'),
+    track
+  })
+  vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
+    computed(() => options.autoTopUp ?? null)
+  )
   distribution.isCloud = options.isCloud ?? false
   vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled =
     options.unified ?? true
@@ -314,5 +327,57 @@ describe('BillingLocalCreditBanner', () => {
     expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
       'Out of credits'
     )
+  })
+
+  it.for([
+    { isCloud: false, kind: 'autoTopUpFailed', title: 'Auto top-up failed' },
+    { isCloud: false, kind: 'autoTopUpOff', title: 'Auto top-up turned off' },
+    { isCloud: true, kind: 'autoTopUpFailed', title: 'Auto top-up failed' },
+    { isCloud: true, kind: 'autoTopUpOff', title: 'Auto top-up turned off' }
+  ] as const)('shows $kind on cloud=$isCloud', ({ isCloud, kind, title }) => {
+    arrange({ isCloud, autoTopUp: kind })
+
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
+      title
+    )
+  })
+
+  it('ranks auto top-up above out of credits and low credits', () => {
+    arrange({
+      autoTopUp: 'autoTopUpFailed',
+      subscription: { ...personalSubscription, hasFunds: false },
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+    })
+
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('billing-local-credit-banner')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows no auto top-up banner off the unified billing flag on local', () => {
+    arrange({ unified: false, autoTopUp: 'autoTopUpFailed' })
+
+    expect(
+      screen.queryByTestId('billing-auto-top-up-banner')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hands off the Update payment link to the platform billing page', async () => {
+    arrange({ autoTopUp: 'autoTopUpFailed' })
+    const link = screen.getByRole('link', { name: 'Update payment' })
+    link.addEventListener('click', (event) => event.preventDefault())
+
+    await userEvent.click(link)
+
+    expect(link).toHaveAttribute(
+      'href',
+      'https://platform.test/profile/billing'
+    )
+    expect(usePlatformHandoff).toHaveBeenCalledWith('/profile/billing', {
+      target: 'auto_top_up',
+      action: 'update_payment'
+    })
+    expect(track).toHaveBeenCalled()
   })
 })
