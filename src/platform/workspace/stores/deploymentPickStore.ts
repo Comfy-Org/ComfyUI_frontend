@@ -59,7 +59,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   const deployments = computed(() =>
     'deployments' in state.value ? state.value.deployments : []
   )
-  /** The listing's `builds_visible`, as received: whether this account may create Builds. */
+  /** The listing's `builds_visible`: whether this account may create Builds. */
   const buildsVisible = computed(
     () => 'buildsVisible' in state.value && state.value.buildsVisible
   )

@@ -40,7 +40,7 @@ async function openCustomDeploymentDialog(
   return true
 }
 
-/** Opens the dialog behind Create a custom deployment in the Run on list; false when it could not load. */
+/** Opens the Create a custom deployment dialog; false if it could not load. */
 export function openCreateCustomDeploymentDialog(): Promise<boolean> {
   return openCustomDeploymentDialog('global-create-custom-deployment', {
     title: t('deploymentSwitcher.customDeployment.title'),
@@ -54,7 +54,7 @@ export function openCreateCustomDeploymentDialog(): Promise<boolean> {
   })
 }
 
-/** Opens the dialog the Extensions button shows on Comfy Cloud; false when it could not load. */
+/** Opens the Extensions dialog on Comfy Cloud; false if it could not load. */
 export function openDeployCustomNodesDialog(): Promise<boolean> {
   return openCustomDeploymentDialog('global-deploy-custom-nodes', {
     title: t('deploymentSwitcher.deployCustomNodes.title'),
