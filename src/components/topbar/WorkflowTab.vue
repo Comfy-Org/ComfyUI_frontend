@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
+  <ContextMenuRoot :modal="false">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -104,11 +104,9 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal :key="Number(menuOpen)">
-      <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
-        <MenuItems :items="contextMenuItems" />
-      </ContextMenuContent>
-    </ContextMenuPortal>
+    <ContextMenuContent class="min-w-56">
+      <MenuItems :items="contextMenuItems" />
+    </ContextMenuContent>
   </ContextMenuRoot>
   <WorkflowTabPopover
     v-model:open="popoverOpen"
@@ -122,18 +120,13 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ContextMenuPortal,
-  ContextMenuContent,
-  ContextMenuRoot,
-  ContextMenuTrigger
-} from 'reka-ui'
+import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import MenuItems from '@comfyorg/design-system/menu/MenuItems'
-import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
 import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import {
   usePragmaticDraggable,
@@ -186,7 +179,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
