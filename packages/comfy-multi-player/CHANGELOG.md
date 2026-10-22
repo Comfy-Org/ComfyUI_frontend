@@ -7,6 +7,27 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.12 - 2026-10-21
+
+The first MIT release of the current line. (0.3.11 is a maintenance release of
+the schema-4 line: the 0.3.7 code relicensed to MIT.)
+
+### Changed
+
+- Relicensed from GPL-3.0-only to MIT. Releases up to and including 0.3.10
+  remain available under GPL-3.0-only.
+
+### Added
+
+- Accept a non-empty owner-instance `path` and optional
+  `container_incarnation` on `delete_node`, deleting a node inside a
+  single-instance subgraph definition. The delete uses a path-scoped presence
+  register, removes incident interior links and their endpoint references
+  (including subgraph input/output `linkIds`), preserves same-id root nodes,
+  and rejects shared unforked definitions (PM-2138). A 0.3.10 reader ignores
+  `path` and would delete the same-id ROOT node, so a host must run this
+  version before any producer emits interior deletes.
+
 ## 0.3.10 - 2026-10-04
 
 ### Fixed

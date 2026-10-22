@@ -27,6 +27,11 @@ describe("writeTarget — default arm (schema §3 stamp targets)", () => {
   it("still targets the specific arms it knows", () => {
     expect(writeTarget({ op: "add_node", node_id: 7 } as never)).toEqual(["node", "7"]);
     expect(writeTarget({ op: "delete_node", node_id: 7 } as never)).toEqual(["node", "7"]);
+    expect(writeTarget({ op: "delete_node", path: [70], node_id: 7 } as never)).toEqual([
+      "node",
+      ["70"],
+      "7",
+    ]);
   });
 });
 

@@ -108,6 +108,8 @@ import {
   formFinalOccurrence,
   formIndexOf,
   storedWidgetFormOf,
+  type StoredWidgetForm,
+  WIDGET_FORM_KEY,
 } from "./widget-form.js";
 import { linkHasMissingEndpoint, remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
@@ -137,6 +139,7 @@ import {
   type GrowConnectOp,
   type ImportedLinkState,
   type InteriorSetWidgetOp,
+  type NodeId,
   LINK_STATE_DESCRIPTOR_VERSION,
   type LinkTuple,
   type CanonicalOpInspection,
@@ -152,7 +155,14 @@ import {
   type WireOp,
 } from "./types.js";
 import { addInteriorLinkOrder, removeInteriorLinkOrder } from "./interior-link-order.js";
-import { optionOwnedWidgets, projectedLength, widgetLayoutForWidgets, widgetOrderForValues, widgetOrderForWidgets } from "./dynamic-combos.js";
+import {
+  optionOwnedWidgets,
+  projectedLength,
+  widgetLayoutForWidgets,
+  widgetOrderForProducerOrder,
+  widgetOrderForValues,
+  widgetOrderForWidgets,
+} from "./dynamic-combos.js";
 import { NODE_INCARNATION_KEY, WRITABLE_NODE_FIELDS } from "./types.js";
 
 /**
@@ -569,7 +579,7 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcom
     case "disconnect":
       return applyDisconnect(doc, op);
     case "delete_node":
-      return applyDeleteNode(doc, op);
+      return applyDeleteNode(doc, op, catalog);
     case "clear":
       return applyClear(doc, op);
     case "define_subgraph":
@@ -1453,21 +1463,17 @@ function validateWidgetName(
   node?: Y.Map<unknown>,
   occurrence = 0,
 ): void {
-  // A24: a self-described node answers this question itself, from the ordered
-  // identity its producer declared, and the catalog is not consulted at all —
-  // with or without one. That is the whole unlock: a class the catalog cannot
-  // describe is name-addressable when the node carries its own mapping. The
-  // declaration is still CLOSED, so a name or occurrence it does not list is
-  // `unknown_widget` exactly as a missing `widget_order` entry would be.
+  // A24: a self-described node answers from the ordered identity its producer
+  // declared. A25 adds one bounded catalog overlay for ARRAY forms, so those
+  // writes require the pinned catalog even when the current name is already
+  // declared: without it the applier cannot know whether the name is a
+  // selector whose winning write must refresh the realized order. Every pinned
+  // dynamic-combo option child is legal independent of the current selection,
+  // so child-before-selector and selector-before-child agree. Object/custom-
+  // serializer forms remain closed and catalog-free.
   const form = node ? storedWidgetFormOf(node) : null;
-  if (form) {
-    if (!formDeclares(form, widget, occurrence)) {
-      const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
-      throw new OpRejectedError(
-        "unknown_widget",
-        `widget '${widget}'${at} is not declared by ${nodeType} node ${String(node?.get("id"))}'s widgets_values_form; declared: ${form.order.join(", ")}`,
-      );
-    }
+  if (form && node) {
+    validateDeclaredWidgetName(catalog, nodeType, widget, occurrence, node, form);
     return;
   }
   if (!catalog) return;
@@ -1490,6 +1496,32 @@ function validateWidgetName(
       `widget '${widget}' not found on ${nodeType}; available: ${order.join(", ") || "(none — all inputs are links)"}`,
     );
   }
+}
+
+function validateDeclaredWidgetName(
+  catalog: WidgetCatalog | undefined,
+  nodeType: string,
+  widget: string,
+  occurrence: number,
+  node: Y.Map<unknown>,
+  form: StoredWidgetForm,
+): void {
+  if (form.shape === "array" && catalog === undefined) {
+    throw new OpRejectedError(
+      "catalog_required",
+      `widget '${widget}' on ${nodeType} node ${String(node.get("id"))}: an array widgets_values_form requires the pinned catalog to determine whether the write changes a dynamic-combo order`,
+    );
+  }
+  const entry = catalogEntry(catalog, nodeType);
+  const catalogOwnsDynamicName = form.shape === "array"
+    && occurrence === 0
+    && optionOwnedWidgets(entry).has(widget);
+  if (formDeclares(form, widget, occurrence) || catalogOwnsDynamicName) return;
+  const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+  throw new OpRejectedError(
+    "unknown_widget",
+    `widget '${widget}'${at} is neither declared by ${nodeType} node ${String(node.get("id"))}'s widgets_values_form nor owned by its pinned dynamic-combo catalog; declared: ${form.order.join(", ")}`,
+  );
 }
 
 /**
@@ -1551,6 +1583,36 @@ function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
     mset(node, "widgets", widgets);
   }
   return widgets as Y.Map<unknown>;
+}
+
+/**
+ * Write one widget register and, for a self-described ARRAY form, refresh the
+ * realized order when the winning write targets a dynamic-combo selector.
+ *
+ * The producer's order is the stable anchor. It may contain the previous
+ * selection's catalog-owned children; `widgetOrderForProducerOrder` removes
+ * all such children before expanding the winning selector values, so arrival
+ * order cannot leave stale option slots in the form. Object/custom-serializer
+ * forms stay closed and are never reshaped by catalog metadata.
+ */
+function writeWidgetValue(
+  node: Y.Map<unknown>,
+  catalog: WidgetCatalog | undefined,
+  widget: string,
+  occurrence: number,
+  value: unknown,
+): void {
+  const widgets = widgetsOf(node);
+  mset(widgets, widgetStorageKey(widget, occurrence), structuredClone(value));
+
+  const form = storedWidgetFormOf(node);
+  if (!form || form.shape !== "array") return;
+  const entry = catalogEntry(catalog, String(node.get("type") ?? ""));
+  if (!entry?.dynamic_combos || !Object.hasOwn(entry.dynamic_combos, widget)) return;
+
+  const order = widgetOrderForProducerOrder(entry, form.order, widgets);
+  if (order.length === form.order.length && order.every((name, index) => name === form.order[index])) return;
+  mset(node, WIDGET_FORM_KEY, { ...structuredClone(form), order: [...order] });
 }
 
 /**
@@ -1829,7 +1891,10 @@ function hostWriteStorage(node: Y.Map<unknown>, catalog: WidgetCatalog | undefin
 /**
  * A promoted host write carries TWO addresses for one target — the widget
  * NAME and `promoted.value_index` — and on a self-described node (A24) both
- * resolve. Refuse a disagreement rather than silently preferring one.
+ * must resolve to the current form. Refuse a missing name or a disagreement
+ * rather than silently preferring one. An unselected dynamic child remains a
+ * legal name-addressed write, but it has no current positional host address
+ * and therefore cannot be a promoted write until selection exposes it.
  *
  * This is the rule `promotedHostWrite` already applies one field over, where
  * `promoted.instance_path` must join to `node_id`: a payload naming a
@@ -1855,11 +1920,14 @@ function requirePromotedFormAgreement(
   const form = storedWidgetFormOf(node);
   if (!form) return;
   const declared = formIndexOf(form, widget, occurrence);
-  if (declared < 0 || declared === valueIndex) return;
+  if (declared === valueIndex) return;
   const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+  const position = declared < 0
+    ? "has no position in its current widgets_values_form"
+    : `is at ${String(declared)} in its current widgets_values_form`;
   throw new OpRejectedError(
     "malformed_op",
-    `set_widget: promoted.value_index ${String(valueIndex)} names a different slot than widget '${widget}'${at}, which node ${String(node.get("id"))}'s widgets_values_form puts at ${String(declared)}`,
+    `set_widget: promoted.value_index ${String(valueIndex)} cannot address widget '${widget}'${at}, which ${position} on node ${String(node.get("id"))}`,
   );
 }
 
@@ -1898,7 +1966,7 @@ function applyPromotedHostWrite(
         const occurrence = op.widget_occurrence ?? 0;
         requirePromotedFormAgreement(target, op.widget, occurrence, promoted.valueIndex);
         validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target, occurrence);
-        mset(widgetsOf(target), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+        writeWidgetValue(target, catalog, op.widget, occurrence, op.value);
         updateOrderedWidgetValue(target, op.widget, occurrence, op.value);
         updateNamedWidgetValue(target, catalog, op.widget, occurrence, op.value);
       }
@@ -2028,7 +2096,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
         );
       }
     }
-    mset(widgetsOf(target), widgetStorageKey(widget, occurrence), structuredClone(op.value));
+    writeWidgetValue(target, catalog, widget, occurrence, op.value);
     updateOrderedWidgetValue(target, widget, occurrence, op.value);
     updateNamedWidgetValue(target, catalog, widget, occurrence, op.value);
     mset(stamps, targetKey, key);
@@ -2044,7 +2112,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget, node, occurrence);
   // Top-level writes may extend past the current positional length — comfy-cli
   // pads with None; here the name-keyed map makes padding a projection concern.
-  mset(widgetsOf(node), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+  writeWidgetValue(node, catalog, op.widget, occurrence, op.value);
   updateOrderedWidgetValue(node, op.widget, occurrence, op.value);
   updateNamedWidgetValue(node, catalog, op.widget, occurrence, op.value);
   mset(stamps, targetKey, key);
@@ -2358,7 +2426,7 @@ function resolveVisibleInteriorHost(
 /** Resolve the definition owned by an instance route for an interior graph edit. */
 function resolveInteriorGraphScope(
   doc: Y.Doc,
-  op: Pick<ConnectOp | AddNodeOp, "path" | "node_incarnation">,
+  op: { path?: readonly NodeId[]; node_incarnation?: string },
   catalog?: WidgetCatalog,
   operation = "connect",
   rejectMissingHead = false,
@@ -3183,6 +3251,23 @@ function removeLinkInScope(scope: InteriorGraphScope, linkId: unknown): void {
   if (Array.isArray(linkOrder)) {
     mset(scope.definition, "link_order", removeInteriorLinkOrder(linkOrder, key));
   }
+  for (const side of ["inputs", "outputs"]) scrubDefinitionSlotLinkIds(scope.definition, side, key);
+}
+
+/** Drop a removed interior link from the definition's own subgraph input/output `linkIds`. */
+function scrubDefinitionSlotLinkIds(definition: Y.Map<unknown>, side: string, key: string): void {
+  const slots = definition.get(side);
+  if (!Array.isArray(slots)) return;
+  let changed = false;
+  const next = slots.map((slot: unknown) => {
+    const linkIds = (slot as { linkIds?: unknown } | null)?.linkIds;
+    if (!Array.isArray(linkIds)) return slot;
+    const kept = linkIds.filter((id: unknown) => String(id) !== key);
+    if (kept.length === linkIds.length) return slot;
+    changed = true;
+    return { ...(slot as Record<string, unknown>), linkIds: kept };
+  });
+  if (changed) mset(definition, side, next);
 }
 
 /** Scrub input/output references selected by one shared link-id predicate. */
@@ -3323,9 +3408,16 @@ function writeNodeField(target: Y.Map<unknown>, key: string, value: unknown): vo
   else mset(target, key, value);
 }
 
-function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
+/** Every `delete_node` precondition that reads only the op, checked before any document read (KA-4). */
+function requireDeleteNodeValid(op: DeleteNodeOp): Iterable<NodeId> {
   if (op.node_id === undefined) {
     throw new OpRejectedError("malformed_op", "delete_node: missing node_id");
+  }
+  if (op.path !== undefined && (!Array.isArray(op.path) || op.path.length === 0)) {
+    throw new OpRejectedError("malformed_op", "delete_node: path must be a non-empty array when present");
+  }
+  if (op.container_incarnation !== undefined && (typeof op.container_incarnation !== "string" || op.container_incarnation.length === 0)) {
+    throw new OpRejectedError("malformed_op", "delete_node: container_incarnation must be a non-empty string");
   }
   // `new Set(op.removed_links ?? [])` throws on anything non-iterable, and it
   // used to be evaluated AFTER the node had been deleted: the op reported
@@ -3340,6 +3432,17 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
       `delete_node: removed_links must be iterable, got ${typeof removedLinks}`,
     );
   }
+  return removedLinks;
+}
+
+function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp, catalog?: WidgetCatalog): SuccessfulOutcome {
+  const removedLinks = requireDeleteNodeValid(op);
+  const route: { path?: readonly NodeId[]; node_incarnation?: string } = op.path ? { path: op.path } : {};
+  if (op.container_incarnation !== undefined) route.node_incarnation = op.container_incarnation;
+  const interiorScope = op.path
+    ? resolveInteriorGraphScope(doc, route, catalog, "delete_node", true, true)
+    : null;
+  if (interiorScope) return applyInteriorDeleteNode(doc, op, interiorScope, removedLinks);
   const nodes = nodesMap(doc);
   const key = String(op.node_id);
   const stamps = stampsMap(doc);
@@ -3389,6 +3492,47 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
   scrubDanglingLinkRefs(doc);
   if (!presenceWon && toDelete.length === 0 && !retiredStranded) return "lww-dropped";
   return nodeWasPresent || toDelete.length > 0 || retiredStranded ? "applied" : "no-op";
+}
+
+function applyInteriorDeleteNode(
+  doc: Y.Doc,
+  op: DeleteNodeOp,
+  scope: InteriorGraphScope,
+  removedLinks: Iterable<NodeId>,
+): SuccessfulOutcome {
+  const nodeKey = String(op.node_id);
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const stamp = stampKey(op);
+  const presenceWon = prior == null || compareStampKeys(stamp, prior) > 0;
+  const nodeWasPresent = scope.nodes.has(nodeKey);
+  if (presenceWon) {
+    mset(stamps, targetKey, stamp);
+    if (nodeWasPresent) mdel(scope.nodes, nodeKey);
+    // `node_order` keeps the id: projection filters absent nodes, and pruning
+    // it would make a later winning re-add sort as a new addition only on
+    // replicas where this delete arrived first (KA-4).
+  }
+
+  const named = new Set([...removedLinks].map(String));
+  const toDelete = new Set<string>();
+  scope.links.forEach((raw: unknown, linkKey: string) => {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return;
+    const link = raw as Record<string, unknown>;
+    const id = String(link.id ?? linkKey);
+    if (named.has(id)) {
+      toDelete.add(linkKey);
+      return;
+    }
+    if (presenceWon && (String(link.origin_id) === nodeKey || String(link.target_id) === nodeKey)) {
+      toDelete.add(linkKey);
+    }
+  });
+  for (const linkKey of toDelete) removeLinkInScope(scope, linkKey);
+
+  if (!presenceWon && toDelete.size === 0) return "lww-dropped";
+  return nodeWasPresent || toDelete.size > 0 ? "applied" : "no-op";
 }
 
 function retireStrandedLinks(doc: Y.Doc, removedIds: Set<string>): boolean {

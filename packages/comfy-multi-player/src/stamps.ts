@@ -112,7 +112,7 @@ export function writeTarget(op: WireOp): unknown[] {
     case "add_node":
       return nodeTarget(op.node_id, op.path);
     case "delete_node":
-      return ["node", String(op.node_id)];
+      return nodeTarget(op.node_id, op.path);
     case "set_node_field":
       // One register per (node lifetime, field), so two fields of one node
       // never contend and a re-add starts a fresh ledger for both.
@@ -175,7 +175,7 @@ function occurrenceTarget(target: unknown[], occurrence: number | undefined): un
   return (occurrence ?? 0) === 0 ? target : [...target, occurrence];
 }
 
-function nodeTarget(nodeId: unknown, path?: readonly string[] | null): unknown[] {
+function nodeTarget(nodeId: unknown, path?: readonly unknown[] | null): unknown[] {
   return path && path.length > 0
     ? ["node", path.map(String), String(nodeId)]
     : ["node", String(nodeId)];
