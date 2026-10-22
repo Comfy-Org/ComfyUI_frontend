@@ -1,3 +1,5 @@
+// get_template and generate_workflow place a whole workflow on the canvas
+// server-side (cloud additiveInsertTools), so they are writes like add_node.
 const CANVAS_MUTATING_TOOLS = new Set([
   'add_node',
   'delete_node',
@@ -7,6 +9,8 @@ const CANVAS_MUTATING_TOOLS = new Set([
   'clear_canvas',
   'apply_ops',
   'insert_workflow',
+  'get_template',
+  'generate_workflow',
   'define_subgraph'
 ])
 
@@ -16,6 +20,8 @@ const CANVAS_CONTENT_TOOLS = new Set([
   'connect',
   'apply_ops',
   'insert_workflow',
+  'get_template',
+  'generate_workflow',
   'define_subgraph',
   'print_workflow'
 ])

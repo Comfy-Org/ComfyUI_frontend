@@ -42,6 +42,42 @@ test.describe(
       expect(await agent.settledCanvasNodeIds()).toEqual([])
     })
 
+    test(
+      'a template the server placed but the canvas never showed is not reported as done',
+      {
+        annotation: {
+          type: 'source',
+          description:
+            'https://linear.app/comfyorg/issue/PM-1343/test-agent-completes-an-image-edit-but-leaves-the-canvas-with-zero#comment-1741744b'
+        }
+      },
+      async ({ page }) => {
+        await page.clock.install()
+        const agent = new AgentRemoteApplyHarness(page)
+        await agent.setUp()
+        await agent.openAndTarget()
+        await agent.sendPrompt('Turn this forest scene to daytime.')
+        await agent.hostSocket.waitForSubscribe()
+
+        // get_template places a gallery template on the canvas server-side
+        // (draft_committed=true); no follower frame ever reaches this tab.
+        agent.reportToolCall('get_template', 'call-template')
+        agent.finishTurn('Your workflow is ready to run.')
+
+        await agent.expectTurnReportedFinished()
+        await expect(
+          agent.panel.getByTestId('agent-run-notice-emptyCanvas')
+        ).toContainText(COPY.canvasIsEmptyAfterTurn)
+
+        await page.clock.fastForward(STALE_AFTER_MS + 1)
+
+        await expect(agent.workSummary).toContainText(
+          COPY.workedNotConfirmedOnCanvas
+        )
+        expect(await agent.settledCanvasNodeIds()).toEqual([])
+      }
+    )
+
     test('a write the canvas took reads as done through a redelivered frame, with no notice', async ({
       page
     }) => {
