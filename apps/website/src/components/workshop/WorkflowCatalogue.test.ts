@@ -279,11 +279,11 @@ describe('workflow catalogue ordering and shared links', () => {
     ])
   })
 
-  it('restores a known capability from a shared URL and drops one no workflow has', async () => {
+  it('ignores capability on the static list and keeps the other filters', async () => {
     history.replaceState(
       null,
       '',
-      '/hub/workflows/?capability=Upscale&capability=Unknown'
+      '/hub/workflows/?capability=Upscale&model=SeedVR2'
     )
     render(WorkflowCatalogue, {
       props: {
@@ -295,13 +295,16 @@ describe('workflow catalogue ordering and shared links', () => {
     })
     await waitFor(() =>
       expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
-        'Upscale'
+        'SeedVR2'
       )
     )
     expect(screen.getByTestId('workshop-filter-chips')).not.toHaveTextContent(
-      'Unknown'
+      'Upscale'
     )
-    expect(visibleOutcomes()).toEqual(['/models/workflows/restore/'])
+    expect(visibleOutcomes()).toEqual([
+      '/models/workflows/connect/',
+      '/models/workflows/restore/'
+    ])
   })
 })
 

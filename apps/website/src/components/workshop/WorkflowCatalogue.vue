@@ -18,7 +18,11 @@ import type {
   WorkflowWorkshopModel,
   WorkshopModel
 } from '@/config/models-catalogue'
-import { catalogueAddress, sortWorkshopModels } from '@/config/models-catalogue'
+import {
+  addressCapabilities,
+  catalogueAddress,
+  sortWorkshopModels
+} from '@/config/models-catalogue'
 import { searchWorkshopModels } from '@/config/models-search'
 import type {
   CatalogListPages,
@@ -125,13 +129,7 @@ function readAddress(search: string, preserveQuery = false) {
         ? serverFacets.models.some((model) => model.value === name)
         : models.some((model) => model.models?.includes(name))
     )
-  capabilities.value = [
-    ...new Set(params.getAll('capability').map((value) => value.trim()))
-  ].filter((value) =>
-    serverPage
-      ? value
-      : models.some((model) => model.capabilities.includes(value))
-  )
+  capabilities.value = serverPage ? addressCapabilities(params) : []
   if (serverPage)
     sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
 }
