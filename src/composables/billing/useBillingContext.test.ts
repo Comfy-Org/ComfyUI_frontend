@@ -485,7 +485,10 @@ describe('useBillingContext', () => {
     expect(context.type.value).toBe('workspace')
     await context.topup(500)
 
-    expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
+    expect(workspaceApi.createTopup).toHaveBeenCalledWith(
+      500,
+      expect.any(String)
+    )
     expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
   })
 
@@ -885,7 +888,10 @@ describe('useBillingContext', () => {
       loaded.value = true
       await pending
 
-      expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
+      expect(workspaceApi.createTopup).toHaveBeenCalledWith(
+        500,
+        expect.any(String)
+      )
       expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
     })
   })
