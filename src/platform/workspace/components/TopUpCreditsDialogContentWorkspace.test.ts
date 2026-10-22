@@ -1446,9 +1446,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await clickSetDefaultCard()
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
 
-        Object.assign(useTeamWorkspaceStore(), {
-          workspaceTransitionGeneration: 1
-        })
+        const workspace = useTeamWorkspaceStore()
+        const generation = workspace.workspaceTransitionGeneration
+        workspace.resetForIdentityChange()
+        expect(workspace.workspaceTransitionGeneration).toBe(generation + 1)
         window.dispatchEvent(new Event('focus'))
 
         await waitFor(() =>
