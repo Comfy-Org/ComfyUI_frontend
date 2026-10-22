@@ -136,7 +136,6 @@ describe('native CONTENT presentation', () => {
           website_author: {
             uid: 'other-account',
             name: 'Wrong person',
-            username: 'wrong-person',
             avatar_url: 'https://media.comfy.org/other.png'
           }
         }
@@ -146,7 +145,6 @@ describe('native CONTENT presentation', () => {
       catalogDetails: { author: 'Author unavailable' }
     })
     expect(view).not.toHaveProperty('catalogDetails.authorAvatarURL')
-    expect(view).not.toHaveProperty('catalogDetails.authorUsername')
     const invalidAvatar = detailSchema.parse(
       catalogPresentation({
         ...record,
@@ -156,7 +154,6 @@ describe('native CONTENT presentation', () => {
           website_author: {
             uid,
             name: 'Actual author',
-            username: '../admin',
             avatar_url: 'javascript:alert(1)'
           }
         }
@@ -166,100 +163,7 @@ describe('native CONTENT presentation', () => {
       catalogDetails: { author: 'Actual author' }
     })
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorAvatarURL')
-    expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorUsername')
   })
-  it.for([
-    {
-      case: 'a Hub handle',
-      name: 'Actual author',
-      username: 'Comfy-Creator',
-      kept: true
-    },
-    {
-      case: 'a missing name',
-      name: undefined,
-      username: 'comfy-creator',
-      kept: false
-    },
-    {
-      case: 'a blank name',
-      name: '  ',
-      username: 'comfy-creator',
-      kept: false
-    },
-    {
-      case: 'a double dot',
-      name: 'Actual author',
-      username: 'a..',
-      kept: false
-    },
-    {
-      case: 'a dot and hyphen run',
-      name: 'Actual author',
-      username: 'a.-.',
-      kept: false
-    },
-    {
-      case: 'an underscore',
-      name: 'Actual author',
-      username: 'comfy_creator',
-      kept: false
-    },
-    {
-      case: 'a trailing hyphen',
-      name: 'Actual author',
-      username: 'comfy-',
-      kept: false
-    },
-    {
-      case: 'a path',
-      name: 'Actual author',
-      username: '../admin',
-      kept: false
-    },
-    {
-      case: '30 characters',
-      name: 'Actual author',
-      username: 'a'.repeat(30),
-      kept: true
-    },
-    {
-      case: '31 characters',
-      name: 'Actual author',
-      username: 'a'.repeat(31),
-      kept: false
-    },
-    {
-      case: '42 characters',
-      name: 'Actual author',
-      username: 'a'.repeat(42),
-      kept: false
-    }
-  ])(
-    'decides whether to keep the creator username for $case',
-    ({ name, username, kept }) => {
-      const uid = '00000000-0000-4000-8000-000000000096'
-      const view = detailSchema.parse(
-        catalogPresentation({
-          ...record,
-          data: {
-            ...record.data,
-            author_uid: uid,
-            website_author: {
-              uid,
-              username,
-              ...(name === undefined ? {} : { name })
-            }
-          }
-        })
-      )
-      if (kept)
-        expect(view).toMatchObject({
-          catalogDetails: { authorUsername: username }
-        })
-      else expect(view).not.toHaveProperty('catalogDetails.authorUsername')
-    }
-  )
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
     const api = '00000000-0000-4000-8000-000000000081'
@@ -642,7 +546,6 @@ describe('native CONTENT presentation', () => {
         runs: 0,
         downloads: 12,
         author: 'Comfy creator',
-        authorUsername: 'comfy-creator',
         authorAvatarURL: 'https://media.comfy.org/creator.png',
         models: [
           {

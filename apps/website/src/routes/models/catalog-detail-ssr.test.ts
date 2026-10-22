@@ -99,16 +99,6 @@ function serveNativeWorkflow(data: Record<string, unknown>) {
   )
 }
 
-const authoredWorkflow = {
-  ...nativeWorkflow,
-  author_uid: '00000000-0000-4000-8000-000000000096',
-  website_author: {
-    uid: '00000000-0000-4000-8000-000000000096',
-    name: 'Comfy Creator',
-    username: 'Comfy-Creator'
-  }
-}
-
 type DetailHead = ReturnType<typeof catalogDetailHead>
 
 function headHtml(head: DetailHead) {
@@ -176,33 +166,20 @@ describe('catalog workflow page structured data and meta', () => {
     expect(new Set(titles).size).toBe(records.length)
   })
 
-  it('names a CCC workflow as source code by its creator, under the workflows crumb', async () => {
-    const head = await workflowHead(authoredWorkflow)
+  it('names a CCC workflow as source code under the workflows crumb', async () => {
+    const head = await workflowHead(nativeWorkflow)
     expect(
       validateHtml(headHtml(head), '/hub/workflows/native-workflow/')
     ).toEqual([])
-    const creatorUrl = 'https://comfy.org/hub/creators/comfy-creator/'
     expect(graphNode(head, 'SoftwareSourceCode')).toMatchObject({
       name: 'Native workflow',
-      description: authoredWorkflow.description,
-      author: { '@id': `${creatorUrl}#creator` }
-    })
-    expect(graphNode(head, 'Person')).toMatchObject({
-      '@id': `${creatorUrl}#creator`,
-      name: 'Comfy Creator',
-      url: creatorUrl
+      description: nativeWorkflow.description
     })
     expect(head.jsonLd.breadcrumbs.map((crumb) => crumb.url)).toEqual([
       'https://comfy.org/',
       'https://comfy.org/hub/workflows/',
       undefined
     ])
-  })
-
-  it('names no author for a CCC workflow without a creator username', async () => {
-    const head = await workflowHead(nativeWorkflow)
-    expect(graphNode(head, 'SoftwareSourceCode')).not.toHaveProperty('author')
-    expect(graphNode(head, 'Person')).toBeUndefined()
   })
 
   it('cleans the workflow summary in the JSON-LD as in the meta description', async () => {

@@ -4,32 +4,15 @@ import { cleanSummary } from '@/lib/workshop/model-meta-description'
 import type { Crumb, JsonLdNode } from './jsonLd'
 import { jsonLdId, organizationId } from './jsonLd'
 
-const CREATORS_PATH = '/hub/creators/'
-
 interface WorkflowPageJsonLdInput {
   model: {
     name: string
     summary?: string
     thumbnail?: { url: string; kind: 'image' | 'video' | 'audio' }
-    catalogDetails?: { author?: string; authorUsername?: string }
   }
   useCaseLabel?: string
   url: string
   siteUrl: string
-}
-
-function creatorNode(
-  siteUrl: string,
-  details: WorkflowPageJsonLdInput['model']['catalogDetails']
-): JsonLdNode | undefined {
-  if (!details?.author || !details.authorUsername) return undefined
-  const url = `${siteUrl}${CREATORS_PATH}${details.authorUsername.toLowerCase()}/`
-  return {
-    '@type': 'Person',
-    '@id': jsonLdId(url, 'creator'),
-    name: details.author,
-    url
-  }
 }
 
 export function workflowPageJsonLd({
@@ -44,7 +27,6 @@ export function workflowPageJsonLd({
   extraJsonLd: JsonLdNode[]
 } {
   const id = jsonLdId(url, 'workflow')
-  const creator = creatorNode(siteUrl, model.catalogDetails)
   const workflow: JsonLdNode = {
     '@type': 'SoftwareSourceCode',
     '@id': id,
@@ -54,7 +36,6 @@ export function workflowPageJsonLd({
     image: model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined,
     genre: useCaseLabel,
     runtimePlatform: 'ComfyUI',
-    ...(creator ? { author: { '@id': creator['@id'] } } : {}),
     publisher: { '@id': organizationId(siteUrl) },
     mainEntityOfPage: url
   }
@@ -69,6 +50,6 @@ export function workflowPageJsonLd({
       },
       { name: model.name }
     ],
-    extraJsonLd: creator ? [workflow, creator] : [workflow]
+    extraJsonLd: [workflow]
   }
 }
