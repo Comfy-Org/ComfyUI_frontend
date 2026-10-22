@@ -12,7 +12,6 @@ function isTextEntryTarget(element: Element | null): boolean {
 
 export function useKeyboard(containerRef?: Ref<HTMLElement | undefined>) {
   const store = useMaskEditorStore()
-
   const keysDown = ref<string[]>([])
 
   const isKeyDown = (key: string): boolean => {
@@ -46,10 +45,13 @@ export function useKeyboard(containerRef?: Ref<HTMLElement | undefined>) {
 
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.key.toUpperCase()
-
       if ((key === 'Y' && !event.shiftKey) || (key === 'Z' && event.shiftKey)) {
+        event.stopPropagation()
+        event.preventDefault()
         store.canvasHistory.redo()
       } else if (key === 'Z' && !event.shiftKey) {
+        event.stopPropagation()
+        event.preventDefault()
         store.canvasHistory.undo()
       }
     }
