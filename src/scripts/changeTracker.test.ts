@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
+  afterEach,
   assert,
   beforeEach,
   describe,
@@ -22,11 +23,13 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@/types/nodeId'
@@ -2076,6 +2079,12 @@ describe('ChangeTracker', () => {
   })
 
   describe('node-history widgets', () => {
+    const addedNodes: LGraphNode[] = []
+
+    afterEach(() => {
+      for (const node of addedNodes.splice(0)) app.rootGraph.remove(node)
+    })
+
     const regionA = { x: 0, y: 0, width: 64, height: 64 }
     const regionB = { x: 32, y: 32, width: 128, height: 128 }
 
@@ -2127,6 +2136,71 @@ describe('ChangeTracker', () => {
     function loadedState(): unknown {
       return vi.mocked(app.loadGraphData).mock.calls.at(-1)?.[0]
     }
+
+    function addImageCropNode() {
+      const node = new LGraphNode('ImageCropV2')
+      node.id = toNodeId(8)
+      node.serialize_widgets = true
+      app.rootGraph.add(node)
+      addedNodes.push(node)
+      vi.mocked(app.rootGraph.serialize).mockRestore()
+      const crop = useBoundingBoxWidget()(node, {
+        type: 'BOUNDING_BOX',
+        name: 'crop_region',
+        component: 'ImageCrop'
+      })
+      const field = (name: string) => {
+        const widget = node.widgets?.find((w) => w.name === name)
+        if (!widget) throw new Error(`missing widget ${name}`)
+        return widget
+      }
+      const cropBounds = () => {
+        if (!isBoundsObject(crop.value)) throw new Error('crop is not bounds')
+        return crop.value
+      }
+      return { crop, cropBounds, field }
+    }
+
+    function inVueNodesMode(enabled: boolean) {
+      const previous = LiteGraph.vueNodesMode
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previous
+      })
+    }
+
+    async function serializedGraph() {
+      return requireValidWorkflow(app.rootGraph.serialize())
+    }
+
+    it('keeps an image crop edit and its widget undo out of graph history in Vue nodes mode', async () => {
+      inVueNodesMode(true)
+      const { crop, cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+      const editCrop = (x: number) => {
+        crop.value = { ...cropBounds(), x }
+        crop.callback?.(crop.value)
+        tracker.captureCanvasState()
+      }
+
+      editCrop(25)
+      expect(field('x').value).toBe(25)
+      editCrop(0)
+
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('records a graph undo step for a crop field edited on the classic canvas', async () => {
+      inVueNodesMode(false)
+      const { cropBounds, field } = addImageCropNode()
+      const tracker = createTracker(await serializedGraph())
+
+      field('x').callback?.(25)
+      tracker.captureCanvasState()
+
+      expect(cropBounds().x).toBe(25)
+      expect(tracker.undoQueue).toHaveLength(1)
+    })
 
     it('records no graph undo step for a node-history value edit', () => {
       const { id } = addBoundingBoxesNode()

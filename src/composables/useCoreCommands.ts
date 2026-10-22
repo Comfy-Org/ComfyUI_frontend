@@ -21,7 +21,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import {
   deleteSelectedLinks,
-  hideSelectedLinks
+  hideSelectedLinks,
+  showSelectedLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -996,6 +997,16 @@ export function useCoreCommands(): ComfyCommand[] {
       mutatesGraph: true,
       function: () => {
         hideSelectedLinks(app.canvas)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ShowSelectedLinks',
+      icon: 'icon-[lucide--eye]',
+      label: 'Show Selected Links',
+      versionAdded: '1.58.0',
+      mutatesGraph: true,
+      function: () => {
+        showSelectedLinks(app.canvas)
       }
     },
     {

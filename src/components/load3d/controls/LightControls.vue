@@ -62,7 +62,7 @@ import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   HDRIConfig,
   MaterialMode
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

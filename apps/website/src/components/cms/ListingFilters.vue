@@ -7,21 +7,26 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { LISTING_KINDS } from '@/lib/cms/format'
+import type { QueueSort } from '@/lib/cms/queue-sort'
 
 /** A list's views on the left (slot), underlined up to the type filter and search, which always sit on the right. */
 const {
   counts,
   searchLabel,
+  sortOptions,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   counts: Record<ListingFilter, number>
   searchLabel: string
+  /** Offer a sort order before the type filter when given. */
+  sortOptions?: { value: QueueSort; label: string }[]
   disabled?: boolean
   locale?: Locale
 }>()
 const filter = defineModel<ListingFilter>('filter', { required: true })
 const query = defineModel<string>('query', { required: true })
+const sort = defineModel<QueueSort>('sort', { default: 'NAME' })
 const { t } = translationsFor(locale)
 const options = computed(() =>
   (['ALL', ...LISTING_KINDS] as const).map((value) => ({
@@ -44,6 +49,17 @@ const options = computed(() =>
       <slot />
     </div>
     <div class="flex w-full items-center gap-2 pb-1 sm:w-auto">
+      <div
+        v-if="sortOptions && sortOptions.length > 1"
+        class="w-36 shrink-0 [&_button]:h-8 [&_button]:py-0 [&_button]:text-xs"
+      >
+        <AdminSelect
+          v-model="sort"
+          :options="sortOptions"
+          :label="t('cmsAdmin.draft.sortLabel')"
+          :disabled
+        />
+      </div>
       <div
         class="w-40 shrink-0 [&_button]:h-8 [&_button]:py-0 [&_button]:text-xs"
       >

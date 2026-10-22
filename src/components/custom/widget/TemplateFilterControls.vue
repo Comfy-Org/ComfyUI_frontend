@@ -1,5 +1,5 @@
 <template>
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedModels"
     v-model:search-query="modelSearchText"
     size="md"
@@ -12,7 +12,7 @@
     actions-placement="footer"
   />
 
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedUseCases"
     size="md"
     :class="triggerClass"
@@ -24,7 +24,7 @@
     actions-placement="footer"
   />
 
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedRunsOn"
     size="md"
     :class="triggerClass"
@@ -36,7 +36,7 @@
     actions-placement="footer"
   />
 
-  <SingleSelect
+  <AppSingleSelect
     v-model="sortSelection"
     size="md"
     :class="triggerClass"
@@ -46,13 +46,13 @@
     <template #icon>
       <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
     </template>
-  </SingleSelect>
+  </AppSingleSelect>
 </template>
 
 <script setup lang="ts">
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 
 const {

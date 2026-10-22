@@ -65,7 +65,7 @@ export const Default: Story = {
           <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Are you sure?</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2">
               <DialogDescription>
@@ -107,7 +107,7 @@ export const LongContent: Story = {
           <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Long content scrolls</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2 space-y-2 overflow-auto">
               <p v-for="n in 30" :key="n">
@@ -181,7 +181,7 @@ export const AllSizes: Story = {
           <DialogContent :size="s">
             <DialogHeader>
               <DialogTitle>Size: {{ s }}</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2 text-sm">
               The {{ s }} size variant.

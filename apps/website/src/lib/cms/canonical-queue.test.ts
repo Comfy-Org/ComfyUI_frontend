@@ -51,6 +51,18 @@ describe('canonical records in Mar’s queue', () => {
     expect(canonicalQueue([item]).map((row) => row.change)).toEqual(['removed'])
   })
 
+  it('reads the save time from the staging item, falling back to its content', () => {
+    const item = fixtureReview().items[0]
+    assert.exists(item)
+    expect(canonicalQueue([item])[0]?.savedAt).toBeUndefined()
+    item.content.saved_at = '2026-10-20T09:00:00Z'
+    expect(canonicalQueue([item])[0]?.savedAt).toBe('2026-10-20T09:00:00Z')
+    item.saved_at = '2026-10-21T10:30:00.123456Z'
+    expect(canonicalQueue([item])[0]?.savedAt).toBe(
+      '2026-10-21T10:30:00.123456Z'
+    )
+  })
+
   it('credits the author by canonical account ID, never as the provider name', () => {
     const item = fixtureReview().items[0]
     assert.exists(item)

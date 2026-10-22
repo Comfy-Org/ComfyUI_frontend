@@ -8,7 +8,7 @@ const meta: Meta<typeof DialogPanel> = {
   title: 'Components/Dialog/DialogPanel',
   component: DialogPanel,
   tags: ['autodocs'],
-  args: { onClose: fn() },
+  args: { onClose: fn(), closeLabel: 'Close' },
   render: (args) => ({
     components: { Button, DialogPanel },
     setup: () => ({ args }),

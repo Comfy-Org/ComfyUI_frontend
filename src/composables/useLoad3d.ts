@@ -5,10 +5,12 @@ import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -28,7 +30,7 @@ import type {
   StoredModelConfig,
   SceneConfig,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -214,7 +216,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         isPreview.value = true
       }
 
-      load3d = createLoad3d(containerRef, {
+      load3d = createLoad3d(containerRef, load3dHost, {
         width: widthWidget?.value as number | undefined,
         height: heightWidget?.value as number | undefined,
         // Provide dynamic dimension getter for reactive updates
@@ -850,6 +852,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       loadingMessage.value = t('load3d.loadingModel')
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')

@@ -6,6 +6,11 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import {
+  hasModifierKey,
+  selectSlotLinks
+} from '@/lib/litegraph/src/canvas/linkSelection'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -34,6 +39,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
@@ -54,6 +60,12 @@ interface SlotInteractionHandlers {
   onClick: (event: PointerEvent) => void
   onDoubleClick: (event: PointerEvent) => void
   onPointerDown: (event: PointerEvent) => void
+}
+
+interface SlotPress {
+  readonly client: Point
+  readonly node: LGraphNode | undefined
+  readonly withModifier: boolean
 }
 
 interface PointerSession {
@@ -156,9 +168,34 @@ export function useSlotLinkInteraction({
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
   let autoPan: AutoPanController | null = null
+  let press: SlotPress | null = null
+  let hasDragged = false
+
+  const latchDragPastClickDrift = (event: PointerEvent) => {
+    if (hasDragged || !press) return
+    hasDragged =
+      Math.hypot(
+        event.clientX - press.client.x,
+        event.clientY - press.client.y
+      ) > CanvasPointer.maxClickDrift
+  }
+
+  const isSlotClick = (event: PointerEvent) => {
+    latchDragPastClickDrift(event)
+    return press !== null && !hasDragged && !press.withModifier
+  }
+
+  const selectClickedSlotLinks = (node: LGraphNode | undefined) => {
+    const { graph } = app.canvas
+    if (!graph || !node) return
+    const layout = getGraphSlotLayout(graph, node.id, index, type === 'input')
+    if (!layout) return
+    selectSlotLinks(app.canvas, node, type, index, layout.position)
+  }
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
+  const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -336,10 +373,13 @@ export function useSlotLinkInteraction({
     }
     activeAdapter?.reset()
     pointerSession.clear()
+    press = null
+    hasDragged = false
     endDrag()
     activeAdapter = null
     raf.cancel()
     dragContext.dispose()
+    dragReveal.unrevealLinks()
     clearCompatible()
   }
 
@@ -460,12 +500,18 @@ export function useSlotLinkInteraction({
   const canvas = app.canvas
   const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
-    if (!pointerSession.matches(event) || canvasStore.isReadOnly) return
+    if (!pointerSession.matches(event)) return
+    latchDragPastClickDrift(event)
+    if (canvasStore.isReadOnly) {
+      autoPan?.stop()
+      return
+    }
 
     event.stopPropagation()
 
     app.canvas.last_mouse = [event.clientX, event.clientY]
     autoPan?.updatePointer(event.clientX, event.clientY)
+    if (hasDragged) autoPan?.start()
 
     if (canvas.subgraph && node) {
       augmentToCanvasPointerEvent(event, node, canvas)
@@ -576,6 +622,15 @@ export function useSlotLinkInteraction({
     canvasEvent.preventDefault()
 
     raf.flush()
+
+    if (isSlotClick(event)) {
+      const pressedNode = press?.node
+      cleanupInteraction()
+      selectClickedSlotLinks(pressedNode)
+      app.canvas.setDirty(true, true)
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+      return
+    }
 
     if (!state.source) {
       cleanupInteraction()
@@ -727,6 +782,7 @@ export function useSlotLinkInteraction({
     const shouldMoveExistingInput =
       isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
+    const wasConnecting = activeAdapter.linkConnector.isConnecting
     if (isOutputSlot) {
       activeAdapter.beginFromOutput(localNodeId, index, {
         moveExisting: shouldMoveExistingOutput
@@ -736,6 +792,21 @@ export function useSlotLinkInteraction({
         moveExisting: shouldMoveExistingInput,
         layout
       })
+    }
+
+    if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
+      dragReveal.revealLinks()
+      const { linkConnector } = activeAdapter
+      // Escape on the canvas resets the connector without ending this
+      // pointer session. Check after dispatch, since a listener may veto it.
+      linkConnector.events.addEventListener(
+        'reset',
+        () =>
+          queueMicrotask(() => {
+            if (!linkConnector.isConnecting) dragReveal.unrevealLinks()
+          }),
+        { once: true }
+      )
     }
 
     if (shouldMoveExistingInput && existingInputLink) {
@@ -766,6 +837,11 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
+    press = {
+      client: { x: event.clientX, y: event.clientY },
+      node: resolvedNode ?? undefined,
+      withModifier: hasModifierKey(event)
+    }
 
     toCanvasPointerEvent(event)
     updatePointerState(event)
@@ -826,7 +902,6 @@ export function useSlotLinkInteraction({
       }
     })
     autoPan.updatePointer(event.clientX, event.clientY)
-    autoPan.start()
 
     canvas.setDirty(true, true)
   }

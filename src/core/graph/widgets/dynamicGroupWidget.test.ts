@@ -830,6 +830,37 @@ describe('DynamicGroup widgets', () => {
     }
   )
 
+  it.for([false, true])(
+    'restores saved rows above max with named restoration = %s',
+    (named) => {
+      LiteGraph.namedValuesRestore = named
+      const wider = setup(0, 5)
+      wider.widget('loras').value = 4
+      wider.widget('loras.3.lora_name').value = 'C'
+      const saved = wider.node.serialize()
+      const { node, widget } = setup()
+
+      node.configure(saved)
+
+      expect(widget('loras').value).toBe(4)
+      expect(widget('loras.3.lora_name').value).toBe('C')
+    }
+  )
+
+  it('rejects an unsupported saved row count stored as a numeric string', () => {
+    LiteGraph.namedValuesRestore = false
+    const { node } = setup()
+    const saved = node.serialize()
+    saved.widgets_values = ['first', '1000000000', 'last']
+    vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+      throw new Error('Unexpected row allocation')
+    })
+
+    expect(() => node.configure(saved)).toThrow(
+      'Invalid saved row count for DynamicGroup'
+    )
+  })
+
   it('preserves saved values in an error node when the group definition is invalid', () => {
     const { node, graph, widget } = setup()
     const nodeType = 'test/InvalidDynamicGroup'

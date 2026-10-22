@@ -121,11 +121,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
-    test.afterEach(async ({ agentPanel, comfyPage }) => {
+    test.afterEach(async ({ agentPanel }) => {
       if (await agentPanel.nodeSelectionBanner.isVisible()) {
         await agentPanel.exitNodeSelectionMode()
       }
-      await comfyPage.canvasOps.resetView()
     })
 
     test('keeps panning and zooming available while picking without dropping the picked node', async ({

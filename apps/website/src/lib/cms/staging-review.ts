@@ -28,7 +28,11 @@ const state = z.object({
   next_rev: integer.positive(),
   previous_live_rev: integer.positive().nullable()
 })
+// When an exact change was saved: server display metadata for a latest-change
+// order, never part of the selection digest.
+const savedAt = z.iso.datetime({ offset: true })
 const resource = z.object({
+  saved_at: savedAt.optional(),
   uid: z.uuid(),
   revision_uid: z.uuid(),
   type: z.enum(reviewTypes),
@@ -37,6 +41,7 @@ const resource = z.object({
   is_deleted: z.boolean()
 })
 const item = z.object({
+  saved_at: savedAt.optional(),
   content: resource,
   before: resource.optional(),
   status: z.enum(editorialStates),

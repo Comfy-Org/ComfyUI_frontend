@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 
-import { openFeedbackDialog } from '../../feedback'
+import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 
-vi.mock(import('../../feedback'), () => ({
+vi.mock(import('@/workbench/extensions/agent/feedback'), () => ({
   openFeedbackDialog: vi.fn()
 }))
 
