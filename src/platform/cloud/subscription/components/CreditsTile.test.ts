@@ -472,10 +472,10 @@ describe('CreditsTile', () => {
 
   it('hides the plan breakdown in the zero state and keeps the server balance', () => {
     activeProSubscription()
-    const { container } = renderTile({ zeroState: true })
-    expect(container.textContent).toContain('1,055')
-    expect(container.textContent).not.toContain('left of')
-    expect(container.textContent).not.toContain('Additional credits')
+    renderTile({ zeroState: true })
+    expect(screen.getByText('1,055')).toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
     expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
   })
@@ -488,8 +488,8 @@ describe('CreditsTile', () => {
       cloudCreditBalanceMicros: 0,
       prepaidBalanceMicros: 3_000
     }
-    const { container } = renderTile({ zeroState: true })
-    expect(container.textContent).toContain('6,330')
+    renderTile({ zeroState: true })
+    expect(screen.getByText('6,330')).toBeInTheDocument()
   })
 
   it('shows disabled credit details for an inactive plan and still renders add-credits from can_top_up', () => {
