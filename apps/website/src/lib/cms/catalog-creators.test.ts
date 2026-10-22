@@ -304,6 +304,19 @@ describe('loadCatalogCreator', () => {
     }
   )
 
+  it('reads no workflow cards for a creator the catalog does not know', async () => {
+    serve({
+      '/api/v1/catalog/creators/ghost': () =>
+        new Response(null, { status: 404 }),
+      '/api/v1/catalog/cards': () => Response.json(cardsPage())
+    })
+
+    expect(await loadCatalogCreator(undefined, 'en', 'ghost')).toEqual({
+      status: 'missing'
+    })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   it('reports the page unavailable when the workflow cards cannot be read', async () => {
     serve({
       '/api/v1/catalog/creators/purz': () => Response.json(profile),
