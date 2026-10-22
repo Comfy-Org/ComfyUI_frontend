@@ -490,21 +490,19 @@ export function registerAgentPanelExtension(): void {
 
       let resumingAccept = false
       // While `acceptAfterSignIn` is waiting in this page the record is its
-      // own; only a record that outlived a reload is resumed here.
+      // own; only a record that outlived a reload is resumed here. A signed-in
+      // user resumes at once; only "signed out" waits for auth to settle.
       function resumePendingAccept(): boolean {
-        if (
-          !isAuthInitialized.value ||
-          introductionStore.isContinuingSignIn ||
-          !hasPendingSignInAccept()
-        )
+        if (introductionStore.isContinuingSignIn || !hasPendingSignInAccept())
           return false
         if (!isLoggedIn.value) {
-          clearPendingSignInAccept()
+          if (isAuthInitialized.value) clearPendingSignInAccept()
           return false
         }
         if (!resolvedUserInfo.value) return false
         resumingAccept = true
         void resumeAcceptAfterReload().finally(() => {
+          clearPendingSignInAccept()
           resumingAccept = false
           loadConsentIfEligible()
         })

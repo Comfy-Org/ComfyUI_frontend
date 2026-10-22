@@ -2241,19 +2241,45 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it('is finished before consent is read', async () => {
+      let finishResume = () => {}
       const resume = vi.mocked(useAgentConsent().resumeAcceptAfterReload)
-      resume.mockImplementationOnce(async () => {
-        sessionStorage.removeItem(PENDING_KEY)
-      })
+      resume.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishResume = resolve))
+      )
+
+      await loadEntryAndSetup()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      expect(resume).toHaveBeenCalledOnce()
+      expect(consentStore.load).not.toHaveBeenCalled()
+
+      finishResume()
+      await flush()
+      expect(resume).toHaveBeenCalledOnce()
+      expect(consentStore.load).toHaveBeenCalledOnce()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('waits for the signed-in account to resolve', async () => {
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      currentUser.value = null
 
       await loadEntryAndSetup()
       await flush()
 
-      expect(resume).toHaveBeenCalledOnce()
-      expect(consentStore.load).toHaveBeenCalledOnce()
-      expect(resume.mock.invocationCallOrder[0]).toBeLessThan(
-        vi.mocked(consentStore.load).mock.invocationCallOrder[0]
-      )
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('is kept while auth has not settled on signed out', async () => {
+      currentUser.value = null
+      isAuthInitialized.value = false
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     })
 
     it('is dropped when the page comes back signed out', async () => {

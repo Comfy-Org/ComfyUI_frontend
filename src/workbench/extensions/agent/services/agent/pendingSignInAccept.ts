@@ -1,14 +1,19 @@
+import { z } from 'zod'
+
 // A consent accepted while signed out waits on the sign-in dialog in memory.
-// Desktop can finish that sign-in outside the page and reload it, which drops
-// the wait, so the accept and the held draft are also kept here: sessionStorage
-// survives a same-window reload and nothing else.
+// Desktop can finish that sign-in outside the page and reload it while the
+// dialog is still open, which drops the wait, so the accept and the held
+// draft's text are also kept here: sessionStorage survives a same-window
+// reload and nothing else. References and attachments are not kept; they
+// point at live graph and upload state that a reload does not restore.
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 const PENDING_SIGN_IN_ACCEPT_TTL_MS = 10 * 60 * 1000
 
-interface PendingSignInAccept {
-  draft: string
-  savedAt: number
-}
+const zPendingSignInAccept = z.object({
+  draft: z.string(),
+  savedAt: z.number()
+})
+type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
 
 function storage(): Storage | null {
   try {
@@ -54,19 +59,11 @@ export function takePendingSignInAccept(): PendingSignInAccept | null {
   clearPendingSignInAccept()
   if (!raw) return null
   try {
-    const record: unknown = JSON.parse(raw)
-    if (
-      typeof record !== 'object' ||
-      record === null ||
-      !('draft' in record) ||
-      !('savedAt' in record) ||
-      typeof record.draft !== 'string' ||
-      typeof record.savedAt !== 'number'
-    )
-      return null
-    const age = Date.now() - record.savedAt
+    const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
+    if (!parsed.success) return null
+    const age = Date.now() - parsed.data.savedAt
     if (age < 0 || age > PENDING_SIGN_IN_ACCEPT_TTL_MS) return null
-    return { draft: record.draft, savedAt: record.savedAt }
+    return parsed.data
   } catch {
     return null
   }

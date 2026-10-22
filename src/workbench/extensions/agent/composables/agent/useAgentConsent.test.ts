@@ -1180,6 +1180,23 @@ describe('accepting while signed out across a page reload', () => {
     })
   })
 
+  it.for(['reject', 'dismiss'] as const)(
+    'keeps nothing when the signed-out card is answered with %s',
+    async (answer) => {
+      signedOut()
+      holdDraft('make it blue')
+
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      const dialog = await waitForConsentDialog()
+      if (answer === 'reject') (dialog.contentProps.onReject as () => void)()
+      else dismissConsent(dialog)
+      await request
+
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    }
+  )
+
   it.for([
     { outcome: 'cancelled', result: () => Promise.resolve(false) },
     {
@@ -1213,12 +1230,18 @@ describe('accepting while signed out across a page reload', () => {
     const ensureScope = vi
       .spyOn(useAgentConsentStore(), 'ensureScope')
       .mockResolvedValueOnce('account-a/workspace-a')
+    let continuingDuringSave: boolean | undefined
     const accept = vi
       .spyOn(useAgentConsentStore(), 'accept')
-      .mockResolvedValueOnce(true)
+      .mockImplementationOnce(async () => {
+        continuingDuringSave =
+          useAgentConsentIntroductionStore().isContinuingSignIn
+        return true
+      })
 
     await useAgentConsent().resumeAcceptAfterReload()
 
+    expect(continuingDuringSave).toBe(true)
     expect(ensureScope).toHaveBeenCalledOnce()
     expect(accept).toHaveBeenCalledExactlyOnceWith('account-a/workspace-a')
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
