@@ -3777,13 +3777,10 @@
         "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
-      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
       "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
-      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
       "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
