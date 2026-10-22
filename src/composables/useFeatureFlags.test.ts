@@ -16,12 +16,11 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -42,6 +41,20 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
+
+function persistFromAnotherTab(key: string, value: string) {
+  localStorage.setItem(key, value)
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: value,
+      storageArea: localStorage
+    })
+  )
+}
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -707,6 +720,26 @@ describe('useFeatureFlags', () => {
       cachedBillingControlEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
     })
+
+    it.for([
+      { stored: 'false', expected: false },
+      { stored: 'true', expected: true }
+    ])(
+      'resolves a persisted $stored as a boolean during the auth window',
+      ({ stored, expected }) => {
+        onTestFinished(() => {
+          localStorage.removeItem('billing_control_enabled')
+          localStorage.removeItem('v1_payment_recovery')
+        })
+        persistFromAnotherTab('billing_control_enabled', stored)
+        persistFromAnotherTab('v1_payment_recovery', stored)
+
+        const { flags } = useFeatureFlags()
+
+        expect(flags.billingControlEnabled).toBe(expected)
+        expect(flags.v1PaymentRecovery).toBe(expected)
+      }
+    )
 
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true

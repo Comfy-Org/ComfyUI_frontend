@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
@@ -388,6 +388,7 @@ describe('useAgentCrdtFollower', () => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
     expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
 
@@ -405,6 +406,7 @@ describe('useAgentCrdtFollower', () => {
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
     expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
 
@@ -2658,10 +2660,11 @@ describe('useAgentCrdtFollower', () => {
       removed_count: 0,
       apply_failure_count: 0
     })
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'agent_crdt_human_ops_rejected',
+        errorType: 'error_applying_agent_graph_edit',
+        fingerprint: ['error_applying_agent_graph_edit'],
         context: expect.objectContaining({
           opId: ops[1].op_id,
           code: 'unknown_node'
