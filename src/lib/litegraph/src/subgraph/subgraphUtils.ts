@@ -225,16 +225,7 @@ export function getBoundaryLinks(
 }
 
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
-  const clonedNodes: ISerialisedNode[] = []
-
-  // Keep IDs, link ids and the live input order. Round-tripping through a
-  // fresh node would rebuild dynamic inputs (e.g. a grown autogrow group) in
-  // their default layout and, having no graph, serialize every link as null,
-  // so the subgraph's links could not be realigned by name (FE-3325).
-  // structuredClone: litegraph "serialize" is mostly a shallow clone.
-  for (const node of nodes) clonedNodes.push(structuredClone(node.serialize()))
-
-  return clonedNodes
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
 }
 
 export function findUnresolvableSubgraphLink(

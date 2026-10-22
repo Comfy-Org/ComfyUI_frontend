@@ -7,7 +7,9 @@ import {
   test
 } from 'vitest'
 
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -15,10 +17,6 @@ import { useLitegraphService } from '@/services/litegraphService'
 const AUTOGROW_NODE_TYPE = 'test/AutogrowThenPlainInputs'
 const SOURCE_NODE_TYPE = 'test/ImageMaskFloatSource'
 
-/**
- * An autogrow group followed by ordinary inputs: the shape FE-3325 reports.
- * Growing the group shifts `mask` and `strength` to later slots.
- */
 const autogrowNodeDef: ComfyNodeDefV1 = {
   name: AUTOGROW_NODE_TYPE,
   display_name: 'Autogrow Then Plain Inputs',
@@ -46,21 +44,47 @@ const autogrowNodeDef: ComfyNodeDefV1 = {
   output_node: false
 }
 
+const SOURCE_OUTPUTS = {
+  image_a: 'IMAGE',
+  image_b: 'IMAGE',
+  image_c: 'IMAGE',
+  mask: 'MASK',
+  value: 'FLOAT'
+}
+
 class SourceNode extends LGraphNode {
   constructor() {
     super('Source')
-    this.addOutput('image', 'IMAGE')
-    this.addOutput('mask', 'MASK')
-    this.addOutput('value', 'FLOAT')
+    for (const [name, type] of Object.entries(SOURCE_OUTPUTS))
+      this.addOutput(name, type)
   }
 }
 
-/** Connected inputs as `name -> link type`, so a link on the wrong slot shows. */
 function connectedInputTypes(node: LGraphNode): Record<string, string> {
   return Object.fromEntries(
     node.inputs.flatMap((input, slot) => {
       const link = node.getInputLink(slot)
       return link ? [[input.name, String(link.type)]] : []
+    })
+  )
+}
+
+function connectedInputOrigins(
+  node: LGraphNode,
+  host?: SubgraphNode
+): Record<string, string> {
+  return Object.fromEntries(
+    node.inputs.flatMap((input, slot) => {
+      let link = node.getInputLink(slot) ?? undefined
+      let graph = node.graph
+      if (link?.origin_id === SUBGRAPH_INPUT_ID && host) {
+        graph = host.graph
+        link = graph?.getLink(host.inputs[link.origin_slot]?.link)
+      }
+      const origin = link && graph?.getNodeById(link.origin_id)
+      return link && origin
+        ? [[input.name, origin.outputs[link.origin_slot].name]]
+        : []
     })
   )
 }
@@ -73,13 +97,14 @@ const EXPECTED_CONNECTIONS = {
   strength: 'FLOAT'
 }
 
-/**
- * FE-3325: `multiClone` used to round-trip each selected node through a fresh,
- * graph-less node. Its default autogrow layout made `ComfyNode.configure`
- * append the grown slots after `mask`/`strength`, and with no graph the
- * serialized link ids were lost, so the subgraph's links kept their original
- * slot indices and landed on the wrong inputs.
- */
+const EXPECTED_ORIGINS = {
+  'images.image0': 'image_a',
+  'images.image1': 'image_b',
+  'images.image2': 'image_c',
+  mask: 'mask',
+  strength: 'value'
+}
+
 describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
   beforeEach(async () => {
     LiteGraph.registerNodeType(SOURCE_NODE_TYPE, SourceNode)
@@ -100,21 +125,22 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
     const slotOf = (name: string) =>
       node.inputs.findIndex((input) => input.name === name)
     source.connect(0, node, slotOf('images.image0'))
-    source.connect(0, node, slotOf('images.image1'))
-    source.connect(0, node, slotOf('images.image2'))
-    source.connect(1, node, slotOf('mask'))
-    source.connect(2, node, slotOf('strength'))
+    source.connect(1, node, slotOf('images.image1'))
+    source.connect(2, node, slotOf('images.image2'))
+    source.connect(3, node, slotOf('mask'))
+    source.connect(4, node, slotOf('strength'))
     expect(connectedInputTypes(node)).toEqual(EXPECTED_CONNECTIONS)
+    expect(connectedInputOrigins(node)).toEqual(EXPECTED_ORIGINS)
     return { graph, source, node }
   }
 
-  function innerAutogrowNode(graph: LGraph, items: Set<LGraphNode>) {
-    const { subgraph } = graph.convertToSubgraph(items)
+  function convert(graph: LGraph, items: Set<LGraphNode>) {
+    const { subgraph, node: host } = graph.convertToSubgraph(items)
     const inner = subgraph.nodes.find(
       (node) => node.type === AUTOGROW_NODE_TYPE
     )
     assert.ok(inner, 'autogrow node inside the subgraph')
-    return inner
+    return { inner, host }
   }
 
   test('wires the grown group ahead of mask and strength', () => {
@@ -131,27 +157,27 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
 
   test('converts with the autogrow node inside the subgraph when the sources stay outside', () => {
     const { graph, node } = buildGraph()
-    expect(innerAutogrowNode(graph, new Set([node])).type).toBe(
-      AUTOGROW_NODE_TYPE
-    )
+    expect(convert(graph, new Set([node])).inner.type).toBe(AUTOGROW_NODE_TYPE)
   })
 
   test('converts with the autogrow node inside the subgraph when the sources are converted too', () => {
     const { graph, source, node } = buildGraph()
-    expect(innerAutogrowNode(graph, new Set([source, node])).type).toBe(
+    expect(convert(graph, new Set([source, node])).inner.type).toBe(
       AUTOGROW_NODE_TYPE
     )
   })
 
   test('keeps every link on its input when the sources stay outside (boundary links)', () => {
     const { graph, node } = buildGraph()
-    const inner = innerAutogrowNode(graph, new Set([node]))
+    const { inner, host } = convert(graph, new Set([node]))
     expect(connectedInputTypes(inner)).toEqual(EXPECTED_CONNECTIONS)
+    expect(connectedInputOrigins(inner, host)).toEqual(EXPECTED_ORIGINS)
   })
 
   test('keeps every link on its input when the sources are converted too (internal links)', () => {
     const { graph, source, node } = buildGraph()
-    const inner = innerAutogrowNode(graph, new Set([source, node]))
+    const { inner } = convert(graph, new Set([source, node]))
     expect(connectedInputTypes(inner)).toEqual(EXPECTED_CONNECTIONS)
+    expect(connectedInputOrigins(inner)).toEqual(EXPECTED_ORIGINS)
   })
 })
