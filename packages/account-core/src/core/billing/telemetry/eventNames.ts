@@ -41,5 +41,7 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_CANCEL_FAILED: 'billing.cancel.failed',
   BILLING_PORTAL_OPENED: 'billing.portal.opened',
   BILLING_PORTAL_FAILED: 'billing.portal.failed',
-  BILLING_PORTAL_RETURNED: 'billing.portal.returned'
+  BILLING_PORTAL_RETURNED: 'billing.portal.returned',
+  BILLING_AUTO_TOP_UP_CARD_VIEWED: 'billing.auto_top_up_card.viewed',
+  BILLING_PLATFORM_HANDOFF_OPENED: 'billing.platform_handoff.opened'
 } as const satisfies Record<string, BillingTelemetryEventName>

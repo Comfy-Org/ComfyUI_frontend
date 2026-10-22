@@ -219,9 +219,14 @@ function finishWithPersistedParts(
     }
     return
   }
+  const persistedHasThinking = persistedParts.some(
+    (part) => part.type === 'thinking'
+  )
   message.parts = interleaveLocalParts(
     persistedParts,
-    anchorLocalParts(message.parts)
+    anchorLocalParts(message.parts).filter(
+      ({ part }) => !persistedHasThinking || part.type !== 'thinking'
+    )
   )
 }
 
