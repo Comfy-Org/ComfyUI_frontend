@@ -99,7 +99,7 @@ describe('ModelsCatalogue', () => {
       locale: 'en',
       tab: 'models',
       subtitle:
-        'Try the latest AI models with your own ideas, right in your browser.'
+        'Try models here, call them through the API, or build them into a ComfyUI workflow.'
     },
     {
       locale: 'en',
@@ -116,7 +116,8 @@ describe('ModelsCatalogue', () => {
     {
       locale: 'zh-CN',
       tab: 'models',
-      subtitle: '用你自己的创意试用最新的 AI 模型，就在浏览器中。'
+      subtitle:
+        '在这里试用模型，通过 API 调用，或将它们集成到 ComfyUI 工作流中。'
     },
     {
       locale: 'zh-CN',

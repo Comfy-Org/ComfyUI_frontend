@@ -59,6 +59,25 @@ const active = computed<FeaturedSlide | undefined>(
   () => slides[shownIndex.value]
 )
 
+const secondaryAction = computed(() => {
+  const slide = active.value
+  if (slide?.apiHref)
+    return {
+      href: slide.apiHref,
+      label: t('workshop.hub.useApi'),
+      target: undefined,
+      symbol: '⌘'
+    }
+  if (slide?.docsHref)
+    return {
+      href: slide.docsHref,
+      label: t('workshop.hub.docs'),
+      target: '_blank',
+      symbol: ''
+    }
+  return undefined
+})
+
 function goTo(index: number) {
   activeIndex.value = (index + slides.length) % slides.length
 }
@@ -212,19 +231,17 @@ const fill = computed(() =>
             {{ active.cta ?? t('workshop.hub.tryNow') }}
           </Button>
           <Button
-            v-if="active.apiHref || active.docsHref"
+            v-if="secondaryAction"
             as="a"
             variant="outline"
-            :href="active.apiHref ?? active.docsHref"
-            :target="active.apiHref ? undefined : '_blank'"
+            :href="secondaryAction.href"
+            :target="secondaryAction.target"
             rel="noopener noreferrer"
             class="w-fit"
             data-testid="featured-docs-link"
           >
-            {{
-              t(active.apiHref ? 'workshop.hub.useApi' : 'workshop.hub.docs')
-            }}
-            <span v-if="active.apiHref" aria-hidden="true">⌘</span>
+            {{ secondaryAction.label }}
+            <span aria-hidden="true">{{ secondaryAction.symbol }}</span>
           </Button>
         </div>
       </div>

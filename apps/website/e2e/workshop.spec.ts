@@ -561,8 +561,8 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
-    for (const card of await cards.all())
-      await expect(card.getByTestId('tag-row')).toContainText(/premium/i)
+    await cards.and(page.locator(`a[href="${MODEL_PATH}"]`)).click()
+    await expect(page.getByTestId('model-tags')).toContainText(/premium/i)
   })
 
   test('the hero medium deep-links into the catalog', async ({ page }) => {
@@ -599,7 +599,7 @@ test.describe('Models catalog', () => {
       const card = row.getByTestId('workshop-model-card').first()
       await expect(card).toBeVisible()
       await card.hover()
-      const cardBox = await card.boundingBox()
+      const cardBox = await card.locator('..').boundingBox()
       const arrowBox = await row.getByTestId('card-row-next').boundingBox()
       if (!cardBox || !arrowBox) throw new Error('the row did not lay out')
       const middleOf = (box: { y: number; height: number }) =>

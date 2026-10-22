@@ -34,8 +34,20 @@ async function allowWorkflows(context: BrowserContext) {
 test('the model API tab opens with the key action and what it needs beside the code', async ({
   page
 }) => {
-  await page.goto(MODEL_PATH)
-  await page.getByTestId('tab-api').click()
+  await page.goto('/hub/models/')
+  await page
+    .getByRole('searchbox', {
+      name: 'Search models, providers, and categories'
+    })
+    .fill('Flux 2 Max')
+  await page
+    .getByTestId('workshop-models-grid')
+    .locator(`a[href="${MODEL_PATH}#api"]`)
+    .click()
+  await expect(page.getByTestId('tab-api')).toHaveAttribute(
+    'aria-selected',
+    'true'
+  )
 
   const facts = page.getByTestId('api-facts')
   await expect(facts).toContainText('POST /v2/models/bfl/flux-2-max')

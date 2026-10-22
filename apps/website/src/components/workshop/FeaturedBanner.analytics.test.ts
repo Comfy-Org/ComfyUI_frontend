@@ -36,7 +36,7 @@ describe('FeaturedBanner analytics', () => {
       props: { slides, autoplay: false }
     })
 
-    await user.click(screen.getByRole('link', { name: 'Try now' }))
+    await user.click(screen.getByRole('link', { name: 'Try model' }))
     await user.click(screen.getByRole('button', { name: 'Kling' }))
     await user.click(screen.getByTestId('featured-slide-link'))
 

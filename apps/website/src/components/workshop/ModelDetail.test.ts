@@ -270,6 +270,13 @@ describe('ModelDetail', () => {
       'true'
     )
     expect(runWorkshopRouter).not.toHaveBeenCalled()
+    history.replaceState(null, '', '#playground')
+    window.dispatchEvent(new Event('hashchange'))
+    await nextTick()
+    expect(screen.getByTestId('tab-playground')).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   // Ben's finding, pinned: whatever the flag says, a page that goes away takes

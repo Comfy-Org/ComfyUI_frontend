@@ -682,7 +682,9 @@ test('a workflow card spends the tag line on its name', async ({
 
   // The heading above the row already names the kind, so the card does not
   // repeat it under a name that needed the room.
-  await expect(cards.getByTestId('model-card-task')).toHaveCount(0)
+  await expect(cards.locator('..').getByTestId('model-card-task')).toHaveCount(
+    0
+  )
 
   // Searching takes the headings away, and with them the only other place the
   // kind is written, so there every card carries its tag again.
@@ -690,7 +692,9 @@ test('a workflow card spends the tag line on its name', async ({
   await expect(cards.first()).toBeVisible()
   const found = await cards.count()
   expect(found).toBeGreaterThan(0)
-  await expect(cards.getByTestId('model-card-task')).toHaveCount(found)
+  await expect(cards.locator('..').getByTestId('model-card-task')).toHaveCount(
+    found
+  )
 })
 
 test('every workflow card carries its whole name, not a shortened one', async ({

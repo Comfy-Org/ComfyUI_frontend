@@ -181,7 +181,9 @@ describe('WorkshopModelsGrid analytics', () => {
 
     await user.click(screen.getByRole('button', { name: 'Browse all models' }))
     await user.click(
-      within(screen.getByTestId('workshop-models-grid')).getAllByRole('link')[1]
+      within(screen.getByTestId('workshop-models-grid')).getAllByTestId(
+        'workshop-model-card'
+      )[1]
     )
 
     expect(events('hub_item_clicked')).toEqual([
@@ -204,7 +206,9 @@ describe('WorkshopModelsGrid analytics', () => {
 
     await user.type(await searchbox(), ' Flux {Enter}')
     await user.click(
-      within(screen.getByTestId('workshop-models-grid')).getByRole('link')
+      within(screen.getByTestId('workshop-models-grid')).getByTestId(
+        'workshop-model-card'
+      )
     )
 
     expect(events('hub_item_clicked')).toEqual([
@@ -228,7 +232,9 @@ describe('WorkshopModelsGrid analytics', () => {
 
     await user.type(await searchbox(), 'Flux')
     await user.click(
-      within(screen.getByTestId('workshop-models-grid')).getByRole('link')
+      within(screen.getByTestId('workshop-models-grid')).getByTestId(
+        'workshop-model-card'
+      )
     )
     unmount()
     vi.advanceTimersByTime(SEARCH_SETTLE_MS)

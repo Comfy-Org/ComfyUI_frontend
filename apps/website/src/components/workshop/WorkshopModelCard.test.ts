@@ -118,6 +118,9 @@ describe('WorkshopModelCard', () => {
         model: {
           ...base,
           routerId: undefined,
+          type: 'CLOUD',
+          workflowId: 'workflows/flux',
+          href: '/models/flux/',
           capabilities: ['upscale', 'inpaint', 'controlnet']
         }
       }
