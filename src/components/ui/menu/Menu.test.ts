@@ -490,6 +490,28 @@ describe('Menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('dismisses a context menu when the element it opened from is pressed', async () => {
+    render(
+      defineComponent({
+        components: { ContextMenu },
+        setup() {
+          const menu = ref<InstanceType<typeof ContextMenu>>()
+          return { menu }
+        },
+        template:
+          '<button @contextmenu.prevent="menu?.show($event)" @pointerdown.stop>Canvas</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
+      })
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const canvas = screen.getByRole('button', { name: 'Canvas' })
+
+    await user.pointer({ keys: '[MouseRight]', target: canvas })
+    await screen.findByRole('menu')
+    await user.pointer({ keys: '[MouseLeft>]', target: canvas })
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
   it('keeps a context menu open when focus moves outside', async () => {
     render(
       defineComponent({
