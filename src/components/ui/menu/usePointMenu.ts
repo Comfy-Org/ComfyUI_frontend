@@ -30,6 +30,8 @@ export function usePointMenu(onShow?: (event: Event) => void) {
   function toggle(event: Event) {
     const control = event.currentTarget
     const pressDismissedMenu =
+      event instanceof MouseEvent &&
+      event.detail > 0 &&
       control instanceof Node &&
       control === shownFrom &&
       dismissingPress !== null &&
@@ -42,6 +44,7 @@ export function usePointMenu(onShow?: (event: Event) => void) {
     document,
     'pointerdown',
     ({ target }) => {
+      dismissingPress = null
       if (!open.value) return
       if (target instanceof Element && target.closest('[role="menu"]')) return
       dismissingPress = target instanceof Node ? target : null

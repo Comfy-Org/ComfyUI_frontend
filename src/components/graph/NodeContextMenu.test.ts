@@ -81,6 +81,22 @@ describe('NodeContextMenu', () => {
     )
   })
 
+  it('opens on the next click after a press on its control that did not click', async () => {
+    renderWithControls()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const moreOptions = screen.getByRole('button', { name: 'More options' })
+
+    await user.click(moreOptions)
+    await screen.findByRole('menu')
+    await user.pointer({ keys: '[MouseRight]', target: moreOptions })
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+    await user.click(moreOptions)
+
+    expect(await screen.findByRole('menu')).toBeVisible()
+  })
+
   it('reopens at another control when its press dismisses the menu', async () => {
     renderWithControls()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
