@@ -11,15 +11,46 @@ function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
   })
 }
 
+class FakeDragEvent extends DragEvent {
+  override dataTransfer: DataTransfer | null
+
+  constructor(type: string, dataTransfer: DataTransfer | null) {
+    super(type)
+    this.dataTransfer = dataTransfer
+  }
+}
+
 function createFile(name: string, type = 'image/png'): File {
   return new File(['data'], name, { type })
 }
 
+function createItemsOnlyDataTransfer(file: File): DataTransfer {
+  const source = new DataTransfer()
+  source.items.add(file)
+
+  Object.defineProperty(source, 'files', {
+    configurable: true,
+    value: new DataTransfer().files
+  })
+
+  return source
+}
+
+function createUriTransferWithBmpPlaceholder(): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  dataTransfer.items.add(
+    new File([''], 'placeholder.bmp', { type: 'image/bmp' })
+  )
+  dataTransfer.setData('text/uri-list', 'https://example.com/image.png')
+  return dataTransfer
+}
+
 function createDragEvent(options: {
-  items?: Array<{ kind: string }>
+  items?: Array<{ kind: string; file?: File | null }>
   files?: File[]
   types?: string[]
   uri?: string
+  uriType?: 'text/uri-list' | 'text/x-moz-url'
   assetInfo?: string
 }): DragEvent {
   const {
@@ -27,29 +58,36 @@ function createDragEvent(options: {
     files = [],
     types = [],
     uri = '',
+    uriType = 'text/uri-list',
     assetInfo = ''
   } = options
-  const data: Record<string, string> = {
-    'text/uri-list': uri,
-    [MIME_ASSET_INFO]: assetInfo
-  }
   return fromAny<DragEvent, unknown>({
     dataTransfer: {
-      items: fromAny<DataTransferItemList, unknown>(items),
+      items: fromAny<DataTransferItemList, unknown>(
+        items.map((item) => ({
+          kind: item.kind,
+          getAsFile: vi.fn(() => item.file ?? null)
+        }))
+      ),
       files: fromAny<FileList, unknown>(files),
       types,
-      getData: vi.fn((format: string) => data[format] ?? '')
+      getData: vi.fn((format: string) => {
+        if (format === uriType) return uri
+        if (format === MIME_ASSET_INFO) return assetInfo
+        return ''
+      })
     }
   })
 }
-
 describe('useNodeDragAndDrop', () => {
   it('onDragOver detects file items by default', () => {
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
     const isDragging = node.onDragOver?.(
-      createDragEvent({ items: [{ kind: 'file' }] })
+      createDragEvent({
+        items: [{ kind: 'file', file: createFile('image.png') }]
+      })
     )
 
     expect(isDragging).toBe(true)
@@ -65,11 +103,48 @@ describe('useNodeDragAndDrop', () => {
     })
 
     const isDragging = node.onDragOver?.(
-      createDragEvent({ items: [{ kind: 'file' }] })
+      createDragEvent({
+        items: [{ kind: 'file', file: createFile('image.png') }]
+      })
     )
 
     expect(onDragOver).toHaveBeenCalledTimes(1)
     expect(isDragging).toBe(false)
+  })
+
+  it('onDragOver returns false when file items do not pass the file filter', () => {
+    const node = createNode()
+    useNodeDragAndDrop(node, {
+      onDrop: vi.fn().mockResolvedValue([]),
+      fileFilter: (file) => file.type === 'image/png'
+    })
+
+    const isDragging = node.onDragOver?.(
+      createDragEvent({
+        items: [
+          {
+            kind: 'file',
+            file: createFile('workflow.json', 'application/json')
+          }
+        ]
+      })
+    )
+
+    expect(isDragging).toBe(false)
+  })
+
+  it('onDragOver accepts opaque native file items before files are available', () => {
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+    const isDragging = node.onDragOver?.(
+      createDragEvent({
+        items: [{ kind: 'file', file: null }],
+        types: ['Files']
+      })
+    )
+
+    expect(isDragging).toBe(true)
   })
 
   it('onDragOver returns true for uri list drops without file items', () => {
@@ -78,6 +153,22 @@ describe('useNodeDragAndDrop', () => {
 
     const isDragging = node.onDragOver?.(
       createDragEvent({ items: [{ kind: 'string' }], types: ['text/uri-list'] })
+    )
+
+    expect(isDragging).toBe(true)
+  })
+
+  it('onDragOver accepts Firefox URI drops without file items', () => {
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
+
+    const isDragging = node.onDragOver?.(
+      createDragEvent({
+        items: [{ kind: 'string' }],
+        types: ['text/x-moz-url'],
+        uriType: 'text/x-moz-url',
+        uri: `${location.origin}/api/file?filename=uri.png\nURI title`
+      })
     )
 
     expect(isDragging).toBe(true)
@@ -104,34 +195,94 @@ describe('useNodeDragAndDrop', () => {
     })
 
     const result = await node.onDragDrop?.(
-      createDragEvent({ files: [keep, skip], items: [{ kind: 'file' }] })
+      createDragEvent({
+        files: [keep, skip],
+        items: [
+          { kind: 'file', file: keep },
+          { kind: 'file', file: skip }
+        ]
+      })
     )
 
     expect(result).toBe(true)
     expect(onDrop).toHaveBeenCalledWith([keep])
   })
 
-  it('onDragDrop passes an untyped HDR file to an image filter as an image', async () => {
+  it('onDragDrop calls onDrop with files from dataTransfer.items when files is empty', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const node = createNode()
 
     useNodeDragAndDrop(node, {
       onDrop,
-      fileFilter: (file) => file.type.startsWith('image/')
+      fileFilter: (file) => file.name.endsWith('.png')
     })
+
+    const file = new File([''], 'image.png', { type: '' })
+    const event = new FakeDragEvent('drop', createItemsOnlyDataTransfer(file))
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+    expect(onDrop).toHaveBeenCalledWith([file])
+  })
+
+  it('onDragDrop ignores bmp placeholders so uri drags are not treated as file-backed', async () => {
+    const node = createNode()
+    const onDrop = vi.fn().mockResolvedValue([])
+
+    useNodeDragAndDrop(node, { onDrop })
+
+    const event = new FakeDragEvent(
+      'drop',
+      createUriTransferWithBmpPlaceholder()
+    )
+
+    await expect(node.onDragDrop?.(event)).resolves.toBe(false)
+    expect(onDrop).not.toHaveBeenCalled()
+  })
+
+  it('onDragDrop accepts real bmp files', async () => {
+    const node = createNode()
+    const onDrop = vi.fn().mockResolvedValue([])
+    const file = createFile('image.bmp', 'image/bmp')
+
+    useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
       createDragEvent({
-        files: [createFile('sky.exr', '')],
-        items: [{ kind: 'file' }]
+        files: [file],
+        items: [{ kind: 'file', file }]
       })
     )
 
     expect(result).toBe(true)
-    expect(onDrop).toHaveBeenCalledWith([
-      expect.objectContaining({ name: 'sky.exr', type: 'image/x-exr' })
-    ])
+    expect(onDrop).toHaveBeenCalledWith([file])
   })
+
+  it.for([
+    { name: 'sky.exr', type: 'image/x-exr', itemsOnly: false },
+    { name: 'SKY.HDR', type: 'image/vnd.radiance', itemsOnly: true }
+  ])(
+    'passes untyped $name through an image filter (itemsOnly=$itemsOnly)',
+    async ({ name, type, itemsOnly }) => {
+      const onDrop = vi.fn().mockResolvedValue([])
+      const node = createNode()
+      useNodeDragAndDrop(node, {
+        onDrop,
+        fileFilter: (file) => file.type.startsWith('image/')
+      })
+      const file = new File(['data'], name, { lastModified: 123 })
+      const transfer = new DataTransfer()
+      transfer.items.add(file)
+      const event = new FakeDragEvent(
+        'drop',
+        itemsOnly ? createItemsOnlyDataTransfer(file) : transfer
+      )
+
+      await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+      expect(onDrop).toHaveBeenCalledWith([
+        expect.objectContaining({ name, type, lastModified: 123, size: 4 })
+      ])
+    }
+  )
 
   it('onDragDrop returns false for invalid drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
@@ -160,6 +311,40 @@ describe('useNodeDragAndDrop', () => {
 
     expect(result).toBe(true)
     expect(onReject).toHaveBeenCalledWith([file])
+  })
+
+  it('handles selected rejections without warning on hover', async () => {
+    const file = createFile('extensionless', 'video/mp4')
+    const onReject = vi.fn().mockReturnValue(true)
+    const onDrop = vi.fn().mockResolvedValue([])
+    const node = createNode()
+    useNodeDragAndDrop(node, {
+      onDrop,
+      fileFilter: () => false,
+      onReject,
+      canHandleRejectedFile: (file) =>
+        file.type.startsWith('video/') && !file.name.includes('.')
+    })
+
+    const extensionlessEvent = createDragEvent({
+      files: [file],
+      items: [{ kind: 'file', file }]
+    })
+    expect(node.onDragOver?.(extensionlessEvent)).toBe(true)
+    expect(onReject).not.toHaveBeenCalled()
+    expect(await node.onDragDrop?.(extensionlessEvent)).toBe(true)
+    expect(onReject).toHaveBeenCalledWith([file])
+    expect(onDrop).not.toHaveBeenCalled()
+
+    const unrelatedFile = createFile('notes.pdf', 'application/pdf')
+    expect(
+      node.onDragOver?.(
+        createDragEvent({
+          files: [unrelatedFile],
+          items: [{ kind: 'file', file: unrelatedFile }]
+        })
+      )
+    ).toBe(false)
   })
 
   it('does not claim a rejected file when the rejection handler declines it', async () => {
@@ -215,6 +400,35 @@ describe('useNodeDragAndDrop', () => {
     expect(fetch).toHaveBeenCalledWith(new URL(uri))
     expect(onDrop).toHaveBeenCalledTimes(1)
     expect(onDrop.mock.calls[0][0][0]).toBeInstanceOf(File)
+    expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
+  })
+
+  it('onDragDrop handles Firefox URI drops and ignores the title line', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    const fetchSpy = vi.mocked(fetch).mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: true,
+        blob: vi
+          .fn()
+          .mockResolvedValue(new Blob(['uri'], { type: 'image/png' }))
+      })
+    )
+    const uri = `${location.origin}/api/file?filename=uri.png`
+
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({
+        uri: `${uri}\nURI title`,
+        uriType: 'text/x-moz-url',
+        types: ['text/x-moz-url']
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(new URL(uri))
+    expect(onDrop).toHaveBeenCalledTimes(1)
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
   })
 
