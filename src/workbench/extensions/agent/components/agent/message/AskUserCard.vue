@@ -8,10 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 
 import type { AskUserPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import {
-  choosableCount,
-  showsDismissed
-} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { choosableCount } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import AskUserAnswer from './AskUserAnswer.vue'
 import AskUserCheckboxOptions from './AskUserCheckboxOptions.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
@@ -66,7 +63,6 @@ function boundsHint(
     : t('agent.askUser.chooseUpTo', { max })
 }
 
-const dismissed = computed(() => showsDismissed(part))
 const hint = computed(() =>
   requiredSingleChoice.value || part.resolution || part.dismissed
     ? undefined
@@ -154,7 +150,7 @@ function submit(): void {
     :class="
       cn(
         'flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md',
-        dismissed && 'opacity-50 shadow-none'
+        part.dismissed && 'opacity-50 shadow-none'
       )
     "
   >
@@ -171,7 +167,7 @@ function submit(): void {
     </div>
 
     <p
-      v-if="dismissed"
+      v-if="part.dismissed"
       role="status"
       class="m-0 text-sm/5 text-muted-foreground"
     >

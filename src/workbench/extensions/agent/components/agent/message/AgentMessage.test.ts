@@ -747,6 +747,28 @@ describe('AgentMessage ask_user question', () => {
     thinking: false
   })
 
+  it('keeps a dismissed question showing as dismissed after another tab answers it', () => {
+    const message = askMessage()
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: message.parts.map((part) => ({
+            ...part,
+            dismissed: true,
+            resolution: { status: 'answered', selected: ['flux'] }
+          }))
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByText('Flux Dev')).not.toBeInTheDocument()
+  })
+
   it('shows a dismissed question as dismissed, without answer controls', () => {
     const message = askMessage()
     render(AgentMessage, {
@@ -932,6 +954,19 @@ describe('AgentMessage delete approval', () => {
       props: { message: { ...deleteMessage(), parts: [part] } },
       global: { plugins: [i18n] }
     })
+
+  it('keeps a dismissed delete card showing as dismissed after another tab answers it', () => {
+    renderResolved({
+      ...deleteCard,
+      dismissed: true,
+      resolution: { status: 'answered', selected: ['delete'] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByText('Answered: delete them')).not.toBeInTheDocument()
+  })
 
   it('shows a dismissed delete card as dismissed, without answer controls', () => {
     renderResolved({ ...deleteCard, dismissed: true })

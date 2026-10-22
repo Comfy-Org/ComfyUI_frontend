@@ -2144,6 +2144,20 @@ describe('useAgentConversationStore', () => {
       )
     })
 
+    it('stays dismissed when another tab approves the run', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      store.dismissOpenAsks()
+      store.retireAsk('turn-1:call-1', { status: 'answered', selected: ['run'] })
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+
     it('stays dismissed when its stashed turn comes back', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

@@ -9,7 +9,6 @@ import type {
   AskUserResolution,
   DeleteApprovalPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { showsDismissed } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part, answering = false } = defineProps<{
   part: DeleteApprovalPart
@@ -28,9 +27,8 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
   unconfirmed: 'agent.deleteApproval.unconfirmed'
 }
 
-const dismissed = computed(() => showsDismissed(part))
 const decision = computed(() => {
-  if (dismissed.value) return t('agent.askDismissed')
+  if (part.dismissed) return t('agent.askDismissed')
   const resolution = part.resolution
   if (!resolution) return undefined
   if (resolution.status === 'answered') {
@@ -51,7 +49,7 @@ const decision = computed(() => {
     :class="
       cn(
         'flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md',
-        dismissed && 'opacity-50 shadow-none'
+        part.dismissed && 'opacity-50 shadow-none'
       )
     "
   >

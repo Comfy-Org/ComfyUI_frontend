@@ -155,11 +155,6 @@ export function isPendingAskPart(part: MessagePart): part is AskPart {
   return part.type === 'runApproval' || part.resolution === undefined
 }
 
-export function showsDismissed(part: AskPart): boolean {
-  if (!part.dismissed) return false
-  return part.type === 'runApproval' || part.resolution?.status !== 'answered'
-}
-
 export function isOpenAskPart(part: MessagePart): boolean {
   return isPendingAskPart(part) || part.type === 'askUnavailable'
 }

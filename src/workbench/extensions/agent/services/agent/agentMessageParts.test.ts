@@ -4,7 +4,6 @@ import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   dismissAskParts,
   retireAskParts,
-  showsDismissed,
   toAskOrNoticePart,
   toAskPart,
   toAskResolution
@@ -409,20 +408,6 @@ describe('retireAskParts', () => {
     expect(
       retireAskParts(dismissed, 'run', { status: 'answered', selected: [] })
     ).toBe(dismissed)
-  })
-
-  it('shows a dismissed question as dismissed until an answer settles on it', () => {
-    const dismissed = { ...question, dismissed: true }
-    expect(showsDismissed(dismissed)).toBe(true)
-    const [closed] = retireAskParts([dismissed], 'q', { status: 'closed' })
-    assert(closed.type === 'askUser')
-    expect(showsDismissed(closed)).toBe(true)
-    const [answered] = retireAskParts([dismissed], 'q', {
-      status: 'answered',
-      selected: []
-    })
-    assert(answered.type === 'askUser')
-    expect(showsDismissed(answered)).toBe(false)
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
