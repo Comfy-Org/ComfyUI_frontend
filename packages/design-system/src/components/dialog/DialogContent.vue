@@ -44,7 +44,6 @@ function focusAutofocusTarget(event: Event) {
       cn(
         dialogContentVariants({ maximized, size, surface }),
         customClass,
-        // Custom dimension and position classes must yield to maximize.
         maximized &&
           'top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none'
       )

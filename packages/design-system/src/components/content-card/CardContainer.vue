@@ -32,10 +32,8 @@ const {
   class?: string
 }>()
 
-// Base structure classes
 const structureClasses = 'flex flex-col overflow-hidden'
 
-// Rounded corners
 const roundedClasses = {
   none: 'rounded-none',
   md: 'rounded',
@@ -44,7 +42,6 @@ const roundedClasses = {
 } as const
 
 const containerClasses = computed(() => {
-  // Variant styles
   const variantClasses = {
     default: cn(
       hasBackground && 'bg-secondary',
@@ -63,7 +60,6 @@ const containerClasses = computed(() => {
     )
   }
 
-  // Size/aspect ratio
   const aspectRatio = customAspectRatio
     ? `aspect-[${customAspectRatio}]`
     : {

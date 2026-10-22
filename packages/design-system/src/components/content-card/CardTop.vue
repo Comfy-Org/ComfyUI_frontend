@@ -64,7 +64,6 @@ const topStyle = computed(() => {
   return `${baseClasses} ${ratioClasses[ratio]}`
 })
 
-// Get default classes for each slot position
 const defaultSlotClasses = {
   'top-left': 'absolute top-2 left-2 flex flex-wrap justify-start gap-2',
   'top-right': 'absolute top-2 right-2 flex flex-wrap justify-end gap-2',
@@ -76,7 +75,6 @@ const defaultSlotClasses = {
   'bottom-right': 'absolute right-2 bottom-2 flex flex-wrap justify-end gap-2'
 }
 
-// Compute all slot classes once and cache them
 const slotClasses = computed(() => ({
   'top-left': cn(defaultSlotClasses['top-left'], topLeftClass),
   'top-right': cn(defaultSlotClasses['top-right'], topRightClass),

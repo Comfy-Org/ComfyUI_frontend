@@ -1,6 +1,5 @@
 <template>
   <div ref="containerRef" class="w-full">
-    <!-- Hidden single-line measurement element for overflow detection -->
     <div
       ref="measureRef"
       class="pointer-events-none invisible absolute inset-x-0 top-0 overflow-hidden whitespace-nowrap"

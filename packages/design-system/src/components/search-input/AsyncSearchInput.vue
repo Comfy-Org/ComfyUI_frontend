@@ -35,8 +35,6 @@ const emit = defineEmits<{
 
 const searchQuery = defineModel<string>({ default: '' })
 
-// The native `autofocus` attribute only fires on initial page load, not when the
-// input is mounted dynamically (e.g. inside a modal), so focus it explicitly.
 const inputRef = ref<HTMLInputElement>()
 onMounted(() => {
   if (!autofocus) return

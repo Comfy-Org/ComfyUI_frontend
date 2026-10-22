@@ -20,9 +20,6 @@ defineOptions({
 
 const {
   position = 'popper',
-  // Safari has issues with click events on portaled content inside dialogs.
-  // Set disablePortal to true when using Select inside a Dialog on Safari.
-  // See: https://github.com/chakra-ui/ark/issues/1782
   disablePortal = false,
   class: className,
   ...restProps

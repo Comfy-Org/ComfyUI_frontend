@@ -90,7 +90,6 @@ const root = useTemplateRef<HTMLElement>('root')
 const baseVideo = useTemplateRef<HTMLVideoElement>('baseVideo')
 const overlayVideo = useTemplateRef<HTMLVideoElement>('overlayVideo')
 
-/** Handle position as a 0–100 percentage from the left edge. */
 const position = ref(startPosition)
 
 function setPosition(value: number) {
@@ -108,8 +107,6 @@ function positionFromPointer(event: PointerEvent) {
 const isDragging = ref(false)
 
 useEventListener(root, 'pointerdown', (event: PointerEvent) => {
-  // Overlay controls (mute, close) live in the slot on top of the videos;
-  // a press on one must click it, not start a compare drag.
   if ((event.target as HTMLElement).closest('button')) return
   isDragging.value = true
   root.value?.setPointerCapture(event.pointerId)
@@ -128,10 +125,6 @@ function endDrag(event: PointerEvent) {
 useEventListener(root, 'pointerup', endDrag)
 useEventListener(root, 'pointercancel', endDrag)
 
-/**
- * Respect the OS "reduce motion" setting: hold both clips on their first frame
- * instead of looping indefinitely, satisfying WCAG 2.2.2 without extra chrome.
- */
 const reducedMotion = usePreferredReducedMotion()
 const motionAllowed = computed(() => reducedMotion.value !== 'reduce')
 
@@ -152,7 +145,6 @@ function onKeydown(event: KeyboardEvent) {
   event.preventDefault()
 }
 
-/** Realigns the overlay clip to the base clip's timeline so they stay in step. */
 function syncPlayback() {
   if (baseVideo.value && overlayVideo.value) {
     overlayVideo.value.currentTime = baseVideo.value.currentTime

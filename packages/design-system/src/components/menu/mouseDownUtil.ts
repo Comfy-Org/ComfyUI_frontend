@@ -22,7 +22,6 @@ export const whileMouseDown = (
     disposeLocal()
   }
 
-  // Listen for mouseup globally to catch cases where user drags out of element
   const disposeGlobal = useEventListener(document, 'mouseup', dispose)
   const disposeLocal = useEventListener(element, 'mouseup', dispose)
 

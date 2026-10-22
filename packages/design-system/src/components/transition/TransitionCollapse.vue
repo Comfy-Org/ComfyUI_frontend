@@ -84,7 +84,6 @@ function animateTransition(
   options?: number | KeyframeAnimationOptions
 ) {
   const animation = element.animate(keyframes, options)
-  // Set height to 'auto' to restore it after animation
   element.style.height = initialStyle.height
   animation.onfinish = () => {
     element.style.overflow = initialStyle.overflow

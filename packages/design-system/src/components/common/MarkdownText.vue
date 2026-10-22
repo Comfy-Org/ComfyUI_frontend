@@ -57,7 +57,6 @@ const parsedSegments = computed(() => {
   let linkMatch: RegExpExecArray | null
 
   while ((linkMatch = linkRegex.exec(remainingText)) !== null) {
-    // Add text before the match
     if (linkMatch.index > lastIndex) {
       segments.push({
         type: 'text',
@@ -65,7 +64,6 @@ const parsedSegments = computed(() => {
       })
     }
 
-    // Add the link
     segments.push({
       type: 'link',
       text: linkMatch[1],
@@ -75,29 +73,24 @@ const parsedSegments = computed(() => {
     lastIndex = linkMatch.index + linkMatch[0].length
   }
 
-  // Add remaining text after all links
   if (lastIndex < remainingText.length) {
     let rest = remainingText.substring(lastIndex)
 
-    // Process bold text
     rest = rest.replace(/(\*\*|__)(.*?)(\*\*|__)/g, (_, __, p2) => {
       segments.push({ type: 'bold', text: p2 })
       return ''
     })
 
-    // Process italic text
     rest = rest.replace(/(\*|_)(.*?)(\*|_)/g, (_, __, p2) => {
       segments.push({ type: 'italic', text: p2 })
       return ''
     })
 
-    // Process code
     rest = rest.replace(/`(.*?)`/g, (_, p1) => {
       segments.push({ type: 'code', text: p1 })
       return ''
     })
 
-    // Add any remaining text
     if (rest) {
       segments.push({ type: 'text', text: rest })
     }
