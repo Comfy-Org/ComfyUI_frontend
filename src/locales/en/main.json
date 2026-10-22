@@ -5789,6 +5789,8 @@
       "includedSources": "Include in the report (on by default)"
     },
     "loadFailed": "The agent panel failed to load.",
+    "askAgent": "Ask agent",
+    "referenceInAgent": "Reference in agent",
     "entryButton": "Agent",
     "entryStarting": "Agent starting…",
     "entryFailed": "Agent unavailable",

@@ -1,12 +1,15 @@
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { referenceNodesInAgent } from '@/composables/graph/referenceNodesInAgent'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './menuOption'
 import type { MenuOption } from './menuOption'
 import { useNodeArrangement } from './useNodeArrangement'
 import { useSelectionOperations } from './useSelectionOperations'
+import { useSelectionState } from './useSelectionState'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 /**
@@ -28,6 +31,19 @@ export function useSelectionMenuOptions() {
     useSubgraphOperations()
 
   const { frameNodes } = useFrameNodes()
+  const { selectedNodes } = useSelectionState()
+  const agentPanelStore = useAgentPanelStore()
+
+  const getReferenceInAgentOption = (): MenuOption | null => {
+    if (!agentPanelStore.enabled || selectedNodes.value.length === 0)
+      return null
+    return {
+      label: t('agent.referenceInAgent'),
+      icon: 'icon-[lucide--astroid]',
+      action: () =>
+        referenceNodesInAgent(selectedNodes.value.map((node) => node.id))
+    }
+  }
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
@@ -128,6 +144,7 @@ export function useSelectionMenuOptions() {
 
   return {
     getBasicSelectionOptions,
+    getReferenceInAgentOption,
     getSubgraphOptions,
     getMultipleNodesOptions,
     getDeleteOption,

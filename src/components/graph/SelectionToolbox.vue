@@ -42,6 +42,7 @@
                 :command
               />
               <ExecuteButton v-if="showExecute" />
+              <AskAgentButton v-if="showAskAgent" />
               <NodeOptionsButton />
             </template>
           </div>
@@ -54,6 +55,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import AskAgentButton from '@/components/graph/selectionToolbox/AskAgentButton.vue'
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
@@ -71,6 +73,7 @@ import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -116,8 +119,10 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  canOpenNodeInfo
+  canOpenNodeInfo,
+  selectedNodes
 } = useSelectionState()
+const agentPanelStore = useAgentPanelStore()
 
 const showColorPicker = computed(() => hasAnySelection.value)
 const showConvertToSubgraph = computed(() => hasAnySelection.value)
@@ -142,6 +147,9 @@ const hasLinkSelection = computed(
 const showDelete = computed(() => hasAnySelection.value)
 const showRefresh = computed(() => hasAnySelection.value)
 const showExecute = computed(() => hasOutputNodesSelected.value)
+const showAskAgent = computed(
+  () => agentPanelStore.enabled && selectedNodes.value.length > 0
+)
 
 const showAnyPrimaryActions = computed(
   () =>

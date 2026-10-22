@@ -131,6 +131,7 @@ export function useMoreOptionsMenu() {
   } = useGroupMenuOptions()
   const {
     getBasicSelectionOptions,
+    getReferenceInAgentOption,
     getMultipleNodesOptions,
     getSubgraphOptions,
     getAlignmentOptions,
@@ -209,6 +210,9 @@ export function useMoreOptionsMenu() {
     const basicOps = getBasicSelectionOptions()
     options.push(...basicOps)
     options.push({ type: 'divider' })
+
+    const referenceInAgent = getReferenceInAgentOption()
+    if (referenceInAgent) options.push(referenceInAgent)
 
     // Section 2: Node actions (Run Branch, Pin, Bypass, Mute)
     if (hasOutputNodesSelected.value) {
