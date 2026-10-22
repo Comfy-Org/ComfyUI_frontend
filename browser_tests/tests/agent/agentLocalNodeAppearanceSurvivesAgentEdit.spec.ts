@@ -3,21 +3,19 @@ import { expect } from '@playwright/test'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
+import { NodeAppearanceEditor } from '@e2e/tests/agent/NodeAppearanceEditor'
 import {
-  AGENT_NODE_IDS,
-  addStyledLoadImageNode,
+  APPEARANCE_PIN,
+  addLoadImageNode,
   setNodeTitle
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
-import { NodeAppearanceEditor } from '@e2e/fixtures/helpers/NodeAppearanceEditor'
 
-const [NODE_ID] = AGENT_NODE_IDS
-const RENAMED_TITLE = 'Reference Image'
-const ISSUE = {
-  type: 'issue',
-  description:
-    'https://linear.app/comfyorg/issue/FE-3494/crdt-sync-local-node-colourshapeproperties-edits-are-not-written-back'
-}
+const {
+  nodeId: NODE_ID,
+  renamedTitle: RENAMED_TITLE,
+  issue: ISSUE
+} = APPEARANCE_PIN
 
 test.describe(
   'A local node appearance edit survives an agent edit to the same node',
@@ -43,7 +41,7 @@ test.describe(
       async () => {
         agent.reportToolCall('add_node', 'call-add')
         agent.applyAndBroadcast([
-          addStyledLoadImageNode(NODE_ID, 0, {
+          addLoadImageNode(NODE_ID, 0, {
             color: '#232',
             bgcolor: '#353'
           })
@@ -76,7 +74,7 @@ test.describe(
       async () => {
         agent.reportToolCall('add_node', 'call-add')
         agent.applyAndBroadcast([
-          addStyledLoadImageNode(NODE_ID, 0, { shape: RenderShape.CARD })
+          addLoadImageNode(NODE_ID, 0, { shape: RenderShape.CARD })
         ])
         await expect(agent.node(NODE_ID)).toBeVisible()
         const documentRadius = await appearance.borderRadius(NODE_ID)

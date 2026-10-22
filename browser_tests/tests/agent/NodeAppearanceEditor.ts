@@ -4,11 +4,7 @@ import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-/**
- * The user's own route to a node's appearance: the selection toolbox for
- * colour and the node context menu for shape. Both write the live node
- * directly, so a spec using this drives the same path a person does.
- */
+/** Drives a node's appearance the way a user does: toolbox colour, menu shape. */
 export class NodeAppearanceEditor {
   private readonly contextMenu: ContextMenu
   private readonly vueNodes: VueNodeHelpers
@@ -34,10 +30,7 @@ export class NodeAppearanceEditor {
     )
   }
 
-  /**
-   * Dispatched rather than clicked: with the agent panel open, the graph-mode
-   * overlay covers the selection toolbox and an actionable click never lands.
-   */
+  /** Dispatched, not clicked: the agent panel's overlay covers the toolbox. */
   async recolourRed(nodeId: number | string): Promise<void> {
     await this.vueNodes.selectNode(String(nodeId))
     await this.page
