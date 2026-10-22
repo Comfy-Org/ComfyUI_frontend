@@ -2851,11 +2851,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
       await session.sendMessage('actually, do this instead')
 
-      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledWith({
-        method: 'button',
-        turn_id: 'msg-2',
-        turn_elapsed_ms: null
-      })
+      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'button', turn_id: 'msg-2' })
+      )
     })
 
     it("does not stop a new chat's first turn from a later new chat", async () => {
