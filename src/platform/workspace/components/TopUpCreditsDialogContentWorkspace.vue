@@ -953,6 +953,9 @@ function armPayRetryOnCardReturn() {
     const attempt = purchaseAttempt
     await handleBuy()
     if (unmounted) return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
+      return
+    }
     if (checkoutRecovery.value === 'refused') {
       armPayRetryAfterNextDeparture()
       return
