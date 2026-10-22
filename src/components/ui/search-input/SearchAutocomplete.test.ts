@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
 
@@ -136,6 +137,69 @@ describe('SearchAutocomplete', () => {
 
     await user.keyboard('{ArrowDown}')
     await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('bar'))
+  })
+
+  it.for(['Home', 'End'])(
+    'leaves Shift+%s to the input instead of moving the highlight',
+    async (key) => {
+      const onHighlight = vi.fn()
+      const user = userEvent.setup()
+      render(SearchAutocomplete, {
+        props: {
+          modelValue: 'fo',
+          suggestions: ['foo', 'bar', 'baz'],
+          openOnFocus: true,
+          accessibleLabel: 'Search',
+          clearLabel: 'Clear',
+          onHighlight
+        }
+      })
+
+      const input = screen.getByRole('combobox')
+      await user.click(input)
+      await user.keyboard('{ArrowDown}')
+      await waitFor(() => expect(onHighlight).toHaveBeenLastCalledWith('bar'))
+      onHighlight.mockClear()
+
+      const event = new KeyboardEvent('keydown', {
+        key,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+      input.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(onHighlight).not.toHaveBeenCalled()
+      expect(screen.getByRole('option', { name: 'bar' })).toHaveAttribute(
+        'data-highlighted'
+      )
+    }
+  )
+
+  it('lets Shift+Home reach leading-slot controls', () => {
+    render(SearchAutocomplete, {
+      props: {
+        modelValue: 'fo',
+        suggestions: ['foo'],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear'
+      },
+      slots: { leading: () => h('button', 'Filter chip') }
+    })
+    const chip = screen.getByRole('button', { name: 'Filter chip' })
+    const onChipKeydown = vi.fn()
+    chip.addEventListener('keydown', onChipKeydown)
+
+    chip.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Home',
+        shiftKey: true,
+        bubbles: true
+      })
+    )
+
+    expect(onChipKeydown).toHaveBeenCalledOnce()
   })
 
   it('highlights the first suggestion when results change', async () => {
