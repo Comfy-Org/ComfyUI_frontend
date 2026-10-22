@@ -115,6 +115,17 @@ describe('NodeAskAgentHover', () => {
       'size-7'
     )
     expect(button).not.toHaveClass('size-8')
+    expect(button).toHaveClass('group')
+    expect(screen.getByTestId('node-ask-agent-icon')).toHaveClass(
+      'size-4',
+      'text-foreground',
+      'transition-transform',
+      'duration-300',
+      'ease-out',
+      'group-hover:rotate-360',
+      'group-hover:duration-500',
+      'motion-reduce:transition-none'
+    )
     expect(button).not.toHaveClass(
       'hover:border-solid',
       'hover:border-border',

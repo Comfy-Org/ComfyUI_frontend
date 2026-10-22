@@ -91,6 +91,14 @@ type Story = StoryObj<typeof meta>
 export const FloatingButton: Story = {}
 
 export const ButtonHover: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Same icon turn as the top-bar Agent entry: hover rotates a full circle clockwise over 500ms, then unwinds in 300ms. The transition is suppressed under prefers-reduced-motion.'
+      }
+    }
+  },
   play: async ({ canvasElement }) => {
     const page = pageOf(canvasElement)
     await userEvent.hover(

@@ -21,10 +21,13 @@
       variant="outline"
       size="icon"
       :aria-label="t('agent.askAgent')"
-      class="size-7 border-border"
+      class="group size-7 border-border"
       @click="openComposer"
     >
-      <i class="icon-[lucide--astroid] size-4 text-foreground" />
+      <i
+        data-testid="node-ask-agent-icon"
+        class="icon-[lucide--astroid] size-4 text-foreground transition-transform duration-300 ease-out group-hover:rotate-360 group-hover:duration-500 motion-reduce:transition-none"
+      />
     </Button>
     <div
       v-else
