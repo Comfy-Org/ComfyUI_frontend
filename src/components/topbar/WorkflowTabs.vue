@@ -71,7 +71,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
-import TopbarActions from '@/components/topbar/TopbarActions.vue'
+import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@comfyorg/design-system/button/Button'
