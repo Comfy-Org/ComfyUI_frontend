@@ -1,24 +1,9 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { assert, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useExtensionService } from '@/services/extensionService'
-import type { ComfyExtension } from '@/types/comfy'
 
-const { registered } = vi.hoisted(() => ({
-  registered: [] as ComfyExtension[]
-}))
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
-      registerExtension: (extension: ComfyExtension) => {
-        registered.push(extension)
-      }
-    })
-}))
-
-await import('./lightInfo')
+import { lightInfoExtension } from './lightInfo'
 
 class CreateLightInfoNode extends LGraphNode {
   static comfyClass = 'CreateLightInfo'
@@ -49,12 +34,12 @@ describe('Comfy.CreateLightInfo extension', () => {
       expected: [200, 100]
     }
   ])('$label', ({ NodeClass, size, expected }) => {
-    const extension = registered.find((e) => e.name === 'Comfy.CreateLightInfo')
-    assert.exists(extension?.nodeCreated)
+    const { nodeCreated } = lightInfoExtension
+    assert.exists(nodeCreated)
     const node = new NodeClass('Node')
     node.size = [size[0], size[1]]
 
-    extension.nodeCreated(node, fromAny({}))
+    nodeCreated(node, fromAny({}))
 
     expect([node.size[0], node.size[1]]).toEqual(expected)
   })
