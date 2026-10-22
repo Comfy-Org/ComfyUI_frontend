@@ -89,3 +89,15 @@ export async function mockWorkspace(
     )
   )
 }
+
+/** Refuse the deployment listing the way a workspace outside the rollout sees it. */
+export async function mockDeploymentRolloutRefusal(
+  routeTarget: Page | BrowserContext
+): Promise<void> {
+  await routeTarget.route('**/api/workspaces/*/deployments', (route) =>
+    route.fulfill({
+      ...jsonRoute({ error: 'Deployment selection is outside the rollout' }),
+      status: 403
+    })
+  )
+}

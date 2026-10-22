@@ -9,10 +9,10 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
-import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { provideExtensionService } from '@/services/extensionServiceAccess'
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
   return (
@@ -21,6 +21,44 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
       value !== null &&
       typeof (value as { then?: unknown }).then === 'function')
   )
+}
+
+const graphLoadLifecycleHooks = new Set<string>([
+  'beforeLoadGraph',
+  'beforeConfigureGraph',
+  'afterConfigureGraph',
+  'afterLoadGraph',
+  'onGraphLoadError'
+] satisfies (keyof ComfyExtension)[])
+
+const graphLoadEntrypoints = new Set<PropertyKey>([
+  'loadGraphData',
+  'loadApiJson',
+  'handleFile'
+] satisfies (keyof ComfyApp)[])
+
+function rejectNestedGraphLoad() {
+  return Promise.reject(
+    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+  )
+}
+
+function createGraphLoadHookApp(app: ComfyApp) {
+  let dispatching = true
+  const hookApp = new Proxy(app, {
+    get(target, property) {
+      if (dispatching && graphLoadEntrypoints.has(property))
+        return rejectNestedGraphLoad
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+  return {
+    hookApp,
+    endDispatch: () => {
+      dispatching = false
+    }
+  }
 }
 
 export const useExtensionService = () => {
@@ -57,7 +95,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets(useApp())
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -66,7 +104,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, useApp()),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -149,7 +187,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
+            results.push(fn.call(ext, ...args, useApp()))
           }
         } catch (error) {
           console.error(
@@ -180,6 +218,10 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
+    const graphLoadHook = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookApp(useApp())
+      : undefined
+    const app = graphLoadHook?.hookApp ?? useApp()
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -223,7 +265,11 @@ export const useExtensionService = () => {
         logError(ext, error)
       }
     }
-    return await Promise.all(pending)
+    try {
+      return await Promise.all(pending)
+    } finally {
+      graphLoadHook?.endDispatch()
+    }
   }
 
   return {
@@ -232,3 +278,5 @@ export const useExtensionService = () => {
     invokeExtensionsAsync
   }
 }
+
+provideExtensionService(useExtensionService)

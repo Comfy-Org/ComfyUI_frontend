@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useResizeObserver } from '@vueuse/core'
@@ -17,12 +18,14 @@ import EventsDirectoryCta from './EventsDirectoryCta.vue'
 const {
   row,
   locale = 'en',
-  selected = false
+  selected = false,
+  titleClass
 } = defineProps<{
   row: DirectoryRow
   locale?: Locale
   /** The map view rings the row whose pin was clicked. */
   selected?: boolean
+  titleClass?: HTMLAttributes['class']
 }>()
 const { t } = translationsFor(locale)
 
@@ -112,7 +115,7 @@ useResizeObserver(descEl, ([entry]) => {
         </Badge>
       </div>
 
-      <h3 class="text-sm font-light text-primary-warm-white">
+      <h3 :class="cn('text-sm font-light text-primary-warm-white', titleClass)">
         {{ row.title }}
       </h3>
 

@@ -8,6 +8,7 @@ import {
   initialWorkshopPageState,
   workshopExampleState
 } from '@/config/workshop-page-state'
+import type { PlaygroundExample } from '@/config/workshop-playground'
 import { restoreFormValues, urlUploadField } from '@/config/workshop-playground'
 import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import {
@@ -37,13 +38,13 @@ import {
 import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import { sameFormValues } from '@/lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
+import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
 import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
-import WorkflowExampleCard from './WorkflowExampleCard.vue'
 
 const { model, scope } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -236,6 +237,15 @@ function applyExample(index: number) {
   section.value = 'playground'
 }
 
+const activeExampleId = computed(
+  () => initial.examples[selectedExample.value]?.id
+)
+
+function openExample(example: PlaygroundExample) {
+  const index = initial.examples.findIndex((item) => item.id === example.id)
+  if (index !== -1) selectExample(index)
+}
+
 function updateExampleDialog(open: boolean) {
   if (!open) replacing.value = undefined
 }
@@ -377,28 +387,18 @@ function start() {
     />
   </div>
   <section
-    v-if="model.examples.length"
+    v-if="initial.examples.length"
     v-show="section === 'playground'"
     class="mt-14"
-    aria-labelledby="workflow-examples-heading"
+    data-testid="examples-section"
   >
-    <h2
-      id="workflow-examples-heading"
-      class="mb-5 text-sm font-bold text-primary-warm-white"
-    >
-      {{ t('workshop.examples.start') }}
-    </h2>
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      <WorkflowExampleCard
-        v-for="(example, index) in model.examples"
-        :key="example.name"
-        :example
-        :chosen="selectedExample === index"
-        :poster="model.thumbnailUrl"
-        :disabled="formDisabled"
-        @open="selectExample(index)"
-      />
-    </div>
+    <ExamplesTab
+      :examples="initial.examples"
+      :gallery-label="model.name"
+      :active-id="activeExampleId"
+      :disabled="formDisabled"
+      @open="openExample"
+    />
   </section>
   <ExampleReplaceDialog
     :open="replacing !== undefined"

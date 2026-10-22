@@ -1,13 +1,13 @@
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void
@@ -26,7 +26,7 @@ export function useComposer(options: UseComposerOptions) {
       (draft.value.trim().length > 0 ||
         prompt.value.references.length > 0 ||
         attachments.value.length > 0) &&
-      !attachments.value.some((item) => item.uploading)
+      !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
   function submit(): void {
@@ -73,6 +73,7 @@ export function useComposer(options: UseComposerOptions) {
       prompt_id: starterPrompt.promptId,
       prompt_index: starterPrompt.promptIndex,
       prompt_count: starterPrompt.promptCount,
+      visible_prompt_count: starterPrompt.visiblePromptCount,
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,

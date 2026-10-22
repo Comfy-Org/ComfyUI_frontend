@@ -33,6 +33,9 @@ const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 /** Why the workspace session was refused, as far as the sign-in page acts on it. */
 export type SessionRefusal = Pick<SessionFailure, 'code' | 'organizationId'>
 
+/** Whether this origin can offer sign-in: still asking, able to, or refused its configuration. */
+type IdentityStatus = 'resolving' | 'ready' | 'unavailable'
+
 export type SessionEstablishment =
   | { readonly status: 'ok' }
   | { readonly status: 'error'; readonly code: SessionErrorCode }
@@ -78,12 +81,12 @@ export function useSignInController(
 ) {
   const { user } = port
   const state = ref<SignInState>({ step: 'idle' })
-  // Resolved asynchronously so it can't block first paint. A failed fetch no
-  // longer sticks in account-core's cache, so calling this again (from
-  // `retryAvailability`) genuinely re-fetches instead of replaying `undefined`.
   const identity = ref<FirebaseIdentity>()
+  const identityResolving = ref(true)
   async function loadIdentity(): Promise<void> {
+    identityResolving.value = true
     identity.value = await port.loadIdentity()
+    identityResolving.value = false
   }
   void loadIdentity()
 
@@ -198,7 +201,10 @@ export function useSignInController(
     sessionFailureCode: computed(() => port.failure.value?.code),
     /** The organization an `SSO_REQUIRED` refusal names, when it names one. */
     ssoOrganizationId: computed(() => port.failure.value?.organizationId),
-    available: computed(() => identity.value !== undefined),
+    identityStatus: computed<IdentityStatus>(() => {
+      if (identity.value) return 'ready'
+      return identityResolving.value ? 'resolving' : 'unavailable'
+    }),
     signInWith,
     submitEmail,
     retryMint,

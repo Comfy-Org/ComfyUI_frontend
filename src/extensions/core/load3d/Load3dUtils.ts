@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { uploadTempFile } from '@/services/uploadTempFile'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -82,15 +82,6 @@ class Load3dUtils {
     return uploadPath
   }
 
-  static getFilenameExtension(url: string): string | undefined {
-    const queryString = url.split('?')[1]
-    if (queryString) {
-      const filename = new URLSearchParams(queryString).get('filename')
-      if (filename) return filename.split('.').pop()?.toLowerCase()
-    }
-    return url.split('?')[0].split('.').pop()?.toLowerCase()
-  }
-
   static splitFilePath(path: string): [string, string] {
     const folder_separator = path.lastIndexOf('/')
     if (folder_separator === -1) {
@@ -111,7 +102,7 @@ class Load3dUtils {
       'filename=' + encodeURIComponent(filename),
       'type=' + type,
       'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
+      useApp().getRandParam().substring(1)
     ].join('&')
 
     return `/view?${params}`

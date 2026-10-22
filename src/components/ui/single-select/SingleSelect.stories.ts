@@ -24,6 +24,10 @@ const meta: Meta<typeof SingleSelect> = {
     loading: { control: 'boolean' }
   },
   args: {
+    accessibleLabel: 'Category',
+    searchLabel: 'Search categories',
+    searchPlaceholder: 'Search...',
+    emptyText: 'No results found',
     label: 'Category',
     size: 'lg',
     invalid: false,
@@ -56,8 +60,7 @@ export const Default: Story = {
       const selected = ref<string | null>(null)
       return { selected, args }
     },
-    template:
-      '<SingleSelect v-model="selected" :options="args.options" :label="args.label" :size="args.size" :invalid="args.invalid" :loading="args.loading" />'
+    template: '<SingleSelect v-bind="args" v-model="selected" />'
   })
 }
 
@@ -69,7 +72,7 @@ export const MediumSize: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" size="md" />'
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" size="md" accessible-label="Category" search-label="Search categories" empty-text="No results found" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -82,7 +85,7 @@ export const WithIcon: Story = {
       return { selected, sampleOptions }
     },
     template: `
-      <SingleSelect v-model="selected" :options="sampleOptions" label="Sorting Type">
+      <SingleSelect v-model="selected" :options="sampleOptions" label="Sorting Type" accessible-label="Sorting Type" search-label="Search sorting types" empty-text="No results found">
         <template #icon>
           <i class="icon-[lucide--arrow-up-down] size-3.5" />
         </template>
@@ -100,7 +103,7 @@ export const Disabled: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" disabled />'
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" disabled accessible-label="Category" search-label="Search categories" empty-text="No results found" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -113,7 +116,7 @@ export const Invalid: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" invalid />'
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" invalid accessible-label="Category" search-label="Search categories" empty-text="No results found" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -126,7 +129,7 @@ export const Loading: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" loading />'
+      '<SingleSelect v-model="selected" :options="sampleOptions" label="Category" loading accessible-label="Category" search-label="Search categories" empty-text="No results found" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -147,19 +150,19 @@ export const AllStates: Story = {
         <div>
           <p class="mb-2 text-xs text-muted-foreground">Large (Interface)</p>
           <div class="flex flex-col gap-3">
-            <SingleSelect v-model="a" :options="sampleOptions" label="Default" />
-            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" disabled />
-            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" invalid />
-            <SingleSelect v-model="d" :options="sampleOptions" label="Loading" loading />
+            <SingleSelect v-model="a" :options="sampleOptions" label="Default" accessible-label="Default" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" disabled accessible-label="Disabled" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" invalid accessible-label="Invalid" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="d" :options="sampleOptions" label="Loading" loading accessible-label="Loading" search-label="Search" empty-text="No results found" />
           </div>
         </div>
         <div>
           <p class="mb-2 text-xs text-muted-foreground">Medium (Node)</p>
           <div class="flex flex-col gap-3">
-            <SingleSelect v-model="a" :options="sampleOptions" label="Default" size="md" />
-            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" size="md" disabled />
-            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" size="md" invalid />
-            <SingleSelect v-model="e" :options="sampleOptions" label="Loading" size="md" loading />
+            <SingleSelect v-model="a" :options="sampleOptions" label="Default" size="md" accessible-label="Default" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="b" :options="sampleOptions" label="Disabled" size="md" disabled accessible-label="Disabled" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="c" :options="sampleOptions" label="Invalid" size="md" invalid accessible-label="Invalid" search-label="Search" empty-text="No results found" />
+            <SingleSelect v-model="e" :options="sampleOptions" label="Loading" size="md" loading accessible-label="Loading" search-label="Search" empty-text="No results found" />
           </div>
         </div>
       </div>

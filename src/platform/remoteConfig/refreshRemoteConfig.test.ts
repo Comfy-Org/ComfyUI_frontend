@@ -9,7 +9,6 @@ import {
 import {
   authenticatedRemoteConfigState,
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
@@ -61,7 +60,6 @@ describe('refreshRemoteConfig', () => {
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfigRevision.value = 0
-    cachedLegacyBillingMigrationEnabled.value = undefined
     cachedBillingControlEnabled.value = undefined
     cachedV1PaymentRecovery.value = undefined
     sessionAgentGrant.value = undefined
@@ -155,16 +153,6 @@ describe('refreshRemoteConfig', () => {
       expect(authenticatedRemoteConfigState.value).toBe('error')
     })
 
-    it('caches authenticated legacy billing migration eligibility', async () => {
-      mockAuthenticatedFetch(
-        mockSuccessResponse({ legacy_billing_migration_enabled: true })
-      )
-
-      await refreshRemoteConfig()
-
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
-    })
-
     it('passes an AbortSignal on the authenticated branch', async () => {
       mockAuthenticatedFetch(mockSuccessResponse())
 
@@ -174,31 +162,51 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
-    it('discards a failed response from a superseded refresh', async () => {
-      let resolveFirst: ((response: Response) => void) | undefined
-      vi.mocked(api.fetchApi)
-        .mockImplementationOnce(
-          (_route, options) =>
-            new Promise<Response>((resolve) => {
-              options?.onAuthHeader?.(true)
-              resolveFirst = resolve
-            })
+    it.for([200, 401])(
+      'discards a superseded response with status %s without changing cached flags',
+      async (status) => {
+        const latestConfig = {
+          subscription_required: true,
+          billing_control_enabled: false,
+          v1_payment_recovery: false
+        }
+        let resolveFirst: ((response: Response) => void) | undefined
+        vi.mocked(api.fetchApi)
+          .mockImplementationOnce(
+            (_route, options) =>
+              new Promise<Response>((resolve) => {
+                options?.onAuthHeader?.(true)
+                resolveFirst = resolve
+              })
+          )
+          .mockImplementationOnce(async (_route, options) => {
+            options?.onAuthHeader?.(true)
+            return mockSuccessResponse(latestConfig)
+          })
+
+        const firstRefresh = refreshRemoteConfig({ useAuth: true })
+        await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+        await refreshRemoteConfig({ useAuth: true })
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+        resolveFirst?.(
+          new Response(
+            JSON.stringify({
+              billing_control_enabled: true,
+              v1_payment_recovery: true
+            }),
+            { status }
+          )
         )
-        .mockImplementationOnce(async (_route, options) => {
-          options?.onAuthHeader?.(true)
-          return mockSuccessResponse({ subscription_required: true })
-        })
+        await firstRefresh
 
-      const firstRefresh = refreshRemoteConfig({ useAuth: true })
-      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-      await refreshRemoteConfig({ useAuth: true })
-      resolveFirst?.(mockErrorResponse(401, 'Unauthorized'))
-      await firstRefresh
-
-      expect(remoteConfig.value).toEqual({ subscription_required: true })
-      expect(remoteConfigState.value).toBe('authenticated')
-      expect(remoteConfigErrorStatus.value).toBeNull()
-    })
+        expect(remoteConfig.value).toEqual(latestConfig)
+        expect(remoteConfigState.value).toBe('authenticated')
+        expect(remoteConfigErrorStatus.value).toBeNull()
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+      }
+    )
 
     it('preserves shared state when the caller cancels the refresh', async () => {
       const existingConfig = { subscription_required: true }
@@ -256,7 +264,6 @@ describe('refreshRemoteConfig', () => {
 
   describe('without auth', () => {
     it('builds the no-auth url via api.apiURL so a path prefix is respected', async () => {
-      cachedLegacyBillingMigrationEnabled.value = true
       vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: false })
@@ -269,7 +276,6 @@ describe('refreshRemoteConfig', () => {
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(true)
     })
 
     it('clears authenticated state and its grant when anonymous config commits', async () => {
@@ -355,14 +361,12 @@ describe('refreshRemoteConfig', () => {
 
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
-      cachedLegacyBillingMigrationEnabled.value = true
       mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))
 
       await refreshRemoteConfig()
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it("records this session's grant without persisting it anywhere", async () => {
@@ -431,7 +435,6 @@ describe('refreshRemoteConfig', () => {
         subscription_required: true,
         comfy_cloud_base_url: 'https://cloud.example.com'
       }
-      cachedLegacyBillingMigrationEnabled.value = true
       remoteConfig.value = existingConfig
       window.__CONFIG__ = existingConfig
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
@@ -440,7 +443,6 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual(existingConfig)
       expect(window.__CONFIG__).toEqual(existingConfig)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
     })
 
     it('preserves config on 500 response', async () => {

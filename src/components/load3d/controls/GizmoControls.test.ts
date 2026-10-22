@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GizmoControls from '@/components/load3d/controls/GizmoControls.vue'
-import type { GizmoConfig } from '@/extensions/core/load3d/interfaces'
+import type { GizmoConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,
@@ -47,8 +47,7 @@ function renderComponent(initial: Partial<GizmoConfig> = {}) {
       }
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
@@ -139,8 +138,7 @@ describe('GizmoControls', () => {
     const { emitted } = render(GizmoControls, {
       props: { gizmoConfig: undefined },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 

@@ -15,7 +15,7 @@ describe('the SSO-required screen when its chunk fails to load', () => {
   it('reports the failure and still tells the person to use SSO', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
 
-    expect(presentSsoRequired()).toBe(true)
+    expect(presentSsoRequired('session_refused')).toBe(true)
     await vi.waitFor(() =>
       expect(useToast().toasts).toEqual([
         expect.objectContaining({

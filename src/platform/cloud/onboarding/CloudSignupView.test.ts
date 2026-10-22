@@ -311,6 +311,23 @@ describe('CloudSignupView SSO', () => {
     expect(useAuthActions().signUpWithEmail).not.toHaveBeenCalled()
   })
 
+  it('signs up with Firebase for an organization in optional mode', async () => {
+    vi.mocked(useFeatureFlags().flags).ssoEnabled = true
+    discoverReplies({ sso: true, required: false })
+    await renderSignupView()
+
+    await signUpWithEmail('ada@acme.com')
+
+    await waitFor(() =>
+      expect(useAuthActions().signUpWithEmail).toHaveBeenCalledWith(
+        'ada@acme.com',
+        'hunter22',
+        'turnstile-token'
+      )
+    )
+    expect(assign).not.toHaveBeenCalled()
+  })
+
   it('signs up with Firebase when SSO discovery is down', async () => {
     vi.mocked(useFeatureFlags().flags).ssoEnabled = true
     discoverReplies({ code: 'INTERNAL_ERROR', message: 'down' }, 500)

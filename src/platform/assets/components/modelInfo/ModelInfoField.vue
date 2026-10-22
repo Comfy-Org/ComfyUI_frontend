@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-2 px-4 py-2 text-sm text-base-foreground">
+  <div class="flex flex-col gap-2 px-4 py-2 text-sm text-foreground">
     <div class="relative flex items-center justify-between">
       <span class="select-none">{{ label }}</span>
       <slot name="label-action" />

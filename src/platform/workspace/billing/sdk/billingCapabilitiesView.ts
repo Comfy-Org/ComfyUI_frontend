@@ -1,6 +1,6 @@
 import type { CapabilitiesSnapshot } from '@comfyorg/account-core/billing'
 
-import type { BillingCapabilitiesResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
 
 /**
  * The SDK's cached capabilities snapshot in the shape the capabilities
@@ -9,9 +9,10 @@ import type { BillingCapabilitiesResponse } from '@/platform/workspace/api/works
  */
 export function projectBillingCapabilities(
   snapshot: CapabilitiesSnapshot
-): BillingCapabilitiesResponse {
+): BillingCapabilitiesRead {
   return {
     capabilities: snapshot.capabilities,
+    denied_reasons: snapshot.denials,
     expires_at: new Date(snapshot.freshUntil).toISOString(),
     resolved_for: {
       user_id: snapshot.scope.userId,

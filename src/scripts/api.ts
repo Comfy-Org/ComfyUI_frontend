@@ -35,10 +35,13 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
+  AgentStatusWsMessage,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
+  AssetSeedCompletedWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -266,8 +269,10 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
+  'assets.seed.completed': AssetSeedCompletedWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -364,13 +369,13 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ): void
 
   removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void
 }
@@ -777,13 +782,12 @@ export class ComfyApi extends EventTarget {
 
   override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ) {
-    // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
     super.addEventListener(
       type,
-      this.wrapListener(callback as EventListener),
+      this.wrapListener(callback as EventListenerOrEventListenerObject | null),
       options
     )
     this._registered.add(type)
@@ -791,12 +795,14 @@ export class ComfyApi extends EventTarget {
 
   override removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void {
     super.removeEventListener(
       type,
-      this.getWrappedListener(callback as EventListener),
+      this.getWrappedListener(
+        callback as EventListenerOrEventListenerObject | null
+      ),
       options
     )
   }
@@ -882,6 +888,12 @@ export class ComfyApi extends EventTarget {
       params.set('token', authToken)
     }
     return !requests || params.has('token')
+  }
+
+  /** The cloud socket's auth params; null when no one is signed in to open it. */
+  async socketAuthParams(): Promise<URLSearchParams | null> {
+    const params = new URLSearchParams()
+    return (await this.addSocketAuth(params)) ? params : null
   }
 
   /**
@@ -1108,6 +1120,13 @@ export class ComfyApi extends EventTarget {
               this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
+            case 'agent_status':
+              this.serverFeatureFlags.value = {
+                ...this.serverFeatureFlags.value,
+                agent: msg.data
+              }
+              this.dispatchCustomEvent('agent_status', msg.data)
+              break
             default:
               if (this._registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
@@ -1146,6 +1165,8 @@ export class ComfyApi extends EventTarget {
     this.clientId = undefined
     window.name = ''
     sessionStorage.removeItem('clientId')
+    const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
+    this.serverFeatureFlags.value = features
     await this.replaceSocket()
   }
 
@@ -1160,8 +1181,9 @@ export class ComfyApi extends EventTarget {
 
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
-    // serverFeatureFlags deliberately keeps the previous map: clearing it would
-    // downgrade every serverSupportsFeature() caller until the next delivery.
+    // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
+    // only `agent`): clearing it would downgrade every serverSupportsFeature()
+    // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
@@ -1629,10 +1651,15 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a setting for the current user
    */
-  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
+  async storeSetting(
+    id: keyof Settings,
+    value: Settings[keyof Settings],
+    options?: Pick<RequestInit, 'keepalive'>
+  ) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
-      body: JSON.stringify(value)
+      body: JSON.stringify(value),
+      ...options
     })
   }
 
@@ -1665,18 +1692,41 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
-      {
-        method: 'POST',
-        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
-        ...options
-      }
-    )
-    if (resp.status !== 200 && options.throwOnError !== false) {
-      throw new Error(
-        `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
+    const overwrite = options.overwrite ?? true
+    const fullInfo = options.full_info ?? false
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
+    const resp = await this.fetchApi(route, {
+      method: 'POST',
+      body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
+      ...options
+    })
+    if (resp.status !== 200) {
+      const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      // The reported message and route are file-independent: the literal file
+      // name (and `route`, which embeds it) is unbounded cardinality and
+      // would fragment Sentry grouping into one bucket per file instead of
+      // one for this failure mode — exactly what buried PM-1906's alerts.
+      reportError(
+        new Error(
+          `Error storing user data file: ${resp.status} ${resp.statusText}`
+        ),
+        {
+          errorType: 'userdata_store_failure',
+          surface: 'platform',
+          tags: {
+            status: resp.status,
+            overwrite,
+            full_info: fullInfo
+          },
+          context: {
+            file,
+            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+          }
+        }
       )
+      if (options.throwOnError !== false) {
+        throw new Error(message)
+      }
     }
 
     return resp

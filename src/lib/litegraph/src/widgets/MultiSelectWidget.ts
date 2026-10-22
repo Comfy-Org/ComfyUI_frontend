@@ -1,4 +1,4 @@
-import type { IMultiSelectWidget } from '../types/widgets'
+import type { IMultiSelectWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**
