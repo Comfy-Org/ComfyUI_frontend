@@ -7,6 +7,7 @@ import { computed, provide, ref, toRefs } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 
@@ -108,6 +109,29 @@ export const HiddenLabel: Story = {
       return { value, widget }
     },
     template: '<WidgetTextarea :widget="widget" v-model="value" />'
+  })
+}
+
+export const EnhancePrompt: Story = {
+  beforeEach() {
+    useAgentPanelStore().enabled = true
+  },
+  render: () => ({
+    components: { WidgetTextarea },
+    setup() {
+      const value = ref(
+        'Cinematic drone perspective shot, smooth camera movement: drone flies forward from behind the character.'
+      )
+      const widget: SimplifiedWidget<string> = {
+        name: 'prompt',
+        type: 'STRING',
+        value: '',
+        label: 'prompt'
+      }
+      return { value, widget }
+    },
+    template:
+      '<WidgetTextarea :widget="widget" v-model="value" node-type="CLIPTextEncode" />'
   })
 }
 

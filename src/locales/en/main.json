@@ -5977,6 +5977,8 @@
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
     "working": "Working...",
+    "enhancePrompt": "Enhance prompt",
+    "enhancingPrompt": "Enhancing prompt",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -37,13 +38,15 @@ function renderComponent(
   widget: SimplifiedWidget<string>,
   modelValue: string,
   placeholder?: string,
-  onUpdateModelValue?: (...args: unknown[]) => void
+  onUpdateModelValue?: (...args: unknown[]) => void,
+  nodeType?: string
 ) {
   return render(WidgetTextarea, {
     props: {
       widget,
       modelValue,
       placeholder,
+      nodeType,
       ...(onUpdateModelValue
         ? { 'onUpdate:modelValue': onUpdateModelValue }
         : {})
@@ -291,6 +294,27 @@ describe('WidgetTextarea Value Binding', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(formattedText)
     })
+  })
+})
+
+describe('WidgetTextarea enhance prompt', () => {
+  it('hides the enhance button when the agent is unavailable', () => {
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the enhance button on CLIP text encode nodes when the agent is enabled', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    expect(
+      screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    ).toBeInTheDocument()
   })
 })
 
