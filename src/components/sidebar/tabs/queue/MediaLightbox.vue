@@ -105,9 +105,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  createFileDownload,
+  useAssetDownload
+} from '@/platform/assets/composables/useAssetDownload'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
@@ -132,6 +135,8 @@ const props = defineProps<{
 
 /* Keeps the active video plus its neighbors buffered across gallery moves. */
 const RETAINED_VIDEO_COUNT = 3
+
+const { downloadFiles } = useAssetDownload()
 
 const galleryVisible = ref(false)
 const dialogRef = ref<HTMLElement>()
@@ -168,7 +173,9 @@ function navigateImage(direction: number) {
 function downloadActiveItem() {
   const item = activeItem.value
   if (!item) return
-  downloadFile(item.downloadUrl ?? resultItemUrl(item), item.filename)
+  void downloadFiles([
+    createFileDownload(item.downloadUrl ?? resultItemUrl(item), item.filename)
+  ])
 }
 
 let maskMouseDownTarget: EventTarget | null = null
