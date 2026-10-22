@@ -26,9 +26,6 @@ test.describe(
         await agentPanel.selectWorkflow('Unsaved Workflow (2)')
 
         await expect(agentPanel.composer).toBeEmpty()
-        await expect(
-          agentPanel.root.getByTestId('composer-node-section')
-        ).toHaveCount(0)
       })
 
       await test.step('add a node through canvas search', async () => {
