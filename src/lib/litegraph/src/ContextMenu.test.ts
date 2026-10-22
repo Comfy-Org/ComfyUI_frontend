@@ -1,17 +1,20 @@
 import DOMPurify from 'dompurify'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 describe('ContextMenu sanitisation', () => {
   const styledContent = '<span style="color: red; position: fixed">Label</span>'
+  let menu: ContextMenu | undefined
 
   afterEach(() => {
-    document.body.innerHTML = ''
+    menu?.close()
+    menu = undefined
   })
 
   it('filters menu styles without changing the default DOMPurify instance', () => {
-    const menu = new LiteGraph.ContextMenu([{ content: styledContent }], {
+    menu = new LiteGraph.ContextMenu([{ content: styledContent }], {
       event: new MouseEvent('contextmenu')
     })
 
