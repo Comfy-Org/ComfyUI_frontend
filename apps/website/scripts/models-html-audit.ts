@@ -1,4 +1,4 @@
-import { parseFaqAnswer } from '@/utils/faqAnswer'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',
@@ -44,6 +44,7 @@ export function auditModelPage(html: string, modelName: string): string[] {
 interface CatalogDetailBody {
   name: string
   summary?: string
+  workflowId?: string
   catalogDetails?: {
     longDescription?: string
     faqs: readonly { question: string; answer: string }[]
@@ -52,37 +53,58 @@ interface CatalogDetailBody {
   workflow?: { template?: { models?: readonly string[] } }
 }
 
-function squashed(html: string): string {
-  return textOf(html).replace(/\s/g, '')
+const ABOUT_SECTIONS = [
+  'aria-labelledby="workflow-about-heading"',
+  'data-testid="model-about"'
+]
+const FAQ_SECTIONS = ['id="workflow-faq"', 'id="model-faq"']
+const MODEL_SECTIONS = ['data-testid="workflow-facts"']
+
+function elementWith(html: string, marker: string): string {
+  const at = html.indexOf(marker)
+  if (at < 0) return ''
+  const rest = html.slice(html.lastIndexOf('<', at))
+  const tag = /^<([a-z][\w-]*)/i.exec(rest)?.[1]
+  if (!tag) return ''
+  let depth = 0
+  for (const match of rest.matchAll(new RegExp(`<(/?)${tag}\\b[^>]*>`, 'gi'))) {
+    depth += match[1] ? -1 : 1
+    if (depth === 0) return rest.slice(0, match.index + match[0].length)
+  }
+  return rest
 }
 
-function faqAnswerText(answer: string): string {
-  return parseFaqAnswer(answer)
-    .map((part) => part.label ?? part.value)
-    .join('')
+function textWithin(html: string, markers: readonly string[]) {
+  const text = textOf(
+    markers.map((marker) => elementWith(html, marker)).join(' ')
+  ).replace(/\s/g, '')
+  return (value: string) => text.includes(value.replace(/\s/g, ''))
 }
 
 function bodyErrors(html: string, record: CatalogDetailBody): string[] {
-  const text = squashed(html)
-  const has = (value: string) => text.includes(squashed(value))
+  const inAbout = textWithin(html, ABOUT_SECTIONS)
+  const inFaq = textWithin(html, FAQ_SECTIONS)
+  const inModels = textWithin(html, MODEL_SECTIONS)
   const details = record.catalogDetails
   const paragraphs = (details?.longDescription ?? '')
     .split(/\n\s*\n/)
     .filter((paragraph) => paragraph.trim())
-  const models = details
+  const workflowModels = details
     ? details.models.map((model) => model.name)
     : (record.workflow?.template?.models ?? [])
+  const models = record.workflowId ? workflowModels : []
   return [
-    ...(paragraphs.every(has)
+    ...(paragraphs.every(inAbout)
       ? []
       : ['server HTML is missing the long description']),
     ...(details?.faqs ?? [])
       .filter(
-        ({ question, answer }) => !has(question) || !has(faqAnswerText(answer))
+        ({ question, answer }) =>
+          !inFaq(question) || !inFaq(faqAnswerPlainText(answer))
       )
       .map(({ question }) => `server HTML is missing the FAQ "${question}"`),
     ...models
-      .filter((name) => name.trim() && !has(name))
+      .filter((name) => name.trim() && !inModels(name))
       .map((name) => `server HTML is missing the model "${name.trim()}"`)
   ]
 }
@@ -106,7 +128,7 @@ export function auditCatalogDetailBody(
       `expected one h1 "${record.name}", found ${JSON.stringify(h1s)}`
     )
   const summary = record.summary?.trim()
-  if (summary && !textOf(live).includes(textOf(summary)))
+  if (summary && !textOf(live).includes(summary.replace(/\s+/g, ' ')))
     errors.push('server HTML is missing the summary')
   if (
     live.includes('data-testid="catalog-detail-loading"') ||
