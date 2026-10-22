@@ -7,7 +7,7 @@ import * as Y from 'yjs'
 
 import { definitionsObserverRoot } from './agentSubgraphDefinitions'
 import type { FrameChanges, NodeChange } from './liveGraphApplier'
-import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
+import { metaMap, readDocGroups, SYNCED_NODE_FIELDS } from './liveGraphApplier'
 
 /**
  * Collects what the Y observers on one follower document report between two
@@ -27,17 +27,21 @@ export class DocChangeCollector {
     Map<string, Set<string> | 'all'>
   >()
   private readonly interiorDefinitions = new Set<string>()
+  private readonly groups = new Set<string>()
   private readonly nodesMap: Y.Map<Y.Map<unknown>>
   private readonly linksMap: Y.Map<unknown>
   private readonly definitionsMap: Y.Map<unknown>
+  private readonly metaMap: Y.Map<unknown>
 
   constructor(doc: Y.Doc) {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
     this.definitionsMap = definitionsObserverRoot(doc)
+    this.metaMap = metaMap(doc)
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
     this.definitionsMap.observeDeep(this.onDefinitionsChanged)
+    this.metaMap.observe(this.onMetaChanged)
   }
 
   /** Returns everything collected so far without clearing it. */
@@ -53,7 +57,8 @@ export class DocChangeCollector {
           new Map(nodes)
         ])
       ),
-      interiorDefinitions: new Set(this.interiorDefinitions)
+      interiorDefinitions: new Set(this.interiorDefinitions),
+      groups: new Set(this.groups)
     }
   }
 
@@ -71,12 +76,14 @@ export class DocChangeCollector {
     this.links.clear()
     this.interiors.clear()
     this.interiorDefinitions.clear()
+    this.groups.clear()
   }
 
   destroy(): void {
     this.nodesMap.unobserveDeep(this.onNodesChanged)
     this.linksMap.unobserve(this.onLinksChanged)
     this.definitionsMap.unobserveDeep(this.onDefinitionsChanged)
+    this.metaMap.unobserve(this.onMetaChanged)
     this.discard()
   }
 
@@ -197,5 +204,14 @@ export class DocChangeCollector {
 
   private readonly onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
     for (const id of event.keysChanged) this.links.add(id)
+  }
+
+  private readonly onMetaChanged = (event: Y.YMapEvent<unknown>): void => {
+    const change = event.changes.keys.get('groups')
+    if (!change) return
+    const before = readDocGroups(change.oldValue)
+    const after = readDocGroups(this.metaMap.get('groups'))
+    for (const id of before.keys()) if (!after.has(id)) this.groups.add(id)
+    for (const id of after.keys()) if (!before.has(id)) this.groups.add(id)
   }
 }
