@@ -32,7 +32,7 @@
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 
-import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
+import type { EditKeybindingDialogState } from '@/platform/keybindings/components/editKeybindingDialogState'
 
 const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
   dialogState: EditKeybindingDialogState
