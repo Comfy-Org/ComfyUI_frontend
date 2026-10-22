@@ -60,12 +60,15 @@ describe('projectBillingCapabilities', () => {
     })
   })
 
-  it('passes payment_recovery_available through to the capabilities read', () => {
-    expect(
-      projectBillingCapabilities({
-        ...SNAPSHOT,
-        paymentRecoveryAvailable: true
-      }).payment_recovery_available
-    ).toBe(true)
-  })
+  it.for([true, false])(
+    'passes payment_recovery_available %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({
+          ...SNAPSHOT,
+          paymentRecoveryAvailable: served
+        }).payment_recovery_available
+      ).toBe(served)
+    }
+  )
 })

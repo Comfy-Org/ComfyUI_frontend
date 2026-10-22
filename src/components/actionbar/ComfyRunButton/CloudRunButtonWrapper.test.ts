@@ -207,6 +207,7 @@ describe('CloudRunButtonWrapper', () => {
 
   it('unlocks Run when resolved capabilities say the actor can run', () => {
     mockCanRunWorkflows.value = false
+    mockPaymentRecoveryLock.value = 'owner'
     useBillingCapabilities().canRunWorkflows = computed(() => true)
     renderWrapper()
 
