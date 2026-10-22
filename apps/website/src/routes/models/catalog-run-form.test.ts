@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { detailSchema } from '@/config/models-page-data'
 import { workflowCloudRequest } from '@/config/workshop-workflow-api'
 import { getWorkshopPageDetail } from '@/config/workshop-page-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
 import { catalogPresentation } from '@/lib/cms/catalog-presentation'
 import {
   RUN_FOOTER,
@@ -81,6 +82,12 @@ describe('static Run form fallback on a Workshop slug', () => {
       fields: { runnable: false },
       footer: false,
       notice: false
+    },
+    {
+      shape: 'runnable set to false and catalog details that do not parse',
+      fields: { runnable: false, script_code: 'print("hi")' },
+      footer: false,
+      notice: false
     }
   ])(
     'a record with $shape shows Run form: $footer, mismatch notice: $notice',
@@ -103,6 +110,19 @@ describe('static Run form fallback on a Workshop slug', () => {
     })
     if (page.kind !== 'page') throw new Error('Expected a page')
     expect(page.model.form).toEqual(legacy.form)
+  })
+
+  it('opens with the prefilled example of the static page', async () => {
+    const legacy = getWorkshopPageDetail(`workflows/${STATIC_SLUG}`)
+    if (!legacy) throw new Error('Static workflow missing')
+    const { model } = await loadPage(
+      workflowRecord(STATIC_SLUG, {
+        examples: [{ name: 'record-example', title: 'Example', values: {} }]
+      })
+    )
+    const { values } = initialWorkshopPageState(model)
+    expect(values).toEqual(initialWorkshopPageState(legacy).values)
+    expect(values.prompt).toBeTruthy()
   })
 })
 
