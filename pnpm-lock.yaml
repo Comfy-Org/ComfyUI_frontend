@@ -483,7 +483,7 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
-  '@grpc/grpc-js@^1.9.0': ^1.13.6
+  '@grpc/grpc-js@^1.9.0': ^1.14.6
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
