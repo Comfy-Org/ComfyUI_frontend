@@ -489,9 +489,6 @@ export function registerAgentPanelExtension(): void {
       }
 
       let resumingAccept = false
-      // While `acceptAfterSignIn` is waiting in this page the record is its
-      // own; only a record that outlived a reload is resumed here. A signed-in
-      // user resumes at once; only "signed out" waits for auth to settle.
       function resumePendingAccept(): boolean {
         if (introductionStore.isContinuingSignIn || !hasPendingSignInAccept())
           return false
@@ -499,24 +496,17 @@ export function registerAgentPanelExtension(): void {
           if (isAuthInitialized.value) clearPendingSignInAccept()
           return false
         }
-        if (!resolvedUserInfo.value) return false
+        if (!resolvedUserInfo.value) return true
         resumingAccept = true
         void resumeAcceptAfterReload().finally(() => {
-          clearPendingSignInAccept()
           resumingAccept = false
-          loadConsentIfEligible()
+          if (!workspaceStore.isSwitching) loadConsentIfEligible(false)
         })
         return true
       }
 
-      const loadConsentIfEligible = (): void => {
+      function loadConsent(): void {
         const { introduceBeforeSignIn } = agentPanelStore.onboarding
-        if (
-          !agentPanelStore.enabled ||
-          (introduceBeforeSignIn && !isAuthInitialized.value)
-        )
-          return
-        if (resumingAccept || resumePendingAccept()) return
         if (introduceBeforeSignIn && !isLoggedIn.value) {
           offerWhenStartupDecided()
           return
@@ -540,13 +530,24 @@ export function registerAgentPanelExtension(): void {
             })
           })
       }
+      const loadConsentIfEligible = (resume = true): void => {
+        const { introduceBeforeSignIn } = agentPanelStore.onboarding
+        if (
+          !agentPanelStore.enabled ||
+          (introduceBeforeSignIn && !isAuthInitialized.value)
+        )
+          return
+        if (resumingAccept || (resume && resumePendingAccept())) return
+        loadConsent()
+      }
       watch(
         [
           () => resolvedUserInfo.value?.id,
           () => consentStore.identity,
-          () => isAuthInitialized.value
+          () => isAuthInitialized.value,
+          () => workspaceStore.isSwitching
         ],
-        loadConsentIfEligible
+        () => loadConsentIfEligible()
       )
 
       whenever(

@@ -1,70 +1,88 @@
 import { z } from 'zod'
 
-// A consent accepted while signed out waits on the sign-in dialog in memory.
-// Desktop can finish that sign-in outside the page and reload it while the
-// dialog is still open, which drops the wait, so the accept and the held
-// draft's text are also kept here: sessionStorage survives a same-window
-// reload and nothing else. References and attachments are not kept; they
-// point at live graph and upload state that a reload does not restore.
+import { createUuidv4 } from '@/utils/uuid'
+
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 const PENDING_SIGN_IN_ACCEPT_TTL_MS = 10 * 60 * 1000
 
 const zPendingSignInAccept = z.object({
+  id: z.string().optional(),
   draft: z.string(),
-  savedAt: z.number()
+  savedAt: z.number(),
+  scope: z
+    .object({ userId: z.string(), workspaceId: z.string().optional() })
+    .optional()
 })
-type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
+export type PendingSignInAccept = z.infer<typeof zPendingSignInAccept>
+type WriteResult =
+  | { ok: true; pending: PendingSignInAccept }
+  | { ok: false; error: unknown }
 
-function storage(): Storage | null {
+function save(record: PendingSignInAccept): WriteResult {
   try {
-    return window.sessionStorage
-  } catch {
-    return null
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record))
+    return { ok: true, pending: record }
+  } catch (error) {
+    return { ok: false, error }
   }
 }
 
-export function writePendingSignInAccept(draft: string): void {
-  const record: PendingSignInAccept = { draft, savedAt: Date.now() }
+export function writePendingSignInAccept(draft: string): WriteResult {
   try {
-    storage()?.setItem(STORAGE_KEY, JSON.stringify(record))
-  } catch {
-    // Storage full or blocked: the in-memory path still works without a reload.
+    return save({ id: createUuidv4(), draft, savedAt: Date.now() })
+  } catch (error) {
+    return { ok: false, error }
   }
 }
 
-export function clearPendingSignInAccept(): void {
+export function clearPendingSignInAccept(pending?: PendingSignInAccept): void {
   try {
-    storage()?.removeItem(STORAGE_KEY)
+    if (pending && !ownsPendingSignInAccept(pending)) return
+    window.sessionStorage.removeItem(STORAGE_KEY)
   } catch {
-    // Nothing to clear if storage is unavailable.
+    return
   }
+}
+
+export function ownsPendingSignInAccept(pending: PendingSignInAccept): boolean {
+  const current = readPendingSignInAccept()
+  return (
+    current !== null &&
+    current.id === pending.id &&
+    current.savedAt === pending.savedAt &&
+    current.draft === pending.draft
+  )
+}
+
+export function bindPendingSignInAccept(
+  pending: PendingSignInAccept,
+  scope: NonNullable<PendingSignInAccept['scope']>
+): WriteResult {
+  return save({ ...pending, scope })
 }
 
 export function hasPendingSignInAccept(): boolean {
-  try {
-    return storage()?.getItem(STORAGE_KEY) != null
-  } catch {
-    return false
-  }
+  return readPendingSignInAccept() !== null
 }
 
-/** Reads and removes the record; null when absent, malformed or expired. */
-export function takePendingSignInAccept(): PendingSignInAccept | null {
-  let raw: string | null | undefined
+export function readPendingSignInAccept(): PendingSignInAccept | null {
+  let raw: string | null
   try {
-    raw = storage()?.getItem(STORAGE_KEY)
+    raw = window.sessionStorage.getItem(STORAGE_KEY)
   } catch {
     return null
   }
-  clearPendingSignInAccept()
   if (!raw) return null
   try {
     const parsed = zPendingSignInAccept.safeParse(JSON.parse(raw))
-    if (!parsed.success) return null
-    const age = Date.now() - parsed.data.savedAt
-    if (age < 0 || age > PENDING_SIGN_IN_ACCEPT_TTL_MS) return null
-    return parsed.data
+    if (parsed.success) {
+      const age = Date.now() - parsed.data.savedAt
+      if (age >= 0 && age <= PENDING_SIGN_IN_ACCEPT_TTL_MS) return parsed.data
+    }
   } catch {
+    clearPendingSignInAccept()
     return null
   }
+  clearPendingSignInAccept()
+  return null
 }

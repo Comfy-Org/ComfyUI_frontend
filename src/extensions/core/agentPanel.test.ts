@@ -86,25 +86,28 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => {
-    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(
-        async (
-          _trigger: AgentConsentTrigger,
-          onAccept: () => void,
-          hooks?: ConsentOfferHooks
-        ) => {
-          if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
-          onAccept()
-        }
-      ),
-      resumeAcceptAfterReload: vi.fn(async () => {})
-    })
-    const CONSENT_DIALOG_KEY = 'agent-consent' as const
-    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
+  {
+    spy: true
   }
 )
+
+const mockedConsent = fromPartial<ReturnType<typeof useAgentConsent>>({
+  withConsent: vi.fn(
+    async (
+      _trigger: AgentConsentTrigger,
+      onAccept: () => void,
+      hooks?: ConsentOfferHooks
+    ) => {
+      if (hooks?.canShow?.() === false) return
+      hooks?.onShown?.()
+      onAccept()
+    }
+  ),
+  resumeAcceptAfterReload: vi.fn(async () => {})
+})
+let resumeAcceptAfterReload: ReturnType<
+  typeof useAgentConsent
+>['resumeAcceptAfterReload']
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -213,6 +216,8 @@ describe('AgentPanel extension flag gate', () => {
       () => isAuthInitialized.value
     )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
+    resumeAcceptAfterReload = useAgentConsent().resumeAcceptAfterReload
+    vi.mocked(useAgentConsent).mockReturnValue(mockedConsent)
     mocks.isCloud = true
     mocks.isDesktop = false
     setupScope = effectScope()
@@ -2249,15 +2254,15 @@ describe('AgentPanel extension flag gate', () => {
 
       await loadEntryAndSetup()
       Object.assign(consentStore, { identity: 'account-a/workspace-b' })
-      await flush()
+      await nextTick()
       expect(resume).toHaveBeenCalledOnce()
       expect(consentStore.load).not.toHaveBeenCalled()
 
       finishResume()
-      await flush()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
       expect(resume).toHaveBeenCalledOnce()
       expect(consentStore.load).toHaveBeenCalledOnce()
-      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
     })
 
     it('waits for the signed-in account to resolve', async () => {
@@ -2265,7 +2270,6 @@ describe('AgentPanel extension flag gate', () => {
       currentUser.value = null
 
       await loadEntryAndSetup()
-      await flush()
 
       expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
@@ -2276,7 +2280,6 @@ describe('AgentPanel extension flag gate', () => {
       isAuthInitialized.value = false
 
       await loadEntryAndSetup()
-      await flush()
 
       expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
@@ -2286,7 +2289,6 @@ describe('AgentPanel extension flag gate', () => {
       currentUser.value = null
 
       await loadEntryAndSetup()
-      await flush()
 
       expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
@@ -2296,10 +2298,31 @@ describe('AgentPanel extension flag gate', () => {
       useAgentConsentIntroductionStore().isContinuingSignIn = true
 
       await loadEntryAndSetup()
-      await flush()
 
       expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
       expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('binds startup recovery before workspace readiness and invalidates it when the account changes', async () => {
+      Object.assign(workspaceStore, { isSwitching: true })
+      vi.mocked(useAgentConsent().resumeAcceptAfterReload).mockImplementation(
+        resumeAcceptAfterReload
+      )
+
+      await loadEntryAndSetup()
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        scope: { userId: 'account-a' }
+      })
+      expect(consentStore.load).not.toHaveBeenCalled()
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+      Object.assign(workspaceStore, { isSwitching: false })
+      await vi.waitFor(() =>
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      )
+
+      expect(consentStore.accept).not.toHaveBeenCalled()
     })
   })
 
