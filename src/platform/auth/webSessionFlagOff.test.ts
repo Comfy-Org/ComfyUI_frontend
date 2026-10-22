@@ -21,7 +21,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
