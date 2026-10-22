@@ -180,6 +180,7 @@ export type IWidget =
   | IRangeWidget
   | IVideoEditWidget
   | IResolutionPreviewWidget
+  | ITextOverlayPreviewWidget
   | IBoundingBoxesWidget
   | ILightInfoWidget
   | IColorsWidget
@@ -475,6 +476,14 @@ export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
   ratio_widget?: string
   megapixels_widget?: string
   multiple_widget?: string
+}
+
+export interface ITextOverlayPreviewWidget extends IBaseWidget<
+  null,
+  'textoverlaypreview'
+> {
+  type: 'textoverlaypreview'
+  value: null
 }
 
 export interface IResolutionPreviewWidget extends IBaseWidget<

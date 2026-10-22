@@ -84,10 +84,9 @@ import { useMouseInElement } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
-import { app } from '@/scripts/app'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import BatchNavigation from './BatchNavigation.vue'
 
@@ -96,11 +95,10 @@ const { widget, nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
-const node = computed(() => {
-  const locatorId = widget.nodeLocatorId
-  const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
-  return owner || app.canvas.graph?.getNodeById(nodeId)
-})
+const node = useWidgetHostNode(
+  () => widget,
+  () => nodeId
+)
 
 const { beforeImages, afterImages } = useImageCompareImages(node)
 
