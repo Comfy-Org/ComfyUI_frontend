@@ -24,7 +24,7 @@
       :class="
         cn(
           'size-7 rounded-lg bg-background shadow-lg',
-          'hover:shadow-[0_0_16px_0_color-mix(in_srgb,var(--color-foreground)_40%,transparent)]'
+          'hover:shadow-xl hover:ring-2 hover:ring-foreground/30'
         )
       "
       @click="openComposer"

@@ -25,10 +25,21 @@ const meta: Meta<typeof NodeAskAgentHover> = {
       },
       template: `
         <TooltipProvider :delay-duration="0">
-          <div
-            class="group/node relative h-28 w-80 rounded-xl bg-node-component-surface"
-          >
-            <story />
+          <div class="min-h-72 min-w-[780px] bg-background p-8">
+            <div
+              class="group/node relative w-80 rounded-xl border border-border bg-secondary text-foreground"
+            >
+              <div class="px-2 py-1.5 text-xs">ModelSamplingAuraFlow</div>
+              <div
+                class="rounded-b-xl px-3 py-2 text-xs text-muted-foreground"
+              >
+                <div class="flex justify-between">
+                  <span>model</span>
+                  <span>MODEL</span>
+                </div>
+              </div>
+              <story />
+            </div>
           </div>
         </TooltipProvider>
       `
