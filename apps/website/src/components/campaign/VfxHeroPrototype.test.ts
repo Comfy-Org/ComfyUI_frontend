@@ -81,7 +81,8 @@ it('keeps both hero clips paused after selecting another sample', async () => {
   const user = userEvent.setup()
   const { beforeVideo, afterVideo } = await renderReadyHero()
   await waitFor(() => expect(beforeVideo.paused).toBe(false))
-  await user.click(screen.getByRole('button', { name: /^Pause$/ }))
+  screen.getByRole('button', { name: /^Pause$/ }).focus()
+  await user.keyboard(' ')
   await waitFor(() => {
     expect(beforeVideo.paused).toBe(true)
     expect(afterVideo.paused).toBe(true)
@@ -96,7 +97,10 @@ it('keeps both hero clips paused after selecting another sample', async () => {
 
   expect(beforeVideo.paused).toBe(true)
   expect(selectedVideo.paused).toBe(true)
-  expect(screen.getByRole('button', { name: /^Play$/ })).toBeVisible()
+  expect(screen.getByRole('button', { name: /^Play$/ })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  )
 })
 
 it('lets reduced-motion visitors play both clips and keeps that choice after selection', async () => {
@@ -104,7 +108,8 @@ it('lets reduced-motion visitors play both clips and keeps that choice after sel
   motion.reduced = true
   const { beforeVideo, afterVideo } = await renderReadyHero('zh-CN')
   expect(beforeVideo.paused).toBe(true)
-  await user.click(screen.getByRole('button', { name: /^播放$/ }))
+  screen.getByRole('button', { name: /^播放$/ }).focus()
+  await user.keyboard(' ')
   await waitFor(() => {
     expect(beforeVideo.paused).toBe(false)
     expect(afterVideo.paused).toBe(false)
@@ -120,7 +125,10 @@ it('lets reduced-motion visitors play both clips and keeps that choice after sel
     expect(beforeVideo.paused).toBe(false)
     expect(selectedVideo.paused).toBe(false)
   })
-  expect(screen.getByRole('button', { name: /^暂停$/ })).toBeVisible()
+  expect(screen.getByRole('button', { name: /^暂停$/ })).toHaveAttribute(
+    'aria-pressed',
+    'false'
+  )
 })
 
 it('resumes a new hero sample after a media failure when the visitor has not paused', async () => {
@@ -146,7 +154,8 @@ it('does not move the comparison divider when playback is toggled', async () => 
   const user = userEvent.setup()
   await renderReadyHero()
 
-  await user.click(screen.getByRole('button', { name: /^Pause$/ }))
+  screen.getByRole('button', { name: /^Pause$/ }).focus()
+  await user.keyboard(' ')
 
   expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '50')
 })

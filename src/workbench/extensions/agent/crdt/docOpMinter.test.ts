@@ -219,6 +219,7 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let docDefinitionIds: Set<string>
   let graphAvailable: boolean
   let unbound: boolean
   let refusals: Array<[string, string]>
@@ -233,6 +234,7 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     mayWrite = true
+    docDefinitionIds = new Set()
     graphAvailable = true
     unbound = false
     refusals = []
@@ -246,6 +248,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
     })
@@ -256,6 +259,31 @@ describe('attachDocOpMinter', () => {
     for (const doc of seededPromotedDocs) {
       if (!doc.isDestroyed) doc.destroy()
     }
+  })
+
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
   })
 
   describe('mints one op per graph command', () => {
@@ -543,6 +571,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: () => null,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
 
@@ -1687,6 +1716,84 @@ describe('attachDocOpMinter', () => {
     expect(minted[0]).not.toHaveProperty('promoted')
   })
 
+  function handAddedPromotedHost() {
+    const inner = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(inner.id, inner)
+    const outer = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(outer.id, outer)
+    withGraphIntentSource('load', () => {
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      outer.add(interior)
+      outer.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    const doc = mintDocFrom(graph)
+    seededPromotedDocs.add(doc)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    const host = createTestSubgraphNode(outer)
+    graph.add(host)
+    return { host, inner, outer, doc }
+  }
+
+  it('defines a hand-added host’s subgraphs the document lacks, so its promoted write places', async () => {
+    const { host, inner, outer, doc } = handAddedPromotedHost()
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', inner.id, outer.id])
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      promotedNames: ['text']
+    })
+
+    minted = []
+    host.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 0 })
+      })
+    ])
+    expect(refusals).toEqual([])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+  })
+
+  it('keeps the add and skips a definition that cannot serialize, with its dependents', async () => {
+    const { inner } = handAddedPromotedHost()
+    vi.spyOn(inner, 'asSerialisable').mockImplementation(() => {
+      throw new Error('extension serializer failed')
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(['add_node'])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: inner.id }
+      })
+    )
+  })
+
+  it('does not redefine a subgraph the document already holds', async () => {
+    const { inner, outer } = handAddedPromotedHost()
+    docDefinitionIds.add(inner.id)
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', outer.id])
+  })
+
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
     // Built the way useNodeProgressText builds it: `serialize: false` and
@@ -2047,21 +2154,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
@@ -2383,88 +2496,151 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     return node
   }
 
-  it('declares the order when an extension adds a value widget the definition does not describe', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
-    )
-    const node = nodeWith('Display Int', (n) => {
-      n.addInput('input', 'INT')
-      n.addWidget('text', 'output', '', () => {})
-      n.addWidget('button', 'copy', 'copy', () => {})
-    })
+  it.for([
+    {
+      case: 'an extension widget the definition does not describe',
+      definitions: [
+        nodeDef('Display Int', {
+          input: ['INT', { forceInput: true }]
+        })
+      ],
+      type: 'Display Int',
+      build: (n: LGraphNode) => {
+        n.addInput('input', 'INT')
+        n.addWidget('text', 'output', '', () => {})
+        n.addWidget('button', 'copy', 'copy', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'widgets the definition fully describes',
+      definitions: [nodeDef('Described', { steps: ['INT', {}] })],
+      type: 'Described',
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      },
+      values: { steps: 20 },
+      order: ['steps']
+    },
+    {
+      case: 'a companion linked to a described widget',
+      definitions: [nodeDef('Seeded', { seed: ['INT', {}] })],
+      type: 'Seeded',
+      build: (n: LGraphNode) => {
+        const seed = n.addWidget('number', 'seed', 1, () => {})
+        const control = n.addWidget(
+          'combo',
+          'control_after_generate',
+          'fixed',
+          () => {},
+          { values: ['fixed', 'randomize'] }
+        )
+        seed.linkedWidgets = [control]
+      },
+      values: { seed: 1, control_after_generate: 'fixed' },
+      order: ['seed', 'control_after_generate']
+    },
+    {
+      case: 'a class with no definition',
+      definitions: [],
+      type: 'Undefined Class',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'output', '', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'integer-like widget names',
+      definitions: [],
+      type: 'Integer Names',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', '2', 'two', () => {})
+        n.addWidget('text', '1', 'one', () => {})
+      },
+      values: { '2': 'two', '1': 'one' },
+      order: ['2', '1']
+    }
+  ])(
+    'declares the live widget order for $case',
+    ({ definitions, type, build, values, order }) => {
+      useNodeDefStore().updateNodeDefs(definitions)
+      const node = nodeWith(type, build)
 
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values: { output: '' },
-      widgets_values_form: { order: ['output'] }
-    })
-  })
+      expect(wireNodeSnapshot(node)).toMatchObject({
+        widgets_values: values,
+        widgets_values_form: { order }
+      })
+    }
+  )
 
-  it('declares every value widget, described ones included, once one is not', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Mixed', { steps: ['INT', {}] }))
-    const node = nodeWith('Mixed', (n) => {
-      n.addWidget('number', 'steps', 20, () => {})
-      n.addWidget('text', 'preview', 'x', () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values: { steps: 20, preview: 'x' },
-      widgets_values_form: { order: ['steps', 'preview'] }
-    })
-  })
-
-  it('keeps the catalog path when every widget is a definition input', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
-    const node = nodeWith('Described', (n) => {
-      n.addWidget('number', 'steps', 20, () => {})
-    })
+  it.for([
+    {
+      case: 'a dynamic combo input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'a dynamic group input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICGROUP_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.0.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'an autogrow input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_AUTOGROW_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'no value widgets',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('button', 'refresh', 'refresh', () => {})
+      }
+    },
+    {
+      case: 'an unnamed value widget',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', '', 'b', () => {})
+      }
+    },
+    {
+      case: 'two value widgets sharing a name',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'prompt', 'b', () => {})
+      }
+    },
+    {
+      case: 'a stored value whose widget its serializer removed',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'extra', 'b', () => {})
+        new LGraph().add(n)
+        n.onSerialize = () => {
+          n.widgets?.pop()
+        }
+      }
+    }
+  ])('declares no form for a node with $case', ({ definition, build }) => {
+    useNodeDefStore().addNodeDef(definition)
+    const node = nodeWith('Dynamic', build)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 
-  it('treats a companion linked to a described widget as described', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Seeded', { seed: ['INT', {}] }))
-    const node = nodeWith('Seeded', (n) => {
-      const seed = n.addWidget('number', 'seed', 1, () => {})
-      const control = n.addWidget(
-        'combo',
-        'control_after_generate',
-        'fixed',
-        () => {},
-        { values: ['fixed', 'randomize'] }
-      )
-      seed.linkedWidgets = [control]
-    })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('treats a dynamic child named under a definition input as described', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
-    )
-    const node = nodeWith('Dynamic', (n) => {
-      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-      n.addWidget('number', 'mode.steps', 4, () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares the order when an extension widget shares a forceInput name', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Any', { source: ['*', { forceInput: true }] })
-    )
-    const node = nodeWith('Display Any', (n) => {
-      n.addInput('source', '*')
-      n.addWidget('text', 'source', '', () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values_form: { order: ['source'] }
-    })
-  })
-
-  it('declares nothing for a node built by the real widget constructors', () => {
+  it('declares the form for a node built by the real widget constructors', () => {
     const required = {
       seed: ['INT', { default: 1, control_after_generate: true }],
       sampler_name: [['euler', 'dpmpp_2m'], {}],
@@ -2479,27 +2655,12 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         )
     })
 
-    expect(Object.keys(wireNodeSnapshot(node)?.widgets_values ?? {})).toEqual(
-      expect.arrayContaining(['seed', 'sampler_name'])
-    )
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares the order when an extension widget shares a socket-only input name', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Image', { source: ['IMAGE', {}] })
-    )
-    const node = nodeWith('Display Image', (n) => {
-      n.addInput('source', 'IMAGE')
-      n.addWidget('text', 'source', '', () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values_form: { order: ['source'] }
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['seed', 'control_after_generate', 'sampler_name']
     })
   })
 
-  it('drops a form the node carried in from a loaded projection when none applies', () => {
+  it('replaces a form the node carried in from a loaded projection with its live order', () => {
     useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
     const node = nodeWith('Described', (n) => {
       n.addWidget('number', 'steps', 20, () => {})
@@ -2509,71 +2670,114 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         widgets_values_form: { order: ['steps', 'gone'] }
       })
     )
-    expect(node.serialize()).toHaveProperty('widgets_values_form')
 
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares nothing for a class with no definition', () => {
-    const node = nodeWith('Undefined Class', (n) => {
-      n.addWidget('text', 'output', '', () => {})
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['steps']
     })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 
-  it('declares nothing when the node has no value widgets', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Buttons', {}))
-    const node = nodeWith('Buttons', (n) => {
-      n.addWidget('button', 'refresh', 'refresh', () => {})
-    })
+  it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+    {
+      catalogCase: 'lists no widgets for the class',
+      catalog: { types: { Described: { widget_order: [] } } }
+    },
+    {
+      catalogCase: 'does not list the class',
+      catalog: { types: {} }
+    }
+  ])(
+    'mints a described node the applier accepts when the catalog $catalogCase',
+    ({ catalog }) => {
+      useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+      const node = nodeWith('Described', (n) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      })
+      const snapshot = wireNodeSnapshot(node)!
+      const doc = mint({ nodes: [], links: [] }, catalog)
 
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
+      const result = applyOps(
+        doc,
+        mintWireOps(
+          [
+            {
+              op: 'add_node',
+              node_id: snapshot.id,
+              class_type: snapshot.type,
+              pos: [0, 0],
+              node: snapshot
+            }
+          ],
+          {
+            actor: 'human:user:tab',
+            baseVersion: 1
+          }
+        ),
+        catalog
+      )
 
-  it('mints a declared node the applier accepts against a catalog that lists no widgets', () => {
+      expect(result.outcomes).toEqual([
+        expect.objectContaining({ outcome: 'applied' })
+      ])
+      expect(project(doc, catalog).nodes).toEqual([
+        expect.objectContaining({
+          type: 'Described',
+          widgets_values: { steps: 20 },
+          widgets_values_form: { order: ['steps'] }
+        })
+      ])
+      doc.destroy()
+    }
+  )
+
+  it('keeps a catalogued dynamic combo writable after its selection changes', () => {
     useNodeDefStore().addNodeDef(
-      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
-    const node = nodeWith('Display Int', (n) => {
-      n.addInput('input', 'INT')
-      n.addWidget('text', 'output', '', () => {})
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
     })
-    const snapshot = wireNodeSnapshot(node)!
     const catalog: WidgetCatalog = {
-      types: { 'Display Int': { widget_order: [] } }
+      types: {
+        Dynamic: {
+          widget_order: ['mode', 'mode.steps'],
+          dynamic_combos: {
+            mode: {
+              default: 'a',
+              options: {
+                a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+              }
+            }
+          }
+        }
+      }
     }
     const doc = mint({ nodes: [], links: [] }, catalog)
+    const operations: GraphOperation[] = [
+      {
+        op: 'add_node',
+        node_id: node.id,
+        class_type: 'Dynamic',
+        pos: [0, 0],
+        node: wireNodeSnapshot(node)!
+      },
+      { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
+      { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
+    ]
 
-    const result = applyOps(
+    const { outcomes } = applyOps(
       doc,
-      mintWireOps(
-        [
-          {
-            op: 'add_node',
-            node_id: snapshot.id,
-            class_type: snapshot.type,
-            pos: [0, 0],
-            node: snapshot
-          }
-        ],
-        {
-          actor: 'human:user:tab',
-          baseVersion: 1
-        }
-      ),
+      mintWireOps(operations, { actor: 'human:user:tab', baseVersion: 1 }),
       catalog
     )
 
-    expect(result.outcomes).toEqual([
-      expect.objectContaining({ outcome: 'applied' })
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied',
+      'applied',
+      'applied'
     ])
-    expect(project(doc, catalog).nodes).toEqual([
-      expect.objectContaining({
-        type: 'Display Int',
-        widgets_values: { output: '' },
-        widgets_values_form: { order: ['output'] }
-      })
-    ])
+    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
   })
 })

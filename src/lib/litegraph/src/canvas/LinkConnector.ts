@@ -17,6 +17,7 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { EventListeners } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type { LinkSegment, Point } from '@/lib/litegraph/src/interfaces'
 import type {
@@ -1165,8 +1166,8 @@ export class LinkConnector {
    */
   listenUntilReset<K extends keyof LinkConnectorEventMap>(
     eventName: K,
-    listener: Parameters<typeof this.events.addEventListener<K>>[1],
-    options?: Parameters<typeof this.events.addEventListener<K>>[2]
+    listener: EventListeners<LinkConnectorEventMap>[K],
+    options?: boolean | AddEventListenerOptions
   ) {
     this.events.addEventListener(eventName, listener, options)
     this.events.addEventListener(

@@ -68,9 +68,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test.setTimeout(30_000)
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
 
+    await expect(
+      panel.getByRole('note').filter({
+        hasText: enMessages.agent.targetFollowsVisibleWorkflow
+      })
+    ).toBeVisible()
+    await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]

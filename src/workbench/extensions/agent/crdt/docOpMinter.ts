@@ -14,6 +14,7 @@
 import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
+  SubgraphDefinition,
   WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
@@ -28,12 +29,12 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -52,6 +53,7 @@ import {
 } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -88,6 +90,8 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /** Whether the bound document holds a subgraph definition by this id. */
+  docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
@@ -133,22 +137,7 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets. A node whose value
- * widgets the definition fully describes is checked against the pinned
- * catalog's `widget_order`; any other node also declares its own
- * `widgets_values_form` so the host accepts names the catalog lacks.
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
- *
- * `flags.ghost` is a placement-in-progress marker the placement click clears
- * without minting, so the document must not record it.
- */
+/** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -167,39 +156,36 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isVirtualNode) return snapshot
   const values = valueWidgetsOnly(node, named)
-  const form = undescribedWidgetForm(node, values)
+  const form = nodeLocalWidgetForm(node, values)
   return form
     ? { ...snapshot, widgets_values: values, widgets_values_form: form }
     : { ...snapshot, widgets_values: values }
 }
 
-function undescribedWidgetForm(
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+function nodeLocalWidgetForm(
   node: LGraphNode,
   values: Record<string, unknown>
 ): WidgetValuesForm | undefined {
-  const order = Object.keys(values)
-  if (order.length === 0) return undefined
   const definition = useNodeDefStore().fromLGraphNode(node)
-  if (!definition) return undefined
-  const linked = new Set(
-    (node.widgets ?? []).flatMap((widget) =>
-      (widget.linkedWidgets ?? []).map((companion) => companion.name)
-    )
+  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
+    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
   )
-  const widgetStore = useWidgetStore()
-  const isInput = (name: string) =>
-    Object.hasOwn(definition.inputs, name) &&
-    definition.inputs[name].forceInput !== true
-  const isWidgetInput = (name: string) => {
-    if (!isInput(name)) return false
-    const spec = definition.inputs[name]
-    return widgetStore.widgets.has(spec.widgetType ?? spec.type)
-  }
-  const described = (name: string) =>
-    isWidgetInput(name) ||
-    (name.includes('.') && isInput(name.split('.', 1)[0])) ||
-    linked.has(name)
-  return order.every(described) ? undefined : { order }
+  if (layoutDependsOnValues) return undefined
+  const order = (node.widgets ?? [])
+    .map((widget) => widget.name)
+    .filter((name) => Object.hasOwn(values, name))
+  const isClosed =
+    order.length > 0 &&
+    order.length === Object.keys(values).length &&
+    order.every((name) => name.length > 0) &&
+    new Set(order).size === order.length
+  return isClosed ? { order } : undefined
 }
 
 function valueWidgetsOnly(
@@ -465,12 +451,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (node.graph !== graph) return null
     const snapshot = wireNodeSnapshot(node)
     if (!snapshot) {
-      reportOnce(
-        `snapshot:${nodeKey(graph.id, node.id)}`,
-        'Agent node add has no snapshot',
-        'agent_crdt_node_snapshot_missing',
-        { graphId: graph.id, nodeId: node.id }
-      )
+      const key = `snapshot:${nodeKey(graph.id, node.id)}`
+      if (reported.has(key)) return null
+      reported.add(key)
+      reportLostEdit('mint_divergence', [{ op: 'add_node' }], {
+        code: 'missing_node_snapshot',
+        errorType: 'agent_crdt_node_snapshot_missing',
+        graphId: graph.id,
+        nodeId: node.id
+      })
       return null
     }
     return {
@@ -482,6 +471,52 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
+  function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
+    try {
+      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: subgraph.id }
+      })
+      return null
+    }
+  }
+
+  function mintMissingDefinitions(
+    hosts: readonly SubgraphNode[]
+  ): GraphOperation[] {
+    const operations: GraphOperation[] = []
+    const available = new Map<string, boolean>()
+    const define = (subgraph: Subgraph): boolean => {
+      const settled = available.get(subgraph.id)
+      if (settled !== undefined) return settled
+      available.set(subgraph.id, false)
+      const dependenciesAvailable = subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .map((node) => define(node.subgraph))
+        .every(Boolean)
+      if (deps.docHasSubgraphDefinition(subgraph.id)) {
+        available.set(subgraph.id, true)
+        return true
+      }
+      const definition = dependenciesAvailable
+        ? serialisedDefinition(subgraph)
+        : null
+      if (!definition) return false
+      operations.push({
+        op: 'define_subgraph',
+        subgraph_id: subgraph.id,
+        subgraph_definition: definition
+      })
+      available.set(subgraph.id, true)
+      return true
+    }
+    for (const host of hosts) define(host.subgraph)
+    return operations
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -489,13 +524,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
+    const hosts: SubgraphNode[] = []
     const operations = batch.flatMap((entry) => {
-      const operation =
-        entry.kind === 'op'
-          ? entry.operation
-          : mintAddNodeOperation(entry.graph, entry.node)
-      return operation ? [operation] : []
+      if (entry.kind === 'op') return [entry.operation]
+      const operation = mintAddNodeOperation(entry.graph, entry.node)
+      if (!operation) return []
+      if (entry.node.isSubgraphNode()) hosts.push(entry.node)
+      return [operation]
     })
+    operations.push(...mintMissingDefinitions(hosts))
     if (operations.length > 0) deps.enqueue(operations)
   }
 
@@ -556,7 +593,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
-      reportUnresolvedOwner(routed.unresolvedGraphId, event)
+      reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
       return
     }
     if ('reason' in routed) {
@@ -566,6 +603,21 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'op', operation: routed })
   }
 
+  function reportUnresolvedWidgetOwner(
+    graphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    if (reportedRefusals.has(key)) return
+    reportedRefusals.add(key)
+    reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
+      code: 'unresolvable_widget_owner',
+      errorType: 'agent_crdt_widget_owner_unresolved',
+      graphId,
+      nodeId: event.nodeId
+    })
+  }
+
   function takeHeldWrite(
     event: IntentOf<'set_widget'>
   ): HeldPromotedWrite | null {
@@ -573,19 +625,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const held = heldPromotedWrites.get(key) ?? null
     heldPromotedWrites.delete(key)
     return held
-  }
-
-  function reportUnresolvedOwner(
-    graphId: string,
-    event: IntentOf<'set_widget'>
-  ): void {
-    reportOnce(
-      `owner:${nodeKey(graphId, event.nodeId)}`,
-      'Agent widget write has an unresolvable owner',
-      'agent_crdt_widget_owner_unresolved',
-      { graphId, nodeId: event.nodeId },
-      reportedRefusals
-    )
   }
 
   function holdOrRefuseWidgetWrite(

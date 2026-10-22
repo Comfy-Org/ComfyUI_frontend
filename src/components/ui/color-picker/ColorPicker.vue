@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import {
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
-  PopoverTrigger
+  PopoverTrigger,
+  PopoverPortal
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
 import type { ColorPickerProps } from '@/components/ui/color-picker/types'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -65,7 +64,6 @@ const previewColor = computed(() => {
 const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
 const isOpen = ref(false)
-const contentStyle = useModalLiftedZIndex(isOpen)
 </script>
 
 <template>
@@ -118,14 +116,13 @@ const contentStyle = useModalLiftedZIndex(isOpen)
         </button>
       </slot>
     </PopoverTrigger>
-    <PopoverPortal>
+    <PopoverPortal :key="Number(isOpen)">
       <PopoverContent
         side="bottom"
         align="start"
         :side-offset="7"
         :collision-padding="10"
-        class="z-1700"
-        :style="contentStyle"
+        class="z-overlay"
       >
         <ColorPickerPanel
           v-model:hsva="hsva"

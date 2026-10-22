@@ -99,6 +99,12 @@ export function deleteLinks(
   })
 }
 
+export function getLinkStackMenuOptions(): IContextMenuValue<string>[] {
+  return [
+    { content: st('contextMenu.Show Links', 'Show Links'), value: 'Show Links' }
+  ]
+}
+
 export function getVisibleRerouteLink(
   graph: LGraph,
   reroute: Reroute

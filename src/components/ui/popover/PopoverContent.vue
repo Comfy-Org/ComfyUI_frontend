@@ -2,14 +2,13 @@
 import type { PopoverContentEmits, PopoverContentProps } from 'reka-ui'
 import {
   PopoverContent,
-  PopoverPortal,
   injectPopoverRootContext,
-  useForwardPropsEmits
+  useForwardPropsEmits,
+  PopoverPortal
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
@@ -32,17 +31,15 @@ const delegatedProps = computed(() => ({
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 const rootContext = injectPopoverRootContext()
-const contentStyle = useModalLiftedZIndex(rootContext.open)
 </script>
 
 <template>
-  <PopoverPortal>
+  <PopoverPortal :key="Number(restProps.forceMount || rootContext.open.value)">
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
-      :style="contentStyle"
       :class="
         cn(
-          'z-1700 w-72 rounded-md border bg-background p-4 text-foreground shadow-md outline-none',
+          'z-overlay w-72 rounded-md border bg-background p-4 text-foreground shadow-md outline-none',
           'data-[state=closed]:animate-out data-[state=open]:animate-in',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

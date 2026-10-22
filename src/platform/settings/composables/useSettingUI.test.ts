@@ -252,7 +252,10 @@ describe('useSettingUI', () => {
       })
     })
 
-    it('shows only Plan & Credits in the local Workspace group', () => {
+    it('keeps Plan & Credits on local when unified billing settings is off', () => {
+      env.state.isCloud = false
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+      vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
       const { findPanelByKey, navGroups } = useSettingUI()
       const workspaceItems = navGroups.value
         .find((group) => group.title === 'Workspace')
@@ -261,6 +264,25 @@ describe('useSettingUI', () => {
       expect(workspaceItems).toEqual([
         { id: 'workspace', label: 'PlanCredits' }
       ])
+      expect(findPanelByKey('workspace')?.props).toEqual({
+        section: 'planCredits'
+      })
+      expect(findPanelByKey('workspace-members')).toBeNull()
+      expect(findPanelByKey('workspace-allowlist')).toBeNull()
+    })
+
+    it('mounts the Billing tab on local when unified billing settings is on', () => {
+      env.state.isCloud = false
+      const flags = vi.mocked(useFeatureFlags().flags)
+      flags.unifiedBillingSettingsEnabled = true
+      flags.partnerNodeGovernanceEnabled = true
+      const { findPanelByKey, navGroups } = useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([{ id: 'workspace', label: 'Billing' }])
+      expect(findPanelByKey('workspace')?.props).toBeUndefined()
       expect(findPanelByKey('workspace-members')).toBeNull()
       expect(findPanelByKey('workspace-allowlist')).toBeNull()
     })

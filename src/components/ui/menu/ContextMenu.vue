@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import {
   DropdownMenuContent,
-  DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuPortal
 } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
@@ -39,7 +37,6 @@ const anchor = ref<EventTarget | null>(null)
 const anchorPointerDownWhileOpen = ref(false)
 const anchorPosition = ref({ x: 0, y: 0 })
 const showRequest = ref(0)
-const contentStyle = useModalLiftedZIndex(visible)
 
 function setOpen(value: boolean) {
   if (visible.value === value) return
@@ -80,7 +77,6 @@ useEventListener(
       target instanceof Node &&
       anchor.value instanceof Node &&
       anchor.value.contains(target)
-    if (anchorPointerDownWhileOpen.value) return
     if (
       !visible.value ||
       !(target instanceof Element) ||
@@ -133,7 +129,7 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(visible)">
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         :reference
@@ -145,7 +141,6 @@ defineExpose({ hide, show, toggle, visible })
             $attrs.class
           )
         "
-        :style="contentStyle"
         :side-offset="2"
         align="start"
         :update-position-strategy="reference ? 'always' : 'optimized'"

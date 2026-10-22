@@ -306,9 +306,11 @@ useExtensionService().registerExtension({
     ])
     return {
       LOAD_3D(node) {
-        const inputName = VIEWPORT_STATE_NODES.has(node.constructor.comfyClass)
-          ? 'viewport_state'
-          : 'image'
+        const { comfyClass } = node.constructor
+        const inputName =
+          comfyClass && VIEWPORT_STATE_NODES.has(comfyClass)
+            ? 'viewport_state'
+            : 'image'
         const hasModelFileWidget = node.widgets?.some(
           (w) => w.name === 'model_file'
         )

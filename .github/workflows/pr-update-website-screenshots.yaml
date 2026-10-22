@@ -113,6 +113,7 @@ jobs:
     with:
       ready: ${{ needs.plan.outputs.run-id != '' || needs.update-screenshots.result == 'success' }}
       unavailable: ${{ needs.plan.outputs.unavailable }}
+      missing: ${{ needs.plan.outputs.missing }}
       pr-number: ${{ github.event.issue.number || github.event.pull_request.number }}
       branch: ${{ needs.plan.outputs.branch }}
       head-sha: ${{ needs.plan.outputs.head-sha }}

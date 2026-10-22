@@ -57,7 +57,13 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": [
+    "color-conversion",
+    "design-system",
+    "dialog-host",
+    "graph-model",
+    "vue-node-widgets"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
