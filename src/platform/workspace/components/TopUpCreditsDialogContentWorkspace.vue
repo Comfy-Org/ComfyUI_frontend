@@ -919,6 +919,23 @@ function stopPayRetryOnCardReturn() {
   stopDefaultCardReturnRefresh = null
 }
 
+function armPayRetryAfterNextDeparture() {
+  stopPayRetryOnCardReturn()
+  const arm = () => {
+    stopPayRetryOnCardReturn()
+    armPayRetryOnCardReturn()
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') arm()
+  }
+  window.addEventListener('blur', arm)
+  document.addEventListener('visibilitychange', onVisibility)
+  stopDefaultCardReturnRefresh = () => {
+    window.removeEventListener('blur', arm)
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
+}
+
 function armPayRetryOnCardReturn() {
   stopPayRetryOnCardReturn()
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
@@ -929,9 +946,11 @@ function armPayRetryOnCardReturn() {
     const attempt = purchaseAttempt
     await handleBuy()
     if (unmounted) return
-    if (purchaseAttempt === attempt || checkoutRecovery.value === 'refused') {
-      armPayRetryOnCardReturn()
+    if (checkoutRecovery.value === 'refused') {
+      armPayRetryAfterNextDeparture()
+      return
     }
+    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
   })
 }
 

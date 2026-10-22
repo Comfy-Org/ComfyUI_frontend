@@ -1422,6 +1422,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
         expect(useToast().error).not.toHaveBeenCalled()
         expect(listCards).not.toHaveBeenCalled()
+        window.dispatchEvent(new Event('focus'))
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
 
         vi.mocked(mockBillingContext().topup).mockResolvedValue(
           topupResponse('completed')
