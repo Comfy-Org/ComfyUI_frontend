@@ -22,6 +22,11 @@ export function isCatalogMediaPath(value: string): boolean {
   return CATALOG_MEDIA_PATH.test(value)
 }
 
+/** Same-origin catalog paths need the visitor's session; every other source is fetched anonymously. */
+export function exampleMediaCredentials(source: string): RequestCredentials {
+  return isCatalogMediaPath(source) ? 'same-origin' : 'omit'
+}
+
 export function workshopExampleFile(
   source: string,
   fallbackType = 'application/octet-stream'

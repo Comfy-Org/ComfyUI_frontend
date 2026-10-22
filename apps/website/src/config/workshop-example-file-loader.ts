@@ -3,7 +3,7 @@ import type { FileValue } from './workshop-playground'
 
 import {
   WORKSHOP_EXAMPLE_MIME_TYPES,
-  isCatalogMediaPath,
+  exampleMediaCredentials,
   workshopExampleFile
 } from './workshop-example-file'
 
@@ -25,7 +25,7 @@ export async function loadWorkshopExampleFile(
   ])
   const response = await fetch(value.sourceUrl, {
     signal: requestSignal,
-    credentials: isCatalogMediaPath(value.sourceUrl) ? 'same-origin' : 'omit',
+    credentials: exampleMediaCredentials(value.sourceUrl),
     redirect: 'error'
   })
   if (

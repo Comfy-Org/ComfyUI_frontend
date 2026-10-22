@@ -413,6 +413,21 @@ function uploadsCatalogMedia(field: FieldSchema, value: FormValues[string]) {
   )
 }
 
+function inputSchemaRejects(field: FieldSchema, value: FormValues[string]) {
+  if (
+    !field.inputSchema ||
+    field.kind === 'file' ||
+    uploadsCatalogMedia(field, value)
+  )
+    return false
+  if (field.kind === 'text' && field.valueType === 'json')
+    return !(
+      typeof value === 'string' &&
+      parseWorkshopJsonInput(value, field.inputSchema).success
+    )
+  return !validateWorkshopInput(value, field.inputSchema)
+}
+
 export function validateForm(
   schema: readonly FieldSchema[],
   values: FormValues
@@ -484,19 +499,8 @@ export function validateForm(
     } else if (typeof value !== 'boolean') {
       errors[field.name] = 'badType'
     }
-    if (
-      !Object.hasOwn(errors, field.name) &&
-      field.inputSchema &&
-      field.kind !== 'file' &&
-      !uploadsCatalogMedia(field, value)
-    ) {
-      const result =
-        field.kind === 'text' && field.valueType === 'json'
-          ? typeof value === 'string' &&
-            parseWorkshopJsonInput(value, field.inputSchema).success
-          : validateWorkshopInput(value, field.inputSchema)
-      if (!result) errors[field.name] = 'rejected'
-    }
+    if (!Object.hasOwn(errors, field.name) && inputSchemaRejects(field, value))
+      errors[field.name] = 'rejected'
   }
   for (const field of schema) {
     const constraint = field.presentation?.formConstraint
