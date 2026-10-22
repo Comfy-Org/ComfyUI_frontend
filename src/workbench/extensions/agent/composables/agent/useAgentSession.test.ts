@@ -406,7 +406,6 @@ async function restoredTurnStaysStreaming(
   return streaming
 }
 
-
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
