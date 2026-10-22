@@ -75,7 +75,11 @@
       <PartnerNodesRunCaption v-if="!isDocked" />
     </div>
 
-    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+    <Teleport
+      v-if="inlineProgressTarget"
+      :key="isDocked ? 'docked' : 'floating'"
+      :to="inlineProgressTarget"
+    >
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
         radius-class="rounded-xl"
