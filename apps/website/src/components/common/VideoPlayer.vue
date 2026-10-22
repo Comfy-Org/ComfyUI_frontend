@@ -381,6 +381,8 @@ function toggleFullscreen() {
       />
     </video>
 
+    <slot />
+
     <div
       v-if="src && isPreview && !hideControls"
       class="pointer-events-none absolute inset-0 flex items-center justify-center"

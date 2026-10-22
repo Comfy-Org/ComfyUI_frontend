@@ -1,4 +1,4 @@
-import { normalizeLightsValue } from '@/extensions/core/lightInfo/lightsValue'
+import { normalizeLightsValue } from '@comfyorg/viewport3d/lightInfo/lightsValue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'

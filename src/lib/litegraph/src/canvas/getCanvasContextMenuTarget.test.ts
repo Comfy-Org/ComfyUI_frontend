@@ -185,7 +185,7 @@ describe('getCanvasContextMenuTarget', () => {
   it('returns a hidden link hit on its badge', () => {
     const link = createLink(5)
     hide(link)
-    const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+    layoutHiddenLinkBadges(canvas, canvas.ctx, [
       {
         link,
         presentation: { hidden: true },
@@ -194,14 +194,40 @@ describe('getCanvasContextMenuTarget', () => {
         color: '#cab8ff'
       }
     ])
-    for (const layout of layouts.values()) {
-      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
-    }
+    drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
     const target = resolve()
 
     expect(target.group).toBe(group)
     expect(target.link).toBe(link)
     expect(mockQueryLinkSegmentAtPoint).not.toHaveBeenCalled()
+  })
+
+  it('returns the still-hidden links of a stack hit on its pill', () => {
+    const links = [5, 6, 7].map((id) => {
+      const link = new LLink(toLinkId(id), 'MODEL', 4, 0, id, 0)
+      graph.links.set(link.id, link)
+      hide(link)
+      return link
+    })
+    layoutHiddenLinkBadges(
+      canvas,
+      canvas.ctx,
+      links.map((link) => ({
+        link,
+        presentation: { hidden: true },
+        startPos: [-10, 20],
+        endPos: [200, 20],
+        color: '#cab8ff'
+      }))
+    )
+    useLinkPresentationStore().patch(graphScopeOf(graph), links[2].id, {
+      hidden: false
+    })
+
+    const target = resolve()
+
+    expect(target.stackedLinks).toEqual([links[0], links[1]])
+    expect(target.link).toBeUndefined()
   })
 
   it('skips a revealed hidden curve and returns the visible link behind it', () => {
@@ -251,7 +277,7 @@ describe('getCanvasContextMenuTarget', () => {
     const link = createLink(5)
     hide(link)
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    const layouts = layoutHiddenLinkBadges(canvas, canvas.ctx, [
+    layoutHiddenLinkBadges(canvas, canvas.ctx, [
       {
         link,
         presentation: { hidden: true },
@@ -260,9 +286,7 @@ describe('getCanvasContextMenuTarget', () => {
         color: '#cab8ff'
       }
     ])
-    for (const layout of layouts.values()) {
-      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
-    }
+    drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
 
     const target = resolve()
 

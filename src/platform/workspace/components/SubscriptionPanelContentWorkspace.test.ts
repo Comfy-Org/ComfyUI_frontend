@@ -140,28 +140,25 @@ const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
 })
 
 type MenuUiConfig = {
-  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
 const ownerUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: true,
   workspaceMenuAction: 'delete',
   workspaceMenuDisabledTooltip:
     'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
 }
 const memberUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: false,
   workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const personalUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: true,
   workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
+const mockCanEditWorkspace = ref(true)
 
 const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
 const mockPlanSlug = ref('team-monthly')
@@ -305,6 +302,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().leaveWorkspaceDenial = computed(() =>
       mockCanLeaveWorkspace.value ? undefined : 'personal_workspace_creator'
     )
+    useBillingCapabilities().canEditWorkspace = computed(() =>
+      receiveServerFact('can_edit_workspace', mockCanEditWorkspace.value)
+    )
     workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
@@ -353,6 +353,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
+    mockCanEditWorkspace.value = true
     mockSubscriptionTier.value = 'PRO'
     mockPlanSlug.value = 'team-monthly'
     mockHasTeamPlan.value = true
@@ -369,6 +370,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
     })
+  })
+
+  it('does not render Activating or Contact sales on the Plan & credits panel', () => {
+    mockSubscriptionStatus.value = 'active'
+    renderComponent()
+
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps verification available in settings without exposing its URL', async () => {
@@ -887,6 +901,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
@@ -1497,6 +1512,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       () => 'not_workspace_owner'
     )
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
@@ -1523,6 +1539,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().canChangeSeats = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))

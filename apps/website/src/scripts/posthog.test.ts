@@ -1237,3 +1237,27 @@ describe('shared auth telemetry events', () => {
     )
   })
 })
+
+describe('VFX lead conversion', () => {
+  it('uses the dedicated completed-lead event with campaign metadata', async () => {
+    vi.resetModules()
+    const { initPostHog, captureVfxLeadSubmitted } = await import('./posthog')
+    initPostHog()
+    hoisted.mockCapture.mockClear()
+    captureVfxLeadSubmitted({
+      form_id: 'contact-en',
+      landing_version: 'v3',
+      interest: 'vfx',
+      utm_source: 'linkedin'
+    })
+    expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+      'website:vfx_lead_submitted',
+      {
+        form_id: 'contact-en',
+        landing_version: 'v3',
+        interest: 'vfx',
+        utm_source: 'linkedin'
+      }
+    )
+  })
+})

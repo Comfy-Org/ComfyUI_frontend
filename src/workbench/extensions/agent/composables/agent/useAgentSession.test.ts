@@ -26,35 +26,34 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
   zAgentWsEvent
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError,
   createAgentRestClient
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
-import type { AskUserResolution } from '../../services/agent/agentMessageParts'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))
@@ -73,7 +72,10 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
+      status: 'complete',
+      threads: []
+    })),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -1916,13 +1918,23 @@ describe('useAgentSession (v1 composition root)', () => {
       events: fakeEvents().source
     })
     session.start()
+    const onAccepted = vi.fn()
 
-    const send = session.sendMessage('late reply')
+    const send = session.sendMessage(
+      'late reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      onAccepted
+    )
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
     session.stop()
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
+    expect(onAccepted).toHaveBeenCalledOnce()
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
@@ -4803,6 +4815,28 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the kind and stored preview on a sent EXR', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this plate', [
+      {
+        ref: 'a1b2c3',
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/stored-preview.png'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ kind: 'image', previewUrl: '/stored-preview.png' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 
@@ -6794,31 +6828,6 @@ describe('thread resume (B17)', () => {
     session.start()
 
     expect(await session.loadThread('th-history')).toBe(false)
-  })
-
-  it('listThreads returns the REST client thread list', async () => {
-    const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          created_at: '2026-07-07T00:00:00Z',
-          id: 'th-9',
-          last_message_at: '2026-07-07T00:00:00Z',
-          message_count: 2,
-          preview: 'build a duck',
-          status: 'active',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z',
-          workflow_id: 'wf-9'
-        }
-      ]
-    )
-    const session = useAgentSession({
-      rest: fakeRest({ listThreads }),
-      events: fakeEvents().source
-    })
-    const threads = await session.listThreads()
-    expect(threads).toHaveLength(1)
-    expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
   })
 })
 

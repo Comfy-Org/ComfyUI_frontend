@@ -1,175 +1,24 @@
 <template>
-  <div
-    class="widget-expands flex size-full flex-col gap-1 select-none"
-    data-testid="bounding-boxes"
-    @pointerdown.stop
-  >
-    <div class="flex flex-col">
-      <div
-        class="flex h-9 items-center gap-1 rounded-t-sm border border-b-0 border-node-border bg-input px-2"
-      >
-        <Button
-          variant="textonly"
-          size="unset"
-          :aria-pressed="grid"
-          :class="
-            cn('shrink-0 gap-1.5 rounded-md px-2 py-1', grid && 'bg-muted')
-          "
-          @click="grid = !grid"
-        >
-          <i class="icon-[lucide--grid-3x3] size-4" />
-          <span>{{ $t('boundingBoxes.grid') }}</span>
-        </Button>
-        <WidgetHistoryButtons
-          class="ml-auto"
-          :can-undo
-          :can-redo
-          @undo="undo"
-          @redo="redo"
-        />
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="actionBtnClass"
-          @click="clearAll"
-        >
-          <i class="icon-[lucide--trash-2] size-4" />
-          <span>{{ $t('boundingBoxes.clearAll') }}</span>
-        </Button>
-      </div>
-      <div
-        ref="canvasContainer"
-        class="relative w-full shrink-0 overflow-hidden rounded-b-sm border border-t-0 border-node-border bg-background"
-        :style="canvasStyle"
-      >
-        <canvas
-          ref="canvasEl"
-          tabindex="0"
-          class="absolute inset-0 size-full rounded-sm outline-none"
-          :style="{ cursor: canvasCursor }"
-          @pointerdown="onPointerDown"
-          @pointermove="onCanvasPointerMove"
-          @pointerup="onDocPointerUp"
-          @pointercancel="onDocPointerUp"
-          @pointerleave="onPointerLeave"
-          @lostpointercapture="onDocPointerUp"
-          @dblclick="onDoubleClick"
-          @keydown="onCanvasKeyDown"
-          @focus="focused = true"
-          @blur="focused = false"
-        />
-        <textarea
-          v-if="inlineEditor"
-          ref="inlineEditorEl"
-          v-model="inlineEditor.value"
-          class="absolute resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
-          :style="inlineEditor.style"
-          data-capture-wheel="true"
-          @keydown.stop="onInlineKeyDown"
-          @blur="commitInlineEditor"
-        />
-      </div>
-    </div>
-
-    <div v-if="activeRegion" class="flex flex-col gap-2 rounded-sm bg-node p-2">
-      <div class="flex h-8 items-center gap-1 rounded-sm bg-input p-1">
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="
-            cn(
-              'flex-1 self-stretch px-2 text-xs transition-colors',
-              activeRegion.type === 'obj'
-                ? 'rounded-sm bg-muted text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )
-          "
-          @click="setActiveType('obj')"
-        >
-          {{ $t('boundingBoxes.typeObj') }}
-        </Button>
-        <Button
-          variant="textonly"
-          size="unset"
-          :class="
-            cn(
-              'flex-1 self-stretch px-2 text-xs transition-colors',
-              activeRegion.type === 'text'
-                ? 'rounded-sm bg-muted text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            )
-          "
-          @click="setActiveType('text')"
-        >
-          {{ $t('boundingBoxes.typeText') }}
-        </Button>
-      </div>
-      <div
-        v-if="activeRegion.type === 'text'"
-        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring hover:bg-muted"
-      >
-        <span
-          class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
-        >
-          {{ $t('boundingBoxes.textLabel') }}
-        </span>
-        <Textarea
-          v-model="activeRegion.text"
-          :placeholder="$t('boundingBoxes.textPlaceholder')"
-          class="min-h-14 resize-none overflow-hidden pt-5 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-foreground hover:overflow-auto focus:overflow-auto"
-          data-capture-wheel="true"
-          @update:model-value="onActiveTextInput"
-        />
-      </div>
-      <div
-        class="group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring hover:bg-muted"
-      >
-        <span
-          class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
-        >
-          {{ $t('boundingBoxes.descLabel') }}
-        </span>
-        <Textarea
-          v-model="activeRegion.desc"
-          :placeholder="$t('boundingBoxes.descPlaceholder')"
-          class="min-h-20 resize-none overflow-hidden pt-5 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-foreground hover:overflow-auto focus:overflow-auto"
-          data-capture-wheel="true"
-          @update:model-value="onActiveDescInput"
-        />
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="shrink-0 truncate text-sm text-muted-foreground">
-          {{ $t('boundingBoxes.colors') }}
-        </span>
-        <PaletteSwatchRow
-          v-model="activeRegion.palette"
-          :max="maxColors"
-          @update:model-value="onActivePaletteChange"
-        />
-      </div>
-    </div>
-    <div v-else-if="hasRegions" class="px-1 text-muted-foreground">
-      {{ $t('boundingBoxes.clickRegionToEdit') }}
-    </div>
-  </div>
+  <BoundingBoxesEditor v-model="modelValue" :node-id :widget>
+    <template #toolbar-end>
+      <Button
+        variant="textonly"
+        size="icon"
+        icon="icon-[lucide--maximize-2]"
+        :aria-label="$t('boundingBoxes.openFullscreen')"
+        :tooltip="$t('boundingBoxes.openFullscreen')"
+        @click="openFullscreen"
+      />
+    </template>
+  </BoundingBoxesEditor>
 </template>
 
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
-import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
+import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
-import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
-import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-
-const actionBtnClass =
-  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-foreground outline-none transition-colors hover:bg-muted'
 
 const { nodeId, widget } = defineProps<{
   nodeId: NodeId
@@ -177,41 +26,9 @@ const { nodeId, widget } = defineProps<{
 }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 
-const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
-const canvasContainer = useTemplateRef<HTMLDivElement>('canvasContainer')
-const inlineEditorEl = useTemplateRef<HTMLTextAreaElement>('inlineEditorEl')
-
-const {
-  canvasStyle,
-  canvasCursor,
-  focused,
-  activeRegion,
-  hasRegions,
-  inlineEditor,
-  maxColors,
-  onPointerDown,
-  onCanvasPointerMove,
-  onDocPointerUp,
-  onPointerLeave,
-  onDoubleClick,
-  onCanvasKeyDown,
-  onInlineKeyDown,
-  commitInlineEditor,
-  setActiveType,
-  clearAll,
-  onActiveTextInput,
-  onActiveDescInput,
-  onActivePaletteChange,
-  canUndo,
-  canRedo,
-  undo,
-  redo,
-  grid
-} = useBoundingBoxes(nodeId, {
-  canvasEl,
-  canvasContainer,
-  inlineEditorEl,
-  modelValue,
-  widget
-})
+async function openFullscreen() {
+  const { openBoundingBoxesDialog } =
+    await import('@/components/boundingBoxes/boundingBoxesDialog')
+  openBoundingBoxesDialog(nodeId, widget)
+}
 </script>

@@ -11,6 +11,7 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import {
+  coerceRestoredWidgetValue,
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
@@ -388,7 +389,7 @@ export function dynamicGroupWidget(
       inputName,
       position
     )
-    if (restored?.value !== value) return
+    if (coerceRestoredWidgetValue(controller, restored?.value) !== value) return
     const savedValueCount = store.getRestoredWidgetValueCount(graphId, node.id)
     if (requested > Math.max(max, savedValueCount ?? 0))
       throw new RangeError(

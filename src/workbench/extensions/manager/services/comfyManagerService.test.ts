@@ -5,7 +5,8 @@ import { useComfyManagerService } from '@/workbench/extensions/manager/services/
 
 const mockAxiosInstance = vi.hoisted(() => ({
   get: vi.fn(),
-  post: vi.fn()
+  post: vi.fn(),
+  interceptors: { request: { use: vi.fn() } }
 }))
 
 const managerState = vi.hoisted(() => ({ isNewManagerUI: true }))

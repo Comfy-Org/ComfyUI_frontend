@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
@@ -27,7 +27,6 @@ export type AuditLog = components['schemas']['AuditLog']
 type ErrorResponse = components['schemas']['ErrorResponse']
 
 const customerApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -38,13 +37,6 @@ attachUnifiedRemintInterceptor(customerApiClient)
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)
   let latestRequestId = 0
-
-  watch(
-    () => getComfyApiBaseUrl(),
-    (url) => {
-      customerApiClient.defaults.baseURL = url
-    }
-  )
 
   const mapError = (
     err: unknown,
@@ -200,6 +192,7 @@ export const useCustomerEventsService = () => {
     const result = await executeRequest<CustomerEventsResponse>(
       (client) =>
         client.get('/customers/events', {
+          baseURL: getComfyApiBaseUrl(),
           params: { page, limit },
           headers: authHeaders
         }),
@@ -223,11 +216,9 @@ export const useCustomerEventsService = () => {
   }
 
   return {
-    // State
     isLoading,
     error,
 
-    // Methods
     getMyEvents,
     formatEventType,
     getEventSeverity,

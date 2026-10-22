@@ -4,8 +4,11 @@ import type { Ref, ShallowRef } from 'vue'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
 
-import { renderMinimapToCanvas } from '../minimapCanvasRenderer'
-import type { MinimapRenderContext, UpdateFlags } from '../types'
+import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapRenderContext,
+  UpdateFlags
+} from '@/renderer/extensions/minimap/types'
 
 export function useMinimapRenderer(
   canvasRef: Readonly<ShallowRef<HTMLCanvasElement | null>>,

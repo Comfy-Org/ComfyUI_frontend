@@ -17,7 +17,10 @@ import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
-  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+  | 'amountMicros'
+  | 'cloudCreditBalanceMicros'
+  | 'prepaidBalanceMicros'
+  | 'effectiveBalanceMicros'
 >
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
@@ -467,14 +470,26 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('Credits refill')
   })
 
-  it('hides the breakdown and forces zeros in the zero state while add-credits follows can_top_up', () => {
+  it('hides the plan breakdown in the zero state and keeps the server balance', () => {
     activeProSubscription()
-    const { container } = renderTile({ zeroState: true })
-    expect(container.textContent).toContain('0')
-    expect(container.textContent).not.toContain('left of')
-    expect(container.textContent).not.toContain('Additional credits')
+    renderTile({ zeroState: true })
+    expect(screen.getByText('1,055')).toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
     expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
+  })
+
+  it('shows the effective balance in the zero state when it differs from amount', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      effectiveBalanceMicros: 3_000,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 3_000
+    }
+    renderTile({ zeroState: true })
+    expect(screen.getByText('6,330')).toBeInTheDocument()
   })
 
   it('shows disabled credit details for an inactive plan and still renders add-credits from can_top_up', () => {

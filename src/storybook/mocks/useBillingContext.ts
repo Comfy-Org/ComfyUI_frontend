@@ -11,6 +11,7 @@ export interface BillingContextMockState {
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
+  subscriptionState: BillingContext['subscriptionState']['value']
   renewalDate: string | null
   maxSeats: number | null
   occupiedSeats: number | null
@@ -22,6 +23,7 @@ const defaultState: BillingContextMockState = {
   isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
+  subscriptionState: null,
   renewalDate: null,
   maxSeats: null,
   occupiedSeats: null
@@ -73,6 +75,7 @@ export function useBillingContext(): BillingContext {
     isTeamPlan: computed(() => state.value.isTeamPlan),
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
+    subscriptionState: computed(() => state.value.subscriptionState),
     tier: computed(() => null),
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),

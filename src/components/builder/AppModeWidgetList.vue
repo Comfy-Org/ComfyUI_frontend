@@ -17,6 +17,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -162,12 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`

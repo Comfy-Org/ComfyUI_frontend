@@ -1,5 +1,6 @@
 <template>
-  <DialogPanel
+  <AppDialogPanel
+    unpadded
     data-testid="open-shared-workflow-dialog"
     class="w-176 max-w-full"
     :aria-busy="isOpening"
@@ -150,7 +151,7 @@
         </Button>
       </footer>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
@@ -166,7 +167,7 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import Button from '@/components/ui/button/Button.vue'
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 

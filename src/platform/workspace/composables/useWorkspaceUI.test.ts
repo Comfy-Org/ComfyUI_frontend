@@ -16,7 +16,6 @@ const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
 const mockCanReactivate = ref(false)
-const mockCanLeaveWorkspace = ref(false)
 const mockCanManageSubscription = ref(false)
 const mockCanDowngradeToPersonal = ref(false)
 
@@ -86,7 +85,6 @@ function resetStore() {
   mockIsTeamPlan.value = false
   mockMemberCreditLimitsEnabled.value = false
   mockCanReactivate.value = false
-  mockCanLeaveWorkspace.value = false
   mockCanManageSubscription.value = false
   mockCanDowngradeToPersonal.value = false
   mockIsCloud.value = true
@@ -126,7 +124,6 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     )
     Object.assign(useBillingCapabilities(), {
       canReactivate: computed(() => mockCanReactivate.value),
-      canLeaveWorkspace: computed(() => mockCanLeaveWorkspace.value),
       canManageSubscription: computed(() => mockCanManageSubscription.value),
       canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
       canSubscribeSelfServe: computed(() => true),
@@ -146,8 +143,6 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.workspaceType.value).toBe('personal')
       expect(ui.workspaceRole.value).toBe('owner')
       expect(ui.permissions.value.canViewOtherMembers).toBe(false)
-      expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
-      expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
       expect(ui.uiConfig.value.showMembersList).toBe(false)
     })
   })
@@ -165,9 +160,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.workspaceType.value).toBe('personal')
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: false,
-        canViewPendingInvites: false,
-        canLeaveWorkspace: false,
-        canAccessWorkspaceMenu: false
+        canViewPendingInvites: false
       })
     })
 
@@ -176,22 +169,16 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         activeWorkspace: personalMemberWorkspace
       })
       mockIsTeamPlan.value = true
-      mockCanLeaveWorkspace.value = true
       const ui = await loadComposable()
 
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
-        canViewPendingInvites: false,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true
+        canViewPendingInvites: false
       })
-      expect(ui.uiConfig.value).toMatchObject({
-        showEditWorkspaceMenuItem: false,
-        workspaceMenuAction: null
-      })
+      expect(ui.uiConfig.value.workspaceMenuAction).toBeNull()
     })
 
-    it('lets the personal owner rename their workspace', async () => {
+    it('collapses the members layout for the personal owner', async () => {
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value).toMatchObject({
@@ -199,7 +186,6 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         showPendingTab: false,
         showSearch: false,
         showRoleColumn: false,
-        showEditWorkspaceMenuItem: true,
         workspaceMenuAction: null,
         workspaceMenuDisabledTooltip: null
       })
@@ -224,16 +210,13 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     })
 
     it('shows members and pending invites to the team owner', async () => {
-      mockCanLeaveWorkspace.value = true
       const ui = await loadComposable()
 
       expect(ui.workspaceType.value).toBe('team')
       expect(ui.workspaceRole.value).toBe('owner')
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
-        canViewPendingInvites: true,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true
+        canViewPendingInvites: true
       })
     })
 
@@ -241,7 +224,6 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value.showPendingTab).toBe(true)
-      expect(ui.uiConfig.value.showEditWorkspaceMenuItem).toBe(true)
       expect(ui.uiConfig.value.workspaceMenuAction).toBe('delete')
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBe(
         'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
@@ -283,16 +265,13 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       mockIsTeamPlan.value = true
     })
 
-    it('hides pending invites from a team member allowed to leave', async () => {
-      mockCanLeaveWorkspace.value = true
+    it('hides pending invites from a team member', async () => {
       const ui = await loadComposable()
 
       expect(ui.workspaceRole.value).toBe('member')
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
-        canViewPendingInvites: false,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true
+        canViewPendingInvites: false
       })
     })
 
@@ -301,7 +280,6 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
 
       expect(ui.uiConfig.value.showMembersList).toBe(true)
       expect(ui.uiConfig.value.showPendingTab).toBe(false)
-      expect(ui.uiConfig.value.showEditWorkspaceMenuItem).toBe(false)
       expect(ui.uiConfig.value.workspaceMenuAction).toBeNull()
       expect(ui.uiConfig.value.workspaceMenuDisabledTooltip).toBeNull()
       expect(ui.uiConfig.value.membersGridCols).toBe('grid-cols-[1fr_auto]')
@@ -313,12 +291,11 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
   })
 
   describe('server-fact gates', () => {
-    const served = { leave: true, manage: true, downgrade: true }
-    const withheld = { leave: false, manage: false, downgrade: false }
+    const served = { manage: true, downgrade: true }
+    const withheld = { manage: false, downgrade: false }
     const factRows = [
       { facts: 'all served', ...served },
       { facts: 'all withheld', ...withheld },
-      { facts: 'only can_leave_workspace', ...withheld, leave: true },
       { facts: 'only can_manage_subscription', ...withheld, manage: true },
       { facts: 'only can_downgrade_to_personal', ...withheld, downgrade: true }
     ]
@@ -340,40 +317,22 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         ...row
       })),
       ...actorRows.map((row) => ({
-        facts: row.leave ? 'all served' : 'all withheld',
+        facts: row.manage ? 'all served' : 'all withheld',
         ...row
       }))
     ])(
       'renders $facts as served for $actor',
-      async ({ workspace, leave, manage, downgrade }) => {
+      async ({ workspace, manage, downgrade }) => {
         Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
-        mockCanLeaveWorkspace.value = leave
         mockCanManageSubscription.value = manage
         mockCanDowngradeToPersonal.value = downgrade
         const ui = await loadComposable()
 
         expect(ui.permissions.value).toMatchObject({
-          canLeaveWorkspace: leave,
           canManageSubscription: manage,
           canManageSubscriptionLifecycle: manage,
           canDowngradeToPersonal: downgrade
         })
-      }
-    )
-
-    it.for([
-      { actor: 'a team member', workspace: teamMemberWorkspace, leave: true },
-      { actor: 'a team member', workspace: teamMemberWorkspace, leave: false },
-      { actor: 'a personal owner', workspace: personalWorkspace, leave: true },
-      { actor: 'a personal owner', workspace: personalWorkspace, leave: false }
-    ])(
-      'opens the menu for $actor only through can_leave_workspace $leave',
-      async ({ workspace, leave }) => {
-        Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
-        mockCanLeaveWorkspace.value = leave
-        const ui = await loadComposable()
-
-        expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(leave)
       }
     )
   })

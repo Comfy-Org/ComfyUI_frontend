@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import type { BillingContext } from '../types'
-import type { useBillingContext as realUseBillingContext } from '../useBillingContext'
+import type { BillingContext } from '@/composables/billing/types'
+import type { useBillingContext as realUseBillingContext } from '@/composables/billing/useBillingContext'
 
 function createBillingContextMock(): BillingContext {
   return {
@@ -22,6 +22,7 @@ function createBillingContextMock(): BillingContext {
     isFreeTier: computed(() => false),
     billingStatus: computed(() => null),
     subscriptionStatus: computed(() => null),
+    subscriptionState: computed(() => null),
     tier: computed(() => null),
     renewalDate: computed(() => null),
     renewalInvoice: computed(() => null),
