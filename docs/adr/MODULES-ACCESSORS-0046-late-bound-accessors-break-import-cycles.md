@@ -20,9 +20,11 @@ provider is statically reachable from `main.ts` through runtime imports. The
 one exception is `useSessionCookie`. It loads lazily, so `authStore`
 registers a thunk that imports it.
 
-An accessor read before registration fails in one of two ways. A getter
-guarded by `assert` names the missing provider. An `export let` binding
-throws `TypeError: … is not a function`, which does not name it.
+An accessor read before registration fails in one of three ways. A getter
+guarded by `assert` names the missing provider. An unassigned binding,
+exported or module-private, throws `TypeError: … is not a function`, which
+does not name it. An optional read, such as `remintUnified?.(…) ?? null` in
+`remintRetry`, returns a fallback and reports nothing.
 
 The `LiteGraph` singleton uses the same shape. The barrel constructs the one
 `LiteGraphGlobal` and calls `registerLiteGraphInstance`. Modules that the
@@ -40,7 +42,9 @@ runtime accessors.
 The cycle column shows the import path from the provider to a reader.
 Importing the provider directly from that reader would close the path into a
 cycle. The paths come from the dependency-cruiser graph of `src` at the date
-above. A dashed arrow is a type-only edge.
+above. A dashed arrow (`⇢`) is a type-only edge and a wavy arrow (`⤳`) is a
+dynamic `import()`. The table is a snapshot for planning the follow-ups and
+will drift as they land; decisions 1–6 are the rules.
 
 | Setter                             | Provider (calls the setter)                         | Readers                                                                             | Cycle the accessor breaks                                                                                                  | Fate                            |
 | ---------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
@@ -63,19 +67,20 @@ above. A dashed arrow is a type-only edge.
 | `provideBillingSdkStore`           | `billingSdkStore`                                   | `useBillingReadRail`                                                                | `billingSdkStore → useBillingReadRail`                                                                                     | Keep, register in bootstrap     |
 | `provideWebSessionRequests`        | `cloudWebSessionStore`, while a web session runs    | `webSessionFetch` and its callers                                                   | `cloudWebSessionStore → webSessionFetch`                                                                                   | Keep as a scoped registration   |
 | `provideCheckoutOperationReader`   | `useBillingContext`, per effect scope               | `billingRefresh`, `openHostedBillingTab`                                            | `useBillingContext → billingRefresh`                                                                                       | Keep as a scoped registration   |
-| `provideBillingDialogs`            | `useBillingDialogs` (and its `__mocks__`)           | `useSubscriptionPaywall`, `useSubscriptionCheckout`                                 | `useBillingDialogs → useSubscriptionDialog → SubscriptionRequiredDialogContent → SubscribeButton → useSubscriptionPaywall` | Replace with `provide`/`inject` |
-| `provideSubscriptionDialog`        | `useSubscriptionDialog` (and its `__mocks__`)       | `useSubscriptionPaywall`, `InviteMemberUpsellDialogContent`                         | `useSubscriptionDialog → useWorkspaceDialogs → InviteMemberUpsellDialogContent`                                            | Replace with `provide`/`inject` |
+| `provideBillingDialogs`            | `useBillingDialogs` (and its `__mocks__`)           | `useSubscriptionPaywall`, `useSubscriptionCheckout`                                 | `useBillingDialogs → useSubscriptionDialog ⤳ SubscriptionRequiredDialogContent → SubscribeButton → useSubscriptionPaywall` | Replace with `provide`/`inject` |
+| `provideSubscriptionDialog`        | `useSubscriptionDialog` (and its `__mocks__`)       | `useSubscriptionPaywall`, `InviteMemberUpsellDialogContent`                         | `useSubscriptionDialog → useWorkspaceDialogs ⤳ InviteMemberUpsellDialogContent`                                            | Replace with `provide`/`inject` |
 
-None of these cycles has been removed since PRs #20777, #20782 and #20799
-introduced the accessors, so no accessor can be deleted yet.
+None of these cycles has been removed since its accessor was introduced, so
+no accessor can be deleted yet.
 `registerLiteGraphInstance`, `registerApp`, `registerExtensionDialogService` and
 `setAssertReporter` follow the same pattern under other names. They are
 outside this inventory but follow the same rules.
 
 ## Decision
 
-1. **Litegraph accessors stay registered by their class modules.** Litegraph
-   has no bootstrap and must not depend on Vue. The registration step is the
+1. **Litegraph accessors stay registered by their class modules.**
+   Registration has to work for every consumer of the barrel, including
+   extensions and tests that never run `main.ts`. The registration step is the
    barrel's static import of each class module, which ADR-TYPES-LITEGRAPH-0044
    already requires. `LiteGraph` keeps its identity: the barrel constructs the
    only instance, and `litegraphInstance` and `window.LiteGraph` refer to that
@@ -104,6 +109,10 @@ outside this inventory but follow the same rules.
    valid state that readers handle.
 6. **Every remaining accessor reads through an asserting getter.** An
    accessor read before registration must fail with the name of its provider.
+   This covers module-private bindings as well as exported ones.
+   `remintRetry` keeps its `null` fallback, so a request without a registered
+   remint still surfaces its original 401 in production; the read asserts
+   first, so the missing registration is reported instead of silent.
 
 ## Alternatives and consequences
 
@@ -112,7 +121,8 @@ outside this inventory but follow the same rules.
   and `inject` inside a setup store only works within an app context. So no
   accessor's fate is "replace with a store".
 - **Dynamic `import()` in the reader.** Dependency-cruiser counts dynamic
-  imports, so the cycle would remain.
+  imports, so the cycle would remain. Both dialog cycles already pass through
+  `import()` and still fail `deps:audit` without their accessors.
 - **Merging each provider and reader into one module.** This would combine
   unrelated responsibilities only to satisfy the graph. ADR-TYPES-LITEGRAPH-0044
   rejected the same option for the litegraph classes.
@@ -123,7 +133,8 @@ outside this inventory but follow the same rules.
 
 ## Follow-ups
 
-1. Change the `export let` accessors to asserting getters (decision 6).
+1. Change the unassigned bindings, exported and module-private, and the
+   optional `remintUnified` read to asserting getters (decision 6).
 2. Add the bootstrap registration step and remove the top-level `provide*`
    calls from app-level providers (decision 2). This edits `main.ts`, so it
    waits for the concurrent bootstrap work there to land.
