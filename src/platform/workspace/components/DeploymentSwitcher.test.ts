@@ -1044,6 +1044,24 @@ describe('DeploymentSwitcher', () => {
       ).toHaveAccessibleDescription('Power Lora Loader (rgthree), Image Saver')
     })
 
+    it('keeps the deployment title whole and shortens its subtitle first, in a list no wider than the screen', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [{ deployment_id: D2, missing_node_types: [] }],
+        cloud: { missing_node_types: [] }
+      })
+      const user = renderSwitcher()
+      const menu = await openList(user)
+      const row = await screen.findByTestId(`deployment-row-${D2}`)
+      await waitFor(() => expect(row).toHaveTextContent('Runs this workflow'))
+
+      expect(menu).toHaveClass('max-w-[min(25rem,calc(100vw-1rem))]')
+      expect(within(row).getByText('Studio Build')).toHaveClass('shrink-0')
+      const subtitle = within(row).getByText('production · v2')
+      expect(subtitle).toHaveClass('min-w-0', 'truncate')
+      expect(subtitle).not.toHaveClass('shrink-0')
+      expect(subtitle).toHaveAttribute('title', 'production · v2')
+    })
+
     it('shows the rows as before when the check fails', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
         new WorkspaceApiError('not found', 404)
