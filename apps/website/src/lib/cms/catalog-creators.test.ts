@@ -2,6 +2,8 @@ import type { CccWebsiteCardsPage } from '@comfyorg/ingest-types'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
+  creatorPageResponse,
+  creatorPageStatus,
   loadCatalogCreator,
   loadCatalogCreators,
   loadCreatorPage
@@ -37,11 +39,15 @@ function cardsPage(): CccWebsiteCardsPage {
 function serve(routes: Partial<Record<string, () => Response>>) {
   vi.stubEnv('SITE_CATALOG_API_URL', origin)
   vi.stubEnv('VERCEL_ENV', 'development')
-  const upstream = vi.fn<typeof fetch>().mockImplementation(async (input) => {
-    const url = new URL(String(input))
-    const route = routes[`${url.pathname}${url.search}`] ?? routes[url.pathname]
-    return route ? route() : new Response(null, { status: 404 })
-  })
+  const upstream = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async (input, init) => {
+      init?.signal?.throwIfAborted()
+      const url = new URL(String(input))
+      const route =
+        routes[`${url.pathname}${url.search}`] ?? routes[url.pathname]
+      return route ? route() : new Response(null, { status: 404 })
+    })
   vi.mocked(fetch).mockImplementation(upstream)
   return (index: number) => new URL(String(upstream.mock.calls[index][0]))
 }
@@ -84,25 +90,6 @@ describe('loadCatalogCreators', () => {
       ['sirolim', 'Sirolim', 1]
     ])
     expect(call(1).searchParams.get('cursor')).toBe('page-2')
-  })
-
-  it('merges usernames that differ only in case into one lowercase creator', async () => {
-    serve({
-      '/api/v1/catalog/creators': () =>
-        Response.json({
-          items: [
-            summary('PurZ', 2, { display_name: 'PurZ' }),
-            summary('purz', 1)
-          ]
-        })
-    })
-
-    const result = await loadCatalogCreators()
-
-    assert.isTrue(result.ok)
-    expect(result.creators).toEqual([
-      { username: 'purz', displayName: 'PurZ', workflowCount: 3 }
-    ])
   })
 
   it.for([
@@ -165,7 +152,7 @@ describe('loadCatalogCreators', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
-  it('stops at the page cap even when the catalog has another page', async () => {
+  it('lists the creators read so far when the catalog has more pages than the cap', async () => {
     let page = 0
     serve({
       '/api/v1/catalog/creators': () =>
@@ -175,8 +162,31 @@ describe('loadCatalogCreators', () => {
         })
     })
 
-    expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+    const result = await loadCatalogCreators()
+
+    assert.isTrue(result.ok)
+    expect(result.creators).toHaveLength(20)
     expect(fetch).toHaveBeenCalledTimes(20)
+  })
+
+  it('aborts the next page read when the walk deadline ends', async () => {
+    const deadline = new AbortController()
+    const call = serve({
+      '/api/v1/catalog/creators': () => {
+        deadline.abort()
+        return Response.json({
+          items: [summary('purz', 1)],
+          next_cursor: 'page-2'
+        })
+      }
+    })
+
+    expect(await loadCatalogCreators(deadline.signal)).toEqual({
+      ok: false,
+      status: 503
+    })
+    expect(vi.mocked(fetch).mock.calls[1]?.[1]?.signal?.aborted).toBe(true)
+    expect(call(1).searchParams.get('cursor')).toBe('page-2')
   })
 
   it('leaves out creators with no workflows and names a creator by username when the display name is empty', async () => {
@@ -317,6 +327,11 @@ describe('loadCatalogCreator', () => {
     assert(result.status === 'ok')
     expect(result.creator.username).toBe('purz')
     expect(result.creator.description).toHaveLength(5000)
+    const cards = vi
+      .mocked(fetch)
+      .mock.calls.map(([input]) => new URL(String(input)))
+      .find(({ pathname }) => pathname === '/api/v1/catalog/cards')
+    expect(cards?.searchParams.get('author')).toBe('purz')
   })
 
   it.for(['..', '../admin', 'a'.repeat(31)])(
@@ -346,6 +361,61 @@ describe('loadCreatorPage', () => {
         location
       })
       expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+})
+
+describe('creator profile route answer', () => {
+  it.for([
+    {
+      case: 'a mixed-case username',
+      username: 'PurZ',
+      profile: 200,
+      response: 301,
+      location: '/hub/creators/purz/',
+      status: 200
+    },
+    {
+      case: 'an unknown creator',
+      username: 'ghost',
+      profile: 404,
+      response: undefined,
+      location: null,
+      status: 404
+    },
+    {
+      case: 'a profile read that does not succeed',
+      username: 'purz',
+      profile: 500,
+      response: 503,
+      location: null,
+      status: 200
+    },
+    {
+      case: 'a creator with cards',
+      username: 'purz',
+      profile: 200,
+      response: undefined,
+      location: null,
+      status: 200
+    }
+  ])(
+    'answers $case with response $response and page status $status',
+    async ({ username, profile, response, location, status }) => {
+      serve({
+        [`/api/v1/catalog/creators/${username}`]: () =>
+          profile === 200
+            ? Response.json({ username, display_name: 'Purz' })
+            : new Response(null, { status: profile }),
+        '/api/v1/catalog/cards': () => Response.json(cardsPage())
+      })
+
+      const page = await loadCreatorPage(undefined, 'en', username)
+      const answer = creatorPageResponse(page)
+
+      expect(answer?.status).toBe(response)
+      expect(answer?.headers.get('Location') ?? null).toBe(location)
+      expect(creatorPageStatus(page)).toBe(status)
     }
   )
 })

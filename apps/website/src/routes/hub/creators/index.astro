@@ -5,6 +5,7 @@ import {
   workshopEyebrowClass,
   workshopHeadingClass
 } from '@/components/workshop/workshopHeadingClasses'
+import { catalogLocalePrefix } from '@/config/catalog-locales'
 import { HUB_MODELS_PATH } from '@/config/hub-models'
 import { catalogUnavailable } from '@/lib/cms/catalog'
 import { loadCatalogCreators } from '@/lib/cms/catalog-creators'
@@ -35,7 +36,10 @@ const title = t('workshop.hub.creators.directoryTitle')
   breadcrumbs={[
     {
       name: t('workshop.hub.creators.hub'),
-      url: absoluteUrl(Astro.site, HUB_MODELS_PATH)
+      url: absoluteUrl(
+        Astro.site,
+        `${catalogLocalePrefix(locale)}${HUB_MODELS_PATH}`
+      )
     },
     { name: t('workshop.hub.creators.title') }
   ]}

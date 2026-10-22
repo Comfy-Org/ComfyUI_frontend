@@ -20,21 +20,26 @@ const model = (slug: string): WorkshopModel => ({
 const models = (prefix: string, count: number) =>
   Array.from({ length: count }, (_, i) => model(`${prefix}${i}`))
 
-const cursorPage = (nextCursor?: string) => ({
+const cursorPage = (nextCursor?: string, reset = false) => ({
   page: 1,
   pageSize: 24,
   hasPrevious: false,
   hasNext: Boolean(nextCursor),
   mode: 'cursor' as const,
-  ...(nextCursor && { nextCursor })
+  ...(nextCursor && { nextCursor }),
+  ...(reset && { reset })
 })
 
-const cataloguePage = (items: WorkshopModel[], nextCursor?: string) =>
+const cataloguePage = (
+  items: WorkshopModel[],
+  nextCursor?: string,
+  reset = false
+) =>
   Response.json({
     models: items,
     pages: {
       models: cursorPage(),
-      workflows: cursorPage(nextCursor),
+      workflows: cursorPage(nextCursor, reset),
       apps: cursorPage()
     },
     facets: {
@@ -82,13 +87,18 @@ describe('CreatorWorkflowGrid', () => {
   it('keeps the button after a failed load and ignores clicks while loading', async () => {
     const user = userEvent.setup()
     let failLoad: (response: Response) => void = () => {}
+    let retryLoad: (response: Response) => void = () => {}
     vi.mocked(fetch)
       .mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           failLoad = resolve
         })
       )
-      .mockResolvedValueOnce(cataloguePage(models('second', 2)))
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          retryLoad = resolve
+        })
+      )
     render(CreatorWorkflowGrid, { props })
     const button = screen.getByRole<HTMLButtonElement>('button', {
       name: 'Load more'
@@ -107,8 +117,40 @@ describe('CreatorWorkflowGrid', () => {
     )
 
     await user.click(button)
+    await waitFor(() => expect(button.disabled).toBe(true))
+    expect(screen.getByRole('status').textContent).toBe('')
+    retryLoad(cataloguePage(models('second', 2)))
     await waitFor(() => expect(cards()).toHaveLength(4))
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the fresh first page and reads on from it when the catalog resets an expired cursor', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(cataloguePage(models('second', 2), 'cursor-3'))
+      .mockResolvedValueOnce(
+        cataloguePage([model('new0'), model('first0')], 'fresh-2', true)
+      )
+      .mockResolvedValueOnce(cataloguePage([model('first1')]))
+    render(CreatorWorkflowGrid, { props })
+    const loadMore = () =>
+      user.click(screen.getByRole('button', { name: 'Load more' }))
+
+    await loadMore()
+    await waitFor(() => expect(cards()).toHaveLength(4))
+    await loadMore()
+    await waitFor(() =>
+      expect(cards().map((card) => card.getAttribute('href'))).toEqual([
+        '/hub/workflows/new0/',
+        '/hub/workflows/first0/'
+      ])
+    )
+    await loadMore()
+    await waitFor(() => expect(cards()).toHaveLength(3))
+
+    const third = new URL(String(vi.mocked(fetch).mock.calls[2][0]))
+    expect(third.searchParams.get('cursor')).toBe('fresh-2')
+    expect(third.searchParams.get('p')).toBe('2')
   })
 
   it('shows a card once when the next page repeats it', async () => {

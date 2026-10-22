@@ -10,12 +10,13 @@ import {
 import type { AuthoringSession } from './authoring-session'
 import { loadSiteCatalogList } from './catalog-list'
 import { cmsEnabled } from './cms-enabled'
-import { fetchCatalogJson } from './catalog'
+import { catalogUnavailable, fetchCatalogJson } from './catalog'
 import { everyCursorPage } from './catalog-list-all'
 
 const CREATORS_PATH = '/api/v1/catalog/creators'
 const DIRECTORY_PAGE_LIMIT = 100
 const MAX_DIRECTORY_PAGES = 20
+const DIRECTORY_DEADLINE_MS = 8000
 
 const text = z.string().max(4096).nullish()
 
@@ -54,24 +55,11 @@ type DirectoryItem = z.output<typeof creatorsPageSchema>['items'][number]
 function summaryOf(item: DirectoryItem): HubCreatorSummary {
   const avatarUrl = hubAvatarUrl(item.avatar_url)
   return {
-    username: item.username.toLowerCase(),
+    username: item.username,
     displayName: item.display_name || item.username,
     workflowCount: item.workflow_count,
     ...(avatarUrl && { avatarUrl })
   }
-}
-
-function withCounts(
-  known: HubCreatorSummary | undefined,
-  next: HubCreatorSummary
-): HubCreatorSummary {
-  return known
-    ? {
-        ...next,
-        ...known,
-        workflowCount: known.workflowCount + next.workflowCount
-      }
-    : next
 }
 
 function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
@@ -80,38 +68,37 @@ function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
   )
 }
 
-function mergedByUsername(items: readonly DirectoryItem[]) {
-  const creators = new Map<string, HubCreatorSummary>()
-  for (const summary of items.map(summaryOf))
-    creators.set(
-      summary.username,
-      withCounts(creators.get(summary.username), summary)
-    )
-  return [...creators.values()]
+function directoryOf(items: readonly DirectoryItem[]) {
+  return items
+    .map(summaryOf)
     .filter(({ workflowCount }) => workflowCount > 0)
     .sort(busiestFirst)
 }
 
-export async function loadCatalogCreators() {
+export async function loadCatalogCreators(
+  deadline = AbortSignal.timeout(DIRECTORY_DEADLINE_MS)
+) {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items = await everyCursorPage(async (cursor) => {
+  const items = await everyCursorPage(async (cursor, pageNumber) => {
     const url = new URL(CREATORS_PATH, origin)
     url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
     if (cursor) url.searchParams.set('cursor', cursor)
     const page = creatorsPageSchema.safeParse(
-      (await fetchCatalogJson(url)).data
+      (await fetchCatalogJson(url, undefined, deadline)).data
     )
-    return page.success
-      ? {
-          items: page.data.items,
-          nextCursor: page.data.next_cursor ?? undefined
-        }
-      : undefined
-  }, MAX_DIRECTORY_PAGES)
+    if (!page.success) return undefined
+    return {
+      items: page.data.items,
+      nextCursor:
+        pageNumber < MAX_DIRECTORY_PAGES
+          ? (page.data.next_cursor ?? undefined)
+          : undefined
+    }
+  })
   return items
-    ? ({ ok: true, creators: mergedByUsername(items) } as const)
+    ? ({ ok: true, creators: directoryOf(items) } as const)
     : unavailable
 }
 
@@ -137,19 +124,21 @@ export async function loadCatalogCreator(
   const origin = catalogOrigin()
   if (!origin) return unavailable
   if (!isCreatorUsername(username)) return { status: 'missing' } as const
-  const read = await fetchCatalogJson(
-    new URL(`${CREATORS_PATH}/${encodeURIComponent(username)}`, origin)
-  )
+  const author = username.toLowerCase()
+  const [read, cards] = await Promise.all([
+    fetchCatalogJson(
+      new URL(`${CREATORS_PATH}/${encodeURIComponent(author)}`, origin)
+    ),
+    loadSiteCatalogList(
+      session,
+      locale,
+      'workflows',
+      new URLSearchParams({ author })
+    )
+  ])
   if (read.status === 404) return { status: 'missing' } as const
   const profile = creatorProfileSchema.safeParse(read.data)
-  if (!profile.success) return unavailable
-  const cards = await loadSiteCatalogList(
-    session,
-    locale,
-    'workflows',
-    new URLSearchParams({ author: profile.data.username })
-  )
-  if (!cards.ok) return unavailable
+  if (!profile.success || !cards.ok) return unavailable
   return {
     status: 'ok',
     creator: creatorFromProfile(profile.data),
@@ -170,4 +159,20 @@ export async function loadCreatorPage(
       location: hubCreatorPath(username, locale)
     } as const
   return loadCatalogCreator(session, locale, username)
+}
+
+type CreatorPage = Awaited<ReturnType<typeof loadCreatorPage>>
+
+/** The response the profile route returns before it renders, if any. */
+export function creatorPageResponse(page: CreatorPage) {
+  if (page.status === 'redirect')
+    return new Response(null, {
+      status: 301,
+      headers: { Location: page.location }
+    })
+  return page.status === 'unavailable' ? catalogUnavailable() : undefined
+}
+
+export function creatorPageStatus(page: CreatorPage) {
+  return page.status === 'missing' ? 404 : 200
 }
