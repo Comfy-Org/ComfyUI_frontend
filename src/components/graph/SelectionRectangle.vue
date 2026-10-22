@@ -63,7 +63,7 @@ function getCanvasPanelBounds(
   const canvas = canvasEl.getBoundingClientRect()
   return {
     left: panel.left - canvas.left,
-    top: panel.top - canvas.top,
+    top: 0,
     right: panel.right - canvas.left,
     bottom: panel.bottom - canvas.top
   }

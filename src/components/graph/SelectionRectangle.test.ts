@@ -13,10 +13,10 @@ type RafCallback = Parameters<typeof useRafFn>[0]
 const rafCallbacks: RafCallback[] = []
 vi.mock(import('@vueuse/core'), { spy: true })
 
-function createPanelEl() {
+function createPanelEl(top = 0) {
   const panel = document.createElement('div')
   vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue(
-    fromPartial<DOMRect>({ left: 300, top: 0, right: 1000, bottom: 800 })
+    fromPartial<DOMRect>({ left: 300, top, right: 1000, bottom: 800 })
   )
   return panel
 }
@@ -81,6 +81,17 @@ describe('SelectionRectangle', () => {
     expect(rect.style.top).toBe('100px')
     expect(rect.style.width).toBe('200px')
     expect(rect.style.height).toBe('200px')
+  })
+
+  it('extends above the panel into the canvas area under the top menu', async () => {
+    render(SelectionRectangle, { props: { panelEl: createPanelEl(450) } })
+
+    dragRectangle([400, 100], [600, 600])
+    await nextTick()
+
+    const rect = screen.getByTestId('selection-rectangle')
+    expect(rect.style.top).toBe('100px')
+    expect(rect.style.height).toBe('500px')
   })
 
   it('normalizes and clips a rectangle dragged up-and-left', async () => {
