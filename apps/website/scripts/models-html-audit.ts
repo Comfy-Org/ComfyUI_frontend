@@ -81,31 +81,48 @@ function textWithin(html: string, markers: readonly string[]) {
   return (value: string) => text.includes(value.replace(/\s/g, ''))
 }
 
-function bodyErrors(html: string, record: CatalogDetailBody): string[] {
+function workflowModelNames(record: CatalogDetailBody): readonly string[] {
+  if (!record.workflowId) return []
+  return record.catalogDetails
+    ? record.catalogDetails.models.map((model) => model.name)
+    : (record.workflow?.template?.models ?? [])
+}
+
+function descriptionErrors(html: string, longDescription = ''): string[] {
   const inAbout = textWithin(html, ABOUT_SECTIONS)
-  const inFaq = textWithin(html, FAQ_SECTIONS)
-  const inModels = textWithin(html, MODEL_SECTIONS)
-  const details = record.catalogDetails
-  const paragraphs = (details?.longDescription ?? '')
+  const paragraphs = longDescription
     .split(/\n\s*\n/)
     .filter((paragraph) => paragraph.trim())
-  const workflowModels = details
-    ? details.models.map((model) => model.name)
-    : (record.workflow?.template?.models ?? [])
-  const models = record.workflowId ? workflowModels : []
+  return paragraphs.every(inAbout)
+    ? []
+    : ['server HTML is missing the long description']
+}
+
+function faqErrors(
+  html: string,
+  faqs: readonly { question: string; answer: string }[] = []
+): string[] {
+  const inFaq = textWithin(html, FAQ_SECTIONS)
+  return faqs
+    .filter(
+      ({ question, answer }) =>
+        !inFaq(question) || !inFaq(faqAnswerPlainText(answer))
+    )
+    .map(({ question }) => `server HTML is missing the FAQ "${question}"`)
+}
+
+function modelErrors(html: string, names: readonly string[]): string[] {
+  const inModels = textWithin(html, MODEL_SECTIONS)
+  return names
+    .filter((name) => name.trim() && !inModels(name))
+    .map((name) => `server HTML is missing the model "${name.trim()}"`)
+}
+
+function bodyErrors(html: string, record: CatalogDetailBody): string[] {
   return [
-    ...(paragraphs.every(inAbout)
-      ? []
-      : ['server HTML is missing the long description']),
-    ...(details?.faqs ?? [])
-      .filter(
-        ({ question, answer }) =>
-          !inFaq(question) || !inFaq(faqAnswerPlainText(answer))
-      )
-      .map(({ question }) => `server HTML is missing the FAQ "${question}"`),
-    ...models
-      .filter((name) => name.trim() && !inModels(name))
-      .map((name) => `server HTML is missing the model "${name.trim()}"`)
+    ...descriptionErrors(html, record.catalogDetails?.longDescription),
+    ...faqErrors(html, record.catalogDetails?.faqs),
+    ...modelErrors(html, workflowModelNames(record))
   ]
 }
 
