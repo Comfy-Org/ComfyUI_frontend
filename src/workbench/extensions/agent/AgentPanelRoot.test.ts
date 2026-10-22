@@ -808,7 +808,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
 
-      expect(screen.queryAllByText('Try agent chat for free')).toHaveLength(
+      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
         free
       )
       expect(screen.queryAllByText('Agent chats use credits.')).toHaveLength(
@@ -834,7 +834,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
       Object.assign(consent, { accepted: true })
 
       expect(
-        await screen.findByText('Try agent chat for free')
+        await screen.findByText('Try agent chat for free.')
       ).toBeInTheDocument()
       expect(paywallBilling.fetchStatus).toHaveBeenCalledExactlyOnceWith({
         fresh: true
@@ -909,7 +909,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await screen.findByRole('textbox')
 
-      expect(screen.queryAllByText('Try agent chat for free')).toHaveLength(
+      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
         free
       )
       expect(useFreeUsePlacement).toHaveBeenCalledTimes(placementCalls)
@@ -922,7 +922,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByText('Try agent chat for free')
+    await screen.findByText('Try agent chat for free.')
 
     Object.assign(useAgentConsentStore(), { identity: null })
     await nextTick()
@@ -969,7 +969,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
       fresh: true
     })
     expect(
-      screen.queryByText('Try agent chat for free')
+      screen.queryByText('Try agent chat for free.')
     ).not.toBeInTheDocument()
     expect(withConsent).not.toHaveBeenCalled()
   })
@@ -984,7 +984,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(
-      await screen.findByText('Try agent chat for free')
+      await screen.findByText('Try agent chat for free.')
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Dismiss' })
@@ -1110,7 +1110,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByText('Try agent chat for free')
+    await screen.findByText('Try agent chat for free.')
     const conversation = useAgentConversationStore()
 
     conversation.recordFailedSend(
@@ -1128,7 +1128,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     activateThread()
 
     expect(
-      await screen.findByText('Try agent chat for free')
+      await screen.findByText('Try agent chat for free.')
     ).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Billing is unavailable'
@@ -1139,7 +1139,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     assignArm('treatment')
     paywallAgentScopedHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    await screen.findByText('Try agent chat for free')
+    await screen.findByText('Try agent chat for free.')
 
     executionErrors.isErrorOverlayOpen = true
     await nextTick()
