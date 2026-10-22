@@ -7,20 +7,22 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
+const storage = window.sessionStorage
+
 describe('ComfyApi initial client id', () => {
   afterEach(() => {
-    sessionStorage.clear()
+    storage.clear()
   })
 
   it('reuses the client id stored in session storage', () => {
-    sessionStorage.setItem('clientId', 'stored-client')
+    storage.setItem('clientId', 'stored-client')
 
     expect(new ComfyApi().initialClientId).toBe('stored-client')
   })
 
   it('constructs without a client id when session storage access is denied', () => {
-    sessionStorage.setItem('clientId', 'stored-client')
-    vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+    storage.setItem('clientId', 'stored-client')
+    vi.spyOn(window, 'sessionStorage', 'get').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError')
     })
 
