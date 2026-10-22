@@ -72,6 +72,7 @@ export function usePlanCheckoutBanner() {
       refreshGeneration++
       operation.value = null
       dismissed.value = new Set()
+      void refresh()
     }
   )
   watch(useDocumentVisibility(), (visibility) => {

@@ -128,22 +128,37 @@ describe('usePlanCheckoutBanner', () => {
     expect(checkout.banner.value).toBeNull()
   })
 
-  it('drops workspace A when this tab switches before A answers', async () => {
-    let resolveOperation: (value: {
+  it('loads workspace B after dropping a late answer from A', async () => {
+    let resolveOperationA: (value: {
       id: string
       started_at: string
       status: 'pending'
       checkout_state: 'verify_payment'
       action_url: string
     }) => void = () => {}
-    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
-      ...status,
-      latest_subscription_op_id: 'op-a'
-    })
-    vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValue(
-      new Promise((resolve) => {
-        resolveOperation = resolve
+    vi.mocked(workspaceApi.getBillingStatus)
+      .mockResolvedValueOnce({
+        ...status,
+        latest_subscription_op_id: 'op-a'
       })
+      .mockResolvedValueOnce({
+        ...status,
+        latest_subscription_op_id: 'op-b'
+      })
+    vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
+      async (id) => {
+        if (id === 'op-a') {
+          return new Promise((resolve) => {
+            resolveOperationA = resolve
+          })
+        }
+        return {
+          id: 'op-b',
+          started_at: '2026-10-22T00:00:00Z',
+          status: 'pending',
+          checkout_state: 'payment_received'
+        }
+      }
     )
 
     const checkout = banner()
@@ -154,9 +169,11 @@ describe('usePlanCheckoutBanner', () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceTransitionGeneration: 1
     })
-    await vi.waitFor(() => expect(checkout.banner.value).toBeNull())
+    await vi.waitFor(() =>
+      expect(checkout.banner.value?.kind).toBe('paymentReceived')
+    )
 
-    resolveOperation({
+    resolveOperationA({
       id: 'op-a',
       started_at: '2026-10-22T00:00:00Z',
       status: 'pending',
@@ -165,7 +182,6 @@ describe('usePlanCheckoutBanner', () => {
     })
     await Promise.resolve()
 
-    expect(checkout.banner.value).toBeNull()
-    expect(checkout.banner.value?.kind).not.toBe('verifyPayment')
+    expect(checkout.banner.value?.kind).toBe('paymentReceived')
   })
 })
