@@ -98,10 +98,10 @@ function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
 }
 
 function formatDialogError(error: Error): string {
+  if (!(error instanceof PromptExecutionError)) return error.toString()
   try {
     return error.toString()
-  } catch (cause) {
-    if (!(error instanceof PromptExecutionError)) throw cause
+  } catch {
     return JSON.stringify(error.response)
   }
 }

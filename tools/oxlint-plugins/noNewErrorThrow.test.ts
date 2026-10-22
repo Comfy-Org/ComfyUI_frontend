@@ -111,12 +111,11 @@ it('enforces production throws while preserving file-scope exclusions', () => {
         )
       })
       .parse(JSON.parse(result.stdout))
-    expect(
-      diagnostics
-        .filter(({ code }) => code === 'comfy(no-new-error-throw)')
-        .map(({ filename }) => path.basename(filename))
-        .sort()
-    ).toEqual([...productionFiles].sort())
+    const reportedFiles = diagnostics
+      .filter(({ code }) => code === 'comfy(no-new-error-throw)')
+      .map(({ filename }) => path.basename(filename))
+    expect(reportedFiles).toHaveLength(productionFiles.length)
+    expect(reportedFiles).toEqual(expect.arrayContaining(productionFiles))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
