@@ -4058,7 +4058,10 @@
     "linkRefused": "Couldn't open this deployment",
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
-    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again."
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked"
   },
   "selectionToolbox": {
     "executeButton": {

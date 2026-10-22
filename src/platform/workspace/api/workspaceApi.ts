@@ -172,6 +172,16 @@ export type BillingRecoveryAction = NonNullable<
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
 
+/** The node types each deployment, and Comfy Cloud, lacks for a workflow. */
+export interface DeploymentCompatibility {
+  deployments: {
+    deployment_id: string
+    missing_node_types: string[]
+    unknown?: boolean
+  }[]
+  cloud: { missing_node_types: string[] }
+}
+
 interface GetBillingEventsParams {
   page?: number
   limit?: number
@@ -427,6 +437,27 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'clearDefaultDeployment')
+    }
+  },
+
+  /**
+   * Ask which of these node types each deployment, and Comfy Cloud, lacks.
+   * POST /api/workspaces/:id/deployments/compatibility
+   */
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<DeploymentCompatibility>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes },
+        auth
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
     }
   },
 
