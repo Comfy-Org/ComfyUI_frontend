@@ -52,10 +52,10 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -238,7 +238,7 @@ vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
   () => ({
     useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
   })
@@ -271,8 +271,10 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 vi.mock(import('./crdt/devPanelLog'), { spy: true })
-vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+vi.mock(import('@/platform/billing/composables/useBillingContext'), {
+  spy: true
+})
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'), {
   spy: true
 })
 

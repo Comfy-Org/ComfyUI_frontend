@@ -25,10 +25,10 @@ import {
   showSelectedLinks
 } from '@/lib/litegraph/src/canvas/linkSelection'
 import type { Point } from '@/lib/litegraph/src/litegraph'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'

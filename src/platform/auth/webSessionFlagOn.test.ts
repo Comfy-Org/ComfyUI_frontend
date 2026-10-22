@@ -71,9 +71,9 @@ import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
