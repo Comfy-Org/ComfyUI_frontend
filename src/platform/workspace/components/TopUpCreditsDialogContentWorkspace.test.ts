@@ -1438,6 +1438,28 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(mockBillingContext().topup).toHaveBeenCalledTimes(3)
       })
 
+      it('does not retry Pay after this tab switches workspace', async () => {
+        refuseForNoPaymentMethod()
+        portalOpensAt(portalUrl)
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+
+        Object.assign(useTeamWorkspaceStore(), {
+          workspaceTransitionGeneration: 1
+        })
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() =>
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+        )
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(1)
+        expect(mockBillingContext().topup).toHaveBeenCalledWith(5000)
+      })
+
       it('does not retry Pay after Back leaves confirmation', async () => {
         refuseForNoPaymentMethod()
         portalOpensAt(portalUrl)

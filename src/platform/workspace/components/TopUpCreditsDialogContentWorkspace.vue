@@ -883,7 +883,10 @@ let stopDefaultCardReturnRefresh: (() => void) | null = null
 let checkoutScope: AbortController | null = null
 watch(
   () => workspaceStore.workspaceTransitionGeneration,
-  () => checkoutScope?.abort(),
+  () => {
+    checkoutScope?.abort()
+    stopPayRetryOnCardReturn()
+  },
   { flush: 'sync' }
 )
 onUnmounted(() => {
@@ -938,11 +941,15 @@ function armPayRetryAfterNextDeparture() {
 
 function armPayRetryOnCardReturn() {
   stopPayRetryOnCardReturn()
+  const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
     const stop = stopDefaultCardReturnRefresh
     stopDefaultCardReturnRefresh = null
     stop?.()
     if (step.value !== 'confirm') return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
+      return
+    }
     const attempt = purchaseAttempt
     await handleBuy()
     if (unmounted) return
