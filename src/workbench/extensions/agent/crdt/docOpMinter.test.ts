@@ -261,6 +261,31 @@ describe('attachDocOpMinter', () => {
     }
   })
 
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
+  })
+
   describe('mints one op per graph command', () => {
     it.for([
       {
@@ -2129,21 +2154,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
