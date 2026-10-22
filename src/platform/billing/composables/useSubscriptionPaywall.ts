@@ -1,7 +1,7 @@
 import type { SubscriptionDialogOptions } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useBillingDialogsAccess } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
-import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
+import { useBillingDialogsAccess } from '@/platform/billing/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialogAccess } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 
 /**
  * Opens the paywall for the active billing rail: workspace billing shows the

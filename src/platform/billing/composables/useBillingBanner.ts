@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isWithinEnterpriseEndingNotice } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'

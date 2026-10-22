@@ -5,7 +5,7 @@ import type { MenuItem } from '@/components/ui/menu/types'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useDeleteWorkspaceGate } from '@/platform/workspace/composables/useDeleteWorkspaceGate'

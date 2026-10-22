@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import type {
   BillingStatusResponse,
   RenewalInvoice
@@ -13,7 +13,7 @@ import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 

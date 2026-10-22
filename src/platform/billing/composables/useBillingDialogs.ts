@@ -10,9 +10,9 @@ import type {
 } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
-import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -144,7 +144,7 @@ export function useBillingDialogs() {
     flowAlreadyConfirmed?: boolean
   ) {
     const { default: component } =
-      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+      await import('@/platform/billing/subscription/components/CancelSubscriptionDialogContent.vue')
     if (isScopeCurrent && !isScopeCurrent()) return false
     const guardedProps = {
       ...(flowAlreadyOpened !== undefined ? { flowAlreadyOpened } : {}),
@@ -170,7 +170,7 @@ export function useBillingDialogs() {
     options: CancellationFlowDialogOptions
   ) {
     const { default: component } =
-      await import('@/platform/cloud/subscription/components/CancellationFlowDialogContent.vue')
+      await import('@/platform/billing/subscription/components/CancellationFlowDialogContent.vue')
     if (!options.isScopeCurrent()) return false
     return dialogStore.showDialog({
       key: 'cancel-subscription',
@@ -187,7 +187,7 @@ export function useBillingDialogs() {
   async function showCancelSubscriptionFlow(cancelAt?: string) {
     const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
     const cancellationFlow =
-      await import('@/platform/cloud/subscription/launchCancellationFlow')
+      await import('@/platform/billing/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({
       cancelAt,
       launchWorkspaceId,

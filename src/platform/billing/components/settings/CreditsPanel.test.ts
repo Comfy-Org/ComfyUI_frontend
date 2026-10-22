@@ -25,7 +25,7 @@ vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
 })
 
 vi.mock(
-  import('@/platform/cloud/subscription/components/CreditsTile.vue'),
+  import('@/platform/billing/subscription/components/CreditsTile.vue'),
   () => ({
     default: defineComponent({ setup: () => () => h('div') })
   })

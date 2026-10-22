@@ -5,8 +5,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import {
   toTierKey,
   getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import { formatUsdCents } from '@/utils/numberUtil'
 
 /**

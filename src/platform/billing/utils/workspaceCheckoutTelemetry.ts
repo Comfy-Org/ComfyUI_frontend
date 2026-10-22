@@ -5,7 +5,7 @@ import type {
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { useAuthStore } from '@/stores/authStore'
 
 interface TrackWorkspaceCheckoutStartedOptions {

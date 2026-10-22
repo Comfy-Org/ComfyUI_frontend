@@ -7,9 +7,9 @@ import { createSharedComposable, until } from '@vueuse/core'
 import {
   KEY_TO_TIER,
   getTierFeatures
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import type {
   PreviewSubscribeOptions,

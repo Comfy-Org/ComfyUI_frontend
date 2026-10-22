@@ -8,7 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -31,7 +31,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'

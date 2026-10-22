@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { Ref } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { getPlanCreditGrant } from '@/platform/cloud/subscription/utils/planCreditGrant'
+import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
 import { isCloud } from '@/platform/distribution/types'
 import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'

@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { usdToCredits } from '@/base/credits/comfyCredits'
-import { TEAM_PLAN_CREDIT_STOPS } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { TEAM_PLAN_CREDIT_STOPS } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 
 import CreditSlider from './CreditSlider.vue'
 

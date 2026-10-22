@@ -16,8 +16,8 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscribeToRunPromptPresence } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 
 const { isFreeTier } = useBillingContext()

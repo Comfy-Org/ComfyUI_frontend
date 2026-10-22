@@ -16,7 +16,7 @@ import type {
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
+import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'

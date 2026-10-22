@@ -440,12 +440,12 @@ import {
   ENTERPRISE_URL,
   TIER_PRICING,
   amountForBillingCycle
-} from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
   TierKey,
   TierPricing
-} from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
 import {
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
@@ -453,9 +453,9 @@ import {
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+} from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'

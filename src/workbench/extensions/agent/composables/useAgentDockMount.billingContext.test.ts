@@ -12,7 +12,7 @@ import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -81,10 +81,10 @@ vi.mock(import('@/platform/distribution/types'), () => {
   }
 })
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useFreeTierQuota'),
+  import('@/platform/billing/subscription/composables/useFreeTierQuota'),
   () => ({
     useFreeTierQuota: () => ({
       quotaEnabled: { value: false },
@@ -98,7 +98,7 @@ vi.mock<unknown>(
 vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  import('@/platform/billing/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => ({
       get plans() {

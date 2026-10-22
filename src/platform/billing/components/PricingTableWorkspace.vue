@@ -268,13 +268,13 @@ import {
   amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
-} from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
   TierKey,
   TierPricing
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useCommandStore } from '@/stores/commandStore'
 

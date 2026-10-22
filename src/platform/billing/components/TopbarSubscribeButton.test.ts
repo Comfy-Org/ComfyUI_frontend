@@ -1,5 +1,5 @@
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
+import { useSubscribeToRunPromptPresence } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -20,12 +20,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+  import('@/platform/billing/subscription/composables/useSubscribeCtaPresence')
 )
 
 function renderComponent(promptMounted = computed(() => false)) {

@@ -2216,7 +2216,7 @@
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/components/CreditsTile.vue": {
+    "src/platform/billing/subscription/components/CreditsTile.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -2224,7 +2224,7 @@
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/components/PricingTable.vue": {
+    "src/platform/billing/subscription/components/PricingTable.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -2238,12 +2238,12 @@
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue": {
+    "src/platform/billing/subscription/components/SubscriptionPanelContentLegacy.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/composables/usePricingTableUrlLoader.ts": {
+    "src/platform/billing/subscription/composables/usePricingTableUrlLoader.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -2251,17 +2251,17 @@
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts": {
+    "src/platform/billing/subscription/composables/useSubscriptionDialog.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts": {
+    "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts": {
+    "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts": {
       "complexity_moderate": {
         "count": 1
       }
@@ -3579,7 +3579,7 @@
     "src/core/graph/subgraph/promotionUtils.ts:circular dependency",
     "src/lib/litegraph/src/LGraph.ts:circular dependency",
     "src/composables/useTreeExpansion.ts:high impact",
-    "src/platform/cloud/subscription/components/CreditsTile.vue:complexity",
+    "src/platform/billing/subscription/components/CreditsTile.vue:complexity",
     "src/platform/assets/composables/useMediaAssetActions.ts:complexity",
     "src/platform/workflow/core/services/workflowService.ts:circular dependency",
     "src/services/litegraphService.ts:circular dependency",
@@ -3587,7 +3587,7 @@
     "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
     "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
     "browser_tests/fixtures/ComfyPage.ts:circular dependency",
-    "src/platform/cloud/subscription/composables/useSubscriptionDialog.ts:circular dependency",
+    "src/platform/billing/subscription/composables/useSubscriptionDialog.ts:circular dependency",
     "src/components/error/useErrorOverlayState.ts:high impact",
     "src/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue:circular dependency",
     "src/renderer/extensions/vueNodes/components/ImagePreview.vue:complexity",
@@ -3606,7 +3606,7 @@
     "src/stores/workspace/sidebarTabStore.ts:circular dependency",
     "src/components/TopMenuSection.vue:complexity",
     "src/composables/video/useVideoSourceUrl.ts:high impact",
-    "src/platform/cloud/subscription/composables/useFreeTierQuota.ts:high impact",
+    "src/platform/billing/subscription/composables/useFreeTierQuota.ts:high impact",
     "src/platform/assets/utils/assetFilterUtils.ts:high impact",
     "src/services/dialogService.ts:circular dependency",
     "src/scripts/ui/utils.ts:complexity",
@@ -3706,7 +3706,7 @@
     "src/workbench/extensions/manager/components/manager/ManagerDialog.vue:circular dependency",
     "src/composables/maskeditor/useCanvasHistory.ts:circular dependency",
     "src/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
-    "src/platform/cloud/subscription/components/PricingTable.vue:complexity",
+    "src/platform/billing/subscription/components/PricingTable.vue:complexity",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",
     "src/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue:complexity",

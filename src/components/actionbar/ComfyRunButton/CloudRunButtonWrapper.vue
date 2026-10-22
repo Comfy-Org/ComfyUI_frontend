@@ -19,8 +19,8 @@ import { computed } from 'vue'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 

@@ -1,5 +1,5 @@
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 
 export function resolveSubscriptionTierKey(

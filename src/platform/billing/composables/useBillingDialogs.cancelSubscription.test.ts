@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
-import { launchCancellationFlow } from '@/platform/cloud/subscription/launchCancellationFlow'
+import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
+import { launchCancellationFlow } from '@/platform/billing/subscription/launchCancellationFlow'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/i18n'))
@@ -14,7 +14,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/cloud/subscription/launchCancellationFlow'))
+vi.mock(import('@/platform/billing/subscription/launchCancellationFlow'))
 
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 

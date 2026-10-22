@@ -536,6 +536,7 @@
           "src/platform/billing/customerAttention.test.ts",
           "src/platform/billing/customerAttention.ts",
           "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
+          "src/platform/billing/subscription/constants/**",
           "src/platform/billing/utils/checkoutJourney.test.ts",
           "src/platform/billing/utils/checkoutJourney.ts"
         ]
@@ -599,7 +600,9 @@
           "src/platform/billing/composables/useWorkspaceBilling.ts",
           "src/platform/billing/composables/useWorkspacePlanPricing.ts",
           "src/platform/billing/stores/billingOperationStore.test.ts",
-          "src/platform/billing/stores/billingOperationStore.ts"
+          "src/platform/billing/stores/billingOperationStore.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts"
         ]
       },
       {
@@ -612,6 +615,11 @@
           "src/platform/billing/hostedBillingRoutes.test.ts",
           "src/platform/billing/hostedBillingRoutes.ts",
           "src/platform/billing/subscribeInput.ts",
+          "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
+          "src/platform/billing/subscription/utils/paymentReturnUrl.test.ts",
+          "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
           "src/services/customerEventsService.test.ts",
           "src/services/customerEventsService.ts"
         ]
@@ -671,7 +679,8 @@
           "src/platform/billing/components/settings/WorkspaceInvoicesContent.vue",
           "src/platform/billing/composables/useCheckoutCopy.ts",
           "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
-          "src/platform/billing/composables/useWorkspaceTierLabel.ts"
+          "src/platform/billing/composables/useWorkspaceTierLabel.ts",
+          "src/platform/billing/subscription/components/**"
         ]
       },
       {
@@ -847,12 +856,10 @@
       {
         "name": "cloud/domain",
         "patterns": [
-          "src/config/subscriptionPricesConfig.ts",
           "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
           "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
           "src/platform/cloud/onboarding/survey/surveySchema.ts",
           "src/platform/cloud/onboarding/utils/**",
-          "src/platform/cloud/subscription/constants/**",
           "src/utils/textCaseUtil.test.ts",
           "src/utils/textCaseUtil.ts"
         ]
@@ -865,9 +872,7 @@
           "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
           "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
           "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
-          "src/platform/cloud/onboarding/sso/ssoReentry.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts"
+          "src/platform/cloud/onboarding/sso/ssoReentry.ts"
         ]
       },
       {
@@ -875,12 +880,7 @@
         "patterns": [
           "src/platform/auth/cloudApiAuthProvider.ts",
           "src/platform/cloud/onboarding/auth.test.ts",
-          "src/platform/cloud/onboarding/auth.ts",
-          "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
-          "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
-          "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts"
+          "src/platform/cloud/onboarding/auth.ts"
         ]
       },
       {
@@ -888,7 +888,6 @@
         "patterns": [
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
-          "src/components/dialog/content/subscription/**",
           "src/components/topbar/CloudBadge.vue",
           "src/platform/cloud/notification/components/**",
           "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
@@ -898,8 +897,7 @@
           "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
           "src/platform/cloud/onboarding/composables/useProgressBarPainter.ts",
           "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
-          "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
-          "src/platform/cloud/subscription/components/**"
+          "src/platform/cloud/onboarding/composables/useVideoCarousel.ts"
         ]
       },
       {
@@ -3587,6 +3585,10 @@
         ]
       },
       {
+        "name": "billing/domain/outer-1",
+        "patterns": ["src/platform/billing/subscription/utils/**"]
+      },
+      {
         "name": "billing/application/outer-1",
         "patterns": ["src/storybook/**"]
       },
@@ -3629,7 +3631,6 @@
         "name": "cloud/domain/outer-1",
         "patterns": [
           "src/platform/cloud/onboarding/sso/**",
-          "src/platform/cloud/subscription/utils/**",
           "src/platform/distribution/**"
         ]
       },
@@ -3914,6 +3915,10 @@
       {
         "name": "assets/domain/outer-2",
         "patterns": ["src/platform/assets/**"]
+      },
+      {
+        "name": "billing/application/outer-2",
+        "patterns": ["src/platform/billing/subscription/**"]
       },
       {
         "name": "browser-interaction/domain/outer-2",
@@ -4332,7 +4337,7 @@
       },
       {
         "from": "billing/domain",
-        "allow": ["billing/domain", "unclassified"]
+        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
       },
       {
         "from": "billing/application",
@@ -4340,8 +4345,10 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4351,8 +4358,10 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4362,7 +4371,9 @@
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4374,8 +4385,10 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -6835,13 +6848,19 @@
         ]
       },
       {
+        "from": "billing/domain/outer-1",
+        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+      },
+      {
         "from": "billing/application/outer-1",
         "allow": [
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -6851,8 +6870,10 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -7540,6 +7561,19 @@
         "allow": ["assets/domain", "assets/domain/outer-2", "unclassified"]
       },
       {
+        "from": "billing/application/outer-2",
+        "allow": [
+          "billing/domain",
+          "billing/application",
+          "billing/infrastructure",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "browser-interaction/domain/outer-2",
         "allow": ["browser-interaction/domain/outer-2", "unclassified"]
       },
@@ -7954,6 +7988,7 @@
           "assets/presentation/outer-1",
           "assets/integration/outer-1",
           "authentication/infrastructure/outer-1",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "bottom-panel/integration/outer-1",
@@ -8026,6 +8061,7 @@
           "workflow-templates/application/outer-1",
           "workflow-thumbnails/application/outer-1",
           "assets/domain/outer-2",
+          "billing/application/outer-2",
           "browser-interaction/domain/outer-2",
           "cloud/presentation/outer-2",
           "comfyui-api/domain/outer-2",

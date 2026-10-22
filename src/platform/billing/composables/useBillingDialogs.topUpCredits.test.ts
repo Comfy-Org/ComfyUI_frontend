@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
@@ -42,7 +42,7 @@ vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'), {
 })
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'

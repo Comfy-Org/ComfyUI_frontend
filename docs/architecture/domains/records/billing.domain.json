@@ -1,7 +1,7 @@
 {
   "id": "billing",
   "capability": "Billing",
-  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation stay in the cloud record; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
+  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
   "modules": [
     {
       "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
@@ -504,6 +504,50 @@
       "role": "application"
     },
     {
+      "path": "src/platform/billing/subscription/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscription/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/subscription/constants/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/paymentReturnUrl.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts",
+      "role": "application"
+    },
+    {
       "path": "src/platform/billing/utils/**",
       "role": "infrastructure"
     },
@@ -628,6 +672,19 @@
     {
       "name": "Hosted billing web URL and destination normalization accept only known destinations",
       "checks": ["src/platform/billing/billingWeb.test.ts"]
+    },
+    {
+      "name": "Subscription plans, checkout, and cancellation follow tier policy",
+      "checks": [
+        "src/platform/billing/subscription/constants/tierPricing.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionTierRank.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+        "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+        "src/platform/billing/subscription/utils/retentionOffer.test.ts",
+        "src/platform/billing/subscription/composables/useSubscription.test.ts",
+        "src/platform/billing/subscription/launchCancellationFlow.test.ts",
+        "src/platform/billing/subscription/components/CancelSubscriptionDialogContent.test.ts"
+      ]
     }
   ],
   "adrs": [

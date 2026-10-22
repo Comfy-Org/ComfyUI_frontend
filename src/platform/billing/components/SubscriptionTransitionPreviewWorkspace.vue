@@ -32,12 +32,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
 import {
   getTierCredits,
   toTierKey
-} from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse

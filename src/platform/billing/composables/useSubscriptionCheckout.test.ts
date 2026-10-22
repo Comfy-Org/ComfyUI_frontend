@@ -1,6 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'

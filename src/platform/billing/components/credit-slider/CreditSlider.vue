@@ -15,8 +15,8 @@ import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalo
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+} from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { CreditStop } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 
 const {
   disabled = false,

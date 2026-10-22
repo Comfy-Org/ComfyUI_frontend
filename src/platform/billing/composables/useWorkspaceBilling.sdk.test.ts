@@ -40,7 +40,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  import('@/platform/billing/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => ({
       plans: { value: [] },
@@ -52,7 +52,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))

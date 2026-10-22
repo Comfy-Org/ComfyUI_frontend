@@ -145,7 +145,7 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,

@@ -238,7 +238,7 @@ vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
   () => ({
     useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
   })

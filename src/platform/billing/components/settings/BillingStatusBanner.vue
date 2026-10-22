@@ -88,8 +88,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
   BillingBannerAudience,

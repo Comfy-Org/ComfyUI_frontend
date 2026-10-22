@@ -5,7 +5,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import {
   isEnterprisePlanSlug,
   isUnknownTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
 import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey

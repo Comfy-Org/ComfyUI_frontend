@@ -116,7 +116,7 @@ vi.mock(import('@/platform/billing/composables/useResubscribe'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: state.showSubscriptionDialog })
   })

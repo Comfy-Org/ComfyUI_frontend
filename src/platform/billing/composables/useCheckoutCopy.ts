@@ -6,12 +6,12 @@ import type {
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
   getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 
 /**
  * The app's translations and catalog for the shared checkout steps.

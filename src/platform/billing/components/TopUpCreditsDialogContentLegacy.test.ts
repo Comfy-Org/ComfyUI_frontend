@@ -9,7 +9,7 @@ import enMessages from '@/locales/en/main.json'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -26,7 +26,7 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 

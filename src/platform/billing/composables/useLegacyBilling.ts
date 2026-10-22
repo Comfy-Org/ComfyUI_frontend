@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { isWorkspaceBillingRequiredError } from '@/platform/remote/comfyui/errors'
 import type {
   BillingStatus,

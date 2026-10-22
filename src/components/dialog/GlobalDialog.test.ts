@@ -8,7 +8,7 @@ import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogCont
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
+import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'

@@ -343,7 +343,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))

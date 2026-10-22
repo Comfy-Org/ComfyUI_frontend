@@ -29,7 +29,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
@@ -49,10 +49,10 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/components/SubscribeToRun.vue'),
+  import('@/platform/billing/subscription/components/SubscribeToRun.vue'),
   async () => {
     const { registerSubscribeToRunPrompt } =
-      await import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+      await import('@/platform/billing/subscription/composables/useSubscribeCtaPresence')
     return {
       default: {
         name: 'SubscribeToRun',

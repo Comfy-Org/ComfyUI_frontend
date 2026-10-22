@@ -276,7 +276,7 @@ import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/setting
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/billing/components/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 

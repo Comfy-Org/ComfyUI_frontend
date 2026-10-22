@@ -52,7 +52,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  import('@/platform/billing/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => ({
       plans: { value: [] },

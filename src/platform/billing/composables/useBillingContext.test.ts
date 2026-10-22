@@ -6,7 +6,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAuthStore } from '@/stores/authStore'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -85,10 +85,10 @@ vi.mock(import('@/platform/distribution/types'), () => {
   }
 })
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useFreeTierQuota'),
+  import('@/platform/billing/subscription/composables/useFreeTierQuota'),
   () => ({
     useFreeTierQuota: () => ({
       quotaEnabled: { value: false },
@@ -102,7 +102,7 @@ vi.mock<unknown>(
 vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  import('@/platform/billing/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => ({
       get plans() {

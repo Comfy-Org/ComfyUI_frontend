@@ -20,7 +20,7 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
-import * as tierPricing from '@/platform/cloud/subscription/constants/tierPricing'
+import * as tierPricing from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -227,7 +227,7 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
 const i18n = createI18n({

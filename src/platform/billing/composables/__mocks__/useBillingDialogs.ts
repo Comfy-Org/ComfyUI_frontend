@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 
 import type { useBillingDialogs as realUseBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 

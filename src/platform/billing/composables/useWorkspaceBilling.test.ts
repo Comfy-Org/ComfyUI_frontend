@@ -75,7 +75,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useBillingPlans'),
+  import('@/platform/billing/subscription/composables/useBillingPlans'),
   () => ({
     useBillingPlans: () => mockBillingPlans
   })
