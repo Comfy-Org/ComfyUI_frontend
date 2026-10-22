@@ -26,6 +26,7 @@ jobs:
       cancel-in-progress: false
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false' &&
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     steps:
@@ -75,6 +76,11 @@ jobs:
 
             <sub>${{ steps.urls.outputs.build-note }}</sub>
 
+            <details>
+            <summary>Deployment details</summary>
+
             <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
 
             <sub>Last updated: ${{ github.event.workflow_run.updated_at }} for `${{ steps.urls.outputs.short-sha }}`</sub>
+
+            </details>

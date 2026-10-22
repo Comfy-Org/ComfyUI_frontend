@@ -59,13 +59,13 @@ defineExpose({
     data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
-    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground"
   >
     <div
-      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border-subtle @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
+      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border/50 @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
     >
       <aside
-        class="flex min-h-0 shrink-0 flex-col gap-6 overflow-y-auto border-b border-border-subtle p-6 @[48rem]/template-detail:row-span-2 @[48rem]/template-detail:gap-8 @[48rem]/template-detail:border-r @[48rem]/template-detail:border-b-0 @[48rem]/template-detail:p-8"
+        class="flex min-h-0 shrink-0 flex-col gap-6 overflow-y-auto border-b border-border/50 p-6 @[48rem]/template-detail:row-span-2 @[48rem]/template-detail:gap-8 @[48rem]/template-detail:border-r @[48rem]/template-detail:border-b-0 @[48rem]/template-detail:p-8"
       >
         <div class="w-full shrink-0 overflow-hidden rounded-lg">
           <slot name="preview" />
@@ -74,7 +74,7 @@ defineExpose({
         <section
           v-if="cloudUrl"
           :aria-labelledby="cloudTitleId"
-          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
+          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary/50 p-4"
         >
           <div class="flex min-w-0 flex-col gap-2">
             <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
@@ -103,7 +103,7 @@ defineExpose({
             rel="noopener noreferrer"
             variant="secondary"
             size="md"
-            class="w-full text-base-foreground no-underline"
+            class="w-full no-underline"
           >
             {{ t('templateWorkflows.detail.openInCloud') }}
           </Button>
@@ -124,7 +124,7 @@ defineExpose({
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2 @[48rem]/template-detail:px-6"
+        class="min-h-0 overflow-y-auto border-t border-border/50 px-4 py-2 @[48rem]/template-detail:px-6"
       >
         <WorkflowTemplateDetailGroup
           v-for="group in groups"
@@ -137,7 +137,7 @@ defineExpose({
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border/50 px-6 py-4"
     >
       <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
         <Button

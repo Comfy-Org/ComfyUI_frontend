@@ -1,3 +1,6 @@
+import { once } from 'es-toolkit'
+import type { WatchHandle } from 'vue'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
@@ -72,8 +75,8 @@ export const useExtensionService = () => {
   } = useErrorHandling()
 
   /**
-   * Register an extension with the app
-   * @param extension The extension to register
+   * Register an extension with the app.
+   * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
@@ -91,8 +94,6 @@ export const useExtensionService = () => {
     extension.settings?.forEach(addSetting)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
-      // TODO(huchenlei): We should deprecate the async return value of
-      // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
           const widgets = await extension.getCustomWidgets(useApp())
@@ -100,6 +101,8 @@ export const useExtensionService = () => {
         }
       })()
     }
+
+    const authHookHandles: WatchHandle[] = []
 
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
@@ -114,9 +117,11 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onUserResolved((user) => {
-        void handleUserResolved(user)
-      })
+      authHookHandles.push(
+        onUserResolved((user) => {
+          void handleUserResolved(user)
+        })
+      )
     }
 
     if (extension.onAuthTokenRefreshed) {
@@ -132,9 +137,11 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onTokenRefreshed(() => {
-        void handleTokenRefreshed()
-      })
+      authHookHandles.push(
+        onTokenRefreshed(() => {
+          void handleTokenRefreshed()
+        })
+      )
     }
 
     if (extension.onAuthUserLogout) {
@@ -150,10 +157,17 @@ export const useExtensionService = () => {
           toastErrorHandler(error)
         }
       )
-      onUserLogout(() => {
-        void handleUserLogout()
-      })
+      authHookHandles.push(
+        onUserLogout(() => {
+          void handleUserLogout()
+        })
+      )
     }
+
+    return once(() => {
+      authHookHandles.forEach((stop) => stop())
+      extensionStore.unregisterExtension(extension.name)
+    })
   }
 
   type RemoveLastAppParam<T> = T extends (

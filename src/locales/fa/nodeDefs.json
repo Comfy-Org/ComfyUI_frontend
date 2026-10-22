@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "تبدیل متن به گفتار. از نشانه‌های احساسی در متن ([happy]، [whispering] در s2.1-pro؛ (happy) در s1) و گفت‌وگوی چندگوینده از طریق برچسب‌های {'@'}Voice1/{'@'}Voice2 با چند صدای متصل پشتیبانی می‌کند.",
+    "description": "متن را به گفتار تبدیل می‌کند. از نشانه‌های احساس در متن ([happy]، [whispering] در s2.1-pro؛ (happy) در s1)، [directions] با زبان ساده و تگ‌های واژهٔ `<whisper>...</whisper>` در drama-3، و گفت‌وگوی چندگوینده از طریق تگ‌های {'@'}Voice1/{'@'}Voice2 با چند صدای متصل پشتیبانی می‌کند.",
     "display_name": "تبدیل متن به گفتار Fish Audio",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "یک ویدئو را با شخصیت‌ها، مکان‌ها یا سبک‌های جدید از تصاویر مرجع بازسازی می‌کند، در حالی که حرکت، حرکت دوربین و زمان‌بندی آن حفظ می‌شود.",
+    "display_name": "انتقال حرکت Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که استفاده می‌شود."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
     "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "زاویه چرخش"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "روشنایی sRGB را به HDR از نوع Rec.2020 HLG گسترش می‌دهد. نتیجه را با انتخاب فضای رنگی HDR ذخیره کنید. کانال آلفا حفظ می‌شود.",
+    "display_name": "تبدیل SDR به HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "الگوریتم",
+        "tooltip": "بسط منطقی به سبک Lottes که با یک منحنی log-gain یکنواختِ کالیبره ترکیب شده است."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر(های) SDR در sRGB."
       }
     },
     "outputs": {

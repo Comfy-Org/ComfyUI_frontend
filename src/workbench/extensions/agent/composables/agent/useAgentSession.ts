@@ -1,5 +1,6 @@
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
@@ -29,7 +30,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -38,30 +39,33 @@ import {
   zAttachmentRejection,
   zDisownedWorkflowError,
   zTurnInProgressError
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
   OpenTabsSnapshot,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AskUserResolution,
   AssistantMessage
-} from '../../services/agent/agentMessageParts'
-import { toAskResolution } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
-import type { LiveTurn } from '../../stores/agent/agentConversationStore'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { WorkflowReference } from '../../types/workflowReference'
-import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  isAttachmentKind,
+  normalizeAgentTranscript
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { serializeWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -75,7 +79,7 @@ interface SessionNotice {
 
 type SentAttachment = Pick<
   ComposerAttachment,
-  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl' | 'mediaKind'
 >
 
 interface SentTag {
@@ -114,8 +118,15 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
+  /**
+   * Re-send the user's credential on an interval while a turn runs, so a long
+   * local turn never outlives its token. Off in the cloud, where fetchApi
+   * authenticates every request.
+   */
+  refreshCredentialDuringTurns?: boolean
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -371,6 +382,8 @@ function consumeStopPendingAck() {
   return pending
 }
 
+const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
@@ -393,7 +406,15 @@ function reportSendFailure(error: unknown): void {
   if (isAttachmentTypeRejection(error)) return
   reportError(error, {
     surface: 'agent',
-    errorType: 'agent_send_message_failed'
+    errorType: 'agent_send_message_failed',
+    tags:
+      error instanceof AgentApiError
+        ? {
+            status: error.status,
+            operation: error.operation,
+            retryAfterSeconds: error.retryAfterSeconds
+          }
+        : undefined
   })
 }
 
@@ -417,8 +438,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onAgentEvent,
     onThreadActivated,
     onAskResolved,
+    refreshCredentialDuringTurns = false,
     workflow
   } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -529,6 +552,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
   )
+
+  useIntervalFn(() => {
+    if (!refreshCredentialDuringTurns) return
+    if (conversationStore.liveTurns().length === 0) return
+    rest.refreshCredential().catch((error: unknown) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_refreshing_agent_credential',
+        level: 'warning'
+      })
+    )
+  }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -1087,11 +1122,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
         name,
         previewUrl,
         mediaUrl,
-        ref
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
@@ -1221,7 +1257,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1252,7 +1289,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
         ack,
         text,
@@ -1280,6 +1317,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function observeAcceptedTurn(
+    generation: number,
+    onAccepted?: () => void
+  ): boolean {
+    onAccepted?.()
+    return generation === loadGeneration
+  }
+
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
@@ -1294,7 +1339,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1316,7 +1362,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        onAccepted
       )
       if (!sent) stopPendingAck = null
       return sent
@@ -1595,10 +1642,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingThreadSource.value = source ?? null
   }
 
-  function listThreads() {
-    return rest.listThreads()
-  }
-
   async function loadThread(
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
@@ -1789,6 +1832,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
+    onAgentEvent?.(parsed.data)
     handleAgentEvent(parsed.data)
   }
 
@@ -1982,7 +2026,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
-    listThreads,
     loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),

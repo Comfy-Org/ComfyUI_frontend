@@ -1,0 +1,30 @@
+---
+interface Props {
+  images: readonly {
+    url: string
+    alt?: string
+    type?: string
+    width?: number
+    height?: number
+  }[]
+  fallbackAlt?: string
+}
+const { images, fallbackAlt } = Astro.props
+---
+
+{images.map((image) => (
+  <>
+    <meta
+      property="og:image"
+      content={new URL(image.url, Astro.site ?? 'https://comfy.org').href}
+    />
+    {image.type && <meta property="og:image:type" content={image.type} />}
+    {image.width !== undefined && (
+      <meta property="og:image:width" content={String(image.width)} />
+    )}
+    {image.height !== undefined && (
+      <meta property="og:image:height" content={String(image.height)} />
+    )}
+    <meta property="og:image:alt" content={image.alt ?? fallbackAlt} />
+  </>
+))}

@@ -1,9 +1,15 @@
+import type {
+  SubgraphInput,
+  SubgraphOutput,
+  LGraph,
+  LGraphNode,
+  Reroute
+} from '@/lib/litegraph/src/types/entityRegistry'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -18,10 +24,9 @@ import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { Reroute } from './Reroute'
+
 import type { CanvasColour, ISlotType, LinkSegment, Point } from './interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
@@ -726,4 +731,16 @@ export function unregisterAllLinkTopologies(
   ]) {
     unregisterLinkTopology(link)
   }
+}
+
+type RegisteredLLink = LLink
+type RegisteredSerialisedLLinkArray = SerialisedLLinkArray
+type RegisteredResolvedConnection = ResolvedConnection
+
+declare module './types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    SerialisedLLinkArray: RegisteredSerialisedLLinkArray
+    ResolvedConnection: RegisteredResolvedConnection
+  }
+  interface LLink extends RegisteredLLink {}
 }

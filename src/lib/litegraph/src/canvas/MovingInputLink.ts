@@ -1,8 +1,13 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { graphScopeOf } from '@/types/graphScopeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
@@ -11,7 +16,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/types/slots'
 import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
@@ -151,4 +156,10 @@ export class MovingInputLink extends MovingLinkBase {
   disconnect(): boolean {
     return this.inputNode.disconnectInput(this.inputIndex, true)
   }
+}
+
+type RegisteredMovingInputLink = MovingInputLink
+
+declare module '../types/entityRegistry' {
+  interface MovingInputLink extends RegisteredMovingInputLink {}
 }

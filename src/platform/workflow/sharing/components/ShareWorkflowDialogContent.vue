@@ -1,10 +1,6 @@
 <template>
-  <div
-    class="flex w-xl max-w-full flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-lg"
-  >
-    <header
-      class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
-    >
+  <Card class="flex w-xl max-w-full flex-col shadow-lg">
+    <header class="flex h-12 items-center justify-between gap-2 border-b px-4">
       <div
         v-if="showPublishToHubTab"
         role="tablist"
@@ -30,9 +26,16 @@
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
-      <div v-else class="select-none">
+      <DialogTitle
+        :class="
+          cn(
+            'm-0 text-sm font-normal select-none',
+            showPublishToHubTab && 'sr-only'
+          )
+        "
+      >
         {{ $t('shareWorkflow.shareLinkTab') }}
-      </div>
+      </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
         <i class="icon-[lucide--x] size-4" />
       </Button>
@@ -118,14 +121,11 @@
             :url="publishResult.shareUrl"
             :share-id="publishResult.shareId"
           />
-          <div class="flex flex-col gap-1">
-            <p
-              v-if="publishResult.publishedAt"
-              class="m-0 text-xs text-muted-foreground"
-            >
+          <div class="flex flex-col gap-1 text-xs text-muted-foreground">
+            <p v-if="publishResult.publishedAt" class="m-0">
               {{ $t('shareWorkflow.publishedOn', { date: formattedDate }) }}
             </p>
-            <p class="m-0 text-xs text-muted-foreground">
+            <p class="m-0">
               {{ $t('shareWorkflow.successDescription') }}
             </p>
           </div>
@@ -185,10 +185,11 @@
         />
       </div>
     </main>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -199,6 +200,7 @@ import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/pr
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
@@ -294,8 +296,8 @@ function tabButtonClass(mode: DialogMode) {
   return cn(
     'cursor-pointer border-none transition-colors',
     dialogMode.value === mode
-      ? 'bg-secondary-background text-base-foreground'
-      : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+      ? 'bg-secondary text-foreground'
+      : 'bg-transparent text-muted-foreground hover:bg-accent'
   )
 }
 

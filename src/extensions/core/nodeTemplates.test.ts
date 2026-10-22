@@ -1,11 +1,5 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromAny } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
-
-import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyApi } from '@/scripts/api'
-import { app } from '@/scripts/app'
-
-const getUserData = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
@@ -17,19 +11,12 @@ vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({ getUserData, storeUserData: vi.fn() })
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/scripts/ui'), () => ({
-  ComfyDialog: fromAny(
-    class {
-      element = document.createElement('div')
-    }
-  ),
-  $el: fromAny((tag: string) => document.createElement(tag))
+vi.mock(import('@/scripts/ui'), async () => ({
+  ComfyDialog: (await import('@/scripts/ui/dialog')).ComfyDialog
 }))
 
 function createDeferred<T>() {
@@ -42,21 +29,43 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-const response = createDeferred<{
-  status: number
-  json: () => Promise<unknown>
-}>()
-getUserData.mockReturnValue(response.promise)
+async function importNodeTemplates(getUserData: Promise<Response>) {
+  vi.resetModules()
+  document.body.replaceChildren()
+  const { api } = await import('@/scripts/api')
+  const { app } = await import('@/scripts/app')
+  const { reportError } = await import('@/platform/telemetry/reportError')
+  vi.mocked(api.getUserData).mockReturnValue(getUserData)
+  await import('./nodeTemplates')
+  const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
+  return { api, app, reportError, extension }
+}
 
-await import('./nodeTemplates')
-const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
+it('defers loading templates and creating the import input until setup', async () => {
+  const { api, app, extension } = await importNodeTemplates(
+    Promise.resolve(new Response(null))
+  )
+
+  expect(api.getUserData).not.toHaveBeenCalled()
+  expect(document.body.childElementCount).toBe(0)
+
+  await extension.setup?.(app)
+  await extension.setup?.(app)
+
+  expect(api.getUserData).toHaveBeenCalledOnce()
+  expect(document.body.querySelectorAll('input[type="file"]')).toHaveLength(1)
+})
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
+  const response = createDeferred<Response>()
+  const { app, reportError, extension } = await importNodeTemplates(
+    response.promise
+  )
+  await extension.setup?.(app)
   const error = new Error('invalid template JSON')
-  response.resolve({
-    status: 200,
-    json: () => Promise.reject(error)
-  })
+  const invalidResponse = new Response()
+  vi.spyOn(invalidResponse, 'json').mockRejectedValue(error)
+  response.resolve(invalidResponse)
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {

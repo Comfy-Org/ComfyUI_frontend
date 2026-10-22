@@ -29,7 +29,6 @@ export function useAuthDialogs() {
         component: ApiNodesSignInContent,
         props: {
           apiNodeNames,
-          titleId: key,
           onLogin: () => showSignInDialog().then((result) => resolve(result)),
           onCancel: () => resolve(false)
         },

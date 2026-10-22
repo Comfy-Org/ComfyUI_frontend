@@ -3,11 +3,17 @@ import { nextTick, ref, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { askIdOf } from '../../services/agent/agentMessageParts'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentMessages,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentChatEvent } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
@@ -992,6 +998,53 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      const deleteTranscript = (): AgentMessages => [
+        historyRow(1, 'user', 'turn-1', 'Tidy up', 'user-message-1'),
+        zAgentMessages.parse([
+          {
+            id: 'assistant-message-1',
+            thread_id: 'th',
+            seq: 2,
+            role: 'assistant',
+            status: 'streaming',
+            turn_id: 'turn-1',
+            pending_ask: {
+              ...pendingAskUser,
+              kind: 'delete_approval',
+              options: [
+                { id: 'delete', label: 'Delete' },
+                { id: 'keep', label: 'Keep' }
+              ],
+              allow_other: false,
+              context: { action: 'delete_nodes', nodes: [{ id: '12' }] }
+            }
+          }
+        ])[0]
+      ]
+      store.hydrate(deleteTranscript())
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: ['keep'] },
+        'th'
+      )
+
+      store.hydrate(deleteTranscript())
+
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: { status: 'answered', selected: ['keep'] }
+        })
+      ])
+    })
+
     it('rebuilds a retired question read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1941,7 +1994,7 @@ describe('useAgentConversationStore', () => {
     },
     { name: 'an empty terminal row', persisted: undefined, kept: ['askUser'] }
   ])(
-    'keeps an answered question but drops a pending one and its stand-in when $name settles the turn',
+    'keeps an answered question but drops pending questions, delete approvals and stand-ins when $name settles the turn',
     ({ persisted, kept }) => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1985,12 +2038,67 @@ describe('useAgentConversationStore', () => {
           data: { ...ask, ask_id: 'q-2', kind: 'something_new' }
         })
       )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: {
+            ...ask,
+            ask_id: 'q-3',
+            kind: 'delete_approval',
+            options: [
+              { id: 'delete', label: 'Delete' },
+              { id: 'keep', label: 'Keep' }
+            ],
+            context: {
+              action: 'delete_nodes',
+              nodes: [{ id: '12', type: 'KSampler' }]
+            }
+          }
+        })
+      )
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+        'askUser',
+        'askUser',
+        'askUnavailable',
+        'deleteApproval'
+      ])
 
       store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
 
       expect(store.messages[0].parts.map((part) => part.type)).toEqual(kept)
     }
   )
+
+  it.for([
+    {
+      name: 'persisted thinking replaces the streamed thinking',
+      persisted: [
+        { type: 'thinking', text: 'planning the whole turn', state: 'done' },
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning the whole turn', 'done']
+    },
+    {
+      name: 'a row without thinking keeps the streamed thinking',
+      persisted: [
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning', 'done']
+    }
+  ])('settles a recovered turn so $name', ({ persisted, expected }) => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(thinking('t1', 'planning'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+    expect(
+      store.messages[0].parts.map((part) =>
+        part.type === 'thinking' || part.type === 'text' ? part.text : part.type
+      )
+    ).toEqual(expected)
+  })
 
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()

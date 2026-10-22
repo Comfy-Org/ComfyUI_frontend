@@ -284,6 +284,25 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(false)
     })
 
+    it.for([
+      { served: 'activating' as const, expected: 'activating' as const },
+      { served: undefined, expected: null }
+    ])(
+      'renders subscription_state $served as $expected',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          ...(served === undefined ? {} : { subscription_state: served })
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscriptionState.value).toBe(expected)
+        expect(billing.subscription.value?.isActive).toBe(true)
+      }
+    )
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -729,6 +748,45 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false }
+    ])(
+      'passes low_balance $served through as received',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          low_balance: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value?.lowBalance).toBe(expected)
+      }
+    )
+
+    it('leaves low balance unset when the balance response omits it', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.lowBalance).toBeUndefined()
+    })
+
+    it('passes the server-suggested top-up through as received', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+        ...positiveBalance,
+        suggested_topup_amount_cents: 11_400
+      })
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.suggestedTopupAmountCents).toBe(11_400)
+    })
+
     it('sets error and rethrows when fetchBalance fails', async () => {
       mockWorkspaceApi.getBillingBalance.mockRejectedValue(
         new Error('balance failed')
@@ -1001,7 +1059,7 @@ describe('useWorkspaceBilling', () => {
       })
 
       const billing = setupBilling()
-      await billing.manageSubscription()
+      await expect(billing.manageSubscription()).resolves.toEqual({ ok: true })
 
       expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
         'https://app.example/settings'
@@ -1029,19 +1087,31 @@ describe('useWorkspaceBilling', () => {
     it.for([
       ['empty string', ''],
       ['null', null]
-    ])('closes the reserved tab when API returns %s url', async ([, url]) => {
-      const { tab } = stubPortalTab()
+    ])(
+      'closes the reserved tab and tells the customer when API returns %s url',
+      async ([, url]) => {
+        const { tab } = stubPortalTab()
 
-      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
-        url: url as string
-      })
+        mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+          url: url as string
+        })
 
-      const billing = setupBilling()
-      await billing.manageSubscription()
+        const billing = setupBilling()
+        await expect(billing.manageSubscription()).resolves.toEqual({
+          ok: false,
+          reason: 'missing_url'
+        })
 
-      expect(tab.close).toHaveBeenCalledOnce()
-      expect(tab.location.href).toBe('')
-    })
+        expect(tab.close).toHaveBeenCalledOnce()
+        expect(tab.location.href).toBe('')
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'error',
+            description: "Couldn't open billing. Try again."
+          })
+        ])
+      }
+    )
 
     it.for([
       { name: 'the legacy client', railEnabled: false },
@@ -1080,7 +1150,9 @@ describe('useWorkspaceBilling', () => {
         mockRail.enabled = railEnabled
 
         const billing = setupBilling()
-        await billing.manageSubscription()
+        await expect(billing.manageSubscription()).resolves.toEqual({
+          ok: true
+        })
 
         // The disowned-tab technique opens a blank tab before navigating it,
         // so the hosted URL lands on the tab handle, not on the open() call.
@@ -1140,7 +1212,10 @@ describe('useWorkspaceBilling', () => {
           url: 'https://billing.example/portal'
         })
 
-        await setupBilling().manageSubscription()
+        await expect(setupBilling().manageSubscription()).resolves.toEqual({
+          ok: false,
+          reason: 'blocked'
+        })
 
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
@@ -1193,11 +1268,13 @@ describe('useWorkspaceBilling', () => {
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
         new Error('portal down')
       )
+      const { tab } = stubPortalTab()
 
       const billing = setupBilling()
 
       await expect(billing.manageSubscription()).rejects.toThrow('portal down')
       expect(billing.error.value).toBe('portal down')
+      expect(tab.close).toHaveBeenCalledOnce()
     })
 
     it('re-reads billing state once when the tab regains visibility after opening the portal', async () => {

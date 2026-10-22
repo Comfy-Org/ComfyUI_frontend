@@ -2,7 +2,7 @@
   <span
     :class="
       cn(
-        'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full bg-interface-panel-selected-surface',
+        'inline-flex aspect-square items-center justify-center overflow-hidden rounded-full bg-muted',
         size === 'large' ? 'size-12' : 'size-8'
       )
     "

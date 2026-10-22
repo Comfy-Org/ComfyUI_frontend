@@ -1,6 +1,5 @@
-import { MODAL_LAYER_SELECTOR } from '@/utils/modalLayerStack'
-
-const REKA_LAYER_SELECTORS = `[data-dismissable-layer], [data-reka-popper-content-wrapper], ${MODAL_LAYER_SELECTOR}:not([data-slot="dialog-overlay"])`
+const REKA_LAYER_SELECTORS =
+  '[data-dismissable-layer], [data-reka-popper-content-wrapper]'
 
 const TOAST_SELECTORS = '[data-toast-kind], [data-toast-dock]'
 

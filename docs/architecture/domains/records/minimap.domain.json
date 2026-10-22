@@ -4,27 +4,11 @@
   "description": "Graph overview rendering, viewport navigation, settings, redraw scheduling, and the shared minimap decoration registry. Canvas stores remain external.",
   "modules": [
     {
-      "path": "src/renderer/extensions/minimap/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/minimap/data/**",
+      "path": "src/platform/canvas/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/renderer/extensions/minimap/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/minimap/minimapCanvasRenderer.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts",
+      "path": "src/renderer/extensions/minimap/**",
       "role": "infrastructure"
     },
     {
@@ -36,8 +20,12 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/canvas/minimapDecorationRegistry.ts",
-      "role": "infrastructure"
+      "path": "src/renderer/extensions/minimap/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

@@ -94,7 +94,6 @@ export const TestIds = {
     cloudNotification: 'cloud-notification-dialog',
     openSharedWorkflow: 'open-shared-workflow-dialog',
     openSharedWorkflowTitle: 'open-shared-workflow-title',
-    openSharedWorkflowClose: 'open-shared-workflow-close',
     openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
     openSharedWorkflowCancel: 'open-shared-workflow-cancel',
     openSharedWorkflowOpenWithoutImporting:
@@ -184,6 +183,7 @@ export const TestIds = {
     convertSubgraph: 'convert-to-subgraph-button',
     bypass: 'bypass-button',
     hideLinks: 'hide-links-button',
+    showLinks: 'show-links-button',
     deleteLinks: 'delete-links-button'
   },
   helpCenter: {

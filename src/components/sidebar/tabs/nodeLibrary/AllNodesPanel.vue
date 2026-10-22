@@ -13,7 +13,7 @@
       show-context-menu
       @node-click="(node) => emit('nodeClick', node)"
     />
-    <div v-else class="px-6 py-2 text-xs text-muted-background">
+    <div v-else class="px-6 py-2 text-xs text-muted-foreground">
       {{ $t('sideToolbar.nodeLibraryTab.noBookmarkedNodes') }}
     </div>
 

@@ -856,7 +856,7 @@ describe('useMinimap', () => {
       )
       expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
       expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid #FFF')
+      expect(viewportStyles.border).toBe('2px solid var(--foreground)')
     })
 
     it('should handle canvas dimension updates', async () => {
@@ -890,7 +890,7 @@ describe('useMinimap', () => {
 
       expect(styles.width).toBe('253px')
       expect(styles.height).toBe('200px')
-      expect(styles.border).toBe('1px solid var(--interface-stroke)')
+      expect(styles.border).toBe('1px solid var(--border)')
       expect(styles.borderRadius).toBe('8px')
     })
   })

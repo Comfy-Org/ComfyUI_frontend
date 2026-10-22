@@ -287,33 +287,25 @@ describe('LGraphCanvas group selection', () => {
       canvas.groupSelectChildren = true
     })
 
-    it('modifier-click deselects only the group, not its children', () => {
-      canvas.select(group)
-      expect(group.selected).toBe(true)
-      expect(nodeA.selected).toBe(true)
-      expect(nodeB.selected).toBe(true)
+    it.for<Parameters<LGraphCanvas['processSelect']>[1]>([
+      { shiftKey: true, ctrlKey: false, metaKey: false },
+      { shiftKey: false, ctrlKey: true, metaKey: false }
+    ])(
+      'modifier-click %o deselects the group and its cascaded children',
+      (modifiers) => {
+        canvas.select(group)
+        expect(group.selected).toBe(true)
+        expect(nodeA.selected).toBe(true)
+        expect(nodeB.selected).toBe(true)
 
-      const shiftEvent = { shiftKey: true } as CanvasPointerEvent
-      canvas.processSelect(group, shiftEvent)
+        canvas.processSelect(group, modifiers)
 
-      expect(group.selected).toBe(false)
-      expect(canvas.selectedItems.has(group)).toBe(false)
-      expect(nodeA.selected).toBe(true)
-      expect(nodeB.selected).toBe(true)
-      expect(canvas.selectedItems.has(nodeA)).toBe(true)
-      expect(canvas.selectedItems.has(nodeB)).toBe(true)
-    })
-
-    it('ctrl-click deselects only the group, not its children', () => {
-      canvas.select(group)
-
-      const ctrlEvent = { ctrlKey: true } as CanvasPointerEvent
-      canvas.processSelect(group, ctrlEvent)
-
-      expect(group.selected).toBe(false)
-      expect(nodeA.selected).toBe(true)
-      expect(nodeB.selected).toBe(true)
-    })
+        expect(canvas.selectedItems.size).toBe(0)
+        expect(group.selected).toBe(false)
+        expect(nodeA.selected).toBe(false)
+        expect(nodeB.selected).toBe(false)
+      }
+    )
 
     it('ignores a foreign group with the same id', () => {
       canvas.select(group)

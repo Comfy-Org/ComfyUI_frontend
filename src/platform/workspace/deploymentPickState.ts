@@ -50,8 +50,8 @@ export type DeploymentPickState =
   /** Nothing has answered yet; the switcher is not shown. */
   | { phase: 'idle' }
   /**
-   * The account is outside the rollout, the session cannot pick, or the
-   * first listing failed (for example ingest without these routes).
+   * The account is outside the rollout, ingest has no deployment routes,
+   * the session cannot pick, or the first listing failed.
    */
   | { phase: 'hidden' }
   | ({ phase: 'ready' } & DeploymentListing)
@@ -70,7 +70,10 @@ export type DeploymentPickState =
 
 export type DeploymentPickEvent =
   | ({ type: 'loaded' } & DeploymentListing)
-  /** A 403: the account is outside the rollout, whatever was shown before. */
+  /**
+   * A 403 (the account is outside the rollout) or a 404 (ingest without
+   * these routes): hidden, whatever was shown before.
+   */
   | { type: 'loadRefused' }
   /** Any other failure: keep a listing already shown, else stay hidden. */
   | { type: 'loadFailed' }
@@ -83,6 +86,8 @@ export type DeploymentPickEvent =
    * answers, and end the switch.
    */
   | { type: 'defaultChanged'; defaultDeploymentId: string | null }
+  /** This browser dropped its own pick of the default and now follows it. */
+  | { type: 'followedInPlace' }
   /** Another workspace or account: nothing shown belongs to it. */
   | { type: 'workspaceChanged' }
 
@@ -139,6 +144,11 @@ export function reduceDeploymentPick(
         ...listing,
         defaultDeploymentId: event.defaultDeploymentId,
         goneDefaultDeploymentId: null
+      }))
+    case 'followedInPlace':
+      return endSwitch(state, (listing) => ({
+        ...listing,
+        pickSource: 'workspace_default'
       }))
     case 'workspaceChanged':
       return { phase: 'idle' }

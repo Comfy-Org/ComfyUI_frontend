@@ -7,12 +7,12 @@ import type {
   ActivityPart,
   AssistantMessage,
   TextPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
   isOpenAskPart
-} from '../../../services/agent/agentMessageParts'
-import { htmlReplyAssets } from '../../../utils/replyAssets'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
