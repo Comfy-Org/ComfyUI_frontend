@@ -1413,16 +1413,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
         window.dispatchEvent(new Event('focus'))
         await waitFor(() =>
-          expect(
-            screen.getByRole('button', { name: 'Set a default card' })
-          ).toBeDisabled()
+          expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
         )
-        await waitFor(() =>
-          expect(
-            screen.getByRole('button', { name: 'Set a default card' })
-          ).toBeEnabled()
-        )
-        expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        expect(
+          screen.getByRole('button', { name: 'Set a default card' })
+        ).toBeEnabled()
         expect(useToast().error).not.toHaveBeenCalled()
         expect(listCards).not.toHaveBeenCalled()
 

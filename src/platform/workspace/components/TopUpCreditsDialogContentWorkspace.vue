@@ -736,7 +736,7 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
-async function handleBuy(options?: { keepRefusalUntilSettled?: boolean }) {
+async function handleBuy() {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
@@ -744,7 +744,7 @@ async function handleBuy(options?: { keepRefusalUntilSettled?: boolean }) {
   purchaseAttempt += 1
   const attempt = purchaseAttempt
   const isCurrentAttempt = () => attempt === purchaseAttempt
-  if (!options?.keepRefusalUntilSettled) checkoutRecovery.value = null
+  checkoutRecovery.value = null
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -866,7 +866,6 @@ function reportPurchaseError(
     if (currentAttempt) checkoutRecovery.value = 'refused'
     return
   }
-  if (currentAttempt) checkoutRecovery.value = null
   toast.error(t('credits.topUp.purchaseError'), {
     description: purchaseErrorDetail(error)
   })
@@ -921,7 +920,7 @@ function armPayRetryOnCardReturn() {
     stopDefaultCardReturnRefresh = null
     stop?.()
     const attempt = purchaseAttempt
-    await handleBuy({ keepRefusalUntilSettled: true })
+    await handleBuy()
     if (unmounted) return
     if (purchaseAttempt === attempt || checkoutRecovery.value === 'refused') {
       armPayRetryOnCardReturn()
