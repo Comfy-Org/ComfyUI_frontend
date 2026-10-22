@@ -738,7 +738,6 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
-  if (step.value !== 'confirm') return
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
