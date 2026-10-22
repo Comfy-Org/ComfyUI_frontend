@@ -1136,7 +1136,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stopPendingTurn(ack.thread_id, turnId)
   }
 
-  function stopPendingTurn(threadId: string | null, turnId: TurnId | null): void {
+  function stopPendingTurn(
+    threadId: string | null,
+    turnId: TurnId | null
+  ): void {
     const pendingStop = consumeStopPendingAck()
     if (pendingStop === null || threadId === null || turnId === null) return
     if (turnId === conversationStore.activeTurnId)
