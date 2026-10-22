@@ -126,6 +126,7 @@ describe('a human-added node across a tab switch', () => {
       docInputNames: followerApi.docInputNames,
       docPromotedWidgets: followerApi.docPromotedWidgets,
       mayWritePromotedHost: followerApi.mayWritePromotedHost,
+      docHasSubgraphDefinition: followerApi.docHasSubgraphDefinition,
       onWidgetWriteRefused: followerApi.notifyWidgetWriteRefused
     })
     const cleanup = () => {

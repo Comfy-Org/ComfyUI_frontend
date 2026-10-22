@@ -162,6 +162,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
         docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
         docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
         mayWritePromotedHost: () => true,
+        docHasSubgraphDefinition: () => true,
         onWidgetWriteRefused: () => {}
       })
       onTestFinished(() => port.detach())
@@ -227,6 +228,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
       docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
       docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
     onTestFinished(() => port.detach())

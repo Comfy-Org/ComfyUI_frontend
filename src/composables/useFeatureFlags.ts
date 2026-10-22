@@ -138,6 +138,12 @@ export function useFeatureFlags() {
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
+    /** ComfyUI's `agent` server feature; callers validate `state`. */
+    get agent() {
+      return api.getServerFeature<{ state?: unknown } | null | undefined>(
+        ServerFeatureFlag.AGENT
+      )
+    },
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
@@ -202,6 +208,9 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get deployToCloud() {
+      return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(

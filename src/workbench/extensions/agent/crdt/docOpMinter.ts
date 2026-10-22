@@ -14,6 +14,7 @@
 import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
+  SubgraphDefinition,
   WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
@@ -28,6 +29,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -87,6 +89,8 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /** Whether the bound document holds a subgraph definition by this id. */
+  docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
@@ -463,6 +467,52 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
+  function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
+    try {
+      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: subgraph.id }
+      })
+      return null
+    }
+  }
+
+  function mintMissingDefinitions(
+    hosts: readonly SubgraphNode[]
+  ): GraphOperation[] {
+    const operations: GraphOperation[] = []
+    const available = new Map<string, boolean>()
+    const define = (subgraph: Subgraph): boolean => {
+      const settled = available.get(subgraph.id)
+      if (settled !== undefined) return settled
+      available.set(subgraph.id, false)
+      const dependenciesAvailable = subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .map((node) => define(node.subgraph))
+        .every(Boolean)
+      if (deps.docHasSubgraphDefinition(subgraph.id)) {
+        available.set(subgraph.id, true)
+        return true
+      }
+      const definition = dependenciesAvailable
+        ? serialisedDefinition(subgraph)
+        : null
+      if (!definition) return false
+      operations.push({
+        op: 'define_subgraph',
+        subgraph_id: subgraph.id,
+        subgraph_definition: definition
+      })
+      available.set(subgraph.id, true)
+      return true
+    }
+    for (const host of hosts) define(host.subgraph)
+    return operations
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -470,13 +520,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
+    const hosts: SubgraphNode[] = []
     const operations = batch.flatMap((entry) => {
-      const operation =
-        entry.kind === 'op'
-          ? entry.operation
-          : mintAddNodeOperation(entry.graph, entry.node)
-      return operation ? [operation] : []
+      if (entry.kind === 'op') return [entry.operation]
+      const operation = mintAddNodeOperation(entry.graph, entry.node)
+      if (!operation) return []
+      if (entry.node.isSubgraphNode()) hosts.push(entry.node)
+      return [operation]
     })
+    operations.push(...mintMissingDefinitions(hosts))
     if (operations.length > 0) deps.enqueue(operations)
   }
 
