@@ -2,6 +2,8 @@ import type { CccWebsiteCardsPage } from '@comfyorg/ingest-types'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
+  creatorPageResponse,
+  creatorPageStatus,
   loadCatalogCreator,
   loadCatalogCreators,
   loadCreatorPage
@@ -359,6 +361,61 @@ describe('loadCreatorPage', () => {
         location
       })
       expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+})
+
+describe('creator profile route answer', () => {
+  it.for([
+    {
+      case: 'a mixed-case username',
+      username: 'PurZ',
+      profile: 200,
+      response: 301,
+      location: '/hub/creators/purz/',
+      status: 200
+    },
+    {
+      case: 'an unknown creator',
+      username: 'ghost',
+      profile: 404,
+      response: undefined,
+      location: null,
+      status: 404
+    },
+    {
+      case: 'a profile read that does not succeed',
+      username: 'purz',
+      profile: 500,
+      response: 503,
+      location: null,
+      status: 200
+    },
+    {
+      case: 'a creator with cards',
+      username: 'purz',
+      profile: 200,
+      response: undefined,
+      location: null,
+      status: 200
+    }
+  ])(
+    'answers $case with response $response and page status $status',
+    async ({ username, profile, response, location, status }) => {
+      serve({
+        [`/api/v1/catalog/creators/${username}`]: () =>
+          profile === 200
+            ? Response.json({ username, display_name: 'Purz' })
+            : new Response(null, { status: profile }),
+        '/api/v1/catalog/cards': () => Response.json(cardsPage())
+      })
+
+      const page = await loadCreatorPage(undefined, 'en', username)
+      const answer = creatorPageResponse(page)
+
+      expect(answer?.status).toBe(response)
+      expect(answer?.headers.get('Location') ?? null).toBe(location)
+      expect(creatorPageStatus(page)).toBe(status)
     }
   )
 })

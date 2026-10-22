@@ -10,7 +10,7 @@ import {
 import type { AuthoringSession } from './authoring-session'
 import { loadSiteCatalogList } from './catalog-list'
 import { cmsEnabled } from './cms-enabled'
-import { fetchCatalogJson } from './catalog'
+import { catalogUnavailable, fetchCatalogJson } from './catalog'
 import { everyCursorPage } from './catalog-list-all'
 
 const CREATORS_PATH = '/api/v1/catalog/creators'
@@ -159,4 +159,20 @@ export async function loadCreatorPage(
       location: hubCreatorPath(username, locale)
     } as const
   return loadCatalogCreator(session, locale, username)
+}
+
+type CreatorPage = Awaited<ReturnType<typeof loadCreatorPage>>
+
+/** The response the profile route returns before it renders, if any. */
+export function creatorPageResponse(page: CreatorPage) {
+  if (page.status === 'redirect')
+    return new Response(null, {
+      status: 301,
+      headers: { Location: page.location }
+    })
+  return page.status === 'unavailable' ? catalogUnavailable() : undefined
+}
+
+export function creatorPageStatus(page: CreatorPage) {
+  return page.status === 'missing' ? 404 : 200
 }

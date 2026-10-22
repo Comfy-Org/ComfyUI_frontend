@@ -1,7 +1,10 @@
 ---
 import CreatorProfile from '@/components/hub/CreatorProfile.astro'
-import { catalogUnavailable } from '@/lib/cms/catalog'
-import { loadCreatorPage } from '@/lib/cms/catalog-creators'
+import {
+  creatorPageResponse,
+  creatorPageStatus,
+  loadCreatorPage
+} from '@/lib/cms/catalog-creators'
 import NotFound from '@/pages/404.astro'
 
 const locale = Astro.locals.catalogLocale ?? 'en'
@@ -10,14 +13,9 @@ const profile = await loadCreatorPage(
   locale,
   Astro.params.username ?? ''
 )
-const response =
-  profile.status === 'redirect'
-    ? Astro.redirect(profile.location, 301)
-    : profile.status === 'unavailable'
-      ? catalogUnavailable()
-      : undefined
+const response = creatorPageResponse(profile)
 if (response) return response
-if (profile.status === 'missing') Astro.response.status = 404
+Astro.response.status = creatorPageStatus(profile)
 ---
 
 {profile.status === 'ok' ? (

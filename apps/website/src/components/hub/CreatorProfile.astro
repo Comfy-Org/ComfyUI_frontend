@@ -48,7 +48,10 @@ const directoryPath = `${catalogLocalePrefix(locale)}${HUB_CREATORS_PATH}/`
   breadcrumbs={[
     {
       name: t('workshop.hub.creators.hub'),
-      url: absoluteUrl(Astro.site, HUB_MODELS_PATH)
+      url: absoluteUrl(
+        Astro.site,
+        `${catalogLocalePrefix(locale)}${HUB_MODELS_PATH}`
+      )
     },
     {
       name: t('workshop.hub.creators.title'),
