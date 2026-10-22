@@ -67,6 +67,7 @@ export interface FrameChanges {
 export interface RemoteApplyContext {
   actor: string
   opIds: readonly string[]
+  liveAgentTurn?: boolean
 }
 
 export interface LiveGraphApplierDeps {
@@ -638,7 +639,10 @@ export class LiveGraphApplier {
         }
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        if (mode === 'merge') this.placeBatch(graph, created)
+        if (mode === 'merge')
+          this.placeBatch(graph, created, {
+            moveCollisions: context.liveAgentTurn === true
+          })
         return {
           createdNodeIds: created,
           failureCount: this.currentFailureCount()
@@ -1240,7 +1244,11 @@ export class LiveGraphApplier {
     return created ? 'connected' : 'refused'
   }
 
-  private placeBatch(graph: LGraph, created: readonly NodeId[]): void {
+  private placeBatch(
+    graph: LGraph,
+    created: readonly NodeId[],
+    { moveCollisions }: { moveCollisions: boolean }
+  ): void {
     if (created.length === 0) return
     const createdSet = new Set(created)
     const rect = (node: LGraphNode): PlacementRect => ({
@@ -1255,7 +1263,8 @@ export class LiveGraphApplier {
         .filter((node) => !createdSet.has(node.id))
         .map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect)
+      incoming: incoming.map(rect),
+      moveCollisions
     })
     if (!offset) return
     for (const node of incoming) {
