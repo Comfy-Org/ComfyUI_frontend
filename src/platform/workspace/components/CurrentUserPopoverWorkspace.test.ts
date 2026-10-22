@@ -104,10 +104,6 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
   `
 })
 
-const DeploymentSwitcherStub = defineComponent({
-  template: '<div data-testid="deployment-switcher" />'
-})
-
 const SubscribeButtonStub = defineComponent({
   props: {
     label: { type: String, required: true }
@@ -140,8 +136,7 @@ function renderComponent(
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
         WorkspaceProfilePic: true,
-        Divider: true,
-        DeploymentSwitcher: DeploymentSwitcherStub
+        Divider: true
       }
     }
   })
@@ -306,19 +301,6 @@ describe('CurrentUserPopoverWorkspace', () => {
         !canSwitch
       )
     })
-  })
-
-  it('shows the deployment switcher on Cloud', () => {
-    renderComponent()
-
-    expect(screen.getByTestId('deployment-switcher')).toBeInTheDocument()
-  })
-
-  it('does not show the deployment switcher on Local', () => {
-    state.isCloud = false
-    renderComponent()
-
-    expect(screen.queryByTestId('deployment-switcher')).not.toBeInTheDocument()
   })
 
   it('exposes the full workspace name on hover', async () => {
