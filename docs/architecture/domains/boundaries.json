@@ -3463,10 +3463,9 @@
         "patterns": [
           "src/components/actionbar/PartnerNodesEducationCard.test.ts",
           "src/components/actionbar/PartnerNodesEducationCard.vue",
-          "src/components/custom/**",
           "src/components/sidebar/SidebarTemplatesButton.test.ts",
           "src/components/sidebar/SidebarTemplatesButton.vue",
-          "src/components/templates/**"
+          "src/platform/workflow/templates/components/**"
         ]
       },
       {

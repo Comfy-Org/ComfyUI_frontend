@@ -802,7 +802,7 @@
         "count": 1
       }
     },
-    "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue": {
+    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -3698,7 +3698,7 @@
     "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
     "src/extensions/core/rerouteNode.ts:complexity",
     "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts:complexity",
-    "src/components/custom/widget/WorkflowTemplateSelectorDialog.vue:complexity",
+    "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue:complexity",
     "src/utils/executionUtil.ts:complexity",
     "src/scripts/metadata/avif.ts:complexity",
     "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTemplateDownloadFailure from '@/components/custom/widget/WorkflowTemplateDownloadFailure.vue'
+import WorkflowTemplateDownloadFailure from '@/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'

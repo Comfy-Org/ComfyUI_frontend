@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import HoverDissolveThumbnail from '@/platform/workflow/templates/components/thumbnails/HoverDissolveThumbnail.vue'
 
 vi.mock<unknown>(
-  import('@/components/templates/thumbnails/BaseThumbnail.vue'),
+  import('@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'),
   () => ({
     default: {
       name: 'BaseThumbnail',

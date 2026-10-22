@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
-import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
+import AudioThumbnail from '@/platform/workflow/templates/components/thumbnails/AudioThumbnail.vue'
+import CompareSliderThumbnail from '@/platform/workflow/templates/components/thumbnails/CompareSliderThumbnail.vue'
+import DefaultThumbnail from '@/platform/workflow/templates/components/thumbnails/DefaultThumbnail.vue'
+import HoverDissolveThumbnail from '@/platform/workflow/templates/components/thumbnails/HoverDissolveThumbnail.vue'
+import LogoOverlay from '@/platform/workflow/templates/components/thumbnails/LogoOverlay.vue'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
 const {

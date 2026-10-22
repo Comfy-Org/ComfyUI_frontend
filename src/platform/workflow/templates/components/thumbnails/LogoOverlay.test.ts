@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
+import LogoOverlay from '@/platform/workflow/templates/components/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 
 type LogoOverlayProps = ComponentProps<typeof LogoOverlay>

@@ -12,19 +12,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/custom/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/SidebarTemplatesButton.test.ts",
       "role": "presentation"
     },
     {
       "path": "src/components/sidebar/SidebarTemplatesButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/templates/**",
       "role": "presentation"
     },
     {
@@ -54,6 +46,10 @@
     {
       "path": "src/platform/workflow/templates/**",
       "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/components/**",
+      "role": "presentation"
     },
     {
       "path": "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts",
@@ -109,10 +105,10 @@
     {
       "name": "Template selector dialog filters templates, shows detail and model download status",
       "checks": [
-        "src/components/custom/widget/WorkflowTemplateSelectorDialog.test.ts",
-        "src/components/custom/widget/WorkflowTemplateSelectorDialog.detail.test.ts",
-        "src/components/custom/widget/TemplateFilterControls.test.ts",
-        "src/components/custom/widget/WorkflowTemplateDownloadFailure.test.ts"
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.detail.test.ts",
+        "src/platform/workflow/templates/components/TemplateFilterControls.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.test.ts"
       ]
     },
     {

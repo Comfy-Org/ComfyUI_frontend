@@ -23,7 +23,7 @@
 import { computed } from 'vue'
 
 import LazyImage from '@/components/common/LazyImage.vue'
-import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
+import BaseThumbnail from '@/platform/workflow/templates/components/thumbnails/BaseThumbnail.vue'
 
 const { baseImageSrc, overlayImageSrc, isVideo, isHovered } = defineProps<{
   baseImageSrc: string
