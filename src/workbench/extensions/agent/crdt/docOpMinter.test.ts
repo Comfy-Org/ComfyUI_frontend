@@ -757,10 +757,6 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     })
 
-    // PM-2080: ResizeImageMaskNode grows `resize_type.match` only while
-    // `resize_type` is 'match size'. A document minted under another selection
-    // has no such slot, so the human link into it, and its later removal,
-    // never reached the document the agent reads.
     it('grows a dynamic-combo input the document minted under another selection lacks, so its connect and disconnect both land', async () => {
       const resizeType: ComfyNodeDefV1['input'] = {
         required: {
