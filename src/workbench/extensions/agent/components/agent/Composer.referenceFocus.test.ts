@@ -1,0 +1,82 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
+import { computed, defineComponent, h, ref } from 'vue'
+
+import { i18n } from '@/i18n'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useCanvasSelection } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import Composer from './Composer.vue'
+import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+setupInlinePromptEditorDom()
+
+function renderComposer() {
+  const store = useAgentComposerStore()
+  store.setNodeScope('workflow-A')
+  const selected = ref<SelectedNode[]>([])
+  const Host = defineComponent({
+    setup() {
+      const selection = useCanvasSelection({
+        staged: computed({ get: () => store.nodes, set: store.setNodes }),
+        selection: selected,
+        scope: () => store.nodeScope,
+        isLive: true
+      })
+      return () =>
+        h(Composer, {
+          hasWorkflowTarget: true,
+          selectionTags: selection.staged.value
+        })
+    }
+  })
+  render(Host, {
+    global: { plugins: [i18n] }
+  })
+  return { store, editor: screen.getByRole('textbox') }
+}
+
+describe('composer focus after node reference chips', () => {
+  it.for([
+    {
+      nodes: [{ id: '5', title: 'KSampler' }],
+      text: ' hello'
+    },
+    {
+      nodes: [
+        { id: '5', title: 'KSampler' },
+        { id: '12', title: 'VAE Decode' }
+      ],
+      text: '  hello'
+    }
+  ])(
+    'focuses an open composer and types after $nodes.length chip(s)',
+    async ({ nodes, text }) => {
+      const { editor, store } = renderComposer()
+      store.setNodes(nodes)
+      store.requestEditorFocus()
+
+      await waitFor(() => expect(editor).toHaveFocus())
+      await userEvent.keyboard('hello')
+
+      expect(store.prompt.text).toBe(text)
+      expect(store.prompt.references[0]?.textOffset).toBe(0)
+    }
+  )
+
+  it('focuses after mount when chips were added while the editor was unmounted', async () => {
+    const store = useAgentComposerStore()
+    store.setNodeScope('workflow-A')
+    store.setNodes([{ id: '5', title: 'KSampler' }])
+    store.requestEditorFocus()
+
+    const { editor } = renderComposer()
+
+    await waitFor(() => expect(editor).toHaveFocus())
+    await userEvent.keyboard('hello')
+
+    expect(store.prompt.text).toBe(' hello')
+    expect(store.prompt.references[0]?.textOffset).toBe(0)
+  })
+})

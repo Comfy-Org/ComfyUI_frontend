@@ -34,8 +34,8 @@ function resolveNodes(nodeIds: readonly NodeId[]): SelectedNode[] {
 }
 
 /**
- * Adds each node as a composer reference chip and opens the agent panel if it
- * is closed. Does not send or change the prompt text.
+ * Adds each node as a composer reference chip, focuses the composer after the
+ * last chip, and opens the agent panel if it is closed.
  */
 export function referenceNodesInAgent(nodeIds: readonly NodeId[]): boolean {
   const panel = useAgentPanelStore()
@@ -55,6 +55,7 @@ export function referenceNodesInAgent(nodeIds: readonly NodeId[]): boolean {
     ...composer.nodes,
     ...nodes.filter((node) => !existingKeys.has(selectedNodeKey(node)))
   ])
+  composer.requestEditorFocus()
   if (!panel.isOpen) panel.open('selection_toolbox')
   return true
 }

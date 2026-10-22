@@ -42,6 +42,7 @@ describe('referenceNodesInAgent', () => {
     expect(referenceNodesInAgent([node.id])).toBe(false)
     expect(panel.isOpen).toBe(false)
     expect(useAgentComposerStore().nodes).toEqual([])
+    expect(useAgentComposerStore().editorFocusEpoch).toBe(0)
   })
 
   it('does nothing when none of the ids resolve to graph nodes', () => {
@@ -90,6 +91,7 @@ describe('referenceNodesInAgent', () => {
     ])
     expect(composer.draft.trim()).toBe('')
     expect(composer.submission).toBeNull()
+    expect(composer.editorFocusEpoch).toBeGreaterThan(0)
     expect(useTelemetry()?.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'selection_toolbox'
     })
@@ -112,6 +114,7 @@ describe('referenceNodesInAgent', () => {
       }
     ])
     expect(composer.submission).toBeNull()
+    expect(composer.editorFocusEpoch).toBeGreaterThan(0)
     expect(useTelemetry()?.trackAgentPanelOpened).not.toHaveBeenCalled()
   })
 
