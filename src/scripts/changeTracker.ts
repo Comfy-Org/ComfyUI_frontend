@@ -481,16 +481,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
     }
   }
 
-  /**
-   * Snapshot the current canvas state into activeState and push undo.
-   * INVARIANT: only the active workflow's tracker may read from the canvas.
-   * Calling this on an inactive tracker would capture the wrong graph.
-   */
+  /** Snapshot the workflow's own graph into activeState and push undo. */
   captureCanvasState() {
+    const graph = this.workflow.graph
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !useApp().isGraphReady ||
+      !graph ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -502,12 +499,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return
     }
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      const nodeHistoryWidgets = collectNodeHistoryWidgets(useApp().rootGraph)
+      const nodeHistoryWidgets = collectNodeHistoryWidgets(graph)
       if (
         !differsOnlyInNodeHistoryWidgets(
           previousState,
@@ -529,15 +524,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
     }
   }
   squashState = useDebounceFn(() => {
-    if (
-      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
-    )
-      return
+    const graph = this.workflow.graph
+    if (!graph || !isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState

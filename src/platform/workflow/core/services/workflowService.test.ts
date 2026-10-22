@@ -551,6 +551,7 @@ describe('useWorkflowService', () => {
     it('reloads canvas edits made after the reload was requested', async () => {
       const workflow = createModeTestWorkflow()
       workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
+      workflow.adoptGraph(app.rootGraph)
       useWorkflowStore().activeWorkflow = workflow
       const reloading = useWorkflowService().reloadCurrentWorkflow()
       app.rootGraph.extra.agentEdit = true
