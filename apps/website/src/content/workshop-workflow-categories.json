@@ -1,0 +1,30 @@
+[
+  {
+    "id": "videos",
+    "label": { "en": "Create & edit videos", "zh-CN": "创作与编辑视频" },
+    "highlight": "workflows/image-to-video"
+  },
+  {
+    "id": "characters",
+    "label": { "en": "Animate characters", "zh-CN": "让角色动起来" },
+    "highlight": "workflows/motion-transfer"
+  },
+  {
+    "id": "product",
+    "label": {
+      "en": "Create product photos & ads",
+      "zh-CN": "制作产品照片与广告"
+    },
+    "highlight": "workflows/change-material"
+  },
+  {
+    "id": "upscale",
+    "label": { "en": "Upscale & restore", "zh-CN": "放大与修复" },
+    "highlight": "workflows/upscale-and-restore"
+  },
+  {
+    "id": "cleanup",
+    "label": { "en": "Edit & clean up photos", "zh-CN": "编辑与修整照片" },
+    "highlight": "workflows/edit-selected-region"
+  }
+]

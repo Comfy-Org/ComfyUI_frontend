@@ -336,11 +336,6 @@ export function useVideoFilmstrip(
     { immediate: true }
   )
 
-  function retry() {
-    const url = videoUrl.value
-    if (url) void loadVideo(url)
-  }
-
   onScopeDispose(cancelActiveLoad)
 
   return {
@@ -352,7 +347,6 @@ export function useVideoFilmstrip(
     fps,
     fileSize,
     loading,
-    error,
-    retry
+    error
   }
 }

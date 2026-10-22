@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { useHubStore } from '../../composables/useHubStore'
-import { badgesAvailableIn, templatesInTab } from '../../lib/hub/hub-tabs'
-import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
+import { useHubStore } from '@/composables/useHubStore'
+import { badgesAvailableIn, templatesInTab } from '@/lib/hub/hub-tabs'
+import type { HubTemplate } from '@/lib/hub/types'
+import type { Locale } from '@/i18n/translations'
 import type {
   FacetGroupConfig,
   SortOption,
@@ -18,7 +18,7 @@ export interface GridLabels {
   readonly loadMore: string
   readonly empty: string
   readonly emptyHint: string
-  readonly showing: string
+  readonly showing: (shown: number, total: number) => string
 }
 
 const {
@@ -100,16 +100,14 @@ const hasMore = computed(
   () => displayCount.value < sortedTemplates.value.length
 )
 const showingText = computed(() =>
-  labels.showing
-    .replace('{shown}', String(displayedTemplates.value.length))
-    .replace('{total}', String(sortedTemplates.value.length))
+  labels.showing(displayedTemplates.value.length, sortedTemplates.value.length)
 )
 </script>
 
 <template>
   <div class="w-full min-w-0 flex-1">
     <div
-      class="bg-page sticky top-20 z-30 mb-6 py-4 max-sm:mb-3 max-sm:py-2 lg:top-26"
+      class="sticky top-20 z-30 mb-6 bg-page py-4 max-sm:mb-3 max-sm:py-2 lg:top-26"
     >
       <BrowseToolbar
         :templates="facetSource"
@@ -149,7 +147,7 @@ const showingText = computed(() =>
       v-if="
         store.activeTab.value !== 'models' && displayedTemplates.length === 0
       "
-      class="text-content-muted py-20 text-center"
+      class="py-20 text-center text-content-muted"
       data-testid="hub-empty"
     >
       <p class="text-lg">{{ labels.empty }}</p>
@@ -160,16 +158,16 @@ const showingText = computed(() =>
       <button
         type="button"
         data-testid="hub-load-more"
-        class="border-brand text-brand hover:bg-brand hover:text-page inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border px-12 text-sm font-semibold tracking-wider uppercase transition-colors"
+        class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
         @click="displayCount += PAGE"
       >
-        <span class="ppformula-text-center-sm">{{ labels.loadMore }}</span>
+        <span>{{ labels.loadMore }}</span>
       </button>
     </div>
 
     <div
       v-if="store.activeTab.value !== 'models'"
-      class="text-hub-muted pt-2 pb-4 text-center text-sm"
+      class="pt-2 pb-4 text-center text-sm text-hub-muted"
       data-testid="hub-showing"
     >
       {{ showingText }}

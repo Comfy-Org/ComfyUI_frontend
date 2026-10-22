@@ -45,9 +45,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 }
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-  })
+  test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
 
   test.describe('Selection Toolbox', () => {
     test('Should open help menu for selected node', async ({ comfyPage }) => {
@@ -86,10 +84,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
 
       // Find the KSampler node in search results
-      const ksamplerNode = comfyPage.page
-        .locator('.tree-explorer-node-label')
-        .filter({ hasText: 'KSampler' })
-        .first()
+      const ksamplerNode = comfyPage.menu.nodeLibraryTab.getNode('KSampler')
       await expect(ksamplerNode).toBeVisible()
 
       // Hover over the node to show action buttons
@@ -123,10 +118,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
 
       // Find and interact with the node
-      const ksamplerNode = comfyPage.page
-        .locator('.tree-explorer-node-label')
-        .filter({ hasText: 'KSampler' })
-        .first()
+      const ksamplerNode = comfyPage.menu.nodeLibraryTab.getNode('KSampler')
       await ksamplerNode.hover()
       const helpButton = ksamplerNode.getByRole('button', {
         name: /learn more/i
@@ -153,8 +145,11 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   })
 
   test.describe('Help Content', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    test.use({
+      initialSettings: {
+        'Comfy.NodeLibrary.NewDesign': false,
+        'Comfy.Canvas.SelectionToolbox': true
+      }
     })
 
     test('Should display loading state while fetching help', async ({
@@ -177,7 +172,9 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Verify loading spinner is shown
       const helpPage = await openSelectionToolboxHelp(comfyPage)
-      await expect(helpPage.locator('.p-progressspinner')).toBeVisible()
+      await expect(
+        helpPage.getByRole('progressbar', { name: 'Loading' })
+      ).toBeVisible()
 
       // Wait for content to load
       await expect(helpPage).toContainText('Test Help Content')
@@ -358,7 +355,13 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
     })
 
     test.describe('Locale-specific documentation', () => {
-      test.use({ initialSettings: { 'Comfy.Locale': 'ja' } })
+      test.use({
+        initialSettings: {
+          'Comfy.NodeLibrary.NewDesign': false,
+          'Comfy.Canvas.SelectionToolbox': true,
+          'Comfy.Locale': 'ja'
+        }
+      })
 
       test('Should handle locale-specific documentation', async ({
         comfyPage
@@ -396,8 +399,13 @@ This is English documentation.
     })
 
     test('Should handle network errors gracefully', async ({ comfyPage }) => {
+      let releaseResponse = () => {}
+      const responseGate = new Promise<void>((resolve) => {
+        releaseResponse = resolve
+      })
       // Mock network error
       await comfyPage.page.route('**/docs/**/*.md', async (route) => {
+        await responseGate
         await route.abort('failed')
       })
 
@@ -407,10 +415,16 @@ This is English documentation.
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpPage = await openSelectionToolboxHelp(comfyPage)
+      const spinner = helpPage.getByRole('progressbar', { name: 'Loading' })
+      try {
+        await expect(spinner).toBeVisible()
+      } finally {
+        releaseResponse()
+      }
 
       // Should show fallback content (node description)
       await expect(helpPage).toBeVisible()
-      await expect(helpPage.locator('.p-progressspinner')).toBeHidden()
+      await expect(spinner).toBeHidden()
 
       // Should show some content even on error
       await expect(helpPage).not.toHaveText('')

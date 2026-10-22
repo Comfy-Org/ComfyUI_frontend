@@ -1,4 +1,4 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import { createSharedComposable } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
@@ -15,9 +15,7 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
-
-function useNodeDragIndividual() {
+export const useNodeDrag = createSharedComposable(() => {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
@@ -47,7 +45,11 @@ function useNodeDragIndividual() {
   let lastPointerX = 0
   let lastPointerY = 0
 
-  function startDrag(event: PointerEvent, nodeId: NodeId) {
+  function startDrag(
+    event: PointerEvent,
+    nodeId: NodeId,
+    initialShiftKey: boolean
+  ) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
@@ -56,7 +58,7 @@ function useNodeDragIndividual() {
     const position = layout.position
 
     // Track shift key state and sync to canvas for snap preview
-    stopShiftSync = trackShiftKey(event)
+    stopShiftSync = trackShiftKey(initialShiftKey)
 
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
@@ -215,12 +217,6 @@ function useNodeDragIndividual() {
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
 
-    const { target, pointerId } = event
-    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
-      // Delay capture to drag to allow for the Node cloning
-      target.setPointerCapture(pointerId)
-    }
-
     lastPointerX = event.clientX
     lastPointerY = event.clientY
     startAutoPan(event, nodeId)
@@ -317,10 +313,10 @@ function useNodeDragIndividual() {
     }
   }
 
-  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,
-    endDrag
+    endDrag,
+    cancelDrag: resetDragState
   }
-}
+})

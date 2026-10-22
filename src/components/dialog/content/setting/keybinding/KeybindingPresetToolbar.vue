@@ -9,10 +9,7 @@
           {{ displayLabel }}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent
-        :style="contentStyle"
-        class="max-w-64 min-w-0 **:[[role=listbox]]:gap-1"
-      >
+      <SelectContent class="max-w-64 min-w-0">
         <div class="max-w-60">
           <SelectItem
             value="default"
@@ -28,16 +25,16 @@
           >
             {{ name }}
           </SelectItem>
-          <hr class="h-px max-w-60 border border-border-default" />
+          <hr class="h-px max-w-60 border" />
           <button
-            class="relative flex w-full max-w-60 cursor-pointer items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none select-none hover:bg-secondary-background-hover focus:bg-secondary-background-hover"
+            class="relative flex w-full max-w-60 cursor-pointer items-center justify-between gap-3 rounded-sm border-none bg-transparent p-2 text-sm outline-none select-none hover:bg-accent focus:bg-accent"
             @click.stop="handleImportFromDropdown"
           >
             <span class="truncate">
               {{ $t('g.keybindingPresets.importKeybindingPreset') }}
             </span>
             <i
-              class="icon-[lucide--file-input] shrink-0 text-base-foreground"
+              class="icon-[lucide--file-input] shrink-0 text-foreground"
               aria-hidden="true"
             />
           </button>
@@ -49,7 +46,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -61,9 +57,8 @@ import SelectValue from '@/components/ui/select/SelectValue.vue'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 
-const { presetNames, contentStyle } = defineProps<{
+const { presetNames } = defineProps<{
   presetNames: string[]
-  contentStyle?: StyleValue
 }>()
 
 const emit = defineEmits<{

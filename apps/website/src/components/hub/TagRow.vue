@@ -10,10 +10,11 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { hubTagUrl } from '../../lib/hub/routes'
-import { tagDisplayName } from '../../lib/hub/tag-aliases'
+import { hubTagUrl } from '@/lib/hub/routes'
+import { tagDisplayName } from '@/lib/hub/tag-aliases'
 
-// Inside a card that is itself a link, the chips cannot be anchors.
+// Inside a card that is itself a link, the chips cannot be anchors and the
+// overflow cannot be a button.
 const {
   tags,
   fallbackLabel = '',
@@ -94,12 +95,14 @@ const pillClass =
       </component>
       <HoverCardRoot v-if="hiddenTags.length" :open-delay="120">
         <HoverCardTrigger
-          as="button"
-          type="button"
-          :aria-label="hiddenTags.map((tag) => tag.label).join(', ')"
+          :as="linkTags ? 'button' : 'span'"
+          :type="linkTags ? 'button' : undefined"
+          :aria-label="
+            linkTags ? hiddenTags.map((tag) => tag.label).join(', ') : undefined
+          "
           :class="cn(pillClass, 'cursor-default tabular-nums')"
           data-testid="tag-overflow"
-          @click.prevent.stop
+          @click.stop
         >
           +{{ hiddenTags.length }}
         </HoverCardTrigger>
@@ -108,7 +111,7 @@ const pillClass =
             side="top"
             align="start"
             :side-offset="6"
-            class="bg-site-dropdown z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 p-2 shadow-2xl shadow-black/50"
+            class="z-50 flex max-w-64 flex-col gap-1.5 rounded-2xl border border-white/10 bg-site-dropdown p-2 shadow-2xl shadow-black/50"
             data-testid="tag-overflow-list"
           >
             <span

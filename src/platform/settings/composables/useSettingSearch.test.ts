@@ -1,18 +1,13 @@
-import type * as I18nModule from '@/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { st } from '@/i18n'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type { SettingParams } from '@/platform/settings/types'
 
-// Mock dependencies
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  st: vi.fn((_: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 describe('useSettingSearch', () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>

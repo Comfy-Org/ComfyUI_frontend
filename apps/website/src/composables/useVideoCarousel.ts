@@ -87,11 +87,12 @@ export function useVideoCarousel({
     if (index === activeIndex.value) handle()
   }
 
-  /** Outside reactivity: read once per frame by `progress()`, never in a render. */
-  let slideStartedAt = performance.now()
+  /** Start of the live watchdog deadline. `armWatchdog` resets it and `progress()`
+   *  reads it once per frame, so the fallback bar tracks the same clock the
+   *  watchdog does instead of a wall clock that never resets. */
+  let slideDeadlineStartedAt = performance.now()
 
   watch(activeIndex, () => {
-    slideStartedAt = performance.now()
     isPlaying.value = false
     const incoming = activeVideo.value
     if (incoming) incoming.currentTime = 0
@@ -130,7 +131,10 @@ export function useVideoCarousel({
    *  or `ended`, so silence from `timeupdate` is the only signal it died. */
   const armWatchdog = () => {
     stopWatchdog()
-    if (count > 1 && shouldPlay.value) startWatchdog()
+    if (count > 1 && shouldPlay.value) {
+      slideDeadlineStartedAt = performance.now()
+      startWatchdog()
+    }
   }
 
   watch([isPlaying, activeIndex, shouldPlay], armWatchdog, { immediate: true })
@@ -175,7 +179,7 @@ export function useVideoCarousel({
       slideProgress({
         currentTime: activeVideo.value?.currentTime ?? 0,
         duration: activeVideo.value?.duration ?? Number.NaN,
-        elapsedMs: performance.now() - slideStartedAt,
+        elapsedMs: performance.now() - slideDeadlineStartedAt,
         fallbackMs
       })
   }

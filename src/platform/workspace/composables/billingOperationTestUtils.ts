@@ -1,4 +1,4 @@
-import type { useBillingOperationStore } from '../stores/billingOperationStore'
+import type { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 export type BillingOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>
@@ -19,8 +19,8 @@ export function billingOperation(
     isAuthenticating: false,
     canRetryAuthentication: false,
     authenticationRequiredSeen: false,
+    blockedOnCustomerSeen: false,
     workspaceId: 'workspace-1',
-    autoHandleRequiresAction: false,
     phase: null,
     dismissed: false,
     ...overrides

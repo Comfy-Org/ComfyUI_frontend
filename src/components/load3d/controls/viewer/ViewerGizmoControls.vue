@@ -7,10 +7,10 @@
         :model-value="gizmoEnabled ? 'on' : 'off'"
         @update:model-value="(v) => (gizmoEnabled = v === 'on')"
       >
-        <ToggleGroupItem value="off" size="sm">
+        <ToggleGroupItem value="off" size="sm" class="flex-1">
           {{ $t('g.off') }}
         </ToggleGroupItem>
-        <ToggleGroupItem value="on" size="sm">
+        <ToggleGroupItem value="on" size="sm" class="flex-1">
           {{ $t('g.on') }}
         </ToggleGroupItem>
       </ToggleGroup>
@@ -27,13 +27,13 @@
             }
           "
         >
-          <ToggleGroupItem value="translate">
+          <ToggleGroupItem value="translate" class="flex-1">
             {{ $t('load3d.gizmo.translate') }}
           </ToggleGroupItem>
-          <ToggleGroupItem value="rotate">
+          <ToggleGroupItem value="rotate" class="flex-1">
             {{ $t('load3d.gizmo.rotate') }}
           </ToggleGroupItem>
-          <ToggleGroupItem value="scale">
+          <ToggleGroupItem value="scale" class="flex-1">
             {{ $t('load3d.gizmo.scale') }}
           </ToggleGroupItem>
         </ToggleGroup>
@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
+import type { GizmoMode } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const gizmoEnabled = defineModel<boolean>('gizmoEnabled')
 const gizmoMode = defineModel<GizmoMode>('gizmoMode')

@@ -3,8 +3,9 @@ import { expect } from '@playwright/test'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
-test.describe('Load3D', () => {
+test.describe('Load3D', { tag: '@vue-nodes' }, () => {
   test(
     'Renders canvas with upload buttons and controls menu',
     { tag: ['@smoke', '@screenshot'] },
@@ -34,7 +35,7 @@ test.describe('Load3D', () => {
 
       await expect(load3d.menuButton).toBeVisible()
 
-      await expect(load3d.node).toHaveScreenshot('load3d-empty-node.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-empty-node.png', {
         maxDiffPixelRatio: 0.05
       })
     }
@@ -54,7 +55,8 @@ test.describe('Load3D', () => {
       await expect(load3d.getMenuCategory('Gizmo')).toBeVisible()
       await expect(load3d.exportButton).toBeVisible()
 
-      await expect(load3d.node).toHaveScreenshot(
+      await expectElementScreenshot(
+        load3d.node,
         'load3d-controls-menu-open.png',
         { maxDiffPixelRatio: 0.05 }
       )
@@ -80,7 +82,7 @@ test.describe('Load3D', () => {
         )
         .toBe('#cc3333')
 
-      await expect(load3d.node).toHaveScreenshot('load3d-red-background.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-red-background.png', {
         maxDiffPixelRatio: 0.05
       })
     }
@@ -115,7 +117,7 @@ test.describe('Load3D', () => {
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
       await load3d.waitForModelLoaded()
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-uploaded-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
@@ -145,7 +147,7 @@ test.describe('Load3D', () => {
       const modelFileWidget = await node.getWidget(0)
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-dropped-cube-obj.png',
         { maxDiffPixelRatio: 0.1 }
@@ -186,7 +188,7 @@ test.describe('Load3D', () => {
       await expect(load3d.panoramaModeButton).toBeVisible()
       await expect(load3d.removeBackgroundImageButton).toBeVisible()
 
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         load3d.node,
         'load3d-background-image-tiled.png',
         { maxDiffPixelRatio: 0.05 }
@@ -203,7 +205,7 @@ test.describe('Load3D', () => {
             return properties['Scene Config']?.backgroundRenderMode
           })
           .toBe('panorama')
-        await comfyPage.expectScreenshot(
+        await expectElementScreenshot(
           load3d.node,
           'load3d-background-image-panorama.png',
           { maxDiffPixelRatio: 0.05 }
@@ -238,19 +240,19 @@ test.describe('Load3D', () => {
         await readShowGrid(),
         'Load3D workflow should start with grid visible (true or undefined)'
       ).not.toBe(false)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
       await expect.poll(readShowGrid).toBe(false)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-hidden.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-hidden.png', {
         maxDiffPixelRatio: 0.05
       })
 
       await load3d.gridToggleButton.click()
       await expect.poll(readShowGrid).toBe(true)
-      await comfyPage.expectScreenshot(load3d.node, 'load3d-grid-visible.png', {
+      await expectElementScreenshot(load3d.node, 'load3d-grid-visible.png', {
         maxDiffPixelRatio: 0.05
       })
     }
@@ -292,54 +294,51 @@ test.describe('Load3D', () => {
 })
 
 test.describe('Load3D silent 404 on missing output model', () => {
-  test('Does not show an error toast when the output model file is missing (404)', async ({
-    comfyPage
-  }) => {
-    // Intercept model fetch and return 404 to simulate a missing output file
-    // (e.g. shared workflow opened on a machine that never ran it)
-    await comfyPage.page.route('**/view?**', (route) =>
-      route.fulfill({ status: 404, body: 'Not Found' })
-    )
-
-    // This workflow has a Preview3D node with Last Time Model File set,
-    // triggering the loadFolder: 'output' + silentOnNotFound: true path.
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-
-    // Wait for the 404 response before asserting — gives the load attempt time
-    // to complete without using waitForTimeout
-    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
-    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
-    await responsePromise
-
-    await expect(
-      comfyPage.toast.visibleToasts.filter({ hasText: 'Error loading model' })
-    ).toHaveCount(0)
-  })
-
-  test('Shows an error toast when a non-404 error occurs loading the output model', async ({
-    comfyPage
-  }) => {
-    // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
-    await comfyPage.page.route('**/view?**', (route) =>
-      route.fulfill({ status: 500, body: 'Internal Server Error' })
-    )
-
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-
-    const responsePromise = comfyPage.page.waitForResponse('**/view?**')
-    await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
-    await responsePromise
-
-    await expect
-      .poll(
-        () =>
-          comfyPage.toast.visibleToasts
-            .filter({ hasText: 'Error loading model' })
-            .count(),
-        { timeout: 10000 }
+  test(
+    'Does not show an error toast when the output model file is missing (404)',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      // Intercept model fetch and return 404 to simulate a missing output file
+      // (e.g. shared workflow opened on a machine that never ran it)
+      await comfyPage.page.route('**/view?**', (route) =>
+        route.fulfill({ status: 404, body: 'Not Found' })
       )
-      .toBeGreaterThan(0)
-  })
+
+      // This workflow has a Preview3D node with Last Time Model File set,
+      // triggering the loadFolder: 'output' + silentOnNotFound: true path.
+
+      // Wait for the 404 response before asserting — gives the load attempt time
+      // to complete without using waitForTimeout
+      const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+      await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+      await responsePromise
+
+      await expect(comfyPage.toast.withText('Error loading model')).toHaveCount(
+        0
+      )
+    }
+  )
+
+  test(
+    'Shows an error toast when a non-404 error occurs loading the output model',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      // Intercept with a 500 to simulate a real server error (not 404) — toast must appear
+      await comfyPage.page.route('**/view?**', (route) =>
+        route.fulfill({ status: 500, body: 'Internal Server Error' })
+      )
+
+      const responsePromise = comfyPage.page.waitForResponse('**/view?**')
+      await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
+      await responsePromise
+
+      await expect
+        .poll(() => comfyPage.toast.withText('Error loading model').count(), {
+          timeout: 10000
+        })
+        .toBeGreaterThan(0)
+    }
+  )
 })
 
 test.describe('Load3D initialization failure', () => {
@@ -365,9 +364,7 @@ test.describe('Load3D initialization failure', () => {
     await comfyPage.workflow.loadWorkflow('3d/load3d_node')
 
     await expect(
-      comfyPage.toast.visibleToasts.filter({
-        hasText: 'Failed to initialize 3D Viewer'
-      })
+      comfyPage.toast.withText('Failed to initialize 3D Viewer')
     ).not.toHaveCount(0)
   })
 })

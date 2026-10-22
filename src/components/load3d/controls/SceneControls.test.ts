@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- hidden color/file inputs have no role/label, queried by selector */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- hidden color/file inputs have no role/label, queried by selector */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -82,8 +82,7 @@ function renderComponent(opts: RenderOpts = {}) {
       onUpdateBackgroundImage: opts.onUpdateBackgroundImage
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

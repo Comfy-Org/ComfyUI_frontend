@@ -45,7 +45,8 @@ Options:
 
 function optionValue(args: string[], index: number, option: string): string {
   const value = args.at(index + 1)
-  if (value === undefined) throw new Error(`${option} requires a value`)
+  if (value === undefined || value.startsWith('--'))
+    throw new Error(`${option} requires a value`)
   return value
 }
 
@@ -104,8 +105,21 @@ export function parseOptions(args: string[]): Options {
     temporalPort: 7234,
     temporalUiPort: 0
   }
+  const seen = new Set<string>()
   for (let index = 0; index < args.length; index++) {
     const arg = args[index]
+    if (arg === '--') {
+      const positional = args.slice(index + 1)
+      if (positional.length > 0)
+        throw new Error(`Unexpected argument: ${positional[0]}`)
+      break
+    }
+    if (arg === '--help') {
+      options.help = true
+      return options
+    }
+    if (seen.has(arg)) throw new Error(`Repeated option: ${arg}`)
+    seen.add(arg)
     switch (arg) {
       case '--agent-port':
         options.agentPort = port(optionValue(args, index, arg), arg)
@@ -149,9 +163,6 @@ export function parseOptions(args: string[]): Options {
       case '--frontend-port':
         options.frontendPort = port(optionValue(args, index, arg), arg)
         index++
-        break
-      case '--help':
-        options.help = true
         break
       default:
         throw new Error(`Unknown option: ${arg}`)

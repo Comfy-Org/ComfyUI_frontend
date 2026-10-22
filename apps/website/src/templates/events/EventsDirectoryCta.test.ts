@@ -1,10 +1,9 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyEvent } from '../../data/events'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { ComfyEvent } from '@/data/events'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 

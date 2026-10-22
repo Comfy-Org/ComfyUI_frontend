@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <div v-if="!hasMarkdown" class="wrap-break-word" v-text="text" />
-    <div v-else class="wrap-break-word">
+  <div class="wrap-break-word">
+    <div v-if="!hasMarkdown" v-text="text" />
+    <div v-else>
       <template v-for="(segment, index) in parsedSegments" :key="index">
         <a
           v-if="segment.type === 'link' && 'url' in segment"

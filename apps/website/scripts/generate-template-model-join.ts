@@ -13,15 +13,18 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/models-catalogue'
-import type { WorkshopModel } from '../src/config/models-catalogue'
-import { routerModelSlugAliases } from '../src/config/workshop-browse-content'
-import { hubTemplatesSchema } from '../src/lib/hub/types'
-import { modelNamedBy, partnerModelFor } from '../src/lib/hub/template-use-case'
+import {
+  authoredRouterModelSlugAliases,
+  authoredWorkshopModels
+} from '@/config/workshop-browse-content'
+import { websiteRoot } from '@website/paths'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { hubTemplatesSchema } from '@/lib/hub/types'
+import { modelNamedBy, partnerModelFor } from '@/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'
 import { isDirectExecution } from './script-entry-point'
 
-const DATA = join(import.meta.dirname, '..', 'src', 'data')
+const DATA = join(websiteRoot, 'src/data')
 
 // These template names identify an exact operation. Keep this small and
 // explicit: a provider/family prefix alone is not evidence of version parity.
@@ -61,7 +64,7 @@ function decodeFromName(name: string): string | undefined {
 
 export function buildTemplateModelJoin(
   rawTemplates: unknown,
-  models: readonly WorkshopModel[] = workshopModels
+  models: readonly WorkshopModel[] = authoredWorkshopModels
 ): { joined: Record<string, string>; rejected: string[] } {
   const templates = hubTemplatesSchema.parse(rawTemplates)
   const joined: Record<string, string> = {}
@@ -69,15 +72,15 @@ export function buildTemplateModelJoin(
 
   for (const template of templates) {
     if (!template.tags.includes('API')) continue
-    if (modelNamedBy(template, models)) continue
 
     const exactId = EXACT_ROUTER_IDS.get(template.name)
+    const exactSlug = EXACT_MODEL_SLUGS.get(template.name)
+    if (!exactId && !exactSlug && modelNamedBy(template, models)) continue
     const family = decodeFromName(template.name)
     const sourceSlug =
-      EXACT_MODEL_SLUGS.get(template.name) ??
-      (exactId ? exactId.replace('/', '--') : family)
+      exactSlug ?? (exactId ? exactId.replace('/', '--') : family)
     if (!sourceSlug) continue
-    const slug = routerModelSlugAliases.get(sourceSlug) ?? sourceSlug
+    const slug = authoredRouterModelSlugAliases.get(sourceSlug) ?? sourceSlug
     const model = partnerModelFor(template, models, slug)
     if (model) {
       joined[template.name] = model.slug

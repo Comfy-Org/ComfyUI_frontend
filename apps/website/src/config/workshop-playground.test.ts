@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
+  exampleAlt,
   exampleValues,
   examplesForModel,
   groupPlaygroundFields,
   schemaForModel,
   isVideoUrl,
+  videoPosterUrl,
   restoreFormValues,
+  urlUploadField,
   validateForm
 } from './workshop-playground'
 import type { GeneratedField } from './models-catalogue'
@@ -37,6 +40,32 @@ const generatedFields: GeneratedField[] = [
     required: false
   }
 ]
+
+describe('urlUploadField', () => {
+  it.for([
+    { maxUploadBytes: 500 * 1024 * 1024, expected: 500 * 1024 * 1024 },
+    { maxUploadBytes: undefined, expected: MAX_UPLOAD_BYTES }
+  ])('uses upload limit $expected', ({ maxUploadBytes, expected }) => {
+    expect(
+      urlUploadField({
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          urlUpload: 'video',
+          maxUploadBytes
+        }
+      })?.maxBytes
+    ).toBe(expected)
+  })
+})
 
 describe('restoreFormValues', () => {
   it('restores only field-typed scalars and preserves deliberate clearing without fake uploads', () => {
@@ -360,6 +389,23 @@ describe('examplesForModel', () => {
     expect(audio.mediaKind).toBe('audio')
   })
 
+  it('carries the prompt that produced the output', () => {
+    const shared = {
+      description: '',
+      tags: [],
+      thumbnailUrl: 'https://example.com/x.webp',
+      values: {}
+    }
+    const [prompted, bare] = examplesForModel({
+      examples: [
+        { ...shared, name: 'a', title: 'A', prompt: 'a red fox' },
+        { ...shared, name: 'b', title: 'B' }
+      ]
+    })
+    expect(prompted.prompt).toBe('a red fox')
+    expect(bare).not.toHaveProperty('prompt')
+  })
+
   it('reads back only the settings that say something', () => {
     const shared = {
       description: '',
@@ -431,12 +477,35 @@ describe('exampleValues', () => {
   })
 })
 
+describe(exampleAlt, () => {
+  it.for([
+    { title: 'Object Swap', alt: 'FLUX 2 Max: Object Swap' },
+    { title: 'Sample 2', alt: 'FLUX 2 Max example output 2' },
+    { title: 'Sample shot', alt: 'FLUX 2 Max: Sample shot' }
+  ])('names the model and the example: $title', ({ title, alt }) => {
+    expect(exampleAlt('FLUX 2 Max', title)).toBe(alt)
+  })
+})
+
 describe('isVideoUrl', () => {
   it('recognises a video regardless of what trails the extension', () => {
     expect(isVideoUrl('https://cdn.example/output.mp4')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.mp4?sig=abc')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.mp4#t=0')).toBe(true)
     expect(isVideoUrl('https://cdn.example/output.png')).toBe(false)
+  })
+})
+
+describe('videoPosterUrl', () => {
+  it.for([
+    ['https://cdn.example/clip.mp4', 'https://cdn.example/clip.mp4#t=0.1'],
+    [
+      'https://cdn.example/clip.mp4?sig=abc',
+      'https://cdn.example/clip.mp4?sig=abc#t=0.1'
+    ],
+    ['https://cdn.example/clip.mp4#t=2', 'https://cdn.example/clip.mp4#t=2']
+  ])('points %s at a frame to paint', ([url, expected]) => {
+    expect(videoPosterUrl(url)).toBe(expected)
   })
 })
 

@@ -6,6 +6,8 @@
 
 import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+
 /**
  * Detect loader node type from filename extension
  * Uses shared formatUtil for consistent file type detection across the codebase
@@ -22,6 +24,9 @@ export function detectNodeTypeFromFilename(filename: string): {
   nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null
   widgetName: 'image' | 'file' | 'audio' | null
 } {
+  if (isHdrImageFilename(filename)) {
+    return { nodeType: 'LoadImage', widgetName: 'image' }
+  }
   const mediaType = getMediaTypeFromFilename(filename)
 
   switch (mediaType) {

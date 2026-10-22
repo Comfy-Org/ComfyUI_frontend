@@ -1,7 +1,8 @@
-import type { ExecutionErrorWsMessage, PromptError } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 export type { NodeValidationError }
@@ -44,7 +45,10 @@ export type RunErrorMessageSource =
     }
   | {
       kind: 'execution'
-      error: ExecutionErrorWsMessage
+      error: Pick<
+        ExecutionErrorWsMessage,
+        'exception_type' | 'exception_message'
+      >
       nodeDisplayName: string
     }
 
@@ -54,6 +58,11 @@ export type MissingErrorMessageSource =
       nodeTypes: MissingNodeType[]
       count: number
       isCloud: boolean
+      /**
+       * The deployment the editor runs on (FE-2434), named instead of Cloud;
+       * absent on Comfy Cloud and outside Cloud.
+       */
+      deploymentLabel?: string
     }
   | {
       kind: 'swap_nodes'
@@ -66,6 +75,11 @@ export type MissingErrorMessageSource =
       groups: MissingModelGroup[]
       count: number
       isCloud: boolean
+      /**
+       * The deployment the editor runs on (FE-2434), named instead of Cloud;
+       * absent on Comfy Cloud and outside Cloud.
+       */
+      deploymentLabel?: string
     }
   | {
       kind: 'missing_media'

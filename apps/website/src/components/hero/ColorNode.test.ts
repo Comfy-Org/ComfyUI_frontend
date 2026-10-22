@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { lastEmission, lastNumberEmitted } from '../../test/emitted'
+import { lastEmission, lastNumberEmitted } from '@/test/emitted'
 import ColorNode from './ColorNode.vue'
 
 describe('ColorNode', () => {

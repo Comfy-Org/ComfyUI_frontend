@@ -1,11 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -14,8 +16,6 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -28,14 +28,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      closeWorkflow: mockCloseWorkflow
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
@@ -46,17 +39,6 @@ vi.mock<unknown>(
     })
   })
 )
-
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
-  default: {
-    render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
-  }
-}))
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -108,12 +90,14 @@ function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
   activeWorkflowPath,
-  otherOpenWorkflows = []
+  otherOpenWorkflows = [],
+  compact = false
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
   otherOpenWorkflows?: Workflow[]
+  compact?: boolean
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -126,22 +110,24 @@ function renderTab({
     path: resolvedActiveWorkflowPath
   })
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
-  const rendered = render(WorkflowTab, {
-    global: {
-      plugins: [i18n],
-      stubs: {
-        WorkflowActionsList: true,
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
-    },
-    props: {
-      workflowOption,
-      isFirst: false,
-      isLast: false
+  const rendered = render(
+    defineComponent(
+      () => () =>
+        h(TabsRoot, { modelValue: resolvedActiveWorkflowPath }, () =>
+          h(TabsList, () =>
+            h(WorkflowTab, {
+              workflowOption,
+              isFirst: false,
+              isLast: false,
+              compact
+            })
+          )
+        )
+    ),
+    {
+      global: { plugins: [i18n] }
     }
-  })
+  )
   const workflowStore = useWorkflowStore()
   for (const workflow of [workflowOption.workflow, ...otherOpenWorkflows])
     workflowStore.attachWorkflow(workflow, 0)
@@ -151,6 +137,47 @@ function renderTab({
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
+  })
+
+  it('delays hover preview without moving focus and dismisses after leaving', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+    const trigger = screen.getByRole('tab')
+    trigger.focus()
+
+    await user.hover(tab)
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(99)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not reopen a click-dismissed preview when the hover delay expires', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+
+    await user.hover(tab)
+    await user.click(tab)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.click(tab)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it.for(['running', 'completed', 'failed'] as const)(
@@ -179,7 +206,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -191,7 +218,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     })
 
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -252,7 +279,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
       'size-2',
-      'bg-primary-background'
+      'bg-primary'
     )
     expect(
       screen.queryByRole('img', { name: statusAriaLabels.running })
@@ -287,20 +314,71 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('reveals Close on a compact inactive tab without a status indicator', () => {
+    renderTab({ compact: true })
+
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'group-hover/tab:visible'
+    )
+  })
+
+  it('keeps the close button hidden while an active status indicator shows', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('invisible')
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'visible'
+    )
+  })
+
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
       expect.anything()
     )
   })
 })
 
+describe('WorkflowTab - compact', () => {
+  it('keeps the mode icon on the active compact tab', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ initialMode: 'app' }),
+      activeWorkflowKey: 'test-key',
+      compact: true
+    })
+
+    expect(screen.getByTestId('workflow-mode-icon')).toBeVisible()
+  })
+})
+
 describe('WorkflowTab - Agent target', () => {
   const targetLabel = 'Agent target for this chat'
+
+  it('keeps the target, status, and filename visible in a compact mode tab', async () => {
+    const workflowOption = makeWorkflowOption({ initialMode: 'app' })
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+    renderTab({ workflowOption, compact: true })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.setWorkflowTarget(workflowOption.workflow)
+    await nextTick()
+
+    expect(screen.queryByTestId('workflow-mode-icon')).toBeNull()
+    expect(screen.getByText('test.json')).toBeVisible()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
+  })
 
   it('follows the selected target independently of the visible tab and panel visibility', async () => {
     const workflowOption = makeWorkflowOption()
@@ -371,7 +449,7 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       workflowOption.workflow,
       expect.anything()
     )

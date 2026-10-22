@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import Switch from './Switch.vue'
 
-const meta = {
+const meta: Meta<typeof Switch> = {
   title: 'Components/Switch',
   component: Switch,
   tags: ['autodocs'],
@@ -12,7 +12,7 @@ const meta = {
     readonly: { control: 'boolean' },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof Switch>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

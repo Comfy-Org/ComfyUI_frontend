@@ -202,7 +202,7 @@ function getValueSpecificRule(
 }
 
 function getRawDetailsCopyKeys(error: NodeValidationError): CopyKeys {
-  return error.details.trim()
+  return error.details?.trim()
     ? {
         detailsKey: 'detailsWithRawDetails',
         toastMessageKey: 'toastMessageWithRawDetails'
@@ -211,7 +211,7 @@ function getRawDetailsCopyKeys(error: NodeValidationError): CopyKeys {
 }
 
 function getRawDetailsOnlyCopyKeys(error: NodeValidationError): CopyKeys {
-  if (!error.details.trim()) return DEFAULT_COPY_KEYS
+  if (!error.details?.trim()) return DEFAULT_COPY_KEYS
 
   return {
     detailsKey: 'detailsWithRawDetails',
@@ -249,7 +249,7 @@ function resolveValidationCatalogCopy(
 ): ResolvedCatalogErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
-  const trimmedDetails = error.details.trim()
+  const trimmedDetails = error.details?.trim() ?? ''
   const rawDetails =
     error.type === 'dependency_cycle'
       ? formatDependencyCycleDetails(trimmedDetails)

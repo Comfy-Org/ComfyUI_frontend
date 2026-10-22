@@ -1,9 +1,8 @@
 import type { NodeReplacementResponse } from './types'
-import type { ComfyApp } from '@/scripts/app'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
@@ -13,11 +12,7 @@ vi.mock(import('./nodeReplacementService'), () => ({
   fetchNodeReplacements: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createStore(settingEnabled = true, serverFeatureEnabled = true) {
   useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] =
@@ -206,22 +201,17 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should log error but not throw when fetch fails', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const error = new Error('Network error')
       vi.mocked(fetchNodeReplacements).mockRejectedValue(error)
       store = createStore()
 
       await expect(store.load()).resolves.toBeUndefined()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Failed to load node replacements:',
         error
       )
       expect(store.isLoaded).toBe(false)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should not fetch when setting is disabled', async () => {
@@ -256,7 +246,4 @@ describe('useNodeReplacementStore', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))

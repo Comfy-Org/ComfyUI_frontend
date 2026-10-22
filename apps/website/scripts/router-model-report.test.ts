@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RouterModelReportUpdate } from './router-model-report'
 import { openRouterModelReport } from './router-model-report'
 
-vi.mock(import('../src/config/workshop-model-availability'), () => ({
+vi.mock(import('@/config/workshop-model-availability'), () => ({
   workshopModelAvailability: new Map([
     ['test-disabled', { disabled: true, reason: 'Provider rejects defaults' }],
     ['test-enabled', { disabled: false, reason: 'Fixed and retested' }]
@@ -79,6 +79,9 @@ describe('persistent model results', () => {
     )
     expect(grid).toContain(
       '| test-enabled | prod / page-defaults | Router rejected the mapped inputs | Published |'
+    )
+    expect(grid).toContain(
+      'for the customer that owns the test credential; it does not validate credits, entitlements or concurrency for other customers'
     )
     expect(grid).toContain('Disabled on the site: Provider rejects defaults')
     expect(grid).not.toContain('Fixed and retested')

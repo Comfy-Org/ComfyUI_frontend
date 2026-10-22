@@ -10,7 +10,7 @@ import type {
   MaterialMode,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()
@@ -148,10 +148,7 @@ function renderControls(overrides: RenderProps = {}) {
     },
     global: {
       plugins: [i18n],
-      stubs: childStubs,
-      directives: {
-        tooltip: () => {}
-      }
+      stubs: childStubs
     }
   })
   return { ...result, user: userEvent.setup() }

@@ -1,50 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
-  async () => {
-    const { createExtensionCapture } =
-      await import('@/utils/__tests__/extensionTestUtils')
-    return {
-      extensions: createExtensionCapture(),
-      getUserData: vi.fn(),
-      reportErrorMock: vi.fn()
-    }
-  }
-)
+vi.mock(import('@/platform/telemetry/reportError'))
 
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: reportErrorMock
-}))
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ prompt: vi.fn() })
-}))
-
-vi.mock('@/utils/vintageClipboard', () => ({
+vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: { getUserData, storeUserData: vi.fn() }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    registerExtension: extensions.registerExtension,
-    canvas: { selected_nodes: {} }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/ui', () => ({
-  ComfyDialog: class {
-    element = document.createElement('div')
-  },
-  $el: (tag: string) => document.createElement(tag)
+vi.mock(import('@/scripts/ui'), async () => ({
+  ComfyDialog: (await import('@/scripts/ui/dialog')).ComfyDialog
 }))
 
 function createDeferred<T>() {
@@ -57,23 +29,47 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-const response = createDeferred<{
-  status: number
-  json: () => Promise<unknown>
-}>()
-getUserData.mockReturnValue(response.promise)
+async function importNodeTemplates(getUserData: Promise<Response>) {
+  vi.resetModules()
+  document.body.replaceChildren()
+  const { api } = await import('@/scripts/api')
+  const { app } = await import('@/scripts/app')
+  const { reportError } = await import('@/platform/telemetry/reportError')
+  vi.mocked(api.getUserData).mockReturnValue(getUserData)
+  await import('./nodeTemplates')
+  const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
+  return { api, app, reportError, extension }
+}
 
-await import('./nodeTemplates')
+it('defers loading templates and creating the import input until setup', async () => {
+  const { api, app, extension } = await importNodeTemplates(
+    Promise.resolve(new Response(null))
+  )
+
+  expect(api.getUserData).not.toHaveBeenCalled()
+  expect(document.body.childElementCount).toBe(0)
+
+  await extension.setup?.(app)
+  await extension.setup?.(app)
+
+  expect(api.getUserData).toHaveBeenCalledOnce()
+  expect(document.body.querySelectorAll('input[type="file"]')).toHaveLength(1)
+})
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
+  const response = createDeferred<Response>()
+  const { app, reportError, extension } = await importNodeTemplates(
+    response.promise
+  )
+  await extension.setup?.(app)
   const error = new Error('invalid template JSON')
-  response.resolve({
-    status: 200,
-    json: () => Promise.reject(error)
-  })
+  const invalidResponse = new Response()
+  vi.spyOn(invalidResponse, 'json').mockRejectedValue(error)
+  response.resolve(invalidResponse)
 
   await vi.waitFor(() => {
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'graph',
       errorType: 'failure_loading_node_templates',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -85,7 +81,6 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     })
   })
 
-  const extension = extensions.getExtension('Comfy.NodeTemplates')
   if (!extension.getCanvasMenuItems) {
     throw new Error('Comfy.NodeTemplates does not register canvas menu items')
   }

@@ -144,7 +144,7 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(page.getByRole('link', { name: 'SEE PRICING' })).toHaveCount(1)
     await expect(
       page.getByRole('link', { name: 'SEE PRICING' })
-    ).toHaveAttribute('href', '/pricing')
+    ).toHaveAttribute('href', '/pricing/')
     await expect(
       page.getByText(/Give teams a shared credit pool/)
     ).toBeVisible()
@@ -174,7 +174,7 @@ test.describe('Enterprise pages @smoke', () => {
     await page.goto('/enterprise/managed-builds')
 
     await expect(page.locator('main :is(h1, h2)')).toHaveText([
-      /MANAGED BUILDS\s*BETA/,
+      'MANAGED BUILDS',
       /One approved ComfyUI environment,\s+everywhere your team runs it\./,
       'One ComfyUI build for the whole team',
       'From one working setup to an approved fleet',
@@ -187,12 +187,9 @@ test.describe('Enterprise pages @smoke', () => {
       'Forward Deployed Creatives'
     ])
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      /MANAGED BUILDS\s*BETA/
+      'MANAGED BUILDS'
     )
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    await expect(
-      page.getByRole('heading', { level: 1 }).getByText('BETA', { exact: true })
-    ).toBeVisible()
     await expect(
       page.getByText(
         /deploy the same build anywhere, local or serverless cloud/

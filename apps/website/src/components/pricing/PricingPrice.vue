@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import { computed } from 'vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   locale = 'en',
@@ -17,16 +17,14 @@ const {
   yearlyTotal?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const billingNote = computed(() => {
   if (billingPeriod === 'yearly' && yearlyTotal) {
-    return t('pricing.period.billedYearly', locale).replace(
-      '{total}',
-      yearlyTotal
-    )
+    return t('pricing.period.billedYearly', { total: yearlyTotal })
   }
   if (billingPeriod === 'monthly') {
-    return t('pricing.period.billedMonthly', locale)
+    return t('pricing.period.billedMonthly')
   }
   return undefined
 })
@@ -53,7 +51,7 @@ const billingNote = computed(() => {
 
         <span
           v-if="discount"
-          class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+          class="text-sm text-primary-comfy-yellow max-sm:text-xs sm:ml-2"
         >
           {{ discount }}
         </span>

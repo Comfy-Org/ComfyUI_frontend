@@ -4,37 +4,56 @@ import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
 test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   test('No shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_no_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'optional_input.png'
+    )
   })
 
   test('Wrong shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_wrong_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'optional_input.png'
+    )
   })
 
   test('Correct shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_correct_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'optional_input.png'
+    )
   })
 
   test('Force input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/force_input')
-    await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'force_input.png'
+    )
   })
 
   test('Default input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/default_input')
-    await expect(comfyPage.canvas).toHaveScreenshot('default_input.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'default_input.png'
+    )
   })
 
   test('Only optional inputs', async ({ comfyPage }) => {
@@ -81,22 +100,47 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('slider', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/simple_slider')
-    await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'simple_slider.png'
+    )
   })
 
   test('unknown converted widget', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow(
       'missing/missing_nodes_converted_widget'
     )
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
       'missing_nodes_converted_widget.png'
     )
   })
 
   test('dynamically added input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/dynamically_added_input')
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
       'dynamically_added_input.png'
     )
+  })
+})
+
+test.describe('Renamed converted widget values', { tag: ['@node'] }, () => {
+  test('keeps each widget value on its own widget', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
+
+    const node = await comfyPage.nodeOps.getNodeRefById(toNodeId(3))
+    const [width, height, batchSize] = await Promise.all([
+      node.getWidgetByName('width'),
+      node.getWidgetByName('height'),
+      node.getWidgetByName('batch_size')
+    ])
+
+    expect.soft(await width.getValue()).toBe(640)
+    expect.soft(await height.getValue()).toBe(768)
+    expect.soft(await batchSize.getValue()).toBe(3)
   })
 })

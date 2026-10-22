@@ -122,134 +122,132 @@ for (const entry of manifestEntries) {
   const workflowRelative = `browser_tests/${entry.workflow}`
 
   test.describe(`custom node: ${entry.pack} @custom-nodes`, () => {
-    test('Pack startup/load: expected nodes register, render in both renderers, and frontend integration is present', async ({
-      comfyPage
-    }) => {
-      test.setTimeout(entry.timeoutMs)
-      const objectInfo = await target.getObjectInfo(comfyPage.page)
-      expect(
-        Object.keys(objectInfo).length,
-        'object_info sanity floor'
-      ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
-      const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
-      expect(
-        missing,
-        `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
-      ).toEqual([])
-      await expectNoVisibleErrors(comfyPage.page, 'at startup')
-
-      // Backend registration alone does not prove the pack's FRONTEND JS
-      // loaded: a wrong web dir or a loadExtensions regression leaves nodes
-      // in object_info while every JS-driven behavior silently vanishes
-      // (and this suite would then be testing vanilla nodes). Assert the
-      // pack's boot-registered extensions actually arrived in the browser.
-      const ownedAutogrowCases = AUTOGROW_CASES.filter(
-        ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
-      )
-      const webDirectory =
-        'webDirectory' in entry ? entry.webDirectory : undefined
-      if (
-        expectedExtensionsFor(entry).length > 0 ||
-        ownedAutogrowCases.length > 0 ||
-        webDirectory !== undefined
-      ) {
-        const registered = await comfyPage.page.evaluate(() =>
-          window.app!.extensions.map((extension) => extension.name)
-        )
-        const servedExtensionPaths =
-          webDirectory !== undefined ||
-          ownedAutogrowCases.some(
-            ({ extensionName }) =>
-              !expectedExtensionsFor(entry).includes(extensionName)
-          )
-            ? await comfyPage.page.evaluate(() =>
-                window.app!.api.getExtensions()
-              )
-            : []
-        for (const name of expectedExtensionsFor(entry))
+    for (const vueNodesEnabled of [false, true]) {
+      test(
+        `Pack startup/load: expected nodes register, render with VueNodes=${vueNodesEnabled}, and frontend integration is present`,
+        { tag: vueNodesEnabled ? ['@vue-nodes'] : [] },
+        async ({ comfyPage }) => {
+          test.setTimeout(entry.timeoutMs)
+          const objectInfo = await target.getObjectInfo(comfyPage.page)
           expect(
-            registered,
-            `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
-          ).toContain(name)
-        if (webDirectory !== undefined) {
-          const servesAssets = servesFrontendAssetsForPack(
-            servedExtensionPaths,
-            entry.pack
+            Object.keys(objectInfo).length,
+            'object_info sanity floor'
+          ).toBeGreaterThan(OBJECT_INFO_SANITY_FLOOR)
+          const missing = missingExpectedNodes(objectInfo, entry.expectedNodes)
+          expect(
+            missing,
+            `${entry.pack} not installed on this backend (missing: ${missing.join(', ')})`
+          ).toEqual([])
+          await expectNoVisibleErrors(comfyPage.page, 'at startup')
+
+          // Backend registration alone does not prove the pack's FRONTEND JS
+          // loaded: a wrong web dir or a loadExtensions regression leaves nodes
+          // in object_info while every JS-driven behavior silently vanishes
+          // (and this suite would then be testing vanilla nodes). Assert the
+          // pack's boot-registered extensions actually arrived in the browser.
+          const ownedAutogrowCases = AUTOGROW_CASES.filter(
+            ({ pack }) => pack.toLowerCase() === entry.pack.toLowerCase()
           )
-          if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
-            const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
-            expect(packIdentity(entry)).toBe(exclusion.deployRef)
-            expect(webDirectory).toBe(exclusion.webDirectory)
-            expect(
-              servesAssets,
-              `${entry.pack}: frontend assets are now served - remove the stale exclusion`
-            ).toBe(false)
-          } else
-            expect(
-              servesAssets,
-              `${entry.pack}: supported_nodes.yaml declares web_directory=${webDirectory}, but the backend serves no extension path for this pack`
-            ).toBe(true)
-        }
-        const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
-          {
-            pack: entry.pack,
-            expectedExtensions: expectedExtensionsFor(entry)
-          },
-          registered,
-          servedExtensionPaths
-        )
-        expect(
-          staleAutogrowApplicability,
-          `${entry.pack}: ${staleAutogrowApplicability.join('; ')}`
-        ).toEqual([])
-      }
-
-      for (const vueNodesEnabled of [false, true]) {
-        const consoleErrors = collectConsoleErrors(comfyPage.page)
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          vueNodesEnabled
-        )
-        await comfyPage.nodeOps.clearGraph()
-
-        const addedIds: string[] = []
-        for (const classType of entry.expectedNodes) {
-          const node = await comfyPage.nodeOps.addNode(classType)
-          addedIds.push(String(node.id))
-        }
-        await comfyPage.nextFrame()
-
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(entry.expectedNodes.length)
-        // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
-        // the pack's own nodes rendered, not just any node count.
-        if (vueNodesEnabled)
-          for (const id of addedIds)
-            await expect(comfyPage.vueNodes.getNodeLocator(id)).toBeVisible()
-
-        consoleErrors.stop()
-        // Pack startup/load renders nodes but queues no prompt; a prompt-execution
-        // error here is a prior tier's async stray (isForeignExecutionNoise).
-        // Mounting a pack's nodes is one of the surfaces its ledgered noise
-        // emits on, so this tier reads the ledger like curated workflow
-        // tiers do - the environment rules in particular apply to every pack
-        // and were never reaching this gate.
-        expect(
-          unallowlistedErrors(
-            entry.pack,
-            consoleErrors.errors.filter(
-              (error) => !isForeignExecutionNoise(error)
+          const webDirectory =
+            'webDirectory' in entry ? entry.webDirectory : undefined
+          if (
+            expectedExtensionsFor(entry).length > 0 ||
+            ownedAutogrowCases.length > 0 ||
+            webDirectory !== undefined
+          ) {
+            const registered = await comfyPage.page.evaluate(() =>
+              window.app!.extensions.map((extension) => extension.name)
             )
-          ),
-          `console errors with VueNodes=${vueNodesEnabled}`
-        ).toEqual([])
-        await expectNoVisibleErrors(
-          comfyPage.page,
-          `after VueNodes=${vueNodesEnabled} pass`
-        )
-      }
-    })
+            const servedExtensionPaths =
+              webDirectory !== undefined ||
+              ownedAutogrowCases.some(
+                ({ extensionName }) =>
+                  !expectedExtensionsFor(entry).includes(extensionName)
+              )
+                ? await comfyPage.page.evaluate(() =>
+                    window.app!.api.getExtensions()
+                  )
+                : []
+            for (const name of expectedExtensionsFor(entry))
+              expect(
+                registered,
+                `${entry.pack}: frontend extension "${name}" not registered - pack JS did not load`
+              ).toContain(name)
+            if (webDirectory !== undefined) {
+              const servesAssets = servesFrontendAssetsForPack(
+                servedExtensionPaths,
+                entry.pack
+              )
+              if (entry.pack in FRONTEND_ASSET_EXCLUSIONS) {
+                const exclusion = FRONTEND_ASSET_EXCLUSIONS[entry.pack]
+                expect(packIdentity(entry)).toBe(exclusion.deployRef)
+                expect(webDirectory).toBe(exclusion.webDirectory)
+                expect(
+                  servesAssets,
+                  `${entry.pack}: frontend assets are now served - remove the stale exclusion`
+                ).toBe(false)
+              } else
+                expect(
+                  servesAssets,
+                  `${entry.pack}: supported_nodes.yaml declares web_directory=${webDirectory}, but the backend serves no extension path for this pack`
+                ).toBe(true)
+            }
+            const staleAutogrowApplicability = staleAutogrowApplicabilityIssues(
+              {
+                pack: entry.pack,
+                expectedExtensions: expectedExtensionsFor(entry)
+              },
+              registered,
+              servedExtensionPaths
+            )
+            expect(
+              staleAutogrowApplicability,
+              `${entry.pack}: ${staleAutogrowApplicability.join('; ')}`
+            ).toEqual([])
+          }
+
+          const consoleErrors = collectConsoleErrors(comfyPage.page)
+          await comfyPage.nodeOps.clearGraph()
+
+          const addedIds: string[] = []
+          for (const classType of entry.expectedNodes) {
+            const node = await comfyPage.nodeOps.addNode(classType)
+            addedIds.push(String(node.id))
+          }
+          await comfyPage.nextFrame()
+
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBe(entry.expectedNodes.length)
+          // Vue Nodes 2.0 mounts each node as a [data-node-id] element; assert
+          // the pack's own nodes rendered, not just any node count.
+          if (vueNodesEnabled)
+            for (const id of addedIds)
+              await expect(comfyPage.vueNodes.getNodeLocator(id)).toBeVisible()
+
+          consoleErrors.stop()
+          // Pack startup/load renders nodes but queues no prompt; a prompt-execution
+          // error here is a prior tier's async stray (isForeignExecutionNoise).
+          // Mounting a pack's nodes is one of the surfaces its ledgered noise
+          // emits on, so this tier reads the ledger like curated workflow
+          // tiers do - the environment rules in particular apply to every pack
+          // and were never reaching this gate.
+          expect(
+            unallowlistedErrors(
+              entry.pack,
+              consoleErrors.errors.filter(
+                (error) => !isForeignExecutionNoise(error)
+              )
+            ),
+            `console errors with VueNodes=${vueNodesEnabled}`
+          ).toEqual([])
+          await expectNoVisibleErrors(
+            comfyPage.page,
+            `after VueNodes=${vueNodesEnabled} pass`
+          )
+        }
+      )
+    }
 
     if (entry.tiers.includes('run'))
       test('Curated workflow execution: completes without error', async ({

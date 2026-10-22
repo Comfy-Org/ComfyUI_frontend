@@ -13,7 +13,7 @@ const {
   label?: string
   headingTag?: 'h1' | 'h2' | 'h3'
   maxWidth?: 'md' | 'lg' | 'xl'
-  headingSize?: 'section' | 'hero' | 'compact'
+  headingSize?: 'section' | 'hero' | 'compact' | 'subsection'
   align?: 'center' | 'start'
 }>()
 
@@ -26,7 +26,8 @@ const maxWidthClass = {
 const headingSizeClass = {
   section: 'text-3xl font-light lg:text-5xl/tight',
   hero: 'text-4xl/tight font-light md:text-5xl/tight lg:text-6xl/tight',
-  compact: 'text-2xl font-light lg:text-3xl'
+  compact: 'text-2xl font-light lg:text-3xl',
+  subsection: 'text-3xl font-light lg:text-4xl'
 } as const
 </script>
 

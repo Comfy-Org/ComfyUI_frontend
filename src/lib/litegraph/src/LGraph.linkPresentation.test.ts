@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -113,7 +113,6 @@ describe('graph link presentation serialization', () => {
   })
 
   it('a duplicate serialized link cannot overwrite the first link presentation', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const link = makeLink()
     const serialized = {
@@ -271,7 +270,6 @@ describe('link presentation ownership', () => {
   })
 
   it('rejects a same-id replacement and keeps the incumbent presentation', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const incumbent = makeLink()
     graph._addLink(incumbent)
@@ -285,6 +283,6 @@ describe('link presentation ownership', () => {
       hidden: true,
       label: 'Kept'
     })
-    expect(error).toHaveBeenCalledOnce()
+    expect(console.error).toHaveBeenCalledOnce()
   })
 })

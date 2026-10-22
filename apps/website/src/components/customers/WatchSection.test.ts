@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { customerVideoStories, formatDuration } from '../../data/customerVideos'
+import { customerVideoStories, formatDuration } from '@/data/customerVideos'
 import WatchSection from './WatchSection.vue'
 
 const stories = customerVideoStories.map((story) => ({

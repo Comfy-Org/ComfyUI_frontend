@@ -19,21 +19,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => '')
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 // Mock Image constructor so the loader's image fetches resolve without a
 // network. Records every requested URL; URLs matching failUrlPattern reject
@@ -61,7 +49,10 @@ class MockImage {
 
 const GRAPH_ID = 'maskeditor-loader-test'
 
-function createLoadImageNode(widgetValue: string): LGraphNode {
+function createLoadImageNode(
+  widgetValue: string,
+  images?: LGraphNode['images']
+): LGraphNode {
   const nodeId = toNodeId(7)
   useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
     type: 'string',
@@ -72,7 +63,7 @@ function createLoadImageNode(widgetValue: string): LGraphNode {
     id: nodeId,
     type: 'LoadImage',
     imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
-    images: undefined,
+    images,
     graph: { rootGraph: { id: GRAPH_ID } }
   })
 }
@@ -87,6 +78,9 @@ function requestedLayerUrls(layerFilename: string): string[] {
 
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `http://localhost:8188/api${route}`
+    )
     mockDataStore = useMaskEditorDataStore()
     requestedUrls.length = 0
     failUrlPattern = null
@@ -171,6 +165,16 @@ describe('useMaskEditorLoader', () => {
       sourceRef: { filename: 'clipspace-painted-masked-123.png' },
       paintLayer: undefined,
       nodeId: toNodeId(7)
+    })
+  })
+
+  it('skips a node output image without a filename', async () => {
+    const node = createLoadImageNode('$35-0', [{ type: 'output' }])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'whatever.png' }
     })
   })
 

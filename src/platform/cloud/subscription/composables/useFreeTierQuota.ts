@@ -1,15 +1,12 @@
 import { createSharedComposable } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { graphCreditsBadges } from '@/systems/badgeSystem'
 
 export const useFreeTierQuota = createSharedComposable(function () {
-  const { flags } = useFeatureFlags()
-
   const available = ref(0)
   const maxAvailable = ref(0)
   watch(
@@ -23,10 +20,9 @@ export const useFreeTierQuota = createSharedComposable(function () {
     { immediate: true }
   )
 
-  const quotaEnabled = computed(
-    () => isCloud && flags.freeTierJobAllowanceEnabled && maxAvailable.value > 0
-  )
+  const quotaEnabled = computed(() => isCloud && maxAvailable.value > 0)
   const hasInvalidNodes = computed(() => {
+    const app = useApp()
     return app.isGraphReady && graphCreditsBadges(app.rootGraph).length > 0
   })
   const freeTierExecutionPermitted = computed(

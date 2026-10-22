@@ -73,25 +73,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
-const SliderStub = defineComponent({
-  name: 'Slider',
-  props: {
-    modelValue: { type: Array, default: () => [] },
-    min: Number,
-    max: Number,
-    step: Number
-  },
-  emits: ['update:modelValue'],
-  template:
-    '<div data-testid="slider-stub" :data-min="min" @click="$emit(\'update:modelValue\', [Number(min) + Number(step ?? 1)])" />'
-})
-
 function primePainterState(overrides: Record<string, unknown> = {}) {
   painterHolder.state = { ...createDefaultPainterState(), ...overrides }
 }
@@ -105,8 +86,7 @@ function renderWidget(initialModel = '') {
   })
   return render(Harness, {
     global: {
-      plugins: [i18n],
-      stubs: { Button: ButtonStub, Slider: SliderStub }
+      plugins: [i18n]
     }
   })
 }
@@ -264,11 +244,12 @@ describe('WidgetPainter', () => {
       renderWidget()
       const user = userEvent.setup()
 
-      const slider = within(screen.getByTestId('painter-size-row')).getByTestId(
-        'slider-stub'
-      )
-      await user.click(slider)
-      expect(brushSize.value).toBe(2) // min=1, step=1 -> emits 2
+      const slider = await within(
+        screen.getByTestId('painter-size-row')
+      ).findByRole('slider')
+      slider.focus()
+      await user.keyboard('{Home}{ArrowRight}')
+      expect(brushSize.value).toBe(2)
     })
 
     it('updates brushColor via the color picker', async () => {
@@ -280,7 +261,7 @@ describe('WidgetPainter', () => {
         screen.getByTestId('painter-color-row')
       ).getByDisplayValue('#000000')
       // <input type="color"> has no userEvent equivalent — fire input directly
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.input(colorInput, { target: { value: '#ff0000' } })
       expect(brushColor.value.toLowerCase()).toBe('#ff0000')
     })
@@ -323,7 +304,7 @@ describe('WidgetPainter', () => {
       const bgInput = within(
         screen.getByTestId('painter-bg-color-row')
       ).getByDisplayValue('#ffffff')
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.input(bgInput, { target: { value: '#00ff00' } })
       expect(backgroundColor.value.toLowerCase()).toBe('#00ff00')
     })

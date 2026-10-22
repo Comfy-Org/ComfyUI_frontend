@@ -14,6 +14,7 @@ export interface ErrorCardData {
   id: string
   title: string
   nodeId?: NodeExecutionId
+  rawNodeId?: string
   nodeTitle?: string
   graphNodeId?: string
   errors: ErrorItem[]
@@ -29,6 +30,8 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   count: number
   priority: number
   severity: ErrorGroupSeverity
+  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
+  blockedLastRun: boolean
 }
 
 export type ErrorGroup =

@@ -2,10 +2,10 @@ import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
 import {
-  routerContentBySlug,
-  routerWorkshopModels
+  authoredRouterContentBySlug,
+  authoredWorkshopModels
 } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -14,9 +14,9 @@ import {
 import { workshopExampleValues } from './workshop-example-values'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
-const examples = routerWorkshopModels.flatMap((model) => {
-  const source = routerContentBySlug.get(model.slug)
-  if (!source || source.alias.contentIssue) return []
+const examples = authoredWorkshopModels.flatMap((model) => {
+  const source = authoredRouterContentBySlug.get(model.slug)
+  if (!source || source.binding.contentIssue) return []
   return source.overlay.examples.flatMap((example, index) => {
     if (!Object.hasOwn(example.values, 'medias')) return []
     const media = mediaSchema.parse(example.values.medias)

@@ -11,7 +11,7 @@ The combined preview now builds on `maanil/auth-stack-combined` (#17283),
 commit `957a2403112291d666a8a1fa8ba4bc98b3d98f19`, rather than the older
 `throwaway/christian-closure-2026-09-09` snapshot. This is committed auth work,
 not a claim that its PR is merged or review-approved. The account package is
-unchanged from that base; Models uses its current `@comfyorg/account/session`
+unchanged from that base; Models uses its current `@comfyorg/account-core/session`
 entry instead of restoring the removed core barrel.
 
 The earlier September 10 rebase preserved the assembled prototype/content/Router
@@ -226,10 +226,23 @@ execution bindings remain presentation preferences, not an execution allowlist.
 
 ## Data and regeneration
 
-`src/data/workshop-router-openapi.snapshot.json` contains all 207 complete
-documents at backend commit `411500bd8c93a97328cf1a927b40ad5b24c60026`.
-This includes Matt's merged cloud #8722; it is not proof of deployment.
+`src/data/workshop-router-openapi.snapshot.json` contains all 242
+documents under cloud `services/comfy-api/docs/router-schemas/` at commit
+`53f37ce69794e75faf8f32f43a5c82dbd443108f`; it is not proof of deployment.
 Every referenced component and output content type is retained.
+
+Refresh from a clean cloud checkout (uncommitted router-schemas edits, or a
+`<cloud-sha>` other than the checked-out commit, are refused). This prints the
+IDs added and removed since the committed snapshot, then rewrites the snapshot,
+contracts, index and aliases. The contracts and aliases steps
+stop until `workshop-router-availability.json` and
+`workshop-router-identity-audit.json` are rechecked against the new commit.
+
+```sh
+pnpm refresh:workshop-router-snapshot <cloud-checkout> [<cloud-sha>]
+```
+
+The individual steps:
 
 ```sh
 pnpm generate:workshop-router-snapshot <documents.json> <backend-commit>
@@ -241,9 +254,9 @@ Snapshot input is `[{id, document}]`. The second command reads the packed
 snapshot and optional `src/data/workshop-router-bindings.json` presentation
 overrides. It writes:
 
-- `src/content/workshop-router-contracts.json`: 198 contracts, one per line.
-- `src/content/workshop-router-index.json`: all 207 lightweight browse identities
-  and explicit missing-input markers (209 lines).
+- `src/content/workshop-router-contracts.json`: 226 contracts, one per line.
+- `src/content/workshop-router-index.json`: all 242 lightweight browse identities
+  and explicit missing-input markers (244 lines).
 
 Bindings are optional, not an enablement registry. The first nine retain
 verified media-upload/status selectors and Advanced choices there.
@@ -253,7 +266,7 @@ exclusion are enforced even in native-JSON mode.
 `src/data/workshop-router-identity-audit.json` holds evidence and disposition
 for every original ID, tied to the same backend commit. The alias generator
 validates complete, unique coverage and rejects stale/unknown targets, then
-writes `src/content/workshop-router-aliases.json`: 142 entries / 144 lines.
+writes `src/content/workshop-router-aliases.json`: 144 entries / 146 lines.
 All generated JSON is packed one record per line, marked generated and excluded
 from formatting. It is a valid JSON array, not strict JSONL.
 
@@ -288,27 +301,20 @@ Seedance 2.5, Seedream 5.0 Pro, FLUX 3 Video, Veo 3.1 and Qwen Image 3.0.
 All 114 visible models now have a nonempty display name distinct from their raw
 Router slug; card/detail names agree. Rob's explicit overrides still win.
 
-### Shared-thumbnail ribbons
+### Shared-thumbnail variant labels
 
 `src/data/workshop-thumbnail-labels.json` holds short editorial labels keyed by
 canonical Router ID, separate from Rob's generated content. The shared card
-renders a diagonal upper-right ribbon only when two distinct models use the same
+renders the label as a rounded pill only when two distinct models use the same
 thumbnail URL and media kind. Labels are resolved against the full catalogue,
 so filtering does not remove them; unique artwork and missing images stay plain.
 The current data covers 56 models sharing 21 assets, including video thumbnails.
 Labels are at most 12 characters and distinct within each shared-art group.
-Ribbon text steps down from 16px (up to six characters), to 12px (seven to nine),
-to 9px (ten to twelve), expressed in rem so browser text scaling still applies.
-The ribbon uses a heavy sans-serif face (800 weight), rather than inheriting
-PP Formula. The stripe is 40px thick, up from the initial 24px; its centre stays
-in the same corner position. Its dimensions stay fixed across label lengths,
-and labels are never truncated.
+The pill is warm-white text on the dropdown surface with a hairline border,
+in the site's own type. It sits top-right on hub cards and bottom-left on
+grid cards, near the model name, and slides away while the card is hovered so
+it never blocks the artwork being compared.
 Full names, links, image/video sources and Router requests remain unchanged.
-Verified with 27 focused card/catalogue/Hub/homepage tests, website Vue typecheck,
-scoped type-aware lint and the enabled build. Browser checks cover six model
-groups at 1440px plus 390px/320px layouts: labels remain on filtered cards,
-text stays inside each thumbnail, video frames decode and no paid requests run.
-Probe and screenshots: `temp/scripts/thumbnail-ribbon.JNFijc/` at repository root.
 
 Catalogue search follow-up, observed during this check: `krea turbo` returns no
 results while `Krea 2 Medium Turbo` matches. `filterWorkshopModels` still uses a
@@ -439,7 +445,7 @@ accepted parameter combination succeeds in a live paid request.
 
 ### Live API-key smoke check — September 9
 
-One production request was authorized for testing, using `COMFY_KEY` only in
+One production request was authorized for testing, using `COMFY_API_KEY` only in
 a local process, never in browser code, generated snippets or a committed file.
 Production `GET /customers/balance` authenticated (200) and returned zero total,
 effective, prepaid and cloud-credit balances. The live FLUX 2 Pro input schema

@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Новый пустой рабочий процесс"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Повторить ознакомление"
+  },
   "Comfy_OpenClipspace": {
     "label": "Клипспейс"
   },

@@ -1,4 +1,7 @@
-import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 
 type InputPreviewOutput = Pick<NodeExecutionOutput, 'images'> & {
   images: ResultItem[]

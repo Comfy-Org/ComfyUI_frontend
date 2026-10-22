@@ -1,5 +1,8 @@
 import type { Token } from 'marked'
 
+import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
+import { api } from '@/scripts/api'
+import { isLoopbackHost } from '@/utils/hostWhitelist'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -13,22 +16,151 @@ export interface ReplyAsset {
   label?: string
 }
 
-const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+export function isReplyAssetKind(value: MediaType): value is ReplyAssetKind {
+  return (
+    value === 'image' ||
+    value === 'video' ||
+    value === 'audio' ||
+    value === '3D'
+  )
+}
 
-export function classifyAssetUrl(href: string): ReplyAsset | null {
+/**
+ * Moves a loopback ComfyUI media URL onto the page's API route and returns any
+ * other URL unchanged.
+ */
+export function resolveAgentAssetUrl(href: string): string {
+  const url =
+    URL.parse(href) ??
+    (href.startsWith('//') ? URL.parse(href, window.location.origin) : null)
+  if (!url) return href
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return href
+  if (!isLoopbackHost(url.hostname)) return href
+  if (!isMediaRoute(`${url.pathname}${url.search}`)) return href
+  const rehomed = URL.parse(
+    api.apiURL(`${url.pathname}${url.search}`),
+    window.location.origin
+  )
+  if (!rehomed) return href
+  rehomed.hash = url.hash
+  return rehomed.href
+}
+
+const SRCSET_SPACE = /[\t\n\f\r ]/
+
+interface SrcsetCandidate {
+  url: string
+  descriptor: string
+}
+
+function srcsetCandidates(value: string): SrcsetCandidate[] {
+  const candidates: SrcsetCandidate[] = []
+  let position = skipSrcsetSeparators(value, 0)
+  while (position < value.length) {
+    const [rawUrl, afterUrl] = readSrcsetUrl(value, position)
+    const closesCandidate = rawUrl.endsWith(',')
+    const [descriptor, next] = closesCandidate
+      ? ['', afterUrl]
+      : readSrcsetDescriptor(value, afterUrl)
+    const url = closesCandidate ? rawUrl.replace(/,+$/, '') : rawUrl
+    if (url) candidates.push({ url, descriptor })
+    position = skipSrcsetSeparators(value, next)
+  }
+  return candidates
+}
+
+function isSrcsetSpace(c: string): boolean {
+  return SRCSET_SPACE.test(c)
+}
+
+function skipSrcsetSeparators(value: string, position: number): number {
+  while (
+    position < value.length &&
+    (isSrcsetSpace(value[position]) || value[position] === ',')
+  )
+    position++
+  return position
+}
+
+function readSrcsetUrl(value: string, position: number): [string, number] {
+  const start = position
+  while (position < value.length && !isSrcsetSpace(value[position])) position++
+  return [value.slice(start, position), position]
+}
+
+function readSrcsetDescriptor(
+  value: string,
+  position: number
+): [string, number] {
+  const start = position
+  let inParens = false
+  for (; position < value.length; position++) {
+    const c = value[position]
+    if (c === ',' && !inParens) break
+    if (c === '(') inParens = true
+    else if (c === ')') inParens = false
+  }
+  return [value.slice(start, position).trim(), position + 1]
+}
+
+function resolveSrcset(value: string): string {
+  const candidates = srcsetCandidates(value).map((candidate) => ({
+    ...candidate,
+    target: resolveAgentAssetUrl(candidate.url)
+  }))
+  if (candidates.every(({ url, target }) => target === url)) return value
+  return candidates
+    .map(({ target, descriptor }) =>
+      descriptor ? `${target} ${descriptor}` : target
+    )
+    .join(', ')
+}
+
+const REWRITABLE_ATTRS = ['src', 'href', 'poster', 'srcset'] as const
+
+const MAYBE_MEDIA_ROUTE = /[/\\](?:view|vhs[/\\]|assets[/\\])/
+
+export function rewriteAgentAssetHtml(html: string): string {
+  if (!MAYBE_MEDIA_ROUTE.test(html)) return html
+  const template = document.createElement('template')
+  template.innerHTML = html
+  let rewritten = false
+  for (const element of template.content.querySelectorAll(
+    REWRITABLE_ATTRS.map((name) => `[${name}]`).join(', ')
+  )) {
+    for (const name of REWRITABLE_ATTRS) {
+      const value = element.getAttribute(name)
+      if (value === null) continue
+      const resolved =
+        name === 'srcset' ? resolveSrcset(value) : resolveAgentAssetUrl(value)
+      if (resolved === value) continue
+      element.setAttribute(name, resolved)
+      rewritten = true
+    }
+  }
+  return rewritten ? template.innerHTML : html
+}
+
+export function classifyAssetUrl(
+  href: string,
+  baseUrl = window.location.origin
+): ReplyAsset | null {
   let url: URL
   try {
-    url = new URL(href, window.location.origin)
+    url = new URL(href, baseUrl)
   } catch {
     return null
   }
-  const filename =
-    url.searchParams.get('filename') ??
-    decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  let filename = url.searchParams.get('filename')
+  try {
+    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  } catch {
+    return null
+  }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
-  if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
+  if (!isReplyAssetKind(kind)) return null
+  return { url: resolveAgentAssetUrl(href), filename, kind }
 }
 
 type InlineToken = { type: string; href?: string; text?: string }
@@ -112,6 +244,7 @@ export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
     type: 'output',
     nodeId: '',
     mediaType: asset.kind === 'image' ? 'images' : asset.kind,
+    mediaTypeIsResolved: true,
     url: asset.url
   }
 }

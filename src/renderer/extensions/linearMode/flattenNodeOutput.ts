@@ -1,4 +1,4 @@
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 

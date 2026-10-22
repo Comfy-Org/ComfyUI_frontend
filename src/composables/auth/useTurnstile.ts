@@ -3,13 +3,13 @@ import { computed } from 'vue'
 import {
   isTurnstileEnabled,
   normalizeTurnstileMode
-} from '@comfyorg/account/turnstile'
+} from '@comfyorg/account-core/turnstile'
 
 import { getTurnstileSiteKey } from '@/config/turnstile'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { TurnstileMode } from '@/platform/remoteConfig/types'
 
-export { useTurnstileGate } from '@comfyorg/account/vue'
+export { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'
 
 /**
  * Reactive Turnstile state for the signup form.

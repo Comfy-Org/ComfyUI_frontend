@@ -1,5 +1,10 @@
 #!/usr/bin/env tsx
 
+// The assembler reaches into src/ for the frame schemas, and that graph reads
+// Vite defines (__DISTRIBUTION__ via reportError). tsx is not Vite, so the shim
+// has to run before those modules evaluate.
+import './vite-define-shim'
+
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -58,9 +63,9 @@ export const zObservation = z
     name: z.string().nullish(),
     startTime: z.string(),
     endTime: z.string().nullish(),
-    input: z.unknown(),
-    output: z.unknown(),
-    metadata: z.unknown(),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    metadata: z.unknown().optional(),
     parentObservationId: z.string().nullish()
   })
   .passthrough()

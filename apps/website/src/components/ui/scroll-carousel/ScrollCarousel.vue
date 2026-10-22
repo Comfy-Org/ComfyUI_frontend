@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useScroll } from '@vueuse/core'
+import {
+  useElementHover,
+  useIntersectionObserver,
+  useScroll
+} from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
-import { t } from '../../../i18n/translations'
-import type { Locale } from '../../../i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   locale = 'en',
   gapClass = 'gap-12 lg:gap-20',
+  autoplayMs,
   class: className
 } = defineProps<{
   locale?: Locale
   gapClass?: string
+  autoplayMs?: number
   class?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 const trackRef = ref<HTMLElement>()
 const { x } = useScroll(trackRef)
@@ -33,18 +42,44 @@ function scroll(direction: -1 | 1) {
   el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' })
 }
 
+function advance() {
+  const el = trackRef.value
+  if (!el) return
+  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+  if (atEnd) el.scrollTo({ left: 0, behavior: 'smooth' })
+  else scroll(1)
+}
+
+const isVisible = ref(false)
+useIntersectionObserver(trackRef, ([entry]) => {
+  isVisible.value = entry?.isIntersecting ?? false
+})
+const isHovered = useElementHover(trackRef)
+
+useCarouselAutoplay({
+  delayMs: () => autoplayMs ?? 0,
+  active: () =>
+    Boolean(autoplayMs) &&
+    !prefersReducedMotion() &&
+    isVisible.value &&
+    !isHovered.value,
+  resetKey: x,
+  advance
+})
+
 const progressPercent = computed(() => `${progress.value * 100}%`)
 </script>
 
 <template>
   <section
-    :class="cn('max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24', className)"
+    :class="cn('mx-auto max-w-9xl px-6 py-16 lg:px-16 lg:py-24', className)"
   >
     <div
       ref="trackRef"
+      data-testid="scroll-carousel-track"
       :class="
         cn(
-          'flex snap-x snap-mandatory scrollbar-none overflow-x-auto',
+          'scrollbar-none flex snap-x snap-mandatory overflow-x-auto',
           gapClass
         )
       "
@@ -55,7 +90,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
     <div class="mt-10 flex items-center gap-4">
       <div class="h-1 flex-1 rounded-full bg-white/20" aria-hidden="true">
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: progressPercent }"
         />
       </div>
@@ -63,7 +98,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('carousel.previous', locale)"
+        :aria-label="t('carousel.previous')"
         @click="scroll(-1)"
       >
         <img
@@ -75,8 +110,8 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full transition-opacity hover:opacity-90"
-        :aria-label="t('carousel.next', locale)"
+        class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
+        :aria-label="t('carousel.next')"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

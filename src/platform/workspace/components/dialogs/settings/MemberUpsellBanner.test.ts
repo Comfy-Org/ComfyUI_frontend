@@ -13,15 +13,14 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderBanner(props: { reactivate?: boolean } = {}) {
+function renderBanner() {
   return render(MemberUpsellBanner, {
-    props,
     global: { plugins: [i18n] }
   })
 }
 
 describe('MemberUpsellBanner', () => {
-  it('shows upgrade copy when the workspace never subscribed', () => {
+  it('pitches the Team plan', () => {
     renderBanner()
 
     expect(
@@ -32,23 +31,12 @@ describe('MemberUpsellBanner', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows reactivate copy when the team plan has lapsed', () => {
-    renderBanner({ reactivate: true })
-
-    expect(
-      screen.getByText('To add more teammates, reactivate your plan.')
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Reactivate Team' })
-    ).toBeInTheDocument()
-  })
-
-  it('emits showPlans when the CTA is clicked', async () => {
+  it('emits action when the CTA is clicked', async () => {
     const user = userEvent.setup()
-    const { emitted } = renderBanner({ reactivate: true })
+    const { emitted } = renderBanner()
 
-    await user.click(screen.getByRole('button', { name: 'Reactivate Team' }))
+    await user.click(screen.getByRole('button', { name: 'Upgrade to Team' }))
 
-    expect(emitted()).toHaveProperty('showPlans')
+    expect(emitted()).toHaveProperty('action')
   })
 })

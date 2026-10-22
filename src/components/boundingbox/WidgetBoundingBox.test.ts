@@ -1,10 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetBoundingBox from './WidgetBoundingBox.vue'
 
@@ -13,10 +16,13 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' }
+      boundingBox: { x: 'X', y: 'Y', width: 'Width', height: 'Height' },
+      widgetHistory: { undo: 'Undo', redo: 'Redo' }
     }
   }
 })
+
+vi.mock(import('@/scripts/app'))
 
 const ScrubableNumberInputStub = defineComponent({
   name: 'ScrubableNumberInput',
@@ -40,12 +46,19 @@ const ScrubableNumberInputStub = defineComponent({
   `
 })
 
-function renderBox(initial: Bounds, disabled = false) {
+function renderBox(
+  initial: Bounds,
+  disabled = false,
+  widget?: SimplifiedWidget
+) {
   const value = ref<Bounds>(initial)
+  const editEnds: unknown[] = []
+  const onEditEnd = (field: unknown) => editEnds.push(field)
   const Harness = defineComponent({
     components: { WidgetBoundingBox },
-    setup: () => ({ value, disabled }),
-    template: '<WidgetBoundingBox v-model="value" :disabled="disabled" />'
+    setup: () => ({ value, disabled, widget, onEditEnd }),
+    template:
+      '<WidgetBoundingBox v-model="value" :disabled="disabled" :widget="widget" @edit-end="onEditEnd" />'
   })
   const utils = render(Harness, {
     global: {
@@ -53,7 +66,7 @@ function renderBox(initial: Bounds, disabled = false) {
       stubs: { ScrubableNumberInput: ScrubableNumberInputStub }
     }
   })
-  return { ...utils, value }
+  return { ...utils, value, editEnds }
 }
 
 describe('WidgetBoundingBox', () => {
@@ -128,5 +141,48 @@ describe('WidgetBoundingBox', () => {
         expect(input).not.toBeDisabled()
       }
     })
+  })
+})
+
+describe('WidgetBoundingBox node history', () => {
+  const start: Bounds = { x: 0, y: 0, width: 512, height: 512 }
+  const standalone: SimplifiedWidget = {
+    name: 'box',
+    type: 'boundingbox',
+    value: start,
+    nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
+  }
+
+  it('undoes and redoes a field edit when used as its own widget', async () => {
+    const { value } = renderBox(start, false, standalone)
+    const user = userEvent.setup()
+    await user.type(screen.getByTestId('bounding-box-x'), '5')
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(value.value).toEqual(start)
+
+    await user.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(value.value.x).toBe(5)
+  })
+
+  it('undoes consecutive changes to one field as a single step', async () => {
+    const { value } = renderBox(start, false, standalone)
+    const user = userEvent.setup()
+    await user.type(screen.getByTestId('bounding-box-width'), '12')
+    expect(value.value.width).toBe(51212)
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(value.value).toEqual(start)
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('leaves history to its parent when embedded', async () => {
+    const { editEnds } = renderBox(start)
+    const user = userEvent.setup()
+    await user.type(screen.getByTestId('bounding-box-y'), '3')
+
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull()
+    expect(editEnds).toEqual(['y'])
   })
 })

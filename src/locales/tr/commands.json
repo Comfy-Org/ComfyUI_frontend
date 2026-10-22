@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Yeni Boş İş Akışı"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Başlangıç Tanıtımını Yeniden Oynat"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },

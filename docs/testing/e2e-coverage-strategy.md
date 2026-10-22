@@ -39,14 +39,14 @@ regenerated.
 
 ### Pipeline
 
-| Layer       | Where collected                                                                                  | Output                                                                                           |
-| ----------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Unit        | `ci-tests-unit.yaml`, `pnpm test:coverage` (vitest, v8 provider)                                 | `coverage/lcov.info`, Codecov flag `unit`, `unit-coverage` artifact                              |
-| E2E         | `ci-tests-e2e.yaml`, sharded `chromium` job only, `COLLECT_COVERAGE=true` at build and test time | Per-shard lcov via monocart (`ComfyPage.ts` `page` fixture, `globalTeardown.ts`)                 |
-| E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                |
-| E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                |
-| Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                          |
-| Gating      | `codecov.yml`                                                                                    | Project status disabled; patch status `informational` except `apps/website`; flags carry forward |
+| Layer       | Where collected                                                                                  | Output                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Unit        | `ci-tests-unit.yaml`, `pnpm test:coverage` (vitest, v8 provider)                                 | `coverage/lcov.info`, Codecov flag `unit`, `unit-coverage` artifact                                                     |
+| E2E         | `ci-tests-e2e.yaml`, sharded `chromium` job only, `COLLECT_COVERAGE=true` at build and test time | Per-shard lcov via monocart (`ComfyPage.ts` `page` fixture, `globalTeardown.ts`)                                        |
+| E2E merge   | `ci-tests-e2e-coverage-package.yaml`, `scripts/cicd/package-e2e-coverage.sh`                     | `lcov -a` merge, `genhtml` report, `e2e-coverage` + `e2e-coverage-html` artifacts                                       |
+| E2E publish | `ci-tests-e2e-coverage.yaml` (workflow_run)                                                      | Codecov flag `e2e`, GitHub Pages deploy on `main`                                                                       |
+| Reporting   | `coverage-slack-notify.yaml`, `scripts/coverage-slack-notify.ts`                                 | Slack post per merged PR with unit and E2E deltas against an 80% target                                                 |
+| Gating      | `codecov.yml`                                                                                    | Default project status disabled; website project and all patch statuses informational; unit and E2E flags carry forward |
 
 ### Current numbers (main, 2026-09-01)
 
@@ -120,6 +120,10 @@ regenerated.
    `report.json` records `flaky` outcomes, and nothing aggregates them.
 
 ## 3. Principles from the research
+
+The general form of these principles now lives in
+`docs/guidance/testing-principles.md`; this section records how they apply to
+this suite.
 
 ### Composable tests (Kent Beck)
 

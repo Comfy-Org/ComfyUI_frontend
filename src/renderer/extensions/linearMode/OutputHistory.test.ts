@@ -23,7 +23,7 @@ import OutputHistory from './OutputHistory.vue'
 
 const mediaRef = ref<AssetItem[]>([])
 const hasMoreRef = ref(false)
-const loadMoreFn = vi.fn()
+const loadMoreFn = vi.fn<() => Promise<boolean>>()
 
 const selectFirstHistoryFn = vi.fn(() => {
   const first = mediaRef.value.at(0)
@@ -272,12 +272,10 @@ describe('OutputHistory', () => {
       await nextTick()
 
       expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
-      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenCalledWith(
+      expect(useLinearOutputStore().select).toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalledWith(
         'history:a1:0'
       )
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalledWith('history:a1:0')
       expect(lastEmission(result)).toMatchObject({
         asset,
         output: expect.objectContaining({ filename: 'a1.png' }),
@@ -301,12 +299,10 @@ describe('OutputHistory', () => {
       vi.clearAllMocks()
       await userEvent.click(slots[0])
       expect(useLinearOutputStore().selectedId).toBe('slot:ip1')
-      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenCalledWith(
+      expect(useLinearOutputStore().select).toHaveBeenCalledWith('slot:ip1')
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalledWith(
         'slot:ip1'
       )
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalledWith('slot:ip1')
     })
 
     it('marks unselected items with tabindex=-1', async () => {
@@ -493,9 +489,9 @@ describe('OutputHistory', () => {
       mountComponent()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith('slot:ip1')
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(
+        'slot:ip1'
+      )
     })
 
     it('selects first history when no in-progress but outputs exist', async () => {
@@ -514,9 +510,7 @@ describe('OutputHistory', () => {
       mountComponent()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith(null)
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(null)
     })
 
     it('reselects when workflow path changes after mount', async () => {
@@ -548,9 +542,7 @@ describe('OutputHistory', () => {
       useWorkflowStore().activeWorkflow = null
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalled()
       expect(selectFirstHistoryFn).not.toHaveBeenCalled()
     })
   })
@@ -663,22 +655,22 @@ describe('OutputHistory', () => {
       pressKey('ArrowRight')
       await nextTick()
       expect(useLinearOutputStore().selectedId).toBe('history:a2:0')
-      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenLastCalledWith(
+      expect(useLinearOutputStore().select).toHaveBeenLastCalledWith(
         'history:a2:0'
       )
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalledWith('history:a2:0')
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalledWith(
+        'history:a2:0'
+      )
 
       pressKey('ArrowLeft')
       await nextTick()
       expect(useLinearOutputStore().selectedId).toBe('history:a1:0')
-      expect(vi.mocked(useLinearOutputStore().select)).toHaveBeenLastCalledWith(
+      expect(useLinearOutputStore().select).toHaveBeenLastCalledWith(
         'history:a1:0'
       )
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalledWith(
+        'history:a1:0'
+      )
 
       pressKey('ArrowDown')
       await nextTick()
@@ -729,7 +721,7 @@ describe('OutputHistory', () => {
       )
       await nextTick()
 
-      expect(vi.mocked(useLinearOutputStore().select)).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().select).not.toHaveBeenCalled()
       document.body.removeChild(input)
     })
 

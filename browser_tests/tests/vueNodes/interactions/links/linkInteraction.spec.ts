@@ -1,13 +1,17 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
@@ -70,6 +74,10 @@ function slotLocator(
   return page.locator(`[data-slot-key="${key}"]`)
 }
 
+function vueNodeOf(comfyPage: ComfyPage, nodeId: NodeId) {
+  return comfyPage.vueNodes.getNodeLocator(String(nodeId))
+}
+
 async function expectVisibleAll(...locators: Locator[]) {
   await Promise.all(locators.map((l) => expect(l).toBeVisible()))
 }
@@ -103,8 +111,9 @@ test.describe(
   'Vue Node Link Interaction',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await fitToViewInstant(comfyPage)
     })
@@ -121,10 +130,9 @@ test.describe(
 
       const start = await getCenter(slot)
 
-      // Arbitrary value
       const dragTarget = {
         x: start.x + 180,
-        y: start.y - 140
+        y: start.y + 140
       }
 
       await comfyMouse.move(start)
@@ -132,9 +140,12 @@ test.describe(
       await comfyPage.nextFrame()
 
       try {
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-node-dragging-link.png'
-        )
+        await expect(new Tooltip(comfyPage.page).open).toBeHidden()
+        const region = await screenshotRegion(comfyPage.page, [
+          vueNodeOf(comfyPage, samplerNode.id),
+          dragTarget
+        ])
+        await region.expectScreenshot('vue-node-dragging-link.png')
       } finally {
         await comfyMouse.drop()
       }
@@ -166,6 +177,26 @@ test.describe(
           targetId: vaeNode.id,
           targetSlot: 0
         })
+    })
+
+    test('undo right after dropping a link on a slot removes that link', async ({
+      comfyPage
+    }) => {
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await connectSlots(
+        comfyPage.page,
+        { nodeId: samplerNode.id, index: 0 },
+        { nodeId: vaeNode.id, index: 0 },
+        () => comfyPage.nextFrame()
+      )
+      await vaeInput.expectLinkCount(1)
+
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
     })
 
     test('should not create a link when slot types are incompatible', async ({
@@ -244,9 +275,12 @@ test.describe(
 
       await comfyMouse.move(vaeInputCenter)
       await comfyMouse.drag(dragTarget)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-input-drag-reuses-origin.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        vueNodeOf(comfyPage, samplerNode.id),
+        vueNodeOf(comfyPage, vaeNode.id),
+        dragTarget
+      ])
+      await region.expectScreenshot('vue-node-input-drag-reuses-origin.png')
       await comfyMouse.drop()
     })
 
@@ -289,9 +323,12 @@ test.describe(
 
       try {
         await comfyMouse.drag(dragTarget)
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-node-input-drag-ctrl-alt.png'
-        )
+        const region = await screenshotRegion(comfyPage.page, [
+          vueNodeOf(comfyPage, samplerNode.id),
+          vueNodeOf(comfyPage, vaeNode.id),
+          dragTarget
+        ])
+        await region.expectScreenshot('vue-node-input-drag-ctrl-alt.png')
       } finally {
         await comfyMouse.drop().catch(() => {})
         await comfyPage.page.keyboard.up('Alt').catch(() => {})
@@ -300,7 +337,6 @@ test.describe(
 
       await comfyPage.nextFrame()
 
-      // Technically intended to disconnect existing as well
       await vaeInput.expectLinkCount(0)
       await samplerOutput.expectLinkCount(0)
     })
@@ -404,8 +440,6 @@ test.describe(
       const inputPosition = await vaeInput.getPosition()
       const reroutePoint = getMiddlePoint(outputPosition, inputPosition)
 
-      // Insert a reroute programmatically on the existing link between sampler output[0] and VAE input[0].
-      // This avoids relying on an exact path hit-test position.
       await comfyPage.page.evaluate(
         ([targetNodeId, targetSlot, clientPoint]) => {
           const app = window.app
@@ -420,7 +454,6 @@ test.describe(
           const link = graph.getLink(linkId)
           if (!link) throw new Error('Link not found')
 
-          // Convert the client/canvas pixel coordinates to graph space
           const pos = app.canvas.ds.convertCanvasToOffset([
             clientPoint.x,
             clientPoint.y
@@ -446,9 +479,12 @@ test.describe(
       try {
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drag(dragTarget)
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-node-reroute-input-drag.png'
-        )
+        const region = await screenshotRegion(comfyPage.page, [
+          vueNodeOf(comfyPage, samplerNode.id),
+          vueNodeOf(comfyPage, vaeNode.id),
+          dragTarget
+        ])
+        await region.expectScreenshot('vue-node-reroute-input-drag.png')
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drop()
       } catch (error) {
@@ -473,6 +509,7 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
+      await fitToViewInstant(comfyPage, { zoom: 0.6 })
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
       const samplerOutput = await samplerNode.getOutput(0)
@@ -489,8 +526,6 @@ test.describe(
       const inputPosition = await vaeInput.getPosition()
       const reroutePoint = getMiddlePoint(outputPosition, inputPosition)
 
-      // Insert a reroute programmatically on the existing link between sampler output[0] and VAE input[0].
-      // This avoids relying on an exact path hit-test position.
       await comfyPage.page.evaluate(
         ([targetNodeId, targetSlot, clientPoint]) => {
           const app = window.app
@@ -505,7 +540,6 @@ test.describe(
           const link = graph.getLink(linkId)
           if (!link) throw new Error('Link not found')
 
-          // Convert the client/canvas pixel coordinates to graph space
           const pos = app.canvas.ds.convertCanvasToOffset([
             clientPoint.x,
             clientPoint.y
@@ -525,7 +559,7 @@ test.describe(
       )
       const dragTarget = {
         x: outputCenter.x + 150,
-        y: outputCenter.y - 140
+        y: outputCenter.y - 100
       }
 
       let dropPending = false
@@ -536,9 +570,12 @@ test.describe(
         shiftHeld = true
         dropPending = true
         await comfyMouse.drag(dragTarget)
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-node-reroute-output-shift-drag.png'
-        )
+        const region = await screenshotRegion(comfyPage.page, [
+          vueNodeOf(comfyPage, samplerNode.id),
+          vueNodeOf(comfyPage, vaeNode.id),
+          dragTarget
+        ])
+        await region.expectScreenshot('vue-node-reroute-output-shift-drag.png')
         await comfyMouse.move(outputCenter)
         await comfyMouse.drop()
         dropPending = false
@@ -626,7 +663,6 @@ test.describe(
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
       const clipOutput = await clipNode.getOutput(0)
 
-      // Connect output[0] -> inputs[1] and [2]
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
@@ -662,9 +698,12 @@ test.describe(
         await comfyMouse.drag(dragTarget)
         dropPending = true
 
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-node-shift-output-multi-link.png'
-        )
+        const region = await screenshotRegion(comfyPage.page, [
+          vueNodeOf(comfyPage, clipNode.id),
+          vueNodeOf(comfyPage, samplerNode.id),
+          dragTarget
+        ])
+        await region.expectScreenshot('vue-node-shift-output-multi-link.png')
       } finally {
         if (dropPending) await comfyMouse.drop().catch(() => {})
         if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
@@ -678,7 +717,6 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
-      // Start drag from CLIP output[0]
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
         clipNode.id,
@@ -686,7 +724,6 @@ test.describe(
         false
       )
 
-      // Drag to the visual center of the KSampler Vue node (not a slot)
       const samplerVue = comfyPage.vueNodes.getNodeLocator(
         String(samplerNode.id)
       )
@@ -696,15 +733,14 @@ test.describe(
       await comfyMouse.move(clipOutputCenter)
       await comfyMouse.drag(samplerCenter)
 
-      // During drag, the preview should snap/highlight a compatible input on KSampler
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-snap-to-node.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        vueNodeOf(comfyPage, clipNode.id),
+        samplerVue
+      ])
+      await region.expectScreenshot('vue-node-snap-to-node.png')
 
-      // Drop to create the link
       await comfyMouse.drop()
 
-      // Validate a link was created to one of KSampler's compatible inputs (1 or 2)
       await expect
         .poll(async () => {
           const link1 = await getInputLinkDetails(
@@ -732,8 +768,6 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
-      // Drag from CLIP output[0] to KSampler input[2] (third slot) which is the
-      // second compatible input for CLIP
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
         clipNode.id,
@@ -750,12 +784,12 @@ test.describe(
       await comfyMouse.move(clipOutputCenter)
       await comfyMouse.drag(samplerInput3Center)
 
-      // Expect the preview to show snapping to the targeted slot
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-snap-to-slot.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        vueNodeOf(comfyPage, clipNode.id),
+        vueNodeOf(comfyPage, samplerNode.id)
+      ])
+      await region.expectScreenshot('vue-node-snap-to-slot.png')
 
-      // Finish the connection
       await comfyMouse.drop()
 
       await expect
@@ -1055,10 +1089,8 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow(
       'vueNodes/ksampler-denoise-widget-link'
     )
-    await comfyPage.vueNodes.waitForNodes(2)
     await comfyPage.workflow.waitForDraftPersisted()
     await comfyPage.workflow.reloadAndWaitForApp()
-    await comfyPage.vueNodes.waitForNodes(2)
 
     const ksampler = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
@@ -1191,7 +1223,6 @@ test(
 
 test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await fitToViewInstant(comfyPage)
   })
@@ -1289,3 +1320,85 @@ test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     )
     .toBe(false)
 })
+
+test(
+  'Extends a floating reroute chain',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage, comfyMouse }) => {
+    await comfyPage.nodeOps.clearGraph()
+
+    const sourceNode = await test.step('Add an Int node', async () => {
+      await comfyPage.searchBoxV2.addNode('Int', {
+        position: { x: 800, y: 200 }
+      })
+      return comfyPage.nodeOps.getNodeRefByTitle('Int')
+    })
+
+    const firstReroute =
+      await test.step('Create a floating reroute from the Int output', async () => {
+        const primitiveNode = await comfyPage.vueNodes.getFixtureByTitle('Int')
+        await primitiveNode
+          .getSlot('INT')
+          .first()
+          .dragTo(comfyPage.canvas, {
+            targetPosition: { x: 700, y: 400 }
+          })
+        await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+        return comfyPage.page.evaluate(() => {
+          const reroute = [...window.app!.graph.reroutes.values()][0]
+          const [x, y] = window.app!.canvasPosToClientPos([
+            reroute.pos[0] + window.LiteGraph!.Reroute.slotOffset,
+            reroute.pos[1]
+          ])
+          return { id: reroute.id, position: { x, y } }
+        })
+      })
+
+    await test.step('Extend the reroute while keeping the chain connected', async () => {
+      const reroutePosition = firstReroute.position
+      await comfyMouse.move(reroutePosition)
+      await comfyPage.canvasOps.dragAndDrop(reroutePosition, {
+        x: reroutePosition.x - 120,
+        y: reroutePosition.y + 80
+      })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            const reroutes = [...graph.reroutes.values()]
+            const tip = reroutes.find((reroute) => reroute.floating)
+            const link = [...graph.floatingLinks.values()][0]
+            return {
+              rerouteCount: reroutes.length,
+              floatingLinkCount: graph.floatingLinks.size,
+              regularLinkCount: graph.links.size,
+              linkEndsAtTip: link.parentId === tip?.id,
+              tipParentId: tip?.parentId,
+              originId: link.origin_id,
+              originSlot: link.origin_slot,
+              targetId: link.target_id,
+              targetSlot: link.target_slot,
+              chainMembership: reroutes.every((reroute) =>
+                reroute.floatingLinkIds.has(link.id)
+              )
+            }
+          })
+        )
+        .toEqual({
+          rerouteCount: 2,
+          floatingLinkCount: 1,
+          regularLinkCount: 0,
+          linkEndsAtTip: true,
+          tipParentId: firstReroute.id,
+          originId: sourceNode.id,
+          originSlot: 0,
+          targetId: UNASSIGNED_NODE_ID,
+          targetSlot: -1,
+          chainMembership: true
+        })
+    })
+  }
+)

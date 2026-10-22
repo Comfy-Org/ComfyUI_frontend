@@ -6,6 +6,7 @@ import type { EffectScope } from 'vue'
 import { useBrushDrawing } from '@/composables/maskeditor/useBrushDrawing'
 import { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { app } from '@/scripts/app'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
@@ -43,19 +44,7 @@ vi.mock(import('@/composables/maskeditor/useCoordinateTransform'), () => ({
   useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    extensionManager: {
-      setting: {
-        get: vi.fn((key: string) => {
-          if (key === 'Comfy.MaskEditor.UseDominantAxis') return false
-          if (key === 'Comfy.MaskEditor.BrushAdjustmentSpeed') return 1
-          return undefined
-        })
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const mockKeyboard = {
   isKeyDown: vi.fn().mockReturnValue(false),
@@ -116,6 +105,11 @@ const setup = (): ReturnType<typeof useToolManager> => {
 
 describe('useToolManager', () => {
   beforeEach(() => {
+    vi.mocked(app.extensionManager.setting.get).mockImplementation((key) => {
+      if (key === 'Comfy.MaskEditor.UseDominantAxis') return false
+      if (key === 'Comfy.MaskEditor.BrushAdjustmentSpeed') return 1
+      return undefined
+    })
     mockStore = useMaskEditorStore()
     mockStore.currentTool = Tools.MaskPen
     mockStore.activeLayer = 'mask'

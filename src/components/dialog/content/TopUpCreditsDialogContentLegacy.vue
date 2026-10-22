@@ -1,18 +1,16 @@
 <template>
-  <div
-    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <Card class="flex min-w-[460px] flex-col shadow-md">
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
+      <DialogTitle class="m-0 text-lg font-bold">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
             : $t('credits.topUp.addMoreCredits')
         }}
-      </h2>
+      </DialogTitle>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
@@ -26,6 +24,10 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <p class="m-0 px-8 pb-4 text-sm text-muted-foreground">
+      {{ $t('credits.topUp.purchaseDisclosure') }}
+    </p>
+
     <!-- Preset amount buttons -->
     <div class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">
@@ -33,15 +35,16 @@
       </h3>
       <div class="flex gap-2 pt-3">
         <Button
-          v-for="amount in PRESET_AMOUNTS"
+          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
           :key="amount"
           :autofocus="amount === 50"
           variant="secondary"
           size="lg"
+          :aria-pressed="selectedPreset === amount"
           :class="
             cn(
-              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
-              selectedPreset === amount && 'bg-secondary-background-selected'
+              'h-10 w-full text-base focus-visible:ring-ring',
+              selectedPreset === amount && 'bg-muted'
             )
           "
           @click="handlePresetClick(amount)"
@@ -53,42 +56,49 @@
     <!-- Amount (USD) / Credits -->
     <div class="flex gap-2 px-8 pt-8">
       <!-- You Pay -->
-      <div class="flex flex-1 flex-col gap-3" data-testid="top-up-pay-amount">
+      <div
+        class="flex min-w-0 flex-1 flex-col gap-3"
+        data-testid="top-up-pay-amount"
+      >
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <FormattedNumberStepper
+        <FormNumberField
+          class="w-full"
+          :aria-label="$t('credits.topUp.youPay')"
+          input-class="text-lg font-medium"
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
-          :step="getStepAmount"
+          :step="getStepAmount(payAmount)"
+          :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
-          @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <span class="shrink-0 text-base font-semibold text-base-foreground"
-              >$</span
-            >
+            <span class="shrink-0 text-base font-semibold">$</span>
           </template>
-        </FormattedNumberStepper>
+        </FormNumberField>
       </div>
 
       <!-- You Get -->
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex min-w-0 flex-1 flex-col gap-3">
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <FormattedNumberStepper
+        <FormNumberField
           v-model="creditsModel"
+          class="w-full"
+          :aria-label="$t('credits.topUp.youGet')"
+          input-class="text-lg font-medium"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount"
-          @max-reached="showCeilingWarning = true"
+          :step="getCreditsStepAmount(creditsModel)"
+          :format-options="{ maximumFractionDigits: 0 }"
         >
           <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           </template>
-        </FormattedNumberStepper>
+        </FormNumberField>
       </div>
     </div>
 
@@ -96,7 +106,7 @@
 
     <p
       v-if="isBelowMin"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -107,7 +117,7 @@
     </p>
     <p
       v-if="showCeilingWarning"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -127,10 +137,9 @@
     <div class="flex flex-col gap-8 p-8">
       <Button
         :disabled="!isValidAmount || loading"
-        :loading="loading"
+        :loading
         variant="primary"
         size="lg"
-        class="h-10 justify-center"
         @click="handleBuy"
       >
         {{ $t('credits.topUp.buyCredits') }}
@@ -139,35 +148,44 @@
         <a
           :href="pricingUrl"
           target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link] size-4" />
         </a>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import Card from '@/components/ui/card/Card.vue'
+import {
+  getTopupAmountPreset,
+  TOPUP_AMOUNT_PRESETS_USD
+} from '@comfyorg/account-core/billing'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
 }>()
 
 const { t } = useI18n()
@@ -179,14 +197,12 @@ const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 // Constants
-const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 
 // State
 const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
-const showCeilingWarning = ref(false)
 const loading = ref(false)
 
 // Computed
@@ -207,6 +223,7 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -229,11 +246,9 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
-  showCeilingWarning.value = false
 }
 
 function handlePresetClick(amount: number) {
-  showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
 }
@@ -252,7 +267,17 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCreditsDirect(payAmount.value)
+    if (useBillingContext().canAccessSubscriptionFeatures.value) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'started',
+        outcome: 'pending',
+        payment_intent_source: source,
+        amount_cents: payAmount.value * 100,
+        amount_preset: getTopupAmountPreset(selectedPreset.value)
+      })
+      await authActions.purchaseCreditsDirect(payAmount.value)
+    }
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
     // updated balance. The destination is the V1 panel for every session: the
@@ -271,12 +296,13 @@ async function handleBuy() {
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
-      failure_category: categorizeBillingApiError(error)
+      payment_intent_source: source,
+      ...describeBillingFailure(error)
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: t('credits.topUp.purchaseErrorDetail', { error: errorMessage })
+    toast.error(t('credits.topUp.purchaseError'), {
+      description: t('credits.topUp.purchaseErrorDetail', {
+        error: errorMessage
+      })
     })
   } finally {
     loading.value = false

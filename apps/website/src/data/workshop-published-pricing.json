@@ -1,6 +1,6 @@
 {
-  "sourceUrl": "https://docs.comfy.org/tutorials/partner-nodes/pricing#image",
-  "verifiedOn": "2026-09-11",
+  "sourceUrl": "https://docs.comfy.org/tutorials/partner-nodes/pricing",
+  "verifiedOn": "2026-09-16",
   "models": {
     "bfl/flux-kontext-pro": {
       "creditsPerRun": 8.44,
@@ -9,6 +9,62 @@
     "bfl/flux-kontext-max": {
       "creditsPerRun": 16.88,
       "useCases": ["generate-images", "edit-images"]
+    },
+    "bria/image-edit-erase": {
+      "creditsPerRun": 6.03,
+      "useCases": ["edit-images"]
+    },
+    "bria/image-edit-expand": {
+      "creditsPerRun": 6.03,
+      "useCases": ["edit-images"]
+    },
+    "bria/fibo": {
+      "creditsPerRun": 8.44,
+      "useCases": ["edit-images"]
+    },
+    "bria/image-edit-gen-fill": {
+      "creditsPerRun": 9.05,
+      "useCases": ["edit-images"]
+    },
+    "bria/image-edit-increase-resolution": {
+      "creditsPerRun": 6.03,
+      "useCases": ["edit-images"]
+    },
+    "bria/image-edit-remove-background": {
+      "creditsPerRun": 3.8,
+      "useCases": ["edit-images"]
+    },
+    "freepik/ai-skin-enhancer-creative": {
+      "creditsPerRun": 61.19,
+      "useCases": ["edit-images"]
+    },
+    "luma/photon-1": {
+      "creditsPerRun": 2.19,
+      "useCases": ["generate-images", "edit-images"]
+    },
+    "luma/photon-flash-1": {
+      "creditsPerRun": 0.57,
+      "useCases": ["generate-images", "edit-images"]
+    },
+    "runway/gen4_image": {
+      "creditsPerRun": 24.14,
+      "useCases": ["generate-images"]
+    },
+    "wan/wan2.5-i2i-preview": {
+      "creditsPerRun": 6.33,
+      "useCases": ["edit-images"]
+    },
+    "wan/wan2.5-t2i-preview": {
+      "creditsPerRun": 6.33,
+      "useCases": ["generate-images"]
+    },
+    "wavespeed/seedvr2": {
+      "creditsPerRun": 2.11,
+      "useCases": ["edit-images"]
+    },
+    "wavespeed/ultimate-image-upscaler": {
+      "creditsPerRun": 12.66,
+      "useCases": ["edit-images"]
     }
   }
 }

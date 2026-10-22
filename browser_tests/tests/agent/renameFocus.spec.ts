@@ -7,9 +7,10 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory
 const CHAT_OPTIONS_LABEL = enMessages.agent.chatOptions
 const RENAME_LABEL = enMessages.g.rename
@@ -20,12 +21,6 @@ const RENAME_LABEL = enMessages.g.rename
 // failure - that was the locator (see below).
 const PANEL_MOUNT_TIMEOUT = 30_000
 
-// Precondition, not the criterion. The history list is populated by
-// AgentPanelRoot.vue -> history.replaceAll((await listThreads())...), and
-// listThreads() GETs /agent/threads (agentRestClient.ts). Seeding through that
-// route is the app's own load path, so the row under test is rendered by the
-// real component from real store state - nothing is injected into the DOM and
-// no state is faked past the UI.
 const SEEDED_THREAD_ID = 'thread-rename-focus'
 const SEEDED_TITLE = 'Seeded session'
 const SEEDED_AT = new Date(0).toISOString()
@@ -48,7 +43,7 @@ async function seedOneThread(page: Parameters<typeof bootAgentApp>[0]) {
     ]
   } satisfies AgentThreadListResponse
 
-  await page.route('**/agent/threads', (route) =>
+  await page.route('**/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(response))
   )
 }
@@ -61,9 +56,12 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     await seedOneThread(page)
     await bootAgentApp(page, agentFlagEnabled)
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
-    await openButton.click()
+    await new AgentPanel(page).open()
 
     // Staged: the docked shell renders immediately, the async root arrives
     // after its chunk. Asserting the shell first keeps a later failure

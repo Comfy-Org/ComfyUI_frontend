@@ -11,7 +11,7 @@ export type RightSidePanelTab =
   | 'subgraph'
   | 'errors'
 
-type RightSidePanelSection = 'advanced-inputs' | string
+type RightSidePanelSection = 'advanced-inputs'
 
 /**
  * Store for managing the right side panel state.
