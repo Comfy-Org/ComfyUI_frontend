@@ -27,6 +27,7 @@ import {
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -85,7 +86,11 @@ export async function createAppRouter(): Promise<Router> {
           {
             path: '',
             name: 'GraphView',
-            component: () => import('@/views/GraphView.vue'),
+            component: () =>
+              bootstrapTracer.settle(
+                'bootstrap/graph-view-chunk',
+                () => import('@/views/GraphView.vue')
+              ),
             beforeEnter: async () => {
               const userStore = useUserStore()
               await userStore.initialize()

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex max-h-96 w-full flex-col overflow-hidden rounded-lg md:w-80">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
     <div
       class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
