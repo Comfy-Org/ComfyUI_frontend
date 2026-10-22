@@ -6210,10 +6210,11 @@ describe('AgentPanelRoot sending while a run card waits', () => {
   })
 
   it('keeps Stop over a running turn with no card, even when the backend supports it', async () => {
-    getServerFeature.mockImplementation((name: string, defaultValue?: unknown) =>
-      name === 'agent'
-        ? { state: 'ready', ask_send_dismisses: true }
-        : defaultValue
+    getServerFeature.mockImplementation(
+      (name: string, defaultValue?: unknown) =>
+        name === 'agent'
+          ? { state: 'ready', ask_send_dismisses: true }
+          : defaultValue
     )
     respondToFetch({}, () => json(200, {}))
     workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
