@@ -3,7 +3,6 @@ import type { TooltipContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   loading = false,
@@ -25,17 +24,16 @@ const emit = defineEmits<{
 <template>
   <Button
     variant="muted-textonly"
-    size="icon-sm"
+    size="icon"
+    icon="icon-[lucide--astroid]"
     :loading
     :disabled
-    :class="cn('text-muted-foreground hover:text-foreground', className)"
+    :class="className"
     :tooltip="$t('agent.enhancePrompt')"
     :tooltip-side="tooltipSide"
     :aria-label="
       loading ? $t('agent.enhancingPrompt') : $t('agent.enhancePrompt')
     "
     @click="emit('click', $event)"
-  >
-    <i class="icon-[lucide--astroid] size-3" />
-  </Button>
+  />
 </template>

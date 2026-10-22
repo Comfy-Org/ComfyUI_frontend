@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { EnhancePromptStateKey } from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
@@ -429,6 +431,62 @@ describe('WidgetTextarea enhance prompt', () => {
     })
     expect(screen.getByRole('textbox')).toHaveValue('enhanced prompt')
     expect(screen.queryByText('enhanced')).not.toBeInTheDocument()
+  })
+
+  it('shares processing and reveal with another textarea for the same widget', async () => {
+    useAgentPanelStore().enabled = true
+    const id = widgetId('test-graph-id', toNodeId(1), 'prompt')
+    let resolveRequest: (result: { ok: true; prompt: string }) => void = () =>
+      undefined
+    vi.mocked(enhancePromptRequest).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      })
+    )
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode',
+        widgetId: id
+      },
+      global: {
+        mocks: { $t: (msg: string) => msg }
+      }
+    })
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode',
+        widgetId: id
+      },
+      global: {
+        provide: { [HideLayoutFieldKey as symbol]: true },
+        mocks: { $t: (msg: string) => msg }
+      }
+    })
+
+    const [canvasField, panelField] = screen.getAllByRole('textbox')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    )
+
+    expect(canvasField).toHaveAttribute('readonly')
+    expect(panelField).toHaveAttribute('readonly')
+    expect(canvasField).toHaveClass('agent-shimmer-text')
+    expect(panelField).toHaveClass('agent-shimmer-text')
+    expect(enhancePromptRequest).toHaveBeenCalledOnce()
+
+    resolveRequest({ ok: true, prompt: 'enhanced prompt' })
+    await vi.waitFor(() => {
+      expect(screen.getAllByText('enhanced').length).toBeGreaterThan(0)
+    })
+    expect(canvasField).toHaveClass('invisible')
+    expect(panelField).toHaveClass('invisible')
+    expect(canvasField).toHaveValue('a prompt')
+    expect(panelField).toHaveValue('a prompt')
   })
 })
 

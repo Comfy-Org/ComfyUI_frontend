@@ -27,6 +27,7 @@ import type {
   WidgetValue as SimplifiedWidgetValue
 } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -158,6 +159,14 @@ const promptValue = computed({
   }
 })
 
+const enhanceWidgetId = computed((): WidgetId | undefined => {
+  if (widget.widgetId) return widget.widgetId
+  const graphId = node.graph?.rootGraph.id
+  const bareNodeId = stripGraphPrefix(node.id)
+  if (!graphId || !bareNodeId) return undefined
+  return widgetId(graphId, bareNodeId, widget.name)
+})
+
 const {
   isLocked,
   isProcessing,
@@ -166,7 +175,8 @@ const {
   revealStaggerMs,
   enhance
 } = useEnhancePrompt({
-  prompt: promptValue
+  prompt: promptValue,
+  widgetId: enhanceWidgetId.value
 })
 
 const showEnhance = computed(() => {
@@ -290,6 +300,7 @@ const displayLabel = customRef((track, trigger) => {
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
+      :widget-id="enhanceWidgetId"
       :node-id="node.id"
       :node-type="node.type"
       :class="

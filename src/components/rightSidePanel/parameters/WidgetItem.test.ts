@@ -10,6 +10,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -20,6 +21,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { widgetId } from '@/types/widgetId'
 
 import WidgetItem from './WidgetItem.vue'
@@ -411,6 +413,23 @@ describe('WidgetItem', () => {
       expect(enhanceButton()).not.toBeInTheDocument()
     })
 
+    it('uses the library icon button size and muted-textonly variant', () => {
+      useAgentPanelStore().enabled = true
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      const button = screen.getByRole('button', { name: 'Enhance prompt' })
+      expect(button).toHaveClass('size-8')
+      expect(button.dataset.variant).toBe('muted-textonly')
+      expect(button.innerHTML).toContain('size-4')
+    })
+
     it('replaces the prompt in place when enhance succeeds', async () => {
       useAgentPanelStore().enabled = true
       const widget = createMockWidget({
@@ -434,6 +453,7 @@ describe('WidgetItem', () => {
       await waitFor(() => {
         expect(onUpdate).toHaveBeenCalledWith('a cat rewritten')
       })
+      expect(onUpdate).toHaveBeenCalledOnce()
       expect(widget.value).toBe('a cat rewritten')
     })
 
@@ -499,6 +519,63 @@ describe('WidgetItem', () => {
           screen.getByRole('button', { name: 'Enhance prompt' })
         ).toBeEnabled()
       })
+    })
+
+    it('shares processing with a canvas prompt box for the same widget', async () => {
+      useAgentPanelStore().enabled = true
+      vi.mocked(getComponent).mockReturnValue(WidgetTextarea)
+      const id = widgetId('test-graph-id', toNodeId(1), 'prompt')
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'a prompt',
+        widgetId: id
+      })
+      enhancePromptRequest.mockReturnValue(new Promise(() => {}))
+
+      render(WidgetItem, {
+        props: {
+          widget,
+          node: createMockNode({ type: 'CLIPTextEncode' })
+        },
+        global: {
+          plugins: [i18n],
+          provide: { [HideLayoutFieldKey as symbol]: true },
+          stubs: {
+            EditableText: { template: '<span />' },
+            WidgetActions: { template: '<span />' }
+          }
+        }
+      })
+      render(WidgetTextarea, {
+        props: {
+          widget: {
+            name: 'prompt',
+            type: 'customtext',
+            value: 'a prompt'
+          },
+          modelValue: 'a prompt',
+          nodeType: 'CLIPTextEncode',
+          widgetId: id
+        },
+        global: {
+          plugins: [i18n]
+        }
+      })
+
+      const buttons = screen.getAllByRole('button', { name: 'Enhance prompt' })
+      await userEvent.click(buttons[0])
+
+      await waitFor(() => {
+        for (const field of screen.getAllByRole('textbox')) {
+          expect(field).toHaveAttribute('readonly')
+          expect(field).toHaveClass('agent-shimmer-text')
+        }
+      })
+      expect(enhancePromptRequest).toHaveBeenCalledOnce()
+
+      await userEvent.click(buttons[1] ?? buttons[0])
+      expect(enhancePromptRequest).toHaveBeenCalledOnce()
     })
   })
 })

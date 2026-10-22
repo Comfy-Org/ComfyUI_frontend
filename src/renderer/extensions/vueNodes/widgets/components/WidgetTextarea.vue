@@ -91,6 +91,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@/types/widgetId'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -110,11 +111,13 @@ import { WidgetInputBaseClass } from './layout'
 const {
   widget,
   placeholder = '',
-  nodeType
+  nodeType,
+  widgetId
 } = defineProps<{
   widget: SimplifiedWidget<string>
   placeholder?: string
   nodeType?: string
+  widgetId?: WidgetId
 }>()
 
 const textAreaRef = useTemplateRef('textAreaRef')
@@ -168,7 +171,8 @@ const {
   revealStaggerMs: ownedRevealStaggerMs,
   enhance
 } = useEnhancePrompt({
-  prompt: modelValue
+  prompt: modelValue,
+  widgetId
 })
 
 const isLocked = computed(
