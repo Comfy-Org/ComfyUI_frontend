@@ -14,6 +14,7 @@ import type { AuthoringSession } from '@/lib/cms/authoring-session'
 import { auditCatalogDetailBody } from '@website/scripts/models-html-audit'
 import { validateHtml } from '@website/scripts/validate-jsonld'
 import { buildPageGraph, webPageName } from '@/utils/jsonLd'
+import { t } from '@/i18n/translations'
 import { entries } from '@website/scripts/export-cms-seed'
 
 const SITE = new URL('https://comfy.org')
@@ -179,6 +180,19 @@ describe('catalog workflow page structured data and meta', () => {
       'https://comfy.org/',
       'https://comfy.org/hub/workflows/',
       undefined
+    ])
+  })
+
+  it('names the workflow breadcrumbs in the page locale', async () => {
+    serveNativeWorkflow(nativeWorkflow)
+    const pathname = '/zh-CN/hub/workflows/native-workflow/'
+    const load = await loadCatalogDetailPage({}, pathname, 'zh-CN')
+    if (load.status !== 'ok') throw new Error(load.status)
+    const head = catalogDetailHead(load.page, pathname, SITE, 'zh-CN', 'zh-CN')
+    expect(head.jsonLd.breadcrumbs.map((crumb) => crumb.name)).toEqual([
+      t('breadcrumb.home', {}, { locale: 'zh-CN' }),
+      t('workshop.hub.workflows', {}, { locale: 'zh-CN' }),
+      load.page.model.name
     ])
   })
 

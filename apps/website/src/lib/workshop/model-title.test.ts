@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '@/i18n/translations'
 import { t } from '@/i18n/translations'
-import { modelTitle } from './model-title'
+import { modelTitle, workflowTitle } from './model-title'
 
 const nameOfLength = (length: number) => 'x'.repeat(length)
 const full = (name: string, locale: Locale = 'en') =>
@@ -66,4 +66,30 @@ describe('modelTitle', () => {
     expect(title).toBe(expected)
     expect(title.length).toBeLessThanOrEqual(60)
   })
+})
+
+describe('workflowTitle', () => {
+  const titleSuffix = (locale: Locale) =>
+    t('workshop.workflow.meta.title', { name: '' }, { locale })
+
+  it.for(['en', 'ja', 'zh-CN'] as const)(
+    'shortens a 100-character name at a word to fit 60 characters in %s',
+    (locale) => {
+      const title = workflowTitle(
+        { name: 'Relight '.repeat(13).slice(0, 100) },
+        locale
+      )
+      expect(title.length).toBeLessThanOrEqual(60)
+      expect(title.endsWith(`Relight…${titleSuffix(locale)}`)).toBe(true)
+    }
+  )
+
+  it.for(['en', 'ja', 'zh-CN'] as const)(
+    'does not split an emoji when it cuts a name in %s',
+    (locale) => {
+      const title = workflowTitle({ name: '😀'.repeat(60) }, locale)
+      expect(title.length).toBeLessThanOrEqual(60)
+      expect(title).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/)
+    }
+  )
 })

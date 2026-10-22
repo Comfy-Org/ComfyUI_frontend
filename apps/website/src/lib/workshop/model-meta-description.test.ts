@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { hubModelSlugs } from '@/config/hub-models'
+import { t } from '@/i18n/translations'
 import { prepareModelPage } from '@/routes/models/model-page'
-import { modelMetaDescription } from './model-meta-description'
+import {
+  modelMetaDescription,
+  workflowMetaDescription
+} from './model-meta-description'
 
 const MAX_LENGTH = 170
 // Re-baseline ratchets, with headroom over today's catalogue.
@@ -202,4 +206,35 @@ describe('modelMetaDescription', () => {
       pages.length * DISTINCT_BODY_SHARE
     )
   })
+})
+
+describe('workflowMetaDescription', () => {
+  const name = 'Flux Kontext Product Relight'
+
+  it.for(['en', 'ja', 'zh-CN'] as const)(
+    'adds the Comfy Hub sentence when it fits in %s',
+    (locale) => {
+      expect(
+        workflowMetaDescription({ name, summary: 'Relights a photo.' }, locale)
+      ).toContain(t('workshop.workflow.meta.hub', {}, { locale }))
+    }
+  )
+
+  it.for([
+    { locale: 'zh-CN', summary: '把产品照片放进摄影棚场景'.repeat(12) },
+    {
+      locale: 'ja',
+      summary: '商品写真をスタジオの場面に置き換えます'.repeat(8)
+    },
+    { locale: 'en', summary: 'x'.repeat(200) }
+  ] as const)(
+    'keeps the name and cuts only a summary without spaces in $locale',
+    ({ locale, summary }) => {
+      const description = workflowMetaDescription({ name, summary }, locale)
+      expect(description.length).toBeLessThanOrEqual(160)
+      expect(description).toMatch(
+        new RegExp(`^${name}[:：] ?${summary.slice(0, 10)}.*…$`)
+      )
+    }
+  )
 })
