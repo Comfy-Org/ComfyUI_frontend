@@ -1,36 +1,23 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Locator, WebSocketRoute } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
-import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
-
 import {
-  MESSAGE_DONE_EVENT,
   WORKFLOW_ID as BOUND_WORKFLOW_ID,
+  MESSAGE_DONE_EVENT,
   agentTest,
-  pushAgentEvent
+  pushAgentEvent,
+  refuseDocSubscribePermanently
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
 const FIRST_PROMPT = 'What is on my canvas?'
 const SECOND_PROMPT = 'Describe the focused canvas.'
-
-const PERMANENTLY_REFUSED_SUBSCRIBE = {
-  type: 'doc_subscribed',
-  data: {
-    v: DOC_PROTOCOL_VERSION,
-    workflow_id: BOUND_WORKFLOW_ID,
-    ok: false,
-    code: 'schema_version_mismatch'
-  }
-}
 
 function parsePosted(raw: string | undefined): AgentPostMessageRequest {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
@@ -51,30 +38,6 @@ function draftNodeCount(body: AgentPostMessageRequest): number {
   )
   if (!Array.isArray(nodes)) throw new Error('Invalid posted draft nodes')
   return nodes.length
-}
-
-function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
-  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
-}
-
-async function pushTurnDoneOnceTurnIsActive(
-  userBubbles: Locator,
-  renderedPrompts: string[],
-  ws: WebSocketRoute
-): Promise<void> {
-  await expect(
-    userBubbles,
-    'the turn must already be the active one before the done frame is pushed'
-  ).toHaveText(renderedPrompts)
-  pushAgentEvent(ws, MESSAGE_DONE_EVENT)
-}
-
-async function expectTurnSettled(agentPanel: AgentPanel): Promise<void> {
-  await expect(
-    agentPanel.stopButton,
-    'turn 1 must settle before turn 2 is composed, so the ack binding is in place'
-  ).toHaveCount(0)
-  await expect(agentPanel.composer).toHaveText('')
 }
 
 test.describe(
@@ -98,7 +61,6 @@ test.describe(
       ).toBeGreaterThanOrEqual(3)
 
       await agentPanel.open()
-      const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
       const ws = await getAgentSocket()
 
       await test.step('turn 1 on an unbound tab carries the canvas inline', async () => {
@@ -113,8 +75,9 @@ test.describe(
       })
 
       await test.step('the ack binds the tab and the turn settles', async () => {
-        await pushTurnDoneOnceTurnIsActive(userBubbles, [FIRST_PROMPT], ws)
-        await expectTurnSettled(agentPanel)
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+        await agentPanel.expectTurnSettled()
       })
 
       const second =
@@ -153,13 +116,13 @@ test.describe(
       expect(nodeCount).toBeGreaterThanOrEqual(3)
 
       await agentPanel.open()
-      const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
       const ws = await getAgentSocket()
 
       await agentPanel.sendMessage(FIRST_PROMPT)
       await expect.poll(() => postedMessages.length).toBe(1)
-      await pushTurnDoneOnceTurnIsActive(userBubbles, [FIRST_PROMPT], ws)
-      await expectTurnSettled(agentPanel)
+      await agentPanel.expectUserMessages([FIRST_PROMPT])
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await agentPanel.expectTurnSettled()
 
       await test.step('user opens a fresh empty tab, then returns to the bound one', async () => {
         await comfyPage.menu.topbar.newWorkflowButton.click()
@@ -199,13 +162,13 @@ test.describe(
       expect(nodeCount).toBeGreaterThanOrEqual(3)
 
       await agentPanel.open()
-      const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
       const ws = await getAgentSocket()
 
       await agentPanel.sendMessage(FIRST_PROMPT)
       await expect.poll(() => postedMessages.length).toBe(1)
-      await pushTurnDoneOnceTurnIsActive(userBubbles, [FIRST_PROMPT], ws)
-      await expectTurnSettled(agentPanel)
+      await agentPanel.expectUserMessages([FIRST_PROMPT])
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await agentPanel.expectTurnSettled()
 
       await test.step('the host permanently refuses the bound document and the user is told', async () => {
         refuseDocSubscribePermanently(ws)

@@ -3,6 +3,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 import { themeSchema } from '@/schemas/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
@@ -323,6 +324,22 @@ describe('useColorPaletteService', () => {
       expect(readRootProperty('--shadow-color')).toBe(expected)
     }
   )
+
+  it('keeps the current palette and reports an error when asked to load an unknown palette', async () => {
+    clearRootThemeAfterTest()
+    const service = useColorPaletteService()
+    await service.loadColorPalette('nord')
+
+    await service.loadColorPalette('unknown')
+
+    expect(readRootProperty('--background')).toBe('#161b22')
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Color palette unknown not found'
+      })
+    )
+  })
 
   it('removes a custom palette legacy shadow once the next palette omits it', async () => {
     clearRootThemeAfterTest()

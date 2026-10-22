@@ -5,6 +5,7 @@ import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionG
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 const nodeIn = (graph: LGraph, title: string) => {
@@ -96,6 +97,26 @@ describe('useSelectionGrid', () => {
       expect(Array.from(node.pos)).toEqual(position)
     }
   )
+
+  it('spaces nodes by rendered size when content has grown past size', () => {
+    const graph = new LGraph()
+    const a = nodeIn(graph, 'A')
+    const b = nodeIn(graph, 'B')
+    a.pos = [0, 0]
+    b.pos = [0, 250]
+    a.size = [100, 50]
+    b.size = [100, 50]
+    layoutStore.reportContentSize(graph.id, a.id, { width: 100, height: 200 })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+
+    useSelectionGrid().tidyUp([a, b], { gap: 12, captureUndo: false })
+
+    expect(Array.from(a.size)).toEqual([100, 50])
+    expect(Array.from(a.pos)).toEqual([0, 0])
+    expect(Array.from(b.pos)).toEqual([0, 242])
+  })
 
   it('moves the drawn bounds to the target while preserving their offset from the raw position', () => {
     const graph = new LGraph()
