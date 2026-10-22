@@ -32,14 +32,16 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 
 ## Exports
 
-| Path                 | Contents                                                   |
-| -------------------- | ---------------------------------------------------------- |
-| `./css/style.css`    | Full theme — palette, fonts, Tailwind layers, icon plugins |
-| `./css/base.css`     | Palette and fonts only                                     |
-| `./css/_palette.css` | Color variables                                            |
-| `./css/fonts.css`    | Font faces                                                 |
-| `./icons/*.svg`      | Comfy icon set source SVGs                                 |
-| `./workspaceAvatar`  | Deterministic workspace avatar styles by plan and name     |
+| Path                            | Contents                                                             |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins           |
+| `./css/base.css`                | Palette and fonts only                                               |
+| `./css/_palette.css`            | Color variables                                                      |
+| `./css/fonts.css`               | Font faces                                                           |
+| `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal |
+| `./css/_legacy-palette.css`     | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)   |
+| `./icons/*.svg`                 | Comfy icon set source SVGs                                           |
+| `./workspaceAvatar`             | Deterministic workspace avatar styles by plan and name               |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.

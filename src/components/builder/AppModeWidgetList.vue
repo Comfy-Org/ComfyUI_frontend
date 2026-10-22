@@ -17,6 +17,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -162,12 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
@@ -228,12 +224,7 @@ defineExpose({ handleDragDrop })
     <div
       v-if="description || builderMode"
       data-testid="app-mode-widget-description"
-      :class="
-        cn(
-          'h-5 px-5',
-          description ? 'text-muted-foreground' : 'text-muted-background'
-        )
-      "
+      class="h-5 px-5 text-muted-foreground"
     >
       <WidgetDescription
         :description
@@ -271,7 +262,7 @@ defineExpose({ handleDragDrop })
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "
         />

@@ -17,6 +17,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -54,9 +55,6 @@ interface Turn {
   send: (frame: AgentWsEvent | HostFrame) => void
 }
 
-// Boots the agent panel on a fresh canvas and sends one user message, answering
-// the document subscription the way the host does, so every frame after it is
-// the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
   const hostSocket = new AgentFollowerHostSocket(
     page,
@@ -65,8 +63,8 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   )
   const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
@@ -247,12 +245,20 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
+      let releaseAnswer = (): void => {}
+      const answerCanFinish =
+        selection === 'cancel'
+          ? new Promise<void>((resolve) => {
+              releaseAnswer = resolve
+            })
+          : Promise.resolve()
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
           answeredRequests.push({ url: request.url(), selected: body.selected })
+          await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),
             status: 202
@@ -295,8 +301,8 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await action.click()
 
       test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
+        selection === 'run',
+        'The run approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint. The cancel path reaches it again since the agent events socket landed.'
       )
       await expect
         .poll(() => answeredRequests)
@@ -309,15 +315,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
           }
         ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
-      send({
-        type: 'agent_ask_resolved',
-        data: {
-          ...ids,
-          ask_id: askId,
-          status: 'answered',
-          selected: [selection]
-        }
-      })
+      releaseAnswer()
       await expect(action).toHaveCount(0)
     })
   }

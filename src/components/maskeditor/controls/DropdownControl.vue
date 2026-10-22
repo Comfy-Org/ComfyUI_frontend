@@ -1,10 +1,10 @@
 <template>
   <div class="relative flex min-h-6 items-center gap-2.5">
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       label
     }}</span>
     <select
-      class="absolute right-0 h-6 rounded-md border border-border-default bg-secondary-background px-1.5 transition-colors duration-100 focus:outline focus:outline-node-component-border"
+      class="absolute right-0 h-6 rounded-md border bg-secondary px-1.5 transition-colors duration-100 focus:outline focus:outline-ring"
       :value="modelValue"
       @change="onChange"
     >

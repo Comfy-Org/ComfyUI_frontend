@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { workspaceApi as realWorkspaceApi } from '../workspaceApi'
+import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 export class WorkspaceApiError extends Error {
   constructor(
@@ -108,6 +108,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_manage_subscription: false,
+          can_open_plans: false,
           can_run_workflows: false,
           can_upgrade: false,
           can_reactivate: false,
@@ -125,6 +126,24 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
         }
       }
     },
+    getBillingAutoReload: async () => ({
+      configured: false,
+      cycle_resets_at: null,
+      disabled_reason: null,
+      enabled: false,
+      last_failure_at: null,
+      last_failure_reason: null,
+      max_monthly_budget_cents: 0,
+      min_reload_credits: 0,
+      monthly_budget_cents: null,
+      paused_by_budget: false,
+      paused_by_decline: false,
+      reload_amount_cents: null,
+      reload_credits: null,
+      spent_this_cycle_cents: 0,
+      status: 'off',
+      threshold_credits: null
+    }),
     getBillingPlans: async () => ({ plans: [] }),
     listSavedPaymentMethods: async () => [],
     previewSubscribe: async (slug) => ({

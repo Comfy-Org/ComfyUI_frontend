@@ -12,6 +12,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
   DeploymentPickSource,
@@ -22,6 +23,7 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
@@ -116,9 +118,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       workspaceStore.activeWorkspace?.role === 'owner'
     )
   )
-  const buildsVisible = computed(() =>
-    'buildsVisible' in state.value ? state.value.buildsVisible : true
-  )
   /**
    * True once a listing has answered, and while a reload of it is in flight.
    * False before any listing answers, when the account cannot pick, and when
@@ -127,6 +126,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   const isVisible = computed(() => 'deployments' in state.value)
   const isSwitching = computed(() => state.value.phase === 'switching')
+  const listingRefused = shallowRef(false)
   /**
    * The deployment this page booted on, from the first listing that
    * answered: null for Comfy Cloud (a gone pick, a rollout refusal, an ingest
@@ -183,12 +183,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       retryDelaysMs,
       () => workspaceStore.workspaceId === id
     )
-    // The workspace may have changed while the listing was in flight.
     if (workspaceStore.workspaceId !== id) return
-    applyAnswer(request, event)
+    applyAnswer(id, request, event)
   }
 
-  function applyAnswer(request: number, event: DeploymentPickEvent) {
+  function applyAnswer(
+    workspaceId: string,
+    request: number,
+    event: DeploymentPickEvent
+  ) {
     if (request <= lastApplied) {
       if (event.type === 'loaded') keepPickGone(event.gonePickedDeploymentId)
       return
@@ -199,10 +202,27 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     lastApplied = request
     dispatch(event)
+    listingRefused.value = event.type === 'loadRefused'
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
     if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
       bootDeployment.value = null
     }
+    rememberBootTarget(workspaceId)
+  }
+
+  function rememberBootTarget(workspaceId: string) {
+    setDeploymentHint(
+      workspaceId,
+      pickedDeployment.value?.deployment_id ?? null
+    )
+  }
+
+  function reloadOnto(workspaceId: string, deploymentId: string | null) {
+    setDeploymentHint(workspaceId, deploymentId)
+    reloadForDeploymentSwitch(() => {
+      dispatch({ type: 'switchFailed' })
+      void load()
+    })
   }
 
   function keepPickGone(gonePickedDeploymentId: string | null) {
@@ -233,6 +253,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     () => {
       dispatch({ type: 'workspaceChanged' })
       sawPickGone.value = false
+      listingRefused.value = false
       lastApplied = latestRequest
       firstLoad = null
     },
@@ -332,7 +353,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     ]).finally(() => clearTimeout(timeout))
     if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') window.location.reload()
+    if (outcome.kind === 'picked') reloadOnto(workspaceId, deploymentId)
     else dispatch({ type: 'switchFailed' })
     return outcome
   }
@@ -354,7 +375,21 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadOnto(workspaceId, deploymentId)
+    return null
+  }
+
+  async function followInPlace(workspaceId: string): Promise<string | null> {
+    dispatch({ type: 'switchStarted', target: pickedDeploymentId.value })
+    try {
+      await workspaceApi.clearDeployment(workspaceId, { follow: 'workspace' })
+    } catch (err) {
+      dispatch({ type: 'switchFailed' })
+      return errorMessage(err)
+    }
+    lastApplied = latestRequest
+    dispatch({ type: 'followedInPlace' })
+    await load()
     return null
   }
 
@@ -366,6 +401,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase !== 'ready') return null
     if (followsWorkspace.value) return null
+    if (defaultDeploymentId.value === pickedDeploymentId.value) {
+      return followInPlace(id)
+    }
     dispatch({ type: 'switchStarted', target: defaultDeploymentId.value })
     try {
       await workspaceApi.clearDeployment(id, { follow: 'workspace' })
@@ -373,8 +411,12 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadOnto(id, defaultDeploymentId.value)
     return null
+  }
+
+  function defaultMovesThisBrowser(deploymentId: string | null): boolean {
+    return followsWorkspace.value && deploymentId !== pickedDeploymentId.value
   }
 
   /**
@@ -408,8 +450,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    if (followsWorkspace.value) {
-      window.location.reload()
+    if (defaultMovesThisBrowser(deploymentId)) {
+      reloadOnto(id, deploymentId)
       return null
     }
     lastApplied = latestRequest
@@ -430,9 +472,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     defaultDeployment,
     followsWorkspace,
     canSetDefault,
-    buildsVisible,
     isVisible,
     isSwitching,
+    listingRefused,
     bootDeployment,
     changeSinceBoot,
     load,

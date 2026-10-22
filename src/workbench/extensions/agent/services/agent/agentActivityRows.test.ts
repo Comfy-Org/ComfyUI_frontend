@@ -97,4 +97,39 @@ describe('foldActivity', () => {
 
     expect(rows[0]).toMatchObject({ count: 2, ok: true })
   })
+
+  it.for([
+    { order: 'unconfirmed first', verdicts: [false, true] },
+    { order: 'unconfirmed last', verdicts: [true, false] }
+  ])(
+    'keeps a folded row unconfirmed when any write was unconfirmed ($order)',
+    ({ verdicts }) => {
+      const rows = foldActivity(
+        verdicts.map((canvasConfirmed) => ({
+          ...tool('add_node', true),
+          canvasConfirmed
+        }))
+      )
+
+      expect(rows[0]).toMatchObject({ count: 2, canvasConfirmed: false })
+    }
+  )
+
+  it.for([
+    { order: 'both confirmed', verdicts: [true, true] },
+    { order: 'confirmed then pending', verdicts: [true, undefined] },
+    { order: 'pending then confirmed', verdicts: [undefined, true] }
+  ])(
+    'records a folded row as confirmed when no verdict is unconfirmed ($order)',
+    ({ verdicts }) => {
+      const rows = foldActivity(
+        verdicts.map((canvasConfirmed) => ({
+          ...tool('add_node', true),
+          canvasConfirmed
+        }))
+      )
+
+      expect(rows[0]).toMatchObject({ count: 2, canvasConfirmed: true })
+    }
+  )
 })

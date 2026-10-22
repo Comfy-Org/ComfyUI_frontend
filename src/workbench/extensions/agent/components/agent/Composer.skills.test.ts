@@ -13,8 +13,8 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 import UserMessage from './message/UserMessage.vue'
@@ -336,11 +336,7 @@ describe('Composer skill selection', () => {
     await type('/por')
     await userEvent.keyboard('{Enter}')
     const reference = screen.getByTestId('skill-reference')
-    expect(reference).toHaveClass(
-      'underline',
-      'cursor-pointer',
-      'text-warning-background'
-    )
+    expect(reference).toHaveClass('underline', 'cursor-pointer', 'text-warning')
     expect(reference).toHaveAccessibleDescription(PORTRAIT)
     await userEvent.hover(reference)
     expect(await screen.findByRole('tooltip')).toHaveTextContent(
@@ -409,7 +405,7 @@ describe('Composer skill selection', () => {
     expect(emitted().send).toEqual([[PORTRAIT_LINK, []]])
 
     skills.upsertPack(pack('portrait', 'New description'))
-    await waitFor(() => expect(skill).toHaveClass('text-warning-background'))
+    await waitFor(() => expect(skill).toHaveClass('text-warning'))
     expect(skill).toHaveAccessibleDescription(PORTRAIT)
     expect(composer.prompt.references).toMatchObject([
       { name: 'portrait', description: PORTRAIT }

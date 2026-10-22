@@ -8,7 +8,8 @@ import {
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
-import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -24,7 +25,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import type {
@@ -32,7 +33,7 @@ import type {
   SocialSignInOptions
 } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
-import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
+import { openBillingUrl } from '@/platform/billing/billingTab'
 
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.
@@ -202,8 +203,6 @@ export const useAuthActions = () => {
       )
     }
 
-    // Mark the pending top-up directly, not via telemetry, so the balance
-    // refresh on return still fires when telemetry consent is off.
     const pendingTopup = usePendingTopup()
     pendingTopup.startPendingTopup()
     if (!openBillingUrl(response.checkout_url)) {
@@ -212,7 +211,9 @@ export const useAuthActions = () => {
         t('subscription.preview.paymentPopupBlocked')
       )
     }
-    watchForTopupBalanceUpdate()
+    watchForTopupBalanceUpdate({
+      onBalanceIncreased: () => refreshBilling('account')
+    })
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(

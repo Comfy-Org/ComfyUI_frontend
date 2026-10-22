@@ -17,8 +17,11 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
-import { MINIMAP_DECORATION_POP_MS } from '../minimapCanvasRenderer'
-import type { MinimapCanvas, MinimapSettingsKey } from '../types'
+import { MINIMAP_DECORATION_POP_MS } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import type {
+  MinimapCanvas,
+  MinimapSettingsKey
+} from '@/renderer/extensions/minimap/types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
@@ -326,8 +329,8 @@ export function useMinimap({
       transform: `translate(${transform.x}px, ${transform.y}px)`,
       width: `${transform.width}px`,
       height: `${transform.height}px`,
-      border: `2px solid ${settings.isLightTheme.value ? '#E0E0E0' : '#FFF'}`,
-      backgroundColor: `rgba(255, 255, 255, 0.2)`,
+      border: '2px solid var(--foreground)',
+      backgroundColor: 'color-mix(in srgb, var(--foreground) 20%, transparent)',
       willChange: 'transform',
       backfaceVisibility: 'hidden' as const,
       perspective: '1000px',

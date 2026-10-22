@@ -1,5 +1,5 @@
 <template>
-  <DialogPanel class="w-lg max-w-full" @close="onClose">
+  <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <i class="icon-[comfy--extensions-blocks]" />
       {{ $t('manager.survey.title') }}
@@ -35,25 +35,23 @@
         <div
           v-else-if="status === 'error'"
           data-testid="manager-survey-error"
-          class="flex min-h-56 flex-col items-center justify-center gap-2 text-center"
+          class="flex min-h-56 flex-col items-center justify-center gap-2 text-center text-muted-foreground"
         >
-          <i
-            class="icon-[lucide--triangle-alert] size-6 text-muted-foreground"
-          />
-          <p class="m-0 text-sm text-muted-foreground">
+          <i class="icon-[lucide--triangle-alert] size-6" />
+          <p class="m-0 text-sm">
             {{ $t('manager.survey.error') }}
           </p>
         </div>
       </div>
     </main>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 

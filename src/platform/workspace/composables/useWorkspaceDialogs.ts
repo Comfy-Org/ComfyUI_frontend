@@ -131,7 +131,7 @@ export function useWorkspaceDialogs() {
 
   async function showInviteMemberUpsellDialog() {
     const { default: component } =
-      await import('@/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue')
+      await import('@/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue')
     return dialogStore.showDialog({
       key: 'invite-member-upsell',
       component,

@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { fakeWebSessionUser } from '../testing.js'
+import { fakeWebSessionUser } from '#/testing'
 import type {
   RequestAuthorization,
   RequestPrincipal,
   RequestTarget
-} from './requestAuth.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
+} from './requestAuth'
+import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth'
 
 const SESSION: RequestPrincipal = {
   kind: 'session',

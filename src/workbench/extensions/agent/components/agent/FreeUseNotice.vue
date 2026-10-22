@@ -54,7 +54,7 @@ function onDismiss(): void {
     :data-placement="placement"
     :class="
       cn(
-        'flex items-start gap-3 bg-blue-selection text-base-foreground',
+        'flex items-start gap-3 bg-primary/30 text-foreground',
         PLACEMENT_CLASSES[placement]
       )
     "
@@ -68,7 +68,7 @@ function onDismiss(): void {
         :href="AGENT_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
+        class="inline p-0 text-sm/5 font-normal text-foreground underline underline-offset-4"
         @click="emit('notice', { action: 'learn_more_clicked', placement })"
       >
         {{ $t('g.learnMore') }}

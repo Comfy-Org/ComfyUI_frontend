@@ -20,14 +20,13 @@
     </template>
   </div>
 
-  <Toaster />
+  <AppToaster />
   <ToastDock>
     <ModelImportProgressDialog />
     <AssetExportProgressDialog />
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -54,7 +53,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import ToastDock from '@/components/ui/toast/ToastDock.vue'
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
@@ -79,7 +78,7 @@ import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vu
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -126,6 +125,7 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
@@ -194,12 +194,6 @@ if (isCloud) void useDeploymentPickAtBoot()
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.documentElement.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.documentElement.classList.add(DARK_THEME_CLASS)
-    }
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',

@@ -3,15 +3,15 @@ import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@/components/ui/menu/types'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useDeleteWorkspaceGate } from '@/platform/workspace/composables/useDeleteWorkspaceGate'
 import { useLeaveWorkspaceGate } from '@/platform/workspace/composables/useLeaveWorkspaceGate'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 interface GatedItem {
@@ -32,7 +32,7 @@ function gatedItem(status: 'enabled' | 'disabled', item: GatedItem): MenuItem {
 /** Edit, Leave and Delete workspace: the one source for every workspace ⋯ menu. */
 export function useWorkspaceActionMenuItems() {
   const { t } = useI18n()
-  const { uiConfig } = useWorkspaceUI()
+  const { canEditWorkspace } = useBillingCapabilities()
   const { gate: leaveGate, tooltip: leaveTooltip } = useLeaveWorkspaceGate()
   const { gate: deleteGate, tooltip: deleteTooltip } = useDeleteWorkspaceGate()
   const {
@@ -53,7 +53,7 @@ export function useWorkspaceActionMenuItems() {
 
   return computed<MenuItem[]>(() => {
     const items: MenuItem[] = []
-    if (uiConfig.value.showEditWorkspaceMenuItem) {
+    if (canEditWorkspace.value) {
       items.push({
         label: t('workspacePanel.menu.editWorkspace'),
         command: () => void showEditWorkspaceDialog()

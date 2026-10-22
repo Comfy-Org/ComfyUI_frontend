@@ -57,7 +57,7 @@
       :class="cn(formPanelClass, 'w-56')"
     >
       <div class="flex flex-col gap-2 p-1">
-        <span class="text-sm text-base-foreground">{{ t('load3d.fov') }}</span>
+        <span class="text-sm text-foreground">{{ t('load3d.fov') }}</span>
         <Slider
           :model-value="[fov]"
           :min="10"
@@ -86,7 +86,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
+import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const { compact = false } = defineProps<{
   compact?: boolean

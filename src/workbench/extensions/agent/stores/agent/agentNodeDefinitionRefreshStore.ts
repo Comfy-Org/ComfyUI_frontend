@@ -6,7 +6,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 function isSuccessfulRestart(event: AgentWsEvent): boolean {
   return (
@@ -41,27 +41,39 @@ async function reloadWorkflowWithoutRejecting(): Promise<void> {
 }
 
 /**
- * Refreshes node definitions and the open workflow after the agent restarts
- * ComfyUI; a failed refresh runs again on ComfyUI's next reconnect.
+ * How far apart a successful restart and a ComfyUI `/ws` reconnect may be for
+ * the reconnect to count as that restart. The turn can run on after the tool
+ * reports success, and the agent then allows ComfyUI five minutes to go down
+ * and come back.
+ */
+const RESTART_WINDOW_MS = 10 * 60_000
+
+/**
+ * Refreshes node definitions and the open workflow when ComfyUI reconnects
+ * after the agent restarts it. The agent reports the restart before ComfyUI
+ * goes down, but the report and the reconnect arrive on different sockets, so
+ * either may come first: every reconnect within the window refreshes,
+ * including one that came just before the report. An unrelated reconnect in
+ * the window refreshes too, which is harmless, and leaves the restart's own
+ * reconnect to refresh again.
  */
 export const useAgentNodeDefinitionRefreshStore = defineStore(
   'agentNodeDefinitionRefresh',
   () => {
-    let stale = false
+    let restartedAt = -Infinity
+    let reconnectedAt = -Infinity
+    let refreshQueued = false
     let queue = Promise.resolve()
 
-    async function refreshIfStale(): Promise<void> {
-      if (!stale) return
-      stale = false
-      if (!(await refreshNodeDefinitions())) {
-        stale = true
-        return
-      }
-      await reloadWorkflowWithoutRejecting()
+    async function refresh(): Promise<void> {
+      refreshQueued = false
+      if (await refreshNodeDefinitions()) await reloadWorkflowWithoutRejecting()
     }
 
     function enqueueRefresh(): void {
-      queue = queue.then(refreshIfStale).catch((error: unknown) => {
+      if (refreshQueued) return
+      refreshQueued = true
+      queue = queue.then(refresh).catch((error: unknown) => {
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_running_agent_node_definition_refresh'
@@ -69,13 +81,22 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
       })
     }
 
-    function observeAgentEvent(event: AgentWsEvent): void {
-      if (!isSuccessfulRestart(event)) return
-      stale = true
-      enqueueRefresh()
+    function refreshIfRestartNearby(): void {
+      if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
+        enqueueRefresh()
+      }
     }
 
-    useEventListener(api, 'reconnected', enqueueRefresh)
+    function observeAgentEvent(event: AgentWsEvent): void {
+      if (!isSuccessfulRestart(event)) return
+      restartedAt = Date.now()
+      refreshIfRestartNearby()
+    }
+
+    useEventListener(api, 'reconnected', () => {
+      reconnectedAt = Date.now()
+      refreshIfRestartNearby()
+    })
 
     return { observeAgentEvent }
   }

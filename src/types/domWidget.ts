@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import type {
   IBaseWidget,
   IWidgetOptions
