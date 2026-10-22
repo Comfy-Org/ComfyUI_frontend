@@ -132,7 +132,7 @@ function projectedLinkIds(host: HostDoc): unknown[] {
     .links.flatMap((link) => (Array.isArray(link) ? [link[0]] : []))
 }
 
-export class DynamicComboChildLinkScenario {
+class DynamicComboChildLinkScenario {
   public readonly childLabel: Locator
 
   constructor(
