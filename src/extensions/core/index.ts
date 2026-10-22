@@ -1,12 +1,13 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 
+import { registerElectronAdapterExtension } from './electronAdapter'
+
 import './clipspace'
 import './contextMenuFilter'
 import './createBoundingBoxes'
 import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
-import './electronAdapter'
 import './groupNode'
 import './groupOptions'
 import './imageCompare'
@@ -34,6 +35,8 @@ import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
+
+await registerElectronAdapterExtension()
 
 // Cloud-only extensions - tree-shaken in OSS builds
 // The literal __DISTRIBUTION__ comparison (not the isCloud const) is what

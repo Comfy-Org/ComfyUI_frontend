@@ -22,6 +22,11 @@ export type {
   CheckoutHostedStep,
   CheckoutRedirectNavigation
 } from './checkoutRedirectEvent'
+export type { AutoTopUpCardStatus } from './autoTopUpCardEvent'
+export type {
+  AutoTopUpCardAction,
+  PlatformHandoffDestination
+} from './platformHandoffEvent'
 export type { BillingPortalTarget } from './portalEvent'
 export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent'
 export type {

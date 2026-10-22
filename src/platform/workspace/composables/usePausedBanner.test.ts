@@ -16,6 +16,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 describe('usePausedBanner', () => {
   let scope: EffectScope | undefined
