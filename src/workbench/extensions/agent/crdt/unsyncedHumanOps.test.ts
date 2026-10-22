@@ -20,11 +20,30 @@ describe('unsyncedHumanOps', () => {
 
     const afterSecondReload = await loadPage()
     expect(afterSecondReload.hasUnsyncedHumanOps('wf-a')).toBe(true)
+    afterSecondReload.forgetUnsyncedAtLoad(null)
+    expect(afterSecondReload.hasUnsyncedHumanOps('wf-a')).toBe(true)
     afterSecondReload.forgetUnsyncedAtLoad('wf-a')
     expect(afterSecondReload.hasUnsyncedHumanOps('wf-a')).toBe(false)
 
     expect((await loadPage()).hasUnsyncedHumanOps('wf-a')).toBe(false)
   })
+
+  it.for([
+    { stored: 'not json', carriesWfA: false },
+    { stored: '"wf-a"', carriesWfA: false },
+    { stored: '{ "0": "wf-a" }', carriesWfA: false },
+    { stored: 'null', carriesWfA: false },
+    { stored: '["wf-a", 7, null, { "id": "wf-b" }]', carriesWfA: true }
+  ])(
+    'reads a stored $stored as carrying wf-a: $carriesWfA, and never carries wf-b',
+    async ({ stored, carriesWfA }) => {
+      sessionStorage.setItem('Comfy.Agent.UnsyncedHumanOps', stored)
+
+      const page = await loadPage()
+      expect(page.hasUnsyncedHumanOps('wf-a')).toBe(carriesWfA)
+      expect(page.hasUnsyncedHumanOps('wf-b')).toBe(false)
+    }
+  )
 
   it('keeps a carried workflow when this page records only its own edits', async () => {
     const before = await loadPage()

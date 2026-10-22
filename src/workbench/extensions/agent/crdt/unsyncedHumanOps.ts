@@ -37,10 +37,7 @@ function unsyncedNow(): Set<string> {
   ])
 }
 
-/**
- * Records, per recorder, the workflows whose canvas holds human edits the
- * shared document may lack. Survives reloads of this browser tab.
- */
+/** Records this recorder's workflows whose canvas holds edits the doc may lack. */
 export function recordUnsyncedHumanOps(
   recorder: string,
   workflowIds: Iterable<string>
@@ -51,19 +48,14 @@ export function recordUnsyncedHumanOps(
   writeStored([...unsyncedNow()])
 }
 
-/**
- * Whether `workflowId` has human edits the shared document may lack, recorded
- * by this page or carried over from a page before a reload.
- */
+/** Whether `workflowId`'s canvas holds edits the shared document may lack. */
 export function hasUnsyncedHumanOps(workflowId: string): boolean {
   return unsyncedNow().has(workflowId)
 }
 
-/**
- * Drops what an earlier page recorded for `workflowId` once this page has
- * subscribed to it, from which point this page's own record is authoritative.
- */
-export function forgetUnsyncedAtLoad(workflowId: string): void {
+/** Drops what a page before this one recorded for `workflowId`. */
+export function forgetUnsyncedAtLoad(workflowId: string | null): void {
+  if (workflowId === null) return
   if (!loadOnce().delete(workflowId)) return
   writeStored([...unsyncedNow()])
 }

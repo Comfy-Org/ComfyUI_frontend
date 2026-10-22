@@ -674,8 +674,7 @@ function startAgentCrdtFollower(
     if (ok) {
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
-      if (subscribedWorkflowId.value !== null)
-        forgetUnsyncedAtLoad(subscribedWorkflowId.value)
+      forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)

@@ -1,7 +1,11 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentPostMessageRequest,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -218,6 +222,7 @@ export class AgentConversationHarness {
   private readonly expectations: ExpectedTurn[]
   private postedTurns = 0
   private lastAddGhosted = false
+  private restoredAssistantText = 'Done.'
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -355,6 +360,7 @@ export class AgentConversationHarness {
 
   /** Serve this thread a stored transcript naming its bound workflow, as the service does once a turn has run. */
   async persistThreadTranscript(assistantText = 'Done.'): Promise<void> {
+    this.restoredAssistantText = assistantText
     const workflowId = this.conversation.workflow.id
     const { content } = this.conversation.turns[0].request
     const history: AgentMessages = [
@@ -384,6 +390,54 @@ export class AgentConversationHarness {
         ? route.fulfill(jsonRoute(history))
         : route.fallback()
     )
+  }
+
+  /** Reload, then wait for the stored transcript to restore `workflowName` as the target. */
+  async reloadIntoRestoredTarget(workflowName: string): Promise<void> {
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await expect(
+      this.panel.getByText(this.restoredAssistantText).first()
+    ).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await expect(
+      this.panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
+    ).toHaveText(workflowName, { timeout: PANEL_MOUNT_TIMEOUT })
+  }
+
+  /** The widget values `nodeId` carries in the draft of the next posted message. */
+  async nextPostedDraftWidgetValues(nodeId: number): Promise<unknown[]> {
+    const request = await this.page.waitForRequest(
+      (candidate) =>
+        candidate.method() === 'POST' &&
+        /\/api\/agent\/threads\/[^/]+\/messages$/.test(
+          new URL(candidate.url()).pathname
+        )
+    )
+    const parsed = zAgentPostMessageRequest.safeParse(
+      JSON.parse(request.postData() ?? '{}')
+    )
+    expect(
+      parsed.success,
+      'the posted turn must match the request schema'
+    ).toBe(true)
+    const body: AgentPostMessageRequest | undefined = parsed.data
+    const nodes: unknown = body?.draft?.content?.nodes
+    if (!Array.isArray(nodes))
+      throw new Error('the posted turn carried a draft with no nodes')
+    const node: unknown = nodes.find(
+      (candidate: unknown) =>
+        typeof candidate === 'object' &&
+        candidate !== null &&
+        'id' in candidate &&
+        candidate.id === nodeId
+    )
+    const values =
+      typeof node === 'object' && node !== null && 'widgets_values' in node
+        ? node.widgets_values
+        : undefined
+    if (!Array.isArray(values))
+      throw new Error(`the posted draft gave node ${nodeId} no widget values`)
+    return values
   }
 
   async sendPrompt(turn = 0): Promise<void> {

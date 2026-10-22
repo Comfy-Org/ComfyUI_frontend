@@ -7917,7 +7917,10 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
       )
       await screen.findAllByText('Earlier request')
-      await nextTick()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+      )
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
       expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
     } finally {
       recordUnsyncedHumanOps('previous-panel', [])
