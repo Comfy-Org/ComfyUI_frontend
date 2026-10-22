@@ -141,14 +141,12 @@
             <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
-        <div class="flex h-0 w-full flex-col gap-1 overflow-visible">
-          <ErrorOverlay v-if="!isActionBarsHidden" />
-          <QueueProgressOverlay
-            v-if="isQueueProgressOverlayEnabled"
-            v-model:expanded="isQueueOverlayExpanded"
-            :menu-hovered="isTopMenuHovered"
-          />
-        </div>
+        <ErrorOverlay v-if="!isActionBarsHidden" />
+        <QueueProgressOverlay
+          v-if="isQueueProgressOverlayEnabled"
+          v-model:expanded="isQueueOverlayExpanded"
+          :menu-hovered="isTopMenuHovered"
+        />
       </div>
     </div>
 
