@@ -81,6 +81,11 @@ function registerNodeDef(id: number, name: string) {
   return load3dLazyExtension.beforeRegisterNodeDef!(nodeType, nodeData, app)
 }
 
+const replayedNodeTypes = () =>
+  lazyExtensions.map(
+    ({ beforeRegisterNodeDef }) => beforeRegisterNodeDef.mock.calls
+  )
+
 describe('load3dLazy after a failed lazy import', () => {
   it('registers nothing, reports the failure once, and retries the import on the next 3D node', async () => {
     const extensionStore = useExtensionStore()
@@ -91,8 +96,7 @@ describe('load3dLazy after a failed lazy import', () => {
     await expect(registerNodeDef(1, 'Load3D')).resolves.toBeUndefined()
 
     expect(registeredNames()).toEqual([])
-    for (const extension of lazyExtensions)
-      expect(extension.beforeRegisterNodeDef).not.toHaveBeenCalled()
+    expect(replayedNodeTypes()).toEqual(lazyExtensions.map(() => []))
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
       errorType: 'error_loading_3d_extensions',
       surface: 'graph'
@@ -101,12 +105,11 @@ describe('load3dLazy after a failed lazy import', () => {
     await registerNodeDef(2, 'Preview3D')
 
     expect(registeredNames()).toEqual(lazyExtensions.map(({ name }) => name))
-    for (const extension of lazyExtensions)
-      expect(extension.beforeRegisterNodeDef).toHaveBeenCalledExactlyOnceWith(
-        { id: 2 },
-        expect.objectContaining({ name: 'Preview3D' }),
-        app
-      )
+    expect(replayedNodeTypes()).toEqual(
+      lazyExtensions.map(() => [
+        [{ id: 2 }, expect.objectContaining({ name: 'Preview3D' }), app]
+      ])
+    )
     expect(reportError).toHaveBeenCalledOnce()
   })
 })

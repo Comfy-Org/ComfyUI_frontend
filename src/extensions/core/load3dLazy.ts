@@ -19,6 +19,7 @@ function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
 }
 
 async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
+  const disposers: (() => void)[] = []
   let extensions: ComfyExtension[]
   try {
     const [
@@ -53,7 +54,11 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
       cameraAngle.cameraAngleExtension,
       lightInfo.lightInfoExtension
     ]
+    const { registerExtension } = useExtensionService()
+    for (const extension of extensions)
+      disposers.push(registerExtension(extension))
   } catch (cause) {
+    disposers.forEach((dispose) => dispose())
     load3dExtensionsLoading = null
     reportError(cause, {
       errorType: 'error_loading_3d_extensions',
@@ -62,8 +67,6 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
     return undefined
   }
   load3dExtensionsLoaded = true
-  const { registerExtension } = useExtensionService()
-  for (const extension of extensions) registerExtension(extension)
   const { isExtensionEnabled } = useExtensionStore()
   return extensions.filter((extension) => isExtensionEnabled(extension.name))
 }

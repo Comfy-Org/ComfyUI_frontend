@@ -36,6 +36,7 @@ const lazyModules = vi.hoisted(() => {
   }
 })
 
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/scripts/app'), () => ({
   app: fromAny({ __mockApp: true })
 }))
@@ -56,6 +57,11 @@ vi.mock(import('@/extensions/core/lightInfo'), () => lazyModules.lightInfo)
 const lazyExtensions = Object.values(lazyModules).flatMap((module) =>
   Object.values(module)
 )
+
+const replayCalls = () =>
+  lazyExtensions.map(
+    ({ beforeRegisterNodeDef }) => vi.mocked(beforeRegisterNodeDef).mock.calls
+  )
 
 const LAZY_EXTENSION_REGISTRATION_ORDER = [
   'Comfy.Load3D',
@@ -94,9 +100,11 @@ async function loadLazyExtensionFresh() {
   const { load3dLazyExtension } = await import('@/extensions/core/load3dLazy')
   const { useExtensionStore } = await import('@/stores/extensionStore')
   const { app } = await import('@/scripts/app')
+  const { reportError } = await import('@/platform/telemetry/reportError')
   const extensionStore = useExtensionStore()
   return {
     app,
+    reportError,
     extensionStore,
     registeredNames: () => extensionStore.extensions.map(({ name }) => name),
     registerNodeDef: (nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) =>
@@ -111,8 +119,7 @@ describe('load3dLazy', () => {
     await registerNodeDef(nodeTypeWithId(1), makeNodeDef('PlainNode'))
 
     expect(registeredNames()).toEqual([])
-    for (const extension of lazyExtensions)
-      expect(extension.beforeRegisterNodeDef).not.toHaveBeenCalled()
+    expect(replayCalls()).toEqual(lazyExtensions.map(() => []))
   })
 
   it.for([
@@ -176,12 +183,31 @@ describe('load3dLazy', () => {
 
     await registerNodeDef(nodeType, nodeData)
 
-    for (const extension of lazyExtensions)
-      expect(extension.beforeRegisterNodeDef).toHaveBeenCalledExactlyOnceWith(
-        nodeType,
-        nodeData,
-        app
-      )
+    expect(replayCalls()).toEqual(
+      lazyExtensions.map(() => [[nodeType, nodeData, app]])
+    )
+  })
+
+  it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {
+    const { extensionStore, registeredNames, registerNodeDef, reportError } =
+      await loadLazyExtensionFresh()
+    extensionStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
+
+    await expect(
+      registerNodeDef(nodeTypeWithId(1), makeNodeDef('Load3D'))
+    ).resolves.toBeUndefined()
+
+    expect(registeredNames()).toEqual(['Comfy.CreateLightInfo'])
+    expect(replayCalls()).toEqual(lazyExtensions.map(() => []))
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+      errorType: 'error_loading_3d_extensions',
+      surface: 'graph'
+    })
+
+    extensionStore.unregisterExtension('Comfy.CreateLightInfo')
+    await registerNodeDef(nodeTypeWithId(2), makeNodeDef('Preview3D'))
+
+    expect(registeredNames()).toEqual(LAZY_EXTENSION_REGISTRATION_ORDER)
   })
 
   it('registers but does not replay lazy extensions that are disabled', async () => {
