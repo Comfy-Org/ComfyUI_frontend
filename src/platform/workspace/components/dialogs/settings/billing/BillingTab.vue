@@ -4,6 +4,11 @@
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
     />
+    <BillingPlanCheckoutBanner
+      :banner="planCheckout.banner.value"
+      @dismiss="planCheckout.dismiss"
+    />
+    <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -81,7 +86,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
+import BillingPlanCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanCheckoutBanner.vue'
 import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
+import { usePlanCheckoutBanner } from '@/platform/workspace/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -92,10 +100,16 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
+const { isPaused } = usePausedBanner()
+const planCheckout = usePlanCheckoutBanner()
+const suppressCreditBanner = computed(
+  () => isPaused.value || planCheckout.banner.value != null
+)
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
@@ -123,7 +137,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 

@@ -2150,7 +2150,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :session-id="threadId"
-      :custom-title="history.titleFor(threadId) ?? provisionalTitle"
+      :custom-title="
+        historyGroups.current.find((session) => session.id === threadId)
+          ?.title ?? provisionalTitle
+      "
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"

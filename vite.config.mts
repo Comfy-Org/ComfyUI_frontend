@@ -309,6 +309,9 @@ export default defineConfig({
   server: {
     host: devAgentConfig.host,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
+    warmup: {
+      clientFiles: ['./src/main.ts', './src/views/GraphView.vue']
+    },
     watch: {
       ignored: [
         './browser_tests/**',
@@ -773,14 +776,6 @@ export default defineConfig({
               name: 'vendor-markdown',
               test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
               priority: 12
-            },
-
-            // Catch-all for remaining node_modules
-            {
-              name: 'vendor-other',
-              test: /[\\/]node_modules[\\/]/,
-              priority: 0,
-              minSize: 10000
             }
           ]
         }

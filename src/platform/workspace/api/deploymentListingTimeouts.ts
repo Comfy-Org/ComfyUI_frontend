@@ -25,3 +25,6 @@ export const DEPLOYMENT_LISTING_BACKSTOP_MS =
 export const DEPLOYMENT_LISTING_RETRY_DELAYS_MS: readonly number[] = [
   1_000, 2_000
 ]
+
+/** How long the boot waits for the listing when this browser has no deployment hint or link. */
+export const DEPLOYMENT_LISTING_NO_HINT_WAIT_MS = 5_000

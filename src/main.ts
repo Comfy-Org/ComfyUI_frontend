@@ -30,7 +30,9 @@ import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
+import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -134,6 +136,8 @@ function installSubgraphGraphHooks(): void {
 }
 
 async function bootstrap(): Promise<void> {
+  api.captureLaunchContext()
+
   if (isCloud) {
     stripPaymentReturnParams()
     installCloudApiAuth()
@@ -167,6 +171,9 @@ async function bootstrap(): Promise<void> {
   installSubgraphGraphHooks()
 
   void useBootstrapStore(pinia).startStoreBootstrap()
+
+  const detachLegacyUI = attachLegacyUI()
+  import.meta.hot?.dispose(detachLegacyUI)
 
   app.mount('#vue-app')
   bootstrapTracer.milestone('app-mounted')

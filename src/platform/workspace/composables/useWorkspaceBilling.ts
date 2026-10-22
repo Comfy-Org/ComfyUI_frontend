@@ -258,7 +258,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
-      suggestedTopupAmountCents: data.suggested_topup_amount_cents
+      suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      lowBalance: data.low_balance
     }
   })
 
@@ -821,7 +822,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'

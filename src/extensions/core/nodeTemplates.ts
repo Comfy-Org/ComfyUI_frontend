@@ -49,8 +49,8 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
     const res = await api.getUserData(file)
     if (res.status === 200)
       return { ok: true, templates: (await res.json()) ?? [] }
-    if (res.status !== 404) console.error(res.status + ' ' + res.statusText)
-    return { ok: true, templates: [] }
+    if (res.status === 404) return { ok: true, templates: [] }
+    return { ok: false, cause: `${res.status} ${res.statusText}` }
   } catch (cause) {
     return { ok: false, cause }
   }
@@ -58,6 +58,8 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
 
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
+  loading: Promise<boolean>
+  writes: Promise<void> = Promise.resolve()
   draggedEl: HTMLElement | null
   saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
@@ -65,7 +67,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    void this.load()
+    this.loading = this.load()
 
     this.element.classList.add('comfy-manage-templates')
     this.element.dataset.testid = 'manage-node-templates-dialog'
@@ -111,11 +113,11 @@ class ManageTemplates extends ComfyDialog {
     return btns
   }
 
-  async load() {
+  async load(): Promise<boolean> {
     const result = await fetchTemplates()
     if (result.ok) {
       this.templates = result.templates
-      return
+      return true
     }
     reportError(result.cause, {
       surface: 'graph',
@@ -128,12 +130,29 @@ class ManageTemplates extends ComfyDialog {
       },
       level: 'error'
     })
+    return false
   }
 
-  async store() {
-    const templates = JSON.stringify(this.templates, undefined, 4)
+  store(
+    update: (templates: NodeTemplate[]) => NodeTemplate[] = (templates) =>
+      templates
+  ) {
+    this.writes = this.writes.then(() => this.write(update))
+    return this.writes
+  }
+
+  async write(update: (templates: NodeTemplate[]) => NodeTemplate[]) {
+    if (!(await this.loading)) {
+      useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
+        description: t('nodeTemplates.notLoaded')
+      })
+      return
+    }
+    const next = update(this.templates)
+    const templates = JSON.stringify(next, undefined, 4)
     try {
       await api.storeUserData(file, templates, { stringify: false })
+      this.templates = next
     } catch (error) {
       console.error(error)
       useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
@@ -149,12 +168,11 @@ class ManageTemplates extends ComfyDialog {
         reader.onload = async () => {
           const importFile = JSON.parse(reader.result as string)
           if (importFile?.templates) {
-            for (const template of importFile.templates) {
-              if (template?.name && template?.data) {
-                this.templates.push(template)
-              }
-            }
-            await this.store()
+            const imported = importFile.templates.filter(
+              (template: Partial<NodeTemplate> | null) =>
+                template?.name && template.data
+            )
+            await this.store((templates) => [...templates, ...imported])
           }
         }
         await reader.readAsText(file)
@@ -405,11 +423,10 @@ const ext: ComfyExtension = {
           app.canvas.copyToClipboard()
           const data = localStorage.getItem('litegrapheditor_clipboard')
 
-          manage.templates.push({
-            name,
-            data: data || '{}'
-          })
-          await manage.store()
+          await manage.store((templates) => [
+            ...templates,
+            { name, data: data || '{}' }
+          ])
         })
       }
     })
