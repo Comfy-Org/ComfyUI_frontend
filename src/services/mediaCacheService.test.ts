@@ -1,30 +1,38 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { useMediaCache } from './mediaCacheService'
+import { disposeMediaCache, useMediaCache } from './mediaCacheService'
+
+vi.hoisted(() => vi.spyOn(window, 'addEventListener'))
+
+function unloadCalls(calls: unknown[][]) {
+  return calls.filter(([type]) => type === 'beforeunload')
+}
+
+const unloadListenersAddedAtImport = unloadCalls(
+  vi.mocked(window.addEventListener).mock.calls
+).length
 
 describe('mediaCacheService', () => {
+  afterEach(() => disposeMediaCache())
+
   describe('lifecycle', () => {
-    it('owns its unload listener and cleanup interval from creation until disposal', async () => {
+    it('registers no unload listener at import', () => {
+      expect(unloadListenersAddedAtImport).toBe(0)
+    })
+
+    it('owns its unload listener and cleanup interval from creation until disposal', () => {
       vi.useFakeTimers()
-      vi.resetModules()
       const addListener = vi.spyOn(window, 'addEventListener')
       const removeListener = vi.spyOn(window, 'removeEventListener')
-      const unloadCalls = (spy: typeof addListener) =>
-        spy.mock.calls.filter(([type]) => type === 'beforeunload')
-
-      const { useMediaCache, disposeMediaCache } =
-        await import('./mediaCacheService')
-      expect(unloadCalls(addListener)).toHaveLength(0)
-      expect(vi.getTimerCount()).toBe(0)
 
       useMediaCache()
       useMediaCache()
-      expect(unloadCalls(addListener)).toHaveLength(1)
+      expect(unloadCalls(addListener.mock.calls)).toHaveLength(1)
       expect(vi.getTimerCount()).toBe(1)
 
       disposeMediaCache()
-      expect(unloadCalls(removeListener)).toEqual([
-        ['beforeunload', unloadCalls(addListener)[0][1]]
+      expect(unloadCalls(removeListener.mock.calls)).toEqual([
+        ['beforeunload', unloadCalls(addListener.mock.calls)[0][1]]
       ])
       expect(vi.getTimerCount()).toBe(0)
     })
