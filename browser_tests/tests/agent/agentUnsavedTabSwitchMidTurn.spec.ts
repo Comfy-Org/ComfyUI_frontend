@@ -3,22 +3,11 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 
-// Reported from #agent-sorry: "agent said it created a workflow but tab is
-// empty". Repro: start a chat on a new, unsaved tab, switch to another tab
-// while the turn is still editing, then come back -- the tab is blank even
-// though the agent reports the workflow as built.
-//
-// agentTabSwitchCatchUp.spec.ts covers switching only after the turn has
-// finished, on a saved seed tab. This switches mid-turn: the follower
-// unsubscribes the inactive tab, the host keeps applying the remaining edits,
-// and the returning subscribe's catch-up is the only way they reach the canvas.
-const CASE = 'agent-rec-three-sequential-adds'
-
 test.describe(
   'Agent turn on an unsaved tab, switched away mid-turn',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: CASE })
+    test.use({ conversationCase: 'agent-rec-three-sequential-adds' })
 
     test('shows every edit after switching away mid-turn and back', async ({
       agentConversation,
@@ -36,6 +25,7 @@ test.describe(
       await test.step('user opens another tab after the first edit', async () => {
         let graphOpsSeen = 0
         await agentConversation.replayResponse(0, {
+          waitForGraphOpsDelivery: () => graphOpsSeen === 1,
           beforeGraphOps: async () => {
             graphOpsSeen += 1
             if (graphOpsSeen !== 2) return
