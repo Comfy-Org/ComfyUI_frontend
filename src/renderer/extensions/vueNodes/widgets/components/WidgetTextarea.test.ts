@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -330,6 +331,40 @@ describe('WidgetTextarea enhance prompt', () => {
     expect(
       screen.getByRole('button', { name: 'agent.enhancePrompt' })
     ).toBeInTheDocument()
+  })
+
+  it('uses the small in-field icon button on the prompt label row', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    const button = screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    expect(button).toHaveClass('size-5', 'absolute', 'top-1', 'right-4')
+    expect(button).toHaveClass('hover:bg-accent')
+    expect(button.dataset.variant).toBe('muted-textonly')
+    expect(button.innerHTML).toContain('size-3')
+  })
+
+  it('hides the enhance button in App Mode when the layout label is hidden', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode'
+      },
+      global: {
+        provide: { [HideLayoutFieldKey as symbol]: true },
+        mocks: {
+          $t: (msg: string) => msg
+        }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
   })
 
   it('shimmers the textarea text in place and locks the input while enhance is in flight', async () => {

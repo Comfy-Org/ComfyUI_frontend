@@ -25,7 +25,7 @@
         cn(
           WidgetInputBaseClass,
           'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
-          !hideLayoutField && 'pt-5',
+          !hideLayoutField && (showEnhance ? 'pt-7' : 'pt-5'),
           'overflow-hidden hover:overflow-auto focus:overflow-auto',
           isProcessing && 'agent-shimmer-text caret-transparent',
           isRevealing && 'invisible'
@@ -45,7 +45,7 @@
       :class="
         cn(
           'pointer-events-none absolute inset-0 scrollbar-gutter-stable overflow-auto px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
-          !hideLayoutField && 'pt-5'
+          !hideLayoutField && (showEnhance ? 'pt-7' : 'pt-5')
         )
       "
     >
@@ -57,7 +57,7 @@
     </div>
     <EnhancePromptButton
       v-if="showEnhance"
-      class="absolute top-1.5 right-1.5 z-10"
+      class="absolute top-1 right-4 z-10"
       :loading="isProcessing"
       :disabled="isLocked"
       @click="enhance"
@@ -142,7 +142,7 @@ const { enabled: agentEnabled } = storeToRefs(agentPanelStore)
 const nodeDefStore = useNodeDefStore()
 const resolvedNodeType = computed(() => nodeType ?? widget.nodeType)
 const showEnhance = computed(() => {
-  if (!agentEnabled.value || isReadOnly.value) return false
+  if (hideLayoutField || !agentEnabled.value || isReadOnly.value) return false
   const type = resolvedNodeType.value
   return canEnhancePromptOnNode({
     nodeType: type,

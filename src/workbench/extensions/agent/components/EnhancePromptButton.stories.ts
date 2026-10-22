@@ -10,11 +10,16 @@ const meta: Meta<typeof EnhancePromptButton> = {
   args: {
     loading: false,
     disabled: false,
+    size: 'icon-sm',
     onClick: fn()
   },
   argTypes: {
     loading: { control: 'boolean' },
-    disabled: { control: 'boolean' }
+    disabled: { control: 'boolean' },
+    size: {
+      control: 'select',
+      options: ['icon-sm', 'icon']
+    }
   },
   parameters: {
     layout: 'centered'
