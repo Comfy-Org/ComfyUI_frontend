@@ -52,6 +52,7 @@ const examples = computed(() => examplesForModel(model))
     <section
       v-if="paragraphs.length"
       :aria-label="t('workshop.workflow.about')"
+      data-testid="model-about"
       class="max-w-4xl space-y-5 text-primary-warm-gray"
     >
       <p

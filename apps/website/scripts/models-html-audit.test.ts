@@ -190,6 +190,7 @@ describe(auditCatalogDetailBody, () => {
   const head = '<h1>Example Model</h1><p>Turns prompts into images.</p>'
   const workflow = {
     ...record,
+    workflowId: 'example-workflow',
     catalogDetails: {
       longDescription: 'First paragraph.\n\nSecond paragraph.',
       faqs: [
@@ -201,11 +202,19 @@ describe(auditCatalogDetailBody, () => {
       models: [{ name: 'Flux Kontext' }, { name: ' ' }]
     }
   }
-  const about = '<p>First paragraph.</p><p>Second paragraph.</p>'
-  const faq =
+  const aboutSection = (inner: string) =>
+    `<section aria-labelledby="workflow-about-heading"><h2 id="workflow-about-heading">About</h2>${inner}</section>`
+  const faqSection = (inner: string) =>
+    `<section id="workflow-faq"><div><h2>FAQ</h2></div><div>${inner}</div></section>`
+  const factsBlock = (inner: string) =>
+    `<div data-testid="workflow-facts"><div><span>Runs on</span></div><div>${inner}</div></div>`
+  const paragraphs = '<p>First paragraph.</p><p>Second paragraph.</p>'
+  const qa =
     '<h3>Does it run?</h3><p>Yes, see <a href="https://docs.comfy.org">the docs</a>.</p>'
-  const models =
-    '<ul><li><a href="/hub/models/flux/">Flux Kontext</a></li></ul>'
+  const modelLink = '<a href="/hub/models/flux/">Flux Kontext</a>'
+  const about = aboutSection(paragraphs)
+  const faq = faqSection(qa)
+  const models = factsBlock(modelLink)
 
   it('accepts one named h1 with the summary', () => {
     expect(auditCatalogDetailBody(page(head), record)).toEqual([])
@@ -218,9 +227,51 @@ describe(auditCatalogDetailBody, () => {
   })
 
   it('takes the model list of a template workflow from its template', () => {
-    const template = { ...record, workflow: { template: { models: ['SDXL'] } } }
+    const template = {
+      ...record,
+      workflowId: 'example-workflow',
+      workflow: { template: { models: ['SDXL'] } }
+    }
     expect(auditCatalogDetailBody(page(head), template)).toEqual([
       'server HTML is missing the model "SDXL"'
+    ])
+  })
+
+  it('keeps authored angle brackets and ampersands as text', () => {
+    const prompt = {
+      name: 'Example Model',
+      summary: 'Add <lora:detail:0.8> & more.',
+      workflowId: 'example-workflow',
+      catalogDetails: {
+        longDescription: 'Write <lora:detail:0.8> in the prompt.',
+        faqs: [{ question: 'Is <b> markup?', answer: 'No, 1 < 2 & 3 > 2.' }],
+        models: [{ name: 'A<B> & C' }]
+      }
+    }
+    const html = page(
+      '<h1>Example Model</h1><p>Add &lt;lora:detail:0.8&gt; &amp; more.</p>' +
+        aboutSection('<p>Write &lt;lora:detail:0.8&gt; in the prompt.</p>') +
+        faqSection(
+          '<h3>Is &lt;b&gt; markup?</h3><p>No, 1 &lt; 2 &amp; 3 &gt; 2.</p>'
+        ) +
+        factsBlock('<a href="/hub/models/ab/">A&lt;B&gt; &amp; C</a>')
+    )
+    expect(auditCatalogDetailBody(html, prompt)).toEqual([])
+  })
+
+  it('checks the body of a model record without a model list', () => {
+    const localModel = { ...record, catalogDetails: workflow.catalogDetails }
+    const html = page(
+      head +
+        `<section data-testid="model-about">${paragraphs}</section>` +
+        `<section id="model-faq">${qa}</section>`
+    )
+    expect(auditCatalogDetailBody(html, localModel)).toEqual([])
+    expect(
+      auditCatalogDetailBody(page(head + paragraphs + qa), localModel)
+    ).toEqual([
+      'server HTML is missing the long description',
+      'server HTML is missing the FAQ "Does it run?"'
     ])
   })
 
@@ -247,17 +298,37 @@ describe(auditCatalogDetailBody, () => {
   it.for([
     {
       missing: 'a long description paragraph',
-      body: '<p>First paragraph.</p>' + faq + models,
+      body: aboutSection('<p>First paragraph.</p>') + faq + models,
+      error: 'server HTML is missing the long description'
+    },
+    {
+      missing: 'the long description in its About section',
+      body: paragraphs + faq + models,
       error: 'server HTML is missing the long description'
     },
     {
       missing: 'an FAQ answer',
-      body: about + '<h3>Does it run?</h3>' + models,
+      body: about + faqSection('<h3>Does it run?</h3>') + models,
+      error: 'server HTML is missing the FAQ "Does it run?"'
+    },
+    {
+      missing: 'an FAQ question',
+      body: about + faqSection('<p>Yes, see <a>the docs</a>.</p>') + models,
+      error: 'server HTML is missing the FAQ "Does it run?"'
+    },
+    {
+      missing: 'the FAQ in its FAQ section',
+      body: about + qa + models,
       error: 'server HTML is missing the FAQ "Does it run?"'
     },
     {
       missing: 'a model',
       body: about + faq,
+      error: 'server HTML is missing the model "Flux Kontext"'
+    },
+    {
+      missing: 'the model in its facts block',
+      body: about + faq + factsBlock('') + modelLink,
       error: 'server HTML is missing the model "Flux Kontext"'
     },
     {
