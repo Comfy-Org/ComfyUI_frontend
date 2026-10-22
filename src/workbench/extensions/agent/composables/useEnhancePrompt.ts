@@ -1,9 +1,17 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
-import type { Ref } from 'vue'
+import type { InjectionKey, Ref } from 'vue'
 import { computed, onScopeDispose, shallowRef } from 'vue'
 
 import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
+
+type EnhancePromptViewState = {
+  isLocked: Ref<boolean>
+  isProcessing: Ref<boolean>
+}
+
+export const EnhancePromptStateKey: InjectionKey<EnhancePromptViewState> =
+  Symbol('EnhancePromptState')
 
 type EnhancePromptState =
   | { phase: 'idle' }

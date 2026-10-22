@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { EnhancePromptStateKey } from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -315,6 +318,55 @@ describe('WidgetTextarea enhance prompt', () => {
     expect(
       screen.getByRole('button', { name: 'agent.enhancePrompt' })
     ).toBeInTheDocument()
+  })
+
+  it('hides the in-field button when the properties panel owns the control', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode'
+      },
+      global: {
+        provide: { [HideLayoutFieldKey as symbol]: true },
+        mocks: {
+          $t: (msg: string) => msg
+        }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('locks the field when the properties panel is enhancing', () => {
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode'
+      },
+      global: {
+        provide: {
+          [EnhancePromptStateKey as symbol]: {
+            isLocked: ref(true),
+            isProcessing: ref(true)
+          }
+        },
+        mocks: {
+          $t: (msg: string) => msg
+        }
+      }
+    })
+
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
   })
 })
 

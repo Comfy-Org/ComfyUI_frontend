@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, customRef, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, customRef, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -31,7 +32,24 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
+import EnhancePromptButton from '@/workbench/extensions/agent/components/EnhancePromptButton.vue'
+import {
+  EnhancePromptStateKey,
+  useEnhancePrompt
+} from '@/workbench/extensions/agent/composables/useEnhancePrompt'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { canEnhancePromptOnNode } from '@/workbench/extensions/agent/utils/canEnhancePromptOnNode'
+
 import WidgetActions from './WidgetActions.vue'
+
+function isPromptTextareaWidget(type: string): boolean {
+  const canonical = type.toLowerCase()
+  return (
+    canonical === 'textarea' ||
+    canonical === 'multiline' ||
+    canonical === 'customtext'
+  )
+}
 
 const {
   widget,
@@ -65,6 +83,8 @@ const nodeDefStore = useNodeDefStore()
 const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const linkStore = useLinkStore()
+const agentPanelStore = useAgentPanelStore()
+const { enabled: agentEnabled } = storeToRefs(agentPanelStore)
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -131,6 +151,42 @@ const widgetValue = computed({
   }
 })
 
+const promptValue = computed({
+  get: () => (typeof widgetValue.value === 'string' ? widgetValue.value : ''),
+  set: (value: string) => {
+    widgetValue.value = value
+  }
+})
+
+const { isLocked, isProcessing, enhance } = useEnhancePrompt({
+  prompt: promptValue
+})
+
+const showEnhance = computed(() => {
+  if (
+    !agentEnabled.value ||
+    !isPromptTextareaWidget(simplifiedWidget.value.type)
+  )
+    return false
+  if (
+    isLinked.value ||
+    widget.disabled ||
+    widget.options?.read_only ||
+    widget.options?.disabled
+  ) {
+    return false
+  }
+  return canEnhancePromptOnNode({
+    nodeType: node.type,
+    isApiNode: nodeDefStore.getNodeDefByName(node.type)?.api_node === true
+  })
+})
+
+provide(EnhancePromptStateKey, {
+  isLocked,
+  isProcessing
+})
+
 const displayLabel = customRef((track, trigger) => {
   return {
     get() {
@@ -192,6 +248,13 @@ const displayLabel = customRef((track, trigger) => {
         v-if="!hiddenWidgetActions"
         class="pointer-events-auto flex shrink-0 items-center gap-1"
       >
+        <EnhancePromptButton
+          v-if="showEnhance"
+          tooltip-side="bottom"
+          :loading="isProcessing"
+          :disabled="isLocked"
+          @click="enhance"
+        />
         <WidgetActions
           v-model:label="displayLabel"
           :widget

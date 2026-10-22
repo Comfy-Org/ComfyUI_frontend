@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, useTemplateRef } from 'vue'
+import { computed, inject, ref, useId, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -90,7 +90,10 @@ import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
-import { useEnhancePrompt } from '@/workbench/extensions/agent/composables/useEnhancePrompt'
+import {
+  EnhancePromptStateKey,
+  useEnhancePrompt
+} from '@/workbench/extensions/agent/composables/useEnhancePrompt'
 import EnhancePromptButton from '@/workbench/extensions/agent/components/EnhancePromptButton.vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { canEnhancePromptOnNode } from '@/workbench/extensions/agent/utils/canEnhancePromptOnNode'
@@ -133,9 +136,16 @@ const isReadOnly = computed(() =>
 const agentPanelStore = useAgentPanelStore()
 const { enabled: agentEnabled } = storeToRefs(agentPanelStore)
 const nodeDefStore = useNodeDefStore()
+const panelEnhance = inject(EnhancePromptStateKey, null)
 const resolvedNodeType = computed(() => nodeType ?? widget.nodeType)
 const showEnhance = computed(() => {
-  if (!agentEnabled.value || isReadOnly.value) return false
+  if (
+    hideLayoutField ||
+    panelEnhance ||
+    !agentEnabled.value ||
+    isReadOnly.value
+  )
+    return false
   const type = resolvedNodeType.value
   return canEnhancePromptOnNode({
     nodeType: type,
@@ -143,9 +153,20 @@ const showEnhance = computed(() => {
   })
 })
 
-const { isLocked, isProcessing, enhance } = useEnhancePrompt({
+const {
+  isLocked: ownedLocked,
+  isProcessing: ownedProcessing,
+  enhance
+} = useEnhancePrompt({
   prompt: modelValue
 })
+
+const isLocked = computed(
+  () => panelEnhance?.isLocked.value ?? ownedLocked.value
+)
+const isProcessing = computed(
+  () => panelEnhance?.isProcessing.value ?? ownedProcessing.value
+)
 
 function handleContextMenu(e: MouseEvent) {
   if (isNodeOptionsOpen() || isFocused.value) {

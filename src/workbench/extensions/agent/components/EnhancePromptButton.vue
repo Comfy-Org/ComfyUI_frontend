@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TooltipContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -7,11 +8,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   loading = false,
   disabled = false,
-  class: className
+  class: className,
+  tooltipSide
 } = defineProps<{
   loading?: boolean
   disabled?: boolean
   class?: HTMLAttributes['class']
+  tooltipSide?: TooltipContentProps['side']
 }>()
 
 const emit = defineEmits<{
@@ -27,6 +30,7 @@ const emit = defineEmits<{
     :disabled
     :class="cn('text-muted-foreground hover:text-foreground', className)"
     :tooltip="$t('agent.enhancePrompt')"
+    :tooltip-side="tooltipSide"
     :aria-label="
       loading ? $t('agent.enhancingPrompt') : $t('agent.enhancePrompt')
     "

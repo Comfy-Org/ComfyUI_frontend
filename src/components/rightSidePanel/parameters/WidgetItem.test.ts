@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -12,7 +12,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/utils/widgetUtil'
+import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -50,11 +54,29 @@ vi.mock<unknown>(
   })
 )
 
+const enhancePromptRequest = vi.hoisted(() =>
+  vi.fn<EnhancePromptFn>(async ({ prompt }) => ({
+    ok: true,
+    prompt: `${prompt} rewritten`
+  }))
+)
+
+vi.mock(
+  import('@/workbench/extensions/agent/services/enhancePromptRequest'),
+  () => ({
+    enhancePromptRequest
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
+      agent: {
+        enhancePrompt: 'Enhance prompt',
+        enhancingPrompt: 'Enhancing prompt'
+      },
       rightSidePanel: {
         fallbackNodeTitle: 'Untitled'
       }
@@ -62,7 +84,9 @@ const i18n = createI18n({
   }
 })
 
-function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
+function createMockNode(
+  overrides: Partial<LGraphNode> | Record<string, unknown> = {}
+): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
@@ -87,10 +111,17 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
 
 function renderWidgetItem(
   widget: IBaseWidget,
-  node: LGraphNode = createMockNode()
+  node: LGraphNode = createMockNode(),
+  onUpdateWidgetValue?: (value: WidgetValue) => void
 ) {
   return render(WidgetItem, {
-    props: { widget, node },
+    props: {
+      widget,
+      node,
+      ...(onUpdateWidgetValue
+        ? { 'onUpdate:widgetValue': onUpdateWidgetValue }
+        : {})
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -290,6 +321,184 @@ describe('WidgetItem', () => {
       await nextTick()
 
       expect(getStubWidget(container).options.disabled).toBe(true)
+    })
+  })
+
+  describe('enhance prompt', () => {
+    function enhanceButton() {
+      return screen.queryByRole('button', { name: 'Enhance prompt' })
+    }
+
+    it.for([
+      {
+        type: 'customtext',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'multiline',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'textarea',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: true
+      },
+      {
+        type: 'combo',
+        nodeType: 'CLIPTextEncode',
+        agent: true,
+        visible: false
+      },
+      {
+        type: 'customtext',
+        nodeType: 'KSampler',
+        agent: true,
+        visible: false
+      },
+      {
+        type: 'customtext',
+        nodeType: 'CLIPTextEncode',
+        agent: false,
+        visible: false
+      }
+    ])(
+      '$type on $nodeType with agent=$agent → visible=$visible',
+      ({ type, nodeType, agent, visible }) => {
+        useAgentPanelStore().enabled = agent
+        renderWidgetItem(
+          createMockWidget({ type, name: 'prompt', value: 'a cat' }),
+          createMockNode({ type: nodeType })
+        )
+
+        expect(Boolean(enhanceButton())).toBe(visible)
+      }
+    )
+
+    it('shows the button on partner API nodes', () => {
+      useAgentPanelStore().enabled = true
+      vi.spyOn(useNodeDefStore(), 'getNodeDefByName').mockReturnValue(
+        fromPartial({ api_node: true })
+      )
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'ByteDanceSeedance' })
+      )
+
+      expect(enhanceButton()).toBeInTheDocument()
+    })
+
+    it('hides the button when the prompt field is read-only', () => {
+      useAgentPanelStore().enabled = true
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat',
+          options: { read_only: true }
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      expect(enhanceButton()).not.toBeInTheDocument()
+    })
+
+    it('replaces the prompt in place when enhance succeeds', async () => {
+      useAgentPanelStore().enabled = true
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'a cat'
+      })
+      const onUpdate = vi.fn((value: WidgetValue) => {
+        widget.value = value
+      })
+      renderWidgetItem(
+        widget,
+        createMockNode({ type: 'CLIPTextEncode' }),
+        onUpdate
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+
+      await waitFor(() => {
+        expect(onUpdate).toHaveBeenCalledWith('a cat rewritten')
+      })
+      expect(widget.value).toBe('a cat rewritten')
+    })
+
+    it('leaves the original prompt unchanged when enhance fails', async () => {
+      useAgentPanelStore().enabled = true
+      enhancePromptRequest.mockResolvedValueOnce({
+        ok: false,
+        reason: 'failed'
+      })
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'keep this wording'
+      })
+      const onUpdate = vi.fn((value: WidgetValue) => {
+        widget.value = value
+      })
+      renderWidgetItem(
+        widget,
+        createMockNode({ type: 'CLIPTextEncode' }),
+        onUpdate
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+      await nextTick()
+
+      expect(widget.value).toBe('keep this wording')
+      expect(onUpdate).not.toHaveBeenCalled()
+    })
+
+    it('locks the prompt field while the enhance request is in flight', async () => {
+      useAgentPanelStore().enabled = true
+      let resolveRequest: (result: { ok: true; prompt: string }) => void = () =>
+        undefined
+      enhancePromptRequest.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRequest = resolve
+          })
+      )
+      const widget = createMockWidget({
+        type: 'customtext',
+        name: 'prompt',
+        value: 'original prompt'
+      })
+      renderWidgetItem(widget, createMockNode({ type: 'CLIPTextEncode' }))
+
+      const pending = userEvent.click(
+        screen.getByRole('button', { name: 'Enhance prompt' })
+      )
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Enhancing prompt' })
+        ).toBeDisabled()
+      })
+
+      resolveRequest({ ok: true, prompt: 'rewritten prompt' })
+      await pending
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Enhance prompt' })
+        ).toBeEnabled()
+      })
     })
   })
 })
