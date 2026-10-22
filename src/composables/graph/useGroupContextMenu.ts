@@ -2,6 +2,7 @@ import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 function shouldUseLegacyContextMenu(
   canvas: LGraphCanvas,
@@ -42,8 +43,13 @@ export function useGroupContextMenu() {
       this.selectedItems.size === 1 && this.selectedItems.has(group)
 
     if (!groupIsOnlySelection && !this.selectOnly) {
-      this.deselectAll()
-      this.select(group, { selectGroupChildren: false })
+      this.deselectAll({ notify: false })
+      this.select(group, { notify: false, selectGroupChildren: false })
+      this.onSelectionChange?.(
+        Object.fromEntries(
+          selectedCanvasNodes(this).map((node) => [node.id, node])
+        )
+      )
       this.setDirty(true)
     }
     showNodeOptions(event)
