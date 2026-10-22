@@ -1,4 +1,9 @@
-export type LocalCreditBannerKind = 'outOfCredits' | 'lowCredits'
+import type { AutoTopUpBannerKind } from '@/platform/workspace/composables/deriveAutoTopUpBanner'
+
+export type LocalCreditBannerKind =
+  | 'outOfCredits'
+  | AutoTopUpBannerKind
+  | 'lowCredits'
 
 export interface LocalCreditBannerInput {
   unifiedBillingSettingsEnabled: boolean
@@ -6,6 +11,7 @@ export interface LocalCreditBannerInput {
   lowBalance: boolean | undefined
   outOfCreditsDismissed: boolean
   lowCreditsDismissed: boolean
+  autoTopUp: AutoTopUpBannerKind | null
 }
 
 export function deriveLocalCreditBanner(
@@ -15,6 +21,7 @@ export function deriveLocalCreditBanner(
   if (input.hasFunds === false && !input.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
+  if (input.autoTopUp) return input.autoTopUp
   if (input.lowBalance === true && !input.lowCreditsDismissed) {
     return 'lowCredits'
   }

@@ -1,4 +1,8 @@
-import { useAsyncState, useDocumentVisibility } from '@vueuse/core'
+import {
+  createSharedComposable,
+  useAsyncState,
+  useDocumentVisibility
+} from '@vueuse/core'
 import type { AutoTopUpCardStatus } from '@comfyorg/account-core/billing'
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
@@ -13,10 +17,12 @@ type AutoTopUpCardState =
   | { kind: 'unavailable' }
   | { kind: 'loaded'; settings: AutoReloadSettings }
 
-export function useBillingAutoTopUpCard(
-  visible: MaybeRefOrGetter<boolean> = true
+function useBillingAutoTopUpCardInternal(
+  visible: MaybeRefOrGetter<boolean> = true,
+  enabled: MaybeRefOrGetter<boolean> = true
 ) {
   const read = useAsyncState(() => workspaceApi.getBillingAutoReload(), null, {
+    immediate: false,
     resetOnExecute: false,
     onError: (error) =>
       reportError(error, {
@@ -24,6 +30,14 @@ export function useBillingAutoTopUpCard(
         surface: 'billing'
       })
   })
+
+  watch(
+    () => toValue(enabled),
+    (isEnabled) => {
+      if (isEnabled) void read.execute()
+    },
+    { immediate: true }
+  )
 
   const state = computed<AutoTopUpCardState>(() => {
     if (read.error.value !== undefined) return { kind: 'unavailable' }
@@ -59,8 +73,12 @@ export function useBillingAutoTopUpCard(
   }
 
   watch(useDocumentVisibility(), (visibility) => {
-    if (visibility === 'visible') void read.execute()
+    if (visibility === 'visible' && toValue(enabled)) void read.execute()
   })
 
   return { state, retry }
 }
+
+export const useBillingAutoTopUpCard = createSharedComposable(
+  useBillingAutoTopUpCardInternal
+)

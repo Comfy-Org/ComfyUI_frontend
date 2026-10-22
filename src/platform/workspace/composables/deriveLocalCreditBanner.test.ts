@@ -8,7 +8,8 @@ const open: LocalCreditBannerInput = {
   hasFunds: true,
   lowBalance: undefined,
   outOfCreditsDismissed: false,
-  lowCreditsDismissed: false
+  lowCreditsDismissed: false,
+  autoTopUp: null
 }
 
 function derive(overrides: Partial<LocalCreditBannerInput>) {
@@ -50,5 +51,35 @@ describe('deriveLocalCreditBanner', () => {
 
   it('hides a dismissed low-credits banner', () => {
     expect(derive({ lowBalance: true, lowCreditsDismissed: true })).toBeNull()
+  })
+
+  it.for([
+    { hasFunds: false, lowBalance: true, kind: 'outOfCredits' },
+    { hasFunds: true, lowBalance: true, kind: 'autoTopUpFailed' },
+    { hasFunds: true, lowBalance: false, kind: 'autoTopUpFailed' }
+  ] as const)(
+    'ranks auto top-up between out of credits and low credits ($kind)',
+    ({ hasFunds, lowBalance, kind }) => {
+      expect(
+        derive({ hasFunds, lowBalance, autoTopUp: 'autoTopUpFailed' })
+      ).toBe(kind)
+    }
+  )
+
+  it('shows low credits again after a dismissed out of credits when no auto top-up banner applies', () => {
+    expect(
+      derive({ hasFunds: false, outOfCreditsDismissed: true, lowBalance: true })
+    ).toBe('lowCredits')
+  })
+
+  it('shows the turned-off banner under a dismissed out of credits', () => {
+    expect(
+      derive({
+        hasFunds: false,
+        outOfCreditsDismissed: true,
+        lowBalance: true,
+        autoTopUp: 'autoTopUpOff'
+      })
+    ).toBe('autoTopUpOff')
   })
 })

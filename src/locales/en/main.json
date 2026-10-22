@@ -3688,6 +3688,14 @@
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
+      "autoTopUpFailed": {
+        "title": "Auto top-up failed",
+        "body": "Your last automatic top-up didn't go through. Update your payment method to keep it running."
+      },
+      "autoTopUpOff": {
+        "title": "Auto top-up turned off",
+        "body": "Auto top-up turned off after 3 declined charges. Update your payment method, then turn it back on."
+      },
       "lowCredits": {
         "title": "Credits are low",
         "localBody": "You have {credits} credits left. Add credits to keep running Partner Nodes."

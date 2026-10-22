@@ -46,6 +46,18 @@
         >
           {{ $t('workspacePanel.billingStatus.updatePayment') }}
         </Button>
+        <Button
+          v-else-if="banner.action === 'updateAutoTopUpPayment'"
+          as="a"
+          :href
+          target="_blank"
+          rel="noopener"
+          variant="inverted"
+          size="lg"
+          @click="track"
+        >
+          {{ $t('workspacePanel.billingStatus.updatePayment') }}
+        </Button>
       </div>
     </div>
   </div>
@@ -61,15 +73,19 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { deriveAutoTopUpBanner } from '@/platform/workspace/composables/deriveAutoTopUpBanner'
 import { deriveLocalCreditBanner } from '@/platform/workspace/composables/deriveLocalCreditBanner'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-type BannerAction = 'addCredits' | 'updatePayment'
+type BannerAction = 'addCredits' | 'updatePayment' | 'updateAutoTopUpPayment'
 
 interface BannerView {
   title: string
@@ -83,7 +99,14 @@ const bs = 'workspacePanel.billingStatus'
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
-const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  canManageBilling,
+  canManageAutoTopUp,
+  autoTopUpSetup
+} = useBillingCapabilities()
+const { isPaused } = usePausedBanner()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const { t, d, locale } = useI18n()
@@ -95,9 +118,37 @@ const subscription = computed(() => billing.subscription?.value ?? null)
 const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
+const autoTopUpEnabled = computed(() => {
+  if (!flags.autoTopUpEnabled) return false
+  return canManageAutoTopUp.value
+})
+const { state: autoTopUpState } = useBillingAutoTopUpCard(
+  () => autoTopUpSetup.value?.state !== 'unavailable',
+  autoTopUpEnabled
+)
+
+const autoTopUp = computed(() => {
+  const read = autoTopUpState.value
+  return deriveAutoTopUpBanner({
+    enabled: flags.autoTopUpEnabled,
+    canManageAutoTopUp: canManageAutoTopUp.value,
+    isPaused: isPaused.value,
+    hasActivePlan: !isCloud || billing.canAccessSubscriptionFeatures.value,
+    status: read.kind === 'loaded' ? read.settings.status : null,
+    disabledReason:
+      read.kind === 'loaded' ? read.settings.disabled_reason : null
+  })
+})
+
+const { href, track } = usePlatformHandoff('/profile/billing', {
+  target: 'auto_top_up',
+  action: 'update_payment'
+})
+
 const kind = computed(() => {
-  if (isCloud) return null
+  if (isCloud) return autoTopUp.value
   return deriveLocalCreditBanner({
+    autoTopUp: autoTopUp.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     hasFunds: subscription.value?.hasFunds ?? null,
     lowBalance: balance.value?.lowBalance,
@@ -213,7 +264,28 @@ function lowCreditsView(): BannerView {
   }
 }
 
+function autoTopUpView(titleKey: string, bodyKey: string): BannerView {
+  return {
+    title: t(titleKey),
+    body: t(bodyKey),
+    action: 'updateAutoTopUpPayment',
+    dismissible: false
+  }
+}
+
 const banner = computed<BannerView | null>(() => {
+  if (kind.value === 'autoTopUpFailed') {
+    return autoTopUpView(
+      'workspacePanel.billingStatus.autoTopUpFailed.title',
+      'workspacePanel.billingStatus.autoTopUpFailed.body'
+    )
+  }
+  if (kind.value === 'autoTopUpOff') {
+    return autoTopUpView(
+      'workspacePanel.billingStatus.autoTopUpOff.title',
+      'workspacePanel.billingStatus.autoTopUpOff.body'
+    )
+  }
   if (kind.value === 'outOfCredits') return outOfCreditsView()
   if (kind.value === 'lowCredits') return lowCreditsView()
   return null
