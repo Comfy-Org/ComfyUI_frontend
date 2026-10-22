@@ -12,6 +12,7 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
@@ -156,7 +157,7 @@ function attachmentUrl(
   const capturedUrl =
     kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
   if (capturedUrl) return capturedUrl
-  if (!item.ref) return
+  if (!item.ref || isHdrImageFilename(item.name)) return
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>

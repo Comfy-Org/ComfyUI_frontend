@@ -1,5 +1,13 @@
 # @comfyorg/website
 
+> **This copy is frozen.** comfy.org, including /hub, is now developed in the
+> private repository
+> [Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website). The
+> copy here stays for now so changes to the shared packages keep running
+> against the website's checks. Only mechanical fixes forced by a
+> shared-package change land here. To report a problem with comfy.org, open
+> an issue in this repository.
+
 Marketing/brand website built with Astro + Vue.
 
 ## Linting

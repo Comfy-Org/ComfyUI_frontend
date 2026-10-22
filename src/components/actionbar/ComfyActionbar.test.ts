@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -39,7 +39,12 @@ const renderActionbar = (showRunProgressBar: boolean) => {
       plugins: [pinia, i18n],
       stubs: {
         Badge: true,
-        QueueInlineProgress: true
+        QueueInlineProgress: true,
+        FreeTierQuota: true,
+        PartnerNodesRunCaption: true,
+        DeploymentSwitcher: {
+          template: '<div data-testid="deployment-switcher" />'
+        }
       },
       directives: {
         coachmark: vCoachmark
@@ -102,5 +107,65 @@ describe('ComfyActionbar', () => {
     } finally {
       dockedProgressContainer.remove()
     }
+  })
+})
+
+describe('ComfyActionbar deployment switcher', () => {
+  it('puts the engine button before the Run button', async () => {
+    const { dockedProgressContainer, rendered } = renderActionbar(false)
+    onTestFinished(() => dockedProgressContainer.remove())
+
+    const run = await rendered.findByText('Run')
+    expect(
+      rendered.getByTestId('deployment-switcher').compareDocumentPosition(run) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+})
+
+describe('ComfyActionbar floating position', () => {
+  it('pulls a bar parked at the right edge back on screen when it grows', async () => {
+    const observedCallbacks = new Map<Element, ResizeObserverCallback>()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        readonly callback: ResizeObserverCallback
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback
+        }
+        observe(target: Element) {
+          observedCallbacks.set(target, this.callback)
+        }
+        unobserve() {}
+        disconnect() {}
+      }
+    )
+    let panelWidth = 200
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      () => panelWidth
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(40)
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+    localStorage.setItem(
+      'Comfy.MenuPosition.Floating',
+      JSON.stringify({ x: window.innerWidth - panelWidth, y: 100 })
+    )
+    onTestFinished(() => {
+      localStorage.clear()
+      vi.unstubAllGlobals()
+      vi.restoreAllMocks()
+    })
+    const { dockedProgressContainer, rendered } = renderActionbar(false)
+    onTestFinished(() => dockedProgressContainer.remove())
+    await rendered.findByText('Run')
+    await nextTick()
+
+    const panel = rendered.getByTestId('actionbar-panel')
+    expect(observedCallbacks.has(panel)).toBe(true)
+    panelWidth = 400
+    observedCallbacks.get(panel)?.([], new ResizeObserver(() => {}))
+    await nextTick()
+
+    expect(panel.style.left).toBe(`${window.innerWidth - 400}px`)
   })
 })

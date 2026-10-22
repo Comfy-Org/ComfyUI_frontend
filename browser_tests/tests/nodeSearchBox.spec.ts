@@ -407,6 +407,39 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.searchBox.removeFilter(0)
       await expect(comfyPage.searchBox.input).toHaveFocus()
     })
+
+    test('Shift+Home and Shift+End select the query while results are open', async ({
+      comfyPage
+    }) => {
+      const { input, resultsListbox } = comfyPage.searchBox
+      const query = 'KSampler'
+      await input.fill(query)
+      await expect(resultsListbox).toBeVisible()
+
+      const selection = () =>
+        input.evaluate((element: HTMLInputElement) => [
+          element.selectionStart,
+          element.selectionEnd
+        ])
+
+      await test.step('Shift+Home selects back to the start', async () => {
+        await input.press('ArrowLeft')
+        await expect
+          .poll(selection)
+          .toEqual([query.length - 1, query.length - 1])
+        await input.press('Shift+Home')
+        await expect.poll(selection).toEqual([0, query.length - 1])
+      })
+
+      await test.step('Shift+End selects forward to the end', async () => {
+        await input.press('ArrowLeft')
+        await input.press('ArrowRight')
+        await input.press('Shift+End')
+        await expect.poll(selection).toEqual([1, query.length])
+      })
+
+      await expect(resultsListbox).toBeVisible()
+    })
   })
 })
 
