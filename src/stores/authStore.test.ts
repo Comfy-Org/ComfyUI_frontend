@@ -354,6 +354,22 @@ describe('useAuthStore', () => {
       })
     })
 
+    it('reports an unknown code when the failure body is not JSON', async () => {
+      respondToFetch(
+        BALANCE_URL,
+        () =>
+          new Response('upstream connect error', {
+            status: 503,
+            headers: { 'Retry-After': '3600' }
+          })
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        status: 503,
+        code: 'UNKNOWN_ERROR'
+      })
+    })
+
     it('returns the balance when a 503 clears on retry', async () => {
       vi.useFakeTimers()
       let calls = 0
