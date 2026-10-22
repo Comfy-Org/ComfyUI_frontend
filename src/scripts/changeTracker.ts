@@ -42,6 +42,7 @@ import {
 } from './nodeHistoryWidgetValues'
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
@@ -363,8 +364,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
     resetCanvasTrackerForTest()
     reportedCanvasMismatchCalls.clear()
   }
-  /** Set while loadGraphData reconfigures a graph in place; suppresses state capture. */
-  static isLoadingGraph = false
 
   /**
    * The active state of the workflow.
@@ -378,6 +377,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+
+  /** Whether a workflow load is configuring this tracker's graph. */
+  get isLoadingGraph(): boolean {
+    return isGraphLoading(this.workflow.graph)
+  }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -535,7 +539,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       !graph ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph ||
+      this.isLoadingGraph ||
       isChangeCaptureSuppressed()
     )
       return
@@ -579,7 +583,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       !graph ||
       !isActiveTracker(this) ||
-      ChangeTracker.isLoadingGraph ||
+      this.isLoadingGraph ||
       isChangeCaptureSuppressed() ||
       !canCaptureCanvas(this)
     )
@@ -598,7 +602,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * state, without adding undo history or reading the canvas.
    */
   markModified() {
-    if (!isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
+    if (!isActiveTracker(this) || this.isLoadingGraph) return
 
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) workflow.isModified = true

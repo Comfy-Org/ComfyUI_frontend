@@ -9,7 +9,6 @@ interface ChangeTrackerClass {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
-  readonly isLoadingGraph: boolean
   graphEqual(
     a: ComfyWorkflowJSON | null | undefined,
     b: ComfyWorkflowJSON | null | undefined
