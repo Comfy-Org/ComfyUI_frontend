@@ -170,7 +170,11 @@ function submit(): void {
       </p>
     </div>
 
-    <p v-if="dismissed" role="status" class="m-0 text-sm/5 text-muted-foreground">
+    <p
+      v-if="dismissed"
+      role="status"
+      class="m-0 text-sm/5 text-muted-foreground"
+    >
       {{ t('agent.askDismissed') }}
     </p>
 

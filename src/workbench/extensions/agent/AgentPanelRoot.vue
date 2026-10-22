@@ -948,8 +948,7 @@ const {
   }
 })
 const sendDismissesAsk = computed(
-  () =>
-    askOpen.value && agentPanelStore.comfyAgent?.ask_send_dismisses === true
+  () => askOpen.value && agentPanelStore.comfyAgent?.ask_send_dismisses === true
 )
 
 provide(

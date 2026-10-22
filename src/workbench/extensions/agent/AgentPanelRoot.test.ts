@@ -6181,10 +6181,11 @@ describe('AgentPanelRoot sending while a run card waits', () => {
   }
 
   it('sends over the card and greys it out when the backend supports it', async () => {
-    getServerFeature.mockImplementation((name: string, defaultValue?: unknown) =>
-      name === 'agent'
-        ? { state: 'ready', ask_send_dismisses: true }
-        : defaultValue
+    getServerFeature.mockImplementation(
+      (name: string, defaultValue?: unknown) =>
+        name === 'agent'
+          ? { state: 'ready', ask_send_dismisses: true }
+          : defaultValue
     )
     respondToFetch({}, () => json(200, {}))
     respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
@@ -6201,9 +6202,7 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     expect(
       screen.queryByRole('button', { name: 'Run' })
     ).not.toBeInTheDocument()
-    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
-      1
-    )
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(1)
   })
 
   it('keeps Stop over the card when the backend does not advertise it', async () => {
