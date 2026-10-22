@@ -1,13 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fakeWebSessionUser } from '../testing.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
-import type { WebSession, WebSessionErrorCode } from './sessionContracts.js'
-import type { SessionTokenResult } from './sessionTokenMint.js'
-import {
-  SessionTokenError,
-  createSessionTokenMint
-} from './sessionTokenMint.js'
+import { fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth'
+import type { WebSession, WebSessionErrorCode } from './sessionContracts'
+import type { SessionTokenResult } from './sessionTokenMint'
+import { SessionTokenError, createSessionTokenMint } from './sessionTokenMint'
 
 const T0 = Date.parse('2026-09-25T00:00:00Z')
 const MINUTE = 60_000

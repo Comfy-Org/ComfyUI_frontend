@@ -214,6 +214,7 @@ export const externalLinks = {
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
+  cloudSignup: 'https://cloud.comfy.org/cloud/signup',
   cloudCta: (content: string) =>
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',

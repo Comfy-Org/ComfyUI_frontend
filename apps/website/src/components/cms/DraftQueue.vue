@@ -14,6 +14,8 @@ import { translationsFor } from '@/i18n/translations'
 import type { ListingFilter } from '@/lib/cms/format'
 import { kindCounts, matchesListing } from '@/lib/cms/format'
 import type { QueueItem } from '@/lib/cms/queue'
+import type { QueueSort } from '@/lib/cms/queue-sort'
+import { canSortByLatest, sortQueue } from '@/lib/cms/queue-sort'
 import type { Staging } from '@/lib/cms/stage-status'
 import { stageOf } from '@/lib/cms/stage-status'
 
@@ -78,10 +80,21 @@ const tabs = computed(() =>
 const kinds = computed(() =>
   kindCounts(inTab(tab.value).map((item) => item.kind))
 )
-// New content first, so a brand-new page is never buried under edits.
+// Alphabetical by default; latest change first once the server reports when
+// each change was saved.
+const sort = ref<QueueSort>('NAME')
+const latestAvailable = computed(() => canSortByLatest(items))
+const sortOptions = computed(() =>
+  latestAvailable.value
+    ? (['NAME', 'LATEST'] as const).map((value) => ({
+        value,
+        label: t(`cmsAdmin.draft.sort.${value}`)
+      }))
+    : []
+)
 const visible = computed(() =>
-  inTab(tab.value)
-    .filter((item) =>
+  sortQueue(
+    inTab(tab.value).filter((item) =>
       matchesListing(filter.value, query.value, item.kind, [
         item.title,
         item.source === 'submission' ? item.author : item.provider,
@@ -91,8 +104,9 @@ const visible = computed(() =>
           ? item.canonical.content.document.change_id
           : undefined
       ])
-    )
-    .toSorted((a, b) => Number(b.change === 'new') - Number(a.change === 'new'))
+    ),
+    latestAvailable.value ? sort.value : 'NAME'
+  )
 )
 const openIndex = computed(() =>
   visible.value.findIndex((item) => item.id === openId.value)
@@ -207,6 +221,8 @@ function review(event: MouseEvent) {
       <ListingFilters
         v-model:filter="filter"
         v-model:query="query"
+        v-model:sort="sort"
+        :sort-options="sortOptions"
         :counts="kinds"
         :search-label="t('cmsAdmin.draft.search')"
         :locale

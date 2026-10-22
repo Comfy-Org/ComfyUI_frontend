@@ -64,6 +64,8 @@
           <SearchInput
             v-if="showSearch"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"

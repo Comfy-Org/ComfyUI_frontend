@@ -12,7 +12,7 @@ import type {
   BillingOperationState,
   BillingRecoveryAction,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 
 export type PaymentStep =
   | 'select'

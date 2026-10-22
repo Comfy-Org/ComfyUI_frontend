@@ -56,9 +56,11 @@ On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under
 `Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
 Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
-without saving; failed loads or saves keep the panel closed and allow retry.
-Switching user or workspace invalidates the cached acceptance and loads the new
-scope. Desktop/Local sign-in continuation authenticates before saving.
+without accepting. Skip stores an account preference that suppresses future
+automatic offers; Escape and outside clicks do not. An explicit Send can offer
+consent again. Failed loads or saves keep the panel closed and allow retry.
+Switching user or workspace invalidates the cached acceptance and loads the
+new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 ## First-use tour
 

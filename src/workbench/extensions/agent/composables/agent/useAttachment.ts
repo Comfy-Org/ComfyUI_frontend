@@ -9,9 +9,9 @@ import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import { isAgentAttachable } from '../../utils/attachableFiles'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { isAgentAttachable } from '@/workbench/extensions/agent/utils/attachableFiles'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 

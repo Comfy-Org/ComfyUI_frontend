@@ -8,6 +8,11 @@ import { useToast } from './toastStore'
 const meta: Meta<typeof Toaster> = {
   title: 'Components/Toast/Toaster',
   component: Toaster,
+  args: {
+    closeLabel: 'Close',
+    regionLabel: 'Notification',
+    formatViewportLabel: (hotkey: string) => `Notifications (${hotkey})`
+  },
   parameters: { layout: 'fullscreen' }
 }
 
@@ -15,7 +20,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Kinds: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { Button, Toaster },
     setup() {
       const toast = useToast()
@@ -30,13 +35,13 @@ export const Kinds: Story = {
       toast.error('Save failed', {
         description: 'ENOSPC: no space left on device, /home/user/workflows'
       })
-      return { toast }
+      return { toast, args }
     },
     template: `
       <div class="flex h-screen items-start gap-2 bg-background p-8">
         <Button @click="toast.info('Saved', { duration: 3000 })">Timed info</Button>
         <Button variant="destructive" @click="toast.dismissAll()">Dismiss all</Button>
-        <Toaster />
+        <Toaster v-bind="args" />
       </div>
     `
   })

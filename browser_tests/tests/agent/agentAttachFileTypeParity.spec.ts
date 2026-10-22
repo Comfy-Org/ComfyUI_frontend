@@ -3,9 +3,9 @@ import { truncate, writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { formatSize } from '@/utils/formatUtil'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { assetPath } from '@e2e/fixtures/utils/paths'

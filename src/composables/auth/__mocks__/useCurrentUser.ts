@@ -2,7 +2,7 @@ import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
-import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
+import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
 
 function createWatchHandle(): ReturnType<
   ReturnType<typeof realUseCurrentUser>['onUserResolved']

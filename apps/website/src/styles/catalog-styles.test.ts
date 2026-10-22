@@ -65,7 +65,7 @@ describe('catalog stylesheet delivery', () => {
     expect(css).toContain('.shadow-admin-dialog')
     expect(css).toContain('.shadow-admin-drawer')
     expect(css).toContain('.focus-visible\\:outline-admin-fg')
-    expect(css).toContain('.data-\\[state\\=checked\\]\\:bg-admin-card')
+    expect(css).toContain('.data-\\[state\\=open\\]\\:bg-admin-hover')
     expect(css).not.toMatch(/@(import|reference|theme|source|tailwind)\b/)
   })
 })

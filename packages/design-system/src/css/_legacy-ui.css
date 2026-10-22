@@ -346,7 +346,7 @@ dialog::backdrop {
 
 .litegraph.litecontextmenu,
 .litegraph.litecontextmenu.dark {
-  z-index: 9999 !important;
+  z-index: var(--z-index-overlay) !important;
   background-color: var(--background);
 }
 
@@ -391,7 +391,7 @@ dialog::backdrop {
 }
 
 .litegraph.litesearchbox {
-  z-index: 9999 !important;
+  z-index: var(--z-index-overlay) !important;
   background-color: var(--background);
   overflow: hidden;
   display: block;
