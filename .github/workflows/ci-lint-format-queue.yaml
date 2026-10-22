@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout ref
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -48,11 +51,28 @@ jobs:
           scope: lint
           path: ${{ env.LINT_CACHE_PATHS }}
 
-      - name: Verify lint
-        run: pnpm lint:ci
+      - parallel:
+          - name: Verify Stylelint
+            run: pnpm stylelint
 
-      - name: Verify format
-        run: pnpm -r --include-workspace-root format:check
+          - name: Verify oxlint
+            run: pnpm oxlint
+
+          - name: Verify architecture
+            run: pnpm architecture:check
+
+          - name: Verify ESLint
+            run: pnpm exec eslint --cache --concurrency auto --cache-strategy content
+
+          - name: Verify format
+            run: pnpm -r --include-workspace-root format:check
+
+      # Push runs gate the pushed range; a branch-creation push has no base.
+      - name: Check server facts on changed lines
+        if: ${{ (github.event.merge_group.base_sha || github.event.before) != '0000000000000000000000000000000000000000' }}
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+        run: pnpm lint:server-facts --base "$BASE_SHA"
 
       - name: Save lint caches
         if: always()
@@ -127,7 +147,7 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Verify knip, locale integrity and ADR index
+      - name: Verify knip, locale integrity and ADR naming
         uses: ./.github/actions/repo-checks
 
   # Single stable branch-protection context over the parallel jobs above.

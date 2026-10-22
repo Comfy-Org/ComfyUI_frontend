@@ -1,5 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { Viewport3d } from '@/extensions/core/load3d/Viewport3d'
+import type { Viewport3d } from '@comfyorg/viewport3d/load3d/Viewport3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 type WidgetCallback = (value: unknown, ...rest: unknown[]) => void
@@ -17,6 +17,11 @@ interface NodeWithWirableWidgets {
 type ViewportStatus = Pick<
   Viewport3d,
   'updateStatusMouseOnNode' | 'refreshViewport'
+>
+
+type SceneStatus = Pick<
+  Viewport3d,
+  'updateStatusMouseOnScene' | 'refreshViewport'
 >
 
 interface NodeWiringHooks {
@@ -91,4 +96,19 @@ export function useViewportNodeWiring() {
   }
 
   return { wireWidgets, wireNode, unwire }
+}
+
+export function createSceneHoverHandlers(
+  viewport: () => SceneStatus | null | undefined
+) {
+  return {
+    handleMouseEnter(): void {
+      const target = viewport()
+      target?.updateStatusMouseOnScene(true)
+      target?.refreshViewport()
+    },
+    handleMouseLeave(): void {
+      viewport()?.updateStatusMouseOnScene(false)
+    }
+  }
 }

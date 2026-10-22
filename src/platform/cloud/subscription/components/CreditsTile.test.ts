@@ -1,5 +1,6 @@
+import { paymentRecoveryAvailableFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,14 +12,16 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
-  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+  | 'amountMicros'
+  | 'cloudCreditBalanceMicros'
+  | 'prepaidBalanceMicros'
+  | 'effectiveBalanceMicros'
 >
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
@@ -30,6 +33,7 @@ const state = vi.hoisted(() => ({
   subscription: null as Subscription | null,
   personalIsYearly: false,
   canAccessSubscriptionFeatures: false,
+  subscriptionStatus: null as 'active' | 'ended' | 'canceled' | null,
   isFreeTier: false,
   isTeamPlan: false,
   tier: null as SubscriptionInfo['tier'],
@@ -45,13 +49,9 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
-)
-
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -103,7 +103,8 @@ const i18n = createI18n({
         outOfCreditsTitleNoDate: "You're out of credits",
         outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
-        upgradeToAddCredits: 'Upgrade to add credits'
+        subscribeToUseCredits: 'Subscribe to use credits on Cloud.',
+        resubscribeToUseCredits: 'Resubscribe to use credits on Cloud.'
       }
     }
   }
@@ -113,8 +114,7 @@ function renderTile(props: Record<string, unknown> = {}) {
   return render(CreditsTile, {
     props,
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 }
@@ -177,6 +177,7 @@ describe('CreditsTile', () => {
     billing.canAccessSubscriptionFeatures = computed(
       () => state.canAccessSubscriptionFeatures
     )
+    billing.subscriptionStatus = computed(() => state.subscriptionStatus)
     billing.isFreeTier = computed(() => state.isFreeTier)
     billing.isTeamPlan = computed(() => state.isTeamPlan)
     billing.tier = computed(() => state.tier)
@@ -195,6 +196,7 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.personalIsYearly = false
     state.canAccessSubscriptionFeatures = false
+    state.subscriptionStatus = null
     state.isFreeTier = false
     state.isTeamPlan = false
     state.tier = null
@@ -469,19 +471,30 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('Credits refill')
   })
 
-  it('hides the breakdown and forces zeros in the zero state', () => {
+  it('hides the plan breakdown in the zero state and keeps the server balance', () => {
     activeProSubscription()
-    const { container } = renderTile({ zeroState: true })
-    expect(container.textContent).toContain('0')
-    expect(container.textContent).not.toContain('left of')
-    expect(container.textContent).not.toContain('Additional credits')
-    expect(screen.queryByText('Add credits')).toBeNull()
+    renderTile({ zeroState: true })
+    expect(screen.getByText('1,055')).toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
   })
 
-  it('shows disabled credit details for an inactive plan even while top-up reads open', () => {
+  it('shows the effective balance in the zero state when it differs from amount', () => {
     activeProSubscription()
-    // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
-    // self-serve plan must keep this state on tier alone.
+    state.balance = {
+      amountMicros: 0,
+      effectiveBalanceMicros: 3_000,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 3_000
+    }
+    renderTile({ zeroState: true })
+    expect(screen.getByText('6,330')).toBeInTheDocument()
+  })
+
+  it('shows disabled credit details for an inactive plan and still renders add-credits from can_top_up', () => {
+    activeProSubscription()
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -489,14 +502,38 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain(
       'Reactivate your plan to use these credits'
     )
-    expect(screen.queryByText('Add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
+  })
+
+  it.for([{ inactivePlan: true }, { zeroState: true }])(
+    'renders nothing to add when can_top_up is false (%o)',
+    (props) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      renderTile(props)
+
+      expect(screen.queryByText('Add credits')).toBeNull()
+      expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
+    }
+  )
+
+  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+    renderTile()
+
+    await userEvent.click(screen.getByText('Add credits'))
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
   })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
     activeProSubscription()
-    // cloud#8001 closes can_top_up for terminal sales-managed plans, so the
-    // old keep-the-live-tile exclusion left a bare balance; the route back is
-    // the account manager, not a Reactivate button, and the copy says so.
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -515,7 +552,8 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain(
       'Reactivate your plan to use these credits'
     )
-    expect(screen.queryByText('Add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
   })
 
   it('states the ending plainly when an inactive sales-managed plan retains nothing', () => {
@@ -536,7 +574,8 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain(
       'Plan credits ended with your subscription.'
     )
-    expect(screen.queryByText('Add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
   })
 
   it('does not borrow a catalog monthly pool for an Enterprise plan', () => {
@@ -574,6 +613,9 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
     expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(
+      screen.getByText('Subscribe to use credits on Cloud.')
+    ).toBeInTheDocument()
   })
 
   it('keeps add-credits available on local without an active subscription', async () => {
@@ -581,9 +623,9 @@ describe('CreditsTile', () => {
     state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
@@ -592,9 +634,8 @@ describe('CreditsTile', () => {
     state.isTeamPlan = true
     state.balance = { amountMicros: 500 }
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
@@ -621,8 +662,8 @@ describe('CreditsTile', () => {
     )
     expect(screen.getByText('In use')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-interface-menu-component-surface-selected',
-      'hover:bg-secondary-background-hover'
+      'bg-muted',
+      'hover:bg-accent'
     )
   })
 
@@ -642,7 +683,7 @@ describe('CreditsTile', () => {
     )
     expect(screen.queryByText('In use')).toBeNull()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-base-foreground'
+      'bg-foreground'
     )
   })
 
@@ -663,27 +704,76 @@ describe('CreditsTile', () => {
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).toHaveBeenCalledOnce()
     expect(
-      useDialogService().showTopUpCreditsDialog
+      useBillingDialogs().showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
   })
 
-  it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
-    activeProSubscription()
-    state.tier = 'FREE'
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-    renderTile()
-    expect(screen.queryByText('Add credits')).toBeNull()
-    await userEvent.click(screen.getByText('Upgrade to add credits'))
-    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
-  })
+  it.for([
+    {
+      plan: 'active',
+      canAccess: true,
+      status: 'active',
+      canTopUp: true,
+      note: null
+    },
+    {
+      plan: 'active',
+      canAccess: true,
+      status: 'active',
+      canTopUp: false,
+      note: null
+    },
+    {
+      plan: 'none',
+      canAccess: false,
+      status: null,
+      canTopUp: true,
+      note: 'Subscribe to use credits on Cloud.'
+    },
+    {
+      plan: 'none',
+      canAccess: false,
+      status: null,
+      canTopUp: false,
+      note: null
+    },
+    {
+      plan: 'ended',
+      canAccess: false,
+      status: 'ended',
+      canTopUp: true,
+      note: 'Resubscribe to use credits on Cloud.'
+    },
+    {
+      plan: 'ended',
+      canAccess: false,
+      status: 'ended',
+      canTopUp: false,
+      note: null
+    }
+  ] as const)(
+    'renders add-credits and the note from can_top_up=$canTopUp on a $plan plan',
+    ({ canAccess, status, canTopUp, note }) => {
+      state.canAccessSubscriptionFeatures = canAccess
+      state.subscriptionStatus = status
+      state.balance = { amountMicros: 500 }
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+      renderTile()
+
+      expect(screen.queryByText('Add credits') !== null).toBe(canTopUp)
+      expect(screen.queryByText(/to use credits on Cloud/)?.textContent).toBe(
+        note ?? undefined
+      )
+    }
+  )
 
   it('keeps offering add-credits on the free tier for non-cloud distributions', () => {
     mockIsCloud.value = false
     activeProSubscription()
     state.tier = 'FREE'
     renderTile()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 

@@ -20,7 +20,7 @@ useExtensionService().registerExtension({
             type: 'CAMERA_INFO_STATE',
             isPreview: false
           },
-          options: { serialize: false }
+          options: { serialize: false, hideInPanel: true }
         })
         widget.type = 'cameraInfo'
         widget.serialize = false

@@ -1,37 +1,37 @@
 import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 
-import { CINEMATIC_STUDIO_APP_SLUG } from '../lib/workshop/cinematic-studio/analytics'
-import type { CinematicCopyKey } from '../lib/workshop/cinematic-studio/copy'
-import { captureWorkshopEvent } from '../scripts/posthog'
+import { CINEMATIC_STUDIO_APP_SLUG } from '@/lib/workshop/cinematic-studio/analytics'
+import type { CinematicCopyKey } from '@/lib/workshop/cinematic-studio/copy'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 
 import type {
   AspectRatio,
   Direction,
   DirectionPart,
   Resolution
-} from '../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   DEFAULT_DIRECTION,
   RESOLUTIONS,
   directionOption
-} from '../lib/workshop/cinematic-studio/catalog'
-import { shotEstimate } from '../lib/workshop/cinematic-studio/estimate'
-import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import { shotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
 import {
   shotAspects,
   takesReferences,
   videoShotBlock
-} from '../lib/workshop/cinematic-studio/models'
-import { nearestAspect } from '../lib/workshop/cinematic-studio/frames'
-import type { CinematicVideoCapabilities } from '../lib/workshop/cinematic-studio/video'
-import type { StudioImage } from '../lib/workshop/cinematic-studio/take-image'
+} from '@/lib/workshop/cinematic-studio/models'
+import { nearestAspect } from '@/lib/workshop/cinematic-studio/frames'
+import type { CinematicVideoCapabilities } from '@/lib/workshop/cinematic-studio/video'
+import type { StudioImage } from '@/lib/workshop/cinematic-studio/take-image'
 import {
   imageFile,
   imageInput,
   keepTake
-} from '../lib/workshop/cinematic-studio/take-image'
-import { cinematicPrompt } from '../lib/workshop/cinematic-studio/prompt'
-import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
+} from '@/lib/workshop/cinematic-studio/take-image'
+import { cinematicPrompt } from '@/lib/workshop/cinematic-studio/prompt'
+import type { StarterShot } from '@/lib/workshop/cinematic-studio/starters'
 import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
 

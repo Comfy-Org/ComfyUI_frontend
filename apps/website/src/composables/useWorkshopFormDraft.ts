@@ -6,19 +6,16 @@ import {
   clearWorkshopFiles,
   packWorkshopFiles,
   restoreWorkshopFiles
-} from '../config/workshop-draft-files'
+} from '@/config/workshop-draft-files'
 import {
   deleteWorkshopDraft,
   readWorkshopDraft,
   storeWorkshopDraft
-} from '../config/workshop-draft-storage'
-import type { FieldSchema, FormValues } from '../config/workshop-playground'
-import {
-  restoreFormValues,
-  urlUploadField
-} from '../config/workshop-playground'
-import { onBeforeSignInLeave } from '../config/workshop-return'
-import { workshopIdempotencyKey } from '../config/workshop-snippets'
+} from '@/config/workshop-draft-storage'
+import type { FieldSchema, FormValues } from '@/config/workshop-playground'
+import { restoreFormValues, urlUploadField } from '@/config/workshop-playground'
+import { onBeforeSignInLeave } from '@/config/workshop-return'
+import { workshopIdempotencyKey } from '@/config/workshop-snippets'
 
 export function useWorkshopFormDraft(
   slug: string,

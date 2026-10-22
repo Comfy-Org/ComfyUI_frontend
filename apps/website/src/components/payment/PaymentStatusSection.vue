@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { externalLinks } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import SectionLabel from '../common/SectionLabel.vue'
+import { externalLinks } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import SectionLabel from '@/components/common/SectionLabel.vue'
 
 // Display-only thank-you / failure pages: payment state is verified
 // server-side via Stripe webhooks (see comfy-api). These pages exist

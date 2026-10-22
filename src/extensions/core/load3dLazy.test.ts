@@ -37,6 +37,8 @@ vi.mock(import('@/extensions/core/load3dAdvanced'), () => ({}))
 vi.mock(import('@/extensions/core/load3dPreviewExtensions'), () => ({}))
 vi.mock(import('@/extensions/core/saveMesh'), () => ({}))
 vi.mock(import('@/extensions/core/cameraInfo'), () => ({}))
+vi.mock(import('@/extensions/core/cameraAngle'), () => ({}))
+vi.mock(import('@/extensions/core/lightInfo'), () => ({}))
 
 type Hook = (
   nodeType: typeof LGraphNode,
@@ -208,5 +210,32 @@ describe('load3dLazy', () => {
     await hook({} as typeof LGraphNode, makeNodeDef('Load3D'))
 
     expect(preexisting.beforeRegisterNodeDef).not.toHaveBeenCalled()
+  })
+
+  it('shares one in-flight load between concurrent 3D node registrations', async () => {
+    const newExtension: ComfyExtension = {
+      name: 'Inner',
+      beforeRegisterNodeDef: vi.fn()
+    }
+    const { hook } = await loadLazyExtensionFresh()
+    enabledExtensionsGetter
+      .mockReturnValueOnce([])
+      .mockReturnValue([newExtension])
+    const load3d = makeNodeDef('Load3D')
+    const preview3d = makeNodeDef('Preview3D')
+
+    await Promise.all([
+      hook({ id: 1 } as unknown as typeof LGraphNode, load3d),
+      hook({ id: 2 } as unknown as typeof LGraphNode, preview3d)
+    ])
+
+    expect(
+      vi
+        .mocked(newExtension.beforeRegisterNodeDef!)
+        .mock.calls.map(([nodeType, nodeData]) => [nodeType, nodeData.name])
+    ).toEqual([
+      [{ id: 1 }, 'Load3D'],
+      [{ id: 2 }, 'Preview3D']
+    ])
   })
 })

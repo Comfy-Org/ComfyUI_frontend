@@ -2,7 +2,7 @@ import type { NodeReplacementResponse } from './types'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
@@ -201,22 +201,17 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should log error but not throw when fetch fails', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
       const error = new Error('Network error')
       vi.mocked(fetchNodeReplacements).mockRejectedValue(error)
       store = createStore()
 
       await expect(store.load()).resolves.toBeUndefined()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Failed to load node replacements:',
         error
       )
       expect(store.isLoaded).toBe(false)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it('should not fetch when setting is disabled', async () => {

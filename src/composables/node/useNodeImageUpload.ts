@@ -1,14 +1,15 @@
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const UPLOAD_TIMEOUT_MS = 120_000
 const BYTES_PER_MB = 1024 * 1024
@@ -53,7 +54,7 @@ const uploadFile = async (
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(buildUploadErrorMessage(resp))
+    useToast().warning(buildUploadErrorMessage(resp))
     return
   }
 
@@ -83,6 +84,7 @@ interface ImageUploadOptions {
   folder?: ResultItemType
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
+  onReject?: (files: File[]) => boolean
 }
 
 /**
@@ -103,16 +105,20 @@ export const useNodeImageUpload = (
       return path
     } catch (error) {
       if (error instanceof DOMException && error.name === 'TimeoutError') {
-        useToastStore().addAlert(t('g.uploadTimedOut'))
+        useToast().warning(t('g.uploadTimedOut'))
       } else {
-        useToastStore().addAlert(String(error))
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     }
   }
 
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) {
-      useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+      useToast().warning(t('g.uploadAlreadyInProgress'))
       return []
     }
     node.isUploading = true
@@ -139,6 +145,7 @@ export const useNodeImageUpload = (
   // Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
+    onReject: options.onReject,
     onDrop: handleUploadBatch,
     onResultItemDrop: (item) => onUploadComplete([item])
   })
@@ -146,6 +153,7 @@ export const useNodeImageUpload = (
   // Handle paste
   useNodePaste(node, {
     fileFilter,
+    onReject: options.onReject,
     allow_batch,
     onPaste: handleUploadBatch
   })
@@ -153,6 +161,7 @@ export const useNodeImageUpload = (
   // Handle file input
   const { openFileSelection } = useNodeFileInput(node, {
     fileFilter,
+    onReject: options.onReject,
     allow_batch,
     accept,
     onSelect: handleUploadBatch

@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import HubspotFormEmbed from './HubspotFormEmbed.vue'
+import { captureVfxLeadSubmitted } from '@/scripts/posthog'
+
+vi.mock(import('@/scripts/posthog'))
 
 const FORM_ID = '40ef858c-374a-4958-8180-bfa54f0a67fb'
 const SCRIPT_ID = 'hubspot-form-embed'
@@ -56,7 +59,10 @@ let createElementSpy: ReturnType<typeof stubScriptLoading>
 beforeEach(() => {
   createElementSpy = stubScriptLoading()
 })
-afterEach(() => loaderScript()?.remove())
+afterEach(() => {
+  loaderScript()?.remove()
+  window.history.replaceState(null, '', '/')
+})
 
 describe('HubspotFormEmbed', () => {
   it('addresses the requested form on the embed container', () => {
@@ -130,4 +136,34 @@ describe('HubspotFormEmbed', () => {
       )
     }
   })
+})
+
+it('tracks only opted-in contact embeds and removes the handler when unmounted', () => {
+  window.history.replaceState(
+    null,
+    '',
+    '/contact/?interest=vfx&landing_version=v3'
+  )
+  const ordinary = render(HubspotFormEmbed, { props: { formId: FORM_ID } })
+  const success = () =>
+    window.dispatchEvent(
+      new CustomEvent('hs-form-event:on-submission:success', {
+        detail: { formId: FORM_ID, instanceId: 'one' }
+      })
+    )
+  success()
+  expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
+  ordinary.unmount()
+  const contact = render(HubspotFormEmbed, {
+    props: { formId: FORM_ID, trackVfxLeads: true }
+  })
+  success()
+  expect(captureVfxLeadSubmitted).toHaveBeenCalledTimes(1)
+  contact.unmount()
+  window.dispatchEvent(
+    new CustomEvent('hs-form-event:on-submission:success', {
+      detail: { formId: FORM_ID, instanceId: 'two' }
+    })
+  )
+  expect(captureVfxLeadSubmitted).toHaveBeenCalledTimes(1)
 })

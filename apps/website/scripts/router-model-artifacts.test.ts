@@ -20,12 +20,14 @@ afterEach(async () => {
 describe('artifact verification', () => {
   it('downloads raw bytes without forwarding Router credentials', async () => {
     vi.stubEnv('COMFY_API_KEY', 'secret-comfy-key')
-    vi.stubGlobal('fetch', async (_url: string, options: RequestInit) => {
-      if (new Headers(options.headers).has('authorization'))
-        return new Response('Credential was exposed', { status: 403 })
-      expect(options.credentials).toBe('omit')
-      return new Response('actual bytes')
-    })
+    vi.mocked(fetch).mockImplementation(
+      async (_url: RequestInfo | URL, options: RequestInit = {}) => {
+        if (new Headers(options.headers).has('authorization'))
+          return new Response('Credential was exposed', { status: 403 })
+        expect(options.credentials).toBe('omit')
+        return new Response('actual bytes')
+      }
+    )
     const path = join(directory, 'artifact.bin')
     const result = await downloadArtifact(
       'https://provider.example/signed-output',
@@ -39,8 +41,7 @@ describe('artifact verification', () => {
   })
 
   it('rejects an HTML error page even when the MIME type says image', async () => {
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       async () =>
         new Response('<html>Expired</html>', {
           headers: { 'Content-Type': 'image/png' }
@@ -63,8 +64,7 @@ describe('artifact verification', () => {
 
   it('bounds streamed downloads even without a content-length header', async () => {
     const cancelled = vi.fn()
-    vi.stubGlobal(
-      'fetch',
+    vi.mocked(fetch).mockImplementation(
       async () =>
         new Response(
           new ReadableStream({
@@ -90,7 +90,7 @@ describe('artifact verification', () => {
   it('stops reading an aborted download', async () => {
     const controller = new AbortController()
     controller.abort(new Error('Stop this case'))
-    vi.stubGlobal('fetch', async () => new Response('bytes'))
+    vi.mocked(fetch).mockImplementation(async () => new Response('bytes'))
     await expect(
       downloadArtifact(
         'https://provider.example/output',

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ServerlessCustomerProofSection from './ServerlessCustomerProofSection.vue'
 
 describe('ServerlessCustomerProofSection', () => {

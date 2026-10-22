@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sverweij/dependency-cruiser/v18.5.0/src/schema/configuration.schema.json",
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "from": {},
+      "to": { "circular": true }
+    },
+    {
+      "name": "agent-feedback-through-platform-support",
+      "severity": "error",
+      "from": { "path": "^src/workbench/extensions/agent/" },
+      "to": { "path": "^src/platform/surveys/openTypeformDialog\\.ts$" }
+    }
+  ],
+  "options": {
+    "tsConfig": { "fileName": "tsconfig.json" },
+    "tsPreCompilationDeps": "specify",
+    "doNotFollow": { "path": "node_modules" },
+    "exclude": {
+      "path": ["\\.(test|spec|stories)\\.ts$", "/__tests?__/", "/test/"]
+    },
+    "enhancedResolveOptions": {
+      "extensions": [".ts", ".mts", ".js", ".vue", ".json"],
+      "mainFields": ["module", "main", "types"]
+    }
+  }
+}

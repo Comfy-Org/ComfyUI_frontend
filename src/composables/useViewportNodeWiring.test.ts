@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-import { useViewportNodeWiring } from './useViewportNodeWiring'
+import {
+  createSceneHoverHandlers,
+  useViewportNodeWiring
+} from './useViewportNodeWiring'
 import type { WirableWidget } from './useViewportNodeWiring'
 
 interface FakeNode {
@@ -92,5 +95,35 @@ describe('useViewportNodeWiring', () => {
     expect(node.widgets[0].callback).toBe(original)
     expect(node.onMouseEnter).toBe(originalEnter)
     expect(node.onConnectionsChange).toBeUndefined()
+  })
+})
+
+describe('createSceneHoverHandlers', () => {
+  it('routes scene hover into the current viewport status', () => {
+    const viewport = {
+      updateStatusMouseOnScene: vi.fn(),
+      refreshViewport: vi.fn()
+    }
+    const { handleMouseEnter, handleMouseLeave } = createSceneHoverHandlers(
+      () => viewport
+    )
+
+    handleMouseEnter()
+    expect(viewport.updateStatusMouseOnScene).toHaveBeenLastCalledWith(true)
+    expect(viewport.refreshViewport).toHaveBeenCalledOnce()
+
+    handleMouseLeave()
+    expect(viewport.updateStatusMouseOnScene).toHaveBeenLastCalledWith(false)
+  })
+
+  it('does nothing without a viewport', () => {
+    const { handleMouseEnter, handleMouseLeave } = createSceneHoverHandlers(
+      () => null
+    )
+
+    expect(() => {
+      handleMouseEnter()
+      handleMouseLeave()
+    }).not.toThrow()
   })
 })

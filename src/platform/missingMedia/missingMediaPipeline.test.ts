@@ -1,6 +1,7 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
@@ -14,7 +15,6 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 let activeWorkflow: ComfyWorkflow
 
@@ -105,20 +105,33 @@ describe('runMissingMediaPipeline', () => {
       expect(onVerified.mock.calls).toEqual(
         completed ? [[[{ ...candidate, isMissing: resolvedMissing }]]] : []
       )
-      expect(vi.mocked(useToastStore().add).mock.calls).toEqual(
+      expect(vi.mocked(useToast().warning).mock.calls).toEqual(
         failed
           ? [
               [
-                expect.objectContaining({
-                  severity: 'warn',
-                  summary: t('toastMessages.missingMediaVerificationFailed')
-                })
+                t('toastMessages.missingMediaVerificationFailed'),
+                { duration: 5000 }
               ]
             ]
           : []
       )
     }
   )
+  it('clears a stale missing-media snapshot after a synchronous rescan resolves it', async () => {
+    const {
+      rootGraph,
+      hosts: [host]
+    } = createPromotedMediaRuntime()
+    const staleCandidate = createPromotedMissingMediaCandidate(host)
+    vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
+      { ...staleCandidate, isMissing: false }
+    ])
+    useMissingMediaStore().setMissingMedia([staleCandidate])
+
+    await runMissingMediaPipeline({ rootGraph, silent: true })
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
 
   it('surfaces workflow-load media when another fanout consumer stays active during verification', async () => {
     const {

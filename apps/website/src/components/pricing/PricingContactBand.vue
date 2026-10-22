@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import { computed } from 'vue'
 
-import { getRoutes } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
-import Button from '../ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
 import PricingCard from './PricingCard.vue'
 import PricingPlanLabel from './PricingPlanLabel.vue'
 

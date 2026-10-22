@@ -13,10 +13,12 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
@@ -39,6 +41,9 @@ const config: KnipConfig = {
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/test-utils': {
+      project: ['src/**/*.ts']
+    },
     'packages/shared-frontend-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -54,7 +59,16 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
+    'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/design-system-audits': {
+      project: ['src/**/*.ts']
+    },
     'tools/test-recorder': {
+      project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
       project: ['src/**/*.ts']
     }
   },

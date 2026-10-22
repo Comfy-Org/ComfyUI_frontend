@@ -1,4 +1,3 @@
-import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -77,7 +76,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 
@@ -554,9 +553,7 @@ describe('computeProcessedWidgets', () => {
 
     const result = processWidgets({ widgetIds: [id], showAdvanced: true })
 
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
+    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
@@ -701,7 +698,7 @@ describe('computeProcessedWidgets', () => {
       hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
-        borderStyle: 'ring ring-component-node-widget-advanced'
+        borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)

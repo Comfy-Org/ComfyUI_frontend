@@ -1,4 +1,4 @@
-import workflowsJsonl from '../content/workshop-workflows.jsonl?raw'
+import workflowsJsonl from '@/content/workshop-workflows.jsonl?raw'
 import {
   parseAppCatalog,
   parseWorkflowCatalog

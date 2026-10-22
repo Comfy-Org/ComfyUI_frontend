@@ -1,0 +1,36 @@
+{
+  "id": "server-facts",
+  "capability": "Server facts marker",
+  "description": "pendingServerFact marks a client expression that stands in for a server fact until the referenced backend ticket ships it.",
+  "modules": [
+    {
+      "path": "src/platform/serverFacts/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/__tests__/serverFactGate.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "pendingServerFact returns its value and requires a backend ticket id",
+      "checks": ["src/platform/serverFacts/pendingServerFact.test.ts"]
+    },
+    {
+      "name": "Server-fact gates render only the fact under perturbation",
+      "checks": ["src/platform/workspace/composables/useMembersPanel.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "pendingServerFact stays importable from every layer as the ADR-API-SERVER-FACTS-0042 marker."
+  ],
+  "deepImports": "inventory"
+}

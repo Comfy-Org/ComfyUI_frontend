@@ -1,21 +1,21 @@
 ---
 import type { GetStaticPaths } from 'astro'
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import ModelPage from '../../components/workshop/ModelPage.vue'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import ModelPage from '@/components/workshop/ModelPage.vue'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import {
   HUB_MODELS_PATH,
   hubModelSlugs,
   hubWorkflowName
-} from '../../config/hub-models'
-import { isIndexableModelPage } from '../../config/indexing'
-import { workshopPagePaths } from '../../config/workshop-page-content'
-import { modelDeveloper } from '../../config/model-vendors'
-import { modelMetaDescription } from '../../lib/workshop/model-meta-description'
-import { modelTitle } from '../../lib/workshop/model-title'
-import { pageContext } from '../../utils/jsonLd'
-import { modelPageJsonLd } from '../../utils/modelJsonLd'
+} from '@/config/hub-models'
+import { isIndexableModelPage } from '@/config/indexing'
+import { workshopPagePaths } from '@/config/workshop-page-content'
+import { modelDeveloper } from '@/config/model-vendors'
+import { modelMetaDescription } from '@/lib/workshop/model-meta-description'
+import { modelTitle } from '@/lib/workshop/model-title'
+import { pageContext } from '@/utils/jsonLd'
+import { modelPageJsonLd } from '@/utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from './model-page'
 
 interface Props {

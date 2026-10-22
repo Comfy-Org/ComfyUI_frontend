@@ -48,8 +48,7 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
-# Use dot notation for artifact names (as Playwright creates them)
-BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
+BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
@@ -67,39 +66,42 @@ if ! command -v tsx > /dev/null 2>&1; then
     npm install -g tsx >&2 || echo "Failed to install tsx" >&2
 fi
 
+create_pages_project() {
+    echo "Creating Cloudflare Pages project $1..." >&2
+    wrangler pages project create "$1" --production-branch=main >&2 ||
+        echo "Failed to create Cloudflare Pages project $1" >&2
+}
+
 # Deploy a single browser report, WARN: ensure inputs are sanitized before calling this function
 deploy_report() {
     dir="$1"
     browser="$2"
     branch="$3"
-    
+
     [ ! -d "$dir" ] && echo "failed" && return
-    
-    
-    # Project name with dots converted to dashes for Cloudflare
+
     sanitized_browser="${browser//./-}"
     project="comfyui-playwright-${sanitized_browser}"
-    
+
     echo "Deploying $browser to project $project on branch $branch..." >&2
-    
-    # Try deployment up to 3 times
+
     i=1
     while [ $i -le 3 ]; do
         echo "Deployment attempt $i of 3..." >&2
-        # Branch and project are already sanitized, use them directly
-        # Branch was sanitized at script start, project uses sanitized_browser
         if output=$(wrangler pages deploy "$dir" \
             --project-name="$project" \
             --branch="$branch" 2>&1); then
-            
-            # Extract URL from output (improved regex for valid URL characters)
+
             url=$(echo "$output" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
             result="${url:-https://${branch}.${project}.pages.dev}"
             echo "Success! URL: $result" >&2
-            echo "$result"  # Only this goes to stdout for capture
+            echo "$result"
             return
         else
             echo "Deployment failed on attempt $i: $output" >&2
+            case "$output" in
+                *"does not exist"*) create_pages_project "$project" ;;
+            esac
         fi
         [ $i -lt 3 ] && sleep 10
         i=$((i + 1))
@@ -121,6 +123,11 @@ parse_counts() {
             "$(echo "$json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')" \
             "$(echo "$json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')"
     fi
+}
+
+count_screenshot_diffs() {
+    find snapshot-updates -name manifest.json -exec cat {} + 2>/dev/null |
+        jq -s 'map(length) | add // 0'
 }
 
 # Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
@@ -189,7 +196,7 @@ else
     echo "Looking for reports in: $(pwd)/reports"
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
-    
+
     # Deploy all reports in parallel and collect URLs + test counts
     temp_dir=$(mktemp -d)
     pids=""
@@ -199,7 +206,6 @@ else
     SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     BASE_DIR="$(pwd)"
     
-    # Start parallel deployments and count extractions
     for browser in $BROWSERS; do
         if [ -d "reports/playwright-report-$browser" ]; then
             echo "Found report for $browser, deploying in parallel..."
@@ -207,14 +213,12 @@ else
                 url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
                 echo "$url" > "$temp_dir/$i.url"
                 echo "Deployment result for $browser: $url"
-                
-                # Extract test counts using tsx (TypeScript executor)
+
                 EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
                 REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
-                
+
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    # Pass the base URL so we can generate trace links
                     counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
@@ -226,7 +230,7 @@ else
             pids="$pids $!"
         else
             echo "Report not found for $browser at reports/playwright-report-$browser"
-            echo "failed" > "$temp_dir/$i.url"
+            echo "missing" > "$temp_dir/$i.url"
             echo '{}' > "$temp_dir/$i.counts"
         fi
         i=$((i + 1))
@@ -240,6 +244,7 @@ else
     # Collect URLs and counts in order
     urls=""
     all_counts=""
+    missing_reports=0
     i=0
     for browser in $BROWSERS; do
         if [ -f "$temp_dir/$i.url" ]; then
@@ -247,6 +252,7 @@ else
         else
             url="failed"
         fi
+        [ "$url" = "missing" ] && missing_reports=$((missing_reports + 1))
         if [ -z "$urls" ]; then
             urls="$url"
         else
@@ -272,27 +278,6 @@ else
     # Clean up temp directory
     rm -rf "$temp_dir"
 
-    # Deploy the focused new-tests report (with embedded video), if the PR
-    # added spec files (see playwright-video-new-tests in ci-tests-e2e.yaml).
-    # Reuses the chromium project on its own branch so it doesn't clobber the
-    # main chromium report deployed above.
-    new_tests_url=""
-    new_tests_counts="{}"
-    if [ -d "reports/playwright-report-new-tests" ]; then
-        echo "Found new-tests report, deploying..."
-        new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
-
-        EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
-        REPORT_DIR="$BASE_DIR/reports/playwright-report-new-tests"
-        if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
-            new_tests_counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$new_tests_url" 2>&1 || echo '{}')
-        fi
-    fi
-
-    # counts_array (browsers only, read again below) must stay separate: the
-    # per-browser listing loop zips it positionally against BROWSERS/urls.
-    agg_all_counts="$all_counts|$new_tests_counts"
-
     # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
@@ -300,8 +285,8 @@ else
     total_skipped=0
     total_tests=0
 
-    IFS='|' read -r -a agg_counts_array <<< "$agg_all_counts"
-    for counts_json in "${agg_counts_array[@]}"; do
+    IFS='|' read -r -a counts_array <<< "$all_counts"
+    for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
         read -r passed failed flaky skipped total <<< "$(parse_counts "$counts_json")"
         total_passed=$((total_passed + passed))
@@ -313,7 +298,7 @@ else
     unset IFS
     
     # Determine overall status (flaky tests are treated as passing)
-    if [ $total_failed -gt 0 ]; then
+    if [ $total_failed -gt 0 ] || [ $missing_reports -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
@@ -326,23 +311,33 @@ else
     if [ $total_flaky -gt 0 ]; then
         flaky_note=" · $total_flaky flaky"
     fi
+
+    missing_note=""
+    if [ $missing_reports -gt 0 ]; then
+        missing_note=", $missing_reports missing"
+    fi
     
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
-### ❌ Failed Tests"
+> ❌ $total_failed tests failed. Expand the failed tests below, review their traces and fix the failures before merging.
 
-        for counts_json in "${agg_counts_array[@]}"; do
+<details>
+<summary>Failed tests</summary>
+
+"
+
+        for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
@@ -369,8 +364,20 @@ $test_line"
                 fi
             fi
         done
+        comment="$comment
+
+</details>"
     fi
     
+    screenshot_diffs=$(count_screenshot_diffs) || screenshot_diffs=0
+    if [ "${screenshot_diffs:-0}" -gt 0 ]; then
+        diff_plural="s"
+        [ "$screenshot_diffs" -eq 1 ] && diff_plural=""
+        comment="$comment
+
+- [ ] Update Playwright expectations ($screenshot_diffs screenshot diff$diff_plural)"
+    fi
+
     # Add browser reports in collapsible section
     comment="$comment
 
@@ -381,18 +388,22 @@ $test_line"
     
     # Add browser results
     i=0
+    deployment_failed=false
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
-    IFS='|' read -r -a counts_array <<< "$all_counts"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
         url="${url_array[$i]:-}"
         
-        if [ "$url" != "failed" ] && [ -n "$url" ]; then
+        if [ "$url" = "missing" ]; then
+            comment="$comment
+- **${browser}**: ❌ Report missing"
+        elif [ "$url" != "failed" ] && [ -n "$url" ]; then
             comment="$comment
 - **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
+            deployment_failed=true
             comment="$comment
 - **${browser}**: ❌ Deployment failed"
         fi
@@ -400,14 +411,15 @@ $test_line"
     done
     unset IFS
 
-    if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
-        comment="$comment
-- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})$(counts_suffix "$new_tests_counts")"
-    fi
-
     comment="$comment
 
 </details>"
+
+    if [ "$deployment_failed" = true ]; then
+        comment="$comment
+
+> ❌ Browser reports are missing. [Open the workflow run]($WORKFLOW_URL), fix report generation or deployment and re-run the job."
+    fi
 
     post_comment "$comment"
 fi

@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AshbyJobPosting } from './ashby.schema'
-import type { RolesSnapshot } from '../data/roles'
+import type { RolesSnapshot } from '@/data/roles'
 
 import { fetchRolesForBuild, resetAshbyFetcherForTests } from './ashby'
 

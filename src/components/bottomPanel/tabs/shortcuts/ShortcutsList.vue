@@ -10,7 +10,7 @@
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-text-secondary uppercase"
+          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-muted-foreground uppercase"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>
@@ -35,7 +35,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge min-w-6 rounded-sm bg-muted-background px-2 py-1 text-center font-mono text-xs"
+                  class="key-badge min-w-6 rounded-sm bg-muted px-2 py-1 text-center font-mono text-xs"
                 >
                   {{ formatKey(key) }}
                 </span>

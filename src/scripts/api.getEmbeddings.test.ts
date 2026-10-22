@@ -1,12 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
 describe('api.getEmbeddings', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-  })
-
   it('returns the parsed embeddings', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
       new Response(JSON.stringify(['embedding-a', 'embedding-b']), {

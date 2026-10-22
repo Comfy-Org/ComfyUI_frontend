@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
@@ -10,12 +11,12 @@ import { useAppModeStore } from '@/stores/appModeStore'
 const { t } = useI18n()
 const { enableAppBuilder } = useAppMode()
 const appModeStore = useAppModeStore()
-const { enterBuilder } = appModeStore
+const { enterBuilder } = useEnterBuilder()
 const { hasNodes } = storeToRefs(appModeStore)
 </script>
 
 <template>
-  <div class="pointer-events-auto flex flex-row items-start gap-2">
+  <div class="pointer-events-auto flex items-start gap-2">
     <WorkflowActionsDropdown source="app_mode_toolbar" />
     <Button
       v-if="enableAppBuilder"

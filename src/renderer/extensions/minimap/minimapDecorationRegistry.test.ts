@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   getMinimapDecorations,
@@ -20,10 +20,6 @@ const scopeB = {
 }
 
 describe('minimapDecorationRegistry', () => {
-  beforeEach(() => {
-    vi.mocked(reportError).mockClear()
-  })
-
   it('hands a contested id to the newest registrant', () => {
     const outgoing = registerMinimapDecorationLayer('test.takeover')
     outgoing.replace([{ target: { ...scopeA, nodeId: toNodeId('1') } }])

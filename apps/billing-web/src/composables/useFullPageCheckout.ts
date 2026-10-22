@@ -18,12 +18,14 @@ import type {
   CancelOperationResult,
   CapabilitiesSnapshot,
   SubscribeInput,
+  SubscriptionCommandFailure,
   SubscriptionCommandResult,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
-  matchesServerCode
+  matchesServerCode,
+  unwrapServerCode
 } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 
@@ -31,7 +33,8 @@ import type {
   CheckoutPage,
   CheckoutPageEvent,
   PaymentTab,
-  SavedArrival
+  SavedArrival,
+  ServerRefusal
 } from '@/checkout/checkoutPage'
 import {
   RESOLVING,
@@ -45,8 +48,7 @@ import {
   isParked,
   needsConsent,
   railAcceptsPay,
-  reduceCheckoutPage,
-  settledPlanSource
+  reduceCheckoutPage
 } from '@/checkout/checkoutPage'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
@@ -112,11 +114,37 @@ type PlannedEntry = BillingEntry & { plan: string }
 /** What the quote answers for a plan slug the catalog does not have. */
 const UNKNOWN_PLAN_SERVER_CODE = 'INVALID_PLAN'
 
+const RATE_LIMITED = 429
+
 /** The status the server answered a failed read with, when it answered. */
 function withHttpStatus(failure: object) {
   return 'httpStatus' in failure && typeof failure.httpStatus === 'number'
     ? { httpStatus: failure.httpStatus }
     : {}
+}
+
+/**
+ * A quote the server refused in its own words: a 4xx carrying its code. A
+ * 5xx, a rate limit, or a request that never reached it is a quote it could
+ * not give, which Try again can still get.
+ */
+function refusalOf(
+  failure: SubscriptionCommandFailure
+): ServerRefusal | undefined {
+  if (!('serverCode' in failure) || failure.serverCode === undefined)
+    return undefined
+  const { httpStatus, serverMessage } = failure
+  if (
+    httpStatus === undefined ||
+    httpStatus < 400 ||
+    httpStatus >= 500 ||
+    httpStatus === RATE_LIMITED
+  )
+    return undefined
+  return {
+    code: unwrapServerCode(failure.serverCode),
+    ...(serverMessage === undefined ? {} : { message: serverMessage })
+  }
 }
 
 /** A capability read that ends the page before any quote: unreadable, or refused. */
@@ -384,11 +412,7 @@ export function useFullPageCheckout() {
     if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return withScheduledChange(stopped)
-    if (quoted.status === 'error')
-      return 'serverCode' in quoted &&
-        matchesServerCode(quoted, UNKNOWN_PLAN_SERVER_CODE)
-        ? { type: 'planUnavailable', reason: 'retired' }
-        : { type: 'unavailable', code: quoted.code, ...withHttpStatus(quoted) }
+    if (quoted.status === 'error') return quoteFailureEvent(quoted, arrival)
     const unquotable = quotedStop(quoted.value, arrival)
     if (unquotable !== undefined) return unquotable
     const facts = {
@@ -400,6 +424,43 @@ export function useFullPageCheckout() {
       ...railOf(quoted.value, arrivalOf(methods), stripeKey),
       ...facts
     }
+  }
+
+  /**
+   * A quote the server would not give: a slug its catalog lacks, a team
+   * plan its catalog lists but the link names without a stop, a refusal in
+   * its own words, or a read that failed.
+   */
+  async function quoteFailureEvent(
+    failure: SubscriptionCommandFailure,
+    arrival: PlannedEntry
+  ): Promise<CheckoutPageEvent> {
+    if (
+      'serverCode' in failure &&
+      matchesServerCode(failure, UNKNOWN_PLAN_SERVER_CODE)
+    )
+      return { type: 'planUnavailable', reason: 'retired' }
+    const server = refusalOf(failure)
+    if (server === undefined)
+      return {
+        type: 'unavailable',
+        code: failure.code,
+        ...withHttpStatus(failure)
+      }
+    if (await namesTeamWithoutStop(arrival))
+      return { type: 'planUnavailable', reason: 'team_stop_missing' }
+    return { type: 'notAllowed', server }
+  }
+
+  async function namesTeamWithoutStop(arrival: PlannedEntry) {
+    if (arrival.teamCreditStopId !== undefined) return false
+    const catalog = await plans.read()
+    return (
+      catalog.status === 'ok' &&
+      catalog.value.data.plans.some(
+        (plan) => plan.slug === arrival.plan && plan.tier === 'TEAM'
+      )
+    )
   }
 
   /** Capture never renders before reconciliation has answered (rule 3). */
@@ -541,46 +602,11 @@ export function useFullPageCheckout() {
     (awaiting) => (awaiting ? recheck.resume() : recheck.pause())
   )
 
-  /**
-   * A settled payment this page did not price names the plan the catalog
-   * lists for its receipt, or for a returned one without a receipt plan, the
-   * plan the status now reports; never the fresh quote.
-   */
-  async function readSettledPlan(receiptSlug: string | undefined) {
-    const [slug, catalog] = await Promise.all([
-      receiptSlug ?? statusPlanSlug(),
-      plans.read()
-    ])
-    const listed =
-      slug !== undefined && catalog.status === 'ok'
-        ? catalog.value.data.plans.find((plan) => plan.slug === slug)
-        : undefined
-    if (!listed) return
-    const { tier, duration, price_cents } = listed
-    dispatch({
-      type: 'settledPlanRead',
-      plan: { tier, duration, price_cents }
-    })
-  }
-
-  async function statusPlanSlug() {
-    const read = await status.read()
-    return read.status === 'ok' ? read.value.status.plan_slug : undefined
-  }
-
   /** A finished checkout has no code left to re-apply. */
   watch(
     () => page.value.kind === 'terminal',
     (finished) => {
       if (finished) promoMemory.keep(undefined)
-    }
-  )
-
-  watch(
-    () => settledPlanSource(page.value)?.key,
-    () => {
-      const source = settledPlanSource(page.value)
-      if (source !== undefined) void readSettledPlan(source.receiptSlug)
     }
   )
 
@@ -607,7 +633,10 @@ export function useFullPageCheckout() {
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
 
   watch(
-    () => endingOf(page.value)?.kind,
+    () => {
+      const kind = endingOf(page.value)?.kind
+      return kind === 'scheduled' ? 'success' : kind
+    },
     (kind) => {
       if (kind === undefined) {
         journey.resumed()
@@ -857,6 +886,7 @@ export function useFullPageCheckout() {
     const press = journey.submitted()
     dispatch({
       type: 'paySubmitted',
+      quote: quoted,
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing
@@ -885,7 +915,9 @@ export function useFullPageCheckout() {
     abandon: journey.abandoned,
     retryLoad,
     onPaymentPhase,
-    savedMethods: saved.methods,
+    savedMethods: computed(() =>
+      saved.failure.value === undefined ? saved.methods.value : undefined
+    ),
     reconcile,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),

@@ -85,7 +85,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Undo' }))
 
-      expect(vi.mocked(mockStore.canvasHistory).undo).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.undo).toHaveBeenCalledTimes(1)
     })
 
     it('should call canvasHistory.redo when redo button is clicked', async () => {
@@ -94,7 +94,7 @@ describe('TopBarHeader', () => {
 
       await user.click(screen.getByRole('button', { name: 'Redo' }))
 
-      expect(vi.mocked(mockStore.canvasHistory).redo).toHaveBeenCalledTimes(1)
+      expect(mockStore.canvasHistory.redo).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -124,18 +124,17 @@ describe('TopBarHeader', () => {
     ] as const)(
       'should swallow and log errors from %s',
       async ([label, method, expectedMsg]) => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         mockCanvasTransform[method].mockRejectedValueOnce(new Error('boom'))
         const user = userEvent.setup()
         renderHeader()
 
         await user.click(screen.getByRole('button', { name: label }))
 
-        expect(errorSpy).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           `[TopBarHeader] ${expectedMsg}`,
           expect.any(Error)
         )
-        errorSpy.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     )
   })
@@ -195,7 +194,6 @@ describe('TopBarHeader', () => {
     })
 
     it('should restore brush + button state and log on save failure', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockSaver.save.mockRejectedValueOnce(new Error('save failed'))
       const user = userEvent.setup()
       renderHeader()
@@ -203,7 +201,7 @@ describe('TopBarHeader', () => {
       await user.click(screen.getByRole('button', { name: /save/i }))
 
       expect(mockStore.brushVisible).toBe(true)
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         '[TopBarHeader] Save failed:',
         expect.any(Error)
       )
@@ -212,7 +210,6 @@ describe('TopBarHeader', () => {
       expect(
         screen.getByRole('button', { name: /save/i }).textContent.trim()
       ).toBe('Save')
-      errorSpy.mockRestore()
     })
   })
 

@@ -2,12 +2,12 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { useHubStore } from '../../composables/useHubStore'
-import { groupModels } from '../../config/model-family'
-import { sortWorkshopModels, useCasesFor } from '../../config/models-catalogue'
-import { workshopModels } from '../../config/workshop-browse-content'
-import hubTemplates from '../../data/hubTemplates.json'
-import type { HubTemplate } from '../../lib/hub/types'
+import { useHubStore } from '@/composables/useHubStore'
+import { groupModels } from '@/config/model-family'
+import { sortWorkshopModels, useCasesFor } from '@/config/models-catalogue'
+import { workshopModels } from '@/config/workshop-browse-content'
+import hubTemplates from '@/data/hubTemplates.json'
+import type { HubTemplate } from '@/lib/hub/types'
 import HubBrowse from './HubBrowse.vue'
 
 const templates = hubTemplates as HubTemplate[]

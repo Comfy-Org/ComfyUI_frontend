@@ -1,12 +1,8 @@
-import type { VideoTrack } from '../components/common/VideoPlayer.vue'
-import type {
-  Locale,
-  LocalizedText,
-  TranslationKey
-} from '../i18n/translations'
+import type { VideoTrack } from '@/components/common/VideoPlayer.vue'
+import type { Locale, LocalizedText, TranslationKey } from '@/i18n/translations'
 
-import { externalLinks } from '../config/routes'
-import { translationsFor } from '../i18n/translations'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 import { categoryPath } from './learningPaths'
 
 export { categoryPath, tutorialPath } from './learningPaths'

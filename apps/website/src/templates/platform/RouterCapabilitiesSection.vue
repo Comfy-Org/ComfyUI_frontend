@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { translationsFor } from '../../i18n/translations'
-import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
-import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
-import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import type { FeatureRow } from '@/components/blocks/FeatureRows01.vue'
+import type { Locale } from '@/i18n/translations'
 import RouterProviderLogoRow from './RouterProviderLogoRow.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

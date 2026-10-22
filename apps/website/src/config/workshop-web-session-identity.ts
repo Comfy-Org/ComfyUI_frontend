@@ -15,7 +15,7 @@ import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { RememberedLogin } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
-import { captureWebSessionEvent } from '../scripts/posthog'
+import { captureWebSessionEvent } from '@/scripts/posthog'
 import { workshopIdentity } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import type { WorkshopAccountSource } from './workshop-account-source'

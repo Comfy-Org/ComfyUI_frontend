@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import contractsJson from '../content/workshop-router-contracts.json'
+import contractsJson from '@/content/workshop-router-contracts.json'
 import { workshopContractRecordSchema } from './workshop-contract'
 import { workshopModels } from './workshop-browse-content'
 import { initialWorkshopPageState } from './workshop-page-state'

@@ -1,3 +1,4 @@
+import { fetchRequests } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -33,33 +34,24 @@ function generation(over: Partial<SavedGeneration> = {}): SavedGeneration {
   }
 }
 
-function stubFetch(...responses: Response[]) {
-  const calls = vi.fn<typeof fetch>()
-  for (const response of responses) calls.mockResolvedValueOnce(response)
-  vi.stubGlobal('fetch', calls)
-  return calls
-}
-
 const signal = () => new AbortController().signal
-const requestedUrl = (calls: ReturnType<typeof stubFetch>, index = 0) =>
-  String(calls.mock.calls[index][0])
 
 describe('listWorkshopGenerations', () => {
   it('asks only for the runs this site started', async () => {
-    const calls = stubFetch(Response.json({ requests: [] }))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ requests: [] }))
 
     await listWorkshopGenerations(TOKEN, signal())
 
-    const url = new URL(requestedUrl(calls))
+    const url = new URL(fetchRequests()[0].url)
     expect(url.origin + url.pathname).toBe(
       `${WORKSHOP_ROUTER_BASE_URL}/v2/models/requests`
     )
     expect(url.searchParams.get('usage_source')).toBe('comfy-models')
     expect(url.searchParams.get('limit')).toBe('20')
     expect(url.searchParams.get('provider')).toBeNull()
-    expect(
-      new Headers(calls.mock.calls[0][1]?.headers).get('Authorization')
-    ).toBe(`Bearer ${TOKEN}`)
+    expect(fetchRequests()[0].headers.get('Authorization')).toBe(
+      `Bearer ${TOKEN}`
+    )
   })
 
   // A model id is one string carrying two, split on its first slash, and each
@@ -75,11 +67,11 @@ describe('listWorkshopGenerations', () => {
   ])(
     'splits $modelId into $provider and $model',
     async ({ modelId, provider, model }) => {
-      const calls = stubFetch(Response.json({ requests: [] }))
+      vi.mocked(fetch).mockResolvedValueOnce(Response.json({ requests: [] }))
 
       await listWorkshopGenerations(TOKEN, signal(), modelId, 'page-2')
 
-      const url = new URL(requestedUrl(calls))
+      const url = new URL(fetchRequests()[0].url)
       expect(url.searchParams.get('provider')).toBe(provider)
       expect(url.searchParams.get('model')).toBe(model)
       expect(url.searchParams.get('cursor')).toBe('page-2')
@@ -87,13 +79,15 @@ describe('listWorkshopGenerations', () => {
   )
 
   it('refuses a history that does not match the contract', async () => {
-    stubFetch(Response.json({ requests: [{ request_id: 'not-a-uuid' }] }))
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ requests: [{ request_id: 'not-a-uuid' }] })
+    )
 
     await expect(listWorkshopGenerations(TOKEN, signal())).rejects.toThrow()
   })
 
   it('reports the status when the router refuses', async () => {
-    stubFetch(Response.json({}, { status: 403 }))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}, { status: 403 }))
 
     await expect(
       listWorkshopGenerations(TOKEN, signal())
@@ -103,7 +97,7 @@ describe('listWorkshopGenerations', () => {
 
 describe('accessWorkshopAsset', () => {
   it('asks Cloud for one asset and takes back an https address', async () => {
-    const calls = stubFetch(
+    vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({
         content_url: 'https://assets.example/one.png',
         expires_at: '2026-09-20T13:00:00Z'
@@ -112,10 +106,10 @@ describe('accessWorkshopAsset', () => {
 
     const access = await accessWorkshopAsset(ASSET_ID, TOKEN, signal())
 
-    expect(requestedUrl(calls)).toBe(
+    expect(fetchRequests()[0].url).toBe(
       `${WORKSHOP_CLOUD_BASE_URL}/api/assets/${ASSET_ID}/access`
     )
-    expect(calls.mock.calls[0][1]?.method).toBe('POST')
+    expect(fetchRequests()[0].method).toBe('POST')
     expect(access.content_url).toBe('https://assets.example/one.png')
   })
 
@@ -126,7 +120,7 @@ describe('accessWorkshopAsset', () => {
     { url: 'javascript:alert(1)', named: 'a script address' },
     { url: 'not a url at all', named: 'no address at all' }
   ])('refuses $named', async ({ url }) => {
-    stubFetch(
+    vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({ content_url: url, expires_at: '2026-09-20T13:00:00Z' })
     )
 
@@ -139,7 +133,7 @@ describe('accessWorkshopAsset', () => {
 describe('getWorkshopGeneration', () => {
   it('puts the model back onto a status that does not carry it', async () => {
     const { provider, model, ...status } = generation()
-    const calls = stubFetch(Response.json(status))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(status))
 
     const found = await getWorkshopGeneration(
       `${provider}/${model}`,
@@ -148,7 +142,7 @@ describe('getWorkshopGeneration', () => {
       signal()
     )
 
-    expect(requestedUrl(calls)).toBe(
+    expect(fetchRequests()[0].url).toBe(
       `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${provider}/${model}/requests/${REQUEST_ID}/status`
     )
     expect(found).toEqual({ ...status, provider, model })
@@ -157,7 +151,7 @@ describe('getWorkshopGeneration', () => {
   // A run the router has forgotten is not an error: the address it came from
   // may simply be older than the history the router keeps.
   it('answers with nothing when the router has no such run', async () => {
-    stubFetch(Response.json({}, { status: 404 }))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}, { status: 404 }))
 
     await expect(
       getWorkshopGeneration(
@@ -170,8 +164,6 @@ describe('getWorkshopGeneration', () => {
   })
 
   it('does not ask about a request id that cannot be one', async () => {
-    const calls = stubFetch()
-
     await expect(
       getWorkshopGeneration(
         'black-forest-labs/flux-2-pro',
@@ -180,11 +172,11 @@ describe('getWorkshopGeneration', () => {
         signal()
       )
     ).resolves.toBeUndefined()
-    expect(calls).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('lets any other refusal through', async () => {
-    stubFetch(Response.json({}, { status: 500 }))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}, { status: 500 }))
 
     await expect(
       getWorkshopGeneration(
@@ -199,14 +191,14 @@ describe('getWorkshopGeneration', () => {
 
 describe('cancelWorkshopGeneration', () => {
   it('names the run in the path it asks to stop', async () => {
-    const calls = stubFetch(Response.json({}, { status: 202 }))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({}, { status: 202 }))
 
     await cancelWorkshopGeneration(generation(), TOKEN, signal())
 
-    expect(requestedUrl(calls)).toBe(
+    expect(fetchRequests()[0].url).toBe(
       `${WORKSHOP_ROUTER_BASE_URL}/v2/models/black-forest-labs/flux-2-pro/requests/${REQUEST_ID}/cancel`
     )
-    expect(calls.mock.calls[0][1]?.method).toBe('PUT')
+    expect(fetchRequests()[0].method).toBe('PUT')
   })
 })
 

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Reel, Take } from '../../../lib/workshop/cinematic-studio/reel'
+import type { Reel, Take } from '@/lib/workshop/cinematic-studio/reel'
 import CinematicStageCard from './CinematicStageCard.vue'
 
 const models = [

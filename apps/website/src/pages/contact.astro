@@ -1,15 +1,15 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro'
-import FormSection from '../components/contact/FormSection.vue'
-import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
-import { contactFaqs } from '../data/contactFaq'
-import { faqAnswerPlainText } from '../utils/faqAnswer'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import FormSection from '@/components/contact/FormSection.vue'
+import FAQSplit01 from '@/components/blocks/FAQSplit01.vue'
+import { contactFaqs } from '@/data/contactFaq'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import {
   absoluteUrl,
   faqPageNode,
   organizationId,
   pageContext
-} from '../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,

@@ -1,0 +1,29 @@
+{
+  "id": "markdown-rendering",
+  "capability": "Markdown rendering and sanitization (shared technical module)",
+  "description": "Shared technical module, not a business domain. Renders Markdown to sanitized HTML with link and media handling for note nodes, text output previews, release notes, node help, node previews, and agent replies. The note-nodes and text-output-preview records explicitly leave shared Markdown rendering outside their capability; this record is that owner.",
+  "modules": [
+    {
+      "path": "src/utils/markdownRendererUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/markdownRendererUtil.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Markdown renders to sanitized HTML with safe links and media",
+      "checks": ["src/utils/markdownRendererUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

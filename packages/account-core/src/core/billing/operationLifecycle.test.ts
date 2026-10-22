@@ -1,40 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import type {
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
   IssuedBillingOperation
-} from './operationLifecycle.js'
+} from './operationLifecycle'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import type { BillingOperationPointerStorage } from './operationPointer.js'
-import { operationPointerKey } from './operationPointer.js'
-import {
-  OPERATION_POLL_BUDGET,
-  OPERATION_POLL_TIMING
-} from './operationPolicy.js'
+} from './operationLifecycle'
+import type { BillingOperationPointerStorage } from './operationPointer'
+import { operationPointerKey } from './operationPointer'
+import { OPERATION_POLL_BUDGET, OPERATION_POLL_TIMING } from './operationPolicy'
 import type {
   BillingChargeBreakdown,
   BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
-} from './operationState.js'
+} from './operationState'
 import type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusSnapshot
-} from './status.js'
+} from './status'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
@@ -1072,6 +1069,69 @@ describe('createBillingOperationLifecycle', () => {
       expect(storedPointer(storage)).toMatchObject({ settled: 'succeeded' })
     })
 
+    it.for([
+      {
+        settledAs: 'succeeded',
+        answers: SETTLED_ANSWERS,
+        revisitedAs: opStatus({ status: 'succeeded' })
+      },
+      {
+        settledAs: 'reconciliation_needed',
+        answers: [
+          httpOk(opStatus()),
+          httpOk(opStatus({ status: 'reconciliation_needed' }))
+        ],
+        revisitedAs: opStatus({ status: 'succeeded' })
+      }
+    ])(
+      'reports nothing when a revisit reads back an operation this tab already reported as $settledAs',
+      async ({ answers, revisitedAs }) => {
+        const storage = await settleOwnOperation(answers)
+        const reloaded = harness({
+          storage,
+          retainSettled: true,
+          answers: [httpOk(revisitedAs)]
+        })
+
+        await reloaded.lifecycle.recover({ includeSettled: true })
+        await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.initialMs * 1.5)
+
+        expect(reloaded.lifecycle.get('op-1')).toMatchObject({
+          phase: 'succeeded'
+        })
+        expect(reloaded.telemetry).toEqual([])
+      }
+    )
+
+    it('keeps a revisit quiet across a second reload while the operation is still pending', async () => {
+      const storage = await settleOwnOperation([
+        httpOk(opStatus()),
+        httpOk(opStatus({ status: 'reconciliation_needed' }))
+      ])
+      const revisit = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus())]
+      })
+      await revisit.lifecycle.recover({ includeSettled: true })
+      revisit.lifecycle.dispose()
+
+      expect(storedPointer(storage)).toMatchObject({
+        settled: 'reconciliation_needed'
+      })
+
+      const reloaded = harness({
+        storage,
+        retainSettled: true,
+        answers: [httpOk(opStatus({ status: 'succeeded' }))]
+      })
+      await reloaded.lifecycle.recover({ includeSettled: true })
+      await flush()
+
+      expect(revisit.telemetry).toEqual([])
+      expect(reloaded.telemetry).toEqual([])
+    })
+
     it('marks an operation this tab issued and left pending as awaited here when it comes back settled', async () => {
       const storage = memoryStorage()
       const left = harness({ storage, retainSettled: true })
@@ -1460,7 +1520,9 @@ describe('createBillingOperationLifecycle', () => {
         'no_hosted_url'
       )
 
-      await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+      await vi.advanceTimersByTimeAsync(
+        OPERATION_POLL_TIMING.initialMs * OPERATION_POLL_TIMING.multiplier
+      )
       expect(calls).toHaveLength(2)
       expect(lifecycle.switchPresentation('op-1', 'hosted')).toBe('switched')
       expect(lifecycle.get('op-1')).toMatchObject({

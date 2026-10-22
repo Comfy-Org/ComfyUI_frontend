@@ -5,7 +5,12 @@ import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templ
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { deriveTemplateModelSetup } from './templateModelSetup'
+import {
+  deriveTemplateModelSetup,
+  isModelDownloadCandidate,
+  isModelRowComplete,
+  remainingModelDownloadTotal
+} from './templateModelSetup'
 
 function model(
   name: string,
@@ -277,5 +282,57 @@ describe('deriveTemplateModelSetup', () => {
       'Custom_API_models',
       ''
     ])
+  })
+})
+
+describe('remainingModelDownloadTotal', () => {
+  const idle = () => ({ status: 'idle' })
+
+  function rowsFor(...sizes: [ModelFile, number | null][]) {
+    return deriveTemplateModelSetup(
+      sizes.map(([m]) => requirement(m)),
+      sizes.map(([m]) => ({ model: m, status: 'missing' })),
+      {
+        status: 'completed',
+        entries: sizes.map(([m, size]) => resolvedMetadata(m, size))
+      },
+      { isDownloadable: () => true }
+    ).rows
+  }
+
+  it('charges a model declared twice only once', () => {
+    const duplicated = model('shared.safetensors')
+    const rows = rowsFor([duplicated, 1024], [duplicated, 1024])
+
+    // Must match the group header, which dedupes by identity.
+    expect(remainingModelDownloadTotal(rows, idle)).toEqual({
+      bytes: 1024,
+      isComplete: true
+    })
+  })
+
+  it('reports incomplete when a candidate declares no size', () => {
+    const known = model('known.safetensors')
+    const unknown = model('unknown.safetensors')
+    const rows = rowsFor([known, 2048], [unknown, null])
+
+    expect(remainingModelDownloadTotal(rows, idle)).toMatchObject({
+      isComplete: false
+    })
+  })
+
+  it('counts only rows a bulk click would start', () => {
+    const starting = model('a.safetensors')
+    const running = model('b.safetensors')
+    const rows = rowsFor([starting, 1024], [running, 4096])
+    const stateFor = (m: ModelWithUrl) =>
+      m.name === running.name ? { status: 'downloading' } : { status: 'idle' }
+
+    expect(remainingModelDownloadTotal(rows, stateFor)).toEqual({
+      bytes: 1024,
+      isComplete: true
+    })
+    expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(false)
+    expect(isModelRowComplete(rows[1], stateFor)).toBe(false)
   })
 })

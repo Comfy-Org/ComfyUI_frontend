@@ -9,15 +9,16 @@ import {
   zExchangeTokenResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { isCredentialFresh } from './credentialCache.js'
-import { COMFY_CLIENT } from './requestAuth.js'
-import { timedSignal } from './requestTimeout.js'
+import { isCredentialFresh } from './credentialCache'
+import { COMFY_CLIENT } from './requestAuth'
+import { timedSignal } from './requestTimeout'
+import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired'
 import type {
   AccountCredential,
   WebSession,
   WebSessionErrorCode,
   WebSessionFailure
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export interface SessionTokenMintOptions {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -77,7 +78,8 @@ const STATUS_RULES: Partial<Record<number, StatusRule>> = {
   403: {
     byServerCode: {
       csrf_invalid: 'CSRF_STALE',
-      workspace_access_denied: 'WORKSPACE_ACCESS_DENIED'
+      workspace_access_denied: 'WORKSPACE_ACCESS_DENIED',
+      [SSO_REQUIRED_SERVER_CODE]: 'SSO_REQUIRED'
     },
     fallback: 'SESSION_REQUEST_REFUSED'
   },

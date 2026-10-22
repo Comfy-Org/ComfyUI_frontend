@@ -12,15 +12,12 @@
     :action-url
     :force-reactivation
     :authentication-state
-    :authentication-error
-    :reconciliation-operation-id
-    :quote-is-current
-    :is-applying-promotion-code
-    :embedded-checkout-enabled
+    :payment-cancelable
+    :canceling-payment
+    :cancel-payment-error
+    @cancel-payment="emit('cancelPayment')"
     @confirm="emit('confirm', $event)"
     @back="emit('back')"
-    @apply-promotion-code="emit('applyPromotionCode', $event)"
-    @invalidate-quote="emit('invalidateQuote')"
   />
 </template>
 
@@ -54,11 +51,9 @@ const {
   actionUrl = null,
   forceReactivation = false,
   authenticationState = null,
-  authenticationError = null,
-  reconciliationOperationId = null,
-  quoteIsCurrent = false,
-  isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  paymentCancelable = false,
+  cancelingPayment = false,
+  cancelPaymentError = null
 } = defineProps<{
   previewData: PreviewSubscribeResponse
   isLoading?: boolean
@@ -70,18 +65,15 @@ const {
    * scheduled cancellation until subscribe enforces the consent gate. */
   forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
-  authenticationError?: string | null
-  reconciliationOperationId?: string | null
-  quoteIsCurrent?: boolean
-  isApplyingPromotionCode?: boolean
-  embeddedCheckoutEnabled?: boolean
+  paymentCancelable?: boolean
+  cancelingPayment?: boolean
+  cancelPaymentError?: string | null
 }>()
 
 const emit = defineEmits<{
   confirm: [confirmReactivation: boolean]
   back: []
-  applyPromotionCode: [code: string]
-  invalidateQuote: []
+  cancelPayment: []
 }>()
 
 const { locale, t, te } = useI18n()

@@ -4,14 +4,14 @@ import { computed } from 'vue'
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   ASPECT_RATIOS,
   MAX_TAKES,
   RESOLUTIONS
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 /** Menu options and string-valued models for the aspect, resolution and takes menus. */
 export function useFormatMenus(

@@ -6,7 +6,7 @@ import {
 } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 
 interface Node {
   x: number

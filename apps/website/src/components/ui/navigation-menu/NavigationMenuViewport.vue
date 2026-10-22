@@ -14,13 +14,13 @@ const forwardedProps = useForwardProps(computed(() => ({ ...restProps })))
 </script>
 
 <template>
-  <div class="absolute top-full left-0 isolate z-50 flex justify-center">
+  <div class="absolute top-full left-0 isolate z-50 w-0">
     <NavigationMenuViewport
       data-slot="navigation-menu-viewport"
       v-bind="forwardedProps"
       :class="
         cn(
-          'origin-top-center relative left-(--reka-navigation-menu-viewport-left) mt-1.5 h-(--reka-navigation-menu-viewport-height) w-full overflow-hidden rounded-3xl border border-primary-comfy-ink-light bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-sm data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:zoom-in-90 md:w-(--reka-navigation-menu-viewport-width)',
+          'origin-top-center relative left-(--reka-navigation-menu-viewport-left) mt-1.5 h-(--reka-navigation-menu-viewport-height) w-full overflow-hidden rounded-[40px] border border-primary-comfy-ink-light bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-sm data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:zoom-in-90 md:w-(--reka-navigation-menu-viewport-width)',
           className
         )
       "

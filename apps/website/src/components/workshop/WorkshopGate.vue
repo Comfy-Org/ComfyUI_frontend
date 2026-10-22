@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import {
   useWorkshopEnabled,
   useWorkshopEnabledSettled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
 const {
   keepMounted = false,

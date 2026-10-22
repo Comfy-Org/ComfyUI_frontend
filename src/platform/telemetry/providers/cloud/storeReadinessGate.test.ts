@@ -54,6 +54,8 @@ vi.mock<unknown>(import('posthog-js'), () => ({
     capture: vi.fn(),
     identify: vi.fn(),
     register: vi.fn(),
+    unregister: vi.fn(),
+    get_property: vi.fn(),
     people: { set: vi.fn(), set_once: vi.fn() },
     reset: vi.fn()
   }
@@ -119,7 +121,6 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
   afterEach(() => {
     markStoresReady()
     hoisted.customerIoRegistration.rejection = null
-    hoisted.reportError.mockClear()
     delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 

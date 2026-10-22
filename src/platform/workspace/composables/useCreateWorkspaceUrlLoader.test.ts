@@ -1,4 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -30,6 +30,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 describe('useCreateWorkspaceUrlLoader', () => {
   beforeEach(() => {
@@ -44,7 +45,9 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showTeamWorkspacesDialog
+      ).not.toHaveBeenCalled()
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
@@ -54,7 +57,9 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(useDialogService().showTeamWorkspacesDialog).toHaveBeenCalledOnce()
+      expect(
+        useWorkspaceDialogs().showTeamWorkspacesDialog
+      ).toHaveBeenCalledOnce()
     })
 
     it('restores preserved query and opens dialog', async () => {
@@ -72,7 +77,9 @@ describe('useCreateWorkspaceUrlLoader', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith({
         query: { create_workspace: '1' }
       })
-      expect(useDialogService().showTeamWorkspacesDialog).toHaveBeenCalledOnce()
+      expect(
+        useWorkspaceDialogs().showTeamWorkspacesDialog
+      ).toHaveBeenCalledOnce()
     })
 
     it('cleans up URL after processing', async () => {
@@ -103,7 +110,9 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showTeamWorkspacesDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('ignores non-string param', async () => {
@@ -114,7 +123,9 @@ describe('useCreateWorkspaceUrlLoader', () => {
       const { loadCreateWorkspaceFromUrl } = useCreateWorkspaceUrlLoader()
       await loadCreateWorkspaceFromUrl()
 
-      expect(useDialogService().showTeamWorkspacesDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showTeamWorkspacesDialog
+      ).not.toHaveBeenCalled()
     })
   })
 })

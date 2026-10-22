@@ -1,9 +1,7 @@
 <template>
-  <div
-    class="flex w-52 min-w-52 flex-col border-r border-border-default bg-base-background"
-  >
+  <div class="flex w-52 min-w-52 flex-col border-r bg-background">
     <div class="flex items-center px-3 py-2">
-      <span class="text-xs font-semibold text-base-foreground">
+      <span class="text-xs font-semibold text-foreground">
         {{ t('layerEditor.layers') }}
       </span>
     </div>
@@ -33,13 +31,13 @@
           :ref="(el) => registerThumb(node.id, el)"
           width="32"
           height="32"
-          class="size-8 shrink-0 rounded-sm border border-border-default bg-base-background"
+          class="size-8 shrink-0 rounded-sm border bg-background"
         />
-        <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-w-0 flex-1 flex-col text-xs">
           <input
             v-if="renamingId === node.id"
             :ref="focusInput"
-            class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-xs text-base-foreground select-text"
+            class="min-w-0 rounded-sm border bg-background px-1 text-foreground select-text"
             :value="node.name"
             @blur="commitRename(node.id, $event)"
             @keydown.enter="commitRename(node.id, $event)"
@@ -48,13 +46,13 @@
           />
           <span
             v-else
-            class="truncate text-xs text-base-foreground"
+            class="truncate text-foreground"
             :title="node.name"
             @dblclick="renamingId = node.id"
           >
             {{ node.name }}
           </span>
-          <span class="truncate text-xs text-muted-foreground">
+          <span class="truncate text-muted-foreground">
             {{ layerSubtitle(node) }}
           </span>
         </div>
@@ -76,46 +74,49 @@
         <i :class="eyeIconClass(backgroundLayer.visible)" />
       </button>
       <div
-        class="size-8 shrink-0 rounded-sm border border-border-default"
+        class="size-8 shrink-0 rounded-sm border"
         :style="{ backgroundColor: backgroundColor }"
         data-testid="layer-panel-background-swatch"
       />
-      <div class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-xs text-base-foreground">
+      <div class="flex min-w-0 flex-1 flex-col text-xs">
+        <span class="truncate text-foreground">
           {{ t('layerEditor.background') }}
         </span>
-        <span class="truncate text-xs text-muted-foreground">
+        <span class="truncate text-muted-foreground">
           {{ backgroundSubtitle }}
         </span>
       </div>
     </div>
 
-    <div
-      class="flex items-center justify-end gap-1 border-t border-border-default p-1"
-    >
-      <button
-        :class="footerButtonClass"
+    <div class="flex items-center justify-end gap-1 border-t p-1">
+      <Button
+        variant="textonly"
+        size="icon"
+        class="size-7 rounded-md disabled:opacity-40"
         :disabled="!canMoveActive"
         :title="t('layerEditor.moveUp')"
         :aria-label="t('layerEditor.moveUp')"
         @click="moveActive(1)"
       >
         <i class="icon-[lucide--chevron-up] size-4" />
-      </button>
-      <button
-        :class="footerButtonClass"
+      </Button>
+      <Button
+        variant="textonly"
+        size="icon"
+        class="size-7 rounded-md disabled:opacity-40"
         :disabled="!canMoveActive"
         :title="t('layerEditor.moveDown')"
         :aria-label="t('layerEditor.moveDown')"
         @click="moveActive(-1)"
       >
         <i class="icon-[lucide--chevron-down] size-4" />
-      </button>
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import { computed, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -127,10 +128,7 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
 import { DEFAULT_BACKGROUND_COLOR } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type {
-  RasterData,
-  SceneNode
-} from '@/renderer/extensions/layerEditor/engine/node'
+import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
@@ -163,9 +161,6 @@ const canMoveActive = computed(
   () => activeNode.value !== null && activeNode.value.kind !== 'fill'
 )
 
-const footerButtonClass =
-  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-40'
-
 function layerSubtitle(node: SceneNode): string {
   const blendInitial = node.mode.blend.charAt(0).toUpperCase()
   return `${blendInitial} ${Math.round(node.opacity * 100)}%`
@@ -177,16 +172,16 @@ function isRowSelected(id: string): boolean {
 
 function rowClass(selected: boolean, extra?: string): string {
   return cn(
-    'group relative flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5 select-none',
-    'hover:bg-secondary-background-hover',
-    selected && 'bg-secondary-background-selected',
+    'group relative flex cursor-pointer items-center gap-2 border-border px-2 py-1.5 select-none',
+    'hover:bg-accent',
+    selected && 'bg-muted',
     extra
   )
 }
 
 function eyeButtonClass(visible: boolean): string {
   return cn(
-    'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-base-foreground hover:bg-secondary-background-hover',
+    'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent text-foreground hover:bg-accent',
     visible && 'opacity-0 group-hover:opacity-100'
   )
 }
@@ -210,8 +205,8 @@ function dropHintClass(id: string): string {
   const hint = dropHint.value
   if (hint?.id !== id) return ''
   return hint.pos === 'above'
-    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-base-foreground before:content-['']"
-    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-base-foreground after:content-['']"
+    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-foreground before:content-['']"
+    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground after:content-['']"
 }
 
 function onRowDragStart(id: string, e: DragEvent): void {

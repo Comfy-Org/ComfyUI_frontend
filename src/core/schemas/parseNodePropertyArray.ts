@@ -1,7 +1,7 @@
 import type { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@/types/nodeProperty'
 
 /**
  * @param property - Raw node property value.
@@ -10,7 +10,7 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
  */
 export function parseNodePropertyArray<T>(
   property: NodeProperty | undefined,
-  schema: z.ZodType<T[], z.ZodTypeDef, unknown>,
+  schema: z.ZodType<T[]>,
   contextName: string
 ): T[] {
   if (property === undefined) return []

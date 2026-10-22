@@ -17,6 +17,7 @@ const { session } = useBillingWebSession()
 const {
   page,
   quote,
+  savedMethods,
   canPay,
   returnLink,
   settingsLink,
@@ -69,10 +70,7 @@ function openBillingSettings() {
     @view-plans="returnToProduct"
     @add-credits="openBillingSettings"
   />
-  <main
-    v-else
-    class="dark-theme fixed inset-0 overflow-auto bg-secondary-background font-inter"
-  >
+  <main v-else class="fixed inset-0 overflow-auto bg-secondary font-inter">
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
       <CheckoutSummaryColumn :ledger :locked @back="goBack" />
@@ -87,6 +85,7 @@ function openBillingSettings() {
         :can-pay="canPay"
         :reopening
         purchase="credits"
+        :saved-methods="savedMethods"
         @pay="pay"
         @continue-verification="continueVerification"
       />

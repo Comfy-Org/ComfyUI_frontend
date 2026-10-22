@@ -1,11 +1,11 @@
 import { z } from 'astro/zod'
 
-import rawModels from '../src/data/workshop-creator-models.json'
-import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
+import rawModels from '@/data/workshop-creator-models.json'
+import type { WorkshopCreatorForm } from '@/config/workshop-creator-form'
 import type { curateWorkshopInputs } from './workshop-input-presentation'
 import { createCreatorFields, schemaAt } from './workshop-creator-fields'
 import { wanCreatorRequest } from './workshop-creator-wan'
-import { workshopContentInputs } from '../src/config/workshop-content-inputs'
+import { workshopContentInputs } from '@/config/workshop-content-inputs'
 import { workshopCreatorDefinitionSchema } from './workshop-creator-definition'
 
 const object = z.record(z.string(), z.json())

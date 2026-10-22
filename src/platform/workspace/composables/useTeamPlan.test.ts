@@ -3,15 +3,13 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
-import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
 
 const {
   mockIsActiveSubscription,
   mockIsInitialized,
   mockIsTeamPlan,
   mockMaxSeats,
-  mockSubscription,
-  mockSubscriptionStatus
+  mockSubscription
 } = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
@@ -23,8 +21,7 @@ const {
     mockMaxSeats: ref<number | null>(30),
     mockSubscription: ref<Pick<SubscriptionInfo, 'isCancelled'> | null>({
       isCancelled: false
-    }),
-    mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active')
+    })
   }
 })
 
@@ -60,16 +57,12 @@ describe('useTeamPlan', () => {
           }
         : null
     )
-    billingContext.subscriptionStatus = computed(
-      () => mockSubscriptionStatus.value
-    )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true
     mockMaxSeats.value = 30
     mockSubscription.value = { isCancelled: false }
-    mockSubscriptionStatus.value = 'active'
   })
 
   it('enables Team features from the active plan identity', async () => {
@@ -116,21 +109,6 @@ describe('useTeamPlan', () => {
     mockSubscription.value = null
     const plan = await setup()
     expect(plan.isCancelled.value).toBe(false)
-  })
-
-  it('flags a cancelled or ended Team plan as lapsed', async () => {
-    const plan = await setup()
-    mockSubscriptionStatus.value = 'canceled'
-    expect(plan.hasLapsedTeamPlan.value).toBe(true)
-    mockSubscriptionStatus.value = 'ended'
-    expect(plan.hasLapsedTeamPlan.value).toBe(true)
-  })
-
-  it('does not flag a personal plan as a lapsed Team plan', async () => {
-    mockIsTeamPlan.value = false
-    mockSubscriptionStatus.value = 'ended'
-    const plan = await setup()
-    expect(plan.hasLapsedTeamPlan.value).toBe(false)
   })
 
   it('reports loading until billing initialization completes', async () => {

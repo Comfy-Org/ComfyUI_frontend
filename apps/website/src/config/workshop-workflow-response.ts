@@ -13,11 +13,7 @@ export const workflowIdSchema = z.string().regex(/^workflows\/[a-z0-9-]+$/)
 export const workflowRunIdSchema = z.uuid()
 export const workflowInputsSchema = z.record(
   z.string().min(1).max(256),
-  z.union([
-    z.string().max(WORKFLOW_CONTROL_BYTES),
-    z.number().finite(),
-    z.boolean()
-  ])
+  z.union([z.string().max(WORKFLOW_CONTROL_BYTES), z.number(), z.boolean()])
 )
 export const workflowRequestSchema = z
   .object({

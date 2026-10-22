@@ -3,8 +3,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import { resolveRel } from '../../utils/cta'
-import Badge from '../ui/badge/Badge.vue'
+import { resolveRel } from '@/utils/cta'
+import Badge from '@/components/ui/badge/Badge.vue'
 
 type CardWorkflowMedia = {
   type: 'image' | 'video'
@@ -17,6 +17,7 @@ export type CardWorkflowItem = {
   id: string
   title: string
   href?: string
+  newTab?: boolean
   media: CardWorkflowMedia
   description?: string
   tags?: readonly string[]
@@ -33,6 +34,12 @@ const {
   variant?: 'default' | 'compact'
   class?: HTMLAttributes['class']
 }>()
+
+function linkTargetAttrs(newTab = true) {
+  return newTab
+    ? { target: '_blank', rel: resolveRel({ target: '_blank' }) }
+    : {}
+}
 </script>
 
 <template>
@@ -52,8 +59,7 @@ const {
     <a
       v-if="item.href"
       :href="item.href"
-      target="_blank"
-      :rel="resolveRel({ target: '_blank' })"
+      v-bind="linkTargetAttrs(item.newTab)"
       :aria-label="item.title"
       class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:ring-offset-2 focus-visible:outline-none"
       :class="variant === 'compact' ? 'rounded-5xl' : 'rounded-4.5xl'"

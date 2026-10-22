@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-3 p-2">
     <div class="flex flex-col gap-1">
       <div
-        class="relative h-2 w-full overflow-hidden rounded-full border border-interface-stroke bg-interface-panel-surface"
+        class="relative h-2 w-full overflow-hidden rounded-full border bg-background"
       >
         <div
           class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
@@ -15,14 +15,14 @@
         />
       </div>
       <div class="flex items-start justify-end gap-4 text-[12px] leading-none">
-        <div class="flex items-center gap-1 text-text-primary opacity-90">
+        <div class="flex items-center gap-1 opacity-90">
           <i18n-t keypath="sideToolbar.queueProgressOverlay.total">
             <template #percent>
               <span class="font-bold">{{ totalPercentFormatted }}</span>
             </template>
           </i18n-t>
         </div>
-        <div class="flex items-center gap-1 text-text-secondary">
+        <div class="flex items-center gap-1 text-muted-foreground">
           <span>{{ t('sideToolbar.queueProgressOverlay.currentNode') }}</span>
           <span class="inline-block max-w-40 truncate">{{
             currentNodeName
@@ -35,7 +35,7 @@
     </div>
 
     <div :class="bottomRowClass">
-      <div class="flex items-center gap-4 text-[12px] text-text-primary">
+      <div class="flex items-center gap-4 text-[12px] text-foreground">
         <div class="flex items-center gap-2">
           <span class="opacity-90">
             <span class="font-bold">{{ runningCount }}</span>
@@ -45,14 +45,14 @@
           </span>
           <Button
             v-if="runningCount > 0"
-            v-tooltip.top="cancelJobTooltip"
+            :tooltip="t('sideToolbar.queueProgressOverlay.cancelJobTooltip')"
             variant="destructive"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
             <i
-              class="icon-[lucide--x] block size-4 leading-none text-text-primary"
+              class="icon-[lucide--x] block size-4 leading-none text-foreground"
             />
           </Button>
         </div>
@@ -66,14 +66,14 @@
           </span>
           <Button
             v-if="queuedCount > 0"
-            v-tooltip.top="clearQueueTooltip"
+            :tooltip="t('sideToolbar.queueProgressOverlay.clearQueueTooltip')"
             variant="destructive"
             size="icon"
             :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
             @click="$emit('clearQueued')"
           >
             <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-text-primary"
+              class="icon-[lucide--list-x] block size-4 leading-none text-foreground"
             />
           </Button>
         </div>
@@ -92,11 +92,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   totalProgressStyle: Record<string, string>
@@ -116,10 +114,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const cancelJobTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.cancelJobTooltip'))
-)
-const clearQueueTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
-)
 </script>

@@ -5,7 +5,6 @@ import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
   createLeafNodeExecutionId,
-  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -115,6 +114,14 @@ describe('nodeIdentification', () => {
         expect(parseNodeLocatorId(`${validUuid}:node:1`)).toBeNull()
         expect(parseNodeLocatorId('')).toBeNull()
       })
+
+      it.for(['~root:insert:op', '~root:%69nsert%3Aop'])(
+        'rejects non-canonical encoded locator %s',
+        (locatorId) => {
+          expect(parseNodeLocatorId(locatorId)).toBeNull()
+          expect(isNodeLocatorId(locatorId)).toBe(false)
+        }
+      )
     })
 
     describe('createNodeLocatorId', () => {
@@ -129,43 +136,66 @@ describe('nodeIdentification', () => {
         expect(result).toBe(`${validUuid}:node_1`)
         expect(isNodeLocatorId(result)).toBe(true)
       })
-
-      it('should return null for node ID segments with separators', () => {
-        expect(createNodeLocatorId(validUuid, toNodeId('node:1'))).toBeNull()
-        expect(createNodeLocatorId(null, toNodeId('node:1'))).toBeNull()
-      })
     })
 
-    describe('createLeafNodeLocatorId', () => {
-      it('behaves like createNodeLocatorId for an ordinary, colon-free root id', () => {
-        expect(createLeafNodeLocatorId(null, toNodeId(123))).toBe('123')
+    describe('createNodeLocatorId encoded forms', () => {
+      it('keeps an ordinary root id as-is', () => {
+        expect(createNodeLocatorId(null, toNodeId(123))).toBe('123')
       })
 
-      it('behaves like createNodeLocatorId for an ordinary subgraph-nested id', () => {
-        expect(createLeafNodeLocatorId(validUuid, toNodeId(123))).toBe(
-          validNodeLocatorId
-        )
+      it.for([
+        {
+          name: 'colon-bearing root-level id',
+          subgraphUuid: null,
+          rawId: 'insert:abc123:root:node:5',
+          expectedLocator: '~root:insert%3Aabc123%3Aroot%3Anode%3A5'
+        },
+        {
+          name: 'colon-bearing subgraph-local id',
+          subgraphUuid: validUuid,
+          rawId: 'insert:abc123:root:node:5',
+          expectedLocator: `~subgraph:${validUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
+        },
+        {
+          name: 'root id shaped like a subgraph locator',
+          subgraphUuid: null,
+          rawId: `${validUuid}:123`,
+          expectedLocator: `~root:${validUuid}%3A123`
+        },
+        {
+          name: 'empty root id',
+          subgraphUuid: null,
+          rawId: '',
+          expectedLocator: '~root:'
+        },
+        {
+          name: 'non-integer numeric root id',
+          subgraphUuid: null,
+          rawId: 1.5,
+          expectedLocator: '~root:1.5'
+        },
+        {
+          name: 'root id containing a literal escape sequence',
+          subgraphUuid: null,
+          rawId: 'a%3Ab:c',
+          expectedLocator: '~root:a%253Ab%3Ac'
+        }
+      ])('encodes $name', ({ subgraphUuid, rawId, expectedLocator }) => {
+        const locatorId = createNodeLocatorId(subgraphUuid, rawId)
+
+        expect(locatorId).toBe(expectedLocator)
+        expect(parseNodeLocatorId(locatorId)).toEqual({
+          subgraphUuid,
+          localNodeId: String(rawId)
+        })
       })
 
-      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
-        // comfy-multi-player's insert_workflow remaps every inserted node's
-        // id to a derived string with colons unrelated to subgraph scoping.
-        const rawId = 'insert:abc123:root:node:5'
-        expect(createNodeLocatorId(null, toNodeId(rawId))).toBeNull()
-        expect(createLeafNodeLocatorId(null, rawId)).toBe(rawId)
-      })
-
-      it('still rejects a colon-bearing id when it really is subgraph-nested', () => {
-        // There is no subgraph UUID to disambiguate a colon-bearing id from
-        // in the root-level case, but a node that IS scoped to a subgraph
-        // still goes through the strict, delimiter-aware path.
-        const rawId = 'insert:abc123:root:node:5'
-        expect(createLeafNodeLocatorId(validUuid, rawId)).toBeNull()
-      })
-
-      it('returns null for an empty id', () => {
-        expect(createLeafNodeLocatorId(null, '')).toBeNull()
-      })
+      it.for(['~subgraph:not-a-uuid:x', `~subgraph:${validUuid}`, '~root:%ZZ'])(
+        'rejects malformed encoded locator %s',
+        (locatorId) => {
+          expect(parseNodeLocatorId(locatorId)).toBeNull()
+        }
+      )
     })
   })
 

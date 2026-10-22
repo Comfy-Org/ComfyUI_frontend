@@ -9,7 +9,7 @@ import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
@@ -1694,6 +1694,73 @@ describe('errorMessageResolver', () => {
       displayMessage: 'Import a model, or open the node to replace it.',
       toastTitle: "sdxl.safetensors isn't available on Cloud",
       toastMessage: "This model isn't supported. Choose a different one."
+    })
+  })
+
+  it('names the deployment the editor runs on instead of Cloud in missing node copy', () => {
+    const onDeployment = { isCloud: true, deploymentLabel: 'Studio Build v2' }
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: [missingNodeType('FooNode', '7', 'foo-pack')],
+        count: 1,
+        ...onDeployment
+      })
+    ).toEqual({
+      catalogId: 'missing_node',
+      displayTitle: 'Missing Node Packs',
+      displayMessage:
+        "These nodes aren't on Studio Build v2. Replace them, or pick a deployment that has them.",
+      toastTitle: "FooNode isn't on Studio Build v2",
+      toastMessage: 'Replace this node, or pick a deployment that has it.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: [
+          missingNodeType('FooNode', '7', 'foo-pack'),
+          missingNodeType('BarNode', '9', 'bar-pack')
+        ],
+        count: 2,
+        ...onDeployment
+      })
+    ).toMatchObject({
+      toastTitle: "Nodes aren't on Studio Build v2",
+      toastMessage: 'Replace these nodes, or pick a deployment that has them.'
+    })
+  })
+
+  it('names the deployment the editor runs on instead of Cloud in missing model copy', () => {
+    const onDeployment = { isCloud: true, deploymentLabel: 'Studio Build v2' }
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: missingModelGroups('sdxl.safetensors'),
+        count: 1,
+        ...onDeployment
+      })
+    ).toEqual({
+      catalogId: 'missing_model',
+      displayTitle: 'Missing Models',
+      displayMessage:
+        "These models aren't on Studio Build v2. Open the node to choose one it has.",
+      toastTitle: "sdxl.safetensors isn't on Studio Build v2",
+      toastMessage:
+        'Choose a different model, or pick a deployment that has it.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: missingModelGroups('sdxl.safetensors', 'vae.safetensors'),
+        count: 2,
+        ...onDeployment
+      })
+    ).toMatchObject({
+      toastTitle: "Models aren't on Studio Build v2",
+      toastMessage:
+        'Choose different models, or pick a deployment that has them.'
     })
   })
 

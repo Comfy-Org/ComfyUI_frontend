@@ -47,8 +47,8 @@ const containerClasses = computed(() => {
   // Variant styles
   const variantClasses = {
     default: cn(
-      hasBackground && 'bg-modal-card-background',
-      hasBorder && 'border border-border-default',
+      hasBackground && 'bg-secondary',
+      hasBorder && 'border border-border',
       hasShadow && 'shadow-sm',
       hasCursor && 'cursor-pointer'
     ),
@@ -57,9 +57,9 @@ const containerClasses = computed(() => {
       'p-2 transition-colors duration-200'
     ),
     outline: cn(
-      hasBorder && 'border-2 border-border-subtle',
+      hasBorder && 'border-2 border-border/50',
       hasCursor && 'cursor-pointer',
-      'transition-colors hover:border-border-subtle/50'
+      'transition-colors hover:border-border/25'
     )
   }
 

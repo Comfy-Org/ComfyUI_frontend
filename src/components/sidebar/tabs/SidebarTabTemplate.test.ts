@@ -16,7 +16,7 @@ const i18n = createI18n({
 function renderTemplate(closable?: boolean) {
   return render(SidebarTabTemplate, {
     props: { title: 'Media Assets', closable },
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
 }
 

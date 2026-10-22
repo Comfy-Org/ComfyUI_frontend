@@ -8,7 +8,10 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentWsEvent,
+  PersistedToolCallSummary
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
@@ -18,27 +21,39 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
+// A mocked history row models what the server actually persists, which is
+// the relaxed `PersistedToolCallSummary` shape (see agentApiSchema.ts), not
+// the stricter wire `ToolCallSummary` generated type.
+type MockAgentMessageContent = Omit<
+  NonNullable<AgentMessage['content']>,
+  'tool_calls'
+> & {
+  tool_calls?: PersistedToolCallSummary[]
+}
+type MockAgentMessage = Omit<AgentMessage, 'content'> & {
+  content?: MockAgentMessageContent
+}
+
 export const promptHistoryTest = base.extend<{
   agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
     historyRequestThreadIds: string[]
-    completeLatestTurn: (content: AgentMessage['content']) => void
+    completeLatestTurn: (content: MockAgentMessageContent) => void
   }
 }>({
   agentPanel: async ({ page }, use) => {
     await use(new AgentPanel(page))
   },
-  promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
-    // Workflow selection boots the app before these agent-specific routes.
+  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
-    const messages: AgentMessage[] = []
+    const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const threads: AgentThreadListResponse = {
         threads: threadId
           ? [
@@ -121,7 +136,7 @@ export const promptHistoryTest = base.extend<{
           type: 'agent_message_done',
           data: { message_id: messageId, thread_id: threadId }
         }
-        const socket = await getWebSocket()
+        const socket = await getAgentSocket()
         socket.send(JSON.stringify(done))
       }
     )

@@ -2,6 +2,9 @@
 
 ## Error Handling
 
+- Expected failure is a return value, not a throw. See
+  `docs/guidance/error-handling.md` for the contract shapes, where to catch,
+  and when a throw is still right.
 - User-friendly and actionable messages
 - Proper error propagation
 - Report failures with `reportError()` from `@/platform/telemetry/reportError` —

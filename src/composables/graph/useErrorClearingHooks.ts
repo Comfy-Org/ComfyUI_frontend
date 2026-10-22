@@ -20,7 +20,6 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -29,6 +28,7 @@ import {
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import {
   isMissingMediaCandidateActive,
   isMissingMediaCandidateScopeActive,
@@ -220,7 +220,8 @@ function scanSingleNodeModelsAndTypes(
     rootGraph,
     node,
     assetService.shouldUseWidgetAssetPicker,
-    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType),
+    cloudReleaseModelOptions()
   )
   const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
   if (confirmedModels.length) {
@@ -371,7 +372,7 @@ async function verifyAndAddPendingMedia(
     ])
   )
   try {
-    await verifyMediaCandidates(pending, { isCloud, signal })
+    await verifyMediaCandidates(pending, { signal })
     if (
       signal?.aborted ||
       !rootGraphAtScan ||

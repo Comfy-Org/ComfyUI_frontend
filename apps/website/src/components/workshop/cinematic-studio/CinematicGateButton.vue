@@ -11,13 +11,13 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import { usePersonalWorkspaceSwitch } from '../../../composables/usePersonalWorkspaceSwitch'
-import { useSignInHref } from '../../../composables/useSignInHref'
-import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
-import { leaveForSignIn } from '../../../config/workshop-return'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import { usePersonalWorkspaceSwitch } from '@/composables/usePersonalWorkspaceSwitch'
+import { useSignInHref } from '@/composables/useSignInHref'
+import { requestWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { leaveForSignIn } from '@/config/workshop-return'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const {
   gate,
