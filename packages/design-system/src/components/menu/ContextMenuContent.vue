@@ -12,6 +12,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { menuContentClass } from './menuStyles'
 
+defineOptions({ inheritAttrs: false })
+
 const { class: className, ...restProps } = defineProps<
   ContextMenuContentProps & { class?: HTMLAttributes['class'] }
 >()
@@ -23,7 +25,7 @@ const rootContext = injectContextMenuRootContext()
 <template>
   <ContextMenuPortal :key="Number(rootContext.open.value)">
     <ContextMenuContent
-      v-bind="forwarded"
+      v-bind="{ ...forwarded, ...$attrs }"
       :class="cn(menuContentClass, className)"
     >
       <slot />

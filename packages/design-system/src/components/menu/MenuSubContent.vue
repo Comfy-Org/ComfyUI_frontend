@@ -9,7 +9,7 @@ import {
   useForwardPropsEmits
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { inject, ref } from 'vue'
+import { inject } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -32,7 +32,8 @@ const {
 >()
 const emits = defineEmits<DropdownMenuSubContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
-const open = inject(menuSubOpenKey, ref(false))
+const open = inject(menuSubOpenKey)
+if (!open) throw new Error('MenuSubContent must be rendered inside MenuSub')
 </script>
 
 <template>
