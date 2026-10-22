@@ -7053,10 +7053,13 @@ describe('AgentPanelRoot workflow binding', () => {
           { flush }
         )
 
-        canvasStore.linearMode = true
+        try {
+          canvasStore.linearMode = true
 
-        await waitFor(() => expect(bodies).toHaveLength(1))
-        stopUnmountOnAppMode()
+          await waitFor(() => expect(bodies).toHaveLength(1))
+        } finally {
+          stopUnmountOnAppMode()
+        }
       }
     )
 
