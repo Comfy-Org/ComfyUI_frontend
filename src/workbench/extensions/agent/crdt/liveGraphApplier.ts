@@ -5,7 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
-import { isEqual, isPlainObject } from 'es-toolkit'
+import { isEqual, isPlainObject, omit } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
@@ -133,13 +133,17 @@ const SYNCED_APPEARANCE_FIELDS = [
 
 const AGENT_APPLY_TAGS = { subsystem: 'agent-crdt', layer: 'graph-api' }
 
-interface DocNode {
+type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
-  widgets: Record<string, unknown> | unknown[] | undefined
-  widgetRecord?: Record<string, unknown>
-}
+} & (
+  | {
+      widgets: Record<string, unknown> | unknown[] | undefined
+      widgetRecord?: never
+    }
+  | { widgets?: never; widgetRecord: Record<string, unknown> }
+)
 
 interface DocLink {
   id: LinkId
@@ -337,7 +341,10 @@ function readDocNode(
     order,
     mode
   }
-  return { id, type: serialised.type, serialised, widgets, widgetRecord }
+  const node = { id, type: serialised.type, serialised }
+  return widgetRecord === undefined
+    ? { ...node, widgets }
+    : { ...node, widgetRecord }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
@@ -820,7 +827,8 @@ export class LiveGraphApplier {
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgetRecord ?? docNode.widgets, mode)
+      if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
+      else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
@@ -958,7 +966,11 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
-    const widgets = docNode.widgetRecord ?? docNode.widgets
+    if (docNode.widgetRecord) {
+      restoreWidgetRecord(node, docNode.widgetRecord)
+      return
+    }
+    const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
       this.applyWidgets(node, widgets, mode)
       return
@@ -1504,6 +1516,22 @@ function ordinaryWidgetEntries(
     widget.name,
     widgets[index]
   ])
+}
+
+function restoreWidgetRecord(
+  node: LGraphNode,
+  record: Record<string, unknown>
+): void {
+  const widgets_values = record as unknown as WidgetValue[]
+  if (node.has_errors) {
+    const snapshot = node.last_serialization
+    if (snapshot) node.last_serialization = { ...snapshot, widgets_values }
+    return
+  }
+  node.configure({
+    ...omit(node.serialize(), ['widgets_values_named']),
+    widgets_values
+  })
 }
 
 /**
