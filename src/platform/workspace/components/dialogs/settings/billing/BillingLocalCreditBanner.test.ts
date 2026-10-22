@@ -8,19 +8,17 @@ import { createI18n } from 'vue-i18n'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useTelemetry } from '@/platform/telemetry'
-import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { useAutoTopUpBannerKind } from '@/platform/workspace/composables/useAutoTopUpBannerKind'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
 
+const track = vi.fn()
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -28,13 +26,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/workspace/composables/usePausedBanner'))
-vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
-    `https://platform.test${path}?correlation_id=${correlationId}`
-}))
+vi.mock(import('@/platform/workspace/composables/useAutoTopUpBannerKind'))
+vi.mock(import('@/platform/workspace/composables/usePlatformHandoff'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
@@ -65,29 +58,14 @@ function arrange(options: {
   topUpDenial?: string
   canManageBilling?: boolean
   canManageSubscription?: boolean
-  canAccessSubscriptionFeatures?: boolean
-  isPaused?: boolean
-  autoTopUpEnabled?: boolean
-  canManageAutoTopUp?: boolean
-  autoReload?: Pick<AutoReloadSettings, 'status' | 'disabled_reason'>
+  autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
 }) {
-  vi.mocked(usePausedBanner).mockReturnValue({
-    isPaused: computed(() => options.isPaused ?? false)
+  vi.mocked(usePlatformHandoff).mockReturnValue({
+    href: computed(() => 'https://platform.test/profile/billing'),
+    track
   })
-  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
-    options.autoTopUpEnabled ?? true
-  useBillingCapabilities().canManageAutoTopUp = computed(() =>
-    receiveServerFact(
-      'can_manage_auto_top_up',
-      options.canManageAutoTopUp ?? true
-    )
-  )
-  vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(
-    fromPartial({
-      status: 'on',
-      disabled_reason: null,
-      ...options.autoReload
-    })
+  vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
+    computed(() => options.autoTopUp ?? null)
   )
   distribution.isCloud = options.isCloud ?? false
   vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled =
@@ -100,10 +78,7 @@ function arrange(options: {
       balance: computed(() => balance.value),
       isTeamPlan: computed(() => options.isTeamPlan ?? false),
       renewalDate: computed(() => options.renewalDate ?? null),
-      billingStatus: computed(() => 'paid' as const),
-      canAccessSubscriptionFeatures: computed(
-        () => options.canAccessSubscriptionFeatures ?? true
-      )
+      billingStatus: computed(() => 'paid' as const)
     })
   )
   useBillingCapabilities().canTopUp = computed(() => options.canTopUp ?? true)
@@ -354,139 +329,55 @@ describe('BillingLocalCreditBanner', () => {
     )
   })
 
-  describe('auto top-up banners', () => {
-    const FAILED_BODY =
-      "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
-    const OFF_BODY =
-      'Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on.'
+  it.for([
+    { isCloud: false, kind: 'autoTopUpFailed', title: 'Auto top-up failed' },
+    { isCloud: false, kind: 'autoTopUpOff', title: 'Auto top-up turned off' },
+    { isCloud: true, kind: 'autoTopUpFailed', title: 'Auto top-up failed' },
+    { isCloud: true, kind: 'autoTopUpOff', title: 'Auto top-up turned off' }
+  ] as const)('shows $kind on cloud=$isCloud', ({ isCloud, kind, title }) => {
+    arrange({ isCloud, autoTopUp: kind })
 
-    it.for([
-      {
-        name: 'failed on local',
-        autoReload: { status: 'failed' as const, disabled_reason: null },
-        title: 'Auto top-up failed',
-        body: FAILED_BODY
-      },
-      {
-        name: 'turned off on local',
-        autoReload: {
-          status: 'failed' as const,
-          disabled_reason: 'consecutive_declines'
-        },
-        title: 'Auto top-up turned off',
-        body: OFF_BODY
-      },
-      {
-        name: 'failed on cloud',
-        isCloud: true,
-        autoReload: { status: 'failed' as const, disabled_reason: null },
-        title: 'Auto top-up failed',
-        body: FAILED_BODY
-      },
-      {
-        name: 'turned off on cloud',
-        isCloud: true,
-        autoReload: {
-          status: 'failed' as const,
-          disabled_reason: 'consecutive_declines'
-        },
-        title: 'Auto top-up turned off',
-        body: OFF_BODY
-      }
-    ])('shows $name with its copy and Update payment', async (row) => {
-      arrange({ isCloud: row.isCloud, autoReload: row.autoReload })
-
-      const banner = await screen.findByTestId('billing-local-credit-banner')
-      expect(banner).toHaveTextContent(row.title)
-      expect(banner).toHaveTextContent(row.body)
-      expect(
-        screen.getAllByRole('link').map((link) => link.textContent.trim())
-      ).toEqual(['Update payment'])
-      expect(
-        screen.queryByRole('button', { name: 'Dismiss' })
-      ).not.toBeInTheDocument()
-    })
-
-    it.for([
-      { name: 'a member', canManageAutoTopUp: false },
-      { name: 'the flag off', autoTopUpEnabled: false },
-      { name: 'cloud without an active plan', isCloud: true, canAccess: false },
-      { name: 'a paused workspace', isCloud: true, isPaused: true }
-    ])('shows nothing for $name', async (row) => {
-      arrange({
-        isCloud: row.isCloud,
-        canManageAutoTopUp: row.canManageAutoTopUp,
-        autoTopUpEnabled: row.autoTopUpEnabled,
-        canAccessSubscriptionFeatures: row.canAccess,
-        isPaused: row.isPaused,
-        autoReload: { status: 'failed', disabled_reason: null }
-      })
-      await nextTick()
-      await nextTick()
-
-      expect(
-        screen.queryByTestId('billing-local-credit-banner')
-      ).not.toBeInTheDocument()
-    })
-
-    it.for(['on_hold', 'paused_by_budget', 'on', 'off'] as const)(
-      'shows nothing for status %s',
-      async (status) => {
-        arrange({ autoReload: { status, disabled_reason: null } })
-        await nextTick()
-        await nextTick()
-
-        expect(
-          screen.queryByTestId('billing-local-credit-banner')
-        ).not.toBeInTheDocument()
-      }
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
+      title
     )
+  })
 
-    it('ranks auto top-up above out of credits and low credits on local', async () => {
-      arrange({
-        subscription: { ...personalSubscription, hasFunds: false },
-        balance: { amountMicros: 500, currency: 'usd', lowBalance: true },
-        autoReload: { status: 'failed', disabled_reason: null }
-      })
-
-      const banner = await screen.findByTestId('billing-local-credit-banner')
-      await vi.waitFor(() =>
-        expect(banner).toHaveTextContent('Auto top-up failed')
-      )
-      expect(banner).not.toHaveTextContent('Out of credits')
-      expect(banner).not.toHaveTextContent('Credits are low')
+  it('ranks auto top-up above out of credits and low credits', () => {
+    arrange({
+      autoTopUp: 'autoTopUpFailed',
+      subscription: { ...personalSubscription, hasFunds: false },
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    it('shows out of credits to a member while the owner-only banner is hidden', async () => {
-      arrange({
-        canManageAutoTopUp: false,
-        subscription: { ...personalSubscription, hasFunds: false },
-        autoReload: { status: 'failed', disabled_reason: null }
-      })
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('billing-local-credit-banner')
+    ).not.toBeInTheDocument()
+  })
 
-      expect(
-        await screen.findByTestId('billing-local-credit-banner')
-      ).toHaveTextContent('Out of credits')
+  it('shows no auto top-up banner off the unified billing flag on local', () => {
+    arrange({ unified: false, autoTopUp: 'autoTopUpFailed' })
+
+    expect(
+      screen.queryByTestId('billing-auto-top-up-banner')
+    ).not.toBeInTheDocument()
+  })
+
+  it('hands off the Update payment link to the platform billing page', async () => {
+    arrange({ autoTopUp: 'autoTopUpFailed' })
+    const link = screen.getByRole('link', { name: 'Update payment' })
+    link.addEventListener('click', (event) => event.preventDefault())
+
+    await userEvent.click(link)
+
+    expect(link).toHaveAttribute(
+      'href',
+      'https://platform.test/profile/billing'
+    )
+    expect(usePlatformHandoff).toHaveBeenCalledWith('/profile/billing', {
+      target: 'auto_top_up',
+      action: 'update_payment'
     })
-
-    it('hands off to the platform billing page with auto top-up telemetry', async () => {
-      arrange({ autoReload: { status: 'failed', disabled_reason: null } })
-      const link = await screen.findByRole('link', { name: 'Update payment' })
-      link.addEventListener('click', (event) => event.preventDefault())
-
-      await userEvent.click(link)
-
-      expect(link.getAttribute('href')).toMatch(
-        /^https:\/\/platform\.test\/profile\/billing\?correlation_id=/
-      )
-      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          operation: 'platform_handoff',
-          stage: 'opened',
-          target: 'auto_top_up',
-          action: 'update_payment'
-        })
-      )
-    })
+    expect(track).toHaveBeenCalled()
   })
 })

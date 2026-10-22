@@ -17,6 +17,25 @@ type AutoTopUpCardState =
   | { kind: 'unavailable' }
   | { kind: 'loaded'; settings: AutoReloadSettings }
 
+function reportCardViewed(status: () => AutoTopUpCardStatus | undefined) {
+  let reportedStatus: AutoTopUpCardStatus | undefined
+
+  watch(
+    status,
+    (current) => {
+      if (!current || current === reportedStatus) return
+      reportedStatus = current
+      useTelemetry()?.trackBillingEvent({
+        operation: 'auto_top_up_card',
+        stage: 'viewed',
+        outcome: 'pending',
+        status: current
+      })
+    },
+    { immediate: true }
+  )
+}
+
 function useBillingAutoTopUpCardInternal(
   visible: MaybeRefOrGetter<boolean> = true,
   enabled: MaybeRefOrGetter<boolean> = true
@@ -46,27 +65,12 @@ function useBillingAutoTopUpCardInternal(
     return read.isLoading.value ? { kind: 'loading' } : { kind: 'unavailable' }
   })
 
-  let reportedStatus: AutoTopUpCardStatus | undefined
-
-  watch(
-    () => {
-      const current = state.value
-      return toValue(visible) && read.isReady.value && current.kind === 'loaded'
-        ? current.settings.status
-        : undefined
-    },
-    (status) => {
-      if (!status || status === reportedStatus) return
-      reportedStatus = status
-      useTelemetry()?.trackBillingEvent({
-        operation: 'auto_top_up_card',
-        stage: 'viewed',
-        outcome: 'pending',
-        status
-      })
-    },
-    { immediate: true }
-  )
+  reportCardViewed(() => {
+    const current = state.value
+    return toValue(visible) && read.isReady.value && current.kind === 'loaded'
+      ? current.settings.status
+      : undefined
+  })
 
   async function retry() {
     await read.execute()
