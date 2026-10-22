@@ -371,7 +371,6 @@ describe('fetchJobs', () => {
     })
 
     it('returns undefined for invalid workflow and logs warning', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const jobDetail = {
         ...createMockJob('job1', 'completed'),
         workflow: {
@@ -386,11 +385,10 @@ describe('fetchJobs', () => {
       const workflow = await extractWorkflow(jobDetail)
 
       expect(workflow).toBeUndefined()
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         '[extractWorkflow] Workflow validation failed:',
         expect.any(String)
       )
-      consoleSpy.mockRestore()
     })
   })
 
@@ -677,19 +675,13 @@ describe('fetchJobs', () => {
     })
 
     it('returns empty array and logs the status on non-ok response', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 })
 
       const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(assets).toEqual([])
       expect(complete).toBe(false)
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('404')
-      )
-      consoleWarnSpy.mockRestore()
+      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('404'))
     })
 
     it('accepts an envelope without job_id, offset, limit, or asset created_at', async () => {
@@ -725,20 +717,15 @@ describe('fetchJobs', () => {
     })
 
     it('returns empty array on error', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const { assets, complete } = await fetchJobAssets(mockFetch, 'job1')
 
       expect(assets).toEqual([])
       expect(complete).toBe(false)
-      consoleSpy.mockRestore()
     })
 
     it('stops at the page cap when the server always reports has_more', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const mockFetch = vi.fn().mockImplementation((url: string) => {
         const offset = Number(
           new URL(url, 'http://x').searchParams.get('offset')
@@ -762,16 +749,12 @@ describe('fetchJobs', () => {
       expect(mockFetch).toHaveBeenCalledTimes(20)
       expect(assets).toHaveLength(20)
       expect(complete).toBe(false)
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('20-page cap')
       )
-      consoleWarnSpy.mockRestore()
     })
 
     it('reports incomplete when a later page fails mid-pagination', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -792,13 +775,9 @@ describe('fetchJobs', () => {
 
       expect(assets.map((a) => a.id)).toEqual(['a1'])
       expect(complete).toBe(false)
-      consoleWarnSpy.mockRestore()
     })
 
     it('warns when has_more is true but the page is empty', async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(createAssetsResponse('job1', [], true, 0))
@@ -809,10 +788,9 @@ describe('fetchJobs', () => {
       expect(assets).toEqual([])
       expect(complete).toBe(false)
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('has_more with an empty page')
       )
-      consoleWarnSpy.mockRestore()
     })
   })
 })

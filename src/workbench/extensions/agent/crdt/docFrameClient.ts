@@ -1,7 +1,9 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
 
 import { reportError } from '@/platform/telemetry/reportError'
+
+import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
@@ -353,6 +355,18 @@ function fitsAwarenessBudget(state: Record<string, unknown>): boolean {
   return stateSize !== null && stateSize <= MAX_AWARENESS_STATE_BYTES
 }
 
+type AwarenessStateResult =
+  | { kind: 'present'; state: Record<string, unknown> }
+  | { kind: 'absent' }
+  | { kind: 'invalid' }
+
+function parseAwarenessState(value: unknown): AwarenessStateResult {
+  if (isAbsent(value)) return { kind: 'absent' }
+  const state = parseRecord(value)
+  if (state === null || !fitsAwarenessBudget(state)) return { kind: 'invalid' }
+  return { kind: 'present', state }
+}
+
 const serverFrameParsers: ServerFrameParsers = {
   doc_update: (workflowId, data) => {
     const seq = parseSequence(data.seq)
@@ -422,16 +436,15 @@ const serverFrameParsers: ServerFrameParsers = {
       : null,
   awareness: (workflowId, data) => {
     if (typeof data.actor !== 'string' || !isValidActor(data.actor)) return null
-    const state = parseRecord(data.state)
-    if (state === null ? !isAbsent(data.state) : !fitsAwarenessBudget(state))
-      return null
+    const parsed = parseAwarenessState(data.state)
+    if (parsed.kind === 'invalid') return null
     if (!isAbsent(data.expires_at) && !isSequence(data.expires_at)) return null
     return {
       type: 'awareness',
       data: {
         workflowId,
         actor: data.actor,
-        ...(state !== null && { state }),
+        ...(parsed.kind === 'present' && { state: parsed.state }),
         ...(isSequence(data.expires_at) && { expiresAt: data.expires_at })
       }
     }
@@ -465,14 +478,7 @@ export class DocFrameClient extends EventTarget {
   constructor(private readonly transport: DocFrameTransport) {
     super()
     const reportedTypes = new Set<string>()
-    for (const type of [
-      'doc_update',
-      'doc_subscribed',
-      'doc_ops_result',
-      'doc_reset',
-      'doc_reseed_result',
-      'awareness'
-    ]) {
+    for (const type of SERVER_DOC_FRAME_TYPES) {
       const listener: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })
@@ -500,7 +506,8 @@ export class DocFrameClient extends EventTarget {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
-      supports_reseed: true
+      supports_reseed: true,
+      schema_version: SCHEMA_VERSION
     })
   }
 
@@ -526,7 +533,7 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the ops frame actually left the transport. */
-  sendOps(workflowId: string, tab: string, ops: DocOp[] | Op[]): boolean {
+  sendOps(workflowId: string, tab: string, ops: readonly DocOp[]): boolean {
     return this.send('doc_ops', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,

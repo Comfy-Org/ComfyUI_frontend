@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -77,7 +77,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
   )
 
   const activeMissingMediaGraphIds = computed<Set<string>>(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return new Set()
     return getActiveGraphNodeIds(
       rootGraph,

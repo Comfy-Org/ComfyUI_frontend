@@ -8,11 +8,11 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
-import type { CloudWorkflowListing } from '../../services/agent/agentRestClient'
-import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { CloudWorkflowListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
@@ -650,7 +650,7 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(vi.mocked(workflows.syncWorkflows)).not.toHaveBeenCalled()
+    expect(workflows.syncWorkflows).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 

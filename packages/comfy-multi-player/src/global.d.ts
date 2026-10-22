@@ -15,5 +15,5 @@ declare global {
    * `doc.ts`) even though the function is present at runtime. Declaring it
    * here removes that dependency on the consumer's resolved types entirely.
    */
-  function structuredClone<T = any>(value: T, options?: { transfer?: readonly unknown[] }): T;
+  function structuredClone<T = unknown>(value: T, options?: { transfer?: readonly unknown[] }): T;
 }

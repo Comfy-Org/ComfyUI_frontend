@@ -17,6 +17,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -29,6 +30,7 @@ import {
   LiteGraph,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
@@ -327,31 +329,57 @@ describe('CanvasPointer lifecycle callbacks', () => {
     expect(onClick).toHaveBeenCalledTimes(3)
   })
 
-  it('completes the click on a pointermove that reports the primary button released', () => {
+  const releasedButtons = [
+    { held: 'no buttons', buttons: 0 },
+    { held: 'another button', buttons: 2 }
+  ]
+
+  it.for(releasedButtons)(
+    'completes the click on a pointermove with $held held',
+    ({ buttons }) => {
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      pointer.clearEventsOnReset = false
+      const onClick = vi.fn()
+      pointer.down(pointerEvent('pointerdown', 10, 20))
+      pointer.onClick = onClick
+      const releasedMove = pointerEvent('pointermove', 10, 20, { buttons })
+
+      pointer.move(releasedMove)
+
+      expect(onClick).toHaveBeenCalledWith(releasedMove)
+      expect(pointer.eUp).toBe(releasedMove)
+    }
+  )
+
+  it.for(releasedButtons)(
+    'ends the drag, not cancels it, on a pointermove with $held held',
+    ({ buttons }) => {
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      const onDragEnd = vi.fn()
+      const onDragCancel = vi.fn()
+      pointer.down(pointerEvent('pointerdown', 10, 20))
+      pointer.onDragEnd = onDragEnd
+      pointer.onDragCancel = onDragCancel
+      pointer.move(pointerEvent('pointermove', 30, 40))
+      const releasedMove = pointerEvent('pointermove', 30, 40, { buttons })
+
+      pointer.move(releasedMove)
+
+      expect(onDragEnd).toHaveBeenCalledWith(releasedMove)
+      expect(onDragCancel).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps the recorded release when idle hover moves follow it', () => {
     const pointer = new CanvasPointer(document.createElement('canvas'))
     pointer.clearEventsOnReset = false
-    const onClick = vi.fn()
     pointer.down(pointerEvent('pointerdown', 10, 20))
-    pointer.onClick = onClick
-    const releasedMove = pointerEvent('pointermove', 10, 20, { buttons: 2 })
+    const release = pointerEvent('pointerup', 10, 20)
+    pointer.up(release)
 
-    pointer.move(releasedMove)
+    pointer.move(pointerEvent('pointermove', 50, 60, { buttons: 0 }))
 
-    expect(onClick).toHaveBeenCalledWith(releasedMove)
-    expect(pointer.eUp).toBe(releasedMove)
-  })
-
-  it('ends the drag on a pointermove that reports the primary button released', () => {
-    const pointer = new CanvasPointer(document.createElement('canvas'))
-    const onDragEnd = vi.fn()
-    pointer.down(pointerEvent('pointerdown', 10, 20))
-    pointer.onDragEnd = onDragEnd
-    pointer.move(pointerEvent('pointermove', 30, 40))
-    const releasedMove = pointerEvent('pointermove', 30, 40, { buttons: 2 })
-
-    pointer.move(releasedMove)
-
-    expect(onDragEnd).toHaveBeenCalledWith(releasedMove)
+    expect(pointer.eUp).toBe(release)
   })
 })
 
@@ -376,6 +404,43 @@ describe('LGraphCanvas pointer gestures', () => {
   })
 
   describe('node', () => {
+    it.for([
+      {
+        click: 'a plain click replacing the selection',
+        modifiers: {},
+        preselect: ['B'],
+        emitted: [['A']]
+      },
+      {
+        click: 'a shift click adding a node',
+        modifiers: { shiftKey: true },
+        preselect: ['B'],
+        emitted: [['A', 'B']]
+      },
+      {
+        click: 'a ctrl click removing a node',
+        modifiers: { ctrlKey: true },
+        preselect: ['A', 'B'],
+        emitted: [['B']]
+      }
+    ])(
+      '$click reports these onSelectionChange payloads',
+      ({ modifiers, preselect, emitted }) => {
+        const byTitle: Record<string, LGraphNode> = { A: a, B: b }
+        canvas.selectItems(preselect.map((title) => byTitle[title]))
+        const reported: Positionable[][] = []
+        canvas.onSelectionChange = (selected) => {
+          reported.push(Object.values(selected))
+        }
+
+        gesture.click(A_BODY, modifiers)
+
+        expect(reported).toEqual(
+          emitted.map((titles) => titles.map((title) => byTitle[title]))
+        )
+      }
+    )
+
     it('click selects on release without moving', () => {
       gesture.press(A_BODY)
       expect(selectedTitles(canvas)).toEqual([])
@@ -701,6 +766,101 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(selectedTitles(canvas)).toEqual([])
       expect(canvas.resizingGroup).toBeNull()
     })
+
+    it('movement within the drift threshold does not resize the group', () => {
+      gesture.press(G_RESIZE)
+      gesture.move(shifted(G_RESIZE, [4, 3]))
+      expect([...group.size]).toEqual([500, 300])
+      gesture.release(shifted(G_RESIZE, [4, 3]))
+
+      expect([...group.size]).toEqual([500, 300])
+    })
+  })
+
+  describe('slot click', () => {
+    function connectTwoOutputLinks() {
+      const c = addNode(graph, 'C', 300, 200)
+      a.addOutput('out', '*')
+      b.addInput('in', '*')
+      c.addInput('in', '*')
+      const links = [a.connect(0, b, 0), a.connect(0, c, 0)]
+      for (const node of [a, b, c]) {
+        node._setConcreteSlots()
+        node.arrange()
+        node.updateArea()
+      }
+      return links.map((link) => {
+        assert(link)
+        return link.id
+      })
+    }
+
+    it.for([
+      { slot: 'output', point: () => a.getOutputPos(0), expected: [0, 1] },
+      { slot: 'input', point: () => b.getInputPos(0), expected: [0] }
+    ])(
+      'clicking an $slot selects its links and clears the canvas selection',
+      ({ point, expected }) => {
+        const linkIds = connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point())
+
+        expect(getSelectedLinkIds(graph)).toEqual(
+          expected.map((index) => linkIds[index])
+        )
+        expect(selectedTitles(canvas)).toEqual([])
+      }
+    )
+
+    it.for([
+      {
+        name: 'Shift-click on an input',
+        point: () => b.getInputPos(0),
+        modifiers: { shiftKey: true }
+      },
+      {
+        name: 'Ctrl-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { ctrlKey: true }
+      },
+      {
+        name: 'Meta-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { metaKey: true }
+      }
+    ])(
+      'a $name keeps the canvas selection and selects no links',
+      ({ point, modifiers }) => {
+        LiteGraph.leftMouseClickBehavior = 'select'
+        connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point(), modifiers)
+
+        expect(getSelectedLinkIds(graph)).toEqual([])
+        expect(selectedTitles(canvas)).toEqual(['B'])
+      }
+    )
+
+    it('dragging from an output selects no links', () => {
+      connectTwoOutputLinks()
+
+      gesture.drag(a.getOutputPos(0), FAR)
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+    })
+
+    it('clicking a slot without links keeps the canvas selection', () => {
+      a.addOutput('out', '*')
+      a.updateArea()
+      canvas.selectItems([b])
+
+      gesture.click(a.getOutputPos(0))
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+      expect(selectedTitles(canvas)).toEqual(['B'])
+    })
   })
 
   describe('reroute', () => {
@@ -826,6 +986,16 @@ describe('LGraphCanvas pointer gestures', () => {
         expect(canvas.ds.offset).toEqual([0, 0])
       })
 
+      it('live selection ignores movement within the drift threshold', () => {
+        canvas.liveSelection = true
+        canvas.select(a)
+
+        gesture.press([5, 5])
+        gesture.move([9, 8])
+
+        expect(selectedTitles(canvas)).toEqual(['A'])
+      })
+
       it('cancel discards the rectangle and the selection change', () => {
         gesture.press([5, 5])
         gesture.move([140, 110])
@@ -929,6 +1099,19 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).toContain('canvas.onNodeMoved')
     })
 
+    it('movement within the drift threshold does not resize the node or open an undo transaction', () => {
+      const beforeChange = vi.spyOn(graph, 'beforeChange')
+      const size = [...a.size]
+      const resizeHandle: Point = [119, 99]
+      gesture.press(resizeHandle)
+      gesture.move(shifted(resizeHandle, [4, 3]))
+      expect([...a.size]).toEqual(size)
+      gesture.release(shifted(resizeHandle, [4, 3]))
+
+      expect([...a.size]).toEqual(size)
+      expect(beforeChange).not.toHaveBeenCalled()
+    })
+
     it('lost pointer capture finalizes an interrupted resize transaction', () => {
       const beforeChange = vi.spyOn(graph, 'beforeChange')
       const afterChange = vi.spyOn(graph, 'afterChange')
@@ -980,7 +1163,6 @@ describe('LGraphCanvas pointer gestures', () => {
     })
 
     it('unbinding still unbinds when drag finalization throws', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       canvas.onNodeMoved = () => {
         throw new Error('finalization failed')
       }
@@ -990,7 +1172,7 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(() => canvas.unbindEvents()).toThrow('finalization failed')
 
       canvas.bindEvents()
-      expect(warn).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
     })
   })
 

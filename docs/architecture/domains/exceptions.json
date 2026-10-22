@@ -1,0 +1,34 @@
+{
+  "exceptions": [
+    {
+      "id": "DDD-EX-004",
+      "owner": "@Comfy-Org/comfy_frontend_devs",
+      "rationale": "Existing layer-rule suppressions have not yet been assigned individual exception identifiers.",
+      "sunset": "2026-12-31",
+      "removalCriteria": "Remove each suppression or replace it with a ledger-backed architecture-exception identifier.",
+      "exactFingerprints": [
+        "anonymous-suppression:src/base/common/downloadUtil.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/base/common/downloadUtil.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/lib/litegraph/src/LGraphCanvas.slotHitDetection.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/lib/litegraph/src/canvas/getCanvasContextMenuTarget.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/missingMedia/missingMediaStore.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/missingModel/missingModelStore.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/settings/composables/useLitegraphSettings.reactiveEdge.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/settings/composables/useLitegraphSettings.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/settings/composables/useLitegraphSettings.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/core/services/workflowService.insertWorkflow.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/core/services/workflowService.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/core/services/workflowService.test.ts:comfy/no-restricted-paths#2",
+        "anonymous-suppression:src/platform/workflow/core/services/workflowService.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/management/stores/workflowStore.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/templates/composables/useTemplateUrlLoader.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/platform/workflow/templates/composables/useTemplateUrlLoader.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/workbench/eventHelpers.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.test.ts:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#1",
+        "anonymous-suppression:src/workbench/extensions/agent/AgentPanelRoot.vue:comfy/no-restricted-paths#2",
+        "anonymous-suppression:src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts:comfy/no-restricted-paths#1"
+      ]
+    }
+  ]
+}

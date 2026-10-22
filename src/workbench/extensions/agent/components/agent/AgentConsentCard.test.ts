@@ -9,7 +9,6 @@ import AgentConsentCard from './AgentConsentCard.vue'
 
 const props = {
   title: 'Meet Comfy Agent',
-  titleId: 'agent-consent',
   paragraphs: ['First paragraph.', 'Second paragraph.']
 }
 
@@ -26,10 +25,9 @@ describe('AgentConsentCard', () => {
   it('labels the supplied copy for its parent dialog', () => {
     renderCard()
 
-    expect(screen.getByRole('heading', { name: props.title })).toHaveAttribute(
-      'id',
-      props.titleId
-    )
+    expect(
+      screen.getByRole('heading', { name: props.title })
+    ).toBeInTheDocument()
     for (const paragraph of props.paragraphs) {
       expect(screen.getByText(paragraph)).toBeInTheDocument()
     }

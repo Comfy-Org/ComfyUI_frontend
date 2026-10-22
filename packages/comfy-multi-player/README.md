@@ -377,7 +377,7 @@ ADR-032 and schema Amendment A21.
 | `disconnect` | `link_id`, `to_node`, `to_slot`; claims the same concrete input register as `connect` and removes the winning slot occupant | yes |
 | `set_widget` | `node_id`, `widget` (name, never index), `value`, optional `old`; an interior write adds `path` AND `inner_widget` together (`InteriorSetWidgetOp`); a promoted HOST write adds `promoted: {value_index, instance_path, host_widgets_values}` instead — a positional write into a subgraph instance's opaque array (schema Amendment A15) | yes |
 | `set_node_field` | `node_id`, `field` (one of `title`, `mode`, `flags.collapsed`, `flags.pinned` — exported as `WRITABLE_NODE_FIELDS`), and a field-typed `value`: string for `title`, non-negative integer for `mode`, boolean for flags, or `null` to delete. One LWW register per `(node lifetime, field)`, so two fields of one node never contend and neither disturbs that node's widget stamps. Package-local and provisional (ADR-032) | yes |
-| `delete_node` | `node_id`, `removed_links` | yes |
+| `delete_node` | `node_id`, `removed_links`; an interior delete also carries a non-empty instance `path` and optional `container_incarnation` | yes |
 | `clear` | `removed_nodes` | no |
 | `insert_workflow` | `workflow` containing required raw-ID `nodes` plus optional `links`, `groups`, and `definitions`; the applier remaps IDs deterministically from `op_id` | no |
 | `reset_doc` | see [open questions](docs/api-contract-proposal.md) — currently rejected `op_deferred` by this package | no |
@@ -783,4 +783,5 @@ before building against this package.
 
 ## License
 
-GPL-3.0-only. See [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE). Releases up to and including 0.3.10 were
+published under GPL-3.0-only; later releases are MIT.

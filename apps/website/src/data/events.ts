@@ -101,11 +101,6 @@ function eventVideo(
   }
 }
 
-const launchesHref: LocalizedText = {
-  en: localizeHref('/launches/', 'en'),
-  'zh-CN': localizeHref('/launches/', 'zh-CN')
-}
-
 export function youtubeWatchHref(videoId: string): LocalizedText {
   const href = `https://www.youtube.com/watch?v=${videoId}`
   return { en: href, 'zh-CN': href }
@@ -460,23 +455,22 @@ const events: readonly ComfyEvent[] = [
     category: 'meetup',
     organizer: 'partner',
     coords: { lat: 37.7749, lng: -122.4194 },
-    // TODO: start time and venue are not set (luma.com is unreachable from
-    // this session); add a time and endDateTime from the Luma page.
     title: {
-      en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
-      'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+      en: 'Open Source Higgsfield: ComfyUI Dev Platform Build Night',
+      'zh-CN': '开源版 Higgsfield：ComfyUI 开发者平台创作之夜'
     },
     description: {
-      en: 'An in-person build night in San Francisco for the ComfyUI Dev Platform Challenge. Register on Luma.',
+      en: 'An in-person build night at Frontier Tower in San Francisco for open source builders and creators on the ComfyUI Dev Platform. Register on Luma.',
       'zh-CN':
-        '在旧金山举办的线下创作之夜，围绕 ComfyUI 开发者平台挑战赛展开。请通过 Luma 报名。'
+        '在旧金山 Frontier Tower 举办的线下创作之夜，面向使用 ComfyUI 开发者平台的开源开发者与创作者。请通过 Luma 报名。'
     },
     location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
     dateLabel: {
-      en: 'October 13, 2026 · San Francisco',
-      'zh-CN': '2026年10月13日 · 旧金山'
+      en: 'October 28, 2026 · 3-10 PM PT',
+      'zh-CN': '2026年10月28日 · 下午3点至10点（PT）'
     },
-    startDateTime: '2026-10-13',
+    startDateTime: '2026-10-28T15:00:00-07:00',
+    endDateTime: '2026-10-28T22:00:00-07:00',
     link: {
       href: {
         en: 'https://luma.com/5mydmvu6',
@@ -491,8 +485,8 @@ const events: readonly ComfyEvent[] = [
       type: 'image',
       src: 'https://github.com/user-attachments/assets/f58091d4-909e-44e2-b0bc-5499a8f2b468',
       alt: {
-        en: 'Open Call: ComfyUI Dev Platform Challenge Build Night',
-        'zh-CN': '公开征集：ComfyUI 开发者平台挑战赛创作之夜'
+        en: 'Open Source Higgsfield: ComfyUI Dev Platform Build Night',
+        'zh-CN': '开源版 Higgsfield：ComfyUI 开发者平台创作之夜'
       }
     }
   },
@@ -623,11 +617,12 @@ const events: readonly ComfyEvent[] = [
     id: 'machine-cinema-wip-salon',
     category: 'meetup',
     organizer: 'partner',
-    // TODO: date and time are still a best guess (luma.com is unreachable
-    // from this session) — confirm against https://luma.com/machine-tclv
-    // before merging. Location confirmed as Los Angeles from Allyson's
-    // Luma link-preview screenshot on this PR (comment #5819753977, whose
-    // title reads "Machine Cinema LA - Work in Progress Salon").
+    // TODO: the date (September 30, 2026) is confirmed by the requester, but
+    // the 6-9 PM PT time is still a best guess (luma.com is unreachable from
+    // this session) — confirm against https://luma.com/machine-tclv.
+    // Location confirmed as Los Angeles from Allyson's Luma link-preview
+    // screenshot on this PR (comment #5819753977, whose title reads "Machine
+    // Cinema LA - Work in Progress Salon").
     coords: { lat: 34.0522, lng: -118.2437 },
     title: {
       en: 'Machine Cinema: Work in Progress Salon',
@@ -640,11 +635,11 @@ const events: readonly ComfyEvent[] = [
     },
     location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
     dateLabel: {
-      en: 'October 8, 2026 · 6-9 PM PT',
-      'zh-CN': '2026年10月8日 · 下午6点至9点（PT）'
+      en: 'September 30, 2026 · 6-9 PM PT',
+      'zh-CN': '2026年9月30日 · 下午6点至9点（PT）'
     },
-    startDateTime: '2026-10-08T18:00:00-07:00',
-    endDateTime: '2026-10-08T21:00:00-07:00',
+    startDateTime: '2026-09-30T18:00:00-07:00',
+    endDateTime: '2026-09-30T21:00:00-07:00',
     link: {
       href: {
         en: 'https://luma.com/machine-tclv?lm_source=embed',
@@ -935,7 +930,6 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': '2026年8月5日 · 上午10点（PT）'
     },
     startDateTime: '2026-08-05T10:00:00-07:00',
-    link: { href: launchesHref, newTab: false },
     liveVideoId: '4xS4LOn3CTE',
     featured: {
       order: 4,

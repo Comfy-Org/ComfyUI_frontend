@@ -1,25 +1,25 @@
 ---
-import productWorkflowKeyframes from '@/styles/product-workflow-keyframes.css?raw'
 import WorkflowNode from './WorkflowNode.astro'
-import { productWorkflow as workflow } from './productWorkflow'
+import { productWorkflow } from './productWorkflow'
 import { createWorkflowMotion } from './workflowMotion'
+import type { Locale } from '@/i18n/translations'
+import { tAgent } from './agentTranslations'
 
 interface Props {
   userCursorLabel: string
+  locale: Locale
 }
 
-const { userCursorLabel } = Astro.props
+const { userCursorLabel, locale } = Astro.props
+const workflow = productWorkflow
 const { nodes, width, height, agentRest, userRest } = workflow
 const unit = width / 100
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
-const motion = createWorkflowMotion(workflow)
+const motion = createWorkflowMotion(workflow, { fadeNodes: true })
 const { scene } = motion
 ---
 
-<style
-  is:inline
-  set:html={`${motion.css}\n${productWorkflowKeyframes}`}
-></style>
+<style is:inline set:html={motion.css}></style>
 <div
   style={`--wf-duration:${motion.duration}s;--wf-aspect:${width} / ${height}`}
   class="wf-example"
@@ -66,19 +66,9 @@ const { scene } = motion
             width="23"
             height="26"
           />
-          <span class="wf-user-badge"
-            ><img
-              src={`${imageRoot}/user-left.svg`}
-              alt=""
-              width="14"
-              height="29"
-            /><span><span class="ppformula-text-center">User</span></span
-            ><img
-              src={`${imageRoot}/user-right.svg`}
-              alt=""
-              width="14"
-              height="29"
-          /></span>
+          <span class="wf-user-badge wf-cursor-badge">
+            <span>{tAgent('agentPage.workflow.userTab', locale)}</span>
+          </span>
         </div>
         <div
           style={`--wf-animation:${scene.agentCursor.name};left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw`}
@@ -87,12 +77,21 @@ const { scene } = motion
           aria-label="Comfy Agent"
         >
           <img
-            class="wf-agent-artwork"
-            src={`${imageRoot}/agent-cursor.svg`}
+            class="wf-agent-pointer"
+            src="/images/comfy-agent/agent-pointer.svg"
             alt=""
-            width="459"
-            height="223"
+            width="90"
+            height="100"
           />
+          <span class="wf-agent-badge wf-cursor-badge">
+            <img
+              src="/images/comfy-agent/agent-logo.svg"
+              alt=""
+              width="76"
+              height="87"
+            />
+            <span>{tAgent('agentPage.workflow.agentTab', locale)}</span>
+          </span>
         </div>
       </div>
     </div>

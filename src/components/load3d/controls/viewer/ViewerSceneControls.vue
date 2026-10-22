@@ -13,7 +13,7 @@
         v-model="showGrid"
         type="checkbox"
         name="showGrid"
-        class="size-4 cursor-pointer accent-node-component-surface-highlight"
+        class="size-4 cursor-pointer accent-muted-foreground"
       />
       <label for="showGrid" class="cursor-pointer">
         {{ $t('load3d.showGrid') }}

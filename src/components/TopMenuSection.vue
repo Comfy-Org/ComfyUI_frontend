@@ -73,7 +73,8 @@
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
-                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                :tooltip="t('menu.manageExtensions')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('menu.manageExtensions')"
@@ -82,12 +83,13 @@
                 <i class="icon-[comfy--extensions-blocks] size-4" />
                 <span
                   v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
               <Button
                 v-if="isCloud"
-                v-tooltip.bottom="shareTooltipConfig"
+                :tooltip="t('actionbar.shareTooltip')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
@@ -98,11 +100,12 @@
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
-                  v-tooltip.bottom="rightSidePanelTooltipConfig"
+                  :tooltip="t('rightSidePanel.togglePanel')"
+                  tooltip-side="bottom"
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
+                        'outline-1 outline-destructive'
                     )
                   "
                   variant="secondary"
@@ -112,7 +115,7 @@
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
-                <StatusBadge
+                <Badge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
                   severity="danger"
@@ -177,12 +180,11 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -199,6 +201,7 @@ import {
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -275,12 +278,6 @@ const inlineProgressSummaryTarget = computed(() => {
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
 )
-const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.manageExtensions'))
-)
-const shareTooltipConfig = computed(() =>
-  buildTooltipConfig(t('actionbar.shareTooltip'))
-)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -302,9 +299,6 @@ const showErrorIndicatorOnPanelButton = computed(
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
-const rightSidePanelTooltipConfig = computed(() =>
-  buildTooltipConfig(t('rightSidePanel.togglePanel'))
-)
 
 function openRightSidePanel() {
   useTelemetry()?.trackUiButtonClicked({
@@ -359,7 +353,7 @@ const openCustomNodeManager = async () => {
     return
   }
   try {
-    await managerState.openManager({
+    await useManagerDialog().openManager({
       initialTab: ManagerTab.All,
       showToastOnLegacyError: false
     })

@@ -128,19 +128,27 @@ const BILLING_BALANCE = {
   currency: 'USD'
 } satisfies BillingBalanceResponse
 
+const CURRENT_PLAN = { action: 'none', denied_reason: 'same_plan' } as const
+
 const TEAM_WITH_CREATOR_PLANS = {
   current_plan_slug: 'team_per_credit_annual',
-  plans: [CREATOR_ANNUAL_PLAN]
+  plans: [{ ...CREATOR_ANNUAL_PLAN, action: 'downgrade' }]
 } satisfies BillingPlansResponse
 
 const STANDARD_WITH_CREATOR_PLANS = {
   current_plan_slug: 'standard-annual',
-  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, ...CURRENT_PLAN },
+    { ...CREATOR_ANNUAL_PLAN, action: 'change' }
+  ]
 } satisfies BillingPlansResponse
 
 const CREATOR_WITH_CREATOR_PLANS = {
-  ...STANDARD_WITH_CREATOR_PLANS,
-  current_plan_slug: 'creator-annual'
+  current_plan_slug: 'creator-annual',
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, action: 'downgrade' },
+    { ...CREATOR_ANNUAL_PLAN, ...CURRENT_PLAN }
+  ]
 } satisfies BillingPlansResponse
 
 const TEAM_CREDIT_STOPS = {
@@ -149,32 +157,72 @@ const TEAM_CREDIT_STOPS = {
     {
       id: 'team_200',
       credits: 42_200,
-      monthly: { list_price_cents: 20_000, price_cents: 20_000 },
-      yearly: { list_price_cents: 20_000, price_cents: 20_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000
+      }
     },
     {
       id: 'team_400',
       credits: 84_400,
-      monthly: { list_price_cents: 40_000, price_cents: 39_000 },
-      yearly: { list_price_cents: 40_000, price_cents: 38_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 39_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 38_000
+      }
     },
     {
       id: 'team_700',
       credits: 147_700,
-      monthly: { list_price_cents: 70_000, price_cents: 66_500 },
-      yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 66_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 63_000
+      }
     },
     {
       id: 'team_1400',
       credits: 295_400,
-      monthly: { list_price_cents: 140_000, price_cents: 129_500 },
-      yearly: { list_price_cents: 140_000, price_cents: 119_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 129_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 119_000
+      }
     },
     {
       id: 'team_2500',
       credits: 527_500,
-      monthly: { list_price_cents: 250_000, price_cents: 225_000 },
-      yearly: { list_price_cents: 250_000, price_cents: 200_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 225_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 200_000
+      }
     }
   ]
 } satisfies TeamCreditStops
@@ -575,30 +623,27 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   })
 
   test('keeps an error toast dismissable over the open dialog', async ({
-    page
+    page,
+    toast
   }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
 
     await page.goto(`${APP_URL}/?pricing=1`)
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await page.evaluate((detail) => {
-      window.app!.extensionManager.toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail,
-        life: 30_000
+      window.app!.extensionManager.toast.error('Error', {
+        description: detail,
+        duration: 30_000
       })
     }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
 
-    const toast = page
-      .locator('.p-toast-message')
-      .filter({ hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL })
-    await expect(toast).toBeVisible()
-    // Not getByRole: an open Reka modal marks the toast container aria-hidden,
-    // so the close button is absent from the accessibility tree.
-    await toast.locator('.p-toast-close-button').click()
+    const errorToast = toast.toastErrors.filter({
+      hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL
+    })
+    await expect(errorToast).toBeVisible()
+    await toast.dismiss(errorToast)
 
-    await expect(toast).toHaveCount(0)
+    await expect(errorToast).toHaveCount(0)
     await expect(pricingHeading(page)).toBeVisible()
   })
 
@@ -692,7 +737,8 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   })
 
   test('restores pending checkout when retrying a timed-out operation', async ({
-    page
+    page,
+    toast
   }) => {
     const subscribeRequests: Request[] = []
     const operationPollRequests: Request[] = []
@@ -749,7 +795,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await expect(backButton).toBeEnabled()
     await expect(
-      page.getByText('Subscription verification timed out', { exact: true })
+      toast.withText('Subscription verification timed out')
     ).toBeVisible()
     const pollCountAfterTimeout = operationPollRequests.length
 
@@ -1123,7 +1169,8 @@ test.describe(
       })
 
       test('reconciles status and balance without polling', async ({
-        page
+        page,
+        toast
       }) => {
         await page.goto(`${APP_URL}/?pricing=personal`)
 
@@ -1139,9 +1186,9 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = page
-          .locator('.p-toast-message.p-toast-message-error')
-          .filter({ hasText: 'Failed to change plan' })
+        const blockedPopupToast = toast.toastErrors.filter({
+          hasText: 'Failed to change plan'
+        })
         await expect(blockedPopupToast).toContainText(
           "Couldn't open the payment page — please try again"
         )

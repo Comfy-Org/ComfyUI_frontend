@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import {
@@ -7,7 +7,9 @@ import {
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -24,7 +26,13 @@ describe('useNodeEventHandlers', () => {
     onTestFinished(() => scope.stop())
     const handlers = scope.run(useNodeEventHandlers)
     if (!handlers) throw new Error('handlers require an active scope')
-    return { canvas, first, second, handlers }
+    return { graph, canvas, first, second, handlers }
+  }
+
+  function zIndexOf(graph: LGraph, node: LGraphNode) {
+    const layout = layoutStore.getNodeLayout(graph.rootGraph.id, node.id)
+    assert(layout)
+    return layout.zIndex
   }
 
   function rightClick() {
@@ -39,6 +47,35 @@ describe('useNodeEventHandlers', () => {
 
     expect(selectedTitles(canvas)).toEqual(['First'])
   })
+
+  it.for<{
+    node: string
+    arrange: (canvas: LGraphCanvas, node: LGraphNode) => void
+    raised: boolean
+  }>([
+    { node: 'an unselected node', arrange: () => {}, raised: true },
+    {
+      node: 'a selected node',
+      arrange: (canvas, node) => canvas.select(node),
+      raised: false
+    },
+    {
+      node: 'an unselected pinned node',
+      arrange: (_, node) => node.pin(true),
+      raised: false
+    }
+  ])(
+    'right click on $node puts it above the other node: $raised',
+    async ({ arrange, raised }) => {
+      const { graph, canvas, first, second, handlers } = await setup()
+      arrange(canvas, first)
+      expect(zIndexOf(graph, first)).toBeLessThan(zIndexOf(graph, second))
+
+      handlers.handleNodeRightClick(rightClick(), first.id)
+
+      expect(zIndexOf(graph, first) > zIndexOf(graph, second)).toBe(raised)
+    }
+  )
 
   it('right click on a selected node keeps the multi-selection', async () => {
     const { canvas, first, second, handlers } = await setup()

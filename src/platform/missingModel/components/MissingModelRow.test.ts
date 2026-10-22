@@ -171,7 +171,7 @@ describe('MissingModelRow', () => {
     mockRootGraph.value = null
     mockApiListeners.clear()
     vi.mocked(api.addEventListener).mockImplementation((event, handler) => {
-      if (handler) mockApiListeners.set(event, handler)
+      if (typeof handler === 'function') mockApiListeners.set(event, handler)
     })
     vi.mocked(api.getServerFeature).mockReturnValue(false)
     mockUploadContext.resolver = undefined
@@ -467,7 +467,7 @@ describe('MissingModelRow', () => {
     expect(gatedAccess).toHaveAttribute('rel', 'noopener noreferrer')
 
     gatedAccess.focus()
-    expect(await screen.findByTestId('disclosure-tooltip')).toHaveTextContent(
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
       gatedModelTooltip
     )
     expect(gatedAccess).toHaveAccessibleDescription(gatedModelTooltip)

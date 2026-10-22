@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
 const { state, rowName } = defineProps<{
@@ -25,22 +28,21 @@ function failureLabel(): string {
 
 <template>
   <span class="col-start-3 row-start-1 flex shrink-0 items-center gap-2">
-    <Badge
-      v-tooltip.top="
-        state.reason === 'error'
-          ? {
-              value: t('templateWorkflows.detail.downloadFailedHint'),
-              class: 'template-detail-tooltip'
-            }
-          : undefined
-      "
-      role="status"
-      :aria-label="failureLabel()"
-      severity="danger"
-      variant="compact"
-    >
-      {{ failureLabel() }}
-    </Badge>
+    <Tooltip :disabled="state.reason !== 'error'">
+      <TooltipTrigger as-child>
+        <Badge
+          role="status"
+          :aria-label="failureLabel()"
+          severity="danger"
+          variant="compact"
+        >
+          {{ failureLabel() }}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>
+        {{ t('templateWorkflows.detail.downloadFailedHint') }}
+      </TooltipContent>
+    </Tooltip>
     <span v-if="state.reason === 'error'" :id="hintId" class="sr-only">
       {{ t('templateWorkflows.detail.downloadFailedHint') }}
     </span>
@@ -55,7 +57,7 @@ function failureLabel(): string {
       :aria-describedby="state.reason === 'error' ? hintId : undefined"
       variant="outline"
       size="unset"
-      class="h-6 rounded-md bg-secondary-background px-2 text-xs"
+      class="h-6 bg-secondary px-2 text-xs"
       @click="emit('retry')"
     >
       {{ t('templateWorkflows.detail.retryDownload') }}

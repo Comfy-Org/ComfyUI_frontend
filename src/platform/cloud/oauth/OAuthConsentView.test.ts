@@ -43,6 +43,11 @@ const i18n = createI18n({
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',
+          unverifiedBadge: 'Name not verified',
+          unverifiedNotice:
+            'This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.',
+          unverifiedNoticeNoHost:
+            'This name was provided by whoever registered this app and has not been verified by Comfy.',
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -72,6 +77,7 @@ const challenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Comfy Desktop',
+  client_provenance: 'first_party',
   resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
   client_application_type: 'native',
@@ -106,10 +112,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('loads the consent named in the URL on the session cookie alone, as an SSO callback lands', async () => {
-    const fetchMock = vi.fn<typeof fetch>(
-      async () => new Response(JSON.stringify(challenge), { status: 200 })
-    )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(challenge))
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
@@ -120,7 +123,7 @@ describe('OAuthConsentView', () => {
     render(OAuthConsentView, { global: { plugins: [i18n, router] } })
 
     expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
-    const [url, init] = fetchMock.mock.calls[0]
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(url).toBe(
       `/oauth/authorize?oauth_request_id=${challenge.oauth_request_id}`
     )
@@ -132,6 +135,56 @@ describe('OAuthConsentView', () => {
     renderConsent({ client_display_name: 'Anthropic Verified ✓' })
     expect(screen.getByTestId('client-icon')).toHaveClass(
       'icon-[lucide--app-window]'
+    )
+  })
+
+  it('does not mark a first-party client as unverified', () => {
+    renderConsent()
+    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('client-unverified-notice')
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      case: 'a dynamically registered client',
+      overrides: { client_provenance: 'dynamic' },
+      notice:
+        'This name was provided by whoever registered this app. After you continue, your browser will be sent to chatgpt.com — make sure you recognize it.'
+    },
+    {
+      case: 'a client from a backend that omits provenance',
+      overrides: { client_provenance: undefined },
+      notice:
+        'This name was provided by whoever registered this app. After you continue, your browser will be sent to chatgpt.com — make sure you recognize it.'
+    },
+    {
+      case: 'a dynamically registered client with a loopback redirect',
+      overrides: {
+        client_provenance: 'dynamic',
+        redirect_uri: 'http://127.0.0.1:50632/cb'
+      },
+      notice:
+        'This name was provided by whoever registered this app and has not been verified by Comfy.'
+    }
+  ] satisfies {
+    case: string
+    overrides: Partial<OAuthConsentChallenge>
+    notice: string
+  }[])('marks $case as unverified', ({ overrides, notice }) => {
+    renderConsent({
+      client_display_name: 'ChatGPT Connector',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123',
+      ...overrides
+    })
+
+    expect(screen.getByText('ChatGPT Connector wants access')).toBeVisible()
+    expect(screen.getByTestId('client-unverified')).toHaveTextContent(
+      'Name not verified'
+    )
+    expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
+      notice
     )
   })
 

@@ -37,8 +37,7 @@ describe('ViewerControls', () => {
     render(ViewerControls, {
       props: { node: mockNode },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 
@@ -52,8 +51,7 @@ describe('ViewerControls', () => {
     render(ViewerControls, {
       props: { node: mockNode },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 
@@ -76,8 +74,7 @@ describe('ViewerControls', () => {
     render(ViewerControls, {
       props: { node: mockNode },
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     })
 

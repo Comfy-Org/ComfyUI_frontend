@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkflowReference } from '../types/workflowReference'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { workflowReferenceParts } from './workflowReferenceParts'
 
 describe('workflowReferenceParts', () => {

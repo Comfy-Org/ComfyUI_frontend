@@ -28,7 +28,7 @@ const DialogBodyWithMenu = defineComponent({
   setup: () => () =>
     h(
       Menu,
-      { items },
+      { items, removeLabel: 'Remove' },
       {
         trigger: () => h(Button, null, () => 'Open menu')
       }
@@ -56,9 +56,7 @@ describe('Menu inside a modal Reka dialog', () => {
       title: 'Host dialog',
       component: DialogBodyWithMenu,
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
-        modal: true,
         closable: true
       }
     })

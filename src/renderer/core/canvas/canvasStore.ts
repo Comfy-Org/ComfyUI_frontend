@@ -2,6 +2,7 @@ import { useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
@@ -14,7 +15,6 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -22,6 +22,15 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
+
+let promoteRecommendedWidgets: (subgraphNode: SubgraphNode) => void
+
+/** Called by `promotionUtils` when it loads; it imports this store. */
+export function providePromoteRecommendedWidgets(
+  promote: (subgraphNode: SubgraphNode) => void
+): void {
+  promoteRecommendedWidgets = promote
+}
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -110,11 +119,13 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
   const isPickingNodes = ref(false)
+  const toast = useToast()
 
   function startNodePicking(): void {
     const currentCanvas = canvas.value
     if (!currentCanvas || isPickingNodes.value) return
     isPickingNodes.value = true
+    toast.held = true
     const selected = [...currentCanvas.selectedItems]
     const bounds = createPositionBounds(
       selected.length ? selected : (currentCanvas.graph?.nodes ?? []),
@@ -130,6 +141,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   function stopNodePicking(): undefined {
     if (!isPickingNodes.value) return
     isPickingNodes.value = false
+    toast.held = false
     canvas.value?.deselectAll()
   }
 

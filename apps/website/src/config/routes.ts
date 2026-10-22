@@ -15,9 +15,8 @@ const baseRoutes = {
   pricing: '/pricing/',
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
-  gallery: '/gallery/',
-  launches: '/launches/',
   events: '/events/',
+  eventChallenge: '/open-source-higgsfield/',
   about: '/about/',
   careers: '/careers/',
   customers: '/customers/',
@@ -25,6 +24,7 @@ const baseRoutes = {
   customerVideoSilversideAi: '/customers/videos/silverside-ai/',
   demos: '/demos/',
   learning: '/learning/',
+  vfx: '/solutions/vfx/',
   termsOfService: '/terms-of-service/',
   enterpriseMsa: '/enterprise-msa/',
   privacyPolicy: '/privacy-policy/',
@@ -43,6 +43,8 @@ const baseRoutes = {
   minimaxMusic3: '/minimax-music-3/',
   minimaxLicense: '/minimax/license/',
   minimaxLicenseProfessionalRequest: '/minimax/license/professional-request/',
+  fishAudio: '/fish-audio/',
+  nvidiaVfx: '/nvidia-vfx/',
   flux3: '/flux-3/',
   seedance: '/seedance-2.5/',
   fdct: '/forward-deployed-creatives/',
@@ -53,6 +55,8 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  krea3: '/krea-3/',
+  flux3ImageKlein: '/flux-3-image-klein/',
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
@@ -61,7 +65,8 @@ const baseRoutes = {
   hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
   cinematicStudio: '/hub/apps/cinematic-studio/',
-  reshoot: '/hub/apps/reshoot/'
+  reshoot: '/hub/apps/reshoot/',
+  openjutsu: '/hub/apps/openjutsu/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -89,8 +94,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
-// English only. Every locale links the one catalogue.
+// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot,
+// openjutsu: English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -113,6 +118,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
+  'openjutsu',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])
@@ -128,6 +134,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  '/comfy-agent',
   // Auth surfaces render one page for every locale (copy localizes in the
   // island); a /zh-CN twin does not exist and must not be advertised.
   '/forgot-password',
@@ -207,6 +214,7 @@ export const externalLinks = {
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
+  cloudSignup: 'https://cloud.comfy.org/cloud/signup',
   cloudCta: (content: string) =>
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',

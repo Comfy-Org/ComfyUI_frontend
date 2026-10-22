@@ -1,13 +1,12 @@
 import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({ ensureSessionCookie: vi.fn() })
-}))
+provideEnsureSessionCookie(vi.fn(async () => {}))
 
 const workspace: WorkspaceIdentity = {
   id: 'workspace-123',
@@ -37,22 +36,17 @@ function makeDeps(): LegacyWorkspaceTokenRailDeps {
 }
 
 describe('createLegacyWorkspaceTokenRail', () => {
-  let mockFetch: ReturnType<typeof vi.fn>
-
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          token: 'workspace-token-abc',
-          expires_at: new Date(Date.now() + expiresInMs).toISOString(),
-          workspace: { id: workspace.id, name: workspace.name, type: 'team' },
-          role: 'owner',
-          permissions: ['owner:*']
-        })
-    })
-    vi.stubGlobal('fetch', mockFetch)
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json({
+        token: 'workspace-token-abc',
+        expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+        workspace: { id: workspace.id, name: workspace.name, type: 'team' },
+        role: 'owner',
+        permissions: ['owner:*']
+      })
+    )
   })
 
   it('mints through the identity token and persists the workspace identity', async () => {
@@ -61,7 +55,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
 
     await rail.switchLegacyWorkspace('workspace-123')
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/auth/token'),
       expect.objectContaining({
         headers: expect.objectContaining({
@@ -117,7 +111,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
       await vi.advanceTimersByTimeAsync(expiresInMs)
 
       expect(deps.switchWorkspace).toHaveBeenCalledTimes(refreshes)
-      expect(mockFetch).toHaveBeenCalledOnce()
+      expect(fetch).toHaveBeenCalledOnce()
     }
   )
 })

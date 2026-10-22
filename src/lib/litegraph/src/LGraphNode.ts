@@ -1,3 +1,15 @@
+import type {
+  ExecutableLGraphNode,
+  ExecutionId,
+  LGraph,
+  Subgraph,
+  LGraphCanvas,
+  Reroute,
+  SubgraphNode,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
 import { toValue } from 'vue'
 
 import {
@@ -22,6 +34,12 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
+import type {
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -29,8 +47,9 @@ import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeProperty, NodeState } from '@/types/nodeState'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
@@ -51,12 +70,13 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
+
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
+
+import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
@@ -88,7 +108,7 @@ import {
   runExtensionSerializeHook
 } from './extensionPersistence'
 import { anchorRerouteChain } from './Reroute'
-import type { Reroute, RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { emitNodeFieldWrite } from './graphIntents'
@@ -101,16 +121,10 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  IContextMenuValue,
-  IFoundSlot,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -118,8 +132,17 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
-import { LiteGraph, Subgraph } from './litegraph'
-import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
+import type { IContextMenuValue } from './types/contextMenu'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type { Panel } from './types/panel'
+import { LiteGraph } from './litegraphInstance'
+import { isSubgraph } from './subgraph/subgraphTypeGuards'
+
 import {
   createBounds,
   isInRect,
@@ -134,8 +157,6 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
@@ -151,7 +172,7 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
-import { findFreeSlotOfType } from './utils/collections'
+import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {
   computeLegacyWidgetShadow,
@@ -160,6 +181,7 @@ import {
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
+import { coerceRestoredWidgetValue } from './utils/widget'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -370,6 +392,16 @@ supported callbacks:
 
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
+
+  addDOMWidget<
+    T extends HTMLElement = HTMLElement,
+    V extends object | string = string
+  >(
+    name: string,
+    type: string,
+    element: T,
+    options?: DOMWidgetOptions<V>
+  ): DOMWidget<T, V>
 }
 
 // #endregion Types
@@ -657,7 +689,7 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) =>
           colorOption.color === this.color &&
           colorOption.bgcolor === this.bgcolor
@@ -773,8 +805,50 @@ export class LGraphNode
 
   declare comfyDynamic?: Record<string, object>
   declare comfyClass?: string
+  /**
+   * If the node is a frontend only node and should not be serialized into the prompt.
+   */
   declare isVirtualNode?: boolean
+  /**
+   * @deprecated Lets virtual nodes such as primitives write their values into
+   * the graph before queueing.
+   */
   applyToGraph?(extraLinks?: LLink[]): void
+
+  declare animatedImages?: boolean
+  declare imgs?: HTMLImageElement[]
+  declare images?: ResultItem[]
+  declare videoContainer?: HTMLElement
+  /** Whether the node's preview media is loading */
+  declare isLoading?: boolean
+  declare isUploading?: boolean
+  declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+  /** If true, output images are stored but not rendered below the node */
+  declare hideOutputImages?: boolean
+
+  declare preview?: string[]
+  /** Index of the currently selected image on a multi-image node such as Preview Image */
+  declare imageIndex?: number | null
+  declare imageRects?: Rect[]
+  declare overIndex?: number | null
+  declare pointerDown?: { index: number | null; pos: Point } | null
+  /** @deprecated Image previews size themselves. */
+  setSizeForImage?(force?: boolean): void
+  /** @deprecated Unused */
+  declare inputHeight?: unknown
+
+  /** The y offset of the image preview to the top of the node body. */
+  declare imageOffset?: number
+
+  declare canvasHeight?: number
+  declare index?: number
+  declare runningInternalNodeId?: SerializedNodeId
+
+  /** Used internally for sizing the node during creation */
+  declare _initialMinSize?: { width: number; height: number }
+
+  /** Raw widget values from the last `configure`; litegraph does not read it. */
+  declare widgets_values?: TWidgetValue[]
 
   isSubgraphNode(): this is SubgraphNode {
     return false
@@ -954,6 +1028,32 @@ export class LGraphNode
   setTrigger?(this: LGraphNode, func?: () => void): void
   onDrawBackground?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
   onNodeCreated?(this: LGraphNode): void
+  /**
+   * Callback fired on each node after the graph is configured
+   */
+  onAfterGraphConfigured?(): void
+  onGraphConfigured?(): void
+  /** Called with the node's execution output, which may carry custom keys. */
+  onExecuted?(output: NodeExecutionOutput): void
+  onExecutionStart?(): unknown
+  refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
+  /** Flattens a subgraph node into its executable inner nodes. */
+  getInnerNodes?(
+    nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
+    subgraphNodePath?: readonly SerializedNodeId[],
+    nodes?: ExecutableLGraphNode[],
+    subgraphs?: Set<LGraphNode>
+  ): ExecutableLGraphNode[]
+  recreate?(): Promise<LGraphNode>
+  /** Returns true if this node handles an external drag (file or element). */
+  onDragOver?(e: DragEvent): boolean
+  /** Returns true if this node handled an external drop (file or element). */
+  onDragDrop?(e: DragEvent): Promise<boolean> | boolean
+  convertWidgetToInput?(): boolean
+  /** Callback for pasting an image file into the node */
+  pasteFile?(file: File): void
+  /** Callback for pasting multiple files into the node */
+  pasteFiles?(files: File[]): void
   /**
    * Callback invoked by {@link connect} to override the target slot index.
    * Its return value overrides the target index selection.
@@ -1171,7 +1271,6 @@ export class LGraphNode
     for (const j in info) {
       if (!isNodeCanonicalField(j)) continue
       if (j == 'properties') {
-        // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
           this.properties[k] = info.properties[k]
           this.onPropertyChanged?.(k, info.properties[k])
@@ -1182,9 +1281,6 @@ export class LGraphNode
       if (j === 'type') continue
 
       if (j === 'id') {
-        // Once registered, the owning graph owns the id — it may have
-        // renumbered this node to resolve a collision that the serialised id
-        // would reinstate.
         if (this._graphScope) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
@@ -1225,7 +1321,6 @@ export class LGraphNode
       this.onOutputAdded?.(output)
     }
 
-    // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
     realignGroupWidgetChildLinks(this, info)
@@ -1274,10 +1369,10 @@ export class LGraphNode
               restoration.positional.length
             )
           )
-          if (restored) widget.value = restored.value
+          if (restored)
+            widget.value = coerceRestoredWidgetValue(widget, restored.value)
         }
       }
-      // Sync the state of this.resizable.
       if (this.pinned) this.resizable = false
 
       if (this.widgets_up) {
@@ -1733,6 +1828,9 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
+      case LGraphEventMode.BYPASS:
+        break
+
       default:
         return false
     }
@@ -2167,7 +2265,7 @@ export class LGraphNode
     function compute_text_size(text: string | undefined, fontStyle: string) {
       const value = text ?? ''
       return (
-        LGraphCanvas._measureText?.(value, fontStyle) ??
+        canvasClass._measureText?.(value, fontStyle) ??
         font_size * value.length * 0.6
       )
     }
@@ -2333,9 +2431,6 @@ export class LGraphNode
 
     if (!this.widgets.includes(widget)) return widget
 
-    // Only register with store if node has a valid ID (is already in a graph).
-    // If the node isn't in a graph yet (id === -1), registration happens
-    // when the node is added via LGraph.add() -> node.onAdded.
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
@@ -2351,7 +2446,8 @@ export class LGraphNode
       widget.name,
       positionalIndex
     )
-    if (restored) widget.value = restored.value
+    if (restored)
+      widget.value = coerceRestoredWidgetValue(widget, restored.value)
 
     return widget
   }
@@ -3438,10 +3534,7 @@ export class LGraphNode
       }
       disconnected = true
 
-      if (
-        link_info.target_id === SUBGRAPH_OUTPUT_ID &&
-        graph instanceof Subgraph
-      ) {
+      if (link_info.target_id === SUBGRAPH_OUTPUT_ID && isSubgraph(graph)) {
         const targetSlot = legacyArrayItem(
           graph.outputNode.slots,
           link_info.target_slot
@@ -4616,4 +4709,12 @@ export class LGraphNode
     ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
   }
+}
+
+provideGraphNodeGuard((item): item is LGraphNode => item instanceof LGraphNode)
+
+type RegisteredLGraphNode = LGraphNode
+
+declare module './types/entityRegistry' {
+  interface LGraphNode extends RegisteredLGraphNode {}
 }

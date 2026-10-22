@@ -1,9 +1,9 @@
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The node preview constructs its observer at import time; jsdom omits this API.
 vi.hoisted(() => {
@@ -14,16 +14,26 @@ vi.hoisted(() => {
   }
 })
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 function createHistoryGroups() {
   return {
@@ -89,6 +99,23 @@ function mount(isMaximized = false) {
   })
 }
 
+function mountTargetlessPanel() {
+  const pinia = getActivePinia()
+  assert.exists(pinia)
+  return render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      workflowDetached: true
+    },
+    global: {
+      plugins: [pinia, i18n],
+      directives: { tooltip: {} },
+      stubs: { WorkflowSelectorChip: true }
+    }
+  })
+}
+
 const chatHistoryStub = defineComponent({
   emits: ['back', 'select', 'delete', 'copyMarkdown', 'rename'],
   template: `
@@ -131,6 +158,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }
@@ -252,6 +280,7 @@ const eventPanelHeaderStub = defineComponent({
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     vi.useRealTimers()
     localStorage.clear()
     attachmentCalls.add.length = 0
@@ -259,6 +288,29 @@ describe('AgentPanel', () => {
     attachmentCalls.remove.length = 0
     draftCalls.insert.length = 0
     draftCalls.replaceDraft.length = 0
+  })
+
+  it('renders and forwards the treatment starter prompt exposure', () => {
+    distribution.isCloud = true
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+      })
+    ).toBeVisible()
+    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {
@@ -448,6 +500,51 @@ describe('AgentPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(document.body)
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('keeps the first-focus deadline through a chat-history round trip', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.advanceTimersByTimeAsync(200)
+    await user.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
   it('groups chat options with the title and separates history navigation', () => {
     const title = 'A comfortably short title'
     render(AgentPanel, {
@@ -490,7 +587,6 @@ describe('AgentPanel', () => {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: {
           WorkflowSelectorChip: true
         }
@@ -543,7 +639,6 @@ describe('AgentPanel', () => {
         },
         global: {
           plugins: [pinia, i18n],
-          directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
       })

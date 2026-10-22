@@ -311,9 +311,9 @@ test.describe('Load3D silent 404 on missing output model', () => {
       await comfyPage.workflow.loadWorkflow('3d/load3d_missing_model')
       await responsePromise
 
-      await expect(
-        comfyPage.toast.visibleToasts.filter({ hasText: 'Error loading model' })
-      ).toHaveCount(0)
+      await expect(comfyPage.toast.withText('Error loading model')).toHaveCount(
+        0
+      )
     }
   )
 
@@ -331,13 +331,9 @@ test.describe('Load3D silent 404 on missing output model', () => {
       await responsePromise
 
       await expect
-        .poll(
-          () =>
-            comfyPage.toast.visibleToasts
-              .filter({ hasText: 'Error loading model' })
-              .count(),
-          { timeout: 10000 }
-        )
+        .poll(() => comfyPage.toast.withText('Error loading model').count(), {
+          timeout: 10000
+        })
         .toBeGreaterThan(0)
     }
   )
@@ -366,9 +362,7 @@ test.describe('Load3D initialization failure', () => {
     await comfyPage.workflow.loadWorkflow('3d/load3d_node')
 
     await expect(
-      comfyPage.toast.visibleToasts.filter({
-        hasText: 'Failed to initialize 3D Viewer'
-      })
+      comfyPage.toast.withText('Failed to initialize 3D Viewer')
     ).not.toHaveCount(0)
   })
 })

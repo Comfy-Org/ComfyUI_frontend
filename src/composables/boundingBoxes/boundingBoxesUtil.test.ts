@@ -7,6 +7,7 @@ import {
   applyDrag,
   boxesAt,
   fromBoundingBoxes,
+  isRegionList,
   tagRects,
   toBoundingBoxes
 } from './boundingBoxesUtil'
@@ -223,6 +224,31 @@ describe('fromBoundingBoxes', () => {
       w: 5,
       h: 5
     })
+  })
+})
+
+describe('isRegionList', () => {
+  it.for([
+    { case: 'an empty list', value: [], expected: true },
+    { case: 'a list of regions', value: [region()], expected: true },
+    { case: 'a non-array', value: region(), expected: false },
+    {
+      case: 'pixel boxes',
+      value: [{ x: 1, y: 1, width: 2, height: 2 }],
+      expected: false
+    },
+    {
+      case: 'an unknown region type',
+      value: [{ ...region(), type: 'img' }],
+      expected: false
+    },
+    {
+      case: 'a non-string palette color',
+      value: [{ ...region(), palette: [1] }],
+      expected: false
+    }
+  ])('returns $expected for $case', ({ value, expected }) => {
+    expect(isRegionList(value)).toBe(expected)
   })
 })
 

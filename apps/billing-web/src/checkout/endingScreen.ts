@@ -40,12 +40,47 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   subscription_status_unrecognized: 'unknown',
   subscription_change_in_progress: 'change_unnamed',
   not_a_member: 'unknown',
+  not_original_owner: 'unknown',
+  creator_only_provisioning: 'unknown',
+  payment_past_due: 'unknown',
+  free_plan: 'unknown',
+  no_subscription: 'unknown',
+  subscription_ended: 'unknown',
+  billing_operation_in_progress: 'unknown',
+  billing_operation_parked: 'unknown',
+  cancellation_scheduled: 'unknown',
+  cancellation_not_scheduled: 'unknown',
+  workspace_sso_attached: 'unknown',
+  personal_workspace: 'unknown',
+  plan_not_ended: 'unknown',
+  membership_managed_by_directory: 'unknown',
+  personal_workspace_creator: 'unknown',
+  workspace_creator: 'unknown',
+  only_owner: 'unknown',
+  billing_state_unknown: 'unknown',
+  free_tier_exhausted: 'unknown',
+  invite_capacity_reached: 'unknown',
+  manual_block: 'unknown',
+  no_funds: 'unknown',
+  no_revertible_scheduled_change: 'unknown',
+  no_upgrade_available: 'unknown',
+  partner_governance_not_entitled: 'unknown',
+  plan_ending: 'unknown',
+  project_cap_exceeded: 'unknown',
+  rollout_disabled: 'unknown',
+  sales_managed: 'sales_managed',
+  sales_managed_plan: 'sales_managed',
+  subscription_inactive: 'unknown',
+  usage_attribution_unavailable: 'unknown',
+  user_cap_exceeded: 'unknown',
+  workspace_cap_exceeded: 'unknown',
   unspecified: 'unknown'
 }
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
- * `success` names the plan its quote priced: this page's own Pay sent it.
+ * `success` names the plan the server reports for the operation, or, for this
+ * page's own Pay settled without that report, the plan its quote priced.
  * `completed` is money this page watched settle without sending it;
  * `already_completed` was through before the page could offer a form. Those
  * two name a plan only from the `receipt` the server reported for the

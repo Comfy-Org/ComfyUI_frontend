@@ -3,6 +3,8 @@
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         class="max-w-96"
         size="lg"
         autofocus
@@ -15,7 +17,7 @@
     <Teleport defer to="#keybinding-panel-actions">
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
-          :preset-names="presetNames"
+          :preset-names
           @presets-changed="refreshPresetList"
         />
         <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
@@ -53,7 +55,7 @@
           <KeybindingCommandRows
             v-for="command in visibleCommands"
             :key="command.id"
-            :command="command"
+            :command
             :expanded="expandedCommandIds.has(command.id)"
             :selected="selectedCommandId === command.id"
             @activate="activateRow(command)"
@@ -68,7 +70,7 @@
         </TableBody>
       </RovingFocusGroup>
     </Table>
-    <Pagination
+    <AppPagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
       v-model:items-per-page="commandsPerPage"
@@ -78,7 +80,7 @@
     <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
-      v-tooltip="$t('g.resetAllKeybindingsTooltip')"
+      :tooltip="$t('g.resetAllKeybindingsTooltip')"
       class="mt-4 w-full"
       variant="destructive-textonly"
       @click="resetAllKeybindings"
@@ -97,10 +99,11 @@ import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
@@ -116,7 +119,6 @@ import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -135,7 +137,7 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
-const toastStore = useToastStore()
+const toast = useToast()
 
 const presetNames = ref<string[]>([])
 
@@ -398,8 +400,11 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
         keybindingStore.removeAllKeybindingsForCommand(command.id)
-        await keybindingService.persistUserKeybindings()
-        dialogStore.closeDialog(dialog)
+        try {
+          await keybindingService.persistUserKeybindings()
+        } finally {
+          dialogStore.closeDialog(dialog)
+        }
       }
     }
   })
@@ -448,13 +453,14 @@ function resetAllKeybindings() {
       },
       onConfirm: async () => {
         keybindingStore.resetAllKeybindings()
-        await keybindingService.persistUserKeybindings()
-        dialogStore.closeDialog(dialog)
-        toastStore.add({
-          severity: 'info',
-          summary: t('g.info'),
-          detail: t('g.allKeybindingsReset'),
-          life: 3000
+        try {
+          await keybindingService.persistUserKeybindings()
+        } finally {
+          dialogStore.closeDialog(dialog)
+        }
+        toast.info(t('g.info'), {
+          description: t('g.allKeybindingsReset'),
+          duration: 3000
         })
       }
     }

@@ -344,7 +344,8 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
   })
 
   test('opens the hosted payment page once for a parked subscribe, and settles when the operation succeeds', async ({
-    page
+    page,
+    toast
   }) => {
     let operation: BillingOpStatusResponse = PARKED_OPERATION
     const routes = await setupRail(page, {
@@ -373,7 +374,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     expect(routes.subscribeRequests).toHaveLength(1)
     expect(transport(routes.subscribeRequests[0])).toBe('fetch')
     await expect(
-      page.getByText('Verify your payment to finish setting up your workspace')
+      toast.withText('Verify your payment to finish setting up your workspace')
     ).toBeVisible()
 
     // A poll that still reports the same parked step must not offer it again.
@@ -395,7 +396,8 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
   })
 
   test('shows the progress toast while a subscribe processes, and clears it when it settles', async ({
-    page
+    page,
+    toast
   }) => {
     let operation: BillingOpStatusResponse = PROCESSING_OPERATION
     await setupRail(page, {
@@ -419,7 +421,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     ).toBeVisible()
     await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
-    const progressToast = page.getByText(
+    const progressToast = toast.withText(
       'Processing payment — setting up your workspace...'
     )
     await expect(progressToast).toBeVisible()

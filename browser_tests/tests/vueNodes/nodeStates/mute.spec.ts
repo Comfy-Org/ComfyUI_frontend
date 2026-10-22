@@ -5,7 +5,7 @@ import {
 
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'
-const SELECTED_CLASS = /outline-node-component-outline/
+const SELECTED_CLASS = /outline-foreground/
 
 test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
   test(

@@ -153,7 +153,7 @@ for (const width of [1440, 390]) {
         )
         await page.getByRole('button', { name: 'Close', exact: true }).click()
         await expect(
-          page.getByText('Comfy Agent can now build workflows inside ComfyUI.')
+          page.locator('[data-slot="announcement-banner"]')
         ).toBeHidden()
         const observation = await observeHubNavigation(page)
 
@@ -370,7 +370,7 @@ for (const { section, destination, query, filter, reachTabs } of [
   })
 }
 
-test('the mobile menu closes and reopens after its Hub link navigates', async ({
+test('the mobile menu closes and reopens after its All models link navigates', async ({
   page
 }) => {
   await page.setViewportSize({ width: 390, height: 900 })
@@ -380,7 +380,8 @@ test('the mobile menu closes and reopens after its Hub link navigates', async ({
   await toggle.click()
   const menu = page.getByRole('dialog', { name: 'Menu' })
   await expect(menu).toBeVisible()
-  await menu.getByRole('link', { name: /^Hub\b/ }).click()
+  await menu.getByRole('button', { name: /^Hub\b/ }).click()
+  await menu.getByRole('link', { name: 'All models', exact: true }).click()
   await expect(page).toHaveURL('/hub/models/')
   await expect(menu).toBeHidden()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(

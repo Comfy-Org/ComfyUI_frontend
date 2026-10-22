@@ -111,6 +111,28 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).toHaveBeenCalledWith([keep])
   })
 
+  it('onDragDrop passes an untyped HDR file to an image filter as an image', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    const node = createNode()
+
+    useNodeDragAndDrop(node, {
+      onDrop,
+      fileFilter: (file) => file.type.startsWith('image/')
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({
+        files: [createFile('sky.exr', '')],
+        items: [{ kind: 'file' }]
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(onDrop).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'sky.exr', type: 'image/x-exr' })
+    ])
+  })
+
   it('onDragDrop returns false for invalid drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const node = createNode()
@@ -159,7 +181,6 @@ describe('useNodeDragAndDrop', () => {
   })
 
   it('does not fetch the page for a non-file drop without a uri', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const node = createNode()
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
@@ -168,12 +189,12 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(false)
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('onDragDrop handles same-origin uri drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi
@@ -191,7 +212,7 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(true)
-    expect(fetchSpy).toHaveBeenCalledWith(new URL(uri))
+    expect(fetch).toHaveBeenCalledWith(new URL(uri))
     expect(onDrop).toHaveBeenCalledTimes(1)
     expect(onDrop.mock.calls[0][0][0]).toBeInstanceOf(File)
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
@@ -199,7 +220,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi
@@ -226,7 +247,6 @@ describe('useNodeDragAndDrop', () => {
   it('onDragDrop returns false for cross-origin uri drops', async () => {
     const node = createNode()
     const onDrop = vi.fn().mockResolvedValue([])
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
@@ -237,13 +257,13 @@ describe('useNodeDragAndDrop', () => {
     )
 
     expect(result).toBe(false)
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(onDrop).not.toHaveBeenCalled()
   })
 
   it('onDragDrop returns false when uri fetch throws', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network'))
+    vi.mocked(fetch).mockRejectedValue(new Error('network'))
     const uri = `${location.origin}/api/file?filename=uri.png`
 
     const node = createNode()
@@ -262,7 +282,7 @@ describe('useNodeDragAndDrop', () => {
     const uri = `${location.origin}/api/file?filename=uri.jpg`
 
     const nodeA = createNode()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       fromAny<Response, unknown>({ ok: false })
     )
     useNodeDragAndDrop(nodeA, { onDrop })
@@ -272,7 +292,7 @@ describe('useNodeDragAndDrop', () => {
     expect(badResponseResult).toBe(false)
 
     const nodeB = createNode()
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       fromAny<Response, unknown>({
         ok: true,
         blob: vi

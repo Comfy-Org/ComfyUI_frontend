@@ -1,25 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readonly, ref } from 'vue'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
-import {
-  captureWorkshopEvent,
-  useWorkshopEnabled,
-  useWorkshopWorkflowsEnabled
-} from '@/scripts/posthog'
 import WorkflowPreview from './WorkflowPreview.vue'
-
-vi.mock(import('@/scripts/posthog'))
 
 const model = workflowDetailsBySlug.get('workflows/animate-reference-sheet')
 assert(model, 'the catalogue no longer carries the fixture workflow')
 const template = model.workflow.template
 assert(template, 'the fixture workflow no longer carries a template')
-
-const cloudHref = 'https://cloud.example.com/?template=animate-reference-sheet'
+const { downloadUrl } = template
+assert(downloadUrl, 'the fixture template no longer has a download URL')
 
 const graphJson = () =>
   JSON.parse(
@@ -32,19 +25,15 @@ const graphJson = () =>
     )
   ) as unknown
 
-function servingGraph(answer: () => Promise<Response>) {
-  vi.stubGlobal('fetch', vi.fn(answer))
-}
-
 // Nothing here reaches the network: a test that says nothing about the graph
 // still mounts the component that fetches it.
 beforeEach(() => {
-  servingGraph(async () => Response.error())
+  respondToFetch({}, () => Response.error())
 })
 
 describe('WorkflowPreview', () => {
-  it('puts the graph beside the ways out and what it runs on', () => {
-    render(WorkflowPreview, { props: { model, cloudHref } })
+  it('puts the graph beside what it runs on', () => {
+    render(WorkflowPreview, { props: { model } })
 
     expect(screen.getByTestId('workflow-graph')).toBeTruthy()
     // Panning a graph on a phone is not reading it, so the flat export the
@@ -53,13 +42,10 @@ describe('WorkflowPreview', () => {
       template.previewUrl
     )
 
-    const actions = screen.getByTestId('workflow-actions')
-    expect(actions).toContainElement(
-      screen.getByRole('link', { name: 'Try in Cloud' })
-    )
-    expect(actions).toContainElement(
-      screen.getByRole('link', { name: 'Download workflow JSON' })
-    )
+    expect(screen.queryByRole('link', { name: 'Try in Cloud' })).toBeNull()
+    expect(
+      screen.queryByRole('link', { name: 'Download workflow JSON' })
+    ).toBeNull()
 
     const runsOn = screen.getByTestId('workflow-runs-on')
     expect(runsOn).toHaveTextContent('Runs on')
@@ -70,7 +56,7 @@ describe('WorkflowPreview', () => {
   // hands its click to the frame instead of whatever it started on. The way to
   // the full-size export sits inside that frame, so it has to be let through.
   it('lets a press on the full-size link reach the link', () => {
-    render(WorkflowPreview, { props: { model, cloudHref } })
+    render(WorkflowPreview, { props: { model } })
 
     const frame = screen.getByTestId('workflow-graph')
     screen
@@ -87,7 +73,7 @@ describe('WorkflowPreview', () => {
   // whether its weights are open, and when it was added — have no data behind
   // them anywhere in the catalogue.
   it('names where it runs, what it gives back, and who made it', () => {
-    render(WorkflowPreview, { props: { model, cloudHref } })
+    render(WorkflowPreview, { props: { model } })
 
     const details = screen.getByTestId('workflow-details')
     expect(details).toHaveTextContent('Runs on Comfy Cloud')
@@ -130,38 +116,38 @@ describe('WorkflowPreview', () => {
   // The graph is read from the same JSON the page offers for download, so what
   // it draws is what a reader would get if they took it away.
   it('draws the nodes of the template it downloads', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
 
-    render(WorkflowPreview, { props: { model, cloudHref } })
+    render(WorkflowPreview, { props: { model } })
 
     expect(
       await screen.findByRole('img', { name: /nodes of this workflow/i })
     ).toBeTruthy()
     expect(await screen.findByText('SaveVideo')).toBeTruthy()
-    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+    expect(fetch).toHaveBeenCalledWith(downloadUrl)
   })
 
   it('waits to download the graph until its tab first opens', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
     const { rerender } = render(WorkflowPreview, {
-      props: { model, cloudHref, active: false }
+      props: { model, active: false }
     })
 
     expect(fetch).not.toHaveBeenCalled()
 
-    await rerender({ model, cloudHref, active: true })
+    await rerender({ model, active: true })
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
-    expect(fetch).toHaveBeenCalledWith(template.downloadUrl)
+    expect(fetch).toHaveBeenCalledWith(downloadUrl)
 
-    await rerender({ model, cloudHref, active: false })
-    await rerender({ model, cloudHref, active: true })
+    await rerender({ model, active: false })
+    await rerender({ model, active: true })
     expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('replaces the graph when the workflow changes', async () => {
-    servingGraph(async () => Response.json(graphJson()))
+    respondToFetch(downloadUrl, () => Response.json(graphJson()))
     const { rerender } = render(WorkflowPreview, {
-      props: { model, cloudHref }
+      props: { model }
     })
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
@@ -174,8 +160,7 @@ describe('WorkflowPreview', () => {
           ...model.workflow,
           template: { ...template, downloadUrl: nextUrl }
         }
-      },
-      cloudHref
+      }
     })
 
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
@@ -185,67 +170,14 @@ describe('WorkflowPreview', () => {
   // The flat export is what this page showed before, so it is what a graph
   // that cannot be read falls back to.
   it('falls back to the flat export when the template cannot be read', async () => {
-    servingGraph(async () => Response.error())
+    respondToFetch(downloadUrl, () => Response.error())
 
-    render(WorkflowPreview, { props: { model, cloudHref } })
+    render(WorkflowPreview, { props: { model } })
 
     await waitFor(() =>
       expect(
         screen.getByTestId('workflow-graph-flat').getAttribute('src')
       ).toBe(template.previewUrl)
     )
-  })
-})
-
-describe('WorkflowPreview analytics', () => {
-  it('reports Try in Cloud and workflow download clicks once access is enabled', async () => {
-    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
-    render(WorkflowPreview, { props: { model, cloudHref } })
-    const link = (name: string) => {
-      const anchor = screen.getByRole('link', { name })
-      anchor.addEventListener('click', (event) => event.preventDefault(), {
-        once: true
-      })
-      return anchor
-    }
-
-    link('Try in Cloud').click()
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
-      name: 'try_in_cloud_clicked',
-      properties: expect.objectContaining({
-        model_slug: model.slug,
-        page_type: 'workflow',
-        workflow_id: model.workflowId
-      })
-    })
-
-    link('Download workflow JSON').click()
-    expect(captureWorkshopEvent).toHaveBeenLastCalledWith({
-      name: 'workflow_download_clicked',
-      properties: expect.objectContaining({
-        model_slug: model.slug,
-        page_type: 'workflow',
-        workflow_id: model.workflowId
-      })
-    })
-  })
-
-  it('reports no clicks while Workflows access is off', () => {
-    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
-    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
-    render(WorkflowPreview, { props: { model, cloudHref } })
-    const link = (name: string) => {
-      const anchor = screen.getByRole('link', { name })
-      anchor.addEventListener('click', (event) => event.preventDefault(), {
-        once: true
-      })
-      return anchor
-    }
-
-    link('Try in Cloud').click()
-    link('Download workflow JSON').click()
-
-    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })

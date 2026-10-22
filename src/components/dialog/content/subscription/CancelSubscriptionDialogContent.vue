@@ -18,7 +18,7 @@
     </p>
     <template v-else-if="!didCancelSucceed">
       <p class="m-0 text-sm/5 text-muted-foreground">{{ description }}</p>
-      <p class="m-0 text-sm/5 text-base-foreground">
+      <p class="m-0 text-sm/5">
         {{
           $t('subscription.cancelFlow.confirm.loseAccess', {
             date: formattedEndDate
@@ -29,13 +29,13 @@
         <li
           v-for="feature in lostFeatures"
           :key="feature.key"
-          class="flex flex-col gap-1.5 rounded-[10px] border border-border-subtle bg-secondary-background/50 p-3"
+          class="flex flex-col gap-1.5 rounded-[10px] border border-border/50 bg-secondary/50 p-3"
         >
           <i
-            :class="cn(feature.icon, 'size-4 text-base-foreground')"
+            :class="cn(feature.icon, 'size-4 text-foreground')"
             aria-hidden="true"
           />
-          <span class="text-sm text-base-foreground">{{ feature.title }}</span>
+          <span class="text-sm">{{ feature.title }}</span>
           <span class="text-xs text-muted-foreground">
             {{ feature.description }}
           </span>
@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
 import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -283,10 +283,7 @@ function onClose() {
 
 function abortForScopeChange() {
   didScopeAbort.value = true
-  toast.add({
-    severity: 'warn',
-    summary: t('subscription.cancelDialog.workspaceChanged')
-  })
+  toast.warning(t('subscription.cancelDialog.workspaceChanged'))
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
@@ -305,10 +302,8 @@ function reportCancelFailure(error: unknown) {
     cancelReport.confirmed({ operationFollows: false })
     cancelReport.failed(categorizeBillingApiError(error))
   }
-  toast.add({
-    severity: 'error',
-    summary: t('subscription.cancelDialog.failed'),
-    detail: getErrorMessage(error) ?? t('g.unknownError')
+  toast.error(t('subscription.cancelDialog.failed'), {
+    description: getErrorMessage(error) ?? t('g.unknownError')
   })
   isLoading.value = false
 }

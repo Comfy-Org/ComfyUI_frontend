@@ -34,6 +34,9 @@
  *   │                            │ stranded descriptors included (§4 rule 2) │
  *   │ `__clock_reservations`     │ copied whole (Lamport max must not regress│
  *   │                            │ — `observedDocCounter` reads it)          │
+ *   │ hidden dynamic child values│ copied for ARRAY forms; projection omits │
+ *   │                            │ unselected children, but later selection │
+ *   │                            │ must reveal their stored registers       │
  *   │ `__stamps`                 │ copied through the liveness filter below  │
  *   │ `__applied`                │ left EMPTY: a new lineage starts a new    │
  *   │                            │ idempotency ledger; LWW stamps, not the   │
@@ -67,11 +70,14 @@ import {
   nodesMap,
   stampsMap,
 } from "./doc.js";
+import { optionOwnedWidgets } from "./dynamic-combos.js";
 import { mint } from "./mint.js";
 import { project } from "./project.js";
 import { docCatalogPin } from "./read.js";
 import { assertReadableSchema } from "./schema-version.js";
 import { LEGACY_NODE_INCARNATION, NODE_INCARNATION_KEY, type WidgetCatalog } from "./types.js";
+import { storedWidgetFormOf } from "./widget-form.js";
+import { widgetStorageKey } from "./widget-identity.js";
 
 /** Meta internals that mint re-derives from the projection; copying them would shadow the fresh value. */
 const REDERIVED_META_INTERNALS: readonly string[] = ["__definitions_extra"];
@@ -87,7 +93,8 @@ export function compact(doc: Y.Doc, catalog: WidgetCatalog): Y.Doc {
   const fresh = mint(project(doc, catalog), catalog, docCatalogPin(doc));
   fresh.transact(() => {
     carryNodeIncarnations(nodesMap(doc), nodesMap(fresh));
-    carryDefinitionInternals(definitionsMap(doc), definitionsMap(fresh));
+    carryHiddenWidgetRegisters(nodesMap(doc), nodesMap(fresh), catalog);
+    carryDefinitionInternals(definitionsMap(doc), definitionsMap(fresh), catalog);
     carryMetaInternals(doc, fresh);
     replaceMap(linkStateMap(doc), linkStateMap(fresh));
     carryClockReservations(doc, fresh);
@@ -106,12 +113,45 @@ function carryNodeIncarnations(from: Y.Map<Y.Map<unknown>>, to: Y.Map<Y.Map<unkn
 }
 
 /**
+ * Projection intentionally omits values owned by currently unselected
+ * dynamic-combo options. Carry those hidden occurrence-zero registers into
+ * the fresh lineage so a later selector write can reveal the user's value.
+ */
+function carryHiddenWidgetRegisters(
+  from: Y.Map<Y.Map<unknown>>,
+  to: Y.Map<Y.Map<unknown>>,
+  catalog: WidgetCatalog,
+): void {
+  from.forEach((node, nodeKey) => {
+    const target = to.get(nodeKey);
+    if (!(node instanceof Y.Map) || !(target instanceof Y.Map)) return;
+    const form = storedWidgetFormOf(node);
+    if (form?.shape !== "array") return;
+    const nodeType = String(node.get("type") ?? "");
+    const entry = Object.hasOwn(catalog.types, nodeType) ? catalog.types[nodeType] : undefined;
+    const sourceWidgets = node.get("widgets");
+    const targetWidgets = target.get("widgets");
+    if (!(sourceWidgets instanceof Y.Map) || !(targetWidgets instanceof Y.Map)) return;
+    for (const name of optionOwnedWidgets(entry)) {
+      const key = widgetStorageKey(name, 0);
+      if (sourceWidgets.has(key) && !targetWidgets.has(key)) {
+        targetWidgets.set(key, structuredClone(sourceWidgets.get(key)));
+      }
+    }
+  });
+}
+
+/**
  * Definitions are re-minted from their projection, which scrubs `__`-prefixed
  * keys and resets interior node incarnations. Walk source and fresh
  * definition maps in parallel (by id, recursively through nested
  * `definitions.subgraphs`) and restore both.
  */
-function carryDefinitionInternals(from: Y.Map<Y.Map<unknown>>, to: Y.Map<Y.Map<unknown>>): void {
+function carryDefinitionInternals(
+  from: Y.Map<Y.Map<unknown>>,
+  to: Y.Map<Y.Map<unknown>>,
+  catalog: WidgetCatalog,
+): void {
   from.forEach((definition, id) => {
     const target = to.get(id);
     if (!(definition instanceof Y.Map) || !(target instanceof Y.Map)) return;
@@ -124,10 +164,15 @@ function carryDefinitionInternals(from: Y.Map<Y.Map<unknown>>, to: Y.Map<Y.Map<u
     const targetNodes = target.get("nodes");
     if (nodes instanceof Y.Map && targetNodes instanceof Y.Map) {
       carryNodeIncarnations(nodes as Y.Map<Y.Map<unknown>>, targetNodes as Y.Map<Y.Map<unknown>>);
+      carryHiddenWidgetRegisters(
+        nodes as Y.Map<Y.Map<unknown>>,
+        targetNodes as Y.Map<Y.Map<unknown>>,
+        catalog,
+      );
     }
     const nested = nestedSubgraphs(definition);
     const targetNested = nestedSubgraphs(target);
-    if (nested !== null && targetNested !== null) carryDefinitionInternals(nested, targetNested);
+    if (nested !== null && targetNested !== null) carryDefinitionInternals(nested, targetNested, catalog);
   });
 }
 

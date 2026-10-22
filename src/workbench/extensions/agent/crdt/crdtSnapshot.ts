@@ -14,7 +14,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus } from './agentCrdtStatus'
 
 /** Live CRDT internals, read from the follower at the moment Copy is pressed. */
 export interface CrdtDebugSnapshot {

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Bounds } from '@/renderer/core/layout/types'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import type { LinkedUpstreamInfo, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState } from '@/types/widgetState'
 
@@ -39,17 +40,6 @@ export function singleValueExtractor<T extends WidgetValue>(
     const validValues = widgets.map((w) => w.value).filter(isValid)
     return validValues.length === 1 ? validValues[0] : undefined
   }
-}
-
-function isBoundsObject(value: unknown): value is Bounds {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return (
-    typeof v.x === 'number' &&
-    typeof v.y === 'number' &&
-    typeof v.width === 'number' &&
-    typeof v.height === 'number'
-  )
 }
 
 export function boundsExtractor(): ValueExtractor<Bounds> {

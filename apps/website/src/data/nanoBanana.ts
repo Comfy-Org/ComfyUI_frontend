@@ -4,8 +4,7 @@ const nanoBananaLinks = {
   cloud:
     'https://cloud.comfy.org/?utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
   run: 'https://cloud.comfy.org/?template=api_nano_banana_2_1_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=nano-banana',
-  guide:
-    'https://docs.comfy.org/development/comfy-router/models/google/gemini-nano-banana-2-1/code#use-gemini-nano-banana-2-1-with-comfy-router'
+  guide: 'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-2-1'
 } as const
 
 const mediaBase = 'https://media.comfy.org/website/nano-banana'

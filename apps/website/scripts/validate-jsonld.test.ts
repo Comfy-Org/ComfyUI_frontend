@@ -461,7 +461,6 @@ describe('main', () => {
       status: 1
     }
   ])('returns $status for $name', async ({ pages, status }) => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     const directory = await siteWith(pages)
     expect(main(join(directory, 'dist'))).toBe(status)
@@ -482,7 +481,6 @@ describe('main', () => {
   })
 
   it('returns 1 when dist does not exist', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const directory = await siteWith({})
     expect(main(join(directory, 'missing'))).toBe(1)
   })

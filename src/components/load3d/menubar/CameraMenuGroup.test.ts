@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
-import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
+import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({
@@ -22,7 +22,7 @@ function makeConfig(
 function renderGroup(config = makeConfig(), compact = false) {
   const result = render(CameraMenuGroup, {
     props: { config, compact },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup(), config }
 }
@@ -69,6 +69,28 @@ describe('CameraMenuGroup', () => {
     await user.click(screen.getByRole('button', { name: 'Natural up' }))
     expect(config.useCustomUp).toBe(true)
   })
+
+  it.for([
+    { useCustomUp: true, label: 'Custom up', tooltip: 'Reset camera up to Y' },
+    {
+      useCustomUp: false,
+      label: 'Natural up',
+      tooltip: 'Restore camera up from input'
+    }
+  ])(
+    'names the $label toggle action in its tooltip',
+    async ({ useCustomUp, label, tooltip }) => {
+      const { user } = renderGroup({
+        ...makeConfig(),
+        hasCustomUp: true,
+        useCustomUp
+      })
+
+      await user.hover(screen.getByRole('button', { name: label }))
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
+    }
+  )
 
   it('announces the up toggle as an action in compact mode', async () => {
     const config: CameraConfig = {

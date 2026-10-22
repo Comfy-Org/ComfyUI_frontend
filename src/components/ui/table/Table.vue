@@ -1,11 +1,6 @@
 <template>
   <div
-    :class="
-      cn(
-        'relative w-full overflow-auto rounded-lg border border-border-default',
-        className
-      )
-    "
+    :class="cn('relative w-full overflow-auto rounded-lg border', className)"
   >
     <table
       class="w-full table-fixed caption-bottom border-separate border-spacing-0 text-sm"

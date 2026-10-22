@@ -63,9 +63,8 @@ beforeEach(() => {
   vi.mocked(reshootTransport).mockReturnValue(transport)
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
   vi.mocked(clipSecondsOf).mockReset()
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  vi.mocked(fetch).mockImplementation(
+    async () => new Response(new Blob(['clip'], { type: 'video/mp4' }))
   )
   signIn()
 })
@@ -226,10 +225,9 @@ describe('useReshoot', () => {
   })
 
   it('does not upload an error response in place of the example clip', async () => {
-    const fetchMock = vi.fn(
+    vi.mocked(fetch).mockImplementation(
       async () => new Response('missing', { status: 404 })
     )
-    vi.stubGlobal('fetch', fetchMock)
     const reshoot = start()
 
     reshoot.pick()
@@ -239,7 +237,7 @@ describe('useReshoot', () => {
 
     reshoot.pick()
     await vi.advanceTimersByTimeAsync(0)
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('downloads outputs only once their job has succeeded', async () => {

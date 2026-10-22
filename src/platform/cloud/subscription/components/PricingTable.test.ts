@@ -87,8 +87,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-global.fetch = vi.fn()
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',

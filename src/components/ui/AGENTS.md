@@ -15,8 +15,12 @@ After adding, create `ComponentName.stories.ts` with a `Default` story, an `argT
 - Import siblings directly (`./Component.vue`), not from barrel (`'.'`)
 - Use `cn()` for class merging with `className`
 - Use Iconify icons: `<i class="icon-[lucide--check]" />`
-- Use core semantic tokens such as `bg-secondary-background`, `text-muted-foreground`, and `border-border-default`
+- Use core semantic tokens such as `bg-secondary`, `text-muted-foreground`, and `border-border`
 - Generic UI primitives must not create or consume feature-, screen-, or component-specific color tokens
 - Before adding a token, search `packages/design-system/src/css/style.css` for an existing semantic role
 - Add a token only for a reusable role that the core theme cannot express. Do not add a token family for each component
 - Tailwind 4 CSS variables use parentheses: `h-(--my-var)` not `h-[--my-var]`
+
+## Tooltips
+
+- Read `tooltip/README.md` before adding a tooltip: one app-level provider, `Button` `tooltip`/`tooltip-side` props, and the fragment-root and `as-child` nesting rules

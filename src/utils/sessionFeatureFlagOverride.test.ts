@@ -144,13 +144,11 @@ describe('getSessionOverride', () => {
     })
 
     it('never logs the submitted value, which may carry a pasted secret', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
       visit('/?ff=some_flag:sk-live-not-a-real-secret')
 
       expect(getSessionOverride('some_flag')).toBe('sk-live-not-a-real-secret')
-      expect(warn).not.toHaveBeenCalled()
-      expect(log).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.log).not.toHaveBeenCalled()
     })
 
     it('discards a hand-written storage payload that is not an object', () => {

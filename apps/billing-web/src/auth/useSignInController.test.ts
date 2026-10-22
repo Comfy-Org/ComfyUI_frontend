@@ -48,6 +48,23 @@ beforeEach(() => {
 })
 
 describe('useSignInController identity availability', () => {
+  it('reports the identity as resolving, not unavailable, until its resolution settles', async () => {
+    let resolve: (identity: unknown) => void = () => {}
+    h.resolveIdentity.mockReturnValue(
+      new Promise((settle) => {
+        resolve = settle
+      })
+    )
+
+    const controller = useSignInController(() => undefined)
+    expect(controller.identityStatus.value).toBe('resolving')
+
+    resolve(undefined)
+    await vi.waitFor(() =>
+      expect(controller.identityStatus.value).toBe('unavailable')
+    )
+  })
+
   it('recovers from a failed startup resolution without a reload', async () => {
     const workingIdentity = makeIdentity()
     h.resolveIdentity
@@ -55,11 +72,13 @@ describe('useSignInController identity availability', () => {
       .mockResolvedValueOnce(workingIdentity)
 
     const controller = useSignInController(() => undefined)
-    await vi.waitFor(() => expect(controller.available.value).toBe(false))
+    await vi.waitFor(() =>
+      expect(controller.identityStatus.value).toBe('unavailable')
+    )
 
     await controller.retryAvailability()
 
-    expect(controller.available.value).toBe(true)
+    expect(controller.identityStatus.value).toBe('ready')
     await controller.signInWith('google')
     expect(workingIdentity.signInWithGoogle).toHaveBeenCalledOnce()
   })
@@ -68,7 +87,9 @@ describe('useSignInController identity availability', () => {
     h.resolveIdentity.mockResolvedValue(undefined)
 
     const controller = useSignInController(() => undefined)
-    await vi.waitFor(() => expect(controller.available.value).toBe(false))
+    await vi.waitFor(() =>
+      expect(controller.identityStatus.value).toBe('unavailable')
+    )
 
     expect(h.resolveIdentity).toHaveBeenCalledOnce()
   })

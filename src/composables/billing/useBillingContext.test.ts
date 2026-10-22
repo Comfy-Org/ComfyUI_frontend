@@ -15,7 +15,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -31,6 +30,11 @@ import {
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
+
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
@@ -103,10 +107,6 @@ vi.mock<unknown>(
       }
     })
   })
-)
-
-vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -404,10 +404,10 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('exposes manageSubscription action', async () => {
+  it('reports the legacy billing portal as opened', async () => {
     mockBillingRail.value = 'legacy_stripe'
     const { manageSubscription } = useBillingContext()
-    await expect(manageSubscription()).resolves.toBeUndefined()
+    await expect(manageSubscription()).resolves.toEqual({ ok: true })
   })
 
   it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
@@ -428,6 +428,7 @@ describe('useBillingContext', () => {
         price_cents: 33600,
         credits_cents: 42086,
         max_seats: 1,
+        action: 'subscribe',
         availability: { available: true },
         seat_summary: {
           seat_count: 1,
@@ -466,11 +467,10 @@ describe('useBillingContext', () => {
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
   })
 
-  it('routes migrated legacy Stripe topups through workspace billing', async () => {
-    remoteConfig.value = { legacy_billing_migration_enabled: true }
+  it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'legacy_stripe'
+    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()
@@ -536,7 +536,7 @@ describe('useBillingContext', () => {
   ])(
     'finds an operation the server reports after the first read (pending: $pending)',
     async ({ pending, found }) => {
-      const context = useBillingContext()
+      useBillingContext()
       await vi.waitFor(() =>
         expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
       )
@@ -546,7 +546,7 @@ describe('useBillingContext', () => {
         pending_billing_op_id: pending
       }
 
-      await expect(context.readCheckoutOperation()).resolves.toBe(found)
+      await expect(readCheckoutOperation()).resolves.toBe(found)
 
       expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
       expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
@@ -567,14 +567,46 @@ describe('useBillingContext', () => {
     expect(canAccessSubscriptionFeatures.value).toBe(true)
   })
 
-  it('exposes requireActiveSubscription action', async () => {
-    const { requireActiveSubscription } = useBillingContext()
-    await expect(requireActiveSubscription()).resolves.toBeUndefined()
-  })
+  describe('announced billing refreshes', () => {
+    it.for([
+      { scope: 'account' as const, status: 1, balance: 1 },
+      { scope: 'subscription' as const, status: 1, balance: 1 }
+    ])(
+      'refetches on the legacy rail for a $scope refresh',
+      async ({ scope, status, balance }) => {
+        mockBillingRail.value = 'legacy_stripe'
+        useBillingContext()
+        await vi.waitFor(() => {
+          expect(useAuthStore().fetchBalance).toHaveBeenCalled()
+        })
+        vi.clearAllMocks()
 
-  it('exposes showSubscriptionDialog action', () => {
-    const { showSubscriptionDialog } = useBillingContext()
-    expect(() => showSubscriptionDialog()).not.toThrow()
+        await refreshBilling(scope)
+
+        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(status)
+        expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(balance)
+      }
+    )
+
+    it('stops answering refreshes and checkout reads once its scope stops', async () => {
+      const scope = effectScope()
+      scope.run(useSharedBillingContext)
+      await vi.waitFor(() =>
+        expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+      )
+      scope.stop()
+      vi.clearAllMocks()
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        pending_billing_op_id: 'op-1'
+      }
+
+      await refreshBilling('account')
+
+      await expect(readCheckoutOperation()).resolves.toBe(false)
+      expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
   })
 
   it('reports the rail in effect when cancelSubscription was dispatched, not the one after it resolves', async () => {
@@ -683,6 +715,25 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
     })
 
+    it('reports the billing portal as not opened if the workspace never loads', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      holdWorkspaceUnloaded('team')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const outcome = context.manageSubscription()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(outcome).resolves.toEqual({
+        ok: false,
+        reason: 'routing_unavailable'
+      })
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledOnce()
+    })
+
     it.for([
       {
         name: 'cancelSubscription',
@@ -780,42 +831,40 @@ describe('useBillingContext', () => {
       }
     )
 
-    it('holds previewSubscribe and requireActiveSubscription until the workspace loads', async () => {
+    it('holds previewSubscribe until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
       vi.clearAllMocks()
 
       const preview = context.previewSubscribe('creator-annual')
-      const require = context.requireActiveSubscription()
       await nextTick()
       expect(workspaceApi.previewSubscribe).not.toHaveBeenCalled()
 
       loaded.value = true
-      await Promise.all([preview, require])
+      await preview
 
       expect(workspaceApi.previewSubscribe).toHaveBeenCalledOnce()
     })
 
-    it('holds reconcile, checkout-operation reads, plans and the subscription dialog until the workspace loads', async () => {
+    it('holds reconcile, checkout-operation reads, plans and the routing wait until the workspace loads', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
       vi.clearAllMocks()
 
       const reconcile = context.reconcileSubscriptionSuccess()
-      const operation = context.readCheckoutOperation()
+      const operation = readCheckoutOperation()
       const plans = context.fetchPlans()
-      context.showSubscriptionDialog({ reason: 'subscription_required' })
+      const routing = context.whenRoutingKnown()
       await nextTick()
       expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockFetchPlans).not.toHaveBeenCalled()
-      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
 
       loaded.value = true
       await Promise.all([reconcile, operation, plans])
 
       expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
       expect(mockFetchPlans).toHaveBeenCalled()
-      expect(useSubscriptionDialog().show).toHaveBeenCalled()
+      await expect(routing).resolves.toBe(true)
     })
 
     it('holds a user-initiated action until the workspace loads', async () => {
@@ -896,6 +945,7 @@ describe('useBillingContext', () => {
           price_cents: 10000,
           credits_cents: 2110000,
           max_seats: 50,
+          action: 'subscribe',
           availability: { available: true },
           seat_summary: {
             seat_count: 1,

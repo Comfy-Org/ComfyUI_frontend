@@ -214,15 +214,15 @@ describe('WorkflowPlayground API tab analytics', () => {
 })
 
 describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
+  // The ways out of the page live in the page header, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the page header', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+      props: { model, scope: 'anonymous' }
     })
 
     const panel = screen.getByRole('tabpanel', { name: 'Playground' })
@@ -352,4 +352,38 @@ describe('WorkflowPlayground examples', () => {
       expect(examples).not.toBeVisible()
     }
   )
+
+  it('moves the chosen mark to the example the gallery opened', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    expect(model.examples.length).toBeGreaterThan(1)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent.setup().click(second)
+
+    await waitFor(() => expect(second).toHaveAttribute('aria-current', 'true'))
+    expect(first).not.toHaveAttribute('aria-current')
+    expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+    expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+  })
+
+  it('keeps the chosen example where it is while a run holds the form', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    mockWorkflowRun(shallowRef<WorkflowState>({ phase: 'preparing' }))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    await userEvent.setup().click(second)
+
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+  })
 })

@@ -3,18 +3,21 @@ import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { api } from '@/scripts/api'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   listSkillPacks,
   publishSkillPack,
   SkillPacksApiError
-} from '../api/skillsApi'
-import { useSkillPacksStore } from '../stores/skillPacksStore'
-import type { SkillPack } from '../types'
+} from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillPack } from '@/platform/skills/types'
 import { useSkillPackForm } from './useSkillPackForm'
 
-vi.mock(import('../api/skillsApi'), { spy: true })
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -84,6 +87,24 @@ function mountForm(pack?: SkillPack) {
 }
 
 describe('useSkillPackForm', () => {
+  it('ignores a late publish failure from the previous backend without an intervening catalog request', async () => {
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    store.upsertPack(makePack())
+    const oldScope = store.scope
+    const pending = deferred<SkillPack>()
+    vi.mocked(publishSkillPack).mockReturnValueOnce(pending.promise)
+    const { handleSubmit, fieldError } = mountForm(makePack())
+    const request = handleSubmit()
+    vi.mocked(api.apiURL).mockImplementation((route) => `/other${route}`)
+    pending.reject(new SkillPacksApiError('not found', 404))
+    await request
+    expect(store.scope).not.toBe(oldScope)
+    expect(store.enabled).toBe(true)
+    expect(store.packs).toEqual([])
+    expect(fieldError.value).toBeNull()
+  })
+
   it('seeds the editor from the pack it was given, with no second fetch', () => {
     const pack = makePack()
     const { form } = mountForm(pack)

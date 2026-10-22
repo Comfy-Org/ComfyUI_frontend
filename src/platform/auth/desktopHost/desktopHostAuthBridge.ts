@@ -5,8 +5,9 @@ import type {
 
 export type DesktopHostAuthState = ComfyDesktop2AuthState
 
-/** `switchWorkspace` lands with bridge types 0.5.0 (Comfy-Desktop #1671). */
-export interface DesktopHostAuthBridge extends ComfyDesktop2AuthBridge {
-  /** Absent on Desktop builds before Comfy-Desktop #1671. */
-  switchWorkspace?(workspaceId: string): Promise<DesktopHostAuthState>
-}
+/** `switchWorkspace` is absent on Desktop builds before Comfy-Desktop #1671. */
+export type DesktopHostAuthBridge = Omit<
+  ComfyDesktop2AuthBridge,
+  'switchWorkspace'
+> &
+  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>>

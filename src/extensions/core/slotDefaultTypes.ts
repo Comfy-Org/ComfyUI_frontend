@@ -4,7 +4,7 @@ import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import { collectSearchableOutputTypes } from '@/schemas/nodeDef/searchableSlotTypes'
 
-import { ComfyWidgets } from '../../scripts/widgets'
+import { ComfyWidgets } from '@/scripts/widgets'
 
 /**
  * The socket types a node def should be registered under for link-release

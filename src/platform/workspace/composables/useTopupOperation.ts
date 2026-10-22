@@ -1,11 +1,33 @@
+import { delay } from 'es-toolkit'
 import { computed } from 'vue'
+
+import type { BillingClient } from '@comfyorg/account-core/billing'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+
+const RETRYABLE_CHECKOUT_CODES: ReadonlySet<string | undefined> = new Set([
+  'TOPUP_CHECKOUT_BUSY',
+  'TOPUP_CHECKOUT_NOT_PAYABLE'
+])
+
+const CHECKOUT_RETRY_DELAYS_MS = [1000, 2000]
+
+function isRetryableCheckoutRefusal(error: unknown): boolean {
+  return (
+    error instanceof WorkspaceApiError &&
+    error.status === 409 &&
+    RETRYABLE_CHECKOUT_CODES.has(error.code)
+  )
+}
 
 /**
  * The top-up purchase and the operation the dialog reads, from one rail.
@@ -20,6 +42,7 @@ export function useTopupOperation() {
     : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
+  const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
 
   const isAddingCredits = computed(() =>
     sdkStore ? sdkStore.isAddingCredits : operationStore.isAddingCredits
@@ -35,9 +58,36 @@ export function useTopupOperation() {
     return billingContext.topup(amountCents)
   }
 
-  function retryPaymentAuthentication(operationId: string): Promise<boolean> {
-    if (sdkStore) return sdkStore.retryPaymentAuthentication(operationId)
-    return operationStore.retryPaymentAuthentication(operationId)
+  async function createHostedCheckout(
+    amountCents: number,
+    returnUrl: string,
+    signal?: AbortSignal
+  ): Promise<string> {
+    for (const retryDelayMs of CHECKOUT_RETRY_DELAYS_MS) {
+      try {
+        return await mintHostedCheckout(amountCents, returnUrl, signal)
+      } catch (error) {
+        if (!isRetryableCheckoutRefusal(error)) throw error
+        await delay(retryDelayMs, { signal })
+      }
+    }
+    return mintHostedCheckout(amountCents, returnUrl, signal)
+  }
+
+  async function mintHostedCheckout(
+    amountCents: number,
+    returnUrl: string,
+    signal: AbortSignal | undefined
+  ): Promise<string> {
+    if (sdkStore) {
+      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
+    }
+    const { checkout_url } = await workspaceApi.createTopupCheckout(
+      amountCents,
+      returnUrl,
+      signal
+    )
+    return checkout_url
   }
 
   function dismissOperation(operationId: string): void {
@@ -59,17 +109,15 @@ export function useTopupOperation() {
     }
   ): Promise<void> {
     if (sdkStore) return
-    await operationStore.startOperation(operationId, 'topup', {
-      ...metadata,
-      autoHandleRequiresAction: true
-    })
+    await operationStore.startOperation(operationId, 'topup', metadata)
   }
 
   return {
+    billingClient,
     isAddingCredits,
     topupOperation,
     topup,
-    retryPaymentAuthentication,
+    createHostedCheckout,
     dismissOperation,
     adoptPendingOperation
   }
