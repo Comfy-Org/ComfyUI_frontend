@@ -143,19 +143,21 @@ function consumeQueryParam(): void {
  * until the returned disposer runs.
  */
 export function startCrdtDebugGate(): () => void {
+  clearCachedPreferences()
   applyQueryOverride()
-  window.addEventListener('storage', invalidateCachedPreferences)
-  return () =>
-    window.removeEventListener('storage', invalidateCachedPreferences)
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.key === null ||
+      event.key === ENABLED_KEY ||
+      event.key === LEVEL_KEY
+    )
+      clearCachedPreferences()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
 }
 
-function invalidateCachedPreferences(event: StorageEvent): void {
-  if (
-    event.key !== null &&
-    event.key !== ENABLED_KEY &&
-    event.key !== LEVEL_KEY
-  )
-    return
+function clearCachedPreferences(): void {
   cachedEnabled = null
   cachedStoredEnabled = undefined
   cachedLevel = null

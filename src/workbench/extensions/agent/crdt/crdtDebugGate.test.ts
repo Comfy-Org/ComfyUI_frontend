@@ -86,6 +86,34 @@ describe('crdtDebugGate', () => {
     expect(gate.isCrdtDebugEnabled()).toBe(false)
   })
 
+  it('rereads preferences changed while no gate was running', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await importGate('')
+    gate.startCrdtDebugGate()()
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    started(gate)
+
+    expect(gate.isCrdtDebugEnabled()).toBe(true)
+  })
+
+  it('keeps following other tabs while another start is still running', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await importGate('')
+    const stopFirst = gate.startCrdtDebugGate()
+    started(gate)
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+    stopFirst()
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'Comfy.Agent.CrdtDebug.enabled' })
+    )
+
+    expect(gate.isCrdtDebugEnabled()).toBe(true)
+  })
+
   it('observes a verbosity change written by another tab', async () => {
     const gate = await loadGate('?crdtDebug=1')
     expect(gate.crdtLogLevel()).toBe('info')
