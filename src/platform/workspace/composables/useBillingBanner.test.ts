@@ -8,7 +8,12 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -65,6 +70,7 @@ describe('useBillingBanner', () => {
   }
 
   beforeEach(() => {
+    distribution.isCloud = true
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -91,6 +97,20 @@ describe('useBillingBanner', () => {
 
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
     await nextTick()
+    expect(kind.value).toBeNull()
+  })
+
+  it('stays quiet off cloud, including when unified billing settings is on', async () => {
+    distribution.isCloud = false
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const billing = setupBilling()
+    const { kind } = useBillingBanner()
+
+    billing.tier.value = 'PRO'
+    billing.billingStatus.value = 'paused'
+    billing.subscription.value = { hasFunds: false }
+    await nextTick()
+
     expect(kind.value).toBeNull()
   })
 
