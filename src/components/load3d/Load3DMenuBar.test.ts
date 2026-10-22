@@ -19,7 +19,7 @@ import type {
   LightConfig,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
@@ -128,7 +128,7 @@ describe('Load3DMenuBar', () => {
     await openCategoryMenu(user)
     expect(
       screen.getByRole('button', { name: 'Scene', pressed: true })
-    ).toHaveClass('bg-secondary-background-selected')
+    ).toHaveClass('bg-muted')
   })
 
   it('toggles showGrid on the bound config when the grid button is clicked', async () => {

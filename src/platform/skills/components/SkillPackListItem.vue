@@ -1,5 +1,5 @@
 <template>
-  <div class="group relative rounded-lg border border-border-default">
+  <div class="group relative rounded-lg border">
     <Button
       variant="textonly"
       size="unset"
@@ -9,18 +9,21 @@
       :disabled="disabled || loading"
       @click="emit('edit')"
     >
-      <span class="w-full truncate font-medium text-base-foreground">
+      <span class="w-full truncate font-medium text-foreground">
         {{ pack.name }}
       </span>
-      <span :id="descriptionId" class="line-clamp-2 text-sm text-muted">
+      <span
+        :id="descriptionId"
+        class="line-clamp-2 text-sm text-muted-foreground"
+      >
         {{ pack.description }}
       </span>
-      <span class="text-xs text-muted">{{ sizeLabel }}</span>
+      <span class="text-xs text-muted-foreground">{{ sizeLabel }}</span>
     </Button>
     <div class="absolute top-4 right-4">
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted"
+        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
       />
       <div
         v-else
@@ -63,8 +66,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import type { SkillPack } from '../types'
-import { packByteSize } from '../types'
+import type { SkillPack } from '@/platform/skills/types'
+import { packByteSize } from '@/platform/skills/types'
 
 const {
   pack,

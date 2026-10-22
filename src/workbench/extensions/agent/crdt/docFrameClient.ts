@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type {
   DocOpsResultData,
   DocResetData,
@@ -19,9 +20,9 @@ import type { ComfyApi } from '@/scripts/api'
 import type { DocOp, PendingIngestClientDocFrame } from '@/scripts/apiDocFrames'
 
 import { wireLog } from './crdtLog'
+import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 
 export type { DocOpFailure } from '@comfyorg/ingest-types'
-export type { DocOp } from '@/scripts/apiDocFrames'
 
 export const DOC_PROTOCOL_VERSION = 1
 const utf8 = new TextEncoder()
@@ -273,9 +274,7 @@ export class DocFrameClient extends EventTarget {
   constructor(private readonly transport: DocFrameTransport) {
     super()
     const reportedTypes = new Set<string>()
-    for (const type of serverDocFrame.options.flatMap(
-      (schema) => schema.shape.type.options
-    )) {
+    for (const type of SERVER_DOC_FRAME_TYPES) {
       this.unregister.push(
         transport.registerFrameHandler(type, (data) => {
           const parsed = parseServerDocFrame({ type, data })
@@ -303,7 +302,8 @@ export class DocFrameClient extends EventTarget {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: workflowId,
         state_vector_b64: encodeBase64(stateVector),
-        supports_reseed: true
+        supports_reseed: true,
+        schema_version: SCHEMA_VERSION
       }
     })
   }

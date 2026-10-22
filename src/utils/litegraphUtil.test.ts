@@ -10,8 +10,8 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
+import { createNode } from './createNode'
 import {
-  createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
   migrateWidgetsValues,

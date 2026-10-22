@@ -16,8 +16,7 @@
           'mr-(--comfy-canvas-gutter)':
             !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'overflow-hidden border-r border-interface-stroke/50 shadow-interface':
-            isConnected,
+          'overflow-hidden border-r border-border/50 shadow-md': isConnected,
           'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
@@ -336,6 +335,6 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--background);
 }
 </style>

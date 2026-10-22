@@ -258,6 +258,14 @@ describe('the display overlay against the catalog', () => {
     expect(unplayable).toEqual([])
   })
 
+  it('shows the new-angle workflow with its own published sample, not the missing template cover', () => {
+    const newAngle = display.find((entry) => entry.id === 'workflows/new-angle')
+
+    expect(newAngle?.media.samples?.map((sample) => sample.url)).toContain(
+      newAngle?.media.thumbnail?.url
+    )
+  })
+
   it('points every asset at https or at a file this site serves', () => {
     const insecure = display.flatMap((entry) =>
       [entry.media.thumbnail, ...(entry.media.samples ?? [])]

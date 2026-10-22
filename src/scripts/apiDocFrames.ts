@@ -11,6 +11,7 @@ export type PendingIngestClientDocFrame =
       data: DocIdentity & {
         state_vector_b64: string
         supports_reseed: boolean
+        schema_version: number
       }
     }
   | { type: 'doc_unsubscribe'; data: DocIdentity }

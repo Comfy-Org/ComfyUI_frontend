@@ -7,7 +7,7 @@ import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
 import type {
   GizmoMode,
   ModelConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({
@@ -88,7 +88,7 @@ describe('GizmoMenuGroup', () => {
 
     expect(
       screen.getByRole('button', { name: 'Translate', pressed: true })
-    ).toHaveClass('bg-secondary-background-selected')
+    ).toHaveClass('bg-muted')
 
     await user.click(
       screen.getByRole('button', { name: 'Rotate', pressed: false })

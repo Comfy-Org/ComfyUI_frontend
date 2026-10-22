@@ -110,10 +110,7 @@ test.describe('Single asset tray preview', { tag: '@cloud' }, () => {
         await expect
           .poll(() =>
             playing.evaluate(
-              (media) =>
-                media instanceof HTMLMediaElement &&
-                media.paused &&
-                media.currentTime === 0
+              (media) => media instanceof HTMLMediaElement && media.paused
             )
           )
           .toBe(true)

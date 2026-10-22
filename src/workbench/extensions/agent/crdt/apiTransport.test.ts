@@ -6,7 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import { DocFrameClient } from './docFrameClient'
 import { setCrdtDebugEnabled, setCrdtLogLevel } from './crdtDebugGate'
-import { clearDevEvents, devEvents } from './devPanelLog'
+import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -63,7 +63,13 @@ describe('document frames through api', () => {
     setCrdtDebugEnabled(true)
     setCrdtLogLevel('trace')
 
-    expect(client.reseed('wf', 7, { value: 'secret-prompt' })).toBe(true)
+    expect(
+      client.reseed('wf', 7, {
+        value: 'secret-prompt',
+        signed_url: 'secret-url',
+        token: 'secret-token'
+      })
+    ).toBe(true)
     expect(send).toHaveBeenCalledWith(
       JSON.stringify({
         type: 'doc_reseed',
@@ -71,18 +77,54 @@ describe('document frames through api', () => {
           v: 1,
           workflow_id: 'wf',
           expected_seq: 7,
-          workflow: { value: 'secret-prompt' }
+          workflow: {
+            value: 'secret-prompt',
+            signed_url: 'secret-url',
+            token: 'secret-token'
+          }
         }
       })
     )
     expect(devEvents.value.at(-1)?.detail).toMatchObject({
       delivered: true,
-      frame: { type: 'doc_reseed' }
+      frame: {
+        type: 'doc_reseed',
+        data: {
+          workflow: '[REDACTED]'
+        }
+      }
     })
+    expect(devEvents.value.at(-1)?.detail).toEqual(
+      vi.mocked(console.debug).mock.calls.at(-1)?.at(-1)
+    )
     expect(JSON.stringify(devEvents.value)).not.toContain('secret-prompt')
     expect(JSON.stringify(vi.mocked(console.debug).mock.calls)).not.toContain(
       'secret-prompt'
     )
+    expect(JSON.stringify(vi.mocked(console.debug).mock.calls)).not.toContain(
+      'secret-url'
+    )
+    const copied = stringifyDevEvents(devEvents.value)
+    expect(copied).not.toContain('secret-prompt')
+    expect(copied).not.toContain('secret-token')
+    expect(copied).not.toContain('secret-url')
+    client.destroy()
+  })
+
+  it('does not parse outbound frames while the debug instrument is off', () => {
+    const api = new ComfyApi()
+    api.socket = fromPartial<WebSocket>({
+      readyState: WebSocket.OPEN,
+      send: vi.fn()
+    })
+    const client = new DocFrameClient(api)
+    setCrdtDebugEnabled(false)
+    const parse = vi.spyOn(JSON, 'parse')
+
+    expect(client.unsubscribe('wf')).toBe(true)
+
+    expect(parse).not.toHaveBeenCalled()
+    expect(devEvents.value).toEqual([])
     client.destroy()
   })
 

@@ -61,7 +61,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`) against ComfyUI on 8188 and `pnpm dev:test` on 5173 (see Agent-only rules)
 - `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
 - `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n] [--feature-flags name:value,...]`: **Agent entry point.** Non-interactive, no terminal, no backend/dev-server required — reads the filesystem and prints text only. Validates the tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`. Example:
   ```
@@ -91,7 +91,8 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
-- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
+- `pnpm deps:audit`: Reject production `src/` import cycles, including type-only imports
+- `pnpm audit:inherited-classes [--write]`: Report text color, size, weight and family classes that repeat a value every render context already inherits, following slots and component usages (manual, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
@@ -198,7 +199,7 @@ CI runs everything.
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-4. Avoid new usage of PrimeVue components
+4. PrimeVue has been removed. Its imports are permanently banned; use components from `src/components/ui`.
 5. Write tests for all changes, especially bug fixes to catch future regressions
 6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
@@ -317,6 +318,15 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### Playwright E2E availability
+
+Treat E2E as runnable. Start the backend and dev server per
+[Setup](browser_tests/README.md#setup), or the declared services in a
+[remote agent container](browser_tests/README.md#remote-agent-containers), then
+run the [readiness checks](browser_tests/README.md#running-tests). Report E2E as
+blocked, in a summary or a subagent brief, only with the failing check's command
+and output.
 
 ### PR Review Comment Resolution
 

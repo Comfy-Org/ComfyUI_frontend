@@ -10,6 +10,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -23,10 +26,19 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
+const GRAPH_SCOPE = graphScopeOf({
+  id: 'test-graph',
+  rootGraph: { id: 'test-graph' }
+})
+const CROP_NODE_ID = toNodeId(2)
+
 vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/scripts/app'))
+
+const onEditEnd = vi.fn()
 
 beforeEach(() => {
   vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
@@ -55,7 +67,8 @@ const ImageCropHarness = defineComponent({
       ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
-        modelValue
+        modelValue,
+        onEditEnd
       })
     }
   },
@@ -216,6 +229,76 @@ describe('useImageCrop', () => {
     )
   })
 
+  const SOURCE_LOCATOR = 'source'
+
+  /**
+   * The real `getNodeImageUrls` reads the output store, so these stand-ins do
+   * too: a preview only refreshes if the composable tracks the store entry it
+   * was derived from.
+   */
+  function useSourcePreviews() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode ? outputStore.nodePreviewImages[SOURCE_LOCATOR] : void 0
+    )
+  }
+
+  function setSourcePreview(url: string) {
+    outputStore.nodePreviewImages[SOURCE_LOCATOR] = [url]
+  }
+
+  function useSourceOutputs() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode
+        ? outputStore.nodeOutputs[SOURCE_LOCATOR]?.images?.flatMap((image) =>
+            image.filename ? [image.filename] : []
+          )
+        : undefined
+    )
+  }
+
+  function setSourceOutput(url: string) {
+    outputStore.nodeOutputs[SOURCE_LOCATOR] = fromPartial({
+      images: [{ filename: url }]
+    })
+  }
+
+  /**
+   * Resolves the image input through the link store, the way
+   * `LGraphNode.getInputLink` does, so link edits drive the preview.
+   */
+  function useLinkedCropNode() {
+    const linkStore = useLinkStore()
+    cropNode = createMockLGraphNode({
+      id: CROP_NODE_ID,
+      isSubgraphNode: () => false,
+      getInputLink: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot) ?? null,
+      getInputNode: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot)
+          ? sourceNode
+          : null
+    })
+    mockResolveNode.mockReturnValue(cropNode)
+  }
+
+  function connectImageInput() {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId(99),
+      originSlot: 0,
+      targetNodeId: CROP_NODE_ID,
+      targetSlot: 0,
+      type: 'IMAGE'
+    })
+  }
+
+  function disconnectImageInput() {
+    const link = useLinkStore().getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, 0)
+    if (!link) throw new Error('expected a link on the image input')
+    useLinkStore().deleteLink(GRAPH_SCOPE, link)
+  }
+
   afterEach(() => {
     for (const c of harnessCleanups) {
       c()
@@ -283,29 +366,50 @@ describe('useImageCrop', () => {
   })
 
   it('updates imageUrl when nodeOutputs change', async () => {
+    useSourceOutputs()
+    setSourceOutput('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? ['https://example.com/b.png'] : undefined
-    )
-    outputStore.nodeOutputs['touch'] = { updated: true }
+    setSourceOutput('https://example.com/b.png')
 
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/b.png')
   })
 
   it('updates imageUrl when nodePreviewImages change', async () => {
-    let url = 'https://example.com/a.png'
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? [url] : undefined
-    )
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
-    url = 'https://example.com/preview.png'
-    outputStore.nodePreviewImages['rev'] = []
+
+    setSourcePreview('https://example.com/preview.png')
+
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/preview.png')
+  })
+
+  it('shows the upstream image when the input is connected after mount', async () => {
+    useLinkedCropNode()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+
+    connectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('clears the preview when the image input is disconnected', async () => {
+    useLinkedCropNode()
+    connectImageInput()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    disconnectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBeNull()
   })
 
   it('computes letterboxed display metrics for a wide image', async () => {
@@ -355,13 +459,12 @@ describe('useImageCrop', () => {
   })
 
   it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? ['https://example.com/b.png'] : undefined
-    )
-    outputStore.nodeOutputs['touch'] = {}
+    setSourcePreview('https://example.com/b.png')
     await flushTicks()
 
     expect(vm.imageUrl).toBe('https://example.com/b.png')
@@ -412,6 +515,54 @@ describe('useImageCrop', () => {
     expect(vm.cropX as number).toBeGreaterThan(x0)
     expect(vm.cropY as number).toBeGreaterThanOrEqual(0)
   })
+
+  it.for([
+    {
+      gesture: 'a drag',
+      start: 'handleDragStart',
+      move: 'handleDragMove',
+      end: 'handleDragEnd'
+    },
+    {
+      gesture: 'a resize',
+      start: 'handleResizeStart',
+      move: 'handleResizeMove',
+      end: 'handleResizeEnd'
+    }
+  ])(
+    'reports the end of an edit once $gesture ends',
+    async ({ start, move, end }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 300)
+      const captureEl = document.createElement('div')
+      captureEl.setPointerCapture = vi.fn()
+      captureEl.releasePointerCapture = vi.fn()
+      const call = (name: string, e: PointerEvent) =>
+        (vm[name] as (e: PointerEvent, dir: string) => void)(e, 'right')
+
+      call(start, makePointerEvent('pointerdown', captureEl, 200, 150))
+      call(move, makePointerEvent('pointermove', captureEl, 230, 160))
+      expect(onEditEnd).not.toHaveBeenCalled()
+
+      call(end, makePointerEvent('pointerup', captureEl, 230, 160))
+      expect(onEditEnd).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { ratio: '1:1', calls: 1 },
+    { ratio: 'custom', calls: 0 }
+  ])(
+    'reports $calls edit(s) when choosing the $ratio ratio',
+    async ({ ratio, calls }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 400)
+
+      vm.selectedRatio = ratio
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
+    }
+  )
 
   it('resizes from the right edge without moving origin', async () => {
     const vm = await mountHarness()
@@ -573,7 +724,8 @@ describe('WidgetImageCrop', () => {
           lockRatio: 'Lock aspect ratio',
           unlockRatio: 'Unlock aspect ratio',
           custom: 'Custom'
-        }
+        },
+        widgetHistory: { undo: 'Undo', redo: 'Redo' }
       }
     }
   })

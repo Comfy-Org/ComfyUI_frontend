@@ -46,6 +46,7 @@ export async function mockWorkspaceTokenMint(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: ws.id, name: ws.name, type: ws.type },
         role: ws.role,
         permissions: []
@@ -87,5 +88,17 @@ export async function mockWorkspace(
         pagination: { offset: 0, limit: 50, total: members.length }
       })
     )
+  )
+}
+
+/** Refuse the deployment listing the way a workspace outside the rollout sees it. */
+export async function mockDeploymentRolloutRefusal(
+  routeTarget: Page | BrowserContext
+): Promise<void> {
+  await routeTarget.route('**/api/workspaces/*/deployments', (route) =>
+    route.fulfill({
+      ...jsonRoute({ error: 'Deployment selection is outside the rollout' }),
+      status: 403
+    })
   )
 }

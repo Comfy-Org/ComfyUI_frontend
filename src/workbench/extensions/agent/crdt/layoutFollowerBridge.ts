@@ -1,9 +1,9 @@
 import { assert } from '@/base/assert'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { DocOp } from '@/scripts/apiDocFrames'
 
 import type {
   DocFrameClient,
-  DocOp,
   DocReseedResult,
   DocReset,
   DocSubscribed,
@@ -19,13 +19,13 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
-/**
- * Outbound frames are advisory: the follower's correctness never depends on one
- * arriving. A transport that cannot carry a frame reports `false`; one that
- * throws (the shape `apiTransport` had before this seam was fixed, and the shape
- * any future transport might regress to) is contained here rather than being
- * allowed to abort a Vue watcher or an unmount hook.
- */
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
+}
+
 function trySend(send: () => boolean): boolean {
   try {
     return send()

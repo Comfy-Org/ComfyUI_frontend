@@ -24,8 +24,9 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { DocOp } from '@/scripts/apiDocFrames'
 
-import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
+import type { DocFrameTransport, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
