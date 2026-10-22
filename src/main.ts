@@ -73,16 +73,18 @@ async function startTelemetry(): Promise<void> {
 
 async function startLocalAuthSession(): Promise<void> {
   if (isCloud) return
-  const desktopHostAuth = window.__comfyDesktop2?.Auth
-  if (desktopHostAuth) {
-    const { startDesktopHostSession } =
-      await import('@/platform/auth/desktopHost/desktopHostSession')
-    await startDesktopHostSession(desktopHostAuth)
-  } else {
-    const { startLocalWebSession } =
-      await import('@/platform/auth/localWeb/localWebSession')
-    await startLocalWebSession()
-  }
+  await bootstrapTracer.settle('startup/local-auth', async () => {
+    const desktopHostAuth = window.__comfyDesktop2?.Auth
+    if (desktopHostAuth) {
+      const { startDesktopHostSession } =
+        await import('@/platform/auth/desktopHost/desktopHostSession')
+      await startDesktopHostSession(desktopHostAuth)
+    } else {
+      const { startLocalWebSession } =
+        await import('@/platform/auth/localWeb/localWebSession')
+      await startLocalWebSession()
+    }
+  })
 }
 
 function initFirebaseIdentity(): void {
@@ -136,6 +138,7 @@ function installSubgraphGraphHooks(): void {
 }
 
 async function bootstrap(): Promise<void> {
+  bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
 
   if (isCloud) {
@@ -155,7 +158,7 @@ async function bootstrap(): Promise<void> {
   initFirebaseIdentity()
 
   const pinia = createPinia()
-  const router = await createAppRouter()
+  const router = await bootstrapTracer.settle('startup/router', createAppRouter)
   const app = createApp(App)
 
   initErrorReporting(app, pinia)
