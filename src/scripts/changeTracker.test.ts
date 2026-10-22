@@ -23,7 +23,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -83,7 +83,8 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
   const workflow = {
-    path: `/test/workflow-${++workflowPathCounter}.json`
+    path: `/test/workflow-${++workflowPathCounter}.json`,
+    graph: app.rootGraph
   } as never
   const tracker = markRaw(new ChangeTracker(workflow, state))
   useWorkflowStore().activeWorkflow = fromPartial({
@@ -433,16 +434,30 @@ describe('ChangeTracker', () => {
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when the graph is not ready', () => {
+      it('is a no-op when the workflow owns no graph', () => {
         const tracker = createTracker()
         const original = tracker.activeState
+        tracker.workflow.graph = null
 
-        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
-        spy.mockRestore()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
         expect(tracker.activeState).toBe(original)
+      })
+
+      it('snapshots the workflow graph even while another graph is on the canvas', () => {
+        const tracker = createTracker(createState(1))
+        const ownState = createState(2)
+        const ownGraph = new LGraph()
+        vi.spyOn(ownGraph, 'serialize').mockReturnValue(ownState as never)
+        tracker.workflow.graph = markRaw(ownGraph)
+        mockCanvasState(createState(3))
+
+        tracker.captureCanvasState()
+
+        expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        expect(tracker.activeState).toEqual(ownState)
+        expect(tracker.undoQueue).toHaveLength(1)
       })
 
       it('is a no-op when changeCount > 0', () => {
