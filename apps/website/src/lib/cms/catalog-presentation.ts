@@ -104,7 +104,7 @@ function inputContract(d: Document) {
   }
 }
 
-function authorDetails(d: Document, locale: string) {
+function authorDetails(d: Document, locale: string, preview: boolean) {
   const resolved = objectPresentation(d.website_author)
   const matches =
     typeof d.author_uid === 'string' && resolved.uid === d.author_uid
@@ -117,7 +117,7 @@ function authorDetails(d: Document, locale: string) {
       : undefined
   return {
     author: name ?? unavailable,
-    ...(name ? authorUsername(resolved.username) : {}),
+    ...authorUsername(matches && !!name && !preview, resolved.username),
     ...authorAvatar(matches, resolved.avatar_url)
   }
 }
@@ -126,9 +126,9 @@ function trimmedText(value: unknown) {
   return typeof value === 'string' ? value.trim() || undefined : undefined
 }
 
-function authorUsername(value: unknown) {
+function authorUsername(linked: boolean, value: unknown) {
   const username = trimmedText(value)
-  return username && isCreatorUsername(username)
+  return linked && username && isCreatorUsername(username)
     ? { authorUsername: username }
     : {}
 }
@@ -350,7 +350,7 @@ function workflowDetails(
         ? d.output_type
         : undefined,
     models: modelLinks(d, resources, locale, preview),
-    ...authorDetails(d, locale),
+    ...authorDetails(d, locale, preview),
     runs: optionalCounter(d.runs),
     downloads: optionalCounter(d.downloads)
   })

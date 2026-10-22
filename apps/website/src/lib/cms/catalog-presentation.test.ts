@@ -596,7 +596,6 @@ describe('native CONTENT presentation', () => {
         runs: 0,
         downloads: 12,
         author: 'Comfy creator',
-        authorUsername: 'comfy-creator',
         authorAvatarURL: 'https://media.comfy.org/creator.png',
         models: [
           {
