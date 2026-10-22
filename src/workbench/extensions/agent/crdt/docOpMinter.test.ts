@@ -914,6 +914,137 @@ describe('attachDocOpMinter', () => {
       vi.useRealTimers()
       doc.destroy()
     })
+
+    it('cancels an unsent dynamic-combo grow when disconnected in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        dynamicComboScenario(graph)
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      resize.disconnectInput(match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      doc.destroy()
+    })
+
+    it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const { source, resize, doc, catalog, match } =
+        dynamicComboScenario(graph)
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      minted.length = 0
+      resize.disconnectInput(match)
+      await afterFlush()
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc',
+          context: expect.objectContaining({
+            nodeId: resize.id,
+            input: 'resize_type.match',
+            operations: ['disconnect']
+          })
+        })
+      )
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      vi.useRealTimers()
+      doc.destroy()
+    })
+
+    it('drops pending dynamic-combo state when its node is removed', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const { source, resize, doc, catalog, match } =
+        dynamicComboScenario(graph)
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      minted.length = 0
+      resize.disconnectInput(match)
+      graph.remove(resize)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'delete_node', node_id: resize.id })
+      ])
+      minted.length = 0
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      vi.useRealTimers()
+      doc.destroy()
+    })
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {

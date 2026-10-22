@@ -172,6 +172,7 @@ interface PendingDynamicSlot {
   nodeId: NodeId
   inputName: string
   growLinkId: WireNodeId
+  since: number
   sent: boolean
   deferred: DeferredDynamicOperation[]
 }
@@ -547,13 +548,32 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
+  function dropExpiredDynamicSlot(state: PendingDynamicSlot): boolean {
+    if (performance.now() - state.since < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      return false
+    const key = dynamicSlotKey(state.nodeId, state.inputName)
+    pendingDynamicSlots.delete(key)
+    reportOnce(
+      `dynamic_slot_timeout:${key}`,
+      `Dynamic-combo input ${state.inputName} of node ${String(state.nodeId)} never reached the bound document; dropping its deferred link operations`,
+      'agent_crdt_link_slot_not_in_doc',
+      {
+        nodeId: state.nodeId,
+        input: state.inputName,
+        operations: state.deferred.map(({ kind }) => kind)
+      }
+    )
+    return true
+  }
+
   function retryDynamicSlots(): void {
     dynamicSlotRetryTimer = null
     if (detached) return
     let waiting = false
     for (const state of pendingDynamicSlots.values()) {
       if (state.deferred.length === 0) continue
-      if (!releaseDynamicSlot(state)) waiting = true
+      if (releaseDynamicSlot(state) || dropExpiredDynamicSlot(state)) continue
+      waiting = true
     }
     if (waiting)
       dynamicSlotRetryTimer = setTimeout(
@@ -939,6 +959,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
+    for (const [key, state] of pendingDynamicSlots)
+      if (state.nodeId === event.node.id) pendingDynamicSlots.delete(key)
     const key = nodeKey(event.graph.id, event.node.id)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
@@ -1011,6 +1033,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         nodeId: link.target_id,
         inputName: input.name,
         growLinkId: link.id,
+        since: performance.now(),
         sent: false,
         deferred: []
       })
