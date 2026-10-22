@@ -1,22 +1,11 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import type { DocUpdateFrame } from '@comfyorg/ingest-types'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import fs from 'node:fs'
 import path from 'node:path'
-import * as Y from 'yjs'
-import { z } from 'zod'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  DOC_PROTOCOL_VERSION,
-  encodeBase64
-} from '@/workbench/extensions/agent/crdt/docFrameClient'
 
-export const PROMOTED_WIDGET_WORKFLOW_NAME =
-  'subgraphs/nested-pack-promoted-values'
-export const PROMOTED_WIDGET_WORKFLOW_LABEL = path.basename(
-  PROMOTED_WIDGET_WORKFLOW_NAME
-)
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+
 export const PROMOTED_WIDGET_SUBGRAPH_TYPE =
   'f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1'
 export const PROMOTED_WIDGET_HOST_NODE_ID = '57'
@@ -24,77 +13,6 @@ export const PROMOTED_WIDGET_PROMPT_NODE_ID = '27'
 export const PROMOTED_WIDGET_SAMPLER_NODE_ID = '3'
 export const PROMOTED_WIDGET_NEW_PROMPT = 'NEW PROMPT'
 export const PROMOTED_WIDGET_NEW_STEPS = 12
-
-const docSubscribeFrame = z.object({
-  type: z.literal('doc_subscribe'),
-  data: z.object({ workflow_id: z.string() })
-})
-
-type DocSubscribedFrame = {
-  // Subscribe acknowledgements are control frames outside the generated
-  // ServerDocFrame union; docFrameClient owns their tolerant wire parser.
-  type: 'doc_subscribed'
-  data: {
-    v: number
-    workflow_id: string
-    ok: true
-    seq: number
-  }
-}
-
-function createPromotedWidgetFrames(
-  workflowId: string,
-  fullState: Uint8Array,
-  delta: Uint8Array
-): [DocSubscribedFrame, DocUpdateFrame, DocUpdateFrame] {
-  return [
-    {
-      type: 'doc_subscribed',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: workflowId,
-        ok: true,
-        seq: 0
-      }
-    },
-    {
-      type: 'doc_update',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: workflowId,
-        seq: 0,
-        lineage_seq: 0,
-        actor: 'system:mint',
-        update_b64: encodeBase64(fullState)
-      }
-    },
-    {
-      type: 'doc_update',
-      data: {
-        v: DOC_PROTOCOL_VERSION,
-        workflow_id: workflowId,
-        seq: 1,
-        lineage_seq: 0,
-        actor: 'agent:test:1',
-        op_ids: ['op-1', 'op-2'],
-        update_b64: encodeBase64(delta)
-      }
-    }
-  ]
-}
-
-export function parsePromotedWidgetSubscribeWorkflowId(
-  message: string
-): string | undefined {
-  let frame: unknown
-  try {
-    frame = JSON.parse(message)
-  } catch {
-    return
-  }
-  const parsed = docSubscribeFrame.safeParse(frame)
-  return parsed.success ? parsed.data.data.workflow_id : undefined
-}
 
 const ASSET_PATH = path.resolve(
   import.meta.dirname,
@@ -125,21 +43,18 @@ const NODE_WIDGET_ORDERS: WidgetCatalog['types'] = {
   VAEDecode: { widget_order: [] }
 }
 
-function fixtureData() {
+export function createPromotedWidgetWriteData() {
   const rawAsset: unknown = JSON.parse(fs.readFileSync(ASSET_PATH, 'utf8'))
   const asset = zComfyWorkflow.parse(rawAsset)
+  const seed = { ...asset, extra: asset.extra ?? undefined }
   const definition = asset.definitions?.subgraphs.find(
     (subgraph) => subgraph.id === PROMOTED_WIDGET_SUBGRAPH_TYPE
   )
   if (!definition?.inputs)
     throw new Error('Fixture must define promoted subgraph inputs')
+
   const hostWidgetNames = definition.inputs.map(({ name }) => name)
-  const catalog: WidgetCatalog = {
-    types: {
-      ...NODE_WIDGET_ORDERS,
-      [PROMOTED_WIDGET_SUBGRAPH_TYPE]: { widget_order: hostWidgetNames }
-    }
-  }
+  const catalog: WidgetCatalog = { types: NODE_WIDGET_ORDERS }
   const hostWidgetValues = definition.inputs.map(({ linkIds, name }) => {
     const linkId = linkIds?.[0]
     if (linkId === undefined)
@@ -168,74 +83,36 @@ function fixtureData() {
   if (typeof interiorPrompt !== 'string' || typeof interiorSteps !== 'number')
     throw new Error('Fixture must define prompt and steps promotions')
 
-  return {
-    asset,
-    catalog,
-    hostWidgetValues,
-    promptIndex,
-    stepsIndex,
-    interiorPrompt,
-    interiorSteps
-  }
-}
-
-export function createPromotedWidgetWriteData() {
-  const data = fixtureData()
-  const doc = mint(
-    { ...data.asset, extra: data.asset.extra ?? undefined },
-    data.catalog
-  )
-  const fullState = Y.encodeStateAsUpdate(doc)
-  const vectorBefore = Y.encodeStateVector(doc)
-  const ops: Op[] = [
+  const operations: RecordedGraphOperation[] = [
     {
-      op_id: 'op-1',
-      actor: 'agent:test:1',
-      base_version: 1,
-      stamp: [1, 'agent:test:1'],
       op: 'set_widget',
       node_id: PROMOTED_WIDGET_HOST_NODE_ID,
       widget: 'text',
       value: PROMOTED_WIDGET_NEW_PROMPT,
       promoted: {
         instance_path: [PROMOTED_WIDGET_HOST_NODE_ID],
-        value_index: data.promptIndex,
-        host_widgets_values: data.hostWidgetValues
+        value_index: promptIndex,
+        host_widgets_values: hostWidgetValues
       }
     },
     {
-      op_id: 'op-2',
-      actor: 'agent:test:1',
-      base_version: 1,
-      stamp: [2, 'agent:test:1'],
       op: 'set_widget',
       node_id: PROMOTED_WIDGET_HOST_NODE_ID,
       widget: 'steps',
       value: PROMOTED_WIDGET_NEW_STEPS,
       promoted: {
         instance_path: [PROMOTED_WIDGET_HOST_NODE_ID],
-        value_index: data.stepsIndex,
-        host_widgets_values: data.hostWidgetValues
+        value_index: stepsIndex,
+        host_widgets_values: hostWidgetValues
       }
     }
   ]
-  const outcomes = applyOps(doc, ops, data.catalog).outcomes
-  if (
-    outcomes.length !== ops.length ||
-    outcomes.some(({ outcome }) => outcome !== 'applied')
-  )
-    throw new Error('Fixture operations must apply')
-  const delta = Y.encodeStateAsUpdate(doc, vectorBefore)
-  doc.destroy()
 
   return {
-    interiorPrompt: data.interiorPrompt,
-    interiorSteps: data.interiorSteps,
-    framesFor: (workflowId: string) =>
-      createPromotedWidgetFrames(workflowId, fullState, delta)
+    seed,
+    catalog,
+    operations,
+    interiorPrompt,
+    interiorSteps
   }
 }
-
-export type PromotedWidgetWriteData = ReturnType<
-  typeof createPromotedWidgetWriteData
->
