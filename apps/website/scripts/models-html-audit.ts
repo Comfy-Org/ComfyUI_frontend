@@ -58,7 +58,7 @@ const ABOUT_SECTIONS = [
   'data-testid="model-about"'
 ]
 const FAQ_SECTIONS = ['id="workflow-faq"', 'id="model-faq"']
-const MODEL_SECTIONS = ['data-testid="workflow-facts"']
+const MODEL_SECTIONS = ['data-testid="workflow-runs-on"']
 
 function elementWith(html: string, marker: string): string {
   const at = html.indexOf(marker)
@@ -71,7 +71,7 @@ function elementWith(html: string, marker: string): string {
     depth += match[1] ? -1 : 1
     if (depth === 0) return rest.slice(0, match.index + match[0].length)
   }
-  return rest
+  return ''
 }
 
 function textWithin(html: string, markers: readonly string[]) {

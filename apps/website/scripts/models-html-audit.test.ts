@@ -207,7 +207,7 @@ describe(auditCatalogDetailBody, () => {
   const faqSection = (inner: string) =>
     `<section id="workflow-faq"><div><h2>FAQ</h2></div><div>${inner}</div></section>`
   const factsBlock = (inner: string) =>
-    `<div data-testid="workflow-facts"><div><span>Runs on</span></div><div>${inner}</div></div>`
+    `<div data-testid="workflow-facts"><section data-testid="workflow-runs-on"><div><span>Runs on</span></div><div>${inner}</div></section><dl><dt>Author</dt><dd>Flux Kontext Fan</dd></dl></div>`
   const paragraphs = '<p>First paragraph.</p><p>Second paragraph.</p>'
   const qa =
     '<h3>Does it run?</h3><p>Yes, see <a href="https://docs.comfy.org">the docs</a>.</p>'
@@ -330,6 +330,16 @@ describe(auditCatalogDetailBody, () => {
       missing: 'the model in its facts block',
       body: about + faq + factsBlock('') + modelLink,
       error: 'server HTML is missing the model "Flux Kontext"'
+    },
+    {
+      missing: 'the model in its runs-on list',
+      body: about + faq + factsBlock(''),
+      error: 'server HTML is missing the model "Flux Kontext"'
+    },
+    {
+      missing: 'a closed FAQ section',
+      body: about + `<section id="workflow-faq">${qa}` + models,
+      error: 'server HTML is missing the FAQ "Does it run?"'
     },
     {
       missing: 'a long description that only a template holds',
