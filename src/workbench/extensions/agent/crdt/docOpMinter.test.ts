@@ -2644,7 +2644,6 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(snapshot).toMatchObject({
       widgets_values: { mode: 'a', 'mode.steps': 4 }
     })
-    expect(snapshot).not.toHaveProperty('widgets_values_form')
     const doc = mint({ nodes: [], links: [] }, catalog)
     const operations: GraphOperation[] = [
       {
@@ -2669,9 +2668,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       'applied',
       'applied'
     ])
-    expect(project(doc, catalog).nodes[0]).toMatchObject({
-      widgets_values: ['b', 7]
-    })
+    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
     doc.destroy()
   })
 

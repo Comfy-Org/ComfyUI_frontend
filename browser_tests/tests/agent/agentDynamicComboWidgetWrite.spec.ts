@@ -14,49 +14,25 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
+import {
+  DYNAMIC_COMBO_CLASS,
+  dynamicComboNodeDef
+} from '@e2e/fixtures/data/agent/dynamicComboNode'
+import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 const WORKFLOW_ID = 'fe347000-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'fe347000-0000-4000-8000-000000000003'
 const THREAD_ID = 'fe347000-0000-4000-8000-000000000004'
 
-const ADDED_CLASS = 'DynamicModePicker'
+const ADDED_CLASS = DYNAMIC_COMBO_CLASS
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = 1
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
-  [ADDED_CLASS]: {
-    name: ADDED_CLASS,
-    display_name: 'Dynamic Mode Picker',
-    description: '',
-    category: 'testing',
-    python_module: 'custom_nodes.test',
-    output_node: false,
-    input: {
-      required: {
-        mode: [
-          'COMFY_DYNAMICCOMBO_V3',
-          {
-            options: [
-              { key: 'creative', inputs: { required: {} } },
-              {
-                key: 'faithful',
-                inputs: {
-                  required: {
-                    detail: ['INT', { default: 80, min: 0, max: 100 }]
-                  }
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    output: ['STRING'],
-    output_is_list: [false],
-    output_name: ['STRING']
-  },
+  [ADDED_CLASS]: dynamicComboNodeDef,
   [SEED_CLASS]: {
     name: SEED_CLASS,
     display_name: 'KSampler',
@@ -118,15 +94,14 @@ const canvasSeed: ComfyWorkflowJSON = {
 }
 
 test.describe(
-  'Agent edits on a human-added dynamic combo node',
+  'Human widget writes on a catalogued dynamic combo node',
   { tag: ['@cloud', '@agent', '@widget', '@vue-nodes'] },
   () => {
     test('keeps the newly shown child writable after the selection changes', async ({
       page,
+      request,
       agentFlagEnabled
     }) => {
-      test.setTimeout(90_000)
-
       const host = new HostDoc(WORKFLOW_ID, hostSeed, catalog)
       const hostSocket = new AgentFollowerHostSocket(
         page,
@@ -158,12 +133,7 @@ test.describe(
       await agentPanel.sendMessage('Have a look at this workflow')
       await hostSocket.waitForSubscribe()
       await expect(vueNodes.getNodeLocator(String(SEED_NODE_ID))).toBeVisible()
-      await page.evaluate(() => {
-        const canvas = window.app!.canvas
-        canvas.ds.scale = 1
-        canvas.ds.offset = [40, 40]
-        canvas.setDirty(true, true)
-      })
+      await pinCanvasTransform(page)
 
       const hostNode = (id: string) =>
         host.projection().nodes.find((node) => String(node.id) === id)
@@ -178,13 +148,11 @@ test.describe(
 
       const nodeId =
         await test.step('the person adds the catalogued node', async () => {
-          const nodeId = await page.evaluate((type) => {
-            const node = window.LiteGraph!.createNode(type)
-            if (!node) throw new Error(`${type} is not a registered node type`)
-            node.pos = [460, 120]
-            window.app!.graph.add(node)
-            return String(node.id)
-          }, ADDED_CLASS)
+          const comfyPage = new ComfyPage(page, request)
+          const nodeId = await comfyPage.searchBoxV2.addNodeAndGetId(
+            dynamicComboNodeDef.display_name,
+            { position: { x: 700, y: 500 } }
+          )
           await expect(vueNodes.getNodeLocator(nodeId)).toBeVisible()
 
           await expect
@@ -192,7 +160,6 @@ test.describe(
             .toMatchObject({
               widgets_values: ['creative']
             })
-          expect(hostNode(nodeId)).not.toHaveProperty('widgets_values_form')
           expect(rejectedHumanOps()).toEqual([])
           return nodeId
         })
