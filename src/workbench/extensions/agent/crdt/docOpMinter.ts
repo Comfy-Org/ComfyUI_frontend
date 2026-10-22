@@ -519,8 +519,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const documentValue = deps.docWidgetValue?.(nodeId, selection.widget)
     const pendingValue = pendingWidgetValues.get(key)
     if (isEqual(documentValue, selection.value)) {
-      if (isEqual(pendingValue?.value, selection.value))
-        pendingWidgetValues.delete(key)
+      if (!pendingValue) return true
+      if (!isEqual(pendingValue.value, selection.value)) return false
+      pendingWidgetValues.delete(key)
       return true
     }
     if (!pendingValue || !isEqual(pendingValue.value, selection.value))

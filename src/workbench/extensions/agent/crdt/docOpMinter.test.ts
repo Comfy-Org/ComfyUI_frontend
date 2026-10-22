@@ -976,6 +976,58 @@ describe('attachDocOpMinter', () => {
       )
     })
 
+    it('refuses a dynamic-combo child while a conflicting local selection is pending', async () => {
+      const { source, resize, doc, catalog } = registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+
+      selector.value = 'scale by multiplier'
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: resize.id,
+          widget: 'resize_type',
+          value: 'scale by multiplier'
+        })
+      ])
+      minted.length = 0
+      withGraphIntentSource('agent-remote', () => {
+        selector.value = 'match size'
+      })
+
+      const match = resize.findInputSlot('resize_type.match')
+      expect(match).toBeGreaterThanOrEqual(0)
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc'
+        })
+      )
+    })
+
     it('grows and disconnects a selected dynamic-combo child before the grow echo lands', async () => {
       const { source, resize, doc, catalog, match } =
         registeredDynamicComboScenario()
