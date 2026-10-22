@@ -1,5 +1,6 @@
 import { withCatalogLocalePrefix } from '@/config/catalog-locales'
 import { isIndexableModelPage } from '@/config/indexing'
+import type { Locale } from '@/config/locales'
 import { launchedModelPages } from '@/config/model-page-launch'
 import type { ModelPageLaunch } from '@/config/model-page-launch'
 import type { ModelDeveloper } from '@/config/model-vendors'
@@ -166,7 +167,7 @@ interface HubSectionJsonLdInput {
   items: readonly { name: string; href: string }[]
   url: string
   siteUrl: string
-  locale: string
+  locale: Locale
   /** A paged or filtered view lists other records than the canonical URL. */
   search: string
 }
@@ -181,9 +182,11 @@ export function hubSectionJsonLd({
   search
 }: HubSectionJsonLdInput): CollectionPageJsonLd {
   const site = new URL(siteUrl)
-  const listed = (search === '' ? items : []).map((item) => ({
-    name: item.name,
-    url: absoluteUrl(site, withCatalogLocalePrefix(item.href, locale))
-  }))
+  const listed = (search === '' ? items : [])
+    .filter((item) => isIndexableModelPage(item.href))
+    .map((item) => ({
+      name: item.name,
+      url: absoluteUrl(site, withCatalogLocalePrefix(item.href, locale))
+    }))
   return collectionPageJsonLd(name, homeName, listed, url, siteUrl)
 }

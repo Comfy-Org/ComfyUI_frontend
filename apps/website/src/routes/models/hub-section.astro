@@ -43,7 +43,7 @@ const records = catalog?.ok
         : item.type === 'CLOUD' || item.type === 'SERVERLESS'
     )
   : []
-const { siteUrl, url } = pageContext(
+const { siteUrl, url, locale } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale
@@ -55,7 +55,7 @@ const jsonLd = catalog?.ok
       items: records,
       url,
       siteUrl,
-      locale: Astro.locals.catalogLocale ?? 'en',
+      locale,
       search: Astro.url.search
     })
   : undefined
