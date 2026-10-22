@@ -14,15 +14,19 @@ describe('smokeCommand', () => {
 
 describe('standaloneEnv', () => {
   const options = parseOptions([])
+  const inheritedModes: Array<[string, NodeJS.ProcessEnv]> = [
+    ['unset', {}],
+    ['off', { AGENT_CRDT_MODE: 'off' }],
+    ['on', { AGENT_CRDT_MODE: 'on' }],
+    ['require', { AGENT_CRDT_MODE: 'require' }]
+  ]
 
-  // An inherited mode would silently select the retired direct-write path
-  // while the harness claims the shared-document one.
-  it.for([undefined, 'off', 'on', 'require'])(
+  it.for(inheritedModes)(
     'leaves the mode unselected when the shell has AGENT_CRDT_MODE=%s',
-    (mode) => {
+    ([_mode, inherited]) => {
       const env = standaloneEnv(options, '/tmp/agent-data', 'token', {
         PATH: '/usr/bin',
-        ...(mode === undefined ? {} : { AGENT_CRDT_MODE: mode })
+        ...inherited
       })
 
       expect(env).not.toHaveProperty('AGENT_CRDT_MODE')

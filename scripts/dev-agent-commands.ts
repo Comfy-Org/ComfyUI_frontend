@@ -4,8 +4,6 @@ export function smokeCommand(frontendUrl: string): string {
   return `PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=${frontendUrl} pnpm exec playwright test agentHarnessSmoke --project=agent-harness`
 }
 
-// AGENT_CRDT_MODE is scrubbed, not set: left unselected, the standalone agent
-// launches its own doc host and takes the shared-document write path production uses.
 export function standaloneEnv(
   options: Options,
   dataDir: string,
