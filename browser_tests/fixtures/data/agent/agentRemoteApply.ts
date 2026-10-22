@@ -57,7 +57,28 @@ export function addFiveLoadImageNodes(): RecordedGraphOperation[] {
   return AGENT_NODE_IDS.map((id, index) => addLoadImageNode(id, index))
 }
 
+/**
+ * `addLoadImageNode` carrying `LGraphCanvas.node_colors.green`, so the
+ * document holds a palette colour the follower can re-apply.
+ */
+export function addGreenLoadImageNode(
+  nodeId: number,
+  index: number
+): RecordedGraphOperation {
+  const add = addLoadImageNode(nodeId, index)
+  const node = add.node as Record<string, unknown>
+  return { ...add, node: { ...node, color: '#232', bgcolor: '#353' } }
+}
+
 /** No links exist in these fixtures, so nothing is severed by a delete. */
 export function deleteNode(nodeId: number): RecordedGraphOperation {
   return { op: 'delete_node', node_id: nodeId, removed_links: [] }
+}
+
+/** The op an agent rename emits. */
+export function setNodeTitle(
+  nodeId: number,
+  title: string
+): RecordedGraphOperation {
+  return { op: 'set_node_field', node_id: nodeId, field: 'title', value: title }
 }
