@@ -1,6 +1,6 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
-import type { Ref } from 'vue'
-import { computed, onScopeDispose, shallowRef } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, nextTick, onScopeDispose, shallowRef, toValue } from 'vue'
 
 import {
   splitWords,
@@ -39,9 +39,23 @@ function animationsDisabled(): boolean {
   )
 }
 
+async function writePrompt(
+  prompt: Ref<string>,
+  value: string,
+  textarea?: MaybeRefOrGetter<HTMLTextAreaElement | null | undefined>
+) {
+  const el = toValue(textarea)
+  const scrollTop = el?.scrollTop
+  prompt.value = value
+  if (!el || scrollTop === undefined) return
+  await nextTick()
+  el.scrollTop = scrollTop
+}
+
 export function useEnhancePrompt(options: {
   prompt: Ref<string>
   request?: EnhancePromptFn
+  textarea?: MaybeRefOrGetter<HTMLTextAreaElement | null | undefined>
 }) {
   const prompt = options.prompt
   const request = options.request ?? enhancePromptRequest
@@ -86,7 +100,7 @@ export function useEnhancePrompt(options: {
     }
 
     if (reducedMotion.value === 'reduce' || animationsDisabled()) {
-      prompt.value = result.prompt
+      await writePrompt(prompt, result.prompt, options.textarea)
       activeController = null
       state.value = { phase: 'idle' }
       return
@@ -104,7 +118,7 @@ export function useEnhancePrompt(options: {
     )
     if (!revealed) return
 
-    prompt.value = result.prompt
+    await writePrompt(prompt, result.prompt, options.textarea)
     activeController = null
     state.value = { phase: 'idle' }
   }

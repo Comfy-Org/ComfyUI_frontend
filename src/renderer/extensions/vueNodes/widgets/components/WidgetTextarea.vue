@@ -150,6 +150,11 @@ const showEnhance = computed(() => {
   })
 })
 
+function promptTextarea() {
+  const el = textAreaRef.value?.$el
+  return el instanceof HTMLTextAreaElement ? el : undefined
+}
+
 const {
   isLocked,
   isProcessing,
@@ -158,7 +163,8 @@ const {
   revealStaggerMs,
   enhance
 } = useEnhancePrompt({
-  prompt: modelValue
+  prompt: modelValue,
+  textarea: promptTextarea
 })
 
 function handleContextMenu(e: MouseEvent) {

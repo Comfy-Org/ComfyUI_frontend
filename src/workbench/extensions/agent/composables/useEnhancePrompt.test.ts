@@ -210,4 +210,66 @@ describe('useEnhancePrompt', () => {
     expect(prompt.value).toBe('rewritten prompt')
     session.stop()
   })
+
+  function scrolledPrompt(scrollTop: number) {
+    const textarea = document.createElement('textarea')
+    document.body.append(textarea)
+    const source = ref('original prompt')
+    const prompt = computed({
+      get: () => source.value,
+      set: (value: string) => {
+        source.value = value
+        textarea.scrollTop = 0
+      }
+    })
+    textarea.scrollTop = scrollTop
+    return { textarea, prompt }
+  }
+
+  it('preserves the textarea scroll position when the enhanced prompt is written', async () => {
+    vi.useFakeTimers()
+    allowMotion()
+    const { textarea, prompt } = scrolledPrompt(64)
+    const request = vi.fn<EnhancePromptFn>(async () => ({
+      ok: true,
+      prompt: 'brand new prompt'
+    }))
+    const session = withEnhance({ prompt, request, textarea })
+    const pending = session.enhance()
+
+    await vi.advanceTimersByTimeAsync(250)
+    textarea.scrollTop = 64
+    await vi.advanceTimersByTimeAsync(
+      spokenTextDurationMs(
+        'brand new prompt',
+        0,
+        wordRevealStaggerMs(splitWords('brand new prompt').length)
+      )
+    )
+    await pending
+
+    expect(prompt.value).toBe('brand new prompt')
+    expect(textarea.scrollTop).toBe(64)
+    textarea.remove()
+    session.stop()
+  })
+
+  it('preserves scroll when reduced motion writes the prompt immediately', async () => {
+    vi.mocked(usePreferredReducedMotion).mockReturnValue(
+      computed(() => 'reduce')
+    )
+    const { textarea, prompt } = scrolledPrompt(48)
+    const request = vi.fn<EnhancePromptFn>(async () => ({
+      ok: true,
+      prompt: 'brand new prompt'
+    }))
+    const session = withEnhance({ prompt, request, textarea })
+
+    await session.enhance()
+
+    expect(prompt.value).toBe('brand new prompt')
+    expect(textarea.scrollTop).toBe(48)
+    textarea.remove()
+    session.stop()
+  })
 })
