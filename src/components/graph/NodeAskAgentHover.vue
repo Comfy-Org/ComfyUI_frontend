@@ -18,12 +18,12 @@
         <Button
           :tooltip="t('agent.askAgent')"
           data-testid="node-ask-agent-button"
-          variant="muted-textonly"
+          variant="outline"
           size="icon"
           :aria-label="t('agent.askAgent')"
-          class="hover:border-solid hover:border-border hover:bg-secondary"
+          class="border-border"
         >
-          <i class="icon-[lucide--astroid] size-4" />
+          <i class="icon-[lucide--astroid] size-4 text-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -34,7 +34,7 @@
         @open-auto-focus.prevent="focusComposerInput"
       >
         <form @submit.prevent="onSend">
-          <InputGroup>
+          <InputGroup class="rounded-sm">
             <InputGroupInput
               v-model="draft"
               data-testid="node-ask-agent-input"

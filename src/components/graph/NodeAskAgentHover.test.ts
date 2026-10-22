@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -69,6 +69,27 @@ describe('NodeAskAgentHover', () => {
     expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
   })
 
+  it('renders the outline icon button with a token border and foreground icon', () => {
+    renderHover()
+
+    const button = screen.getByRole('button', { name: 'Ask agent' })
+    expect(button).toHaveAttribute('data-variant', 'outline')
+    expect(button).toHaveClass(
+      'border',
+      'border-solid',
+      'border-border',
+      'text-foreground',
+      'rounded-lg',
+      'size-8'
+    )
+    expect(button).not.toHaveClass(
+      'hover:border-solid',
+      'hover:border-border',
+      'hover:bg-secondary',
+      'text-muted-foreground'
+    )
+  })
+
   it('opens the floating composer focused on the input', async () => {
     renderHover()
 
@@ -77,6 +98,13 @@ describe('NodeAskAgentHover', () => {
       .click(screen.getByRole('button', { name: 'Ask agent' }))
 
     expect(screen.getByTestId('node-ask-agent-composer')).toBeVisible()
+    const composer = screen.getByTestId('node-ask-agent-composer')
+    expect(composer).toHaveClass('rounded-lg', 'p-1')
+    const [inputRow] = within(composer).getAllByRole('group')
+    expect(inputRow).toHaveClass('rounded-sm')
+    expect(
+      screen.getByRole('button', { name: 'Explain this node for me' })
+    ).toHaveClass('rounded-sm')
     expect(
       screen.getByRole('textbox', { name: 'Ask for a change' })
     ).toHaveFocus()
