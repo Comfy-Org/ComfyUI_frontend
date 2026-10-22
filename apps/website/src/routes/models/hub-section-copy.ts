@@ -1,9 +1,13 @@
 import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
+import type { t as siteT } from '@/i18n/translations'
 
-export const HUB_SECTION_COPY = {
-  workflows: { heading: 'ComfyUI workflows' },
-  apps: { heading: 'ComfyUI apps' }
-} as const satisfies Record<
-  Exclude<CatalogueTab, 'models'>,
-  Readonly<Record<'heading', string>>
->
+export function hubSectionCopy(
+  section: Exclude<CatalogueTab, 'models'>,
+  t: typeof siteT
+) {
+  return {
+    title: t(`workshop.hubSection.${section}.title`),
+    description: t(`workshop.hubSection.${section}.description`),
+    heading: t(`workshop.hubSection.${section}.name`)
+  }
+}

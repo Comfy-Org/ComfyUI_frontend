@@ -9,7 +9,7 @@ import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { pageContext } from '@/utils/jsonLd'
 import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
-import { HUB_SECTION_COPY } from './hub-section-copy'
+import { hubSectionCopy } from './hub-section-copy'
 import { modelsByProvider } from './models-directory'
 import { modelsHubIndexModels } from './models-hub-index'
 import { cmsEnabled, catalogUnavailable } from '@/lib/cms/catalog'
@@ -75,8 +75,8 @@ const jsonLd = modelsHubJsonLd({
         catalog?.ok
           ? {
               models: Astro.locals.t('workshop.catalogue.heading'),
-              workflows: HUB_SECTION_COPY.workflows.heading,
-              apps: HUB_SECTION_COPY.apps.heading
+              workflows: hubSectionCopy('workflows', Astro.locals.t).heading,
+              apps: hubSectionCopy('apps', Astro.locals.t).heading
             }
           : undefined
       }
