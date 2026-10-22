@@ -67,3 +67,18 @@ export const InPromptBoxProcessing: Story = {
 export const InPromptBoxEnhanced: Story = {
   render: renderPromptBox(ENHANCED_PROMPT)
 }
+
+export const InPromptBoxReveal: Story = {
+  render: renderPromptBox(SAMPLE_PROMPT),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(
+      canvas.getByRole('button', { name: 'Enhance prompt' })
+    )
+    await expect(canvas.getByRole('textbox')).toHaveClass('agent-shimmer-text')
+    await expect(
+      await canvas.findByText('enhanced', {}, { timeout: 3000 })
+    ).toHaveClass('agent-talk-word')
+    await expect(canvas.getByRole('textbox')).toHaveClass('invisible')
+    await expect(canvas.getByRole('textbox')).toHaveAttribute('readonly')
+  }
+}

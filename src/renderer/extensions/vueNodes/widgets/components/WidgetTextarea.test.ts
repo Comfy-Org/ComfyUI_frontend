@@ -359,8 +359,17 @@ describe('WidgetTextarea enhance prompt', () => {
 
     resolveRequest({ ok: true, prompt: 'enhanced prompt' })
     await vi.waitFor(() => {
+      expect(screen.getByText('enhanced')).toHaveClass('agent-talk-word')
+    })
+    expect(screen.getByRole('textbox')).toHaveClass('invisible')
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    expect(screen.getByRole('textbox')).toHaveValue('a prompt')
+
+    await vi.waitFor(() => {
       expect(screen.getByRole('textbox')).not.toHaveAttribute('readonly')
     })
+    expect(screen.getByRole('textbox')).toHaveValue('enhanced prompt')
+    expect(screen.queryByText('enhanced')).not.toBeInTheDocument()
   })
 })
 
