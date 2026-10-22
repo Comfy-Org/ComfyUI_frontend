@@ -121,7 +121,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ComfyRunButton from './ComfyRunButton'
+import ComfyRunButton from './ComfyRunButton/ComfyRunButton.vue'
 
 const { dockedProgressContainer, queueOverlayExpanded = false } = defineProps<{
   /**
