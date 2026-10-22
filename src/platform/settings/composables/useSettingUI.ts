@@ -136,7 +136,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/platform/billing/components/settings/CreditsPanel.vue')
     )
   }
 

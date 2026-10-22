@@ -4,31 +4,23 @@
   "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation stay in the cloud record; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
   "modules": [
     {
-      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/credit/**",
+      "path": "src/platform/billing/components/TopbarSubscribeButton.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/setting/**",
+      "path": "src/platform/billing/components/TopbarSubscribeButton.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/topbar/TopbarSubscribeButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/topbar/TopbarSubscribeButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/credit-slider/**",
+      "path": "src/platform/billing/components/credit-slider/**",
       "role": "presentation"
     },
     {
@@ -120,11 +112,11 @@
       "role": "application"
     },
     {
-      "path": "src/config/billingWeb.test.ts",
+      "path": "src/platform/billing/billingWeb.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/config/billingWeb.ts",
+      "path": "src/platform/billing/billingWeb.ts",
       "role": "infrastructure"
     },
     {
@@ -317,6 +309,22 @@
     },
     {
       "path": "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/CreditsPanel.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/CreditsPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/settings/UsageLogsTable.vue",
       "role": "presentation"
     },
     {
@@ -597,15 +605,17 @@
     {
       "name": "Credits panel, usage logs, and legacy top-up dialog show balances and start top-ups",
       "checks": [
-        "src/components/dialog/content/setting/CreditsPanel.test.ts",
-        "src/components/dialog/content/setting/UsageLogsTable.test.ts",
-        "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
-        "src/components/ui/credit-slider/CreditSlider.test.ts"
+        "src/platform/billing/components/settings/CreditsPanel.test.ts",
+        "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+        "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
+        "src/platform/billing/components/credit-slider/CreditSlider.test.ts"
       ]
     },
     {
       "name": "Topbar subscribe button routes to subscription checkout",
-      "checks": ["src/components/topbar/TopbarSubscribeButton.test.ts"]
+      "checks": [
+        "src/platform/billing/components/TopbarSubscribeButton.test.ts"
+      ]
     },
     {
       "name": "Customer events service pages credit and API-usage events with re-mint retry and formats them for usage logs",
@@ -617,7 +627,7 @@
     },
     {
       "name": "Hosted billing web URL and destination normalization accept only known destinations",
-      "checks": ["src/config/billingWeb.test.ts"]
+      "checks": ["src/platform/billing/billingWeb.test.ts"]
     }
   ],
   "adrs": [

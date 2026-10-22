@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import TopUpCreditsDialogContentLegacy from '@/platform/billing/components/TopUpCreditsDialogContentLegacy.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   DowngradeToPersonalResult,

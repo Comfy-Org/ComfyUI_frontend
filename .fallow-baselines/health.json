@@ -839,7 +839,7 @@
         "count": 1
       }
     },
-    "src/components/dialog/content/setting/UsageLogsTable.vue": {
+    "src/platform/billing/components/settings/UsageLogsTable.vue": {
       "complexity_high": {
         "count": 1
       },

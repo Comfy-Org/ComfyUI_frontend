@@ -88,7 +88,7 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock<unknown>(import('@/config/billingWeb'), () => ({
+vi.mock<unknown>(import('@/platform/billing/billingWeb'), () => ({
   getBillingWebUrl: () => state.billingWebUrl
 }))
 

@@ -28,8 +28,8 @@ import {
 } from '@comfyorg/billing-contract'
 import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 
-import type { HostedBillingDestination } from '@/config/billingWeb'
-import { getBillingWebUrl } from '@/config/billingWeb'
+import type { HostedBillingDestination } from '@/platform/billing/billingWeb'
+import { getBillingWebUrl } from '@/platform/billing/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 

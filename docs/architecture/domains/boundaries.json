@@ -605,8 +605,8 @@
       {
         "name": "billing/infrastructure",
         "patterns": [
-          "src/config/billingWeb.test.ts",
-          "src/config/billingWeb.ts",
+          "src/platform/billing/billingWeb.test.ts",
+          "src/platform/billing/billingWeb.ts",
           "src/platform/billing/api/capabilityRevision.test.ts",
           "src/platform/billing/api/capabilityRevision.ts",
           "src/platform/billing/hostedBillingRoutes.test.ts",
@@ -619,12 +619,11 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
-          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
-          "src/components/dialog/content/credit/**",
-          "src/components/topbar/TopbarSubscribeButton.test.ts",
-          "src/components/topbar/TopbarSubscribeButton.vue",
-          "src/components/ui/credit-slider/**",
+          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
+          "src/platform/billing/components/TopbarSubscribeButton.test.ts",
+          "src/platform/billing/components/TopbarSubscribeButton.vue",
+          "src/platform/billing/components/credit-slider/**",
           "src/platform/billing/components/InsufficientCreditsMemberDialog.vue",
           "src/platform/billing/components/PricingTableWorkspace.test.ts",
           "src/platform/billing/components/PricingTableWorkspace.vue",
@@ -656,6 +655,10 @@
           "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
           "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
           "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
+          "src/platform/billing/components/settings/CreditsPanel.test.ts",
+          "src/platform/billing/components/settings/CreditsPanel.vue",
+          "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+          "src/platform/billing/components/settings/UsageLogsTable.vue",
           "src/platform/billing/components/settings/BillingStatusBanner.stories.ts",
           "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
           "src/platform/billing/components/settings/BillingStatusBanner.vue",
@@ -3596,10 +3599,6 @@
         ]
       },
       {
-        "name": "billing/presentation/outer-1",
-        "patterns": ["src/components/dialog/content/setting/**"]
-      },
-      {
         "name": "bottom-panel/integration/outer-1",
         "patterns": ["src/composables/bottomPanelTabs/**"]
       },
@@ -3659,6 +3658,10 @@
           "src/components/ui/toast/**",
           "src/components/widget/**"
         ]
+      },
+      {
+        "name": "dialog-host/presentation/outer-1",
+        "patterns": ["src/components/dialog/**"]
       },
       {
         "name": "error-handling/application/outer-1",
@@ -3923,10 +3926,6 @@
       {
         "name": "comfyui-api/domain/outer-2",
         "patterns": ["src/platform/remote/**"]
-      },
-      {
-        "name": "dialog-host/presentation/outer-2",
-        "patterns": ["src/components/dialog/**"]
       },
       {
         "name": "first-run-tour/presentation/outer-2",
@@ -4364,7 +4363,6 @@
           "billing/application",
           "billing/presentation",
           "billing/application/outer-1",
-          "billing/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -4378,7 +4376,6 @@
           "billing/integration",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
-          "billing/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -4462,9 +4459,9 @@
           "bounding-boxes/application/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "graph-model/domain/outer-1",
           "vue-node-widgets/presentation/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4494,11 +4491,11 @@
           "bounding-boxes/application/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
           "vue-node-widgets/presentation/outer-1",
           "vue-node-widgets/integration/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4762,7 +4759,7 @@
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/integration",
-          "dialog-host/presentation/outer-2",
+          "dialog-host/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6066,8 +6063,8 @@
           "settings/domain",
           "settings/application",
           "settings/presentation",
+          "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6088,8 +6085,8 @@
           "settings/presentation",
           "settings/integration",
           "authentication/infrastructure/outer-1",
+          "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6860,17 +6857,6 @@
         ]
       },
       {
-        "from": "billing/presentation/outer-1",
-        "allow": [
-          "billing/domain",
-          "billing/application",
-          "billing/presentation",
-          "billing/application/outer-1",
-          "billing/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "bottom-panel/integration/outer-1",
         "allow": [
           "bottom-panel/application",
@@ -6992,6 +6978,15 @@
           "design-system/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "dialog-host/presentation/outer-1",
+        "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -7571,15 +7566,6 @@
         ]
       },
       {
-        "from": "dialog-host/presentation/outer-2",
-        "allow": [
-          "dialog-host/domain",
-          "dialog-host/application",
-          "dialog-host/presentation/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "first-run-tour/presentation/outer-2",
         "allow": [
           "first-run-tour/domain",
@@ -7970,7 +7956,6 @@
           "authentication/infrastructure/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
-          "billing/presentation/outer-1",
           "bottom-panel/integration/outer-1",
           "bounding-boxes/application/outer-1",
           "browser-export/infrastructure/outer-1",
@@ -7982,6 +7967,7 @@
           "cloud/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-handling/application/outer-1",
           "error-reporting/application/outer-1",
           "extension-manager/application/outer-1",
@@ -8043,7 +8029,6 @@
           "browser-interaction/domain/outer-2",
           "cloud/presentation/outer-2",
           "comfyui-api/domain/outer-2",
-          "dialog-host/presentation/outer-2",
           "first-run-tour/presentation/outer-2",
           "graph-layout/domain/outer-2",
           "properties-panel/presentation/outer-2",

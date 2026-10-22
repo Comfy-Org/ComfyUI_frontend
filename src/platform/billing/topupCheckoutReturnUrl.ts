@@ -1,6 +1,6 @@
 import type { BillingEnvironment } from '@comfyorg/billing-contract'
 
-import { getBillingWebUrl } from '@/config/billingWeb'
+import { getBillingWebUrl } from '@/platform/billing/billingWeb'
 import { isCloud } from '@/platform/distribution/types'
 import { hostBillingEnvironment } from '@/platform/billing/hostedBillingRoutes'
 

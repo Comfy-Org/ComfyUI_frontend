@@ -433,7 +433,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlider.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
