@@ -1,5 +1,7 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
+import type { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 const LOAD_IMAGE_TYPE = 'LoadImage'
@@ -60,4 +62,33 @@ export function addFiveLoadImageNodes(): RecordedGraphOperation[] {
 /** No links exist in these fixtures, so nothing is severed by a delete. */
 export function deleteNode(nodeId: number): RecordedGraphOperation {
   return { op: 'delete_node', node_id: nodeId, removed_links: [] }
+}
+
+/** Appearance keys the document carries for a node, as `add_node` passthrough. */
+export interface AgentNodeAppearance {
+  color?: string
+  bgcolor?: string
+  shape?: RenderShape
+}
+
+/**
+ * A node the agent adds with appearance already set in the document, which is
+ * the only way these keys ever reach it: no op writes them afterwards.
+ */
+export function addStyledLoadImageNode(
+  nodeId: number,
+  index: number,
+  appearance: AgentNodeAppearance
+): RecordedGraphOperation {
+  const add = addLoadImageNode(nodeId, index)
+  const node = add.node as Record<string, unknown>
+  return { ...add, node: { ...node, ...appearance } }
+}
+
+/** The one scalar write-back op that exists, used here to touch the node. */
+export function setNodeTitle(
+  nodeId: number,
+  title: string
+): RecordedGraphOperation {
+  return { op: 'set_node_field', node_id: nodeId, field: 'title', value: title }
 }
