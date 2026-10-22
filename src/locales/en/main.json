@@ -550,6 +550,7 @@
     "totalNodes": "Total Nodes",
     "discoverCommunityContent": "Discover community-made Node Packs, Extensions, and more...",
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
+    "loadMoreFailed": "Couldn't load more results.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "emptyState": {
@@ -4623,7 +4624,14 @@
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
     "summaryClasses": "{count} node class | {count} node classes",
-    "briefFailed": "The brief for your agent could not be prepared. Try again."
+    "briefFailed": "The brief for your agent could not be prepared. Try again.",
+    "openBuilder": "Open the build wizard",
+    "bundleUnauthorized": "Sign in to your Comfy account again, then try once more.",
+    "bundleTooMany": "You have too many pending uploads. Try again later; they expire after 24 hours.",
+    "bundleTooLarge": "This installation is too large to upload.",
+    "bundleUnavailable": "Could not reach Comfy. Try again later.",
+    "bundleBusy": "Comfy is busy. Try again in a moment.",
+    "bundleRejected": "Comfy rejected the upload. The problem has been reported."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",
@@ -6055,6 +6063,9 @@
       "readDocs": "Read the docs",
       "reject": "Skip for now",
       "accept": "Start using Comfy Agent",
+      "agreeAndContinue": "Agree and continue",
+      "signInNext": "You'll sign in next.",
+      "body2BeforeSignIn": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Agree and continue, you agree to its usage.",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
       "signInError": "Could not open sign-in. Please try again.",
