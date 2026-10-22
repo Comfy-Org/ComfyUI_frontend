@@ -13,7 +13,7 @@ import { describe, expect, onTestFinished, test } from 'vitest'
 import {
   scanFollowerInvariantSource,
   scanFollowerInvariantSources
-} from './check-follower-invariants'
+} from './check-follower-document-mutations'
 
 const FOLLOWER_CORE = 'src/workbench/extensions/agent/crdt'
 
@@ -37,7 +37,7 @@ function fixture(name: string, scannedAs = name) {
   }
 }
 
-describe('follower invariant guard', () => {
+describe('follower document mutation guard', () => {
   test('accepts the sole host-to-follower integration seam', () => {
     expect(scanFollowerInvariantSource(fixture('followerDoc.ts'))).toEqual([])
   })
@@ -152,8 +152,6 @@ describe('follower invariant guard', () => {
   })
 
   test('rejects a bracketed applyUpdate call', () => {
-    // Inline because the repo's lint rejects computed namespace access in a
-    // source file, which is exactly the shape this pins.
     expect(
       scanFollowerInvariantSource({
         path: `${FOLLOWER_CORE}/bracketed-update.ts`,
@@ -188,6 +186,11 @@ describe('follower invariant guard', () => {
       name: 'forbidden-seam-other-class.ts',
       scannedAs: 'followerDoc.ts',
       line: 7
+    },
+    {
+      name: 'forbidden-seam-nested-function.ts',
+      scannedAs: 'followerDoc.ts',
+      line: 11
     }
   ])(
     'rejects the seam shape in $name scanned as $scannedAs',
@@ -201,22 +204,24 @@ describe('follower invariant guard', () => {
     }
   )
 
-  test('scans every non-test follower-core module, not a fixed list', () => {
+  test('scans every non-test follower-core module recursively', () => {
     const root = temporaryRoot()
     const core = join(root, FOLLOWER_CORE)
+    const nested = join(core, 'nested')
     mkdirSync(core, { recursive: true })
+    mkdirSync(nested, { recursive: true })
     const forbidden = fixtureContents('forbidden-map-set.ts')
     writeFileSync(
       join(core, 'followerDoc.ts'),
       fixtureContents('followerDoc.ts')
     )
-    writeFileSync(join(core, 'newFollowerWriter.ts'), forbidden)
+    writeFileSync(join(nested, 'newFollowerWriter.ts'), forbidden)
     writeFileSync(join(core, 'newFollowerWriter.test.ts'), forbidden)
     writeFileSync(join(core, 'mergeScenarios.ts'), forbidden)
 
     expect(scanFollowerInvariantSources(root)).toEqual([
       {
-        path: join(core, 'newFollowerWriter.ts'),
+        path: join(nested, 'newFollowerWriter.ts'),
         line: 5,
         column: 1,
         message: 'follower code must not call set on a shared document value'

@@ -8,22 +8,23 @@ const FOLLOWER_CORE_DIRECTORY = 'src/workbench/extensions/agent/crdt'
 
 const FOLLOWER_SEAM_PATH = `${FOLLOWER_CORE_DIRECTORY}/followerDoc.ts`
 
-// The merge laboratory replays op streams into scratch documents it creates
-// itself; it never holds the follower document.
 const EXEMPT_FOLLOWER_SOURCES = new Set(['mergeScenarios.ts'])
 
 function followerSourcePaths(repositoryRoot: string): string[] {
   const directory = join(repositoryRoot, FOLLOWER_CORE_DIRECTORY)
   const discovered = existsSync(directory)
-    ? readdirSync(directory)
+    ? readdirSync(directory, { recursive: true, encoding: 'utf8' })
         .filter(
           (name) =>
+            !name.split(/[\\/]/).includes('__fixtures__') &&
             name.endsWith('.ts') &&
             !name.endsWith('.test.ts') &&
             !name.endsWith('.d.ts') &&
             !EXEMPT_FOLLOWER_SOURCES.has(name)
         )
-        .map((name) => `${FOLLOWER_CORE_DIRECTORY}/${name}`)
+        .map(
+          (name) => `${FOLLOWER_CORE_DIRECTORY}/${name.replaceAll('\\', '/')}`
+        )
     : []
   return [...new Set([FOLLOWER_SEAM_PATH, ...discovered])].sort()
 }
@@ -586,5 +587,5 @@ if (isMain) {
         violations
       )}`
     )
-  process.stdout.write('Follower invariant validation passed\n')
+  process.stdout.write('Follower document mutation validation passed\n')
 }
