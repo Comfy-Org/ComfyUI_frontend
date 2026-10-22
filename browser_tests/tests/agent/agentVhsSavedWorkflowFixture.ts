@@ -1,8 +1,11 @@
 import { mergeTests } from '@playwright/test'
 import type { Page, WebSocketRoute } from '@playwright/test'
+import { OPAQUE_WIDGETS_KEY, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import * as Y from 'yjs'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import {
   agentTest,
   bootAgentApp,
@@ -20,6 +23,32 @@ import {
   vhsNodeDefs
 } from '@e2e/fixtures/data/agent/agentVhsSavedWorkflow'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+
+function quarantineRecordWidgets(
+  frames: HostFrame[],
+  nodeIds: readonly number[]
+): HostFrame[] {
+  return frames.map((frame) => {
+    if (frame.type !== 'doc_update') return frame
+    const doc = new Y.Doc()
+    Y.applyUpdate(doc, Buffer.from(String(frame.data.update_b64), 'base64'))
+    doc.transact(() => {
+      for (const nodeId of nodeIds) {
+        const node = nodesMap(doc).get(String(nodeId))
+        const widgets = node?.get('widgets')
+        if (!(node instanceof Y.Map) || !(widgets instanceof Y.Map)) {
+          throw new Error(`Host node ${String(nodeId)} has no named widget map`)
+        }
+        const record = widgets.toJSON()
+        node.delete('widgets')
+        node.set(OPAQUE_WIDGETS_KEY, record)
+      }
+    })
+    const update = Buffer.from(Y.encodeStateAsUpdate(doc)).toString('base64')
+    doc.destroy()
+    return { ...frame, data: { ...frame.data, update_b64: update } }
+  })
+}
 
 async function registerKvStateRestore(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -39,8 +68,7 @@ async function registerKvStateRestore(page: Page): Promise<void> {
   })
 }
 
-/** Canvas state of the saved VHS workflow, with VHS's name-keyed restore stood in. */
-export class VhsSavedWorkflowCanvas {
+class VhsSavedWorkflowCanvas {
   constructor(private readonly page: Page) {}
 
   state() {
@@ -67,9 +95,11 @@ export class VhsSavedWorkflowCanvas {
       savedVhsWorkflow() as WorkflowJSON,
       vhsCatalog
     )
-    host.quarantineRecordWidgets(VHS_LOAD_ID)
-    host.quarantineRecordWidgets(VHS_COMBINE_ID)
-    for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
+    const frames = quarantineRecordWidgets(host.initialSync(), [
+      VHS_LOAD_ID,
+      VHS_COMBINE_ID
+    ])
+    for (const frame of frames) socket.send(JSON.stringify(frame))
   }
 }
 

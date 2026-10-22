@@ -1,5 +1,4 @@
 import {
-  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
@@ -244,20 +243,6 @@ export class HostDoc {
       HOST_ACTOR,
       []
     )
-  }
-
-  /** Test-only: moves named widget values under `OPAQUE_WIDGETS_KEY`. Call before `initialSync`. */
-  quarantineRecordWidgets(nodeId: number): void {
-    const node = nodesMap(this.doc).get(String(nodeId))
-    const widgets = node?.get('widgets')
-    if (!(node instanceof Y.Map) || !(widgets instanceof Y.Map)) {
-      throw new Error(`Host node ${String(nodeId)} has no named widget map`)
-    }
-    const record = widgets.toJSON()
-    this.doc.transact(() => {
-      node.delete('widgets')
-      node.set(OPAQUE_WIDGETS_KEY, record)
-    })
   }
 
   /** Test-only replacement preserving the caller's named-widget key order. */

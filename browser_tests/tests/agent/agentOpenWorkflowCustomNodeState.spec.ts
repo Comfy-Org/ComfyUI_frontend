@@ -4,7 +4,7 @@ import {
   BLANK_WORKFLOW,
   loadIntoBootWorkflow
 } from '@e2e/fixtures/agentPanelFixture'
-import { test } from '@e2e/fixtures/agentVhsSavedWorkflowFixture'
+import { test } from '@e2e/tests/agent/agentVhsSavedWorkflowFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   restoredVhsCanvas,
