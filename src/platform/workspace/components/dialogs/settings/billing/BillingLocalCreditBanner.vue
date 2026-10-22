@@ -97,6 +97,10 @@ interface BannerView {
 
 const bs = 'workspacePanel.billingStatus'
 
+const { suppressed = false } = defineProps<{
+  suppressed?: boolean
+}>()
+
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
@@ -119,6 +123,7 @@ const { href, track } = usePlatformHandoff('/profile/billing', {
 })
 
 const kind = computed(() => {
+  if (suppressed) return null
   if (isCloud) return autoTopUp.value
   return deriveLocalCreditBanner({
     autoTopUp: autoTopUp.value,

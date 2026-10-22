@@ -34,7 +34,7 @@ export function useAutoTopUpBannerKind() {
       enabled: flags.autoTopUpEnabled,
       canManageAutoTopUp: canManageAutoTopUp.value,
       isPaused: isPaused.value,
-      hasActivePlan: !isCloud || billing.canAccessSubscriptionFeatures.value,
+      hasActivePlan: !isCloud || billing.subscription.value?.isActive === true,
       status: loaded?.status ?? null,
       disabledReason: loaded?.disabled_reason ?? null
     })
