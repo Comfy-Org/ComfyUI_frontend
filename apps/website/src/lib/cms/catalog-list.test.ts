@@ -127,6 +127,19 @@ describe('bounded website catalog transport', () => {
     }
   )
 
+  it('sends each capability from the address trimmed, once and never blank', async () => {
+    const upstream = setup()
+    const result = await loadSiteCatalogList(
+      undefined,
+      'en',
+      'workflows',
+      new URLSearchParams('capability=+&capability=+b+&capability=b')
+    )
+    assert.isTrue(result.ok)
+    const url = new URL(String(upstream.mock.calls[0][0]))
+    expect(url.searchParams.getAll('capability')).toEqual(['b'])
+  })
+
   it('keeps authored details out of the serialized card model', async () => {
     const response = page()
     Object.assign(response.items[0].data, {
