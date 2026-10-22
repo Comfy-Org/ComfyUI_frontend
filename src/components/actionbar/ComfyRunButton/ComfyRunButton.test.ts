@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import ComfyRunButton from './ComfyRunButton.vue'
 
@@ -24,10 +27,8 @@ vi.mock<unknown>(import('./LocalRunButtonWrapper.vue'), () => ({
   default: { template: '<button>local run</button>' }
 }))
 
-const originalConfig = window.__CONFIG__
-
 afterEach(() => {
-  window.__CONFIG__ = originalConfig
+  remoteConfig.value = {}
   distribution.isCloud = true
 })
 
@@ -44,11 +45,27 @@ describe('ComfyRunButton', () => {
     'renders the $label button when isCloud=$isCloud and subscription_required=$subscriptionRequired is set after import',
     async ({ isCloud, subscriptionRequired, label }) => {
       distribution.isCloud = isCloud
-      window.__CONFIG__ = { subscription_required: subscriptionRequired }
+      remoteConfig.value = { subscription_required: subscriptionRequired }
 
       render(ComfyRunButton)
 
       expect(await screen.findByRole('button', { name: label })).toBeVisible()
     }
   )
+
+  it('switches to the subscription run button when remote config enables it after render', async () => {
+    remoteConfig.value = { subscription_required: false }
+    render(ComfyRunButton)
+    expect(
+      await screen.findByRole('button', { name: 'queue run' })
+    ).toBeVisible()
+
+    remoteConfig.value = { subscription_required: true }
+    await nextTick()
+
+    expect(
+      await screen.findByRole('button', { name: 'cloud subscription run' })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'queue run' })).toBeNull()
+  })
 })

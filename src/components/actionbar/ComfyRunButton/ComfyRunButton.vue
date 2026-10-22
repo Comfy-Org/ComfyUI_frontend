@@ -1,11 +1,12 @@
 <template>
-  <component :is="selectRunButton()" />
+  <component :is="runButton" />
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const CloudRunButtonWrapper = defineAsyncComponent(
   () => import('./CloudRunButtonWrapper.vue')
@@ -17,10 +18,10 @@ const LocalRunButtonWrapper = defineAsyncComponent(
   () => import('./LocalRunButtonWrapper.vue')
 )
 
-function selectRunButton() {
+const runButton = computed(() => {
   if (!isCloud) return LocalRunButtonWrapper
-  return window.__CONFIG__?.subscription_required
+  return remoteConfig.value.subscription_required
     ? CloudRunButtonWrapper
     : ComfyQueueButton
-}
+})
 </script>
