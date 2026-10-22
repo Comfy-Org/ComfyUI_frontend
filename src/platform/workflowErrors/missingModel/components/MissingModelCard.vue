@@ -116,7 +116,7 @@ const {
   missingModelGroups: MissingModelGroup[]
   /** Execution node ids to emphasize (current canvas selection). */
   highlightedNodeIds?: Set<string>
-  /** The editor runs on a deployment, whose models come from its Build rather than a Comfy Cloud import. */
+  /** On a deployment, whose models come from its Build, not a Cloud import. */
   onDeployment?: boolean
 }>()
 
