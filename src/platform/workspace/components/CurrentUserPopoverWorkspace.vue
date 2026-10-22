@@ -34,55 +34,55 @@
           {{ workspaceName }}
         </span>
       </div>
-      <template v-else>
-        <Tooltip
-          v-model:open="isWorkspaceNameTooltipOpen"
-          :disabled="!workspaceName"
-        >
-          <TooltipTrigger as-child>
-            <button
-              ref="workspaceSwitcherTrigger"
-              type="button"
-              class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-accent"
-              :aria-expanded="isWorkspaceSwitcherOpen"
-              aria-haspopup="menu"
-              aria-controls="workspace-switcher-panel"
-              data-testid="workspace-switcher-trigger"
-              @click="toggleWorkspaceSwitcher"
-              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
-            >
-              <div class="flex w-0 flex-1 items-center gap-2">
-                <WorkspaceProfilePic
-                  class="size-6 shrink-0 text-xs"
-                  :workspace-name
-                  :subscription-tier="activeWorkspace?.subscriptionTier"
-                />
-                <span class="truncate text-sm text-foreground">
-                  {{ workspaceName }}
-                </span>
-              </div>
-              <i
-                class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
-              />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{{ workspaceName }}</TooltipContent>
-        </Tooltip>
+      <Popover v-else v-model:open="isWorkspaceSwitcherOpen">
+        <PopoverAnchor>
+          <Tooltip
+            v-model:open="isWorkspaceNameTooltipOpen"
+            :disabled="!workspaceName"
+          >
+            <TooltipTrigger as-child>
+              <PopoverTrigger as-child>
+                <button
+                  type="button"
+                  class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-accent"
+                  data-testid="workspace-switcher-trigger"
+                  @keydown.escape.stop="isWorkspaceNameTooltipOpen = false"
+                >
+                  <div class="flex w-0 flex-1 items-center gap-2">
+                    <WorkspaceProfilePic
+                      class="size-6 shrink-0 text-xs"
+                      :workspace-name
+                      :subscription-tier="activeWorkspace?.subscriptionTier"
+                    />
+                    <span class="truncate text-sm text-foreground">
+                      {{ workspaceName }}
+                    </span>
+                  </div>
+                  <i
+                    class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+                  />
+                </button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent>{{ workspaceName }}</TooltipContent>
+          </Tooltip>
+        </PopoverAnchor>
 
-        <div
-          v-if="isWorkspaceSwitcherOpen"
-          id="workspace-switcher-panel"
-          ref="workspaceSwitcherPanel"
-          role="menu"
-          class="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border bg-background shadow-md md:inset-x-auto md:top-0 md:right-full md:mt-0 md:mr-4"
+        <PopoverContent
+          side="left"
+          align="start"
+          :side-offset="16"
+          :collision-padding="8"
+          prioritize-position
+          class="w-auto rounded-lg p-0"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
             @select="isWorkspaceSwitcherOpen = false"
             @create="handleCreateWorkspace"
           />
-        </div>
-      </template>
+        </PopoverContent>
+      </Popover>
     </div>
 
     <!-- Credits Section -->
@@ -248,9 +248,9 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { PopoverAnchor, PopoverTrigger } from 'reka-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -258,6 +258,8 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
@@ -295,16 +297,6 @@ const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
   useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const isWorkspaceNameTooltipOpen = ref(false)
-const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
-const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
-
-onClickOutside(
-  workspaceSwitcherPanel,
-  () => {
-    isWorkspaceSwitcherOpen.value = false
-  },
-  { ignore: [workspaceSwitcherTrigger] }
-)
 
 const emit = defineEmits<{
   close: []
@@ -453,15 +445,6 @@ const handleCreateWorkspace = () => {
   isWorkspaceSwitcherOpen.value = false
   showCreateWorkspaceDialog()
   emit('close')
-}
-
-const toggleWorkspaceSwitcher = () => {
-  isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
-}
-
-const closeWorkspaceSwitcherFromKeyboard = () => {
-  isWorkspaceSwitcherOpen.value = false
-  isWorkspaceNameTooltipOpen.value = false
 }
 
 onMounted(() => {

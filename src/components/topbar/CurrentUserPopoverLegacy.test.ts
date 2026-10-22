@@ -434,19 +434,14 @@ describe('CurrentUserPopoverLegacy', () => {
 
       const trigger = screen.getByTestId('workspace-switcher-trigger')
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
-      expect(trigger).toHaveAttribute(
-        'aria-controls',
-        'workspace-switcher-panel'
-      )
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
 
       await user.click(trigger)
 
-      const panel = screen.getByTestId('workspace-switcher-panel')
-      expect(panel).toBeInTheDocument()
-      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
-      expect(panel).toHaveAttribute('role', 'menu')
+      const panel = screen.getByRole('dialog')
+      expect(panel).toBe(screen.getByTestId('workspace-switcher-panel'))
+      expect(trigger).toHaveAttribute('aria-controls', panel.id)
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
 
