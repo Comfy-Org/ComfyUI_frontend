@@ -356,9 +356,9 @@ describe('BillingLocalCreditBanner', () => {
 
   describe('auto top-up banners', () => {
     const FAILED_BODY =
-      "Your last automatic top-up didn't go through. Update your payment method to keep it running."
+      "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
     const OFF_BODY =
-      'Auto top-up turned off after 3 declined charges. Update your payment method, then turn it back on.'
+      'Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on.'
 
     it.for([
       {
@@ -442,24 +442,31 @@ describe('BillingLocalCreditBanner', () => {
       }
     )
 
-    it('ranks out of credits above and low credits below on local', async () => {
+    it('ranks auto top-up above out of credits and low credits on local', async () => {
       arrange({
         subscription: { ...personalSubscription, hasFunds: false },
         balance: { amountMicros: 500, currency: 'usd', lowBalance: true },
         autoReload: { status: 'failed', disabled_reason: null }
       })
-      await nextTick()
-      await nextTick()
+
+      const banner = await screen.findByTestId('billing-local-credit-banner')
+      await vi.waitFor(() =>
+        expect(banner).toHaveTextContent('Auto top-up failed')
+      )
+      expect(banner).not.toHaveTextContent('Out of credits')
+      expect(banner).not.toHaveTextContent('Credits are low')
+    })
+
+    it('shows out of credits to a member while the owner-only banner is hidden', async () => {
+      arrange({
+        canManageAutoTopUp: false,
+        subscription: { ...personalSubscription, hasFunds: false },
+        autoReload: { status: 'failed', disabled_reason: null }
+      })
 
       expect(
-        screen.getByTestId('billing-local-credit-banner')
+        await screen.findByTestId('billing-local-credit-banner')
       ).toHaveTextContent('Out of credits')
-
-      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
-
-      const banner = screen.getByTestId('billing-local-credit-banner')
-      expect(banner).toHaveTextContent('Auto top-up failed')
-      expect(banner).not.toHaveTextContent('Credits are low')
     })
 
     it('hands off to the platform billing page with auto top-up telemetry', async () => {

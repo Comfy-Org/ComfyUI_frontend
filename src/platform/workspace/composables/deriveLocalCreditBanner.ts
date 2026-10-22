@@ -18,10 +18,10 @@ export function deriveLocalCreditBanner(
   input: LocalCreditBannerInput
 ): LocalCreditBannerKind | null {
   if (!input.unifiedBillingSettingsEnabled) return null
+  if (input.autoTopUp) return input.autoTopUp
   if (input.hasFunds === false && !input.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
-  if (input.autoTopUp) return input.autoTopUp
   if (input.lowBalance === true && !input.lowCreditsDismissed) {
     return 'lowCredits'
   }

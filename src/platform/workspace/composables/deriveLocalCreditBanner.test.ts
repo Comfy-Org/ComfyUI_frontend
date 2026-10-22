@@ -54,32 +54,25 @@ describe('deriveLocalCreditBanner', () => {
   })
 
   it.for([
-    { hasFunds: false, lowBalance: true, kind: 'outOfCredits' },
-    { hasFunds: true, lowBalance: true, kind: 'autoTopUpFailed' },
-    { hasFunds: true, lowBalance: false, kind: 'autoTopUpFailed' }
-  ] as const)(
-    'ranks auto top-up between out of credits and low credits ($kind)',
-    ({ hasFunds, lowBalance, kind }) => {
-      expect(
-        derive({ hasFunds, lowBalance, autoTopUp: 'autoTopUpFailed' })
-      ).toBe(kind)
+    { hasFunds: false, lowBalance: true, outOfCreditsDismissed: false },
+    { hasFunds: false, lowBalance: false, outOfCreditsDismissed: false },
+    { hasFunds: false, lowBalance: true, outOfCreditsDismissed: true },
+    { hasFunds: true, lowBalance: true, outOfCreditsDismissed: false },
+    { hasFunds: true, lowBalance: false, outOfCreditsDismissed: false }
+  ])(
+    'ranks auto top-up above out of credits and low credits ($hasFunds, $lowBalance, dismissed $outOfCreditsDismissed)',
+    (row) => {
+      expect(derive({ ...row, autoTopUp: 'autoTopUpFailed' })).toBe(
+        'autoTopUpFailed'
+      )
+      expect(derive({ ...row, autoTopUp: 'autoTopUpOff' })).toBe('autoTopUpOff')
     }
   )
 
-  it('shows low credits again after a dismissed out of credits when no auto top-up banner applies', () => {
+  it('falls back to out of credits and low credits with no auto top-up banner', () => {
+    expect(derive({ hasFunds: false, lowBalance: true })).toBe('outOfCredits')
     expect(
       derive({ hasFunds: false, outOfCreditsDismissed: true, lowBalance: true })
     ).toBe('lowCredits')
-  })
-
-  it('shows the turned-off banner under a dismissed out of credits', () => {
-    expect(
-      derive({
-        hasFunds: false,
-        outOfCreditsDismissed: true,
-        lowBalance: true,
-        autoTopUp: 'autoTopUpOff'
-      })
-    ).toBe('autoTopUpOff')
   })
 })

@@ -3690,11 +3690,11 @@
       },
       "autoTopUpFailed": {
         "title": "Auto top-up failed",
-        "body": "Your last automatic top-up didn't go through. Update your payment method to keep it running."
+        "body": "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
       },
       "autoTopUpOff": {
         "title": "Auto top-up turned off",
-        "body": "Auto top-up turned off after 3 declined charges. Update your payment method, then turn it back on."
+        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",
