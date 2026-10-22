@@ -114,11 +114,16 @@ if (!existsSync(resolve(import.meta.dirname, AGENT_PANEL_COVERAGE_ROOT))) {
   )
 }
 
+// Re-measured 2026-10-22 on a full `pnpm test:coverage` run against this tree:
+// 95.88% statements / 91.70% branches / 96.69% functions / 97.51% lines. The
+// floor sits ~3 points under each, which is about one large untested file of
+// headroom: tight enough that a real regression trips it, loose enough that
+// ordinary churn does not.
 const AGENT_PANEL_COVERAGE_THRESHOLDS = {
-  statements: 88,
-  branches: 72,
-  functions: 82,
-  lines: 88
+  statements: 93,
+  branches: 88,
+  functions: 94,
+  lines: 95
 }
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
