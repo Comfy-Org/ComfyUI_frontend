@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { groupNodesByPack } from '../helpers/groupNodesByPack'
-import type { ComfyNodeDef } from '../schemas/nodeDefSchema'
+import { groupNodesByPack } from '#/helpers/groupNodesByPack'
+import type { ComfyNodeDef } from '#/schemas/nodeDefSchema'
 
 function makeNodeDef(
   name: string,

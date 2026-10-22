@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { watch } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -14,21 +13,12 @@ type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
 type ErrorResponse = components['schemas']['ErrorResponse']
 
 const releaseApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
-// Release service for fetching release notes
 export const useReleaseService = () => {
-  watch(
-    () => getComfyApiBaseUrl(),
-    (url) => {
-      releaseApiClient.defaults.baseURL = url
-    }
-  )
-
   const mapError = (
     err: unknown,
     context: string,
@@ -88,7 +78,6 @@ export const useReleaseService = () => {
     mapError
   })
 
-  // Fetch release notes from API
   const getReleases = async (
     params: GetReleasesParams,
     options: { signal?: AbortSignal; deployEnvironment?: string } = {}
@@ -103,6 +92,7 @@ export const useReleaseService = () => {
     const apiResponse = await executeRequest(
       (client) =>
         client.get<ReleaseNote[]>(endpoint, {
+          baseURL: getComfyApiBaseUrl(),
           params,
           signal,
           headers: deployEnvironment

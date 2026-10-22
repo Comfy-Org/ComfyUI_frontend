@@ -37,10 +37,14 @@ enum ManagerRoute {
 }
 
 const managerApiClient = axios.create({
-  baseURL: api.apiURL('/v2/'),
   headers: {
     'Content-Type': 'application/json'
   }
+})
+
+managerApiClient.interceptors.request.use((config) => {
+  config.baseURL = api.apiURL('/v2/')
+  return config
 })
 
 /**

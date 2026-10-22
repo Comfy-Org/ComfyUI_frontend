@@ -40,17 +40,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
-  default: {
-    render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
-  }
-}))
-
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
@@ -148,6 +137,47 @@ function renderTab({
 describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
+  })
+
+  it('delays hover preview without moving focus and dismisses after leaving', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+    const trigger = screen.getByRole('tab')
+    trigger.focus()
+
+    await user.hover(tab)
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(99)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not reopen a click-dismissed preview when the hover delay expires', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+
+    await user.hover(tab)
+    await user.click(tab)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.click(tab)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it.for(['running', 'completed', 'failed'] as const)(

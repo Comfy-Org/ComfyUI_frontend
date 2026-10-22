@@ -52,30 +52,6 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/AnimationManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/AnimationManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/GizmoManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/GizmoManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/HDRIManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/HDRIManager.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/extensions/core/load3d/Load3DConfiguration.test.ts",
       "role": "integration"
     },
@@ -84,111 +60,11 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/Load3d.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3d.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/extensions/core/load3d/Load3dUtils.test.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/extensions/core/load3d/Load3dUtils.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LoaderManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LoaderManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.obj.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelExporter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelExporter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/PointCloudModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/RecordingManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/RecordingManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneModelManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneModelManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SplatModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SplatModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraFromMatrices.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraFromMatrices.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/constants.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/constants.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/createLoad3d.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/createLoad3d.ts",
       "role": "infrastructure"
     },
     {
@@ -208,10 +84,6 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/loader/**",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/extensions/core/load3d/model3dOutput.test.ts",
       "role": "domain"
     },
@@ -226,10 +98,6 @@
     {
       "path": "src/extensions/core/load3d/nodeTypes.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/quadWireframe/**",
-      "role": "infrastructure"
     },
     {
       "path": "src/extensions/core/load3dAdvanced.ts",
@@ -275,12 +143,12 @@
     {
       "name": "Model loading, adapters, and export preserve supported formats and scene state",
       "checks": [
-        "src/extensions/core/load3d/Load3d.test.ts",
-        "src/extensions/core/load3d/LoaderManager.test.ts",
-        "src/extensions/core/load3d/MeshModelAdapter.test.ts",
-        "src/extensions/core/load3d/SplatModelAdapter.test.ts",
-        "src/extensions/core/load3d/ModelExporter.test.ts",
-        "src/extensions/core/load3d/constants.test.ts"
+        "packages/viewport3d/src/load3d/Load3d.test.ts",
+        "packages/viewport3d/src/load3d/LoaderManager.test.ts",
+        "packages/viewport3d/src/load3d/MeshModelAdapter.test.ts",
+        "packages/viewport3d/src/load3d/SplatModelAdapter.test.ts",
+        "packages/viewport3d/src/load3d/ModelExporter.test.ts",
+        "packages/viewport3d/src/load3d/constants.test.ts"
       ]
     },
     {

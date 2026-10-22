@@ -1,17 +1,17 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -191,6 +191,26 @@ describe('GlobalDialog', () => {
       expect(await screen.findByRole('dialog', { name })).toBeInTheDocument()
     }
   )
+
+  it('names an untitled framed dialog by the DialogTitle in its content', async () => {
+    mountDialog()
+    const contentTitle = ref('Original title')
+    const TitledBody = defineComponent({
+      name: 'TitledBody',
+      setup: () => () => h(DialogTitle, () => contentTitle.value)
+    })
+
+    useDialogStore().showDialog({
+      key: 'framed-content-titled',
+      component: TitledBody
+    })
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Original title'
+    })
+    contentTitle.value = 'Translated title'
+    await waitFor(() => expect(dialog).toHaveAccessibleName('Translated title'))
+  })
 
   it('opens the save dialog with an accessible name and description', async () => {
     mountDialog()
@@ -415,7 +435,6 @@ describe('shouldPreventRekaDismiss', () => {
     layer.appendChild(inner)
     document.body.appendChild(layer)
     onTestFinished(() => {
-      releaseModalLayer(layer)
       layer.remove()
     })
     return inner
@@ -438,7 +457,6 @@ describe('shouldPreventRekaDismiss', () => {
       mark: (layer: HTMLElement) =>
         layer.setAttribute('data-reka-popper-content-wrapper', '')
     },
-    { name: 'a raised modal layer', mark: raiseModalLayer },
     {
       name: 'a toast',
       mark: (layer: HTMLElement) =>
@@ -460,10 +478,9 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+  it('allows dismiss from a dialog scrim', () => {
     const target = appendLayer((layer) => {
       layer.dataset.slot = 'dialog-overlay'
-      raiseModalLayer(layer)
     })
     expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })

@@ -5702,7 +5702,7 @@
   },
   "FishAudioTextToSpeech": {
     "display_name": "Fish Audio Text to Speech",
-    "description": "Convert text to speech. Supports emotion cues in the text ([happy], [whispering] on s2.1-pro; (happy) on s1) and multi-speaker dialogue via {'@'}Voice1/{'@'}Voice2 tags with multiple connected voices.",
+    "description": "Convert text to speech. Supports emotion cues in the text ([happy], [whispering] on s2.1-pro; (happy) on s1), plain-language [directions] and `<whisper>...</whisper>` word tags on drama-3, and multi-speaker dialogue via {'@'}Voice1/{'@'}Voice2 tags with multiple connected voices.",
     "inputs": {
       "text": {
         "name": "text",
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "display_name": "Higgsfield Genjutsu Motion Transfer",
+    "description": "Recast a video with new characters, locations or styles from reference images while keeping its motion, camera movement and timing.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "display_name": "HitPaw General Image Enhance",
     "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
@@ -9338,6 +9365,28 @@
       },
       "resolution_steps": {
         "name": "resolution_steps"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "display_name": "Convert SDR to HDR",
+    "description": "Expand sRGB brightness into Rec.2020 HLG HDR. Save the result with the HDR color space selected. Alpha is preserved.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "SDR image(s) in sRGB."
+      },
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "Lottes-style rational expansion blended with a calibrated monotonic log-gain curve."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
       }
     },
     "outputs": {

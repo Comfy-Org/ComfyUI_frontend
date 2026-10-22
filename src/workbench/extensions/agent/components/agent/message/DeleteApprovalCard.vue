@@ -7,7 +7,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   AskUserResolution,
   DeleteApprovalPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part, answering = false } = defineProps<{
   part: DeleteApprovalPart

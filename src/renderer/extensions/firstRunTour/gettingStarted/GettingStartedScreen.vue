@@ -3,7 +3,7 @@
     <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-1600 flex overflow-y-auto bg-background focus:outline-none"
+        class="fixed inset-0 z-onboarding flex overflow-y-auto bg-background focus:outline-none"
         role="dialog"
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
@@ -165,7 +165,6 @@ const { dismissGettingStarted, dismissIntoFirstRunTour } = useFirstRunEntry()
 const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 
-/** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
 const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()

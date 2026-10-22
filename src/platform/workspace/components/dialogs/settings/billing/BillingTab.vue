@@ -1,6 +1,9 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
+    <BillingPausedBanner
+      :can-manage-billing="capabilities.canManageBilling.value"
+    />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -27,7 +30,8 @@
       <BillingPlanRow
         :state="planRow"
         :action="action"
-        :can-manage-billing="canManageBilling"
+        :can-manage-subscription="capabilities.canManageSubscription.value"
+        @open-plan="openPlan"
       />
       <BillingCreditsCard
         :state="creditsCard"
@@ -51,11 +55,12 @@
       </span>
       <Button
         as="a"
-        :href="handoffUrl"
+        :href="handoffHref"
         target="_blank"
         rel="noopener"
         variant="secondary"
         class="shrink-0"
+        @click="trackHandoff"
       >
         {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
@@ -71,11 +76,12 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -86,29 +92,24 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
 const { flags } = useFeatureFlags()
-const { workspaceRole } = useWorkspaceUI()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
 
-const HANDOFF_PATH = {
-  owner: '/profile/billing',
-  member: '/profile/usage'
+const HANDOFF = {
+  owner: { path: '/profile/billing', target: 'open_billing' },
+  member: { path: '/profile/usage', target: 'usage' }
 } as const
 
-const canManageBilling = computed(() =>
-  pendingServerFact('BE-20308', workspaceRole.value === 'owner')
-)
-
 const handoffAudience = computed(() =>
-  canManageBilling.value ? 'owner' : 'member'
+  capabilities.canManageBilling.value ? 'owner' : 'member'
 )
 
 const load = computed(() =>
@@ -126,12 +127,17 @@ const action = computed(() =>
   })
 )
 
-const handoffUrl = computed(() =>
-  platformLink(HANDOFF_PATH[handoffAudience.value])
+const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+  () => HANDOFF[handoffAudience.value].path,
+  () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
+}
+
+function openPlan() {
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits() {

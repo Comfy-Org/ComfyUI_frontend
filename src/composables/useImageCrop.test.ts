@@ -36,6 +36,9 @@ vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/scripts/app'))
+
+const onEditEnd = vi.fn()
 
 beforeEach(() => {
   vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
@@ -64,7 +67,8 @@ const ImageCropHarness = defineComponent({
       ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
-        modelValue
+        modelValue,
+        onEditEnd
       })
     }
   },
@@ -512,6 +516,54 @@ describe('useImageCrop', () => {
     expect(vm.cropY as number).toBeGreaterThanOrEqual(0)
   })
 
+  it.for([
+    {
+      gesture: 'a drag',
+      start: 'handleDragStart',
+      move: 'handleDragMove',
+      end: 'handleDragEnd'
+    },
+    {
+      gesture: 'a resize',
+      start: 'handleResizeStart',
+      move: 'handleResizeMove',
+      end: 'handleResizeEnd'
+    }
+  ])(
+    'reports the end of an edit once $gesture ends',
+    async ({ start, move, end }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 300)
+      const captureEl = document.createElement('div')
+      captureEl.setPointerCapture = vi.fn()
+      captureEl.releasePointerCapture = vi.fn()
+      const call = (name: string, e: PointerEvent) =>
+        (vm[name] as (e: PointerEvent, dir: string) => void)(e, 'right')
+
+      call(start, makePointerEvent('pointerdown', captureEl, 200, 150))
+      call(move, makePointerEvent('pointermove', captureEl, 230, 160))
+      expect(onEditEnd).not.toHaveBeenCalled()
+
+      call(end, makePointerEvent('pointerup', captureEl, 230, 160))
+      expect(onEditEnd).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { ratio: '1:1', calls: 1 },
+    { ratio: 'custom', calls: 0 }
+  ])(
+    'reports $calls edit(s) when choosing the $ratio ratio',
+    async ({ ratio, calls }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 400)
+
+      vm.selectedRatio = ratio
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
+    }
+  )
+
   it('resizes from the right edge without moving origin', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 500, 500)
@@ -672,7 +724,8 @@ describe('WidgetImageCrop', () => {
           lockRatio: 'Lock aspect ratio',
           unlockRatio: 'Unlock aspect ratio',
           custom: 'Custom'
-        }
+        },
+        widgetHistory: { undo: 'Undo', redo: 'Redo' }
       }
     }
   })
