@@ -24,7 +24,7 @@
     SOFTWARE.
 */
 export const draggableItemClass =
-  'relative select-none will-change-transform [&.is-idle]:transition-transform [&.is-idle]:duration-250 [&.is-idle]:ease-[ease] [&.is-draggable]:z-10'
+  'draggable-item drag-handle relative cursor-grab select-none will-change-transform [&.is-draggable]:z-10 [&.is-draggable]:cursor-grabbing [&.is-idle]:transition-transform [&.is-idle]:duration-250 [&.is-idle]:ease-[ease]'
 
 export class DraggableList extends EventTarget {
   listContainer: HTMLElement

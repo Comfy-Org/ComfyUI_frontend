@@ -1,5 +1,4 @@
 <script setup lang="ts" generic="T">
-import { cn } from '@comfyorg/tailwind-utils'
 import { onBeforeUnmount, ref, useTemplateRef, watchPostEffect } from 'vue'
 
 import { DraggableList, draggableItemClass } from '@/scripts/ui/draggableList'
@@ -33,13 +32,6 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div ref="draggableItems" class="mt-0.5 space-y-0.5 px-2 pb-2">
-    <slot
-      :drag-class="
-        cn(
-          'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing',
-          draggableItemClass
-        )
-      "
-    />
+    <slot :drag-class="draggableItemClass" />
   </div>
 </template>
