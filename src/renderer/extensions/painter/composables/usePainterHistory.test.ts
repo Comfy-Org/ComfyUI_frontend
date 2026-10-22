@@ -1,8 +1,9 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import {
   captureCanvasRegion,
@@ -11,10 +12,10 @@ import {
 } from './usePainterHistory'
 
 function painterScope(nodeId: number): WidgetHistoryScope {
-  return fromAny<WidgetHistoryScope, unknown>({
+  return {
     rootGraphId: 'root',
-    widgetId: `root:${nodeId}:mask`
-  })
+    widgetId: widgetId('root', toNodeId(nodeId), 'mask')
+  }
 }
 
 const scope = painterScope(1)
@@ -92,7 +93,11 @@ function runIdleTasks() {
 
 function setup(
   target: WidgetHistoryScope | null = scope,
-  options: { budgetBytes?: number; compressMinPixels?: number } = {}
+  options: {
+    budgetBytes?: number
+    compressMinPixels?: number
+    canRestore?: () => boolean
+  } = {}
 ) {
   const canvas = createPixelCanvas()
   canvas.width = 4
@@ -184,18 +189,19 @@ describe(usePainterHistory, () => {
     expect(onRestore).not.toHaveBeenCalled()
   })
 
-  it('drops the oldest steps of every painter once the shared budget is exceeded', () => {
-    const otherScope = painterScope(2)
+  it('drops the oldest step across painters once the shared budget is exceeded', async () => {
     const first = setup(scope, { budgetBytes: 8 })
-    const second = setup(otherScope, { budgetBytes: 8 })
+    const second = setup(painterScope(2), { budgetBytes: 8 })
     first.stroke(0, 0, 100)
     second.stroke(0, 0, 100)
 
     first.stroke(1, 0, 100)
+    await first.history.undo()
 
+    expect(first.pixel(1, 0)).toBe(0)
+    expect(first.pixel(0, 0)).toBe(100)
+    expect(first.history.canUndo.value).toBe(false)
     expect(second.history.canUndo.value).toBe(true)
-    expect(useWidgetHistoryStore().storedSteps()).toHaveLength(2)
-    expect(useWidgetHistoryStore().canUndo(scope)).toBe(true)
   })
 
   it('restores a step that was compressed while idle', async () => {
@@ -231,6 +237,54 @@ describe(usePainterHistory, () => {
     await history.undo()
     expect(pixel(0, 0)).toBe(0)
     expect(history.canUndo.value).toBe(false)
+  })
+
+  it('abandons an undo when another step is recorded while it decodes', async () => {
+    const { history, pixel, stroke } = setup(scope, { compressMinPixels: 1 })
+    stroke(0, 0, 100)
+    runIdleTasks()
+    let finishDecode = () => {}
+    const decoded = new Promise<void>((resolve) => {
+      finishDecode = resolve
+    })
+    vi.mocked(createImageBitmap).mockImplementationOnce(async (png) => {
+      await decoded
+      return fromAny<ImageBitmap, unknown>({
+        ...encoded.get(fromAny<Blob, unknown>(png)),
+        close: vi.fn()
+      })
+    })
+
+    const undoing = history.undo()
+    await vi.waitFor(() => expect(createImageBitmap).toHaveBeenCalled())
+    stroke(1, 0, 150)
+    finishDecode()
+    await undoing
+
+    expect(pixel(0, 0)).toBe(100)
+    expect(pixel(1, 0)).toBe(150)
+    expect(history.canRedo.value).toBe(false)
+  })
+
+  it('abandons an undo the painter cannot take right now', async () => {
+    const { history, pixel, stroke } = setup(scope, { canRestore: () => false })
+    stroke(0, 0, 100)
+
+    await history.undo()
+
+    expect(pixel(0, 0)).toBe(100)
+    expect(history.canUndo.value).toBe(true)
+  })
+
+  it('reports an undo in progress until it settles', async () => {
+    const { history, stroke } = setup()
+    stroke(0, 0, 100)
+
+    const undoing = history.undo()
+    expect(history.isRestoring()).toBe(true)
+    await undoing
+
+    expect(history.isRestoring()).toBe(false)
   })
 
   it('records nothing when a region cannot be captured', () => {

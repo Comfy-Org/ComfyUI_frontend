@@ -282,7 +282,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["painter"],
   "characterizationScenarios": [
     {
       "name": "Legacy canvas widgets render and respond to input for each generic kind",
