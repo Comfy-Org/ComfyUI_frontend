@@ -25,11 +25,10 @@ test.describe(
           nodeId: String(SOURCE_NODE_ID),
           filename: OUTPUT_FILENAME
         })
-        const connectionsBeforeDrop =
-          harness.hostSocket.executionConnectionCount()
-        await harness.hostSocket.dropExecutionSocket()
+        const connectionsBeforeDrop = harness.hostSocket.comfyConnectionCount()
+        await harness.hostSocket.disconnectComfySocket()
         await expect
-          .poll(() => harness.hostSocket.executionConnectionCount())
+          .poll(() => harness.hostSocket.comfyConnectionCount())
           .toBeGreaterThan(connectionsBeforeDrop)
       })
 
