@@ -92,6 +92,21 @@ describe('LiveGraphApplier malformed node report', () => {
     expect(nodesMap(doc).get('149')?.toJSON().inputs).toEqual([slot])
   })
 
+  it('creates a node whose slot type is a list of types', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', type: ['IMAGE', 'MASK'], link: null })],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(graph.getNodeById(toNodeId(NODE_ID))?.inputs[0]?.type).toEqual([
+      'IMAGE',
+      'MASK'
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('reports an opaque widget record with a length key instead of configuring from it', () => {
     const { graph, doc, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
