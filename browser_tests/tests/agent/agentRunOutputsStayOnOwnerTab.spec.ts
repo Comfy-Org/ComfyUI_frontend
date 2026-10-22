@@ -1,18 +1,13 @@
 import { expect } from '@playwright/test'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { agentExecutionTest as test } from '@e2e/fixtures/agentExecutionFixture'
+import { SOURCE_NODE_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import {
-  MESSAGE_ID,
-  SOURCE_NODE_ID,
-  THREAD_ID,
-  WORKFLOW_ID
-} from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
-
-const JOB_ID = 'agent-exec-server-run-pm-2275'
-const SHOWN_OUTPUT = 'agent-run-shown-output.png'
-const HIDDEN_OUTPUT = 'agent-run-hidden-output.png'
+  HIDDEN_OUTPUT,
+  RUN_JOB_ID,
+  SHOWN_OUTPUT,
+  runSuccessFrame
+} from '@e2e/fixtures/data/agent/agentRunOutputOwner'
 
 test.describe(
   'PM-2275: an Agent run keeps its outputs on the tab it ran for',
@@ -31,26 +26,13 @@ test.describe(
       const { topbar } = harness
 
       await test.step('the agent submits a run for this workflow', async () => {
-        const run: AgentWsEvent = {
-          type: 'agent_tool_call',
-          data: {
-            thread_id: THREAD_ID,
-            message_id: MESSAGE_ID,
-            tool_call_id: 'call-run-pm-2275',
-            tool_name: 'run',
-            status: 'success',
-            duration_ms: 40,
-            job_id: JOB_ID,
-            job_workflow_id: WORKFLOW_ID
-          }
-        }
-        harness.hostSocket.send(run)
-        await execution.enqueueServerRun(JOB_ID)
-        await execution.startJob(JOB_ID)
+        harness.hostSocket.send(runSuccessFrame)
+        await execution.enqueueServerRun(RUN_JOB_ID)
+        await execution.startJob(RUN_JOB_ID)
       })
 
       await test.step('the first output lands while its tab is visible', async () => {
-        execution.deliverOutput(JOB_ID, {
+        execution.deliverOutput(RUN_JOB_ID, {
           nodeId: String(SOURCE_NODE_ID),
           filename: SHOWN_OUTPUT
         })
@@ -68,7 +50,7 @@ test.describe(
 
       await test.step('the second output lands while its tab is hidden, before the queue refresh it precedes', async () => {
         const handled = page.waitForRequest(/\/api\/jobs\?/)
-        execution.deliverOutput(JOB_ID, {
+        execution.deliverOutput(RUN_JOB_ID, {
           nodeId: String(SOURCE_NODE_ID),
           filename: HIDDEN_OUTPUT
         })
@@ -86,7 +68,7 @@ test.describe(
       })
 
       await test.step('the run finishes and the output stays', async () => {
-        await execution.completeJob(JOB_ID, {
+        await execution.completeJob(RUN_JOB_ID, {
           nodeId: String(SOURCE_NODE_ID),
           filename: HIDDEN_OUTPUT
         })
