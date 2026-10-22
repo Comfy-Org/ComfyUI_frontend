@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
@@ -53,18 +54,27 @@ describe('NodeContextMenu', () => {
     ).toBeVisible()
   })
 
-  it('dismisses when an outside press is stopped before reaching the document', async () => {
+  it.for([
+    {
+      name: 'an outside press is stopped before reaching the document',
+      leave: (user: UserEvent, outside: HTMLElement) =>
+        user.pointer({ keys: '[MouseLeft>]', target: outside })
+    },
+    {
+      name: 'focus moves outside without a press',
+      leave: async (_user: UserEvent, outside: HTMLElement) => outside.focus()
+    }
+  ])('dismisses when $name', async ({ leave }) => {
     renderWithControls()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.click(screen.getByRole('button', { name: 'More options' }))
     await screen.findByRole('menu')
-    await user.pointer({
-      keys: '[MouseLeft>]',
-      target: screen.getByRole('button', { name: 'Graph canvas' })
-    })
+    await leave(user, screen.getByRole('button', { name: 'Graph canvas' }))
 
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
   it('stays closed when the control that opened it is clicked again', async () => {
