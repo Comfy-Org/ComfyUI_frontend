@@ -2,6 +2,10 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+
+type AddNodeOperation = Extract<GraphOperation, { op: 'add_node' }>
+
 const LOAD_IMAGE_TYPE = 'LoadImage'
 
 /**
@@ -29,7 +33,7 @@ export const AGENT_NODE_IDS = [
 export function addLoadImageNode(
   nodeId: number,
   index: number
-): RecordedGraphOperation {
+): AddNodeOperation {
   const pos = [120 + index * 260, 140]
   return {
     op: 'add_node',
@@ -57,17 +61,13 @@ export function addFiveLoadImageNodes(): RecordedGraphOperation[] {
   return AGENT_NODE_IDS.map((id, index) => addLoadImageNode(id, index))
 }
 
-/**
- * `addLoadImageNode` carrying `LGraphCanvas.node_colors.green`, so the
- * document holds a palette colour the follower can re-apply.
- */
+/** `addLoadImageNode` carrying `LGraphCanvas.node_colors.green`. */
 export function addGreenLoadImageNode(
   nodeId: number,
   index: number
-): RecordedGraphOperation {
+): AddNodeOperation {
   const add = addLoadImageNode(nodeId, index)
-  const node = add.node as Record<string, unknown>
-  return { ...add, node: { ...node, color: '#232', bgcolor: '#353' } }
+  return { ...add, node: { ...add.node, color: '#232', bgcolor: '#353' } }
 }
 
 /** No links exist in these fixtures, so nothing is severed by a delete. */
