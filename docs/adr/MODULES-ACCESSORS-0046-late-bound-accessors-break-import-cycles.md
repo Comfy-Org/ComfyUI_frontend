@@ -137,6 +137,8 @@ outside this inventory but follow the same rules.
    both setters and import the guards directly, after checking that the
    barrel's evaluation order still defines `SubgraphIONodeBase` before its
    subclasses.
-6. Add a `deps:audit` check that fails when a module that calls a `provide*`
-   setter during evaluation is not statically reachable from `main.ts` through
-   runtime imports.
+6. Add a `deps:audit` check that fails when an exported `provide*` setter has
+   no call site in a module statically reachable from `main.ts` through
+   runtime imports. The call site is the provider module today and the
+   bootstrap step after follow-up 2, so the check covers both, and a setter
+   that loses its registration fails in CI rather than at its first read.
