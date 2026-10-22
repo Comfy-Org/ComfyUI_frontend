@@ -15,6 +15,7 @@ import type { EffectScope } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -105,7 +106,20 @@ vi.mock(
 )
 
 const mocks = vi.hoisted(() => ({
-  capturedExtensions: [] as ComfyExtension[]
+  capturedExtensions: [] as ComfyExtension[],
+  isCloud: true,
+  isDesktop: false
+}))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: __DISTRIBUTION__,
+  get isCloud() {
+    return mocks.isCloud
+  },
+  isNightly: __IS_NIGHTLY__,
+  get isDesktop() {
+    return mocks.isDesktop
+  }
 }))
 
 vi.mock(
@@ -187,7 +201,9 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
 }
 
 describe('AgentPanel extension flag gate', () => {
-  afterEach(() => setupScope.stop())
+  afterEach(() => {
+    setupScope.stop()
+  })
 
   beforeEach(() => {
     const currentUserService = vi.mocked(useCurrentUser())
@@ -196,6 +212,8 @@ describe('AgentPanel extension flag gate', () => {
       () => isAuthInitialized.value
     )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
+    mocks.isCloud = true
+    mocks.isDesktop = false
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
@@ -227,6 +245,364 @@ describe('AgentPanel extension flag gate', () => {
     workflowStore.activeWorkflow = createMockLoadedWorkflow({
       instanceId: 'first-workflow-instance',
       path: 'workflows/first.json'
+    })
+  })
+
+  describe('Desktop consent introduction', () => {
+    beforeEach(() => {
+      mocks.isCloud = false
+      mocks.isDesktop = true
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      agentStore.isOpen = false
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(
+        async (_trigger, _onAccept, hooks) => {
+          if (hooks?.canShow?.() === false) return
+          hooks?.onShown?.()
+        }
+      )
+    })
+
+    it('keeps Local introduction and its locked panel independent of Cloud refusal', async () => {
+      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
+        true
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      { session: 'signed out', user: null, visits: '0' },
+      {
+        session: 'signed in on first visit',
+        user: { id: 'account-a' },
+        visits: '0'
+      },
+      {
+        session: 'signed in after discovery',
+        user: { id: 'account-a' },
+        visits: '2'
+      },
+      { session: 'signed out after discovery', user: null, visits: '2' }
+    ])('offers consent on startup when $session', async ({ user, visits }) => {
+      currentUser.value = user
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, visits)
+      localStorage.setItem(
+        'Comfy.AgentConsent.AutoShown.account-a.workspace-a',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(agentStore.isVisible).toBe(true)
+      expect(vi.mocked(useAgentConsent().withConsent).mock.calls[0][0]).toBe(
+        'first_load'
+      )
+    })
+
+    it.for([
+      { surface: 'dialog', hold: openDialog, release: closeDialog },
+      {
+        surface: 'tour',
+        hold: () => {
+          activeTour.value = 'appMode'
+        },
+        release: () => {
+          activeTour.value = null
+        }
+      }
+    ])(
+      'waits for an active $surface before offering signed-out consent',
+      async ({ hold, release }) => {
+        currentUser.value = null
+        hold()
+
+        await loadEntryAndSetup()
+        await flush()
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+        release()
+        await flush()
+
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('queues consent after sign-in from another entry despite a previous introduction response', async () => {
+      currentUser.value = null
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      agentStore.close('close_button')
+
+      currentUser.value = { id: 'account-b' }
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+      Object.assign(consentStore, { identity: 'account-b/workspace-b' })
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(agentStore.isVisible).toBe(true)
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentConsent.IntroductionResponded.signed-out'
+        )
+      ).toBe('true')
+    })
+
+    it.for([
+      {
+        restore: 'auth',
+        user: null,
+        initialized: false,
+        workspaceId: 'workspace-a'
+      },
+      {
+        restore: 'workspace',
+        user: { id: 'account-a' },
+        initialized: true,
+        workspaceId: null
+      }
+    ])(
+      'keeps only the locked panel when initial $restore arrives late after an earlier Skip',
+      async ({ user, initialized, workspaceId }) => {
+        currentUser.value = user
+        isAuthInitialized.value = initialized
+        Object.assign(workspaceStore, { activeWorkspaceId: workspaceId })
+        Object.assign(consentStore, { identity: null })
+        localStorage.setItem(
+          'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+          'true'
+        )
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+        await loadEntryAndSetup()
+        await flush()
+
+        currentUser.value = { id: 'account-a' }
+        Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
+        Object.assign(consentStore, { identity: 'account-a/workspace-a' })
+        isAuthInitialized.value = true
+        await flush()
+
+        expect(agentStore.isVisible).toBe(true)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps an external sign-in queued until its workspace resolves', async () => {
+      currentUser.value = null
+      Object.assign(consentStore, { identity: null })
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
+      await loadEntryAndSetup()
+      await flush()
+      openDialog()
+
+      currentUser.value = { id: 'account-b' }
+      await flush()
+      Object.assign(consentStore, { identity: 'account-b/workspace-b' })
+      await flush()
+      closeDialog()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      { session: 'signed out', user: null, scope: 'signed-out' },
+      {
+        session: 'signed in',
+        user: { id: 'account-a' },
+        scope: 'account-a.workspace-a'
+      }
+    ])(
+      'opens the locked panel on every $session launch after Skip',
+      async ({ user, scope }) => {
+        currentUser.value = user
+        localStorage.setItem(
+          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
+          'true'
+        )
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+        openDialog()
+
+        await loadEntryAndSetup()
+        await flush()
+        expect(agentStore.isVisible).toBe(false)
+
+        closeDialog()
+        await flush()
+        expect(agentStore.isVisible).toBe(true)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+        agentStore.close('close_button')
+        setAgentReady(true)
+        await flush()
+        expect(agentStore.isVisible).toBe(false)
+        setupScope.stop()
+        setupScope = effectScope()
+
+        await loadEntryAndSetup()
+        await flush()
+        expect(agentStore.isVisible).toBe(true)
+        expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+      }
+    )
+
+    it.for([
+      { state: 'unknown', agent: undefined },
+      { state: 'starting', agent: { state: 'starting', reason: null } },
+      { state: 'failed', agent: { state: 'failed', reason: 'not_found' } }
+    ] as const)(
+      'does not offer or open for $state, but recovers on late readiness',
+      async ({ agent }) => {
+        currentUser.value = null
+        Object.assign(agentStore, { comfyAgent: agent, flagsSettled: true })
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+
+        await loadEntryAndSetup()
+        await flush()
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+        setAgentReady(true)
+        await flush()
+        expect(agentStore.isVisible).toBe(true)
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('offers again on a later startup when the earlier card was only dismissed', async () => {
+      currentUser.value = null
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(
+        async (_trigger, _onAccept, hooks) => {
+          hooks?.onShown?.()
+          openDialog(CONSENT_DIALOG_KEY)
+          await nextTick()
+          closeDialog(CONSENT_DIALOG_KEY)
+        }
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
+      setAgentReady(true)
+      await flush()
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      setupScope.stop()
+      setupScope = effectScope()
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+      expect(
+        useAgentConsentIntroductionStore().hasResponded('signed-out')
+      ).toBe(false)
+    })
+
+    it('waits for auth initialization before treating startup as signed out', async () => {
+      currentUser.value = null
+      isAuthInitialized.value = false
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      isAuthInitialized.value = true
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it('suppresses a deferred introduction after a manual response', async () => {
+      currentUser.value = null
+      showFirstRunScreen()
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      useAgentConsentIntroductionStore().markResponded()
+      releaseFirstRunScreen()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
+    it('does not ask again while a signed-out acceptance continues through sign-in', async () => {
+      currentUser.value = null
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.signed-out',
+        'true'
+      )
+      Object.assign(useAgentConsentIntroductionStore(), {
+        isContinuingSignIn: true
+      })
+      await loadEntryAndSetup()
+      await flush()
+
+      currentUser.value = { id: 'account-b' }
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      Object.assign(consentStore, { accepted: true })
+      Object.assign(useAgentConsentIntroductionStore(), {
+        isContinuingSignIn: false
+      })
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
+    it('waits for server readiness before offering signed-out consent', async () => {
+      currentUser.value = null
+      setAgentReady(false)
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      setAgentReady(true)
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it('defers signed-out consent until startup and the first-run screen release', async () => {
+      currentUser.value = null
+      showFirstRunScreen()
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      decide(true)
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+      releaseFirstRunScreen()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     })
   })
 
