@@ -47,9 +47,8 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),
-  runDeniedPaymentPastDue: computed(() =>
-    receiveServerFact('denied_reasons.can_run_workflows', false)
-  ),
+  runWorkflowsDenial: runWorkflowsDenialFact(undefined),
+  runDeniedPaymentPastDue: computed(() => false),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
@@ -71,15 +70,18 @@ export function paymentRecoveryAvailableFact(
   )
 }
 
+export function runWorkflowsDenialFact(
+  denial: MaybeRefOrGetter<string | undefined>
+) {
+  return computed(() =>
+    receiveServerFact('denied_reasons.can_run_workflows', toValue(denial))
+  )
+}
+
 export function runDeniedPaymentPastDueFact(
   deniedPastDue: MaybeRefOrGetter<boolean>
 ) {
-  return computed(() =>
-    receiveServerFact(
-      'denied_reasons.can_run_workflows',
-      toValue(deniedPastDue)
-    )
-  )
+  return computed(() => toValue(deniedPastDue))
 }
 
 export const useBillingCapabilities = vi.fn(() => {
