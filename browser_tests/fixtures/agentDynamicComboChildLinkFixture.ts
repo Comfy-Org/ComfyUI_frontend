@@ -17,6 +17,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const RESIZE_TYPE = 'TestResizeImageMask'
@@ -190,8 +191,10 @@ class DynamicComboChildLinkScenario {
       String(RESIZE_ID),
       childIndex
     )
-    // oxlint-disable-next-line playwright/no-force-option
-    await output.dragTo(input, { force: true })
+    await expect(output).toBeVisible()
+    await expect(input).toBeVisible()
+    await output.dragTo(input)
+    await nextFrame(this.page)
     await expect.poll(() => this.linkId(childIndex)).not.toBeNull()
     const linkId = await this.linkId(childIndex)
     if (linkId === null) throw new Error('The visible slot drag made no link')
@@ -203,6 +206,7 @@ class DynamicComboChildLinkScenario {
       (id) => window.app!.graph.removeLink(id),
       toLinkId(linkId)
     )
+    await nextFrame(this.page)
   }
 
   private async linkId(childIndex: number): Promise<number | null> {

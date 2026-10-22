@@ -42,7 +42,7 @@ import {
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -154,29 +154,41 @@ const CATALOG: WidgetCatalog = {
 }
 
 /** The bound document's view of `graph`, as the host holds it. */
-function mintDocFrom(graph: LGraph) {
+function mintDocFrom(graph: LGraph, catalog: WidgetCatalog = CATALOG) {
   const serialized = graph.serialize() as unknown as WorkflowJSON
-  return mint(serialized, CATALOG)
+  return mint(serialized, catalog)
 }
 
 const zDocInputs = z.array(
   z.object({ name: z.string(), link: z.number().nullable() })
 )
 
-function applyOutcomes(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+function applyOutcomes(
+  doc: ReturnType<typeof mint>,
+  ops: GraphOperation[],
+  catalog: WidgetCatalog = CATALOG
+) {
   return applyOps(
     doc,
     mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
-    CATALOG
+    catalog
   ).outcomes
 }
 
-function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
-  return applyOutcomes(doc, ops).map((outcome) => outcome.outcome)
+function applyMinted(
+  doc: ReturnType<typeof mint>,
+  ops: GraphOperation[],
+  catalog: WidgetCatalog = CATALOG
+) {
+  return applyOutcomes(doc, ops, catalog).map((outcome) => outcome.outcome)
 }
 
-function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
-  const node = project(doc, CATALOG).nodes.find(
+function docInputs(
+  doc: ReturnType<typeof mint>,
+  nodeId: unknown,
+  catalog: WidgetCatalog = CATALOG
+) {
+  const node = project(doc, catalog).nodes.find(
     (candidate) => String(candidate.id) === String(nodeId)
   )
   return node ? zDocInputs.parse(node.inputs) : null
@@ -184,6 +196,68 @@ function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
 
 function afterFlush(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve))
+}
+
+function dynamicComboScenario(graph: LGraph) {
+  const resizeType: ComfyNodeDefV1['input'] = {
+    required: {
+      resize_type: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'scale by multiplier',
+              inputs: { required: { multiplier: ['FLOAT', {}] } }
+            },
+            {
+              key: 'match size',
+              inputs: { required: { match: ['IMAGE,MASK', {}] } }
+            }
+          ]
+        }
+      ]
+    }
+  }
+  useNodeDefStore().addNodeDef({
+    name: 'TestResize',
+    display_name: 'Test Resize',
+    category: 'test',
+    python_module: 'custom_nodes.test',
+    description: '',
+    input: resizeType,
+    output: ['IMAGE'],
+    output_name: ['IMAGE'],
+    output_is_list: [false],
+    output_node: false
+  })
+  const source = new TestSource()
+  const resize = new LGraphNode('Test Resize', 'TestResize')
+  resize.widgets = []
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.resize_type, {
+      name: 'resize_type'
+    })
+  )
+  withGraphIntentSource('load', () => {
+    graph.add(source)
+    graph.add(resize)
+  })
+  const catalog: WidgetCatalog = {
+    types: {
+      ...CATALOG.types,
+      TestResize: { widget_order: ['resize_type'] }
+    }
+  }
+  const doc = mintDocFrom(graph, catalog)
+  const selector = resize.widgets[0]
+  assert(selector)
+  withGraphIntentSource('load', () => {
+    selector.value = 'match size'
+  })
+  const match = resize.findInputSlot('resize_type.match')
+  expect(match).toBeGreaterThanOrEqual(0)
+  return { source, resize, doc, catalog, match }
 }
 
 function seedGraph(graph: LGraph) {
@@ -217,6 +291,7 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
+  let docWidgetValue: NonNullable<DocOpMinterDeps['docWidgetValue']>
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
   let docDefinitionIds: Set<string>
@@ -232,6 +307,7 @@ describe('attachDocOpMinter', () => {
     enabled = true
     bound = true
     docInputNames = () => null
+    docWidgetValue = () => undefined
     docPromotedWidgets = () => null
     mayWrite = true
     docDefinitionIds = new Set()
@@ -246,6 +322,8 @@ describe('attachDocOpMinter', () => {
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
       docInputNames: (nodeId) => docInputNames(nodeId),
+      docWidgetValue: (nodeId, widgetName) =>
+        docWidgetValue(nodeId, widgetName),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
       docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
@@ -757,68 +835,54 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     })
 
-    it('grows a dynamic-combo input the document minted under another selection lacks, so its connect and disconnect both land', async () => {
-      const resizeType: ComfyNodeDefV1['input'] = {
-        required: {
-          resize_type: [
-            'COMFY_DYNAMICCOMBO_V3',
-            {
-              options: [
-                {
-                  key: 'scale by multiplier',
-                  inputs: { required: { multiplier: ['FLOAT', {}] } }
-                },
-                {
-                  key: 'match size',
-                  inputs: { required: { match: ['IMAGE,MASK', {}] } }
-                }
-              ]
-            }
-          ]
-        }
-      }
-      useNodeDefStore().addNodeDef({
-        name: 'TestResize',
-        display_name: 'Test Resize',
-        category: 'test',
-        python_module: 'custom_nodes.test',
-        description: '',
-        input: resizeType,
-        output: ['IMAGE'],
-        output_name: ['IMAGE'],
-        output_is_list: [false],
-        output_node: false
-      })
-      const source = new TestSource()
-      const resize = new LGraphNode('Test Resize', 'TestResize')
-      resize.widgets = []
-      useLitegraphService().addNodeInput(
-        resize,
-        transformInputSpecV1ToV2(resizeType.required!.resize_type, {
-          name: 'resize_type'
-        })
-      )
-      withGraphIntentSource('load', () => {
-        graph.add(source)
-        graph.add(resize)
-      })
-      const doc = mintDocFrom(graph)
+    it('refuses a dynamic-combo child when the document has another selection', async () => {
+      const { source, resize, doc, match } = dynamicComboScenario(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
-      withGraphIntentSource('load', () => {
-        resize.widgets![0].value = 'match size'
-      })
-      const match = resize.findInputSlot('resize_type.match')
-      expect(match).toBeGreaterThanOrEqual(0)
-      expect(docInputs(doc, resize.id)?.map(({ name }) => name)).not.toContain(
-        'resize_type.match'
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc'
+        })
       )
+      doc.destroy()
+    })
+
+    it('grows and disconnects a selected dynamic-combo child before the grow echo lands', async () => {
+      const { source, resize, doc, catalog, match } =
+        dynamicComboScenario(graph)
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
 
       source.connect(0, resize, match)
       await afterFlush()
 
       const handWired = resize.inputs[match].link
-      expect(minted).toEqual([
+      const grow = [...minted]
+      expect(grow).toEqual([
         expect.objectContaining({
           op: 'connect',
           link_id: handWired,
@@ -827,25 +891,27 @@ describe('attachDocOpMinter', () => {
           grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
         })
       ])
-      expect(applyMinted(doc, minted)).toEqual(['applied'])
-      expect(docInputs(doc, resize.id)).toContainEqual({
-        name: 'resize_type.match',
-        link: handWired
-      })
       minted.length = 0
 
+      vi.useFakeTimers()
       resize.disconnectInput(match)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
       await afterFlush()
 
       expect(minted).toEqual([
         expect.objectContaining({ op: 'disconnect', link_id: handWired })
       ])
-      expect(applyMinted(doc, minted)).toEqual(['applied'])
-      expect(docInputs(doc, resize.id)).toContainEqual({
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied'])
+      expect(docInputs(doc, resize.id, catalog)).toContainEqual({
         name: 'resize_type.match',
         link: null
       })
       expect(reportError).not.toHaveBeenCalled()
+      vi.useRealTimers()
       doc.destroy()
     })
   })

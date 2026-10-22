@@ -281,6 +281,23 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     )
   }
 
+  function getDynamicComboSelectionForInput(
+    node: LGraphNode,
+    inputName: string
+  ): { widget: string; value: unknown } | undefined {
+    const separator = inputName.indexOf('.')
+    if (separator <= 0 || inputName.indexOf('.', separator + 1) !== -1)
+      return undefined
+    const widget = inputName.slice(0, separator)
+    const nodeDef = fromLGraphNode(node)
+    if (!nodeDef || Object.hasOwn(nodeDef.inputs, inputName)) return undefined
+    const getValue = (name: string) =>
+      node.widgets?.find((candidate) => candidate.name === name)?.value
+    if (!resolveDynamicInputSpec(nodeDef.input, inputName, getValue))
+      return undefined
+    return { widget, value: getValue(widget) }
+  }
+
   /**
    * Registers a node definition filter.
    * @param filter - The filter to register
@@ -378,6 +395,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
+    getDynamicComboSelectionForInput,
     registerNodeDefFilter,
     unregisterNodeDefFilter,
     topNodeDefs
