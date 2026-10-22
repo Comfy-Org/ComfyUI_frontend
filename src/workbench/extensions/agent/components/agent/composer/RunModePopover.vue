@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import {
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import MenuPortal from '@comfyorg/design-system/menu/MenuPortal'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -113,7 +113,7 @@ const options: {
         />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal :key="Number(open)">
+    <MenuPortal>
       <MenuContent
         side="top"
         align="end"
@@ -200,6 +200,6 @@ const options: {
       <span v-if="open" role="status" class="sr-only">
         {{ savingMode === null ? '' : t('g.saving') }}
       </span>
-    </DropdownMenuPortal>
+    </MenuPortal>
   </DropdownMenuRoot>
 </template>

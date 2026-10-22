@@ -82,7 +82,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal :key="Number(open)">
+    <MenuPortal :open="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -104,7 +104,7 @@
           </DropdownMenuItemIndicator>
         </DropdownMenuCheckboxItem>
       </DropdownMenuSubContent>
-    </DropdownMenuPortal>
+    </MenuPortal>
   </DropdownMenuSub>
 
   <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
@@ -120,7 +120,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal :key="Number(open)">
+    <MenuPortal :open="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -144,13 +144,12 @@
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
-    </DropdownMenuPortal>
+    </MenuPortal>
   </DropdownMenuSub>
 </template>
 
 <script setup lang="ts">
 import {
-  DropdownMenuPortal,
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
@@ -161,6 +160,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
+import MenuPortal from '@comfyorg/design-system/menu/MenuPortal'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

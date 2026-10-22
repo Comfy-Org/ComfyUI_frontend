@@ -2,9 +2,9 @@
 import {
   DropdownMenuLabel,
   DropdownMenuRoot,
-  DropdownMenuTrigger,
-  DropdownMenuPortal
+  DropdownMenuTrigger
 } from 'reka-ui'
+import MenuPortal from './MenuPortal.vue'
 import type { DropdownMenuContentProps } from 'reka-ui'
 
 import MenuContent from './MenuContent.vue'
@@ -42,7 +42,7 @@ const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <DropdownMenuPortal :key="Number(open)" :to>
+    <MenuPortal :to>
       <MenuContent
         :align
         :collision-padding
@@ -69,6 +69,6 @@ const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
           </MenuItems>
         </slot>
       </MenuContent>
-    </DropdownMenuPortal>
+    </MenuPortal>
   </DropdownMenuRoot>
 </template>

@@ -2,9 +2,9 @@
 import {
   DropdownMenuContent,
   DropdownMenuRoot,
-  DropdownMenuTrigger,
-  DropdownMenuPortal
+  DropdownMenuTrigger
 } from 'reka-ui'
+import MenuPortal from './MenuPortal.vue'
 import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
@@ -130,7 +130,7 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <DropdownMenuPortal :key="Number(visible)">
+    <MenuPortal>
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         :reference
@@ -154,6 +154,6 @@ defineExpose({ hide, show, toggle, visible })
           </template>
         </MenuItems>
       </DropdownMenuContent>
-    </DropdownMenuPortal>
+    </MenuPortal>
   </DropdownMenuRoot>
 </template>
