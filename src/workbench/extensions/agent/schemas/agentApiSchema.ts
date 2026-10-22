@@ -26,7 +26,6 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import type { AgentStatusWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
@@ -376,4 +375,8 @@ export const zAgentIdentity = zGeneratedAgentIdentity.extend({
 })
 
 /** The server's `agent` feature, pushed again on every change. */
-export type AgentServerFeature = AgentStatusWsMessage
+export interface AgentServerFeature {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
+  ask_send_dismisses?: boolean
+}

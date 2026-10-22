@@ -1232,6 +1232,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function reattachRefusedTurn(
+    send: PendingSend,
     error: unknown,
     threadAtSend: string,
     generation: number
@@ -1256,6 +1257,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
+    if (adoptedActiveTurn) settleSendStop(send, threadAtSend, activeTurnId)
     return adoptedActiveTurn
   }
 
@@ -1319,12 +1321,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
+        send,
         error,
         threadAtSend,
         generation
       )
-      if (reattached)
-        settleSendStop(send, threadAtSend, conversationStore.activeTurnId)
       if (generation !== loadGeneration) return false
       recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
