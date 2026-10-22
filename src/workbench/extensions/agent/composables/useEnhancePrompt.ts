@@ -1,6 +1,6 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
-import type { ComputedRef, InjectionKey, Ref } from 'vue'
-import { computed, onScopeDispose, shallowRef } from 'vue'
+import type { ComputedRef, InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
+import { computed, nextTick, onScopeDispose, shallowRef, toValue } from 'vue'
 
 import {
   splitWords,
@@ -39,6 +39,11 @@ type EnhancePromptApi = {
 
 const MIN_SHIMMER_MS = 250
 
+type BoundPrompt = {
+  prompt: Ref<string>
+  textarea?: MaybeRefOrGetter<HTMLTextAreaElement | null | undefined>
+}
+
 type SharedSession = {
   api: Omit<EnhancePromptApi, 'enhance'>
   enhanceFrom: (
@@ -46,7 +51,7 @@ type SharedSession = {
     request: EnhancePromptFn,
     reducedMotion: { value: string }
   ) => Promise<void>
-  bind: (prompt: Ref<string>) => void
+  bind: (binding: BoundPrompt) => void
   unbind: (prompt: Ref<string>) => boolean
   abortActive: () => void
 }
@@ -75,12 +80,20 @@ function animationsDisabled(): boolean {
   )
 }
 
-function writePrompts(prompts: Set<Ref<string>>, value: string) {
-  for (const prompt of prompts) prompt.value = value
+async function writePrompts(bindings: Iterable<BoundPrompt>, value: string) {
+  const scrolls = [...bindings].map((binding) => {
+    const el = toValue(binding.textarea)
+    return { el, scrollTop: el?.scrollTop }
+  })
+  for (const binding of bindings) binding.prompt.value = value
+  await nextTick()
+  for (const { el, scrollTop } of scrolls) {
+    if (el && scrollTop !== undefined) el.scrollTop = scrollTop
+  }
 }
 
 function createSession(): SharedSession {
-  const prompts = new Set<Ref<string>>()
+  const bindings = new Set<BoundPrompt>()
   const state = shallowRef<EnhancePromptState>({ phase: 'idle' })
   let activeController: AbortController | null = null
 
@@ -125,7 +138,7 @@ function createSession(): SharedSession {
     }
 
     if (reducedMotion.value === 'reduce' || animationsDisabled()) {
-      writePrompts(prompts, result.prompt)
+      await writePrompts(bindings, result.prompt)
       activeController = null
       state.value = { phase: 'idle' }
       return
@@ -143,7 +156,7 @@ function createSession(): SharedSession {
     )
     if (!revealed) return
 
-    writePrompts(prompts, result.prompt)
+    await writePrompts(bindings, result.prompt)
     activeController = null
     state.value = { phase: 'idle' }
   }
@@ -158,12 +171,14 @@ function createSession(): SharedSession {
       revealStaggerMs
     },
     enhanceFrom,
-    bind(prompt) {
-      prompts.add(prompt)
+    bind(binding) {
+      bindings.add(binding)
     },
     unbind(prompt) {
-      prompts.delete(prompt)
-      return prompts.size === 0
+      for (const binding of bindings) {
+        if (binding.prompt === prompt) bindings.delete(binding)
+      }
+      return bindings.size === 0
     },
     abortActive
   }
@@ -173,6 +188,7 @@ export function useEnhancePrompt(options: {
   prompt: Ref<string>
   request?: EnhancePromptFn
   widgetId?: WidgetId
+  textarea?: MaybeRefOrGetter<HTMLTextAreaElement | null | undefined>
 }): EnhancePromptApi {
   const request = options.request ?? enhancePromptRequest
   const reducedMotion = usePreferredReducedMotion()
@@ -186,7 +202,7 @@ export function useEnhancePrompt(options: {
       })())
     : createSession()
 
-  session.bind(options.prompt)
+  session.bind({ prompt: options.prompt, textarea: options.textarea })
 
   onScopeDispose(() => {
     const empty = session.unbind(options.prompt)

@@ -32,6 +32,7 @@ describe('EnhancePromptButton', () => {
 
       const button = screen.getByRole('button', { name: 'Enhance prompt' })
       expect(button).toHaveClass(buttonClass)
+      expect(button).toHaveClass('hover:bg-accent')
       expect(button.dataset.variant).toBe('muted-textonly')
       expect(button.innerHTML).toContain('icon-[lucide--astroid]')
       expect(button.innerHTML).toContain(iconClass)

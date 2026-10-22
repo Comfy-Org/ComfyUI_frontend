@@ -53,6 +53,18 @@ export const InPromptBox: Story = {
   render: renderPromptBox(SAMPLE_PROMPT)
 }
 
+export const InPromptBoxHover: Story = {
+  render: renderPromptBox(SAMPLE_PROMPT),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.hover(
+      canvas.getByRole('button', { name: 'Enhance prompt' })
+    )
+    await expect(await canvas.findByTestId('tooltip-text')).toHaveTextContent(
+      'Enhance prompt'
+    )
+  }
+}
+
 export const InPromptBoxProcessing: Story = {
   render: renderPromptBox(SAMPLE_PROMPT),
   play: async ({ canvas, userEvent }) => {

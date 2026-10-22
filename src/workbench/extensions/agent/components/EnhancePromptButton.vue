@@ -30,12 +30,7 @@ const emit = defineEmits<{
     :size
     :loading
     :disabled
-    :class="
-      cn(
-        size === 'icon-sm' && 'text-muted-foreground hover:text-foreground',
-        className
-      )
-    "
+    :class="className"
     :tooltip="$t('agent.enhancePrompt')"
     :tooltip-side="tooltipSide"
     :aria-label="
