@@ -60,25 +60,6 @@ describe('loadCatalogCreators', () => {
     expect(call(1).searchParams.get('cursor')).toBe('page-2')
   })
 
-  it('merges usernames that differ only in case into one lowercase creator', async () => {
-    serve({
-      '/api/v1/catalog/creators': () =>
-        Response.json({
-          items: [
-            summary('PurZ', 2, { display_name: 'PurZ' }),
-            summary('purz', 1)
-          ]
-        })
-    })
-
-    const result = await loadCatalogCreators()
-
-    assert.isTrue(result.ok)
-    expect(result.creators).toEqual([
-      { username: 'purz', displayName: 'PurZ', workflowCount: 3 }
-    ])
-  })
-
   it.for([
     {
       case: 'resizes an avatar on the Hub assets host',

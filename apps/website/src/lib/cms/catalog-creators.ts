@@ -37,24 +37,11 @@ type DirectoryItem = z.output<typeof creatorsPageSchema>['items'][number]
 function summaryOf(item: DirectoryItem): HubCreatorSummary {
   const avatarUrl = hubAvatarUrl(item.avatar_url)
   return {
-    username: item.username.toLowerCase(),
+    username: item.username,
     displayName: item.display_name || item.username,
     workflowCount: item.workflow_count,
     ...(avatarUrl && { avatarUrl })
   }
-}
-
-function withCounts(
-  known: HubCreatorSummary | undefined,
-  next: HubCreatorSummary
-): HubCreatorSummary {
-  return known
-    ? {
-        ...next,
-        ...known,
-        workflowCount: known.workflowCount + next.workflowCount
-      }
-    : next
 }
 
 function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
@@ -63,14 +50,9 @@ function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
   )
 }
 
-function mergedByUsername(items: readonly DirectoryItem[]) {
-  const creators = new Map<string, HubCreatorSummary>()
-  for (const summary of items.map(summaryOf))
-    creators.set(
-      summary.username,
-      withCounts(creators.get(summary.username), summary)
-    )
-  return [...creators.values()]
+function directoryOf(items: readonly DirectoryItem[]) {
+  return items
+    .map(summaryOf)
     .filter(({ workflowCount }) => workflowCount > 0)
     .sort(busiestFirst)
 }
@@ -98,6 +80,6 @@ export async function loadCatalogCreators(
     }
   })
   return items
-    ? ({ ok: true, creators: mergedByUsername(items) } as const)
+    ? ({ ok: true, creators: directoryOf(items) } as const)
     : unavailable
 }
