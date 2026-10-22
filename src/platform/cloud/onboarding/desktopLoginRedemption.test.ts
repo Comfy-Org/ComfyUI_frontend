@@ -839,6 +839,48 @@ describe('installDesktopLoginRedemption', () => {
     expect(stashedCode()).toBeUndefined()
   })
 
+  it.for([
+    { name: 'the same code', code: `dls_${'A'.repeat(43)}` },
+    { name: 'a replacement code', code: `dls_${'B'.repeat(43)}` }
+  ])('ignores a stale retry while $name waits for SSO', async ({ code }) => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'comfy-user' } }
+    })
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'sso_required', message: 'Sign in again' },
+          { status: 403 }
+        )
+      )
+      .mockResolvedValue(new Response(null, { status: 503 }))
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+    )
+    seedStash(`dls_${'A'.repeat(43)}`)
+
+    await trigger()
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(stashedCode()).toBe(code)
+    expect(useToast().toasts).toEqual([])
+
+    send.mockResolvedValueOnce(okResponse())
+    await trigger()
+    expect(send).toHaveBeenCalledTimes(3)
+    expect(stashedCode()).toBeUndefined()
+    expect(useToast().toasts.at(-1)?.title).toBe('desktopLogin.successSummary')
+  })
+
   it('waits for the browser session after Firebase sign-in', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
@@ -912,11 +954,12 @@ describe('installDesktopLoginRedemption', () => {
     provideWebSessionRequests(fromPartial<WebSessionRequests>({ scope, send }))
     const code = `dls_${'A'.repeat(43)}`
     seedStash(code)
-    for (let i = 0; i < 2; i++) {
-      await trigger()
-      await vi.advanceTimersByTimeAsync(10_000)
-      expect(stashedCode()).toBe(code)
-    }
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(stashedCode()).toBe(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(stashedCode()).toBe(code)
     scope.mockResolvedValue(
       fromPartial<WebSessionRequestScope>({
         epoch: 1,

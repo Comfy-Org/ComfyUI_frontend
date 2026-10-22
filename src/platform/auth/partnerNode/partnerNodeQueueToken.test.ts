@@ -123,9 +123,20 @@ describe('queueAuthToken', () => {
     expect(fetchRequests(MINT_URL)).toHaveLength(0)
   })
 
-  it.for(['native-partner-token', null])(
-    'uses the native mint result %s without sending the workspace token to mint',
-    async (token) => {
+  it.for([
+    {
+      name: 'uses the native partner token',
+      token: 'native-partner-token',
+      expected: 'native-partner-token'
+    },
+    {
+      name: 'returns no credential when native mint fails',
+      token: null,
+      expected: undefined
+    }
+  ])(
+    '$name without sending the workspace token to mint',
+    async ({ token, expected }) => {
       vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
       const getPartnerNodeToken = vi.fn(async () => token)
       await startDesktopHostSession(
@@ -140,7 +151,7 @@ describe('queueAuthToken', () => {
         })
       )
       await expect(queueAuthToken(WORKSPACE_TOKEN, 'ws-a')).resolves.toBe(
-        token ?? undefined
+        expected
       )
       expect(getPartnerNodeToken).toHaveBeenCalledExactlyOnceWith('ws-a')
       expect(fetchRequests(MINT_URL)).toHaveLength(0)

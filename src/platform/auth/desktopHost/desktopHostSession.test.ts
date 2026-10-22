@@ -274,25 +274,33 @@ describe('desktopHostSession', () => {
     })
   })
 
-  it.for([true, false])(
-    'handles same-identity broadcasts during mint: %s',
-    async (sameIdentity) => {
-      const { bridge, push } = fakeBridge(SIGNED_IN)
-      const pending = deferred<string | null>()
-      await startDesktopHostSession({
-        ...bridge,
-        getPartnerNodeToken: () => pending.promise
-      })
-      const request = desktopHostPartnerNodeToken('ws-1')
-      push(sameIdentity ? { ...SIGNED_IN } : { status: 'signed_out' })
-      pending.resolve('partner-token')
-      await expect(request).resolves.toEqual(
-        sameIdentity
-          ? { status: 'ready', token: 'partner-token' }
-          : { status: 'session_changed' }
-      )
+  it.for([
+    {
+      name: 'keeps a token after a same-identity broadcast during mint',
+      broadcast: SIGNED_IN,
+      expected: { status: 'ready', token: 'partner-token' }
+    },
+    {
+      name: 'discards a token after a signed-out broadcast during mint',
+      broadcast: { status: 'signed_out' },
+      expected: { status: 'session_changed' }
     }
-  )
+  ] satisfies {
+    name: string
+    broadcast: DesktopHostAuthState
+    expected: Awaited<ReturnType<typeof desktopHostPartnerNodeToken>>
+  }[])('$name', async ({ broadcast, expected }) => {
+    const { bridge, push } = fakeBridge(SIGNED_IN)
+    const pending = deferred<string | null>()
+    await startDesktopHostSession({
+      ...bridge,
+      getPartnerNodeToken: () => pending.promise
+    })
+    const request = desktopHostPartnerNodeToken('ws-1')
+    push(broadcast)
+    pending.resolve('partner-token')
+    await expect(request).resolves.toEqual(expected)
+  })
 
   it('does not ask the native bridge for another workspace', async () => {
     const { bridge } = fakeBridge(SIGNED_IN)
