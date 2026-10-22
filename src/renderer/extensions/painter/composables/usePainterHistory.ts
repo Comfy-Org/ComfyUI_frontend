@@ -144,6 +144,7 @@ interface UsePainterHistoryOptions {
   scope: () => WidgetHistoryScope | null
   context: () => CanvasRenderingContext2D | null
   onRestore: () => void
+  canRestore?: () => boolean
   budgetBytes?: number
   compressMinPixels?: number
 }
@@ -152,11 +153,13 @@ export function usePainterHistory({
   scope,
   context,
   onRestore,
+  canRestore = () => true,
   budgetBytes = PAINTER_HISTORY_BUDGET_BYTES,
   compressMinPixels = PAINTER_HISTORY_COMPRESS_MIN_PIXELS
 }: UsePainterHistoryOptions) {
   const store = useWidgetHistoryStore()
   let pending = Promise.resolve()
+  let pendingCount = 0
 
   function storedRegions() {
     return store
@@ -232,18 +235,31 @@ export function usePainterHistory({
     onRestore()
   }
 
+  function nextStep(target: WidgetHistoryScope, direction: 'undo' | 'redo') {
+    const next = store.peek(target, direction)?.value
+    return isCanvasRegion(next) ? next : undefined
+  }
+
   async function travel(direction: 'undo' | 'redo'): Promise<void> {
     const target = scope()
     const ctx = context()
-    const next = target && store.peek(target, direction)?.value
-    if (!target || !ctx || !isCanvasRegion(next)) return
-    if (next.pixels.canvas) return swapRegion(target, ctx, next, direction)
-    if (await decodeRegion(next)) return travel(direction)
-    store.dropStep(target, next)
+    const next = target && nextStep(target, direction)
+    if (!target || !ctx || !next) return
+    if (!next.pixels.canvas && !(await decodeRegion(next))) {
+      store.dropStep(target, next)
+      return
+    }
+    if (nextStep(target, direction) !== next || !canRestore()) return
+    swapRegion(target, ctx, next, direction)
   }
 
   function enqueue(direction: 'undo' | 'redo') {
-    const run = pending.then(() => travel(direction))
+    pendingCount++
+    const run = pending
+      .then(() => travel(direction))
+      .finally(() => {
+        pendingCount--
+      })
     pending = run.catch(() => undefined)
     return run
   }
@@ -265,6 +281,7 @@ export function usePainterHistory({
   return {
     canUndo,
     canRedo,
+    isRestoring: () => pendingCount > 0,
     record,
     discard,
     undo: () => enqueue('undo'),

@@ -25,6 +25,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { usePainter } from './usePainter'
 
@@ -701,10 +702,10 @@ describe('usePainter', () => {
   })
 
   describe('node history', () => {
-    const historyScope = fromAny<WidgetHistoryScope, unknown>({
+    const historyScope: WidgetHistoryScope = {
       rootGraphId: 'root',
-      widgetId: 'root:test-node:mask'
-    })
+      widgetId: widgetId('root', toNodeId('test-node'), 'mask')
+    }
 
     function mountWithHistory() {
       makePaintNode([
@@ -813,6 +814,34 @@ describe('usePainter', () => {
       await painter.undo()
 
       expect(painted).toContainEqual({ width: 20, height: 20, x: 45, y: 45 })
+    })
+
+    it('ignores a stroke started while an undo is still running', async () => {
+      const { painter, canvasEl } = mountWithHistory()
+      canvasEl.value!.getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ left: 0, top: 0, width: 2, height: 2 })
+      painter.handleClear()
+      const event = new PointerEvent('pointerdown', { button: 0 })
+      Object.defineProperty(event, 'target', {
+        value: { setPointerCapture: vi.fn() }
+      })
+
+      const undoing = painter.undo()
+      painter.handlePointerDown(event)
+      await undoing
+
+      expect(painter.canUndo.value).toBe(false)
+      expect(painter.canRedo.value).toBe(true)
+    })
+
+    it('drops the history when the mask is replaced from outside', async () => {
+      const { painter, modelValue } = mountWithHistory()
+      painter.handleClear()
+
+      modelValue.value = 'painter/other.png [input]'
+      await nextTick()
+
+      expect(painter.canUndo.value).toBe(false)
     })
 
     it('drops the history when the canvas size changes', async () => {

@@ -231,6 +231,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const history = usePainterHistory({
     scope: historyScope,
     context: getCtx,
+    canRestore: () => !isDrawing,
     onRestore: () => {
       isDirty.value = true
     }
@@ -461,7 +462,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function startStroke(e: PointerEvent) {
     const point = getCanvasPoint(e)
-    if (!point) return
+    if (!point || history.isRestoring()) return
 
     const el = canvasEl.value
     if (!el) return
