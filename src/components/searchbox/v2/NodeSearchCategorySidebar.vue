@@ -31,7 +31,7 @@
       :class="
         cn(
           'flex flex-col px-3',
-          !hidePresets && 'mt-2 border-t border-border-subtle pt-2'
+          !hidePresets && 'mt-2 border-t border-border/50 pt-2'
         )
       "
     >

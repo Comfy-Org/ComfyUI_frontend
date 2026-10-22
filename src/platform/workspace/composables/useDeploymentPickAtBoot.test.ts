@@ -4,10 +4,7 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import {
-  NOTHING_DISCARDED,
-  reloadForDeploymentSwitch
-} from '@/platform/workspace/deploymentSwitchReload'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -128,7 +125,7 @@ describe('useDeploymentPickAtBoot', () => {
       ...listing,
       ...reply
     })
-    reloadForDeploymentSwitch(NOTHING_DISCARDED, () => {})
+    reloadForDeploymentSwitch(() => {})
 
     await useDeploymentPickAtBoot()
     await useDeploymentPickAtBoot()
@@ -145,7 +142,7 @@ describe('useDeploymentPickAtBoot', () => {
     vi.mocked(workspaceApi.listDeployments)
       .mockRejectedValueOnce(new Error('Network Error'))
       .mockResolvedValue(listing)
-    reloadForDeploymentSwitch(NOTHING_DISCARDED, () => {})
+    reloadForDeploymentSwitch(() => {})
 
     await useDeploymentPickAtBoot()
     expect(useToast().toasts).toEqual([])

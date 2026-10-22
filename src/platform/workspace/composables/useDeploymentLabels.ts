@@ -125,7 +125,7 @@ export function useBootDeploymentLabel() {
   })
 }
 
-/** Build and deployment name of where this page booted, Comfy Cloud, or undefined until known; works outside a component. */
+/** Where this page booted, or Comfy Cloud; undefined until known. */
 export function useBootDeploymentFullLabel() {
   const { bootDeployment, listingRefused } = storeToRefs(
     useDeploymentPickStore()

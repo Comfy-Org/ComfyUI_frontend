@@ -6,7 +6,10 @@
  * Uses Fuse.js for fuzzy matching against category keywords.
  */
 import Fuse from 'fuse.js'
-import type { SurveyResponses, SurveyResponsesNormalized } from '../types'
+import type {
+  SurveyResponses,
+  SurveyResponsesNormalized
+} from '@/platform/telemetry/types'
 
 interface CategoryMapping {
   name: string

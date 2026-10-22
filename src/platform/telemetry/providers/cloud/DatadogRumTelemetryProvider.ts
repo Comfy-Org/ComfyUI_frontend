@@ -27,8 +27,8 @@ import type {
   UnifiedAuthRetryMetadata,
   WorkspaceScopeMismatchMetadata,
   WorkspaceTelemetryContext
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false

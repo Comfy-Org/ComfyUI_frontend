@@ -2,9 +2,7 @@
   <DropdownMenuSub v-slot="{ open }">
     <MenuSubTrigger
       :disabled
-      :class="
-        cn(switcherItemClass, 'data-[state=open]:bg-secondary-background-hover')
-      "
+      :class="cn(switcherItemClass, 'data-[state=open]:bg-accent')"
       data-testid="deployment-switcher-default"
     >
       <i
@@ -16,7 +14,7 @@
         :class="
           cn(
             'ml-auto truncate pl-4',
-            defaultGone ? 'text-warning-background' : 'text-muted-foreground'
+            defaultGone ? 'text-warning' : 'text-muted-foreground'
           )
         "
         data-testid="deployment-switcher-default-current"
@@ -25,7 +23,7 @@
       </span>
       <span :class="switcherTrailingSlotClass">
         <i
-          class="icon-[lucide--chevron-right] size-3.5 text-muted-foreground group-data-[state=open]:text-base-foreground"
+          class="icon-[lucide--chevron-right] size-3.5 text-muted-foreground group-data-[state=open]:text-foreground"
           aria-hidden="true"
         />
       </span>

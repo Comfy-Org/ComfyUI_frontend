@@ -5,13 +5,13 @@
       :id="gatedHintId"
       data-testid="missing-model-gated-hint"
       role="note"
-      class="mb-2 flex gap-2 rounded-md border border-warning-background/30 bg-warning-background/10 p-2.5"
+      class="mb-2 flex gap-2 rounded-md border border-warning/30 bg-warning/10 p-2.5 text-warning"
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--lock] size-4 shrink-0 text-warning-background"
+        class="mt-0.5 icon-[lucide--lock] size-4 shrink-0"
       />
-      <p class="m-0 text-xs/relaxed text-warning-background">
+      <p class="m-0 text-xs/relaxed">
         <span class="font-semibold">
           {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
         </span>
@@ -42,10 +42,10 @@
     <div
       v-if="unsupportedModelRows.length > 0"
       data-testid="missing-model-import-not-supported-section"
-      class="flex flex-col gap-1 border-t border-secondary-background pt-3"
+      class="flex flex-col gap-1 border-t border-secondary pt-3"
     >
       <div class="mb-1">
-        <p class="m-0 text-sm font-semibold text-warning-background">
+        <p class="m-0 text-sm font-semibold text-warning">
           {{ t('rightSidePanel.missingModels.importNotSupported') }}
         </p>
         <p class="m-0 mt-1 text-xs/relaxed text-muted-foreground">
@@ -73,7 +73,7 @@
         data-testid="missing-model-download-all"
         variant="secondary"
         size="sm"
-        class="h-8 min-w-0 flex-1 rounded-md text-xs"
+        class="h-8 min-w-0 flex-1 rounded-md"
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >

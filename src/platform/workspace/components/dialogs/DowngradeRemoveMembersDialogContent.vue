@@ -1,25 +1,27 @@
 <template>
-  <DialogPanel class="w-full max-w-[400px]" @close="onClose">
+  <AppDialogPanel
+    body-class="flex flex-col gap-4 text-sm text-muted-foreground"
+    class="w-full max-w-[400px]"
+    @close="onClose"
+  >
     <template #title>
       {{ $t('subscription.downgrade.title', { plan: planName }) }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ bodyText }}
-      </p>
-      <label class="flex flex-col gap-2 text-sm text-muted-foreground">
-        {{ $t('subscription.downgrade.confirmationPrompt', { phrase }) }}
-        <Input
-          v-model="typedValue"
-          type="text"
-          :placeholder="phrase"
-          :disabled="isLoading"
-          autofocus
-          @keyup.enter="onConfirmDowngrade"
-        />
-      </label>
-    </div>
+    <p class="m-0">
+      {{ bodyText }}
+    </p>
+    <label class="flex flex-col gap-2">
+      {{ $t('subscription.downgrade.confirmationPrompt', { phrase }) }}
+      <Input
+        v-model="typedValue"
+        type="text"
+        :placeholder="phrase"
+        :disabled="isLoading"
+        autofocus
+        @keyup.enter="onConfirmDowngrade"
+      />
+    </label>
 
     <template #footer>
       <Button variant="muted-textonly" :disabled="isLoading" @click="onClose">
@@ -35,11 +37,11 @@
         {{ $t('subscription.downgrade.confirm') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

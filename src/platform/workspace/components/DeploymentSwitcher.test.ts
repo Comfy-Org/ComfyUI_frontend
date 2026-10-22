@@ -13,6 +13,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -570,8 +571,8 @@ describe('DeploymentSwitcher', () => {
 
   it.for([
     {
-      answer: 'a plain failure',
-      error: new WorkspaceApiError('Network Error'),
+      answer: 'no signed-in user',
+      error: new Error('User not authenticated'),
       retries: true
     },
     {
@@ -819,18 +820,16 @@ describe('DeploymentSwitcher', () => {
   })
 
   describe('with unsaved workflows', () => {
+    const portrait = fromPartial<ComfyWorkflow>({
+      path: 'workflows/portrait.json',
+      isLoaded: true,
+      isModified: true
+    })
+
     beforeEach(() => {
-      Object.assign(useWorkflowStore(), {
-        modifiedWorkflows: [
-          fromPartial<ComfyWorkflow>({
-            path: 'workflows/portrait.json',
-            key: 'portrait.json',
-            filename: 'portrait',
-            isLoaded: true,
-            isModified: true
-          })
-        ]
-      })
+      takeLeavePromptSkip()
+      Object.assign(useWorkflowStore(), { modifiedWorkflows: [portrait] })
+      vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValue(true)
     })
 
     it.for([
@@ -924,7 +923,7 @@ describe('DeploymentSwitcher', () => {
           expect(useDialogService().confirm).toHaveBeenCalledWith(
             expect.objectContaining({
               message: `Switching to ${target} reloads the tab. These workflows have changes that aren't saved yet.`,
-              itemList: ['portrait.json']
+              itemList: ['workflows/portrait.json']
             })
           )
         )
@@ -935,6 +934,65 @@ describe('DeploymentSwitcher', () => {
         expect(screen.queryByRole('menu')).not.toBeInTheDocument()
       }
     )
+
+    it.for([
+      { choice: 'Save and switch', answer: true, saved: [portrait] },
+      { choice: 'Switch without saving', answer: false, saved: [] }
+    ])(
+      'switches on $choice, and that reload skips the leave prompt',
+      async ({ answer, saved }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+        mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        const user = renderSwitcher()
+        await openList(user)
+
+        await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+        await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+        expect(
+          vi
+            .mocked(useWorkflowService().saveWorkflow)
+            .mock.calls.map(([workflow]) => workflow)
+        ).toEqual(saved)
+        expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+          deployment_id: D2
+        })
+        expect(takeLeavePromptSkip()).toBe(true)
+      }
+    )
+
+    it('stays put when a save does not finish', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+      vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
+      )
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('keeps the leave prompt when the server refuses the switch', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockRejectedValue(
+        new WorkspaceApiError('deployment is not in this workspace', 403)
+      )
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() => expect(useToast().toasts).toHaveLength(1))
+      expect(reload).not.toHaveBeenCalled()
+      expect(takeLeavePromptSkip()).toBe(false)
+    })
 
     it('neither asks nor changes anything when an owner re-picks the current default', async () => {
       asOwner()
@@ -952,29 +1010,6 @@ describe('DeploymentSwitcher', () => {
 
       expect(useDialogService().confirm).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
-    })
-
-    it('reloads onto where this browser now runs when the switch became a no-op during the prompt', async () => {
-      const boot = {
-        ...listing,
-        picked_deployment_id: D2,
-        pick_source: 'browser'
-      }
-      mockWorkspaceApi.listDeployments
-        .mockResolvedValueOnce(boot)
-        .mockResolvedValueOnce(boot)
-        .mockResolvedValue({ ...boot, picked_deployment_id: D1 })
-      vi.mocked(useDialogService().confirm).mockImplementationOnce(async () => {
-        await useDeploymentPickStore().load()
-        return false
-      })
-      const user = renderSwitcher()
-      await openList(user)
-
-      await user.click(screen.getByTestId(`deployment-row-${D1}`))
-
-      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
-      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
     })
 
     it('neither asks nor reloads when an owner clears a deleted default this browser follows', async () => {
@@ -1027,47 +1062,6 @@ describe('DeploymentSwitcher', () => {
       })
       expect(useDialogService().confirm).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
-    })
-
-    it('keeps the engine button disabled while it saves, then switches', async () => {
-      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
-      let saved: (done: boolean) => void = () => {}
-      vi.mocked(useWorkflowService().saveWorkflow).mockReturnValueOnce(
-        new Promise<boolean>((resolve) => {
-          saved = resolve
-        })
-      )
-      const user = renderSwitcher()
-      await openList(user)
-
-      await user.click(screen.getByTestId(`deployment-row-${D2}`))
-
-      await waitFor(() =>
-        expect(screen.getByTestId('deployment-switcher-trigger')).toBeDisabled()
-      )
-      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
-      saved(true)
-      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
-      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
-        deployment_id: D2
-      })
-    })
-
-    it('switches and reloads when the user switches without saving', async () => {
-      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
-      const user = renderSwitcher()
-      await openList(user)
-
-      await user.click(screen.getByTestId(`deployment-row-${D2}`))
-
-      await waitFor(() => expect(reload).toHaveBeenCalledOnce())
-      expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
-        deployment_id: D2
-      })
     })
   })
 

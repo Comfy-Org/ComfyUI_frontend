@@ -7,10 +7,11 @@ import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
 } from '@/platform/telemetry/types'
+
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 
 import AgentPanel from './AgentPanel.vue'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
+import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()

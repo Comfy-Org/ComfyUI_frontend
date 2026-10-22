@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ViewerGizmoControls from '@/components/load3d/controls/viewer/ViewerGizmoControls.vue'
-import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
+import type { GizmoMode } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,

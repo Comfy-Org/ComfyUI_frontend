@@ -7,6 +7,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { modelImportProgressFixture } from '@e2e/fixtures/modelImportProgressFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = mergeTests(comfyPageFixture, modelImportProgressFixture)
 
@@ -136,7 +137,8 @@ test.describe('Model import progress toast', { tag: ['@screenshot'] }, () => {
       .getByTestId(TestIds.toast.panel)
       .filter({ hasText: 'All downloads completed' })
 
-    await expect(toast).toHaveScreenshot(
+    await expectElementScreenshot(
+      toast,
       'model-import-progress-toast-recovered-completed.png',
       { mask: [toast.locator('.timestamp')] }
     )

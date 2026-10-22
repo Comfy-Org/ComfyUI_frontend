@@ -4,15 +4,7 @@
   "description": "Shared technical module for caught-error normalization, user-facing toast handling, and retry/recovery strategies. Reporting errors to telemetry remains in error-reporting.",
   "modules": [
     {
-      "path": "src/utils/errorUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/errorUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/composables/useErrorHandling.ts",
+      "path": "src/composables/__mocks__/**",
       "role": "application"
     },
     {
@@ -20,8 +12,16 @@
       "role": "application"
     },
     {
-      "path": "src/composables/__mocks__/useErrorHandling.ts",
+      "path": "src/composables/useErrorHandling.ts",
       "role": "application"
+    },
+    {
+      "path": "src/utils/errorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/errorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

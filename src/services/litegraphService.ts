@@ -31,6 +31,7 @@ import type {
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -140,9 +141,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,

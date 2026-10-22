@@ -4,46 +4,6 @@
   "description": "Client-side state of running prompts: websocket-driven execution progress, active and cached nodes, per-node progress, node execution errors and their lifting to subgraph boundaries alongside missing-resource state, node outputs and preview images keyed by node locator across workflow switches, and the latest live preview per job. The job list and history, the wire schemas, and the node execution order store backing litegraph are separate.",
   "modules": [
     {
-      "path": "src/stores/executionErrorStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/executionErrorStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/executionStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/executionStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/jobPreviewStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/jobPreviewStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeOutputStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeOutputStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeOutputStore.workflowSwitch.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/graph/useErrorClearingHooks.promotion.test.ts",
       "role": "integration"
     },
@@ -89,6 +49,46 @@
     },
     {
       "path": "src/composables/useWorkflowStatusDismissal.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionErrorStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionErrorStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/jobPreviewStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/jobPreviewStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeOutputStore.workflowSwitch.test.ts",
       "role": "application"
     },
     {

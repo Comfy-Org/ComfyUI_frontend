@@ -113,7 +113,7 @@ const sidePanelRef = ref<InstanceType<typeof SidePanel>>()
 
 const initialized = ref(false)
 
-const keyboard = useKeyboard()
+const keyboard = useKeyboard(containerRef)
 const panZoom = usePanAndZoom()
 
 const toolManager = useToolManager(keyboard, panZoom)

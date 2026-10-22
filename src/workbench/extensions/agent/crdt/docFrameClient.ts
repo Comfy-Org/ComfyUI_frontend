@@ -3,6 +3,8 @@ import type { DocResetData } from '@comfyorg/ingest-types'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
+
 export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
@@ -476,14 +478,7 @@ export class DocFrameClient extends EventTarget {
   constructor(private readonly transport: DocFrameTransport) {
     super()
     const reportedTypes = new Set<string>()
-    for (const type of [
-      'doc_update',
-      'doc_subscribed',
-      'doc_ops_result',
-      'doc_reset',
-      'doc_reseed_result',
-      'awareness'
-    ]) {
+    for (const type of SERVER_DOC_FRAME_TYPES) {
       const listener: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
         const parsed = parseServerDocFrame({ type, data: event.detail })

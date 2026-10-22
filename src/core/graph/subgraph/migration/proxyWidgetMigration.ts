@@ -27,6 +27,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/widget'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
@@ -395,8 +396,19 @@ function applyHostValueToInput(
   input: INodeInputSlot,
   entry: PendingEntry
 ): boolean {
-  if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
-  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+  if (entry.isHole) return Boolean(input.widgetId)
+  return setRestoredInputValue(input, entry.hostValue)
+}
+
+function setRestoredInputValue(
+  input: INodeInputSlot,
+  value: TWidgetValue
+): boolean {
+  if (!input.widgetId) return false
+  const store = useWidgetValueStore()
+  const state = store.getWidget(input.widgetId)
+  if (!state) return false
+  return store.setValue(input.widgetId, coerceRestoredWidgetValue(state, value))
 }
 
 function applyHostLabelToInput(
@@ -772,8 +784,7 @@ export function appendQuarantine(
     if (sourceNodeId !== '-1' || hostValue === undefined) continue
 
     const input = hostNode.inputs.find((input) => input.name === inputName)
-    if (input?.widgetId)
-      useWidgetValueStore().setValue(input.widgetId, hostValue)
+    if (input) setRestoredInputValue(input, hostValue)
   }
 
   const existing = parseProxyWidgetErrorQuarantine(

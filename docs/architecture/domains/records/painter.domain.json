@@ -12,15 +12,15 @@
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/painter.ts",
       "role": "integration"
     },
     {
       "path": "src/lib/litegraph/src/widgets/PainterWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
       "role": "integration"
     }
   ],

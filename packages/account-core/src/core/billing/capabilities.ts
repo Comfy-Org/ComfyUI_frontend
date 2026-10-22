@@ -19,13 +19,13 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
-import type { CapabilityDenials } from './capabilityDenials.js'
-import { decodeCapabilityDenials } from './capabilityDenials.js'
-import { createScopedReader } from './scopedReader.js'
-import type { ValidatedBillingResponse } from './sharedRead.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { sameBillingScope } from './billingScope'
+import type { CapabilityDenials } from './capabilityDenials'
+import { decodeCapabilityDenials } from './capabilityDenials'
+import { createScopedReader } from './scopedReader'
+import type { ValidatedBillingResponse } from './sharedRead'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 

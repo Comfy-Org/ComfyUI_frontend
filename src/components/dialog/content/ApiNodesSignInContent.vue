@@ -1,7 +1,7 @@
 <template>
   <div
     data-testid="api-signin-dialog"
-    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] items-stretch rounded-3xl border border-border-subtle bg-base-background p-2"
+    class="relative flex max-h-[85vh] min-h-100 w-[min(44rem,90vw)] rounded-3xl border border-border/50 bg-background p-2"
   >
     <Button
       variant="muted-textonly"
@@ -42,7 +42,7 @@
             <li
               v-for="name in apiNodeNames"
               :key="name"
-              class="flex items-center gap-2 rounded-lg bg-secondary-background px-3.5 py-2.5 text-sm font-semibold text-base-foreground"
+              class="flex items-center gap-2 rounded-lg bg-secondary px-3.5 py-2.5 text-sm font-semibold"
             >
               <i
                 class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
@@ -68,7 +68,7 @@
               :href="partnerNodesDocsUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-base-foreground motion-safe:transition-colors"
+              class="flex items-center gap-1 text-xs text-muted-foreground no-underline duration-150 hover:text-foreground motion-safe:transition-colors"
             >
               <i
                 class="icon-[lucide--info] size-4 shrink-0"
@@ -86,7 +86,7 @@
         <Button
           variant="inverted"
           size="unset"
-          class="h-9 rounded-lg px-6 text-sm font-medium"
+          class="h-9 rounded-lg px-6"
           @click="onLogin?.()"
         >
           {{ t('apiNodesSignInDialog.signIn') }}

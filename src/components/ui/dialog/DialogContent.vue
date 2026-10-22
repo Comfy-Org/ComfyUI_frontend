@@ -50,6 +50,7 @@ function focusAutofocusTarget(event: Event) {
       )
     "
     @open-auto-focus="focusAutofocusTarget"
+    @focus="focusAutofocusTarget"
   >
     <slot />
   </DialogContent>
