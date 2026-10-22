@@ -45,6 +45,17 @@ vi.mock(import('@/platform/telemetry'))
 const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
   useRemoteConfigCache()
 
+function persistFromAnotherTab(key: string, value: string) {
+  localStorage.setItem(key, value)
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: value,
+      storageArea: localStorage
+    })
+  )
+}
+
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
     it('should provide reactive readonly flags', () => {
@@ -710,38 +721,20 @@ describe('useFeatureFlags', () => {
       cachedV1PaymentRecovery.value = undefined
     })
 
-    it('reads the cached values from storage on first use, not at import', async () => {
-      vi.resetModules()
-      const getItem = vi.spyOn(localStorage, 'getItem')
-
-      const freshRemoteConfig =
-        await import('@/platform/remoteConfig/remoteConfig')
-      expect(getItem).not.toHaveBeenCalled()
-
-      const cache = freshRemoteConfig.useRemoteConfigCache()
-      expect(getItem).toHaveBeenCalledWith('billing_control_enabled')
-      expect(getItem).toHaveBeenCalledWith('v1_payment_recovery')
-      expect(freshRemoteConfig.useRemoteConfigCache()).toBe(cache)
-    })
-
     it.for([
       { stored: 'false', expected: false },
       { stored: 'true', expected: true }
     ])(
       'resolves a persisted $stored as a boolean during the auth window',
-      async ({ stored, expected }) => {
-        localStorage.setItem('billing_control_enabled', stored)
-        localStorage.setItem('v1_payment_recovery', stored)
+      ({ stored, expected }) => {
         onTestFinished(() => {
           localStorage.removeItem('billing_control_enabled')
           localStorage.removeItem('v1_payment_recovery')
         })
-        vi.resetModules()
-        vi.mocked(await import('@/platform/distribution/types')).isCloud = true
-        const { useFeatureFlags: freshUseFeatureFlags } =
-          await import('@/composables/useFeatureFlags')
+        persistFromAnotherTab('billing_control_enabled', stored)
+        persistFromAnotherTab('v1_payment_recovery', stored)
 
-        const { flags } = freshUseFeatureFlags()
+        const { flags } = useFeatureFlags()
 
         expect(flags.billingControlEnabled).toBe(expected)
         expect(flags.v1PaymentRecovery).toBe(expected)

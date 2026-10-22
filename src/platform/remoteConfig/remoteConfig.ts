@@ -1,5 +1,4 @@
-import { StorageSerializers, useStorage } from '@vueuse/core'
-import { once } from 'es-toolkit'
+import { StorageSerializers, createGlobalState, useStorage } from '@vueuse/core'
 
 import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 
@@ -15,7 +14,7 @@ import type { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFla
  * This module is tree-shaken in OSS builds.
  */
 
-import { computed, effectScope, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { RemoteConfig } from './types'
 
@@ -63,6 +62,7 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   return configValue || defaultValue
 }
 
+/** Last authenticated agent-allowlist answer, kept in memory for this session and never persisted. */
 export const sessionAgentGrant = ref<boolean | undefined>()
 export const sessionAgentGrantValidUntil = ref<number | undefined>()
 
@@ -84,6 +84,4 @@ function createRemoteConfigCache() {
 }
 
 /** Persisted server-flag cache, created on first use and shared by every caller. */
-export const useRemoteConfigCache = once(() =>
-  effectScope(true).run(createRemoteConfigCache)!
-)
+export const useRemoteConfigCache = createGlobalState(createRemoteConfigCache)
