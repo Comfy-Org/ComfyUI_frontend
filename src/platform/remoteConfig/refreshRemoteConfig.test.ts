@@ -371,14 +371,23 @@ describe('refreshRemoteConfig', () => {
         let signal: AbortSignal | undefined
         vi.mocked(global.fetch).mockImplementation((_url, init) => {
           signal = init?.signal ?? undefined
-          return new Promise(() => {})
+          return new Promise<Response>((_resolve, reject) => {
+            signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError'))
+            )
+          })
         })
 
-        void refreshRemoteConfig({ useAuth: false, timeoutMs: 12_000 })
+        const refresh = refreshRemoteConfig({
+          useAuth: false,
+          timeoutMs: 12_000
+        })
         await vi.advanceTimersByTimeAsync(5_001)
         expect(signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(7_000)
         expect(signal?.aborted).toBe(true)
+        await refresh
+        expect(remoteConfigState.value).toBe('error')
       } finally {
         vi.useRealTimers()
       }
