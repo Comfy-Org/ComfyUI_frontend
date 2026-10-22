@@ -53,6 +53,7 @@ import {
 } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
 import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {
@@ -137,7 +138,6 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -145,8 +145,7 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
-  const wireSerialized = { ...serialized }
-  Reflect.deleteProperty(wireSerialized, '__incarnation')
+  const wireSerialized = omitDocumentBookkeeping(serialized)
   Reflect.deleteProperty(wireSerialized, 'widgets_values_form')
   const {
     widgets_values_named: named,
