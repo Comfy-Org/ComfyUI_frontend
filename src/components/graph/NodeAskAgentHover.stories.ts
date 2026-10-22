@@ -1,17 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, userEvent, within } from 'storybook/test'
-import { provide } from 'vue'
 
 import { t } from '@/i18n'
 import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
-import { nodeAskAgentHoverAlwaysVisibleKey } from '@/components/graph/nodeAskAgentHoverAlwaysVisible'
 import {
   LGraph,
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import LGraphNodeVue from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -44,7 +42,7 @@ function seedHoverNode(options: { title: string; partner?: boolean }) {
     type: node.type,
     properties: {}
   }
-  return nodeState
+  return { node, nodeState }
 }
 
 function pageOf(canvasElement: HTMLElement) {
@@ -57,23 +55,31 @@ const meta: Meta<typeof NodeAskAgentHover> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   args: {
-    nodeId: toNodeId(12)
+    nodeId: toNodeId(12),
+    alwaysVisible: true
   },
   render: (_args, { args }) => ({
-    components: { LGraphNodeVue },
+    components: { NodeAskAgentHover, NodeHeader },
     setup() {
-      provide(nodeAskAgentHoverAlwaysVisibleKey, true)
-      const nodeState = seedHoverNode({
+      const { node, nodeState } = seedHoverNode({
         title: args.isPartner
           ? 'ByteDance Seedance 2.5 First-Last-Frame to Video'
           : 'ModelSamplingAuraFlow',
         partner: args.isPartner
       })
-      return { nodeState }
+      return {
+        args: { ...args, nodeId: node.id },
+        nodeState
+      }
     },
     template: `
       <div class="relative min-h-96 w-3xl overflow-visible bg-background p-16">
-        <LGraphNodeVue :node-data="nodeState" />
+        <div
+          class="group/node relative w-80 bg-node-header text-node-foreground"
+        >
+          <NodeHeader :node-data="nodeState" />
+          <NodeAskAgentHover v-bind="args" />
+        </div>
       </div>
     `
   })

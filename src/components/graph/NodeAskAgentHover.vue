@@ -6,7 +6,7 @@
       cn(
         'pointer-events-auto absolute top-0 left-full z-20 ml-2',
         !composerOpen &&
-          !pinnedVisible &&
+          !alwaysVisible &&
           'opacity-0 group-hover/node:opacity-100 focus-within:opacity-100'
       )
     "
@@ -87,7 +87,7 @@
 
 <script setup lang="ts">
 import { PopoverTrigger } from 'reka-ui'
-import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -96,7 +96,6 @@ import {
   sendNodeAskAgentPrompt
 } from '@/components/graph/askAgentFromNode'
 import { isPartnerApiNode } from '@/components/graph/isPartnerApiNode'
-import { nodeAskAgentHoverAlwaysVisibleKey } from '@/components/graph/nodeAskAgentHoverAlwaysVisible'
 import type { NodeAskAgentPrompt } from '@/components/graph/nodeAskAgentPrompts'
 import {
   nextNodeAskAgentShuffleOffset,
@@ -132,13 +131,9 @@ const panel = useAgentPanelStore()
 const canvasStore = useCanvasStore()
 const draft = ref('')
 const shuffleOffset = ref(0)
-const injectedAlwaysVisible = inject(nodeAskAgentHoverAlwaysVisibleKey, false)
-
 const visible = computed(() => panel.enabled && !canvasStore.isPickingNodes)
 
 const composerOpen = computed(() => openComposerNodeId.value === nodeId)
-
-const pinnedVisible = computed(() => alwaysVisible || injectedAlwaysVisible)
 
 const partnerNode = computed(() => {
   if (isPartner != null) return isPartner
