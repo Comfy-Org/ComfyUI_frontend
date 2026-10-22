@@ -430,6 +430,70 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('skips malformed persisted thinking and keeps an entry whose call is missing after the calls', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 42 },
+        { text: '   ' },
+        { text: 'Looking it up.', tool_call_id: 'call-1' },
+        { text: 'The audit row is gone.', tool_call_id: 'call-missing' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('keeps persisted thinking in order when an earlier entry names a call the transcript lacks', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 'Round one.', tool_call_id: 'call-missing' },
+        { text: 'Round two.', tool_call_id: 'call-2' },
+        { text: 'Final round.' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-2',
+          tool_call_id: 'call-2',
+          tool_name: 'add_node',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(
+      transcript.messages[0].parts.map((part) =>
+        part.type === 'thinking' ? part.text : part.type
+      )
+    ).toEqual(['Round one.', 'Round two.', 'tool', 'Final round.', 'text'])
+  })
+
   it('restores a persisted skill name', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
