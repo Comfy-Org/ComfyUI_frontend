@@ -12,7 +12,7 @@ import { reduceRetentionOffer } from '@/platform/cloud/subscription/utils/retent
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 type RedemptionResult = Exclude<
   RetentionOfferEvent,

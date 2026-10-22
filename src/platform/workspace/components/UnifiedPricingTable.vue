@@ -459,8 +459,8 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>

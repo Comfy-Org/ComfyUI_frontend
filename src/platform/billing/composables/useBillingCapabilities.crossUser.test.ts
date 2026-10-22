@@ -22,7 +22,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 const railState = vi.hoisted((): { rail: BillingReadRail | null } => ({
   rail: null
 }))
-vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
+vi.mock(import('@/platform/billing/composables/useBillingReadRail'), () => ({
   useBillingReadRail: () => railState.rail,
   provideBillingSdkStore: () => {}
 }))

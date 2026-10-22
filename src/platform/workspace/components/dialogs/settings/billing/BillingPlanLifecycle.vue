@@ -91,7 +91,7 @@ import type {
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import type { PlanRowState } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { usePlanLifecycleCommands } from '@/platform/workspace/components/dialogs/settings/billing/usePlanLifecycleCommands'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 const { state } = defineProps<{ state: PlanRowState }>()
 

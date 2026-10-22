@@ -21,7 +21,7 @@ const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
 vi.mock(
-  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
   () => ({
     useSubscriptionCheckout: mockUseSubscriptionCheckout
   })

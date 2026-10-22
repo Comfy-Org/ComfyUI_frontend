@@ -18,8 +18,8 @@ import {
   settledOperation
 } from '@/platform/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const flagState = vi.hoisted(() => ({
@@ -58,7 +58,7 @@ vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/telemetry'))
 

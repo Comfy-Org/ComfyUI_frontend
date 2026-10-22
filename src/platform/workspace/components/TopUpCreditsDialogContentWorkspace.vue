@@ -449,8 +449,8 @@ import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationView'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -459,11 +459,11 @@ import {
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource
-} from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
 import {
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
-} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
+} from '@/platform/billing/utils/checkoutJourneyTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'

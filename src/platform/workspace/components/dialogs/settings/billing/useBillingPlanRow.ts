@@ -7,7 +7,7 @@ import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tier
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 import { resolveSubscriptionTierKey } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { derivePlanRow } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
+import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 
 export function useBillingPlanRow() {
   const { t } = useI18n()

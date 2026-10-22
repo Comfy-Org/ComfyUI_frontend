@@ -11,9 +11,9 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { narrowServerFact } from '@/platform/serverFacts/serverFact'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
-import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
+import { useTeamPlan } from '@/platform/billing/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,

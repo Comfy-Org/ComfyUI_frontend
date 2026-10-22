@@ -246,7 +246,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 

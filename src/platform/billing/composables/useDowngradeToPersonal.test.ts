@@ -1,6 +1,6 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -69,7 +69,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isDesktop: false
 }))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 

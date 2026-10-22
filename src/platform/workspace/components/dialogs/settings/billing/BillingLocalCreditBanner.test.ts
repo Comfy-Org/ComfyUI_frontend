@@ -13,8 +13,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
-import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { canManageBillingFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
@@ -29,7 +29,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const personalSubscription: SubscriptionInfo = {

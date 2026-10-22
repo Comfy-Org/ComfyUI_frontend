@@ -27,7 +27,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 beforeEach(() => {
   vi.spyOn(api, 'getLogs').mockResolvedValue('server logs')

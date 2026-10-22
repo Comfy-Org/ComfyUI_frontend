@@ -18,11 +18,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
-} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+} from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -210,7 +210,7 @@ export function useBillingDialogs() {
       useDowngradeToPersonal,
       ReactivationConfirmationRequiredError,
       ReactivationAmountChangedError
-    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    } = await import('@/platform/billing/composables/useDowngradeToPersonal')
     const {
       hasOtherMembers,
       refreshMembers,

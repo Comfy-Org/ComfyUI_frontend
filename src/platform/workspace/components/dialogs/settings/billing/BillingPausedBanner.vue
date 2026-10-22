@@ -44,8 +44,8 @@ import Button from '@/components/ui/button/Button.vue'
 import {
   pausedBannerCopy,
   usePausedBanner
-} from '@/platform/workspace/composables/usePausedBanner'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+} from '@/platform/billing/composables/usePausedBanner'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 const { canManageBilling } = defineProps<{
   canManageBilling: boolean

@@ -19,7 +19,7 @@ const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
   () => ({
     useSubscriptionCheckout: (...args: unknown[]) => {
       mockUseSubscriptionCheckout(...args)

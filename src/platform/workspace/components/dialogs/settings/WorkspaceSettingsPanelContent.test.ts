@@ -5,7 +5,7 @@ import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 
 import { createI18n } from 'vue-i18n'
 
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
@@ -16,7 +16,7 @@ const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 vi.mock(import('@/composables/auth/useCurrentUser'))

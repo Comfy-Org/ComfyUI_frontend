@@ -6,8 +6,8 @@ import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
   resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 
 import {
   handOffCheckoutJourney,

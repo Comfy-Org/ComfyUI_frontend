@@ -33,8 +33,8 @@ import type {
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
 import { useLegacyBilling } from './useLegacyBilling'
-import type { WorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import type { WorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 
 // Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
 // new credit-slider plan uses an underscore `team_per_credit_{cycle}` slug and

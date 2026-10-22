@@ -8,15 +8,15 @@ import {
 } from '@/platform/billing/sdk/billingSdkTestUtils'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
-import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import { useSubscriptionOperationView } from '@/platform/billing/composables/useSubscriptionRail'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())

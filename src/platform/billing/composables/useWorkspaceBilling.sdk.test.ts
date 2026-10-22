@@ -7,8 +7,8 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
@@ -57,7 +57,7 @@ vi.mock(
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/telemetry'))
 

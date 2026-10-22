@@ -25,19 +25,19 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
-vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
+vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
   spy: true
 })
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))

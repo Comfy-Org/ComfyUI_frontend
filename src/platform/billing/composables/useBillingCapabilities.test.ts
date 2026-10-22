@@ -12,7 +12,7 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
-import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -48,7 +48,7 @@ const railState = vi.hoisted(() => ({
   rail: null as { readCapabilities: ReturnType<typeof vi.fn> } | null
 }))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
+  import('@/platform/billing/composables/useBillingReadRail'),
   () => ({
     useBillingReadRail: () => railState.rail,
     provideBillingSdkStore: () => {}

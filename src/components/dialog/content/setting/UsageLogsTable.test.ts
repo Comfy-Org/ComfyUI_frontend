@@ -15,7 +15,7 @@ import { useBillingRouting } from '@/platform/billing/composables/useBillingRout
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import UsageLogsTable from './UsageLogsTable.vue'
@@ -51,7 +51,7 @@ const mockBillingReadRail = vi.hoisted(() => ({
   readPaymentMethods: vi.fn(),
   readEvents: vi.fn<BillingReadRail['readEvents']>()
 }))
-vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
+vi.mock(import('@/platform/billing/composables/useBillingReadRail'), () => ({
   useBillingReadRail: () => {
     if (!mockBillingReadRail.enabled) return null
     const { enabled: _enabled, ...rail } = mockBillingReadRail

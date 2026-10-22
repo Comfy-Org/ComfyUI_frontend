@@ -91,7 +91,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingAutoTopUpCard'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']

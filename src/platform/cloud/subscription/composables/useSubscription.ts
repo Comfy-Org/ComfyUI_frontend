@@ -28,8 +28,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { readOnRail } from '@/platform/workspace/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import {
   PaymentPopupBlockedError,
   categorizeBillingApiError

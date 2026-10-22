@@ -134,7 +134,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
-import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'

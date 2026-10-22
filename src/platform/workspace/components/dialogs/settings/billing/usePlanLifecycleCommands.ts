@@ -7,7 +7,7 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import type { PlanCommandOutcome } from '@/platform/workspace/components/dialogs/settings/billing/planLifecycle'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 function isCodedServerRefusal(err: unknown): err is WorkspaceApiError {
   return (

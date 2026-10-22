@@ -8,9 +8,9 @@ import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/co
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
-import { isTopUpDeniedPastDue } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
+import { isTopUpDeniedPastDue } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =

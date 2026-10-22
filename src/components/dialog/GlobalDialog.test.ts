@@ -14,7 +14,7 @@ import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/compo
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  import('@/platform/billing/composables/useSubscriptionCheckout'),
   async () => {
     const { computed, ref } = await import('vue')
 

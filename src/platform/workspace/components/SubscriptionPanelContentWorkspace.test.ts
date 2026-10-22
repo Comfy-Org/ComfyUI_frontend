@@ -1,5 +1,5 @@
-import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
@@ -8,7 +8,7 @@ import { useBillingRouting } from '@/platform/billing/composables/useBillingRout
 import { getActivePinia } from 'pinia'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { computed, nextTick, ref, toRef } from 'vue'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -28,7 +28,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
-import type { BillingBannerKind } from '@/platform/workspace/composables/useBillingBanner'
+import type { BillingBannerKind } from '@/platform/billing/composables/useBillingBanner'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -39,7 +39,7 @@ const mockBillingBanner = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingBanner'),
+  import('@/platform/billing/composables/useBillingBanner'),
   async () => {
     const { computed } = await import('vue')
     return {
@@ -219,7 +219,7 @@ const mockIsSubscriptionCancelled = computed(
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 

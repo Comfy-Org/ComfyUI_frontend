@@ -17,9 +17,9 @@ import {
 } from '@/platform/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { createJourneyId } from '@/platform/workspace/utils/checkoutJourney'
+import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string

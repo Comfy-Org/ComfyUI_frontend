@@ -5,7 +5,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import SubscriptionPausedDialog from '@/platform/workspace/components/SubscriptionPausedDialog.vue'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 

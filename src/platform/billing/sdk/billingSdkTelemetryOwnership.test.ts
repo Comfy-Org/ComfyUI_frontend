@@ -32,9 +32,9 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useDowngradeToPersonal } from '@/platform/workspace/composables/useDowngradeToPersonal'
-import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
-import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
+import { useDowngradeToPersonal } from '@/platform/billing/composables/useDowngradeToPersonal'
+import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
+import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -47,7 +47,7 @@ import {
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('firebase/auth'))

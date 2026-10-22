@@ -10,7 +10,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING

@@ -55,7 +55,7 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -274,7 +274,7 @@ vi.mock(import('./crdt/devPanelLog'), { spy: true })
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {
   spy: true
 })
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'), {
   spy: true
 })
 

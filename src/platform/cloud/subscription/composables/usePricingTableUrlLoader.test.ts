@@ -1,4 +1,4 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,7 +40,7 @@ const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,

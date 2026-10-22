@@ -1,10 +1,10 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canManageBillingFact,
   runDeniedPaymentPastDueFact
-} from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -104,9 +104,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
+vi.mock(import('@/platform/billing/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
     isResubscribing: computed(() => false),
     handleResubscribe: state.handleResubscribe

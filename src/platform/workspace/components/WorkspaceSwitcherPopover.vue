@@ -139,7 +139,7 @@ import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfil
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import type {
   SubscriptionTier,
   WorkspaceRole,

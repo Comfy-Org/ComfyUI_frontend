@@ -1,19 +1,19 @@
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
 import { render } from '@testing-library/vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, reactive, ref } from 'vue'
 
 import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
-import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import type {
   SettledSubscribeResponse,
   SubscriptionRailOutcome
 } from '@/platform/billing/sdk/subscriptionOperationView'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 
 import { createI18n } from 'vue-i18n'
@@ -25,7 +25,7 @@ import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
@@ -362,7 +362,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isDesktop: false
 }))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/billing/composables/useBillingDialogs'),
@@ -397,7 +397,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionRail'),
+  import('@/platform/billing/composables/useSubscriptionRail'),
   () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
 )
 
@@ -408,7 +408,7 @@ const railState = vi.hoisted(() => ({
   rail: null as Partial<ReadRail> | null
 }))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
+  import('@/platform/billing/composables/useBillingReadRail'),
   () => ({
     useBillingReadRail: () => railState.rail,
     provideBillingSdkStore: () => {}

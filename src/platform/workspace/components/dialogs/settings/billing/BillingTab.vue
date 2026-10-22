@@ -89,7 +89,7 @@ import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/setting
 import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
 import BillingPlanCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanCheckoutBanner.vue'
 import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
-import { usePlanCheckoutBanner } from '@/platform/workspace/composables/usePlanCheckoutBanner'
+import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -99,8 +99,8 @@ import {
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const billing = useBillingContext()

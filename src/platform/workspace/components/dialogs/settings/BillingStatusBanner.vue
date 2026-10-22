@@ -90,21 +90,21 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
   BillingBannerAudience,
   BillingBannerKind
-} from '@/platform/workspace/composables/useBillingBanner'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+} from '@/platform/billing/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
-} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
-import { pausedBannerCopy } from '@/platform/workspace/composables/usePausedBanner'
-import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
-import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
-import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+} from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
+import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 

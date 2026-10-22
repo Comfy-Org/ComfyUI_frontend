@@ -61,12 +61,12 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { deriveLocalCreditBanner } from '@/platform/workspace/composables/deriveLocalCreditBanner'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
-} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+} from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'

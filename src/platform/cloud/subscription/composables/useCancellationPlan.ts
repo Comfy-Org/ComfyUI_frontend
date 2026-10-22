@@ -7,7 +7,7 @@ import {
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { getPlanCreditGrant } from '@/platform/cloud/subscription/utils/planCreditGrant'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 
 export function useCancellationPlan() {
   const { t } = useI18n()

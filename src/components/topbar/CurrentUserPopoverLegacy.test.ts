@@ -1,4 +1,4 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getActivePinia } from 'pinia'
@@ -73,7 +73,7 @@ const mockIsTeamPlan = ref(false)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())

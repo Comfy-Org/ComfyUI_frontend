@@ -2619,7 +2619,7 @@
         "count": 1
       }
     },
-    "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
+    "src/platform/billing/composables/useDowngradeToPersonal.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -2632,7 +2632,7 @@
         "count": 1
       }
     },
-    "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
+    "src/platform/billing/composables/useSubscriptionCheckout.ts": {
       "complexity_critical": {
         "count": 2
       },
@@ -2649,7 +2649,7 @@
         "count": 1
       }
     },
-    "src/platform/workspace/composables/useWorkspaceBilling.ts": {
+    "src/platform/billing/composables/useWorkspaceBilling.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -2662,7 +2662,7 @@
         "count": 1
       }
     },
-    "src/platform/workspace/stores/billingOperationStore.ts": {
+    "src/platform/billing/stores/billingOperationStore.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -3615,7 +3615,7 @@
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",
     "src/base/webviewDetection.ts:high impact",
     "src/components/builder/useResolvedSelectedInputs.ts:high impact",
-    "src/platform/workspace/composables/useDowngradeToPersonal.ts:complexity",
+    "src/platform/billing/composables/useDowngradeToPersonal.ts:complexity",
     "src/lib/litegraph/src/Reroute.ts:circular dependency",
     "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue:complexity",
     "src/composables/useCanvasDrop.ts:complexity",
@@ -3643,7 +3643,7 @@
     "src/lib/litegraph/src/utils/collections.ts:circular dependency",
     "src/renderer/extensions/vueNodes/components/LGraphNode.vue:complexity",
     "src/components/searchbox/v2/NodeSearchListItem.vue:complexity",
-    "src/platform/workspace/composables/useTeamPlan.ts:high impact",
+    "src/platform/billing/composables/useTeamPlan.ts:high impact",
     "src/components/rightSidePanel/errors/ErrorNodeCard.vue:complexity",
     "src/platform/settings/settingStore.ts:circular dependency",
     "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:complexity",

@@ -12,13 +12,13 @@ import {
   settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -40,9 +40,9 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
@@ -68,7 +68,7 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 

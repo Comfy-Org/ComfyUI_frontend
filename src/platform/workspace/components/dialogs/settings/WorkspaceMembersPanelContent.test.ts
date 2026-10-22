@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
@@ -12,7 +12,7 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import WorkspaceMembersPanelContent from './WorkspaceMembersPanelContent.vue'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))

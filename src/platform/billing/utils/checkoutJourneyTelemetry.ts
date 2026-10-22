@@ -10,8 +10,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import {
   getActiveCheckoutJourney,
   toCheckoutJourneyContext
-} from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 
 type CloudCheckoutExit = Extract<CheckoutExit, 'dialog_close' | 'page_exit'>
 

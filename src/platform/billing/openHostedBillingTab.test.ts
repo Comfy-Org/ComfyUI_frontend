@@ -24,7 +24,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 
 const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => {}))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
+  import('@/platform/billing/composables/useBillingCapabilities'),
   () => ({
     useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
   })

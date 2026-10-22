@@ -12,8 +12,8 @@ import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/
  */
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 vi.mock(import('@/i18n'))
 
@@ -35,9 +35,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'), {
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'), {
   spy: true
 })
 

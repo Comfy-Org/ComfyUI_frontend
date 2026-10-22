@@ -9,14 +9,14 @@ import {
   canManageBillingFact,
   paymentRecoveryAvailableFact,
   runWorkflowsDenialFact
-} from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/telemetry/reportError'))

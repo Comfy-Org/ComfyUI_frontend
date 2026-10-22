@@ -63,7 +63,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useDowngradeToPersonal'),
+  import('@/platform/billing/composables/useDowngradeToPersonal'),
   () => ({
     useDowngradeToPersonal,
     ReactivationConfirmationRequiredError,

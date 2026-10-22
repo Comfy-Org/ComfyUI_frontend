@@ -19,10 +19,10 @@ import {
   SettledOperationError,
   billingClientOf
 } from '@/platform/billing/sdk/subscriptionOperationView'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { openBillingUrl } from '@/platform/billing/billingTab'
 

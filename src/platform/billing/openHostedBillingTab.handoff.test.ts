@@ -6,7 +6,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
 
 import {
   disarmHostedBillingReturnRefresh,

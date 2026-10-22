@@ -129,7 +129,7 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
-            find: '@/platform/workspace/composables/useBillingCapabilities',
+            find: '@/platform/billing/composables/useBillingCapabilities',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingCapabilities.ts'
           },

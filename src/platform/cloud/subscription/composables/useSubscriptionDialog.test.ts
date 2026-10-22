@@ -3,7 +3,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
 import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -28,7 +28,7 @@ import type {
 import {
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
-} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+} from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 

@@ -12,7 +12,7 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
   [409, 'TOPUP_CHECKOUT_BUSY'],

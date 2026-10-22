@@ -680,6 +680,41 @@
       "count": 4
     }
   },
+  "src/platform/billing/composables/useDowngradeToPersonal.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/useDowngradeToPersonal.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "src/platform/billing/composables/useResubscribe.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/composables/useSubscriptionCheckout.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/composables/useSubscriptionCheckout.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "src/platform/billing/composables/useTeamPlan.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 5
+    }
+  },
+  "src/platform/billing/composables/useWorkspaceBilling.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
   "src/platform/billing/customerAttention.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -935,44 +970,9 @@
       "count": 2
     }
   },
-  "src/platform/workspace/composables/useDowngradeToPersonal.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useDowngradeToPersonal.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
   "src/platform/workspace/composables/useMembersPanel.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 10
-    }
-  },
-  "src/platform/workspace/composables/useResubscribe.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/composables/useSubscriptionCheckout.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/platform/workspace/composables/useTeamPlan.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 5
-    }
-  },
-  "src/platform/workspace/composables/useWorkspaceBilling.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/platform/workspace/composables/useWorkspaceUI.test.ts": {

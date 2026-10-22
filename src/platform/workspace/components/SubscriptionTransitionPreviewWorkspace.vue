@@ -42,7 +42,7 @@ import type {
   BillingAuthenticationState,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { useCheckoutCopy } from '@/platform/workspace/composables/useCheckoutCopy'
+import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
 const {
   previewData,

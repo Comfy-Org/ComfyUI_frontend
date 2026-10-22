@@ -128,11 +128,11 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/api/capabilityRevision.test.ts",
+      "path": "src/platform/billing/api/capabilityRevision.test.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/api/capabilityRevision.ts",
+      "path": "src/platform/billing/api/capabilityRevision.ts",
       "role": "infrastructure"
     },
     {
@@ -360,151 +360,147 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts",
+      "path": "src/platform/billing/composables/billingOperationTestUtils.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/billingOperationTestUtils.ts",
+      "path": "src/platform/billing/composables/deriveBillingBanner.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/deriveBillingBanner.test.ts",
+      "path": "src/platform/billing/composables/readOnRail.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/readOnRail.test.ts",
+      "path": "src/platform/billing/composables/readOnRail.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/readOnRail.ts",
+      "path": "src/platform/billing/composables/useBillingBanner.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useBillingBanner.test.ts",
+      "path": "src/platform/billing/composables/useBillingBanner.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useBillingBanner.ts",
+      "path": "src/platform/billing/composables/useBillingCapabilities.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useBillingCapabilities.test.ts",
+      "path": "src/platform/billing/composables/useBillingCapabilities.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useBillingCapabilities.ts",
+      "path": "src/platform/billing/composables/useBillingReadRail.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useBillingReadRail.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useCheckoutCopy.ts",
+      "path": "src/platform/billing/composables/useCheckoutCopy.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/composables/useDowngradeToPersonal.test.ts",
+      "path": "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useDowngradeToPersonal.ts",
+      "path": "src/platform/billing/composables/useDowngradeToPersonal.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/usePlanEnded.ts",
+      "path": "src/platform/billing/composables/usePlanEnded.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useResubscribe.test.ts",
+      "path": "src/platform/billing/composables/useResubscribe.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useResubscribe.ts",
+      "path": "src/platform/billing/composables/useResubscribe.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useScheduledPlanChange.ts",
+      "path": "src/platform/billing/composables/useScheduledPlanChange.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useSubscriptionCheckout.test.ts",
+      "path": "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useSubscriptionCheckout.ts",
+      "path": "src/platform/billing/composables/useSubscriptionCheckout.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useSubscriptionOperationView.test.ts",
+      "path": "src/platform/billing/composables/useSubscriptionOperationView.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useSubscriptionRail.ts",
+      "path": "src/platform/billing/composables/useSubscriptionRail.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTeamPlan.test.ts",
+      "path": "src/platform/billing/composables/useTeamPlan.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTeamPlan.ts",
+      "path": "src/platform/billing/composables/useTeamPlan.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTopupOperation.test.ts",
+      "path": "src/platform/billing/composables/useTopupOperation.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTopupOperation.ts",
+      "path": "src/platform/billing/composables/useTopupOperation.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceBilling.sdk.test.ts",
+      "path": "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+      "path": "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceBilling.test.ts",
+      "path": "src/platform/billing/composables/useWorkspaceBilling.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceBilling.ts",
+      "path": "src/platform/billing/composables/useWorkspaceBilling.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspacePlanPricing.ts",
+      "path": "src/platform/billing/composables/useWorkspacePlanPricing.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceTierLabel.test.ts",
+      "path": "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceTierLabel.ts",
+      "path": "src/platform/billing/composables/useWorkspaceTierLabel.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/stores/billingOperationStore.test.ts",
+      "path": "src/platform/billing/stores/billingOperationStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/stores/billingOperationStore.ts",
+      "path": "src/platform/billing/stores/billingOperationStore.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/utils/**",
+      "path": "src/platform/billing/utils/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/utils/checkoutJourney.test.ts",
+      "path": "src/platform/billing/utils/checkoutJourney.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/workspace/utils/checkoutJourney.ts",
+      "path": "src/platform/billing/utils/checkoutJourney.ts",
       "role": "domain"
     },
     {
@@ -539,24 +535,24 @@
         "src/platform/billing/composables/useBillingRouting.test.ts",
         "src/platform/billing/composables/billingRail.test.ts",
         "src/platform/billing/composables/useLegacyBilling.test.ts",
-        "src/platform/workspace/composables/useWorkspaceBilling.test.ts",
-        "src/platform/workspace/composables/useWorkspaceBilling.sdk.test.ts",
-        "src/platform/workspace/composables/useWorkspaceBilling.subscriptionRail.test.ts",
-        "src/platform/workspace/composables/readOnRail.test.ts"
+        "src/platform/billing/composables/useWorkspaceBilling.test.ts",
+        "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
+        "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+        "src/platform/billing/composables/readOnRail.test.ts"
       ]
     },
     {
       "name": "Subscription checkout, plan change, resubscribe, and downgrade keep attempt context and journey telemetry",
       "checks": [
-        "src/platform/workspace/composables/useSubscriptionCheckout.test.ts",
-        "src/platform/workspace/composables/useResubscribe.test.ts",
-        "src/platform/workspace/composables/useDowngradeToPersonal.test.ts",
+        "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
+        "src/platform/billing/composables/useResubscribe.test.ts",
+        "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
         "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.test.ts",
         "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
         "src/platform/workspace/components/UnifiedPricingTable.test.ts",
-        "src/platform/workspace/utils/checkoutJourney.test.ts",
-        "src/platform/workspace/utils/checkoutJourneyTelemetry.test.ts",
-        "src/platform/workspace/utils/pendingSubscriptionCheckout.test.ts"
+        "src/platform/billing/utils/checkoutJourney.test.ts",
+        "src/platform/billing/utils/checkoutJourneyTelemetry.test.ts",
+        "src/platform/billing/utils/pendingSubscriptionCheckout.test.ts"
       ]
     },
     {
@@ -568,8 +564,8 @@
         "src/platform/billing/sdk/topupOperationView.test.ts",
         "src/platform/billing/sdk/subscriptionOperationView.test.ts",
         "src/platform/billing/sdk/operationRecordView.test.ts",
-        "src/platform/workspace/stores/billingOperationStore.test.ts",
-        "src/platform/workspace/composables/useTopupOperation.test.ts",
+        "src/platform/billing/stores/billingOperationStore.test.ts",
+        "src/platform/billing/composables/useTopupOperation.test.ts",
         "src/platform/billing/composables/usePendingTopup.test.ts",
         "src/platform/billing/composables/topupBalanceRefresh.test.ts",
         "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts"
@@ -578,10 +574,10 @@
     {
       "name": "Capabilities, banners, dialogs, invoices, and hosted billing hand-off render server billing facts",
       "checks": [
-        "src/platform/workspace/composables/useBillingCapabilities.test.ts",
-        "src/platform/workspace/api/capabilityRevision.test.ts",
-        "src/platform/workspace/composables/useBillingBanner.test.ts",
-        "src/platform/workspace/composables/deriveBillingBanner.test.ts",
+        "src/platform/billing/composables/useBillingCapabilities.test.ts",
+        "src/platform/billing/api/capabilityRevision.test.ts",
+        "src/platform/billing/composables/useBillingBanner.test.ts",
+        "src/platform/billing/composables/deriveBillingBanner.test.ts",
         "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
         "src/platform/billing/customerAttention.test.ts",
         "src/platform/billing/customerActionParity.test.ts",
@@ -613,7 +609,7 @@
     },
     {
       "name": "The shared billing-context fixture drives workspace billing operation tests",
-      "checks": ["src/platform/workspace/stores/billingOperationStore.test.ts"]
+      "checks": ["src/platform/billing/stores/billingOperationStore.test.ts"]
     },
     {
       "name": "Hosted billing web URL and destination normalization accept only known destinations",

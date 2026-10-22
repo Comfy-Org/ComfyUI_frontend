@@ -536,8 +536,8 @@
           "src/platform/billing/customerAttention.test.ts",
           "src/platform/billing/customerAttention.ts",
           "src/platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
-          "src/platform/workspace/utils/checkoutJourney.test.ts",
-          "src/platform/workspace/utils/checkoutJourney.ts"
+          "src/platform/billing/utils/checkoutJourney.test.ts",
+          "src/platform/billing/utils/checkoutJourney.ts"
         ]
       },
       {
@@ -570,37 +570,36 @@
           "src/platform/billing/sdk/billingSdkStore.test.ts",
           "src/platform/billing/sdk/billingSdkStore.ts",
           "src/platform/billing/sdk/billingSdkTelemetryOwnership.test.ts",
-          "src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts",
-          "src/platform/workspace/composables/billingOperationTestUtils.ts",
-          "src/platform/workspace/composables/deriveBillingBanner.test.ts",
-          "src/platform/workspace/composables/readOnRail.test.ts",
-          "src/platform/workspace/composables/readOnRail.ts",
-          "src/platform/workspace/composables/useBillingBanner.test.ts",
-          "src/platform/workspace/composables/useBillingBanner.ts",
-          "src/platform/workspace/composables/useBillingCapabilities.test.ts",
-          "src/platform/workspace/composables/useBillingCapabilities.ts",
-          "src/platform/workspace/composables/useBillingReadRail.ts",
-          "src/platform/workspace/composables/useDowngradeToPersonal.test.ts",
-          "src/platform/workspace/composables/useDowngradeToPersonal.ts",
-          "src/platform/workspace/composables/usePlanEnded.ts",
-          "src/platform/workspace/composables/useResubscribe.test.ts",
-          "src/platform/workspace/composables/useResubscribe.ts",
-          "src/platform/workspace/composables/useScheduledPlanChange.ts",
-          "src/platform/workspace/composables/useSubscriptionCheckout.test.ts",
-          "src/platform/workspace/composables/useSubscriptionCheckout.ts",
-          "src/platform/workspace/composables/useSubscriptionOperationView.test.ts",
-          "src/platform/workspace/composables/useSubscriptionRail.ts",
-          "src/platform/workspace/composables/useTeamPlan.test.ts",
-          "src/platform/workspace/composables/useTeamPlan.ts",
-          "src/platform/workspace/composables/useTopupOperation.test.ts",
-          "src/platform/workspace/composables/useTopupOperation.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.sdk.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.subscriptionRail.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.ts",
-          "src/platform/workspace/composables/useWorkspacePlanPricing.ts",
-          "src/platform/workspace/stores/billingOperationStore.test.ts",
-          "src/platform/workspace/stores/billingOperationStore.ts"
+          "src/platform/billing/composables/billingOperationTestUtils.ts",
+          "src/platform/billing/composables/deriveBillingBanner.test.ts",
+          "src/platform/billing/composables/readOnRail.test.ts",
+          "src/platform/billing/composables/readOnRail.ts",
+          "src/platform/billing/composables/useBillingBanner.test.ts",
+          "src/platform/billing/composables/useBillingBanner.ts",
+          "src/platform/billing/composables/useBillingCapabilities.test.ts",
+          "src/platform/billing/composables/useBillingCapabilities.ts",
+          "src/platform/billing/composables/useBillingReadRail.ts",
+          "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
+          "src/platform/billing/composables/useDowngradeToPersonal.ts",
+          "src/platform/billing/composables/usePlanEnded.ts",
+          "src/platform/billing/composables/useResubscribe.test.ts",
+          "src/platform/billing/composables/useResubscribe.ts",
+          "src/platform/billing/composables/useScheduledPlanChange.ts",
+          "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
+          "src/platform/billing/composables/useSubscriptionCheckout.ts",
+          "src/platform/billing/composables/useSubscriptionOperationView.test.ts",
+          "src/platform/billing/composables/useSubscriptionRail.ts",
+          "src/platform/billing/composables/useTeamPlan.test.ts",
+          "src/platform/billing/composables/useTeamPlan.ts",
+          "src/platform/billing/composables/useTopupOperation.test.ts",
+          "src/platform/billing/composables/useTopupOperation.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.ts",
+          "src/platform/billing/composables/useWorkspacePlanPricing.ts",
+          "src/platform/billing/stores/billingOperationStore.test.ts",
+          "src/platform/billing/stores/billingOperationStore.ts"
         ]
       },
       {
@@ -608,8 +607,8 @@
         "patterns": [
           "src/config/billingWeb.test.ts",
           "src/config/billingWeb.ts",
-          "src/platform/workspace/api/capabilityRevision.test.ts",
-          "src/platform/workspace/api/capabilityRevision.ts",
+          "src/platform/billing/api/capabilityRevision.test.ts",
+          "src/platform/billing/api/capabilityRevision.ts",
           "src/platform/billing/hostedBillingRoutes.test.ts",
           "src/platform/billing/hostedBillingRoutes.ts",
           "src/platform/billing/subscribeInput.ts",
@@ -666,9 +665,9 @@
           "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
           "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts",
           "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue",
-          "src/platform/workspace/composables/useCheckoutCopy.ts",
-          "src/platform/workspace/composables/useWorkspaceTierLabel.test.ts",
-          "src/platform/workspace/composables/useWorkspaceTierLabel.ts"
+          "src/platform/billing/composables/useCheckoutCopy.ts",
+          "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
+          "src/platform/billing/composables/useWorkspaceTierLabel.ts"
         ]
       },
       {
@@ -3485,6 +3484,7 @@
       {
         "name": "workspace/application",
         "patterns": [
+          "src/platform/workspace/composables/__mocks__/**",
           "src/platform/workspace/composables/useMembersPanel.test.ts",
           "src/platform/workspace/composables/useMembersPanel.ts",
           "src/platform/workspace/composables/useWorkspaceDialogs.ts",
@@ -3589,7 +3589,7 @@
         "name": "billing/infrastructure/outer-1",
         "patterns": [
           "src/platform/billing/sdk/**",
-          "src/platform/workspace/utils/**",
+          "src/platform/billing/utils/**",
           "src/services/__mocks__/**"
         ]
       },
@@ -3905,10 +3905,6 @@
       {
         "name": "workflow-thumbnails/application/outer-1",
         "patterns": ["src/renderer/core/thumbnail/**"]
-      },
-      {
-        "name": "workspace/application/outer-1",
-        "patterns": ["src/platform/workspace/composables/__mocks__/**"]
       },
       {
         "name": "workspace/presentation/outer-1",
@@ -6692,7 +6688,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
-          "workspace/application/outer-1",
           "unclassified"
         ]
       },
@@ -6702,7 +6697,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
-          "workspace/application/outer-1",
           "unclassified"
         ]
       },
@@ -6712,7 +6706,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
-          "workspace/application/outer-1",
           "workspace/presentation/outer-1",
           "unclassified"
         ]
@@ -6725,7 +6718,6 @@
           "workspace/infrastructure",
           "workspace/presentation",
           "workspace/integration",
-          "workspace/application/outer-1",
           "workspace/presentation/outer-1",
           "unclassified"
         ]
@@ -7553,22 +7545,11 @@
         ]
       },
       {
-        "from": "workspace/application/outer-1",
-        "allow": [
-          "workspace/domain",
-          "workspace/application",
-          "workspace/infrastructure",
-          "workspace/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "workspace/presentation/outer-1",
         "allow": [
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
-          "workspace/application/outer-1",
           "workspace/presentation/outer-1",
           "unclassified"
         ]
@@ -8072,7 +8053,6 @@
           "workflow-sharing/application/outer-1",
           "workflow-templates/application/outer-1",
           "workflow-thumbnails/application/outer-1",
-          "workspace/application/outer-1",
           "workspace/presentation/outer-1",
           "assets/domain/outer-2",
           "browser-interaction/domain/outer-2",

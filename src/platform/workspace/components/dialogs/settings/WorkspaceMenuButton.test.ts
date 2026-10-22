@@ -1,6 +1,6 @@
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,7 +25,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const i18n = createI18n({

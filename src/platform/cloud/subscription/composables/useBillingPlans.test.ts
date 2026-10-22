@@ -21,7 +21,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   })
 }))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
+  import('@/platform/billing/composables/useBillingReadRail'),
   () => ({ useBillingReadRail: () => railState.rail })
 )
 

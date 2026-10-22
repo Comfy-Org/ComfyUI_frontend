@@ -77,7 +77,7 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
-import { useCheckoutCopy } from '@/platform/workspace/composables/useCheckoutCopy'
+import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 

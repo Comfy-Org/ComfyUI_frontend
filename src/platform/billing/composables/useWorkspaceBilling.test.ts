@@ -1,9 +1,9 @@
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -27,7 +27,7 @@ import type {
 import {
   CancellationScopeChangedError,
   useWorkspaceBilling
-} from '@/platform/workspace/composables/useWorkspaceBilling'
+} from '@/platform/billing/composables/useWorkspaceBilling'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
@@ -72,7 +72,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: mockWorkspaceApiError
 }))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -93,7 +93,7 @@ const mockRail = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useSubscriptionRail'),
+  import('@/platform/billing/composables/useSubscriptionRail'),
   () => ({
     useSubscriptionRail: () => (mockRail.enabled ? mockRail : null)
   })

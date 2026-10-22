@@ -21,8 +21,8 @@ import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueBu
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
 const { showsSubscribeToRunPrompt, subscription, fetchStatus, fetchBalance } =
   useBillingContext()

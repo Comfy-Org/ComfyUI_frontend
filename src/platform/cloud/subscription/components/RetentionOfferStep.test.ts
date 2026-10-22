@@ -11,7 +11,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RetentionOfferOutcome } from '@/platform/cloud/subscription/utils/retentionOffer'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
 

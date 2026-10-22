@@ -1,4 +1,4 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { getActivePinia } from 'pinia'
@@ -338,7 +338,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 

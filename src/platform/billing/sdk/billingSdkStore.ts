@@ -55,11 +55,11 @@ import {
   needsCustomerAttention,
   progressToastKind
 } from '@/platform/billing/customerAttention'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { provideBillingSdkStore } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { provideBillingSdkStore } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { getCheckoutJourneyPaymentIntentSource } from '@/platform/workspace/utils/checkoutJourney'
+import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { projectBillingCapabilities } from './billingCapabilitiesView'

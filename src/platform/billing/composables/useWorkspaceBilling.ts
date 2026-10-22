@@ -42,12 +42,12 @@ import type {
   SubscriptionRailOutcome
 } from '@/platform/billing/sdk/subscriptionOperationView'
 import { SettledOperationError } from '@/platform/billing/sdk/subscriptionOperationView'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { readOnRail } from '@/platform/workspace/composables/readOnRail'
-import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { subscribeInputFrom } from '@/platform/billing/subscribeInput'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 

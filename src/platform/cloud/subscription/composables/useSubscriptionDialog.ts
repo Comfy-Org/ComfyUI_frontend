@@ -20,7 +20,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getWorkspaceTelemetryContext } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useAuthStore } from '@/stores/authStore'
@@ -28,8 +28,8 @@ import {
   clearPendingSubscriptionCheckout,
   clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout
-} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
-import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+} from '@/platform/billing/utils/pendingSubscriptionCheckout'
+import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'

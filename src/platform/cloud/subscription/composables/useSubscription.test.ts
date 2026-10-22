@@ -12,7 +12,7 @@ import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetc
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -155,7 +155,7 @@ const railState = vi.hoisted(() => ({
   rail: null as Pick<BillingReadRail, 'readStatus'> | null
 }))
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingReadRail'),
+  import('@/platform/billing/composables/useBillingReadRail'),
   () => ({ useBillingReadRail: () => railState.rail })
 )
 

@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 
 interface PausedBannerCopy {
   muted: boolean

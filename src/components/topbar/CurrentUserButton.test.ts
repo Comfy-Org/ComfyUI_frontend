@@ -26,7 +26,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )

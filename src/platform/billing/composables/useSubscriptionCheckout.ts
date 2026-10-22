@@ -39,12 +39,12 @@ import {
   SettledOperationError,
   billingClientOf
 } from '@/platform/billing/sdk/subscriptionOperationView'
-import { readOnRail } from '@/platform/workspace/composables/readOnRail'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -52,18 +52,18 @@ import {
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource
-} from '@/platform/workspace/utils/checkoutJourney'
-import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+} from '@/platform/billing/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 import {
   handOffCheckoutJourney,
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
-} from '@/platform/workspace/utils/checkoutJourneyTelemetry'
+} from '@/platform/billing/utils/checkoutJourneyTelemetry'
 import {
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
-} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
-import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
+} from '@/platform/billing/utils/pendingSubscriptionCheckout'
+import { trackWorkspaceCheckoutStarted } from '@/platform/billing/utils/workspaceCheckoutTelemetry'
 import { openBillingUrl } from '@/platform/billing/billingTab'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'

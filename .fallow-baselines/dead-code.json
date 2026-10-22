@@ -8,8 +8,8 @@
     "src/composables/video/useVideoFilmstrip.ts:FilmstripError",
     "src/platform/workspace/api/workspaceApi.ts:ListWorkspacesResponse",
     "src/platform/workspace/api/workspaceApi.ts:BillingPlansResponse",
-    "src/platform/workspace/composables/useDowngradeToPersonal.ts:DowngradePreview",
-    "src/platform/workspace/stores/billingOperationStore.ts:StartOperationMetadata",
+    "src/platform/billing/composables/useDowngradeToPersonal.ts:DowngradePreview",
+    "src/platform/billing/stores/billingOperationStore.ts:StartOperationMetadata",
     "src/platform/workspace/stores/partnerNodeGovernanceStore.ts:PartnerNodePolicyStatus"
   ],
   "private_type_leaks": [],

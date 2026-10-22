@@ -673,8 +673,7 @@ ruleTester.run(
     valid: [
       {
         name: 'the capability read decoding the API response',
-        filename:
-          'src/platform/workspace/composables/useBillingCapabilities.ts',
+        filename: 'src/platform/billing/composables/useBillingCapabilities.ts',
         code: constructorImport
       },
       {
@@ -685,7 +684,7 @@ ruleTester.run(
       {
         name: 'a vitest manual mock',
         filename:
-          'src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts',
+          'src/platform/billing/composables/__mocks__/useBillingCapabilities.ts',
         code: constructorImport
       },
       {

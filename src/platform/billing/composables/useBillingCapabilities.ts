@@ -8,14 +8,14 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
+import { onCapabilityRevision } from '@/platform/billing/api/capabilityRevision'
 import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { readOnRail } from '@/platform/workspace/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
