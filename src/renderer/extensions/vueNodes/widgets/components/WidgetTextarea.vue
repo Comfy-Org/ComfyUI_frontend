@@ -4,6 +4,7 @@
       cn(
         'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
         !isReadOnly && 'hover:bg-muted',
+        isLocked && 'bg-input',
         widget.borderStyle
       )
     "
@@ -26,7 +27,8 @@
           'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           'overflow-hidden hover:overflow-auto focus:overflow-auto',
-          isProcessing && 'text-transparent caret-transparent'
+          isProcessing && 'agent-shimmer-text caret-transparent',
+          isRevealing && 'invisible'
         )
       "
       :placeholder
@@ -37,18 +39,22 @@
       @pointerup.capture.stop
       @contextmenu.capture="handleContextMenu"
     />
-    <p
-      v-if="isProcessing"
+    <div
+      v-if="isRevealing"
       aria-hidden="true"
       :class="
         cn(
-          'agent-shimmer-text pointer-events-none absolute inset-0 overflow-hidden px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
+          'pointer-events-none absolute inset-0 scrollbar-gutter-stable overflow-auto px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
           !hideLayoutField && 'pt-5'
         )
       "
     >
-      {{ modelValue }}
-    </p>
+      <SpokenText
+        :text="revealText"
+        :start-ms="0"
+        :stagger-ms="revealStaggerMs"
+      />
+    </div>
     <EnhancePromptButton
       v-if="showEnhance"
       class="absolute top-1.5 right-1.5 z-10"
@@ -78,6 +84,7 @@
 import { computed, inject, ref, useId, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 
+import SpokenText from '@/components/SpokenText/SpokenText.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -156,6 +163,9 @@ const showEnhance = computed(() => {
 const {
   isLocked: ownedLocked,
   isProcessing: ownedProcessing,
+  isRevealing: ownedRevealing,
+  revealText: ownedRevealText,
+  revealStaggerMs: ownedRevealStaggerMs,
   enhance
 } = useEnhancePrompt({
   prompt: modelValue
@@ -166,6 +176,15 @@ const isLocked = computed(
 )
 const isProcessing = computed(
   () => panelEnhance?.isProcessing.value ?? ownedProcessing.value
+)
+const isRevealing = computed(
+  () => panelEnhance?.isRevealing.value ?? ownedRevealing.value
+)
+const revealText = computed(
+  () => panelEnhance?.revealText.value ?? ownedRevealText.value
+)
+const revealStaggerMs = computed(
+  () => panelEnhance?.revealStaggerMs.value ?? ownedRevealStaggerMs.value
 )
 
 function handleContextMenu(e: MouseEvent) {

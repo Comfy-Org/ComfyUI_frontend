@@ -158,7 +158,14 @@ const promptValue = computed({
   }
 })
 
-const { isLocked, isProcessing, enhance } = useEnhancePrompt({
+const {
+  isLocked,
+  isProcessing,
+  isRevealing,
+  revealText,
+  revealStaggerMs,
+  enhance
+} = useEnhancePrompt({
   prompt: promptValue
 })
 
@@ -184,7 +191,10 @@ const showEnhance = computed(() => {
 
 provide(EnhancePromptStateKey, {
   isLocked,
-  isProcessing
+  isProcessing,
+  isRevealing,
+  revealText,
+  revealStaggerMs
 })
 
 const displayLabel = customRef((track, trigger) => {

@@ -312,6 +312,10 @@ describe('WidgetTextarea Value Binding', () => {
 })
 
 describe('WidgetTextarea enhance prompt', () => {
+  beforeEach(() => {
+    useAgentPanelStore().enabled = false
+  })
+
   it('hides the enhance button when the agent is unavailable', () => {
     const widget = createTextareaWidget('a prompt')
     renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
@@ -365,7 +369,10 @@ describe('WidgetTextarea enhance prompt', () => {
         provide: {
           [EnhancePromptStateKey as symbol]: {
             isLocked: ref(true),
-            isProcessing: ref(true)
+            isProcessing: ref(true),
+            isRevealing: ref(false),
+            revealText: ref(''),
+            revealStaggerMs: ref(0)
           }
         },
         mocks: {
@@ -374,16 +381,25 @@ describe('WidgetTextarea enhance prompt', () => {
       }
     })
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    const textarea = screen.getByRole('textbox')
+    expect(textarea).toHaveAttribute('readonly')
+    expect(textarea).toHaveClass('agent-shimmer-text')
+    expect(textarea).toHaveValue('a prompt')
     expect(
       screen.queryByRole('button', { name: 'agent.enhancePrompt' })
     ).not.toBeInTheDocument()
-    expect(screen.getByText('a prompt')).toHaveClass('agent-shimmer-text')
+    expect(screen.queryByText('a prompt')).not.toBeInTheDocument()
   })
 
-  it('shimmers the prompt text and locks the input while enhance is in flight', async () => {
+  it('shimmers the textarea text in place and locks the input while enhance is in flight', async () => {
     useAgentPanelStore().enabled = true
-    vi.mocked(enhancePromptRequest).mockReturnValue(new Promise(() => {}))
+    let resolveRequest: (result: { ok: true; prompt: string }) => void = () =>
+      undefined
+    vi.mocked(enhancePromptRequest).mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve
+      })
+    )
     const widget = createTextareaWidget('a prompt')
     renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
 
@@ -391,11 +407,28 @@ describe('WidgetTextarea enhance prompt', () => {
       screen.getByRole('button', { name: 'agent.enhancePrompt' })
     )
 
-    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    const textarea = screen.getByRole('textbox')
+    expect(textarea).toHaveAttribute('readonly')
+    expect(textarea).toHaveClass('agent-shimmer-text')
+    expect(textarea).toHaveValue('a prompt')
+    expect(screen.queryByText('a prompt')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'agent.enhancingPrompt' })
     ).toBeDisabled()
-    expect(screen.getByText('a prompt')).toHaveClass('agent-shimmer-text')
+
+    resolveRequest({ ok: true, prompt: 'enhanced prompt' })
+    await vi.waitFor(() => {
+      expect(screen.getByText('enhanced')).toHaveClass('agent-talk-word')
+    })
+    expect(screen.getByRole('textbox')).toHaveClass('invisible')
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    expect(screen.getByRole('textbox')).toHaveValue('a prompt')
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('readonly')
+    })
+    expect(screen.getByRole('textbox')).toHaveValue('enhanced prompt')
+    expect(screen.queryByText('enhanced')).not.toBeInTheDocument()
   })
 })
 
