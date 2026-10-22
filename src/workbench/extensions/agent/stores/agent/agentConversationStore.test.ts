@@ -2154,6 +2154,13 @@ describe('useAgentConversationStore', () => {
       store.dismissOpenAsks()
       store.resumeBackgroundTurn()
 
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({
+          type: 'runApproval',
+          askId: 'turn-1:call-1',
+          dismissed: true
+        })
+      )
       expect(store.activeAskOpen).toBe(false)
     })
   })
