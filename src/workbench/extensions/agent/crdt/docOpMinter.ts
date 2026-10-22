@@ -402,13 +402,6 @@ export function docInputIndex(
   return index === -1 ? undefined : index
 }
 
-/**
- * Whether `name` is an input the node's definition grows from a dynamic
- * input's current value (`resize_type.match` exists only while `resize_type`
- * selects the option that declares it), resolved from the definition rather
- * than the name's shape. A document minted under another selection lacks such
- * a slot without having diverged.
- */
 function isSelectionDependentInput(node: LGraphNode, name: string): boolean {
   const nodeDefStore = useNodeDefStore()
   const definition = nodeDefStore.fromLGraphNode(node)
