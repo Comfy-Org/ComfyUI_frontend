@@ -181,9 +181,14 @@ describe('NodeAskAgentHover', () => {
     expect(composer).not.toHaveClass('border-border/50')
     const [inputRow] = within(composer).getAllByRole('group')
     expect(inputRow).toHaveClass(
-      'rounded-lg',
+      'rounded-none',
       'has-[[data-slot=input-group-control]:focus-visible]:ring-0'
     )
+    expect(inputRow).not.toHaveClass('rounded-lg')
+    expect(
+      screen.getByRole('textbox', { name: 'Ask for a change' })
+    ).toHaveClass('text-[14px]/5', 'font-inter', 'font-normal')
+    expect(screen.getByRole('button', { name: 'Send' })).toHaveClass('size-8')
     expect(screen.getByTestId('node-ask-agent-starters')).toHaveClass('p-1')
     expect(
       screen.getByRole('button', { name: 'Explain this node for me' })

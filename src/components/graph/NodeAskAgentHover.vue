@@ -33,25 +33,27 @@
     >
       <form class="w-full border-b border-border" @submit.prevent="onSend">
         <InputGroup
-          class="has-[[data-slot=input-group-control]:focus-visible]:ring-0"
+          class="rounded-none has-[[data-slot=input-group-control]:focus-visible]:ring-0"
         >
           <InputGroupInput
             v-model="draft"
             data-testid="node-ask-agent-input"
             :placeholder="t('agent.nodeHover.placeholder')"
             :aria-label="t('agent.nodeHover.placeholder')"
+            class="font-inter text-[14px]/5 font-normal"
           />
           <InputGroupAddon align="inline-end">
-            <InputGroupButton
+            <Button
+              type="button"
               variant="inverted"
-              size="icon-sm"
+              size="icon"
               data-testid="node-ask-agent-send"
               :aria-label="t('agent.send')"
               :disabled="!canSend"
               @click="onSend"
             >
               <i class="icon-[lucide--arrow-up] size-4" />
-            </InputGroupButton>
+            </Button>
           </InputGroupAddon>
         </InputGroup>
       </form>
@@ -117,7 +119,6 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import InputGroup from '@/components/ui/input-group/InputGroup.vue'
 import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
-import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
 import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
