@@ -30,14 +30,23 @@ describe('deriveLocalCreditBanner', () => {
     ).toBeNull()
   })
 
-  it('shows cloud credit banners when the served plan is active', () => {
-    expect(derive({ isCloud: true, isActive: true, hasFunds: false })).toBe(
-      'outOfCredits'
-    )
-    expect(derive({ isCloud: true, isActive: true, lowBalance: true })).toBe(
-      'lowCredits'
-    )
-  })
+  it.for([
+    {
+      name: 'out of credits',
+      input: { isCloud: true, isActive: true, hasFunds: false },
+      expected: 'outOfCredits' as const
+    },
+    {
+      name: 'low credits',
+      input: { isCloud: true, isActive: true, lowBalance: true },
+      expected: 'lowCredits' as const
+    }
+  ])(
+    'shows the $name cloud banner when the served plan is active',
+    ({ input, expected }) => {
+      expect(derive(input)).toBe(expected)
+    }
+  )
 
   it('stays hidden when unified billing settings is off', () => {
     expect(
