@@ -57,7 +57,7 @@ export const installPreservedQueryTracker = (
   router: Router,
   definitions: PreservedQueryDefinition[]
 ) => {
-  router.beforeEach((to, _from, next) => {
+  router.beforeEach((to) => {
     const queryKeys = new Set(Object.keys(to.query))
     const keysToStrip = new Set<string>()
 
@@ -82,13 +82,10 @@ export const installPreservedQueryTracker = (
       }
     )
 
-    if (keysToStrip.size === 0) {
-      next()
-      return
-    }
+    if (keysToStrip.size === 0) return
 
     const cleanedQuery = { ...to.query }
     keysToStrip.forEach((key) => delete cleanedQuery[key])
-    next({ path: to.path, query: cleanedQuery, hash: to.hash })
+    return { path: to.path, query: cleanedQuery, hash: to.hash }
   })
 }

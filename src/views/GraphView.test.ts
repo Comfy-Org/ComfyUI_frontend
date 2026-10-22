@@ -201,9 +201,8 @@ vi.mock<unknown>(
 
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
-  () => stubModule
+vi.mock(
+  import('@/platform/cloud/notification/composables/useDesktopCloudNotification')
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/ModelImportProgressDialog.vue'),

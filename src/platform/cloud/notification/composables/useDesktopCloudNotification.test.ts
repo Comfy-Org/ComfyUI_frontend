@@ -1,10 +1,17 @@
 import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
+import { useDesktopCloudNotification } from './useDesktopCloudNotification'
+
+const NotificationHost = defineComponent({
+  setup() {
+    useDesktopCloudNotification()
+    return () => null
+  }
+})
 
 let settingStore: ReturnType<typeof useSettingStore>
 
@@ -47,7 +54,7 @@ function createDeferred() {
   return { promise, resolve }
 }
 
-describe('DesktopCloudNotificationController', () => {
+describe('useDesktopCloudNotification', () => {
   beforeEach(() => {
     settingStore = useSettingStore()
     settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = false
@@ -62,7 +69,7 @@ describe('DesktopCloudNotificationController', () => {
     const loadSettings = createDeferred()
     vi.mocked(settingStore.load).mockImplementation(() => loadSettings.promise)
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await nextTick()
 
     settingStore.settingValues['Comfy.Desktop.CloudNotificationShown'] = true
@@ -82,7 +89,7 @@ describe('DesktopCloudNotificationController', () => {
     const loadSettings = createDeferred()
     vi.mocked(settingStore.load).mockImplementation(() => loadSettings.promise)
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await nextTick()
 
     unmount()
@@ -103,7 +110,7 @@ describe('DesktopCloudNotificationController', () => {
       useCloudNotificationDialog().showCloudNotification
     ).mockImplementation(() => dialogOpen.promise)
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
 
     await vi.advanceTimersByTimeAsync(0)
     await vi.advanceTimersByTimeAsync(2000)
@@ -132,7 +139,7 @@ describe('DesktopCloudNotificationController', () => {
       await saveSettings.promise
     })
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(
@@ -159,7 +166,7 @@ describe('DesktopCloudNotificationController', () => {
       new Error('load failed')
     )
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(errorReporter).not.toHaveBeenCalled()
@@ -175,7 +182,7 @@ describe('DesktopCloudNotificationController', () => {
     const error = new Error('save failed')
     vi.mocked(settingStore.set).mockRejectedValueOnce(error)
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(errorReporter).toHaveBeenCalledExactlyOnceWith(
@@ -219,7 +226,7 @@ describe('DesktopCloudNotificationController', () => {
       useCloudNotificationDialog().showCloudNotification
     ).mockRejectedValue(error)
 
-    const { unmount } = render(DesktopCloudNotificationController)
+    const { unmount } = render(NotificationHost)
     await vi.advanceTimersByTimeAsync(2000)
 
     expect(errorReporter).toHaveBeenCalledWith(
@@ -265,7 +272,7 @@ describe('DesktopCloudNotificationController', () => {
         Object.assign(settingStore.settingValues, { [key]: value })
       })
 
-      const { unmount } = render(DesktopCloudNotificationController)
+      const { unmount } = render(NotificationHost)
       await vi.advanceTimersByTimeAsync(2000)
 
       expect(errorReporter).toHaveBeenNthCalledWith(

@@ -27,7 +27,6 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
-  <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -79,7 +78,7 @@ import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vu
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
-import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -126,6 +125,7 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
+useDesktopCloudNotification()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

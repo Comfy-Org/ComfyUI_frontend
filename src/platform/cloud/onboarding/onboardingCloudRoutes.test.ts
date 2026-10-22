@@ -299,16 +299,8 @@ async function runGuard(
   [name, guard, path]: GuardedRoute,
   query: Record<string, string>
 ) {
-  const next = vi.fn()
   const to = { query, name, path }
-  await (
-    guard as unknown as (
-      to: unknown,
-      from: unknown,
-      next: unknown
-    ) => Promise<void>
-  )(to, undefined, next)
-  return next.mock.calls[0]?.[0]
+  return (guard as unknown as (to: unknown) => Promise<unknown>)(to)
 }
 
 describe.for(guardedRoutes)('%s beforeEnter', (route) => {

@@ -8,7 +8,7 @@ import {
 } from 'vue-router'
 import type {
   LocationQueryRaw,
-  NavigationGuardNext,
+  NavigationGuardReturn,
   RouteLocationNormalized,
   Router
 } from 'vue-router'
@@ -86,14 +86,10 @@ export async function createAppRouter(): Promise<Router> {
             path: '',
             name: 'GraphView',
             component: () => import('@/views/GraphView.vue'),
-            beforeEnter: async (_to, _from, next) => {
+            beforeEnter: async () => {
               const userStore = useUserStore()
               await userStore.initialize()
-              if (userStore.needsLogin) {
-                next('/user-select')
-              } else {
-                next()
-              }
+              if (userStore.needsLogin) return '/user-select'
             }
           },
           {
@@ -117,9 +113,8 @@ export async function createAppRouter(): Promise<Router> {
 
   installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
-  router.beforeEach((to, _from, next) => {
+  router.beforeEach((to) => {
     captureOAuthRequestId(to.query)
-    next()
   })
 
   router.afterEach(() => {
@@ -180,9 +175,8 @@ function installCloudAuthGuards(router: Router): void {
   /** A lapsed SSO session goes back through its identity provider, once per tab per window. */
   function sendToSignIn(
     to: RouteLocationNormalized,
-    query: LocationQueryRaw,
-    next: NavigationGuardNext
-  ): void {
+    query: LocationQueryRaw
+  ): NavigationGuardReturn {
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -201,19 +195,19 @@ function installCloudAuthGuards(router: Router): void {
           origin: window.location.origin
         })
       )
-      return next(false)
+      return false
     }
-    next({
+    return {
       name: 'cloud-login',
       query: {
         ...query,
         ...(reentry.kind !== 'login' && SSO_ENTRY_OPEN_QUERY),
         ...(ssoError && { sso_error: ssoError })
       }
-    })
+    }
   }
 
-  router.beforeEach(async (to, _from, next) => {
+  router.beforeEach(async (to, from) => {
     rerouteWhenSignedOutElsewhere()
     const authStore = useAuthStore()
 
@@ -223,7 +217,7 @@ function installCloudAuthGuards(router: Router): void {
         await until(isInitialized).toBe(true, { timeout: 16_000 })
       } catch (error) {
         console.error('Auth initialization failed:', error)
-        return next({ name: 'cloud-auth-timeout' })
+        return { name: 'cloud-auth-timeout' }
       }
     }
 
@@ -243,18 +237,18 @@ function installCloudAuthGuards(router: Router): void {
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     if (isPublicRoute(to)) {
-      return next()
+      return
     }
 
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: 'cloud-login' })
+        return { name: 'cloud-login' }
       }
-      return next()
+      return
     }
 
-    if (_from.name === 'cloud-user-check' && to.path === '/') {
-      return next()
+    if (from.name === 'cloud-user-check' && to.path === '/') {
+      return
     }
 
     const query = {
@@ -265,21 +259,21 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (to.meta.requiresAuth && !isLoggedIn) {
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     if (!isLoggedIn) {
       if (isDesktop) {
         const loginSuccess = await useAuthDialogs().showSignInDialog()
-        return loginSuccess ? next() : next(false)
+        return loginSuccess
       }
 
-      return sendToSignIn(to, query, next)
+      return sendToSignIn(to, query)
     }
 
     if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
-        return next()
+        return
       }
       const { getSurveyCompletedStatus } =
         await import('@/platform/cloud/onboarding/auth')
@@ -289,15 +283,15 @@ function installCloudAuthGuards(router: Router): void {
         )
 
         if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
+          return { name: 'cloud-survey' }
         }
       } catch (error) {
         console.error('Failed to check user status:', error)
-        return next({ name: 'cloud-user-check' })
+        return { name: 'cloud-user-check' }
       }
     }
 
-    return next()
+    return
   })
 
   installDesktopLoginRedemption(router)
