@@ -388,6 +388,7 @@ describe('useAgentCrdtFollower', () => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    const stopGate = diagnostics.startCrdtDebugGate()
     expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
     expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
 
@@ -397,6 +398,7 @@ describe('useAgentCrdtFollower', () => {
     expect(bridgeState.current).toBeNull()
     expect('__agentCrdtPoc' in window).toBe(false)
     unmount()
+    stopGate()
   })
 
   it('keeps product transport enabled when diagnostics and legacy controls are off', async () => {
@@ -405,6 +407,7 @@ describe('useAgentCrdtFollower', () => {
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    const stopGate = diagnostics.startCrdtDebugGate()
     expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
     expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
 
@@ -413,6 +416,7 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
     expect('__agentCrdtPoc' in window).toBe(false)
     unmount()
+    stopGate()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
