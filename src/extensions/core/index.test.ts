@@ -1,26 +1,30 @@
+import { setActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
 import { useExtensionStore } from '@/stores/extensionStore'
-
-const coreModules = import.meta.glob(['./*.ts', '!./*.test.ts'])
+import { createDisposablePinia } from '@/testing/pinia'
 
 const registeredNames = () =>
   useExtensionStore().extensions.map((extension) => extension.name)
 
-describe('core extensions', () => {
-  it.for(Object.keys(coreModules))(
-    'importing %s registers nothing',
-    { timeout: 30_000 },
-    async (path) => {
-      await coreModules[path]()
+async function namesRegisteredByImporting(loaders: (() => Promise<unknown>)[]) {
+  using importScope = createDisposablePinia()
+  setActivePinia(importScope.pinia)
+  await Promise.all(loaders.map((load) => load()))
+  return registeredNames()
+}
 
-      expect(registeredNames()).toEqual([])
-    }
-  )
+const namesRegisteredOnImport = await namesRegisteredByImporting(
+  Object.values(import.meta.glob(['./*.ts', '!./*.test.ts']))
+)
+const { registerCoreExtensions } = await import('./index')
+
+describe('core extensions', () => {
+  it('registers nothing when their modules are imported', () => {
+    expect(namesRegisteredOnImport).toEqual([])
+  })
 
   it('registers the core extensions once, in their fixed order', async () => {
-    const { registerCoreExtensions } = await import('./index')
-
     await registerCoreExtensions()
     await registerCoreExtensions()
 
