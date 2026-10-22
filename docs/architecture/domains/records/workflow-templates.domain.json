@@ -20,14 +20,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/useLazyPagination.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLazyPagination.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/templates/**",
       "role": "application"
     },
@@ -50,22 +42,6 @@
     {
       "path": "src/platform/workflow/templates/utils/**",
       "role": "domain"
-    },
-    {
-      "path": "src/stores/templateInputDownloadStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateInputDownloadStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateRankingStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/templateRankingStore.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -105,15 +81,15 @@
     {
       "name": "Template ranking scores and desktop template input downloads track their state",
       "checks": [
-        "src/stores/templateRankingStore.test.ts",
-        "src/stores/templateInputDownloadStore.test.ts"
+        "src/platform/workflow/templates/stores/templateRankingStore.test.ts",
+        "src/platform/workflow/templates/stores/templateInputDownloadStore.test.ts"
       ]
     },
     {
       "name": "Template selector dialog filters, sorts, and lazily paginates templates",
       "checks": [
         "src/platform/workflow/templates/composables/useTemplateFiltering.test.ts",
-        "src/composables/useLazyPagination.test.ts",
+        "src/platform/workflow/templates/composables/useLazyPagination.test.ts",
         "src/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog.test.ts"
       ]
     }

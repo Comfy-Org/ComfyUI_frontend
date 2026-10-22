@@ -10,7 +10,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { resolveTemplateModelMetadata } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
-import type { useLazyPagination } from '@/composables/useLazyPagination'
+import type { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
@@ -275,15 +275,18 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/composables/useLazyPagination'), () => ({
-  useLazyPagination: ((items: { value: unknown[] }) => ({
-    paginatedItems: items,
-    isLoading: ref(false),
-    hasMoreItems: computed(() => false),
-    loadNextPage: vi.fn(async () => {}),
-    reset: vi.fn()
-  })) as unknown as typeof useLazyPagination
-}))
+vi.mock(
+  import('@/platform/workflow/templates/composables/useLazyPagination'),
+  () => ({
+    useLazyPagination: ((items: { value: unknown[] }) => ({
+      paginatedItems: items,
+      isLoading: ref(false),
+      hasMoreItems: computed(() => false),
+      loadNextPage: vi.fn(async () => {}),
+      reset: vi.fn()
+    })) as unknown as typeof useLazyPagination
+  })
+)
 
 vi.mock(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()

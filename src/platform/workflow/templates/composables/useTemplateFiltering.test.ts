@@ -1,5 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/templateRankingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'

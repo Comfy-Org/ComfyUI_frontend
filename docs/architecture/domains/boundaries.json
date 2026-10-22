@@ -3438,17 +3438,6 @@
         ]
       },
       {
-        "name": "workflow-templates/application",
-        "patterns": [
-          "src/composables/useLazyPagination.test.ts",
-          "src/composables/useLazyPagination.ts",
-          "src/stores/templateInputDownloadStore.test.ts",
-          "src/stores/templateInputDownloadStore.ts",
-          "src/stores/templateRankingStore.test.ts",
-          "src/stores/templateRankingStore.ts"
-        ]
-      },
-      {
         "name": "workflow-templates/infrastructure",
         "patterns": [
           "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts"
@@ -6639,20 +6628,9 @@
         "allow": ["workflow-templates/domain", "unclassified"]
       },
       {
-        "from": "workflow-templates/application",
-        "allow": [
-          "workflow-templates/domain",
-          "workflow-templates/application",
-          "workflow-templates/infrastructure",
-          "workflow-templates/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "workflow-templates/infrastructure",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -6662,7 +6640,6 @@
         "from": "workflow-templates/presentation",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/presentation",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -7532,7 +7509,6 @@
         "from": "workflow-templates/application/outer-1",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -7978,7 +7954,6 @@
           "workflow-sharing/infrastructure",
           "workflow-sharing/presentation",
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/presentation",
           "workflow-thumbnails/infrastructure",
