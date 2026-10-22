@@ -55,8 +55,9 @@ jobs:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           touch /tmp/video-cache-index.txt
-          for RUN in $(gh run list --workflow ci-playwright-videos.yaml --branch "$HEAD_REF" \
-            --event pull_request --status completed --limit 20 --json databaseId --jq '.[].databaseId'); do
+          for RUN in $(gh api -X GET "repos/$GH_REPO/actions/workflows/ci-playwright-videos.yaml/runs" \
+            -f branch="$HEAD_REF" -f event=pull_request -f status=completed -F per_page=20 \
+            --jq ".workflow_runs[] | select(.head_repository.full_name == \"$GH_REPO\") | .id"); do
             if gh run download "$RUN" --name video-cache-index --dir /tmp/video-cache-index; then
               cp /tmp/video-cache-index/video-cache-index.txt /tmp/video-cache-index.txt
               echo "run=$RUN" >> "$GITHUB_OUTPUT"

@@ -25,18 +25,19 @@ jobs:
     steps:
       - name: Drop cached recordings and rerun CI Playwright Videos
         run: |
-          HEAD_REF=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
-          HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
-          RUNS=$(gh run list --workflow ci-playwright-videos.yaml --branch "$HEAD_REF" \
-            --event pull_request --limit 100 --json databaseId --jq '.[].databaseId')
+          read -r HEAD_REPO HEAD_REF HEAD_SHA < <(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" \
+            --jq '[.head.repo.full_name, .head.ref, .head.sha] | @tsv')
+          test "$HEAD_REPO" = "$GH_REPO" || { echo "::error::Videos are recorded only for branches in $GH_REPO"; exit 1; }
+          RUNS_URL="repos/$GH_REPO/actions/workflows/ci-playwright-videos.yaml/runs"
+          SAME_REPO=".workflow_runs[] | select(.head_repository.full_name == \"$GH_REPO\") | .id"
+          RUNS=$(gh api -X GET "$RUNS_URL" -f event=pull_request -F per_page=100 -f branch="$HEAD_REF" --jq "$SAME_REPO")
           for RUN in $RUNS; do
             ARTIFACTS=$(gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts?name=video-cache-index" --jq '.artifacts[].id')
             for ARTIFACT in $ARTIFACTS; do
               gh api -X DELETE "repos/$GH_REPO/actions/artifacts/$ARTIFACT"
             done
           done
-          RUN_ID=$(gh run list --workflow ci-playwright-videos.yaml --commit "$HEAD_SHA" \
-            --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          RUN_ID=$(gh api -X GET "$RUNS_URL" -f event=pull_request -F per_page=100 -f head_sha="$HEAD_SHA" --jq "$SAME_REPO" | head -1)
           test -n "$RUN_ID" || { echo "::error::No CI: Playwright Videos run for $HEAD_SHA"; exit 1; }
           gh run rerun "$RUN_ID"
           echo "Rerunning https://github.com/$GH_REPO/actions/runs/$RUN_ID without cached recordings"
