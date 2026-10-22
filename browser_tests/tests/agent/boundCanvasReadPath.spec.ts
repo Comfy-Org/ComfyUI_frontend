@@ -104,6 +104,65 @@ test.describe(
       ).toBe(nodeCount)
     })
 
+    test.describe('canvas edits between turns', () => {
+      test.describe.configure({ timeout: 45_000 })
+      test.use({ objectInfo: 'server' })
+
+      test('second turn carries a node and link the user added between turns', async ({
+        agentPanel,
+        comfyPage,
+        postedMessages,
+        getAgentSocket
+      }) => {
+        test.setTimeout(45_000)
+
+        const beforeEdit = await comfyPage.page.evaluate(() =>
+          window.app!.graph.serialize()
+        )
+
+        await agentPanel.open()
+        const ws = await getAgentSocket()
+        await agentPanel.sendMessage(FIRST_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+        await agentPanel.expectTurnSettled()
+
+        const checkpointLoaders = await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )
+        expect(
+          checkpointLoaders,
+          'the default workflow must contain one checkpoint loader'
+        ).toHaveLength(1)
+        const sampler = await comfyPage.nodeOps.addNode('KSampler', undefined, {
+          x: 900,
+          y: 200
+        })
+        await comfyPage.nextFrame()
+        const checkpointModel = await checkpointLoaders[0].getOutput(0)
+        const modelLinksBefore = await checkpointModel.getLinkCount()
+        await checkpointLoaders[0].connectOutput(0, sampler, 0)
+        await comfyPage.nextFrame()
+        await checkpointModel.expectLinkCount(modelLinksBefore + 1)
+
+        const editedGraph = await comfyPage.page.evaluate(() =>
+          window.app!.graph.serialize()
+        )
+        expect(editedGraph.nodes).toHaveLength(beforeEdit.nodes.length + 1)
+        expect(editedGraph.links).toHaveLength(beforeEdit.links.length + 1)
+
+        await agentPanel.sendMessage(SECOND_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(2)
+        const second = parsePosted(postedMessages[1])
+
+        const editedContent = JSON.parse(
+          JSON.stringify({ nodes: editedGraph.nodes, links: editedGraph.links })
+        ) as { nodes: unknown[]; links: unknown[] }
+        expect(second.draft?.content).toMatchObject(editedContent)
+      })
+    })
+
     test('switching to a new tab and back keeps the bound tab populated on the next turn', async ({
       agentPanel,
       comfyPage,
