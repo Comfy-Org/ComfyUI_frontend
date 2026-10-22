@@ -175,10 +175,12 @@
     "@vueuse/core": "catalog:",
     "@vueuse/integrations": "catalog:",
     "chart.js": "^4.5.0",
+    "clsx": "^2.1.1",
     "cva": "catalog:",
-    "dompurify": "^3.4.13",
+    "dompurify": "catalog:",
     "es-toolkit": "catalog:",
     "fuse.js": "^7.0.0",
+    "tailwind-merge": "^2.2.0",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {

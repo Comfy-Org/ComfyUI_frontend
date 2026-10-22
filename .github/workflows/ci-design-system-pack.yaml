@@ -10,6 +10,11 @@ on:
       - 'pnpm-lock.yaml'
       - 'tsconfig.json'
       - 'tsconfig.declarations.json'
+      - 'package.json'
+      - 'patches/**'
+      - 'scripts/vue-tsc-native.ts'
+      - 'scripts/cicd/check-design-system-*'
+      - '.github/actions/setup-frontend/**'
       - '.github/workflows/ci-design-system-pack.yaml'
 
 concurrency:
@@ -33,6 +38,9 @@ jobs:
 
       - name: Build components
         run: pnpm -C packages/design-system build
+
+      - name: Verify compiled imports are declared dependencies
+        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
 
       - name: Verify packed tarball only contains public design system files
         shell: bash
@@ -91,15 +99,4 @@ jobs:
           echo 'Packed tarball contains only expected files.'
 
       - name: Check an isolated packed consumer
-        shell: bash
-        run: |
-          set -euo pipefail
-          CONSUMER=$(mktemp -d)
-          trap 'rm -rf "$CONSUMER"' EXIT
-          cp packages/design-system/tests/consumer/* "$CONSUMER/"
-          mv "$CONSUMER/package.json.template" "$CONSUMER/package.json"
-          mv "$CONSUMER/tsconfig.json.template" "$CONSUMER/tsconfig.json"
-          printf 'hoist=false\n' > "$CONSUMER/.npmrc"
-          pnpm --config.ignore-scripts=true -C packages/design-system pack --pack-destination "$CONSUMER"
-          pnpm --dir "$CONSUMER" add --ignore-scripts "$CONSUMER"/*.tgz
-          pnpm --dir "$CONSUMER" run check
+        run: scripts/cicd/check-design-system-consumer.sh

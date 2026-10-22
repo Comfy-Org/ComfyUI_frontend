@@ -202,7 +202,7 @@ catalogs:
       specifier: ^18.5.0
       version: 18.5.0
     dompurify:
-      specifier: 3.4.13
+      specifier: ^3.4.13
       version: 3.4.13
     dotenv:
       specifier: ^16.4.5
@@ -1381,11 +1381,14 @@ importers:
       chart.js:
         specifier: ^4.5.0
         version: 4.5.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
       dompurify:
-        specifier: ^3.4.13
+        specifier: 'catalog:'
         version: 3.4.13
       es-toolkit:
         specifier: 'catalog:'
@@ -1393,6 +1396,9 @@ importers:
       fuse.js:
         specifier: ^7.0.0
         version: 7.0.0
+      tailwind-merge:
+        specifier: ^2.2.0
+        version: 2.6.1
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0

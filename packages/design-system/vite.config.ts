@@ -34,7 +34,7 @@ export default defineConfig({
     minify: false,
     rolldownOptions: {
       external:
-        /^(vue|cva|reka-ui|@vueuse\/(core|integrations)|chart\.js|dompurify|es-toolkit|fuse\.js)(\/|$)/,
+        /^(vue|cva|reka-ui|@vueuse\/(core|integrations)|chart\.js|clsx|dompurify|es-toolkit|fuse\.js|tailwind-merge)(\/|$)/,
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: 'shared/[name]-[hash].js'
