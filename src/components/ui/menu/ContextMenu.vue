@@ -7,7 +7,7 @@ import {
 } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
-import { nextTick, ref, useId, useTemplateRef } from 'vue'
+import { nextTick, ref, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -29,14 +29,12 @@ const {
 }>()
 const emit = defineEmits<{ show: []; hide: [] }>()
 
-const trigger = useTemplateRef<HTMLElement>('trigger')
 const visible = ref(false)
 const generatedId = useId()
 const ownerId = `context-menu-${generatedId}`
-const anchor = ref<EventTarget | null>(null)
-const anchorPointerDownWhileOpen = ref(false)
 const anchorPosition = ref({ x: 0, y: 0 })
-const showRequest = ref(0)
+let showRequest = 0
+let dismissingPressTarget: Node | null = null
 
 function setOpen(value: boolean) {
   if (visible.value === value) return
@@ -49,74 +47,67 @@ function setOpen(value: boolean) {
 
 function show(event: Event) {
   if (event.type === 'contextmenu') event.preventDefault()
-  anchor.value = event.currentTarget ?? event.target
   anchorPosition.value = getMenuAnchorPosition(event)
   if (!visible.value) {
     setOpen(true)
     return
   }
   setOpen(false)
-  const request = ++showRequest.value
+  const request = ++showRequest
   void nextTick(() => {
-    if (request === showRequest.value) setOpen(true)
+    if (request === showRequest) setOpen(true)
   })
 }
 
 function hide() {
-  showRequest.value++
+  showRequest++
   setOpen(false)
+}
+
+function isOwnContent(target: Element) {
+  return (
+    target.closest('[data-menu-owner]')?.getAttribute('data-menu-owner') ===
+    ownerId
+  )
 }
 
 useEventListener(
   document,
   'pointerdown',
-  (event) => {
-    const target = event.target
-    anchorPointerDownWhileOpen.value =
-      visible.value &&
-      target instanceof Node &&
-      anchor.value instanceof Node &&
-      anchor.value.contains(target)
-    if (
-      !visible.value ||
-      !(target instanceof Element) ||
-      trigger.value?.contains(target) ||
-      target.closest('[data-menu-owner]')?.getAttribute('data-menu-owner') ===
-        ownerId
-    )
+  ({ target }) => {
+    dismissingPressTarget = null
+    if (!visible.value || !(target instanceof Element) || isOwnContent(target))
       return
+    dismissingPressTarget = target
     hide()
   },
   { capture: true }
 )
 
-function toggle(event: Event) {
-  if (
-    visible.value ||
-    (event instanceof MouseEvent &&
-      event.detail > 0 &&
-      anchorPointerDownWhileOpen.value)
-  ) {
-    anchorPointerDownWhileOpen.value = false
-    hide()
-    return
-  }
-  show(event)
+function isClickFromDismissingPress(event: Event) {
+  const clicked = event.currentTarget ?? event.target
+  return (
+    event instanceof MouseEvent &&
+    event.detail > 0 &&
+    clicked instanceof Node &&
+    dismissingPressTarget !== null &&
+    clicked.contains(dismissingPressTarget)
+  )
 }
 
-function updateOpen(value: boolean) {
-  setOpen(value)
+function toggle(event: Event) {
+  if (visible.value) hide()
+  else if (!isClickFromDismissingPress(event)) show(event)
 }
 
 defineExpose({ hide, show, toggle, visible })
 </script>
 
 <template>
-  <DropdownMenuRoot :open="visible" :modal="false" @update:open="updateOpen">
+  <DropdownMenuRoot :open="visible" :modal="false" @update:open="setOpen">
     <Teleport to="body">
       <DropdownMenuTrigger as-child>
         <button
-          ref="trigger"
           :data-menu-owner="ownerId"
           type="button"
           tabindex="-1"

@@ -2632,8 +2632,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let node =
       graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
 
-    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
-    // If no node was found, check if the click is on a slot and use its owning node.
     if (!node && LiteGraph.vueNodesMode) {
       const slotLayout = getSlotLayoutAtPoint(graph, {
         x: e.canvasX,
@@ -2659,7 +2657,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (this.onMouse?.(e) == true) return
 
-    // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
     } else if (isMiddleButtonEvent(e)) {
@@ -2670,16 +2667,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.read_only &&
       !this.selectOnly
     ) {
-      // Right / aux button
       const { linkConnector, subgraph } = this
 
-      // Sticky select - won't remove single nodes
       if (subgraph?.inputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph input node
         this.processSelect(subgraph.inputNode, e, true)
         subgraph.inputNode.onPointerDown(e, pointer, linkConnector)
       } else if (subgraph?.outputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph output node
         this.processSelect(subgraph.outputNode, e, true)
         subgraph.outputNode.onPointerDown(e, pointer, linkConnector)
       } else {
@@ -2707,8 +2700,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        // Show context menu for the node or group under the pointer
-        pointer.onClick ??= () => this.processContextMenu(node, e)
+        pointer.onClick ??= (upEvent) => this.processContextMenu(node, upEvent)
       }
     }
 
@@ -2718,7 +2710,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph.change()
 
-    // this is to ensure to defocus(blur) if a text input element is on focus
     if (
       !ref_window.document.activeElement ||
       (ref_window.document.activeElement.nodeName.toLowerCase() != 'input' &&
