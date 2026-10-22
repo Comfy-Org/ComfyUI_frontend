@@ -401,7 +401,7 @@ describe('Composer', () => {
   })
 
   it('sends a typed message while the running turn waits on a card', async () => {
-    const { emitted } = mount({ streaming: true, askOpen: true })
+    const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('make it red instead')
@@ -411,7 +411,7 @@ describe('Composer', () => {
   })
 
   it('turns Stop into Send once a draft is typed, and sends on click', async () => {
-    const { emitted } = mount({ streaming: true, askOpen: true })
+    const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('make it red instead')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -426,7 +426,7 @@ describe('Composer', () => {
       ref: '',
       uploading: true
     })
-    const { emitted } = mount({ streaming: true, askOpen: true })
+    const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
     await userEvent.click(send)
@@ -436,7 +436,7 @@ describe('Composer', () => {
 
   it('stops through the Escape override with a draft while the turn waits on a card', async () => {
     useAgentComposerStore().setText('make it red instead')
-    const { emitted } = mount({ streaming: true, askOpen: true })
+    const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
     expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
     const event = new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -447,7 +447,7 @@ describe('Composer', () => {
   })
 
   it('still stops on Escape with a draft while the turn waits on a card', async () => {
-    const { emitted } = mount({ streaming: true, askOpen: true })
+    const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('make it red instead')
     await userEvent.keyboard('{Escape}')

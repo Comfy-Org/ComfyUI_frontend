@@ -2732,7 +2732,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(cancelMessage.mock.calls).toEqual([['th-1', 'msg-2']])
     })
 
-    it('keeps the card greyed and the old turn running when the replacement send fails', async () => {
+    it('keeps the card dismissed and the old turn running when the replacement send fails', async () => {
       const { source, emit, status } = fakeEvents()
       const postMessage = vi
         .fn<
@@ -2743,10 +2743,8 @@ describe('useAgentSession (v1 composition root)', () => {
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
         .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-      const session = useAgentSession({
-        rest: fakeRest({ postMessage }),
-        events: source
-      })
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: source })
       session.start()
       status(true)
       await session.sendMessage('build it and run it')
@@ -2754,6 +2752,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(await session.sendMessage('actually, do this instead')).toBe(false)
 
+      expect(rest.cancelMessage).not.toHaveBeenCalled()
       const store = useAgentConversationStore()
       expect(store.activeTurnId).toBe('msg-1')
       expect(session.askOpen.value).toBe(false)
@@ -2762,6 +2761,81 @@ describe('useAgentSession (v1 composition root)', () => {
           message.parts.filter((part) => part.type === 'runApproval')
         )
       ).toEqual([expect.objectContaining({ dismissed: true })])
+    })
+
+    it('stops the waiting turn when Stop lands on a replacement send that fails', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockImplementationOnce(async () => {
+          await stopDuringPost()
+          throw new TypeError('Failed to fetch')
+        })
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: source })
+      stopDuringPost.mockImplementation(() => session.stopTurn())
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      await session.sendMessage('actually, do this instead')
+
+      expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
+        ['th-1', 'msg-1']
+      ])
+    })
+
+    it("drops a Stop pending on a failed send once another thread's turn is showing", async () => {
+      const { source, emit, status } = fakeEvents()
+      const switchDuringPost = vi.fn<() => Promise<void>>()
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockImplementationOnce(async () => {
+          await switchDuringPost()
+          throw new TypeError('Failed to fetch')
+        })
+      const getMessages = vi.fn(
+        async (threadId: string): Promise<AgentMessages> =>
+          threadId === 'th-2'
+            ? [
+                historyRow(1, 'user', 'turn-9', 'other work'),
+                {
+                  ...historyRow(2, 'assistant', 'turn-9', '', 'msg-9'),
+                  content: {},
+                  status: 'streaming'
+                }
+              ]
+            : []
+      )
+      const rest = fakeRest({ postMessage, getMessages })
+      const session = useAgentSession({ rest, events: source })
+      switchDuringPost.mockImplementation(async () => {
+        await session.stopTurn()
+        await session.loadThread('th-2')
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      await session.sendMessage('actually, do this instead')
+
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-9')
+      expect(rest.cancelMessage).not.toHaveBeenCalled()
     })
 
     // `asks.go` documents 5xx here as the retryable status and re-drives the

@@ -45,7 +45,7 @@ import RunModePopover from './composer/RunModePopover.vue'
 
 const {
   streaming = false,
-  askOpen = false,
+  sendDismissesAsk = false,
   submitting = false,
   canAttach = false,
   canOpenAssets = false,
@@ -59,8 +59,8 @@ const {
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
-  /** The running turn waits on a card: typing turns Stop back into Send. */
-  askOpen?: boolean
+  /** A new message would dismiss the card the turn waits on: typing turns Stop back into Send. */
+  sendDismissesAsk?: boolean
   submitting?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
@@ -133,7 +133,7 @@ const composer = useComposer({
 
 const turnRunning = computed(() => streaming || submitting)
 const running = computed(
-  () => submitting || (streaming && !(askOpen && composer.hasContent.value))
+  () => submitting || (streaming && !(sendDismissesAsk && composer.hasContent.value))
 )
 
 const editorRef =

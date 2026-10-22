@@ -21,6 +21,7 @@ import {
   askIdOf,
   createAssistantMessage,
   dismissAskParts,
+  isDismissibleAskPart,
   isOpenAskPart,
   isPendingAskPart,
   retireAskParts,
@@ -1264,9 +1265,8 @@ export const useAgentConversationStore = defineStore(
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const activeAskOpen = computed(
       () =>
-        activeMessage.value?.parts.some(
-          (part) =>
-            isPendingAskPart(part) && !answeringAskIds.value.has(part.askId)
+        activeMessage.value?.parts.some((part) =>
+          isDismissibleAskPart(part, answeringAskIds.value)
         ) ?? false
     )
     const status = computed<ConversationStatus>(() => {

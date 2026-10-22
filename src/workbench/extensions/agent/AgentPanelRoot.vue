@@ -2043,7 +2043,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
-      :ask-open="sendDismissesAsk"
+      :send-dismisses-ask
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"

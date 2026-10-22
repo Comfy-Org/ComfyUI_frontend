@@ -188,12 +188,19 @@ export function retireAskParts(
     : next
 }
 
+export function isDismissibleAskPart(
+  part: MessagePart,
+  answering: ReadonlySet<string>
+): part is AskPart {
+  return isPendingAskPart(part) && !answering.has(part.askId)
+}
+
 export function dismissAskParts(
   parts: MessagePart[],
   answering: ReadonlySet<string>
 ): MessagePart[] {
   const dismissible = (part: MessagePart): part is AskPart =>
-    isPendingAskPart(part) && !answering.has(part.askId)
+    isDismissibleAskPart(part, answering)
   if (!parts.some(dismissible)) return parts
   return parts.map((part) =>
     dismissible(part) ? { ...part, dismissed: true } : part

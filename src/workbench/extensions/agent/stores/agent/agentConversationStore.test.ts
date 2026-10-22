@@ -2144,7 +2144,7 @@ describe('useAgentConversationStore', () => {
       )
     })
 
-    it('stays greyed when its stashed turn comes back', () => {
+    it('stays dismissed when its stashed turn comes back', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)

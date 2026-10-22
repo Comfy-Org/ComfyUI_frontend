@@ -1135,6 +1135,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     stopPendingActiveTurn()
   }
 
+  function settleStopAfterFailedSend(
+    generation: number,
+    threadAtSend: string | null
+  ): void {
+    if (
+      generation === loadGeneration &&
+      threadAtSend !== null &&
+      conversationStore.threadId === threadAtSend
+    )
+      stopPendingActiveTurn()
+    else consumeStopPendingAck()
+  }
+
   function stopPendingActiveTurn(): void {
     const pendingStop = consumeStopPendingAck()
     const threadId = conversationStore.threadId
@@ -1355,6 +1368,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
     stopPendingAck = null
+    const generation = loadGeneration
+    const threadAtSend = conversationStore.threadId
     try {
       const sent = await performSend(
         text,
@@ -1365,7 +1380,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId,
         onAccepted
       )
-      if (!sent) stopPendingActiveTurn()
+      if (!sent) settleStopAfterFailedSend(generation, threadAtSend)
       return sent
     } finally {
       sending.value = false
@@ -1490,9 +1505,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
-    // The POST has not acked yet; remember the intent and cancel on ack.
-    // sendInFlight, not this instance's sending: the panel that posted may
-    // have been remounted, and the stop arrives through the new instance.
     if (sendInFlight) {
       stopPendingAck = { method }
       return

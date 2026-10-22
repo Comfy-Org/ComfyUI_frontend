@@ -747,7 +747,7 @@ describe('AgentMessage ask_user question', () => {
     thinking: false
   })
 
-  it('shows a dismissed question read-only and greyed', () => {
+  it('shows a dismissed question as dismissed, without answer controls', () => {
     const message = askMessage()
     render(AgentMessage, {
       props: {
@@ -933,7 +933,7 @@ describe('AgentMessage delete approval', () => {
       global: { plugins: [i18n] }
     })
 
-  it('shows a dismissed delete card read-only and greyed', () => {
+  it('shows a dismissed delete card as dismissed, without answer controls', () => {
     renderResolved({ ...deleteCard, dismissed: true })
 
     expect(
