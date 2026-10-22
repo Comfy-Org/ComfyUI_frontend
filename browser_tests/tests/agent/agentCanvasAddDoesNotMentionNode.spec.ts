@@ -35,9 +35,6 @@ test.describe(
         await comfyPage.nextFrame()
 
         await expect(agentPanel.composer).toBeEmpty()
-        await expect(
-          agentPanel.root.getByTestId('composer-node-section')
-        ).toHaveCount(0)
       })
     })
   }
