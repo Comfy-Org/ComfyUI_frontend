@@ -59,6 +59,7 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
   loading: Promise<boolean>
+  writes: Promise<void> = Promise.resolve()
   draggedEl: HTMLElement | null
   saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
@@ -132,10 +133,15 @@ class ManageTemplates extends ComfyDialog {
     return false
   }
 
-  async store(
+  store(
     update: (templates: NodeTemplate[]) => NodeTemplate[] = (templates) =>
       templates
   ) {
+    this.writes = this.writes.then(() => this.write(update))
+    return this.writes
+  }
+
+  async write(update: (templates: NodeTemplate[]) => NodeTemplate[]) {
     if (!(await this.loading)) {
       useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
         description: t('nodeTemplates.notLoaded')

@@ -139,3 +139,28 @@ it('keeps stored templates when saving before the initial load finishes', async 
     { name: 'New template', data: '{}' }
   ])
 })
+
+it('keeps both templates when two saves overlap', async () => {
+  const { api, app, extension } = await importNodeTemplates(async () =>
+    Response.json([])
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt)
+    .mockResolvedValueOnce('First')
+    .mockResolvedValueOnce('Second')
+  await extension.setup?.(app)
+
+  const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+  await Promise.all([
+    saveItem?.callback?.call(fromAny({})),
+    saveItem?.callback?.call(fromAny({}))
+  ])
+
+  const written: unknown = JSON.parse(
+    String(vi.mocked(api.storeUserData).mock.calls.at(-1)?.[1])
+  )
+  expect(written).toEqual([
+    { name: 'First', data: '{}' },
+    { name: 'Second', data: '{}' }
+  ])
+})
