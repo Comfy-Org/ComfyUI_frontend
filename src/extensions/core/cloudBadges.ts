@@ -1,4 +1,4 @@
-import { computed, watch } from 'vue'
+import { computed, effectScope, watch } from 'vue'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,20 +23,27 @@ const badges = computed<TopbarBadge[]>(() => {
   return result
 })
 
-const canvasStore = useCanvasStore()
-watch(
-  () => canvasStore.canvas,
-  (canvas) => {
-    if (canvas) {
-      canvas.info_text = t('g.comfyCloud')
-    }
-  },
-  { immediate: true }
-)
+const canvasInfoTextScope = effectScope(true)
+
+function syncCanvasInfoText() {
+  const canvasStore = useCanvasStore()
+  watch(
+    () => canvasStore.canvas,
+    (canvas) => {
+      if (canvas) {
+        canvas.info_text = t('g.comfyCloud')
+      }
+    },
+    { immediate: true }
+  )
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.Cloud.Badges',
   get topbarBadges() {
     return badges.value
+  },
+  init() {
+    canvasInfoTextScope.run(syncCanvasInfoText)
   }
 })
