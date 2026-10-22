@@ -380,6 +380,16 @@ describe('Composer', () => {
     expect(useAgentComposerStore().draft).toBe('  make art  ')
   })
 
+  it('sends when the store requests submit from a node hover composer', async () => {
+    useAgentComposerStore().setText('Add an output that matches')
+    const { emitted } = mount()
+    useAgentComposerStore().requestSubmit()
+    await waitFor(() => {
+      expect(emitted().send).toBeDefined()
+    })
+    expect(emitted().send[0]).toEqual(['Add an output that matches', []])
+  })
+
   it('sends on Enter but not on Shift+Enter', async () => {
     const { emitted } = mount()
     const box = screen.getByRole('textbox')

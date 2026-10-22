@@ -250,6 +250,10 @@
         </svg>
       </div>
     </template>
+    <NodeAskAgentHover
+      v-if="!isRerouteNode && !nodeData.flags?.ghost"
+      :node-id="nodeData.id"
+    />
   </div>
 </template>
 
@@ -259,6 +263,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
+import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'

@@ -27,6 +27,7 @@ import type {
 } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
@@ -129,6 +130,16 @@ const composer = useComposer({
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
 })
+
+const composerStore = useAgentComposerStore()
+watch(
+  () => composerStore.submitRequestId,
+  () => {
+    if (!composerStore.consumeSubmitRequest()) return
+    composer.submit()
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')

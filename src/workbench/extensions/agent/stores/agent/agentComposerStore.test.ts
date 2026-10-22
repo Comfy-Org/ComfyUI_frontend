@@ -478,3 +478,15 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     expect(store.promptOrigin).toBe('typed')
   })
 })
+
+describe('composer submit request', () => {
+  it('hands a pending send to the first consumer and ignores a second consume', () => {
+    const store = useAgentComposerStore()
+    expect(store.consumeSubmitRequest()).toBe(false)
+    store.requestSubmit()
+    expect(store.submitRequestId).toBe(1)
+    expect(store.consumeSubmitRequest()).toBe(true)
+    expect(store.submitRequestId).toBe(0)
+    expect(store.consumeSubmitRequest()).toBe(false)
+  })
+})

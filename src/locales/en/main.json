@@ -5791,6 +5791,15 @@
     "loadFailed": "The agent panel failed to load.",
     "askAgent": "Ask agent",
     "referenceInAgent": "Reference in agent",
+    "nodeHover": {
+      "placeholder": "Ask for a change",
+      "explain": "Explain this node for me",
+      "fixError": "Fix node error",
+      "whatElse": "What else can I do with this node",
+      "enhance": "Enhance the prompt",
+      "enhanceFill": "Enhance the prompt considering the purpose of this workflow",
+      "shuffle": "Shuffle starter prompts"
+    },
     "entryButton": "Agent",
     "entryStarting": "Agent starting…",
     "entryFailed": "Agent unavailable",

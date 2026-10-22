@@ -85,6 +85,40 @@ export const OneNodeChip: Story = {
   ]
 }
 
+export const StarterPromptFilled: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        const composer = useAgentComposerStore()
+        composer.setNodeScope('story-workflow')
+        composer.setNodes([{ id: '5', title: 'ModelSamplingAuraFlow' }])
+        composer.setText('Explain this node for me')
+        return {}
+      },
+      template: '<story />'
+    })
+  ]
+}
+
+export const PartnerStarterPromptFilled: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        const composer = useAgentComposerStore()
+        composer.setNodeScope('story-workflow')
+        composer.setNodes([
+          { id: '9', title: 'ByteDance Seedance 2.5 First-Last-Frame to Video' }
+        ])
+        composer.setText(
+          'Enhance the prompt considering the purpose of this workflow'
+        )
+        return {}
+      },
+      template: '<story />'
+    })
+  ]
+}
+
 export const MultipleNodeChips: Story = {
   decorators: [
     () => ({
