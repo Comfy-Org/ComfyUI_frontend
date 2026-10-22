@@ -7063,6 +7063,25 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
+    it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      canvasStore.linearMode = true
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
