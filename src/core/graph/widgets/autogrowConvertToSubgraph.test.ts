@@ -73,25 +73,12 @@ const EXPECTED_CONNECTIONS = {
   strength: 'FLOAT'
 }
 
-/** FE-3325's current wrong mapping. Delete with the `test.fails` markers. */
-const MIS_SLOTTED_CONNECTIONS = {
-  'images.image0': 'IMAGE',
-  'images.image1': 'IMAGE',
-  'images.image2': 'MASK',
-  'images.image3': 'FLOAT',
-  mask: 'IMAGE'
-}
-
 /**
- * FE-3325 repro only - no fix ships with these tests.
- *
- * `multiClone` round-trips each selected node through a fresh, graph-less
- * node. Its default autogrow layout makes `ComfyNode.configure` append the
- * grown slots after `mask`/`strength`, and with no graph the serialized link
- * ids are lost, so `realignInputLinkSlots` cannot repoint the subgraph's
- * links by name. They keep the original slot indices and land on the wrong
- * inputs. Once Convert to Subgraph is fixed, flip `test.fails` to `test` and
- * delete the `currently mis-slots` tests with `MIS_SLOTTED_CONNECTIONS`.
+ * FE-3325: `multiClone` used to round-trip each selected node through a fresh,
+ * graph-less node. Its default autogrow layout made `ComfyNode.configure`
+ * append the grown slots after `mask`/`strength`, and with no graph the
+ * serialized link ids were lost, so the subgraph's links kept their original
+ * slot indices and landed on the wrong inputs.
  */
 describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
   beforeEach(async () => {
@@ -156,28 +143,13 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
     )
   })
 
-  test('currently mis-slots links after the grown group when the sources stay outside', () => {
-    const { graph, node } = buildGraph()
-    const inner = innerAutogrowNode(graph, new Set([node]))
-    expect(connectedInputTypes(inner)).toEqual(MIS_SLOTTED_CONNECTIONS)
-  })
-
-  test('currently mis-slots links after the grown group when the sources are converted too', () => {
-    const { graph, source, node } = buildGraph()
-    const inner = innerAutogrowNode(graph, new Set([source, node]))
-    expect(connectedInputTypes(inner)).toEqual(MIS_SLOTTED_CONNECTIONS)
-  })
-
-  // Vitest's `test.fails` covers the whole body, setup included, unlike the
-  // Playwright spec's mid-test `test.fail()`. The plain tests above guard that
-  // setup; don't delete them as redundant.
-  test.fails('keeps every link on its input when the sources stay outside (boundary links)', () => {
+  test('keeps every link on its input when the sources stay outside (boundary links)', () => {
     const { graph, node } = buildGraph()
     const inner = innerAutogrowNode(graph, new Set([node]))
     expect(connectedInputTypes(inner)).toEqual(EXPECTED_CONNECTIONS)
   })
 
-  test.fails('keeps every link on its input when the sources are converted too (internal links)', () => {
+  test('keeps every link on its input when the sources are converted too (internal links)', () => {
     const { graph, source, node } = buildGraph()
     const inner = innerAutogrowNode(graph, new Set([source, node]))
     expect(connectedInputTypes(inner)).toEqual(EXPECTED_CONNECTIONS)

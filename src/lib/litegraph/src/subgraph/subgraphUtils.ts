@@ -28,7 +28,6 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -228,20 +227,12 @@ export function getBoundaryLinks(
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   const clonedNodes: ISerialisedNode[] = []
 
-  // Selectively clone - keep IDs & links
-  for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
-    const data = structuredClone(node.serialize())
-    if (!newNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(data)
-      continue
-    }
-
-    // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
-  }
+  // Keep IDs, link ids and the live input order. Round-tripping through a
+  // fresh node would rebuild dynamic inputs (e.g. a grown autogrow group) in
+  // their default layout and, having no graph, serialize every link as null,
+  // so the subgraph's links could not be realigned by name (FE-3325).
+  // structuredClone: litegraph "serialize" is mostly a shallow clone.
+  for (const node of nodes) clonedNodes.push(structuredClone(node.serialize()))
 
   return clonedNodes
 }

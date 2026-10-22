@@ -132,12 +132,10 @@ test.describe(
         .toEqual(EXPECTED_CONNECTIONS)
     })
 
-    // FE-3325 repro only - no fix ships here. `multiClone` round-trips the
-    // node through a fresh, graph-less node whose default autogrow layout
-    // makes `ComfyNode.configure` append the grown slots after `mask`, and
-    // drops the serialized link ids. The subgraph's links keep their original
-    // slot indices, so the image2 link lands on `mask` and the mask link on
-    // `image3`. Remove `test.fail()` once Convert to Subgraph is fixed.
+    // FE-3325: `multiClone` used to round-trip the node through a fresh,
+    // graph-less node whose default autogrow layout appended the grown slots
+    // after `mask` and dropped the serialized link ids, so the image2 link
+    // landed on `mask` and the mask link on `image3`.
     test('keeps every link on its input inside the subgraph', async ({
       comfyPage
     }) => {
@@ -147,8 +145,6 @@ test.describe(
 
       const connections = await innerConnections(comfyPage, subgraphNodeId)
 
-      // Marked here, after setup, so only the link mapping is expected to fail.
-      test.fail()
       expect(connections).toEqual(EXPECTED_CONNECTIONS)
     })
   }
