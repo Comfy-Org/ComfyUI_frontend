@@ -71,8 +71,9 @@ Three facts on main shape the answer:
    needs it, after setup, not in the constructor.
 
 A cold-import unit test pins clause 4: it re-evaluates the module
-with no active Pinia and fake timers and asserts that the store is empty and
-no timer, listener, fetch, or Pinia was created or required.
+with no active Pinia and fake timers and asserts that the store is empty, that no timer,
+listener, or fetch is left behind, and that no Pinia was activated; a store
+lookup throws without an active Pinia, so the import would fail.
 
 ## Alternatives considered
 

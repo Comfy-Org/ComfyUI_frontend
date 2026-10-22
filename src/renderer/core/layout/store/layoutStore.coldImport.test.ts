@@ -2,7 +2,7 @@ import { getActivePinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 describe('layoutStore cold import', () => {
-  it('allocates an empty store without touching timers, listeners, Pinia, or the network', async () => {
+  it('allocates an empty store without timers, listeners, network requests, or a Pinia lookup', async () => {
     vi.useFakeTimers()
     setActivePinia(undefined)
     const windowListeners = vi.spyOn(window, 'addEventListener')
