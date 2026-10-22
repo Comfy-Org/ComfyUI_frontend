@@ -37,7 +37,7 @@ const creditsBadges = computed(() => {
       side="top"
       :side-offset="5"
       dismiss-on-viewport-change
-      class="w-auto p-2"
+      class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
     >
       <section
         class="max-h-(--reka-popover-content-available-height) scroll-shadows-background overflow-y-auto"
@@ -49,7 +49,7 @@ const creditsBadges = computed(() => {
           :price
         />
       </section>
-      <PopoverArrow class="fill-background stroke-border" />
+      <PopoverArrow class="fill-background stroke-border/50" />
     </PopoverContent>
   </PopoverRoot>
   <div v-else-if="creditsBadges.length === 1">

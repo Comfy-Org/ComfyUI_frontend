@@ -14,7 +14,7 @@
       :side="sidebarOnLeft ? 'right' : 'left'"
       :side-offset="8"
       dismiss-on-viewport-change
-      class="w-auto p-2"
+      class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
     >
       <div
         v-if="typeformError || !isValidTypeformId"
@@ -29,7 +29,7 @@
         data-tf-auto-resize
         :data-tf-widget="APP_MODE_FEEDBACK_TYPEFORM_ID"
       />
-      <PopoverArrow class="fill-background stroke-border" />
+      <PopoverArrow class="fill-background stroke-border/50" />
     </PopoverContent>
   </PopoverRoot>
   <SidebarIcon

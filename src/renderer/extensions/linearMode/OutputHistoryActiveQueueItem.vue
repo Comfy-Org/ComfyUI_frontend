@@ -48,7 +48,7 @@ function clearQueue(close: () => void) {
         side="top"
         :side-offset="5"
         dismiss-on-viewport-change
-        class="w-auto p-2"
+        class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
         @focus-outside.prevent
       >
         <Button

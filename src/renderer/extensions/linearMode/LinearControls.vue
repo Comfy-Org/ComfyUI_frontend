@@ -280,7 +280,7 @@ function replayAppModeTour() {
                 side="top"
                 :side-offset="5"
                 dismiss-on-viewport-change
-                class="w-auto p-2"
+                class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
                 @open-auto-focus.prevent
               >
                 <div
@@ -294,7 +294,7 @@ function replayAppModeTour() {
                   :max="settingStore.get('Comfy.QueueButton.BatchCountLimit')"
                   class="h-10 min-w-40"
                 />
-                <PopoverArrow class="fill-background stroke-border" />
+                <PopoverArrow class="fill-background stroke-border/50" />
               </PopoverContent>
             </PopoverRoot>
             <Button

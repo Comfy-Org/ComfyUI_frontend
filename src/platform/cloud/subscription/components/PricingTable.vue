@@ -164,7 +164,7 @@
                       <PopoverContent
                         align="start"
                         dismiss-on-viewport-change
-                        class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto shadow-lg data-[state=open]:animate-none"
+                        class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
                       >
                         <div class="flex flex-col gap-2">
                           <p class="text-sm/normal text-foreground">
