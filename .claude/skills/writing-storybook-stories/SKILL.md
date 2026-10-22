@@ -54,7 +54,7 @@ Do not invent titles from scratch when a close sibling story already exists. Mat
 | Component area                                                       | Typical title pattern             |
 | -------------------------------------------------------------------- | --------------------------------- |
 | `packages/design-system/src/components/button/Button.vue`            | `Components/Button/Button`        |
-| `src/components/ui/input/Input.vue`                                  | `Components/Input`                |
+| `packages/design-system/src/components/input/Input.vue`              | `Components/Input`                |
 | `packages/design-system/src/components/search-input/SearchInput.vue` | `Components/Input/SearchInput`    |
 | `src/components/common/SearchBox.vue`                                | `Components/Input/SearchBox`      |
 | `src/renderer/extensions/vueNodes/widgets/components/*`              | `Widgets/<WidgetName>`            |

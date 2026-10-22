@@ -37,7 +37,8 @@ const config: KnipConfig = {
     },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
-      project: ['src/**/*.{css,js,ts,vue}']
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['tailwind-merge']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
