@@ -406,7 +406,7 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('make it red instead')
     await userEvent.keyboard('{Enter}')
-    expect(emitted().send).toHaveLength(1)
+    expect(emitted().send).toEqual([['make it red instead', []]])
     expect(emitted().stop).toBeUndefined()
   })
 

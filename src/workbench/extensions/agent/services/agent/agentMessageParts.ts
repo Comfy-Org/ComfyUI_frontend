@@ -168,7 +168,8 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (part.type === 'runApproval') return part.dismissed ? [part] : []
+    if (part.type === 'runApproval')
+      return part.dismissed && resolution.status !== 'answered' ? [part] : []
     if (!isAskPart(part)) return []
     const settled = settleResolution(part.resolution, resolution)
     return [

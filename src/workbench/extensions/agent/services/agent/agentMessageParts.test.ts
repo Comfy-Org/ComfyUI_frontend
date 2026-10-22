@@ -361,6 +361,18 @@ describe('retireAskParts', () => {
     ])
   })
 
+  it('keeps a dismissed run approval unless the run was answered', () => {
+    const dismissed: MessagePart[] = [
+      { type: 'runApproval', askId: 'run', dismissed: true }
+    ]
+    expect(retireAskParts(dismissed, 'run', { status: 'closed' })).toBe(
+      dismissed
+    )
+    expect(
+      retireAskParts(dismissed, 'run', { status: 'answered', selected: [] })
+    ).toEqual([])
+  })
+
   it('keeps an ask_user card read-only with its resolution', () => {
     expect(
       retireAskParts(parts, 'q', { status: 'answered', selected: ['flux'] }).at(
