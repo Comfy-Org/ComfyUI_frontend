@@ -1,8 +1,4 @@
-export type NodeAskAgentPromptId =
-  | 'explain'
-  | 'fixError'
-  | 'whatElse'
-  | 'enhance'
+type NodeAskAgentPromptId = 'explain' | 'fixError' | 'whatElse' | 'enhance'
 
 export interface NodeAskAgentPrompt {
   id: NodeAskAgentPromptId
@@ -11,7 +7,7 @@ export interface NodeAskAgentPrompt {
   icon: string
 }
 
-export const REGULAR_NODE_ASK_PROMPTS = [
+const REGULAR_NODE_ASK_PROMPTS = [
   {
     id: 'explain',
     labelKey: 'agent.nodeHover.explain',
@@ -32,7 +28,7 @@ export const REGULAR_NODE_ASK_PROMPTS = [
   }
 ] as const satisfies readonly NodeAskAgentPrompt[]
 
-export const PARTNER_NODE_ASK_PROMPTS = [
+const PARTNER_NODE_ASK_PROMPTS = [
   {
     id: 'enhance',
     labelKey: 'agent.nodeHover.enhance',
