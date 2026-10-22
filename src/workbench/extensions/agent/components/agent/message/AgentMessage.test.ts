@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -749,15 +749,19 @@ describe('AgentMessage ask_user question', () => {
 
   it('keeps a dismissed question showing as dismissed after another tab answers it', () => {
     const message = askMessage()
+    const [question] = message.parts
+    assert(question.type === 'askUser')
     render(AgentMessage, {
       props: {
         message: {
           ...message,
-          parts: message.parts.map((part) => ({
-            ...part,
-            dismissed: true,
-            resolution: { status: 'answered', selected: ['flux'] }
-          }))
+          parts: [
+            {
+              ...question,
+              dismissed: true,
+              resolution: { status: 'answered', selected: ['flux'] }
+            }
+          ]
         }
       },
       global: { plugins: [i18n] }
