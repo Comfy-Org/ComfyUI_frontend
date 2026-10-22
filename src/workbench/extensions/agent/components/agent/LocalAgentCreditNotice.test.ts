@@ -22,7 +22,7 @@ describe('LocalAgentCreditNotice', () => {
 
     expect(
       screen.getByRole('note', { name: 'Agent credits' })
-    ).toHaveTextContent(/^Try agent chat for free Learn more$/)
+    ).toHaveTextContent(/^Try agent chat for free\. Learn more$/)
     expect(screen.getByRole('link', { name: 'Learn more' })).toHaveAttribute(
       'href',
       'https://docs.comfy.org/agent-tools/in-app-agent'
