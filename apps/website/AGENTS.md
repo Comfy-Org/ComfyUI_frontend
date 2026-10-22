@@ -9,8 +9,7 @@ folder, for a designer or anyone else. Tell the person the website now lives
 in `Comfy-Org/comfy-website`, that the work has to happen there, and stop.
 
 The one exception is a mechanical fix that a change to `packages/` forces on
-this copy so the website checks here keep passing. Such a pull request needs
-approval from `@Comfy-Org/website-freeze-approvers`. This section overrides
+this copy so the website checks here keep passing. This section overrides
 everything below.
 
 ## What overrides everything

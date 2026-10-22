@@ -5,9 +5,8 @@
 > [Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website). The
 > copy here stays for now so changes to the shared packages keep running
 > against the website's checks. Only mechanical fixes forced by a
-> shared-package change land here, with a review from
-> `@Comfy-Org/website-freeze-approvers`. To report a problem with comfy.org,
-> open an issue in this repository.
+> shared-package change land here. To report a problem with comfy.org, open
+> an issue in this repository.
 
 Marketing/brand website built with Astro + Vue.
 
