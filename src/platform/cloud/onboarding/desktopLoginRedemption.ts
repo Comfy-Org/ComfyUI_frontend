@@ -38,6 +38,7 @@ interface CodeRedemptionState {
   approvedUserUid: string | null
   settled: boolean
   forceTokenRefresh: boolean
+  retryTimer?: ReturnType<typeof setTimeout>
 }
 
 // Keyed by code so a different code arriving later gets its own approval and
@@ -93,14 +94,13 @@ function handleTransientFailure(
 ): void {
   console.warn(`[DesktopLoginRedemption] Redeem request failed: ${reason}`)
   if (state.attempts < MAX_REDEEM_ATTEMPTS) {
-    // attempts only increments, so this branch runs at most once per code
-    // and cannot stack retry timers.
-    setTimeout(() => {
+    state.retryTimer = setTimeout(() => {
+      if (getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY) !== code)
+        return
       void redeemPendingDesktopLoginCode()
     }, RETRY_DELAY_MS)
     return
   }
-  // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
@@ -142,6 +142,8 @@ function settledForSsoSession(
 
 async function redeemCode(code: string): Promise<void> {
   const state = getCodeState(code)
+  clearTimeout(state.retryTimer)
+  state.retryTimer = undefined
   if (state.settled) {
     clearStashIfHolds(code)
     return
