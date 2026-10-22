@@ -745,16 +745,6 @@
       "count": 2
     }
   },
-  "src/platform/errorCatalog/errorMessageResolver.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/platform/errorCatalog/types.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/platform/keybindings/keybindingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -768,41 +758,6 @@
   "src/platform/keybindings/presetService.ts": {
     "comfy/no-new-error-throw": {
       "count": 6
-    }
-  },
-  "src/platform/missingModel/components/MissingModelRow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/composables/useMissingModelInteractions.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelDownload.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelGrouping.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/missingModel/missingModelScan.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/missingModel/missingModelStore.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/nodeReplacement/nodeReplacementService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
     }
   },
   "src/platform/serverFacts/serverFact.ts": {
@@ -887,6 +842,51 @@
   },
   "src/platform/workflow/templates/services/templateInputService.ts": {
     "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/errorCatalog/types.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/components/MissingModelRow.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/composables/useMissingModelInteractions.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelGrouping.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelScan.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "src/platform/workflowErrors/missingModel/missingModelStore.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
     }
   },

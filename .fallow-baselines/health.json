@@ -2279,12 +2279,12 @@
         "count": 1
       }
     },
-    "src/platform/missingMedia/missingMediaScan.ts": {
+    "src/platform/workflowErrors/missingMedia/missingMediaScan.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/missingModel/components/MissingModelRow.vue": {
+    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -2292,17 +2292,17 @@
         "count": 1
       }
     },
-    "src/platform/missingModel/missingModelScan.ts": {
+    "src/platform/workflowErrors/missingModel/missingModelScan.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/platform/missingModel/missingModelStore.ts": {
+    "src/platform/workflowErrors/missingModel/missingModelStore.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/nodeReplacement/components/SwapNodeGroupRow.vue": {
+    "src/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.vue": {
       "complexity_moderate": {
         "count": 1
       },
@@ -2310,12 +2310,12 @@
         "count": 1
       }
     },
-    "src/platform/nodeReplacement/missingNodeScan.ts": {
+    "src/platform/workflowErrors/nodeReplacement/missingNodeScan.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/platform/nodeReplacement/useNodeReplacement.ts": {
+    "src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts": {
       "complexity_high": {
         "count": 3
       },
@@ -3598,7 +3598,7 @@
     "src/lib/litegraph/src/node/NodeInputSlot.ts:circular dependency",
     "src/lib/litegraph/src/utils/type.ts:high impact",
     "src/components/graph/SelectionToolbox.vue:complexity",
-    "src/platform/missingModel/missingModelStore.ts:circular dependency",
+    "src/platform/workflowErrors/missingModel/missingModelStore.ts:circular dependency",
     "src/platform/workspace/stores/workspaceAuthStore.ts:circular dependency",
     "src/platform/workspace/stores/teamWorkspaceStore.ts:circular dependency",
     "src/platform/workflow/management/stores/workflowStore.ts:circular dependency",
@@ -3622,7 +3622,7 @@
     "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
     "src/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
     "src/composables/graph/useMoreOptionsMenu.ts:circular dependency",
-    "src/platform/missingMedia/missingMediaStore.ts:circular dependency",
+    "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:circular dependency",
     "src/stores/assetsStore.ts:complexity",
     "src/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue:complexity",
     "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts:high impact",
@@ -3679,7 +3679,7 @@
     "src/composables/useLoad3dViewer.ts:circular dependency",
     "src/lib/litegraph/src/utils/mathParser.ts:untested risk",
     "src/composables/node/useNodePricing.ts:complexity",
-    "src/platform/missingModel/components/MissingModelRow.vue:complexity",
+    "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
     "src/utils/linkFixer.ts:complexity",
     "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts:circular dependency",
     "src/extensions/core/load3d/Load3dUtils.ts:circular dependency",

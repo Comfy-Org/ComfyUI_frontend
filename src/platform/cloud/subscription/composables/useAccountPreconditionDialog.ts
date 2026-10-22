@@ -1,5 +1,5 @@
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'

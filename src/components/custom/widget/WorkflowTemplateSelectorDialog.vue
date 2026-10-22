@@ -474,11 +474,11 @@ import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { loadFolderPathsOnce } from '@/platform/missingModel/folderPathCache'
+import { loadFolderPathsOnce } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import {
   isModelDownloadable,
   modelDownloadNeedsFolderPaths
-} from '@/platform/missingModel/missingModelDownload'
+} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'

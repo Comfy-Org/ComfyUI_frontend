@@ -1089,7 +1089,7 @@
       },
       {
         "name": "error-catalog/domain",
-        "patterns": ["src/platform/errorCatalog/**"]
+        "patterns": ["src/platform/workflowErrors/errorCatalog/**"]
       },
       {
         "name": "error-handling/domain",
@@ -2058,53 +2058,49 @@
       {
         "name": "missing-media/domain",
         "patterns": [
-          "src/platform/missingMedia/missingMediaGrouping.ts",
-          "src/platform/missingMedia/types.ts"
+          "src/platform/workflowErrors/missingMedia/missingMediaGrouping.ts",
+          "src/platform/workflowErrors/missingMedia/types.ts"
         ]
       },
       {
-        "name": "missing-media/application",
-        "patterns": ["src/stores/missingMediaPreviewRegression.test.ts"]
-      },
-      {
         "name": "missing-media/presentation",
-        "patterns": ["src/platform/missingMedia/components/**"]
+        "patterns": ["src/platform/workflowErrors/missingMedia/components/**"]
       },
       {
         "name": "missing-models/domain",
         "patterns": [
-          "src/platform/missingModel/missingModelGrouping.test.ts",
-          "src/platform/missingModel/missingModelGrouping.ts",
-          "src/platform/missingModel/missingModelViewUtils.test.ts",
-          "src/platform/missingModel/missingModelViewUtils.ts",
-          "src/platform/missingModel/types.ts"
+          "src/platform/workflowErrors/missingModel/missingModelGrouping.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelGrouping.ts",
+          "src/platform/workflowErrors/missingModel/missingModelViewUtils.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts",
+          "src/platform/workflowErrors/missingModel/types.ts"
         ]
       },
       {
         "name": "missing-models/application",
         "patterns": [
-          "src/platform/missingModel/composables/**",
-          "src/platform/missingModel/missingModelDownload.test.ts",
-          "src/platform/missingModel/missingModelDownload.ts",
-          "src/platform/missingModel/missingModelMetadata.ts",
-          "src/platform/missingModel/missingModelPipeline.test.ts",
-          "src/platform/missingModel/missingModelPipeline.ts",
-          "src/platform/missingModel/missingModelScan.test.ts",
-          "src/platform/missingModel/missingModelScan.ts",
-          "src/platform/missingModel/missingModelStore.test.ts",
-          "src/platform/missingModel/missingModelStore.ts"
+          "src/platform/workflowErrors/missingModel/composables/**",
+          "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelDownload.ts",
+          "src/platform/workflowErrors/missingModel/missingModelMetadata.ts",
+          "src/platform/workflowErrors/missingModel/missingModelPipeline.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelPipeline.ts",
+          "src/platform/workflowErrors/missingModel/missingModelScan.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelScan.ts",
+          "src/platform/workflowErrors/missingModel/missingModelStore.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelStore.ts"
         ]
       },
       {
         "name": "missing-models/infrastructure",
         "patterns": [
-          "src/platform/missingModel/folderPathCache.test.ts",
-          "src/platform/missingModel/folderPathCache.ts"
+          "src/platform/workflowErrors/missingModel/folderPathCache.test.ts",
+          "src/platform/workflowErrors/missingModel/folderPathCache.ts"
         ]
       },
       {
         "name": "missing-models/presentation",
-        "patterns": ["src/platform/missingModel/components/**"]
+        "patterns": ["src/platform/workflowErrors/missingModel/components/**"]
       },
       {
         "name": "model-3d/domain",
@@ -2332,18 +2328,22 @@
       {
         "name": "node-replacement/domain",
         "patterns": [
-          "src/platform/nodeReplacement/cnrIdUtil.test.ts",
-          "src/platform/nodeReplacement/cnrIdUtil.ts",
-          "src/platform/nodeReplacement/types.ts"
+          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts",
+          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
+          "src/platform/workflowErrors/nodeReplacement/types.ts"
         ]
       },
       {
         "name": "node-replacement/infrastructure",
-        "patterns": ["src/platform/nodeReplacement/nodeReplacementService.ts"]
+        "patterns": [
+          "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts"
+        ]
       },
       {
         "name": "node-replacement/presentation",
-        "patterns": ["src/platform/nodeReplacement/components/**"]
+        "patterns": [
+          "src/platform/workflowErrors/nodeReplacement/components/**"
+        ]
       },
       {
         "name": "node-templates/integration",
@@ -3755,7 +3755,7 @@
       },
       {
         "name": "missing-media/application/outer-1",
-        "patterns": ["src/platform/missingMedia/**"]
+        "patterns": ["src/platform/workflowErrors/missingMedia/**"]
       },
       {
         "name": "model-3d/presentation/outer-1",
@@ -3775,7 +3775,7 @@
       },
       {
         "name": "node-replacement/application/outer-1",
-        "patterns": ["src/platform/nodeReplacement/**"]
+        "patterns": ["src/platform/workflowErrors/nodeReplacement/**"]
       },
       {
         "name": "node-widgets/presentation/outer-1",
@@ -5570,19 +5570,9 @@
         "allow": ["missing-media/domain", "unclassified"]
       },
       {
-        "from": "missing-media/application",
-        "allow": [
-          "missing-media/domain",
-          "missing-media/application",
-          "missing-media/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "missing-media/presentation",
         "allow": [
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/presentation",
           "missing-media/application/outer-1",
           "unclassified"
@@ -7233,7 +7223,6 @@
         "from": "missing-media/application/outer-1",
         "allow": [
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/application/outer-1",
           "unclassified"
         ]
@@ -7854,7 +7843,6 @@
           "minimap/infrastructure",
           "minimap/presentation",
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/presentation",
           "missing-models/domain",
           "missing-models/application",
