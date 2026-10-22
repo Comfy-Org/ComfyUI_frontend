@@ -333,13 +333,7 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  /**
-   * Guard flag to prevent captureCanvasState from running during loadGraphData.
-   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
-   * contains the NEW workflow's data while activeWorkflow still points to
-   * the OLD workflow. Any captureCanvasState call in that window would
-   * serialize the wrong graph into the old workflow's activeState, corrupting it.
-   */
+  /** Set while loadGraphData reconfigures a graph in place; suppresses state capture. */
   static isLoadingGraph = false
   /**
    * The active state of the workflow.

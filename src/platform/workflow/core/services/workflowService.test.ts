@@ -950,53 +950,44 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('repaints the retained workflow when a replacement load reports failure', async () => {
+    it('shows the retained workflow graph again when a replacement load reports failure', async () => {
       const workflowStore = useWorkflowStore()
-      const retained = createWorkflow(null, {
-        loadable: true,
+      const retained = createModeTestWorkflow({
         path: 'workflows/retained.json'
       })
-      const failing = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/failing.json'
-      })
+      retained.adoptGraph(app.createRootGraph())
+      const failing = createModeTestWorkflow({ path: 'workflows/failing.json' })
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.attachWorkflow(failing, 1)
-      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      workflowStore.activeWorkflow = retained
       vi.mocked(app.loadGraphData).mockClear()
+      vi.mocked(app.activateRootGraph).mockClear()
       vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
 
       await expect(useWorkflowService().openWorkflow(failing)).resolves.toBe(
         false
       )
 
-      // Second call = the retained workflow repainted from its saved state,
-      // so selection, canvas, and change tracking agree after the abort.
-      expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(app.loadGraphData).toHaveBeenNthCalledWith(
-        2,
-        retained.activeState,
-        true,
-        true,
-        expect.objectContaining({ path: 'workflows/retained.json' }),
-        expect.anything()
-      )
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.activateRootGraph).toHaveBeenCalledWith(retained.graph)
+      expect(app.rootGraph).toBe(retained.graph)
+      expect(retained.changeTracker.restore).toHaveBeenCalled()
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })
 
-    it('does not repaint the retained workflow for a superseded load', async () => {
+    it('leaves the retained workflow alone for a superseded load', async () => {
       const workflowStore = useWorkflowStore()
-      const retained = createWorkflow(null, {
-        loadable: true,
+      const retained = createModeTestWorkflow({
         path: 'workflows/retained.json'
       })
-      const superseded = createWorkflow(null, {
-        loadable: true,
+      retained.adoptGraph(app.createRootGraph())
+      const superseded = createModeTestWorkflow({
         path: 'workflows/superseded.json'
       })
       workflowStore.attachWorkflow(retained, 0)
       workflowStore.attachWorkflow(superseded, 1)
-      workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
+      workflowStore.activeWorkflow = retained
+      vi.mocked(app.activateRootGraph).mockClear()
       vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
 
       await expect(useWorkflowService().openWorkflow(superseded)).resolves.toBe(
@@ -1004,6 +995,7 @@ describe('useWorkflowService', () => {
       )
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(app.activateRootGraph).not.toHaveBeenCalled()
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
