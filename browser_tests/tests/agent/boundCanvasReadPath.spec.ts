@@ -150,8 +150,6 @@ test.describe(
       ).toBe(nodeCount)
     })
 
-    // FE-3493: a catalog_mismatch refusal tells the user their next message
-    // rebuilds the agent's copy, so that message must carry the canvas.
     for (const { code, detail } of [
       {
         code: 'schema_version_mismatch',
@@ -188,6 +186,11 @@ test.describe(
             comfyPage.toast.withText(enMessages.agent.workflowSyncFailedTitle)
           ).toHaveCount(1)
           await expect(comfyPage.toast.withText(detail)).toHaveCount(1)
+          if (code === 'catalog_mismatch') {
+            await expect(
+              comfyPage.toast.withText('Your next message sends your canvas')
+            ).toHaveCount(1)
+          }
           await comfyPage.toast.closeToasts()
         })
 
