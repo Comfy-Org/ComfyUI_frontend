@@ -82,7 +82,7 @@ jobs:
           VIDEO_CACHE_SALT=$({
             echo "$PLAYWRIGHT_VERSION"
             git ls-tree -r "$HEAD_SHA" -- browser_tests playwright.config.ts \
-              .github/workflows/ci-playwright-videos.yaml | grep -v '\.spec\.ts$'
+              .github/workflows/ci-playwright-videos.yaml | grep -vE '\.spec\.ts$|\.spec\.ts-snapshots/'
           } | sha256sum | cut -c1-32)
           export VIDEO_CACHE_SALT
           mapfile -t FILES < /tmp/video-specs.txt
