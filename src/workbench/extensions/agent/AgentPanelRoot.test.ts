@@ -6777,6 +6777,9 @@ describe('AgentPanelRoot workflow binding', () => {
       vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
         Authorization: 'Bearer renewed-id-token'
       })
+      vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockResolvedValue(
+        'workspace-token'
+      )
       finishSignIn(true)
 
       await waitFor(() =>
@@ -6815,6 +6818,9 @@ describe('AgentPanelRoot workflow binding', () => {
         vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
           Authorization: 'Bearer id-token'
         })
+        vi.mocked(
+          useAuthStore().getWorkspaceAuthTokenOrThrow
+        ).mockResolvedValue('workspace-token')
         currentUserInfo.value = { id: 'account-a' }
         return true
       }
