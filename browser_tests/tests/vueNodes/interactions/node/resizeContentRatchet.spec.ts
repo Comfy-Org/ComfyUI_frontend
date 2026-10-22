@@ -30,10 +30,6 @@ test.describe(
       await comfyPage.nodeOps.clearGraph()
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     /**
      * Selects the "Flux.2 [pro]" option on a Flux2ImageNode's dynamic-combo
      * `model` widget, exposing its `width`/`height`/`images` (autogrow)
