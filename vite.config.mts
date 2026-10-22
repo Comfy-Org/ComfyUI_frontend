@@ -12,6 +12,7 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { existsSync } from 'fs'
 import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
@@ -98,6 +99,31 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   branches: 60,
   functions: 67,
   lines: 70
+}
+
+// Keep this high-coverage surface separate from the lower general floor.
+const AGENT_PANEL_COVERAGE_ROOT = 'src/workbench/extensions/agent'
+const AGENT_PANEL_COVERAGE_GLOB = `${AGENT_PANEL_COVERAGE_ROOT}/**/*.{ts,vue}`
+
+// Fail closed if the coverage root moves instead of matching zero files.
+if (!existsSync(resolve(import.meta.dirname, AGENT_PANEL_COVERAGE_ROOT))) {
+  throw new Error(
+    `Agent coverage bucket root '${AGENT_PANEL_COVERAGE_ROOT}' does not exist. ` +
+      'If the directory moved, update AGENT_PANEL_COVERAGE_ROOT — otherwise the ' +
+      'coverage floor for the agent surface silently passes on zero files.'
+  )
+}
+
+// Re-measured 2026-10-22 on a full `pnpm test:coverage` run against this tree:
+// 95.88% statements / 91.70% branches / 96.69% functions / 97.51% lines. The
+// floor sits ~3 points under each, which is about one large untested file of
+// headroom: tight enough that a real regression trips it, loose enough that
+// ordinary churn does not.
+const AGENT_PANEL_COVERAGE_THRESHOLDS = {
+  statements: 93,
+  branches: 88,
+  functions: 94,
+  lines: 95
 }
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
@@ -921,7 +947,10 @@ export default defineConfig({
       ],
       thresholds: process.env.VITEST_SHARD
         ? undefined
-        : { [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS }
+        : {
+            [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS,
+            [AGENT_PANEL_COVERAGE_GLOB]: AGENT_PANEL_COVERAGE_THRESHOLDS
+          }
     },
     exclude: [
       'src/__ecs_matrix__/**',
