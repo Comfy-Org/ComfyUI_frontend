@@ -2704,7 +2704,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const cancelMessage = vi.fn(
         async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
       )
-      let session!: ReturnType<typeof useAgentSession>
+      const stopDuringPost = vi.fn<() => Promise<void>>()
       const postMessage = vi
         .fn<
           (
@@ -2714,13 +2714,14 @@ describe('useAgentSession (v1 composition root)', () => {
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
         .mockImplementationOnce(async () => {
-          await session.stopTurn()
+          await stopDuringPost()
           return { thread_id: 'th-1', message_id: 'msg-2' }
         })
-      session = useAgentSession({
+      const session = useAgentSession({
         rest: fakeRest({ postMessage, cancelMessage }),
         events: source
       })
+      stopDuringPost.mockImplementation(() => session.stopTurn())
       session.start()
       status(true)
       await session.sendMessage('build it and run it')
