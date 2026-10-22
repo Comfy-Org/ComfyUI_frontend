@@ -97,7 +97,6 @@ test.describe(
         const restartComfy = () =>
           test.step('restart ComfyUI with the new node loaded', async () => {
             const comfySocket = await getWebSocket()
-            // Armed before the close so the page cannot reconnect unobserved.
             const pageReconnected = await page.evaluateHandle(() => ({
               done: new Promise<void>((resolve) =>
                 window.app!.api.addEventListener(
@@ -107,9 +106,8 @@ test.describe(
                 )
               )
             }))
-            const reconnected = nextWebSocket().then(() => {
-              restarted = true
-            })
+            const reconnected = nextWebSocket()
+            restarted = true
             await comfySocket.close()
             await reconnected
             await pageReconnected.evaluate(({ done }) => done)
