@@ -109,4 +109,33 @@ it('does not overwrite stored templates after the initial load fails', async () 
   await saveItem?.callback?.call(fromAny({}))
 
   expect(api.storeUserData).not.toHaveBeenCalled()
+  expect(extension.getCanvasMenuItems?.(fromAny({}))[2]).toEqual({
+    content: 'Node Templates',
+    submenu: {
+      options: [null, expect.objectContaining({ content: 'Manage' })]
+    }
+  })
+})
+
+it('keeps stored templates when saving before the initial load finishes', async () => {
+  const response = createDeferred<Response>()
+  const { api, app, extension } = await importNodeTemplates(
+    () => response.promise
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+  await extension.setup?.(app)
+
+  const saveItem = extension.getCanvasMenuItems?.(fromAny({}))[1]
+  const saving = saveItem?.callback?.call(fromAny({}))
+  response.resolve(Response.json([{ name: 'Stored', data: '{}' }]))
+  await saving
+
+  const written: unknown = JSON.parse(
+    String(vi.mocked(api.storeUserData).mock.calls[0][1])
+  )
+  expect(written).toEqual([
+    { name: 'Stored', data: '{}' },
+    { name: 'New template', data: '{}' }
+  ])
 })

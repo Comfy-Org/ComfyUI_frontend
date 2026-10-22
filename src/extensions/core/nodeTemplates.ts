@@ -58,7 +58,7 @@ async function fetchTemplates(): Promise<TemplatesLoad> {
 
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
-  loaded = false
+  loading: Promise<boolean>
   draggedEl: HTMLElement | null
   saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
@@ -66,7 +66,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    void this.load()
+    this.loading = this.load()
 
     this.element.classList.add('comfy-manage-templates')
     this.element.dataset.testid = 'manage-node-templates-dialog'
@@ -112,12 +112,11 @@ class ManageTemplates extends ComfyDialog {
     return btns
   }
 
-  async load() {
+  async load(): Promise<boolean> {
     const result = await fetchTemplates()
     if (result.ok) {
       this.templates = result.templates
-      this.loaded = true
-      return
+      return true
     }
     reportError(result.cause, {
       surface: 'graph',
@@ -130,18 +129,24 @@ class ManageTemplates extends ComfyDialog {
       },
       level: 'error'
     })
+    return false
   }
 
-  async store() {
-    if (!this.loaded) {
+  async store(
+    update: (templates: NodeTemplate[]) => NodeTemplate[] = (templates) =>
+      templates
+  ) {
+    if (!(await this.loading)) {
       useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
         description: t('nodeTemplates.notLoaded')
       })
       return
     }
-    const templates = JSON.stringify(this.templates, undefined, 4)
+    const next = update(this.templates)
+    const templates = JSON.stringify(next, undefined, 4)
     try {
       await api.storeUserData(file, templates, { stringify: false })
+      this.templates = next
     } catch (error) {
       console.error(error)
       useToast().warning(t('toastMessages.failedToSaveNodeTemplates'), {
@@ -157,12 +162,11 @@ class ManageTemplates extends ComfyDialog {
         reader.onload = async () => {
           const importFile = JSON.parse(reader.result as string)
           if (importFile?.templates) {
-            for (const template of importFile.templates) {
-              if (template?.name && template?.data) {
-                this.templates.push(template)
-              }
-            }
-            await this.store()
+            const imported = importFile.templates.filter(
+              (template: Partial<NodeTemplate> | null) =>
+                template?.name && template.data
+            )
+            await this.store((templates) => [...templates, ...imported])
           }
         }
         await reader.readAsText(file)
@@ -413,11 +417,10 @@ const ext: ComfyExtension = {
           app.canvas.copyToClipboard()
           const data = localStorage.getItem('litegrapheditor_clipboard')
 
-          manage.templates.push({
-            name,
-            data: data || '{}'
-          })
-          await manage.store()
+          await manage.store((templates) => [
+            ...templates,
+            { name, data: data || '{}' }
+          ])
         })
       }
     })
