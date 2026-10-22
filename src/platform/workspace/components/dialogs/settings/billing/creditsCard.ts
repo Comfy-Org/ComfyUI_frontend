@@ -8,6 +8,7 @@ export interface CreditsCardFacts {
   billingStatus: BillingStatus | null
   planPoolCredits: number | null
   isCloud: boolean
+  renewalDate: string | null
 }
 
 export type CreditsCardState =
@@ -24,6 +25,7 @@ export type CreditsCardState =
       planPoolCredits: number | null
       topUpCents: number
       topUpInUse: boolean
+      renewalDate: string | null
     }
 
 /** Maps the served balance and plan state onto the Credits card. */
@@ -48,6 +50,7 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     planCents: facts.billingStatus === 'paused' ? 0 : planCents,
     planPoolCredits: facts.planPoolCredits,
     topUpCents,
-    topUpInUse: planCents === 0 && topUpCents > 0
+    topUpInUse: planCents === 0 && topUpCents > 0,
+    renewalDate: facts.renewalDate
   }
 }
