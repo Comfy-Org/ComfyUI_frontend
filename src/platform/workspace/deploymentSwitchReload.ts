@@ -1,13 +1,4 @@
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-
 const SWITCH_LANDING_KEY = 'Comfy.DeploymentSwitch.Reloading'
-
-/** Workflows a switch may drop, each with the state the user agreed to lose. */
-export type DiscardedWork = ReadonlyMap<ComfyWorkflow, string | null>
-
-export const NOTHING_DISCARDED: DiscardedWork = new Map()
-
-let pendingDiscard: DiscardedWork | null = null
 
 function forgetSwitchLanding() {
   try {
@@ -43,49 +34,14 @@ function onNextInteraction(callback: () => void) {
   }
 }
 
-/**
- * Reloads for a switch; the leave prompt skips only `discarded`, and
- * `onStay` runs on the next interaction if the page stays.
- */
-export function reloadForDeploymentSwitch(
-  discarded: DiscardedWork,
-  onStay: () => void
-): void {
+/** Reloads for a switch; `onStay` runs on the next interaction if it stays. */
+export function reloadForDeploymentSwitch(onStay: () => void): void {
   markSwitchLanding()
-  pendingDiscard = discarded
   onNextInteraction(() => {
     forgetSwitchLanding()
     onStay()
   })
   window.location.reload()
-}
-
-/** The work a switch reload drops, taken once; null for any other unload. */
-export function takeDeploymentSwitchDiscard(): DiscardedWork | null {
-  const discarded = pendingDiscard
-  pendingDiscard = null
-  return discarded
-}
-
-/** A workflow's state as a switch records what the user agreed to lose. */
-export function discardableState(workflow: ComfyWorkflow): string | null {
-  return workflow.activeState === null
-    ? null
-    : JSON.stringify(workflow.activeState)
-}
-
-/**
- * True when a switch reload may drop this workflow: it is not loaded, so
- * nothing of it is in memory, or the user chose to drop its state as it is now.
- */
-export function wasDiscardedOnSwitch(
-  discarded: DiscardedWork | null,
-  workflow: ComfyWorkflow
-): boolean {
-  if (discarded === null) return false
-  return (
-    !workflow.isLoaded || discarded.get(workflow) === discardableState(workflow)
-  )
 }
 
 /** True once, on the first boot after a deployment switch reloaded this tab. */
