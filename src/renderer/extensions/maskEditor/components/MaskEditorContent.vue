@@ -74,14 +74,14 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
-import { useKeyboard } from '@/renderer/extensions/maskEditor/composables/useKeyboard'
+import { useKeyboard } from '@comfyorg/mask-editor/useKeyboard'
 import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
-import { usePanAndZoom } from '@/renderer/extensions/maskEditor/composables/usePanAndZoom'
+import { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 import { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
@@ -201,7 +201,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  toolManager.brushDrawing.saveBrushSettings()
+  toolManager.saveBrushSettings()
 
   keyboard?.removeListeners()
 

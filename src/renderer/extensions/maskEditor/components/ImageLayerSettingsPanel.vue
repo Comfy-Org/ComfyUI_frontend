@@ -131,11 +131,11 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCanvasManager } from '@/renderer/extensions/maskEditor/composables/useCanvasManager'
+import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import type { ImageLayer } from '@/renderer/extensions/maskEditor/types'
-import { MaskBlendMode, Tools } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import type { ImageLayer } from '@comfyorg/mask-editor/types'
+import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 import SliderControl from './controls/SliderControl.vue'
 

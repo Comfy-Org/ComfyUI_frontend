@@ -19,9 +19,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
-import type { usePanAndZoom } from '@/renderer/extensions/maskEditor/composables/usePanAndZoom'
+import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { toolManager, panZoom } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

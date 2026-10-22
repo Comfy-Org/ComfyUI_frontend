@@ -1007,34 +1007,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/maskEditor/composables/brushDrawingUtils.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/gpuUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useBrushDrawing.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useCanvasManager.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useGPUResources.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
     "comfy/no-new-error-throw": {
       "count": 2

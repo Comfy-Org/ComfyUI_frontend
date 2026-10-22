@@ -61,8 +61,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { ColorComparisonMethod } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 import DropdownControl from './controls/DropdownControl.vue'
 import SliderControl from './controls/SliderControl.vue'

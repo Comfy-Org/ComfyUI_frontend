@@ -5,15 +5,16 @@ import type {
   Point,
   ImageLayer,
   ToolInternalSettings
-} from '@/renderer/extensions/maskEditor/types'
-import { Tools } from '@/renderer/extensions/maskEditor/types'
+} from '@comfyorg/mask-editor/types'
+import { Tools } from '@comfyorg/mask-editor/types'
 import { useApp } from '@/scripts/appInstance'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
-import { useBrushDrawing } from './useBrushDrawing'
-import { useCanvasTools } from './useCanvasTools'
-import { useCoordinateTransform } from './useCoordinateTransform'
-import type { useKeyboard } from './useKeyboard'
-import type { usePanAndZoom } from './usePanAndZoom'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useBrushDrawing } from '@comfyorg/mask-editor/useBrushDrawing'
+import { useBrushPersistence } from './useBrushPersistence'
+import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
+import { useCoordinateTransform } from '@comfyorg/mask-editor/useCoordinateTransform'
+import type { useKeyboard } from '@comfyorg/mask-editor/useKeyboard'
+import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 
 export function useToolManager(
   keyboard: ReturnType<typeof useKeyboard>,
@@ -37,6 +38,8 @@ export function useToolManager(
         ? brushAdjustmentSpeed
         : undefined
   })
+  const brushPersistence = useBrushPersistence()
+  brushPersistence.loadAndApply()
   const canvasTools = useCanvasTools()
 
   const mouseDownPoint = ref<Point | null>(null)
@@ -248,6 +251,7 @@ export function useToolManager(
     handlePointerMove,
     handlePointerUp,
 
-    brushDrawing
+    brushDrawing,
+    saveBrushSettings: brushPersistence.save
   }
 }

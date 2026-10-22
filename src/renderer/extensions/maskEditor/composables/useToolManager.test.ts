@@ -1,11 +1,11 @@
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { useBrushDrawing } from '@/renderer/extensions/maskEditor/composables/useBrushDrawing'
+import { useBrushDrawing } from '@comfyorg/mask-editor/useBrushDrawing'
 import { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { Tools } from '@/renderer/extensions/maskEditor/types'
+import { Tools } from '@comfyorg/mask-editor/types'
 import { app } from '@/scripts/app'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
@@ -32,26 +32,17 @@ const mockCoordinateTransform = {
   canvasToScreen: vi.fn()
 }
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useBrushDrawing'),
-  () => ({
-    useBrushDrawing: vi.fn(() => mockBrushDrawing)
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/useBrushDrawing'), () => ({
+  useBrushDrawing: vi.fn(() => mockBrushDrawing)
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useCanvasTools'),
-  () => ({
-    useCanvasTools: vi.fn(() => mockCanvasTools)
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasTools'), () => ({
+  useCanvasTools: vi.fn(() => mockCanvasTools)
+}))
 
-vi.mock(
-  import('@/renderer/extensions/maskEditor/composables/useCoordinateTransform'),
-  () => ({
-    useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
-  })
-)
+vi.mock(import('@comfyorg/mask-editor/useCoordinateTransform'), () => ({
+  useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
+}))
 
 vi.mock(import('@/scripts/app'))
 

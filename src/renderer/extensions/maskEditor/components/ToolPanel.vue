@@ -42,9 +42,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import MaskEditorToolIcon from '@/renderer/extensions/maskEditor/components/MaskEditorToolIcon.vue'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import type { Tools } from '@/renderer/extensions/maskEditor/types'
-import { allTools } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import type { Tools } from '@comfyorg/mask-editor/types'
+import { allTools } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { toolManager } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>

@@ -153,11 +153,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useCanvasTools } from '@/renderer/extensions/maskEditor/composables/useCanvasTools'
-import { useCanvasTransform } from '@/renderer/extensions/maskEditor/composables/useCanvasTransform'
+import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
+import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()

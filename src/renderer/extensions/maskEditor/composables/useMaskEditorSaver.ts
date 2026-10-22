@@ -3,7 +3,7 @@ import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { writeImageWidgetValue } from '@/renderer/extensions/maskEditor/composables/imageWidgetAdapter'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type {
   EditorOutputData,

@@ -1,7 +1,7 @@
 {
   "id": "mask-editor",
   "capability": "Mask editor",
-  "description": "Mask editing UI, drawing operations, editor state, and the core extension contract.",
+  "description": "Mask editing UI, host adapters (loader, saver, image widget, dialog, brush persistence, tool manager), and the core extension contract. The stroke, GPU, pan/zoom and canvas-history engine lives in the @comfyorg/mask-editor package.",
   "modules": [
     {
       "path": "src/extensions/core/clipspace.ts",
@@ -26,10 +26,6 @@
     {
       "path": "src/renderer/extensions/maskEditor/stores/**",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/maskEditor/types.ts",
-      "role": "domain"
     },
     {
       "path": "src/scripts/clipspace.test.ts",
@@ -59,8 +55,8 @@
     {
       "name": "Drawing operations preserve brush and canvas-history behavior",
       "checks": [
-        "src/renderer/extensions/maskEditor/composables/useBrushDrawing.test.ts",
-        "src/renderer/extensions/maskEditor/composables/useCanvasHistory.test.ts"
+        "packages/mask-editor/src/useBrushDrawing.test.ts",
+        "packages/mask-editor/src/useCanvasHistory.test.ts"
       ]
     },
     {

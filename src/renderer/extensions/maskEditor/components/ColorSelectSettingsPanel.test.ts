@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ColorSelectSettingsPanel from '@/renderer/extensions/maskEditor/components/ColorSelectSettingsPanel.vue'
-import { ColorComparisonMethod } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 

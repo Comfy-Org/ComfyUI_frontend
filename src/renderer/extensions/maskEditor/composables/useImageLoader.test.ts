@@ -1,4 +1,4 @@
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toNodeId } from '@/types/nodeId'
@@ -14,12 +14,9 @@ let mockStore: ReturnType<typeof useMaskEditorStore>
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
-vi.mock(
-  import('@/renderer/extensions/maskEditor/composables/useCanvasManager'),
-  () => ({
-    useCanvasManager: vi.fn(() => mockCanvasManager)
-  })
-)
+vi.mock(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
+  useCanvasManager: vi.fn(() => mockCanvasManager)
+}))
 
 vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>

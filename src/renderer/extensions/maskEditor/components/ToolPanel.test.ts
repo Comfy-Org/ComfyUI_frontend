@@ -5,8 +5,8 @@ import { createI18n } from 'vue-i18n'
 
 import ToolPanel from '@/renderer/extensions/maskEditor/components/ToolPanel.vue'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { Tools, allTools } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { Tools, allTools } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 

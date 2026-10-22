@@ -7,11 +7,11 @@ import { useI18n } from 'vue-i18n'
 import {
   getEffectiveBrushSize,
   getEffectiveHardness
-} from '@/renderer/extensions/maskEditor/composables/brushUtils'
-import { StrokeProcessor } from '@/renderer/extensions/maskEditor/composables/StrokeProcessor'
+} from '@comfyorg/mask-editor/brushUtils'
+import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
-import type { Point } from '@/renderer/extensions/maskEditor/types'
+import type { Point } from '@comfyorg/mask-editor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'

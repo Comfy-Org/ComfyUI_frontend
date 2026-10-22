@@ -22,15 +22,12 @@ import { usePainter } from './usePainter'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/StrokeProcessor'),
-  () => ({
-    StrokeProcessor: vi.fn(() => ({
-      addPoint: vi.fn(() => []),
-      endStroke: vi.fn(() => [])
-    }))
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/StrokeProcessor'), () => ({
+  StrokeProcessor: vi.fn(() => ({
+    addPoint: vi.fn(() => []),
+    endStroke: vi.fn(() => [])
+  }))
+}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

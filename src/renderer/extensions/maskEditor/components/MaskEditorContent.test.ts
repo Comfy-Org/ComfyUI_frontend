@@ -5,7 +5,7 @@ import MaskEditorContent from '@/renderer/extensions/maskEditor/components/MaskE
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const mockKeyboard = vi.hoisted(() => ({
   addListeners: vi.fn(),
@@ -19,12 +19,12 @@ const mockPanZoom = vi.hoisted(() => ({
 
 const mockBrushDrawing = vi.hoisted(() => ({
   initGPUResources: vi.fn().mockResolvedValue(undefined),
-  initPreviewCanvas: vi.fn(),
-  saveBrushSettings: vi.fn()
+  initPreviewCanvas: vi.fn()
 }))
 
 const mockToolManager = vi.hoisted(() => ({
-  brushDrawing: mockBrushDrawing
+  brushDrawing: mockBrushDrawing,
+  saveBrushSettings: vi.fn()
 }))
 
 const mockImageLoader = vi.hoisted(() => ({
@@ -37,19 +37,13 @@ const mockMaskEditorLoader = vi.hoisted(() => ({
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useKeyboard'),
-  () => ({
-    useKeyboard: () => mockKeyboard
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/useKeyboard'), () => ({
+  useKeyboard: () => mockKeyboard
+}))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/usePanAndZoom'),
-  () => ({
-    usePanAndZoom: () => mockPanZoom
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/usePanAndZoom'), () => ({
+  usePanAndZoom: () => mockPanZoom
+}))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/maskEditor/composables/useToolManager'),
@@ -327,7 +321,7 @@ describe('MaskEditorContent', () => {
 
       unmount()
 
-      expect(mockBrushDrawing.saveBrushSettings).toHaveBeenCalledTimes(1)
+      expect(mockToolManager.saveBrushSettings).toHaveBeenCalledTimes(1)
       expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
       expect(mockStore.canvasHistory.clearStates).toHaveBeenCalledTimes(1)
       expect(mockStore.resetState).toHaveBeenCalledTimes(1)

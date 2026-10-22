@@ -32,9 +32,9 @@ import { computed, watch } from 'vue'
 import {
   getEffectiveBrushSize,
   getEffectiveHardness
-} from '@/renderer/extensions/maskEditor/composables/brushUtils'
-import { BrushShape } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+} from '@comfyorg/mask-editor/brushUtils'
+import { BrushShape } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 const { containerRef } = defineProps<{
   containerRef?: HTMLElement

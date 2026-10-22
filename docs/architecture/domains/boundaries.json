@@ -1976,10 +1976,6 @@
         ]
       },
       {
-        "name": "mask-editor/domain",
-        "patterns": ["src/renderer/extensions/maskEditor/types.ts"]
-      },
-      {
         "name": "mask-editor/application",
         "patterns": [
           "src/renderer/extensions/maskEditor/composables/**",
@@ -5457,13 +5453,8 @@
         "allow": ["markdown-rendering/infrastructure", "unclassified"]
       },
       {
-        "from": "mask-editor/domain",
-        "allow": ["mask-editor/domain", "unclassified"]
-      },
-      {
         "from": "mask-editor/application",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "unclassified"
@@ -5472,7 +5463,6 @@
       {
         "from": "mask-editor/infrastructure",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "unclassified"
@@ -5481,7 +5471,6 @@
       {
         "from": "mask-editor/presentation",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
           "unclassified"
@@ -5490,7 +5479,6 @@
       {
         "from": "mask-editor/integration",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",

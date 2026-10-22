@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { MaskBlendMode, Tools } from '@/renderer/extensions/maskEditor/types'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
@@ -15,12 +15,9 @@ let mockStore: ReturnType<typeof useMaskEditorStore>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
 const mockSetActiveLayer = vi.fn()
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useCanvasManager'),
-  () => ({
-    useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
+  useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
+}))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),

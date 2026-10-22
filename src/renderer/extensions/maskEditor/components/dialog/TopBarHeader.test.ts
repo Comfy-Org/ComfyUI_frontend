@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import TopBarHeader from '@/renderer/extensions/maskEditor/components/dialog/TopBarHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
@@ -25,19 +25,13 @@ const mockSaver = vi.hoisted(() => ({
   save: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useCanvasTools'),
-  () => ({
-    useCanvasTools: () => mockCanvasTools
-  })
-)
+vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasTools'), () => ({
+  useCanvasTools: () => mockCanvasTools
+}))
 
-vi.mock(
-  import('@/renderer/extensions/maskEditor/composables/useCanvasTransform'),
-  () => ({
-    useCanvasTransform: () => mockCanvasTransform
-  })
-)
+vi.mock(import('@comfyorg/mask-editor/useCanvasTransform'), () => ({
+  useCanvasTransform: () => mockCanvasTransform
+}))
 
 vi.mock(
   import('@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'),

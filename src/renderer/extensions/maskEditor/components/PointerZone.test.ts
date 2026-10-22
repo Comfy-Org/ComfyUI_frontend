@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import PointerZone from '@/renderer/extensions/maskEditor/components/PointerZone.vue'
-import type { usePanAndZoom } from '@/renderer/extensions/maskEditor/composables/usePanAndZoom'
+import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
 import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { useMaskEditorStore } from '@/renderer/extensions/maskEditor/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 type PanZoom = ReturnType<typeof usePanAndZoom>
