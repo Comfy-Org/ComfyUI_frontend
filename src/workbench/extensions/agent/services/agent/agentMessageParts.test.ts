@@ -4,6 +4,7 @@ import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   dismissAskParts,
   retireAskParts,
+  showsDismissed,
   toAskOrNoticePart,
   toAskPart,
   toAskResolution
@@ -338,7 +339,7 @@ describe('toAskOrNoticePart', () => {
 })
 
 describe('dismissAskParts', () => {
-  it('closes open question and delete cards and leaves answered ones alone', () => {
+  it('dismisses open question and delete cards, not answered or in-flight ones', () => {
     const question = toAskPart(askUser({ ask_id: 'q' }))
     const deletion = toAskPart(
       askUser({
@@ -354,17 +355,21 @@ describe('dismissAskParts', () => {
         }
       })
     )
-    assert(question && deletion?.type === 'deleteApproval')
+    assert(question?.type === 'askUser' && deletion?.type === 'deleteApproval')
     const answered: MessagePart = {
       ...question,
       askId: 'a',
       resolution: { status: 'answered', selected: ['flux'] }
     }
+    const inFlight: MessagePart = { ...question, askId: 'f' }
 
-    expect(dismissAskParts([question, deletion, answered])).toEqual([
-      { ...question, resolution: { status: 'closed' } },
-      { ...deletion, resolution: { status: 'closed' } },
-      answered
+    expect(
+      dismissAskParts([question, deletion, answered, inFlight], new Set(['f']))
+    ).toEqual([
+      { ...question, dismissed: true },
+      { ...deletion, dismissed: true },
+      answered,
+      inFlight
     ])
   })
 })
@@ -394,7 +399,7 @@ describe('retireAskParts', () => {
     ])
   })
 
-  it('keeps a dismissed run approval unless the run was answered', () => {
+  it('keeps a dismissed run approval through any resolution', () => {
     const dismissed: MessagePart[] = [
       { type: 'runApproval', askId: 'run', dismissed: true }
     ]
@@ -403,7 +408,21 @@ describe('retireAskParts', () => {
     )
     expect(
       retireAskParts(dismissed, 'run', { status: 'answered', selected: [] })
-    ).toEqual([])
+    ).toBe(dismissed)
+  })
+
+  it('shows a dismissed question as dismissed until an answer settles on it', () => {
+    const dismissed = { ...question, dismissed: true }
+    expect(showsDismissed(dismissed)).toBe(true)
+    const [closed] = retireAskParts([dismissed], 'q', { status: 'closed' })
+    assert(closed.type === 'askUser')
+    expect(showsDismissed(closed)).toBe(true)
+    const [answered] = retireAskParts([dismissed], 'q', {
+      status: 'answered',
+      selected: []
+    })
+    assert(answered.type === 'askUser')
+    expect(showsDismissed(answered)).toBe(false)
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
@@ -464,12 +483,6 @@ describe('retireAskParts', () => {
       shown: { status: 'closed' },
       next: { status: 'unconfirmed' },
       expected: { status: 'closed' }
-    },
-    {
-      name: 'an empty answer replaces a dismissal',
-      shown: { status: 'closed' },
-      next: { status: 'answered', selected: [] },
-      expected: { status: 'answered', selected: [] }
     },
     {
       name: 'a named answer replaces an unnamed one',

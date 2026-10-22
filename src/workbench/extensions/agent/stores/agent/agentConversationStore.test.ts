@@ -2164,6 +2164,21 @@ describe('useAgentConversationStore', () => {
       expect(store.activeAskOpen).toBe(false)
     })
 
+    it('leaves a card whose answer is in flight alone', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.setAskAnswering('turn-1:call-1', true)
+
+      expect(store.activeAskOpen).toBe(false)
+      store.dismissOpenAsks()
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'runApproval')
+      ).not.toHaveProperty('dismissed')
+    })
+
     it("leaves another thread's stashed card open", () => {
       const store = useAgentConversationStore()
       store.setThreadId('other')

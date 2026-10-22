@@ -747,6 +747,25 @@ describe('AgentMessage ask_user question', () => {
     thinking: false
   })
 
+  it('shows a dismissed question read-only and greyed', () => {
+    const message = askMessage()
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: message.parts.map((part) => ({ ...part, dismissed: true }))
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
   it('renders the question card without a working spinner and forwards the answer', async () => {
     const { emitted } = render(AgentMessage, {
       props: { message: askMessage() },
@@ -913,6 +932,15 @@ describe('AgentMessage delete approval', () => {
       props: { message: { ...deleteMessage(), parts: [part] } },
       global: { plugins: [i18n] }
     })
+
+  it('shows a dismissed delete card read-only and greyed', () => {
+    renderResolved({ ...deleteCard, dismissed: true })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
 
   it.for<{ name: string; resolution: AskUserResolution; text: string }>([
     {

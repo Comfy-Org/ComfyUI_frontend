@@ -106,7 +106,7 @@ export interface AgentEventTransport {
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   retireAskPart: (askId: string, resolution: AskUserResolution) => void
-  dismissAsks: () => void
+  dismissAsks: (answering: ReadonlySet<string>) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -582,8 +582,8 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dismissAsks(): void {
-    const parts = dismissAskParts(message.parts)
+  function dismissAsks(answering: ReadonlySet<string>): void {
+    const parts = dismissAskParts(message.parts, answering)
     if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))

@@ -92,9 +92,7 @@ export function settleResolution(
   shown: AskUserResolution | undefined,
   next: AskUserResolution
 ): AskUserResolution {
-  return shown === undefined ||
-    (next.status === 'answered' && shown.status === 'closed') ||
-    resolutionScore(next) > resolutionScore(shown)
+  return shown === undefined || resolutionScore(next) > resolutionScore(shown)
     ? next
     : shown
 }
@@ -123,6 +121,7 @@ export interface AskUserPart {
   maxSelections: number
   allowOther: boolean
   resolution?: AskUserResolution
+  dismissed?: boolean
 }
 
 interface DeleteTarget {
@@ -138,6 +137,7 @@ export interface DeleteApprovalPart {
   nodes: DeleteTarget[]
   hiddenNodeCount: number
   resolution?: AskUserResolution
+  dismissed?: boolean
 }
 
 export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
@@ -151,8 +151,13 @@ function isAskPart(part: MessagePart): part is AskPart {
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
-  if (part.type === 'runApproval') return part.dismissed !== true
-  return isAskPart(part) && part.resolution === undefined
+  if (!isAskPart(part) || part.dismissed) return false
+  return part.type === 'runApproval' || part.resolution === undefined
+}
+
+export function showsDismissed(part: AskPart): boolean {
+  if (!part.dismissed) return false
+  return part.type === 'runApproval' || part.resolution?.status !== 'answered'
 }
 
 export function isOpenAskPart(part: MessagePart): boolean {
@@ -170,8 +175,7 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (part.type === 'runApproval')
-      return part.dismissed && resolution.status !== 'answered' ? [part] : []
+    if (part.type === 'runApproval') return part.dismissed ? [part] : []
     if (!isAskPart(part)) return []
     const settled = settleResolution(part.resolution, resolution)
     return [
@@ -184,14 +188,16 @@ export function retireAskParts(
     : next
 }
 
-export function dismissAskParts(parts: MessagePart[]): MessagePart[] {
-  if (!parts.some(isPendingAskPart)) return parts
-  return parts.map((part): MessagePart => {
-    if (!isPendingAskPart(part)) return part
-    return part.type === 'runApproval'
-      ? { ...part, dismissed: true }
-      : { ...part, resolution: { status: 'closed' } }
-  })
+export function dismissAskParts(
+  parts: MessagePart[],
+  answering: ReadonlySet<string>
+): MessagePart[] {
+  const dismissible = (part: MessagePart): part is AskPart =>
+    isPendingAskPart(part) && !answering.has(part.askId)
+  if (!parts.some(dismissible)) return parts
+  return parts.map((part) =>
+    dismissible(part) ? { ...part, dismissed: true } : part
+  )
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>

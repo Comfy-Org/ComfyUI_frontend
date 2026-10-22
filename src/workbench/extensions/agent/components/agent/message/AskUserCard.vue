@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -7,7 +8,10 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 
 import type { AskUserPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { choosableCount } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  choosableCount,
+  showsDismissed
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import AskUserAnswer from './AskUserAnswer.vue'
 import AskUserCheckboxOptions from './AskUserCheckboxOptions.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
@@ -62,8 +66,9 @@ function boundsHint(
     : t('agent.askUser.chooseUpTo', { max })
 }
 
+const dismissed = computed(() => showsDismissed(part))
 const hint = computed(() =>
-  requiredSingleChoice.value || part.resolution
+  requiredSingleChoice.value || part.resolution || part.dismissed
     ? undefined
     : boundsHint(part.minSelections, part.maxSelections, choosableCount(part))
 )
@@ -146,7 +151,12 @@ function submit(): void {
   <div
     role="group"
     :aria-label="t('agent.askUser.card')"
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
+    :class="
+      cn(
+        'flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md',
+        dismissed && 'opacity-50 shadow-none'
+      )
+    "
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p
@@ -160,8 +170,12 @@ function submit(): void {
       </p>
     </div>
 
+    <p v-if="dismissed" role="status" class="m-0 text-sm/5 text-muted-foreground">
+      {{ t('agent.askDismissed') }}
+    </p>
+
     <AskUserAnswer
-      v-if="part.resolution"
+      v-else-if="part.resolution"
       :resolution="part.resolution"
       :options="part.options"
     />

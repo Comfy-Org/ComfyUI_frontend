@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,6 +9,7 @@ import type {
   AskUserResolution,
   DeleteApprovalPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { showsDismissed } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part, answering = false } = defineProps<{
   part: DeleteApprovalPart
@@ -26,7 +28,9 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
   unconfirmed: 'agent.deleteApproval.unconfirmed'
 }
 
+const dismissed = computed(() => showsDismissed(part))
 const decision = computed(() => {
+  if (dismissed.value) return t('agent.askDismissed')
   const resolution = part.resolution
   if (!resolution) return undefined
   if (resolution.status === 'answered') {
@@ -44,7 +48,12 @@ const decision = computed(() => {
   <div
     role="group"
     :aria-label="t('agent.deleteApproval.card')"
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
+    :class="
+      cn(
+        'flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md',
+        dismissed && 'opacity-50 shadow-none'
+      )
+    "
   >
     <p
       class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-foreground"

@@ -5790,6 +5790,7 @@
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
+    "askDismissed": "Dismissed: you sent a new message instead.",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
       "leadBound": "This tool wants to run this workflow.",
@@ -5797,7 +5798,6 @@
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",
       "run": "Run",
-      "dismissed": "Dismissed: you sent a new message instead.",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."

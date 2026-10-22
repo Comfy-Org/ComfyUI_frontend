@@ -438,15 +438,17 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dismissOpenAsks(): void {
+      const answering = answeringAskIds.value
       messages.value = messages.value.map((message) => {
-        const parts = dismissAskParts(message.parts)
+        const parts = dismissAskParts(message.parts, answering)
         return parts === message.parts ? message : { ...message, parts }
       })
-      activeSlot.value?.transport.dismissAsks()
+      activeSlot.value?.transport.dismissAsks(answering)
       for (const settledTransport of settledActiveTransports)
-        settledTransport.dismissAsks()
+        settledTransport.dismissAsks(answering)
       for (const entry of backgroundTurns.values())
-        if (entry.threadId === threadKey()) entry.transport.dismissAsks()
+        if (entry.threadId === threadKey())
+          entry.transport.dismissAsks(answering)
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1261,7 +1263,11 @@ export const useAgentConversationStore = defineStore(
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const activeAskOpen = computed(
-      () => activeMessage.value?.parts.some(isPendingAskPart) ?? false
+      () =>
+        activeMessage.value?.parts.some(
+          (part) =>
+            isPendingAskPart(part) && !answeringAskIds.value.has(part.askId)
+        ) ?? false
     )
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value

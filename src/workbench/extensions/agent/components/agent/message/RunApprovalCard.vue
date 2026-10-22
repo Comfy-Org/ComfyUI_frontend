@@ -89,7 +89,7 @@ const workflowLabel = computed(
     </div>
 
     <p v-if="part.dismissed" class="m-0 text-sm/5 text-muted-foreground">
-      {{ t('agent.runApproval.dismissed') }}
+      {{ t('agent.askDismissed') }}
     </p>
     <div v-else class="flex h-6 w-full justify-end gap-2">
       <Button

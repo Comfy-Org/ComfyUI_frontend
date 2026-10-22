@@ -949,7 +949,7 @@ const {
 })
 const sendDismissesAsk = computed(
   () =>
-    askOpen.value && api.getServerFeature('agent.ask_send_dismisses') === true
+    askOpen.value && agentPanelStore.comfyAgent?.ask_send_dismisses === true
 )
 
 provide(

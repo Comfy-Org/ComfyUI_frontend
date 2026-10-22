@@ -6182,7 +6182,9 @@ describe('AgentPanelRoot sending while a run card waits', () => {
 
   it('sends over the card and greys it out when the backend supports it', async () => {
     getServerFeature.mockImplementation((name: string, defaultValue?: unknown) =>
-      name === 'agent.ask_send_dismisses' ? true : defaultValue
+      name === 'agent'
+        ? { state: 'ready', ask_send_dismisses: true }
+        : defaultValue
     )
     respondToFetch({}, () => json(200, {}))
     respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
