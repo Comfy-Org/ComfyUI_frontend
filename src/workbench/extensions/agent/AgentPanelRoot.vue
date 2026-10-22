@@ -28,6 +28,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -825,6 +826,7 @@ async function onWorkflowRestoredAndBound(
     isCurrent
   )
   if (committedWorkflowId === null || !isCurrent()) return ready
+  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
   if (boundWorkflowId.value !== committedWorkflowId)
     bindWorkflow(committedWorkflowId)
   return ready

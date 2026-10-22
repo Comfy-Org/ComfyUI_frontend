@@ -297,6 +297,7 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
+import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
 const docOpMinterDeps = vi.hoisted(() => ({
@@ -7877,6 +7878,50 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
     )
     expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('leaves the restored workflow unbound while its canvas holds edits the shared document may lack', async () => {
+    const restored = addTab('workflows/unsynced.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-unsynced' })
+    })
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-unsynced',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-unsynced', name: 'unsynced' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+    recordUnsyncedHumanOps('previous-panel', ['wf-unsynced'])
+
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
+      )
+      await screen.findAllByText('Earlier request')
+      await nextTick()
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    } finally {
+      recordUnsyncedHumanOps('previous-panel', [])
+    }
   })
 
   it('binds the session to the workflow a history thread restored, not only a reload', async () => {
