@@ -116,17 +116,17 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-interface ProjectedInput {
-  name: string
-  link?: number | null
-}
-
-function childSlot(host: HostDoc): ProjectedInput | undefined {
+function childSlot(host: HostDoc) {
   const node = host
     .projection()
     .nodes.find((candidate) => String(candidate.id) === String(RESIZE_ID))
-  const inputs = (node?.inputs ?? []) as ProjectedInput[]
-  return inputs.find((input) => input.name === CHILD)
+  return node?.inputs?.find(
+    (input) =>
+      typeof input === 'object' &&
+      input !== null &&
+      'name' in input &&
+      input.name === CHILD
+  )
 }
 
 test.describe(
