@@ -20,7 +20,9 @@ returns early, preventing cross-workflow data corruption.
 
 ## Automatic Triggers
 
-These are set up once in `ChangeTracker.init()`:
+`ChangeTracker.init()` runs once at startup. It hands the class to the workflow
+store (`provideChangeTracker`), which constructs a tracker for each workflow it
+loads, and installs these triggers:
 
 | Trigger                             | Event / Hook                                       | What It Catches                                     |
 | ----------------------------------- | -------------------------------------------------- | --------------------------------------------------- |

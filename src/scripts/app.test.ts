@@ -3660,6 +3660,7 @@ describe('ComfyApp', () => {
     it('gives each imported workflow its own restorable run errors', async () => {
       const workflowService = await useRealWorkflowService()
       const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)

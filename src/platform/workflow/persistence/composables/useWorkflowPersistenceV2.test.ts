@@ -9,7 +9,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -139,6 +139,7 @@ vi.mock(import('@/scripts/api'))
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 })
 

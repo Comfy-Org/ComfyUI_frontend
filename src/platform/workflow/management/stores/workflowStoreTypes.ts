@@ -3,9 +3,14 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 
-import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
+import type {
+  ChangeTrackerConstructor,
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from './comfyWorkflow'
 
 export interface WorkflowStore {
+  provideChangeTracker: (tracker: ChangeTrackerConstructor) => void
   activeWorkflow: LoadedComfyWorkflow | null
   attachWorkflow: (workflow: ComfyWorkflow, openIndex?: number) => void
   isActive: (workflow: ComfyWorkflow) => boolean
