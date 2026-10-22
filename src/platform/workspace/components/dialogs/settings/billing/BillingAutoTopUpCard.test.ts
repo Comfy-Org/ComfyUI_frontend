@@ -140,6 +140,7 @@ describe('BillingAutoTopUpCard', () => {
   it.for<{
     status: AutoReloadSettings['status']
     settings?: AutoReloadSettings
+    disabledReason?: string
     label: string
     lines: string[]
     action: string
@@ -148,6 +149,15 @@ describe('BillingAutoTopUpCard', () => {
       status: 'failed',
       label: 'Failed',
       lines: [FAILED],
+      action: 'Update payment'
+    },
+    {
+      status: 'failed',
+      disabledReason: 'consecutive_declines',
+      label: 'Turned off',
+      lines: [
+        'Turned off after 3 declined charges. Update your payment method, then turn it back on.'
+      ],
       action: 'Update payment'
     },
     {
@@ -179,9 +189,16 @@ describe('BillingAutoTopUpCard', () => {
       action: 'Manage'
     }
   ])(
-    'renders the served $status status',
-    async ({ status, settings = configured, label, lines, action }) => {
-      renderCard({ ...settings, status })
+    'renders the served $status status as $label',
+    async ({
+      status,
+      settings = configured,
+      disabledReason = null,
+      label,
+      lines,
+      action
+    }) => {
+      renderCard({ ...settings, status, disabled_reason: disabledReason })
 
       expect(
         await screen.findByTestId('billing-auto-top-up-status')

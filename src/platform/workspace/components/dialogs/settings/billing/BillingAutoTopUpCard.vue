@@ -96,6 +96,7 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
+type ViewKey = Status | 'turnedOff'
 
 interface Line {
   text: string
@@ -131,6 +132,12 @@ const STATUS = {
     dot: 'bg-destructive-background',
     action: UPDATE_PAYMENT
   },
+  turnedOff: {
+    ...DANGER,
+    label: 'workspacePanel.billingTab.autoTopUp.status.turnedOff',
+    dot: 'bg-destructive-background',
+    action: UPDATE_PAYMENT
+  },
   off: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.off',
@@ -160,7 +167,7 @@ const STATUS = {
     action: MANAGE
   }
 } as const satisfies Record<
-  Status,
+  ViewKey,
   {
     label: string
     dot: string
@@ -260,8 +267,11 @@ function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
   }
 }
 
-const LINES: Record<Status, (settings: AutoReloadSettings) => Line[]> = {
+const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
   failed: () => [{ text: t('workspacePanel.billingTab.autoTopUp.failed') }],
+  turnedOff: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
+  ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
   on_hold: (settings) => [
     ...ruleLines(settings),
@@ -278,11 +288,22 @@ function isStatus(status: string): status is Status {
   return Object.hasOwn(STATUS, status)
 }
 
+function viewKey(settings: AutoReloadSettings): ViewKey {
+  if (!isStatus(settings.status)) return 'off'
+  if (
+    settings.status === 'failed' &&
+    settings.disabled_reason === 'consecutive_declines'
+  ) {
+    return 'turnedOff'
+  }
+  return settings.status
+}
+
 const view = computed(() => {
   if (state.value.kind !== 'loaded') return null
   const { settings } = state.value
-  const status = isStatus(settings.status) ? settings.status : 'off'
-  return { status: STATUS[status], lines: LINES[status](settings) }
+  const key = viewKey(settings)
+  return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
 const { href, track } = usePlatformHandoff('/profile/billing', () => ({
