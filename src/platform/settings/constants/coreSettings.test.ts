@@ -1,3 +1,4 @@
+import { breakpointsTailwind } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -34,8 +35,8 @@ describe('window-dependent setting defaults', () => {
   )
 
   it.for([
-    [1600, true],
-    [800, false]
+    [breakpointsTailwind.lg, true],
+    [breakpointsTailwind.lg - 1, false]
   ] as const)(
     'shows the minimap by default at a %ipx window: %s',
     ([width, visible]) => {
