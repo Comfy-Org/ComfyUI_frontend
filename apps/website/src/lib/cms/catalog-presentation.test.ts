@@ -191,6 +191,29 @@ describe('native CONTENT presentation', () => {
       expect(view).not.toHaveProperty('catalogDetails.authorUsername')
     }
   )
+  it('links no author creator page in a staff DRAFT preview', () => {
+    const uid = '00000000-0000-4000-8000-000000000098'
+    const authored = {
+      ...record,
+      data: {
+        ...record.data,
+        author_uid: uid,
+        website_author: {
+          uid,
+          name: 'Comfy creator',
+          username: 'comfy-creator'
+        }
+      }
+    }
+
+    expect(detailSchema.parse(catalogPresentation(authored))).toHaveProperty(
+      'catalogDetails.authorUsername',
+      'comfy-creator'
+    )
+    const draft = detailSchema.parse(catalogPresentation(authored, 'en', true))
+    expect(draft).toMatchObject({ catalogDetails: { author: 'Comfy creator' } })
+    expect(draft).not.toHaveProperty('catalogDetails.authorUsername')
+  })
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
     const api = '00000000-0000-4000-8000-000000000081'
