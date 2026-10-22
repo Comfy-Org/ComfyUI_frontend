@@ -43,6 +43,21 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it.for([
+    'A cloud subscription is required to queue workflows.',
+    'A cloud subscription is required to use your credits on cloud.'
+  ])(
+    'classifies the free-tier cloud-subscription 402 (%s) by its CLOUD_SUBSCRIPTION_REQUIRED type',
+    (exceptionMessage) => {
+      expect(
+        resolveAccountPrecondition({
+          exceptionType: 'CLOUD_SUBSCRIPTION_REQUIRED',
+          exceptionMessage
+        })
+      ).toBe('subscription')
+    }
+  )
+
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
       resolveAccountPrecondition({
