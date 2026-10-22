@@ -239,12 +239,12 @@ export function useMaskEditorLoader() {
   }
 
   function getNodeImageUrl(node: LGraphNode): string {
-    if (node.images?.[0]) {
-      const img = node.images[0]
+    const nodeImage = node.images?.[0]
+    if (nodeImage?.filename) {
       const params = new URLSearchParams({
-        filename: img.filename,
-        type: img.type || 'output',
-        subfolder: img.subfolder || ''
+        filename: nodeImage.filename,
+        type: nodeImage.type || 'output',
+        subfolder: nodeImage.subfolder || ''
       })
       return api.apiURL(`/view?${params.toString()}`)
     }

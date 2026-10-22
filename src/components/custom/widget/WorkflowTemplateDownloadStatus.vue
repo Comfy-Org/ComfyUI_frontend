@@ -102,7 +102,7 @@ function namedLabel(key: string): string {
     :title="status.label"
     variant="textonly"
     size="unset"
-    class="col-start-3 row-start-1 size-8 shrink-0 rounded-md p-1.5"
+    class="col-start-3 row-start-1 size-8 shrink-0 p-1.5"
     @click="requestDownload()"
   >
     <i aria-hidden="true" class="icon-[tabler--download] size-4" />
@@ -119,10 +119,10 @@ function namedLabel(key: string): string {
   >
     <span
       aria-hidden="true"
-      class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+      class="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary"
     >
       <span
-        class="indeterminate-stripe indeterminate-stripe--drifting block h-full w-full rounded-full text-primary-background"
+        class="indeterminate-stripe indeterminate-stripe--drifting block h-full w-full rounded-full text-primary"
       />
     </span>
     <span class="shrink-0">
@@ -148,15 +148,15 @@ function namedLabel(key: string): string {
       aria-valuemax="100"
       :aria-valuenow="getProgressPercent(status.downloadState)"
       :aria-valuetext="getProgressText(status.downloadState)"
-      class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary-background"
+      class="block h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary"
     >
       <span
         :class="
           cn(
             'block h-full rounded-full',
             status.downloadState.fraction === null
-              ? 'indeterminate-stripe w-full text-primary-background'
-              : 'bg-primary-background',
+              ? 'indeterminate-stripe w-full text-primary'
+              : 'bg-primary',
             status.downloadState.fraction === null &&
               status.downloadState.activity === 'active' &&
               'indeterminate-stripe--drifting'

@@ -7,7 +7,7 @@
       data-testid="deployment-switcher-notice"
     >
       <i
-        class="mt-px icon-[lucide--triangle-alert] size-3.5 shrink-0 text-warning-background"
+        class="mt-px icon-[lucide--triangle-alert] size-3.5 shrink-0 text-warning"
         aria-hidden="true"
       />
       <span class="text-pretty">{{ notice }}</span>

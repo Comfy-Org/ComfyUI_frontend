@@ -17,7 +17,7 @@ export interface CustomDeploymentPitch {
   missing?: readonly MissingItemsRow[]
 }
 
-/** The pitch for creating a custom deployment, as Run on's Create a custom deployment shows it. */
+/** The pitch Run on's Create a custom deployment item shows. */
 export function customDeploymentPitch(): CustomDeploymentPitch {
   return {
     title: t('deploymentSwitcher.customDeployment.title'),

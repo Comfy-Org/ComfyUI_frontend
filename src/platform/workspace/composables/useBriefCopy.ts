@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
-/** Copies an agent brief, one copy at a time, and says whether the last one landed. */
+/** Copies an agent brief, one at a time, and says whether the last landed. */
 export function useBriefCopy() {
   const { copyToClipboard } = useCopyToClipboard()
   const isCopying = ref(false)

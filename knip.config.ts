@@ -17,7 +17,8 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
@@ -58,9 +59,6 @@ const config: KnipConfig = {
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },
-    'tools/cicd/fast-lane': {
-      project: ['src/**/*.ts']
-    },
     'tools/architecture': {
       project: ['src/**/*.ts']
     },
@@ -68,6 +66,9 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'tools/test-recorder': {
+      project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
       project: ['src/**/*.ts']
     }
   },

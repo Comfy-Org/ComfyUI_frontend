@@ -121,11 +121,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
-    test.afterEach(async ({ agentPanel, comfyPage }) => {
+    test.afterEach(async ({ agentPanel }) => {
       if (await agentPanel.nodeSelectionBanner.isVisible()) {
         await agentPanel.exitNodeSelectionMode()
       }
-      await comfyPage.canvasOps.resetView()
     })
 
     test('keeps panning and zooming available while picking without dropping the picked node', async ({
@@ -151,7 +150,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await comfyPage.canvasOps.waitForViewToSettle()
         await expect(node).toBeInViewport()
         await clickThroughInertLayer(page, node.getByTestId('node-title'))
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
         await expect(selectedNodeReference).toBeVisible()
       })
 
@@ -169,7 +168,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await expect
           .poll(() => comfyPage.canvasOps.getOffset())
           .not.toEqual(offsetBefore)
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
         await expect(selectedNodeReference).toBeVisible()
       })
 
@@ -179,7 +178,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await expect
           .poll(() => comfyPage.canvasOps.getScale())
           .not.toBe(scaleBefore)
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
         await expect(selectedNodeReference).toBeVisible()
         await expect(agentPanel.nodeSelectionBanner).toBeVisible()
       })
@@ -217,7 +216,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
 
       await test.step('clicking the prompt widget selects the node', async () => {
         await clickThroughInertLayer(page, prompt)
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
         await expect(
           agentPanel.root.getByRole('button', {
             name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/

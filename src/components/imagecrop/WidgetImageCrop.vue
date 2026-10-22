@@ -8,7 +8,7 @@
     <!-- Image preview container -->
     <div
       ref="containerEl"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node"
     >
       <div
         v-if="!imageUrl"
@@ -37,7 +37,7 @@
         <div
           v-if="isLoading"
           aria-live="polite"
-          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node-component-surface/90"
+          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node/90"
         >
           <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
         </div>
@@ -78,7 +78,7 @@
     </div>
 
     <div v-if="!isDisabled" class="flex shrink-0 items-center gap-2">
-      <label class="text-xs text-muted-foreground">
+      <label>
         {{ $t('imageCrop.ratio') }}
       </label>
       <Select v-model="selectedRatio">
@@ -110,18 +110,26 @@
           "
         />
       </Button>
+      <WidgetHistoryButtons
+        class="ml-auto"
+        :can-undo
+        :can-redo
+        @undo="undo"
+        @redo="redo"
+      />
     </div>
 
     <WidgetBoundingBox
       v-model="effectiveBounds"
       :disabled="isDisabled"
       class="shrink-0"
+      @edit-end="commitAfterUpdate"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -130,12 +138,16 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import {
   boundsExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { Bounds } from '@/renderer/core/layout/types'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -166,6 +178,18 @@ const effectiveBounds = computed({
   }
 })
 
+const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
+  scope: () => widgetHistoryScope(widget, nodeId),
+  read: () => modelValue.value,
+  apply: (value) => {
+    if (isBoundsObject(value)) modelValue.value = value
+  }
+})
+
+function commitAfterUpdate(mergeKey?: string) {
+  void nextTick(() => commit(mergeKey))
+}
+
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
 const containerEl = useTemplateRef<HTMLDivElement>('containerEl')
 
@@ -189,5 +213,10 @@ const {
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd
-} = useImageCrop(nodeId, { imageEl, containerEl, modelValue: effectiveBounds })
+} = useImageCrop(nodeId, {
+  imageEl,
+  containerEl,
+  modelValue: effectiveBounds,
+  onEditEnd: () => commitAfterUpdate()
+})
 </script>

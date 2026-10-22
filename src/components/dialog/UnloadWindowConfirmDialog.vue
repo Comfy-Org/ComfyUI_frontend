@@ -6,23 +6,17 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  takeDeploymentSwitchDiscard,
-  wasDiscardedOnSwitch
-} from '@/platform/workspace/deploymentSwitchReload'
 
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-  const discarded = takeDeploymentSwitchDiscard()
-  const leavesUnsavedWork = workflowStore.modifiedWorkflows.some(
-    (workflow) => !wasDiscardedOnSwitch(discarded, workflow)
-  )
+  if (takeLeavePromptSkip()) return undefined
   if (
     settingStore.get('Comfy.Window.UnloadConfirmation') &&
-    leavesUnsavedWork
+    workflowStore.modifiedWorkflows.length > 0
   ) {
     event.preventDefault()
     return true

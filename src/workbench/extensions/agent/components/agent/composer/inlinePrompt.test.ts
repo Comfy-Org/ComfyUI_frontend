@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
-import type { ComposerPrompt } from '../../../types/composerPrompt'
-import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 import {
   inlinePromptSchema,

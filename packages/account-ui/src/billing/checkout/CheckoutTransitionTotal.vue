@@ -4,7 +4,7 @@
   <div
     :class="
       cn(
-        'flex flex-col gap-2 border-t border-border-subtle pt-6',
+        'flex flex-col gap-2 border-t border-border/50 pt-6',
         scheduled && 'mt-10'
       )
     "
@@ -19,7 +19,7 @@
         class="flex items-center justify-between text-muted-foreground"
       >
         <span>{{ discount.label }}</span>
-        <span class="text-base-foreground">
+        <span class="text-foreground">
           {{ discount.name
           }}<template v-if="discount.amount">
             · −{{ discount.amount }}</template
@@ -27,15 +27,15 @@
         </span>
       </div>
     </template>
-    <div class="flex items-center justify-between text-base">
-      <span class="text-base-foreground">
+    <div class="flex items-center justify-between text-base text-foreground">
+      <span>
         {{ totalDueToday }}
       </span>
-      <span class="font-bold text-base-foreground tabular-nums">
+      <span class="font-bold tabular-nums">
         {{ amountDueToday }}
       </span>
     </div>
-    <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
+    <span class="text-muted-foreground">{{ renewalTerms }}</span>
   </div>
 </template>
 

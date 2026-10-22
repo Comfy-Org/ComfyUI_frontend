@@ -140,10 +140,6 @@ test.describe(
         await comfyPage.vueNodes.waitForNodes()
       })
 
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.canvasOps.resetView()
-      })
-
       test('keeps a selected non-first output and its preview after save and reload', async ({
         comfyPage
       }) => {

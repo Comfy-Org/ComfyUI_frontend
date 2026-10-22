@@ -6,7 +6,7 @@ export function missingNodeTypeName(nodeType: MissingNodeType): string {
   return typeof nodeType === 'string' ? nodeType : nodeType.type
 }
 
-/** The missing node types only a deployment with their pack can run: those with no replacement. */
+/** Missing node types with no replacement, which only their pack can run. */
 export function nodesNeedingDeployment(
   nodeTypes: readonly MissingNodeType[]
 ): MissingNodeType[] {
@@ -15,7 +15,7 @@ export function nodesNeedingDeployment(
   )
 }
 
-/** Groups missing node types by the registry pack that has them; node types with no known pack come last, under null. */
+/** Missing node types by registry pack, with unknown-pack types last. */
 export function missingPacksOf(
   nodeTypes: readonly MissingNodeType[]
 ): MissingBuildPack[] {

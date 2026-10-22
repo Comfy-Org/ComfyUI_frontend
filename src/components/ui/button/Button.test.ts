@@ -209,7 +209,7 @@ describe('Button', () => {
     })
 
     expect(screen.getByRole('button', { name: 'Primary' })).toHaveClass(
-      'bg-primary-background'
+      'bg-primary'
     )
   })
 })

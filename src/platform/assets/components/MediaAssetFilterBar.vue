@@ -3,6 +3,8 @@
     <SidebarTopArea>
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -46,7 +48,7 @@
       <span
         v-for="chip in filterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-md bg-secondary py-1 pr-1 pl-2 text-xs whitespace-nowrap"
       >
         <span>{{ chip.label }}</span>
         <Button
@@ -63,11 +65,7 @@
           <i class="icon-[lucide--x] size-3" />
         </Button>
       </span>
-      <Button
-        variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
-        @click="clearFilters"
-      >
+      <Button variant="muted-textonly" class="h-6 px-1.5" @click="clearFilters">
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}
       </Button>
     </div>

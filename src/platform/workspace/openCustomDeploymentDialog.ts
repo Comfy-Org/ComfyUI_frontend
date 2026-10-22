@@ -53,7 +53,7 @@ function openCustomDeploymentDialog(
   )
 }
 
-/** Opens the dialog behind Create a custom deployment in the Run on list; false when it could not load. */
+/** Opens the Create a custom deployment dialog; false if it could not load. */
 export function openCreateCustomDeploymentDialog(): Promise<boolean> {
   return openCustomDeploymentDialog(
     'global-create-custom-deployment',
@@ -61,7 +61,7 @@ export function openCreateCustomDeploymentDialog(): Promise<boolean> {
   )
 }
 
-/** Opens the dialog the Extensions button shows on Comfy Cloud; false when it could not load. */
+/** Opens the Extensions dialog on Comfy Cloud; false if it could not load. */
 export function openDeployCustomNodesDialog(): Promise<boolean> {
   return openCustomDeploymentDialog('global-deploy-custom-nodes', {
     title: t('deploymentSwitcher.deployCustomNodes.title'),
@@ -76,7 +76,7 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
   })
 }
 
-/** Opens the dialog a workflow opened on Comfy Cloud shows when it needs a custom deployment; false when it could not load. */
+/** Opens the needs-a-custom-deployment dialog; false if it could not load. */
 export function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   return openCardDialog(
     'global-workflow-needs-deployment',

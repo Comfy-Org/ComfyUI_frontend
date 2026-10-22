@@ -189,8 +189,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
       canDowngradeToPersonal: false
@@ -248,7 +246,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.tab()
     expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       'Team Workspace'
     )
 
@@ -269,6 +267,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 
   describe('with a Desktop host session', () => {
@@ -311,7 +310,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.hover(screen.getByTestId('workspace-switcher-trigger'))
 
     await waitFor(() => {
-      expect(screen.getByRole('tooltip')).toHaveTextContent('Team Workspace')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'Team Workspace'
+      )
     })
   })
 

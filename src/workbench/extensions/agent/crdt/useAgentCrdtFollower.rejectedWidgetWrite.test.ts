@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -6,12 +5,12 @@ import { defineComponent, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import type { GraphOperation } from './graphOperations'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -32,6 +31,11 @@ const WIDGET_EDIT: GraphOperation = {
   value: 222_222
 }
 
+const PUNCTUATED_WIDGET_EDIT: GraphOperation = {
+  ...WIDGET_EDIT,
+  widget: "Width/Height & 'x'"
+}
+
 const NODE_ADD: GraphOperation = {
   op: 'add_node',
   node_id: 7,
@@ -48,10 +52,27 @@ const NODE_ADD: GraphOperation = {
   }
 }
 
+const WORKFLOW_CLEAR: GraphOperation = { op: 'clear', removed_nodes: [9] }
+
 const NODE_DELETE: GraphOperation = {
   op: 'delete_node',
   node_id: 9,
   removed_links: []
+}
+
+const PUNCTUATED_NODE_DELETE: GraphOperation = {
+  ...NODE_DELETE,
+  node_id: 'node & <nine>'
+}
+
+const PUNCTUATED_LINK_CONNECT: GraphOperation = {
+  op: 'connect',
+  link_id: 'link & <nine>',
+  from_node: 1,
+  from_slot: 0,
+  to_node: 2,
+  to_slot: 0,
+  link_type: '*'
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -74,12 +95,10 @@ function docOpsFrames(raw: string[]): string[][] {
   return raw.map(mintedOpIds).filter((ids) => ids.length > 0)
 }
 
-/** The transport listens on `api`; a server frame is a CustomEvent there. */
+let agentSocket = createFakeAgentSocket()
+
 function answerWithOpsResult(detail: Record<string, unknown>): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent('doc_ops_result', { detail })
-  )
+  agentSocket.receive('doc_ops_result', detail)
 }
 
 /**
@@ -90,12 +109,8 @@ function answerWithOpsResult(detail: Record<string, unknown>): void {
 function mountFollower() {
   // The telemetry dedupe is per notifier and each mount makes a new one.
   vi.mocked(reportError).mockClear()
-  const previousSocket = api.socket
-  const send = vi.fn<(frame: string) => void>()
-  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
-  onTestFinished(() => {
-    api.socket = previousSocket
-  })
+  agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
   const store = useAgentPanelStore()
   store.enabled = true
   onTestFinished(() => {
@@ -106,7 +121,9 @@ function mountFollower() {
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport
+        })
         return () => null
       }
     })
@@ -289,17 +306,92 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
+  it.for([
+    {
+      label: 'widget write',
+      operation: WIDGET_EDIT,
+      code: 'unknown_widget',
+      reason: 'Rejected: node 3 seed (unknown_widget)'
+    },
+    {
+      label: 'node add',
+      operation: NODE_ADD,
+      code: 'unknown_widget',
+      reason: 'Rejected: Note (unknown_widget)'
+    },
+    {
+      label: 'widget write whose name carries punctuation',
+      operation: PUNCTUATED_WIDGET_EDIT,
+      code: 'unknown_widget',
+      reason: "Rejected: node 3 Width/Height & 'x' (unknown_widget)"
+    },
+    {
+      label: 'workflow clear',
+      operation: WORKFLOW_CLEAR,
+      code: 'malformed_op',
+      reason: 'Rejected: clearing the workflow (malformed_op)'
+    },
+    {
+      label: 'node delete whose ID carries punctuation',
+      operation: PUNCTUATED_NODE_DELETE,
+      code: 'malformed_op',
+      reason: 'Rejected: node node & <nine> (malformed_op)'
+    },
+    {
+      label: 'link connect whose ID carries punctuation',
+      operation: PUNCTUATED_LINK_CONNECT,
+      code: 'malformed_op',
+      reason: 'Rejected: link link & <nine> (malformed_op)'
+    },
+    {
+      label: 'node field write',
+      operation: {
+        op: 'set_node_field',
+        node_id: 3,
+        field: 'title',
+        value: 'renamed'
+      } satisfies GraphOperation,
+      code: 'malformed_op',
+      reason: 'Rejected: node 3 title (malformed_op)'
+    }
+  ])(
+    'names what the host rejected and why for a $label',
+    async ({ operation, code, reason }) => {
+      const { submit } = mountFollower()
+
+      answerWithOpsResult(rejection(await submit(operation), code))
+
+      expect(toastDescriptions()).toEqual([expect.stringContaining(reason)])
+    }
+  )
+
+  it('keeps the target but omits a blank rejection code', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), ''))
+
+    expect(toastDescriptions()).toEqual([
+      expect.stringMatching(
+        new RegExp(`${GENERIC_REJECTION_TEXT}.*Rejected: node 3 seed$`)
+      )
+    ])
+  })
+
   it('shares one notice between a refusal the minter raised and a host rejection', async () => {
     const { submit, follower } = mountFollower()
 
-    follower.notifyWidgetWriteRefused()
+    follower.notifyWidgetWriteRefused(3, 'seed')
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
+      )
     ])
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
+      )
     ])
   })
 
@@ -326,8 +418,6 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  // A permanent seen-message set would pass the suppression test above and
-  // then silence every later rejection for the follower's lifetime.
   it('speaks again once the throttle window has passed', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     onTestFinished(() => {
@@ -337,11 +427,15 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     await vi.advanceTimersByTimeAsync(10_001)
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithOpsResult(
+      rejection(await submit(PUNCTUATED_WIDGET_EDIT), 'unknown_widget')
+    )
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT),
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringContaining('Rejected: node 3 seed (opaque_widgets)'),
+      expect.stringContaining(
+        "Rejected: node 3 Width/Height & 'x' (unknown_widget)"
+      )
     ])
   })
 
@@ -385,7 +479,9 @@ describe('a human edit the doc host rejects', () => {
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(GENERIC_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`^${GENERIC_REJECTION_TEXT}.*Reason: catalog_mismatch$`)
+      )
     ])
     expect(reportedCodes()).toEqual(['catalog_mismatch'])
   })

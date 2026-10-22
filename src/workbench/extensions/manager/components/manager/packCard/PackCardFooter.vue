@@ -3,7 +3,7 @@
     class="flex min-h-12 items-center justify-between px-4 py-2 text-xs/3 font-medium text-muted-foreground"
   >
     <div v-if="nodePack.downloads" class="flex items-center gap-1.5">
-      <i class="pi pi-download text-muted-foreground"></i>
+      <i class="pi pi-download"></i>
       <span>{{ formattedDownloads }}</span>
     </div>
     <div v-else></div>

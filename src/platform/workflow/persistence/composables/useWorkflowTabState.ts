@@ -5,15 +5,18 @@
  * Includes workspaceId for validation to prevent cross-workspace contamination.
  */
 
-import type { ActivePathPointer, OpenPathsPointer } from '../base/draftTypes'
-import { getWorkspaceId } from '../base/storageKeys'
+import type {
+  ActivePathPointer,
+  OpenPathsPointer
+} from '@/platform/workflow/persistence/base/draftTypes'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   clearActivePath,
   readActivePath,
   readOpenPaths,
   writeActivePath,
   writeOpenPaths
-} from '../base/storageIO'
+} from '@/platform/workflow/persistence/base/storageIO'
 import { api } from '@/scripts/api'
 
 /**

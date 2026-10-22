@@ -32,7 +32,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
       <CanvasBanner
         v-if="canvasStore.isPickingNodes"
         data-testid="node-selection-mode-banner"
-        accent="border-l-primary-background"
+        accent="border-l-primary"
         class="max-w-lg"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >

@@ -4,13 +4,13 @@ import {
   CUT_AND_REPORT_SECTION
 } from '@/platform/workspace/customDeploymentBrief'
 
-/** Node types a deployment lacks, under the registry pack that has them, or null when no pack is known. */
+/** Node types a deployment lacks, under their pack, or null if none is known. */
 export interface MissingBuildPack {
   packId: string | null
   nodeTypes: readonly string[]
 }
 
-/** A model a deployment lacks, with its folder under models/ and its download link when known. */
+/** A model a deployment lacks, with its models/ folder and download link. */
 export interface MissingBuildModel {
   name: string
   directory: string | null
@@ -79,7 +79,7 @@ export function deploymentBuildBrief(
   ].join('\n')
 }
 
-/** Brief an agent follows to create a custom deployment that runs a workflow Comfy Cloud lacks nodes or models for. */
+/** Agent brief for a custom deployment that runs a workflow Cloud can't. */
 export function workflowDeploymentBrief(
   packs: readonly MissingBuildPack[],
   models: readonly MissingBuildModel[]

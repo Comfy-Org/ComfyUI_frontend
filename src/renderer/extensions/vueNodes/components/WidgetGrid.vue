@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -65,11 +65,7 @@
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
-                      cn(
-                        'col-span-2',
-                        row.widget.hasError &&
-                          'font-bold text-node-stroke-error'
-                      )
+                      cn('col-span-2', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
                     @contextmenu="row.widget.handleContextMenu"
