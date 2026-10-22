@@ -182,7 +182,6 @@ test.describe(
       await bootAgentApp(page, true, {
         objectInfo: 'server',
         settings: {
-          'Comfy.VueNodes.Enabled': true,
           'Comfy.Graph.CanvasInfo': false
         }
       })
