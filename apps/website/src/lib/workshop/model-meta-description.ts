@@ -23,6 +23,19 @@ function cutAtWord(text: string, maxLength: number) {
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`
 }
 
+function cutSummaryToFit(
+  lead: (summary: string | undefined) => string,
+  summary: string | undefined,
+  maxLength: number
+) {
+  const overflow = lead(summary).length - maxLength
+  const cut =
+    summary && summary.length > overflow
+      ? lead(cutAtWord(summary, summary.length - overflow))
+      : lead(summary)
+  return cut.length <= maxLength ? cut : cutAtWord(cut, maxLength)
+}
+
 export function cleanSummary(summary: string | undefined) {
   const text = summary?.replace(/`([^`]*)`/g, '$1').trim()
   return text ? text.replace(/(?<![.!?。！？])$/u, '.') : undefined
@@ -82,15 +95,7 @@ export function modelMetaDescription(
     [compose(lead(summary), price), lead(summary)].find(
       (text) => text.length <= META_DESCRIPTION_MAX
     )
-  if (fitting) return fitting
-  const overflow = lead(summary).length - META_DESCRIPTION_MAX
-  const cut =
-    summary && summary.length > overflow
-      ? lead(cutAtWord(summary, summary.length - overflow))
-      : lead(summary)
-  return cut.length <= META_DESCRIPTION_MAX
-    ? cut
-    : cutAtWord(cut, META_DESCRIPTION_MAX)
+  return fitting ?? cutSummaryToFit(lead, summary, META_DESCRIPTION_MAX)
 }
 
 export function workflowMetaDescription(
@@ -99,14 +104,16 @@ export function workflowMetaDescription(
 ) {
   const { t } = translationsFor(locale)
   const summary = cleanSummary(model.summary)
-  const lead = summary
-    ? t('workshop.model.meta.lead', { who: model.name, summary })
-    : t('workshop.model.meta.leadNoSummary', { who: model.name })
-  const full = [lead, t('workshop.workflow.meta.hub')].join(
+  const lead = (shown: string | undefined) =>
+    shown
+      ? t('workshop.model.meta.lead', { who: model.name, summary: shown })
+      : t('workshop.model.meta.leadNoSummary', { who: model.name })
+  const full = [lead(summary), t('workshop.workflow.meta.hub')].join(
     locale === 'en' ? ' ' : ''
   )
   return (
-    [full, lead].find((text) => text.length <= WORKFLOW_DESCRIPTION_MAX) ??
-    cutAtWord(lead, WORKFLOW_DESCRIPTION_MAX)
+    [full, lead(summary)].find(
+      (text) => text.length <= WORKFLOW_DESCRIPTION_MAX
+    ) ?? cutSummaryToFit(lead, summary, WORKFLOW_DESCRIPTION_MAX)
   )
 }

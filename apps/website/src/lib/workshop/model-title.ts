@@ -8,7 +8,8 @@ function shortenAtWord(text: string, max: number) {
   if (text.length <= max) return text
   const limit = max - ELLIPSIS.length
   const wordEnd = text.lastIndexOf(' ', limit)
-  return `${text.slice(0, wordEnd > 0 ? wordEnd : limit)}${ELLIPSIS}`
+  const cut = text.slice(0, wordEnd > 0 ? wordEnd : limit)
+  return `${cut.replace(/[\uD800-\uDBFF]$/, '')}${ELLIPSIS}`
 }
 
 export function modelTitle(model: { name: string }, locale: Locale = 'en') {

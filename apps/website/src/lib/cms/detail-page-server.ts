@@ -3,18 +3,11 @@ import type { APIContext } from 'astro'
 import { CATALOG_LOCALES } from '@/config/catalog-locales'
 import type { Locale } from '@/config/locales'
 import { isIndexableModelPage } from '@/config/indexing'
-import { modelDeveloper } from '@/config/model-vendors'
 import { modelsPageDataSchema } from '@/config/models-page-data'
 import type { ModelsPageData } from '@/config/models-page-data'
-import {
-  modelMetaDescription,
-  workflowMetaDescription
-} from '@/lib/workshop/model-meta-description'
-import { modelTitle, workflowTitle } from '@/lib/workshop/model-title'
+import { detailPageHead } from '@/lib/workshop/detail-head'
 import { modelOgImage, prepareModelPage } from '@/routes/models/model-page'
 import { pageContext } from '@/utils/jsonLd'
-import { modelPageJsonLd } from '@/utils/modelJsonLd'
-import { workflowPageJsonLd } from '@/utils/workflowJsonLd'
 import { catalogUnavailable, loadSiteCatalog } from './catalog'
 import { catalogLocaleTranslated } from './catalog-presentation'
 import { catalogDetailPath } from './detail-route'
@@ -104,29 +97,19 @@ export function catalogDetailHead(
   const canonicalPath = hubLocalePrefix(pathname) + model.href
   const { siteUrl, url } = pageContext(site, canonicalPath, currentLocale)
   const ogImage = modelOgImage(model)
-  const workflow = model.workflowId !== undefined
+  const { title, description, jsonLd } = detailPageHead(
+    page,
+    url,
+    siteUrl,
+    locale
+  )
   return {
-    title: workflow ? workflowTitle(model, locale) : modelTitle(model, locale),
-    description: workflow
-      ? workflowMetaDescription(model, locale)
-      : modelMetaDescription(page, locale),
+    title,
+    description,
     canonicalPath,
     ogImage,
     ogImageAlt: ogImage && `${model.name} example output`,
-    jsonLd: workflow
-      ? workflowPageJsonLd({
-          model,
-          useCaseLabel: page.useCaseLabel,
-          url,
-          siteUrl
-        })
-      : modelPageJsonLd({
-          model,
-          useCaseLabel: page.useCaseLabel,
-          url,
-          siteUrl,
-          developer: modelDeveloper(model.provider)
-        })
+    jsonLd
   }
 }
 

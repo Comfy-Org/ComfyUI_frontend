@@ -5,11 +5,8 @@ import LocalModelPage from './LocalModelPage.vue'
 import ModelsPage from './ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { isIndexableModelPage } from '@/config/indexing'
-import { modelDeveloper } from '@/config/model-vendors'
-import { modelMetaDescription } from '@/lib/workshop/model-meta-description'
-import { modelTitle } from '@/lib/workshop/model-title'
+import { detailPageHead } from '@/lib/workshop/detail-head'
 import { pageContext } from '@/utils/jsonLd'
-import { modelPageJsonLd } from '@/utils/modelJsonLd'
 import { modelOgImage, prepareModelPage } from '@/routes/models/model-page'
 
 interface Props {
@@ -24,19 +21,13 @@ const { siteUrl, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale
 )
-const jsonLd = modelPageJsonLd({
-  model,
-  useCaseLabel: page.useCaseLabel,
-  url,
-  siteUrl,
-  developer: modelDeveloper(model.provider)
-})
+const { title, description, jsonLd } = detailPageHead(page, url, siteUrl)
 const ogImage = modelOgImage(model)
 ---
 
 <BaseLayout
-  title={modelTitle(model)}
-  description={modelMetaDescription(page)}
+  title={title}
+  description={description}
   ogImage={ogImage}
   ogImageAlt={ogImage && `${model.name} example output`}
   canonicalPath={model.href}
