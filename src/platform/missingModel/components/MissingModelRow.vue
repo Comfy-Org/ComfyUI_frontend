@@ -176,17 +176,12 @@
         </span>
       </template>
 
-      <Button
+      <LocateNodeButton
         v-if="!hasMultipleReferences && !isUnknownCategory && primaryReference"
         data-testid="missing-model-locate"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('rightSidePanel.missingModels.locateNode')"
-        class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-        @click="handleLocatePrimary"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-      </Button>
+        :label="locateNodeLabelFor(primaryReference.nodeId)"
+        @locate="handleLocatePrimary"
+      />
     </div>
 
     <TransitionCollapse>
@@ -214,16 +209,12 @@
                 getNodeDisplayLabel(ref.nodeId, model.representative.nodeType)
               }}
             </button>
-            <Button
+            <LocateNodeButton
               data-testid="missing-model-locate"
-              variant="muted-textonly"
-              size="icon-sm"
-              :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-              @click="emit('locateModel', String(ref.nodeId))"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-            </Button>
+              class="ml-auto"
+              :label="locateNodeLabelFor(ref.nodeId)"
+              @locate="emit('locateModel', String(ref.nodeId))"
+            />
           </div>
         </li>
       </ul>
@@ -245,6 +236,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
@@ -451,6 +443,14 @@ function handleOpenGatedRepo() {
 function handleLocatePrimary() {
   const ref = primaryReference.value
   if (ref) emit('locateModel', String(ref.nodeId))
+}
+
+function locateNodeLabelFor(nodeId: string | number): string {
+  return t(
+    'rightSidePanel.locateNodeFor',
+    { item: getNodeDisplayLabel(nodeId, model.representative.nodeType) },
+    { escapeParameter: false }
+  )
 }
 
 function copyModelLink() {
