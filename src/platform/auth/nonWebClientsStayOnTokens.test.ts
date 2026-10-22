@@ -162,6 +162,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']

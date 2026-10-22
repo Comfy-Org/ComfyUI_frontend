@@ -4,6 +4,7 @@
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
     />
+    <BillingLocalCreditBanner />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -81,6 +82,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
 import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
@@ -123,7 +125,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 

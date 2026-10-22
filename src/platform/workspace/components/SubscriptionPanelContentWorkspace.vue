@@ -436,7 +436,8 @@ const {
   canReactivatePlan,
   canOpenPricingSurface
 } = useWorkspaceUI()
-const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
+const { canChangeSeats, canSubscribeSelfServe, runDeniedPaymentPastDue } =
+  useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -531,12 +532,14 @@ const isTeamActive = computed(
   () => isTeamPlan.value && canAccessSubscriptionFeatures.value
 )
 
-const isMemberView = computed(
-  () =>
+const isMemberView = computed(() => {
+  if (runDeniedPaymentPastDue.value) return false
+  return (
     !permissions.value.canManageSubscription &&
     !canAccessSubscriptionFeatures.value &&
     !isWorkspaceSubscribed.value
-)
+  )
+})
 
 const showZeroState = computed(
   () => showTeamSubscribePrompt.value || isMemberView.value

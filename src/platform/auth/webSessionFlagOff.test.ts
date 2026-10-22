@@ -178,6 +178,7 @@ const CAPABILITIES = {
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
     can_manage_subscription: false,
+    can_open_plans: false,
     can_run_workflows: false,
     can_upgrade: false
   } satisfies BillingCapabilities,
@@ -213,6 +214,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']

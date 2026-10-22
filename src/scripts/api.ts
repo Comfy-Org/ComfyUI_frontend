@@ -445,6 +445,23 @@ export class PromptExecutionError extends Error {
   }
 }
 
+interface LaunchContext {
+  host: string
+  base: string
+  initialClientId: string | null
+}
+
+function readLaunchContext(): LaunchContext {
+  return {
+    host: location.host,
+    base: isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/'),
+    initialClientId:
+      withClientIdStorage((storage) =>
+        storage.getItem(CLIENT_ID_STORAGE_KEY)
+      ) ?? null
+  }
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -456,12 +473,7 @@ export class ComfyApi extends EventTarget {
     EventListenerOrEventListenerObject,
     EventListener
   >()
-  api_host: string
-  api_base: string
-  /**
-   * The client id from the initial session storage.
-   */
-  initialClientId: string | null
+  private launchContext?: LaunchContext
   /**
    * The current client id from websocket status updates.
    */
@@ -531,14 +543,44 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
-    this.initialClientId =
-      withClientIdStorage((storage) =>
-        storage.getItem(CLIENT_ID_STORAGE_KEY)
-      ) ?? null
+  }
+
+  /**
+   * Snapshots the page host, base path, and stored client id. Runs on first
+   * use; the bootstrap calls it before routing can change the location.
+   */
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
+    this.launchContext ??= readLaunchContext()
+    return this.launchContext
+  }
+
+  get api_host(): string {
+    return this.capturedLaunchContext.host
+  }
+
+  set api_host(host: string) {
+    this.launchContext = { ...this.capturedLaunchContext, host }
+  }
+
+  get api_base(): string {
+    return this.capturedLaunchContext.base
+  }
+
+  set api_base(base: string) {
+    this.launchContext = { ...this.capturedLaunchContext, base }
+  }
+
+  /** The client id from the initial session storage. */
+  get initialClientId(): string | null {
+    return this.capturedLaunchContext.initialClientId
+  }
+
+  set initialClientId(initialClientId: string | null) {
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
