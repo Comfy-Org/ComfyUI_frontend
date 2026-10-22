@@ -800,11 +800,12 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('closes beforeLoadGraph with an abort when the graph is cleared during activation', async () => {
+    it('closes beforeLoadGraph with an abort when another root graph replaces the load during activation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
-        app.clean()
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        throw new DOMException('Workflow load was replaced', 'AbortError')
       })
 
       await expect(
@@ -3509,7 +3510,8 @@ describe('ComfyApp', () => {
       graph.configure(serialisedGraph(workflowId))
       await workflowService.afterLoadNewGraph(
         workflow,
-        workflowGraphData(workflowId)
+        workflowGraphData(workflowId),
+        graph
       )
     }
 

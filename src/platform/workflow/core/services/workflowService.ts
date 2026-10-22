@@ -2,7 +2,11 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  Point,
+  SerialisableGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -55,24 +59,14 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
-/**
- * Returns the root graph id to scope run errors by, minting one when the graph
- * carries the zero id. Every caller passes `rootGraph.serialize()` as
- * `workflowData`, and `app.clean()` mints a fresh root id before `loadApiJson`
- * and `importA1111` populate the graph, so the zero id only survives here when
- * something upstream skipped both. The id is written back into `workflowData`
- * only in that zero-id case, so a `configure()`-based load (where
- * `rootGraph.id` already came from `workflowData.id`) can never have this
- * rewrite the incoming workflow's identity to a stale graph's id.
- */
-function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
-  if (!useApp().isGraphReady) return null
-
-  const rootGraph = useApp().rootGraph
-  if (rootGraph.id === zeroUuid) {
-    workflowData.id = ensureNonZeroUuid(rootGraph)
+function adoptRootGraphId(
+  workflowData: ComfyWorkflowJSON,
+  graph: LGraph
+): UUID {
+  if (graph.id === zeroUuid) {
+    workflowData.id = ensureNonZeroUuid(graph)
   }
-  return rootGraph.id
+  return graph.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
@@ -748,11 +742,10 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
+    graph: LGraph,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(value, workflowData, shareId)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    await activateLoadedWorkflow(value, workflowData, graph, shareId)
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
@@ -761,17 +754,17 @@ export const useWorkflowService = () => {
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
+    graph: LGraph,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
-    const rootGraphId = adoptRootGraphId(workflowData)
+    const rootGraphId = adoptRootGraphId(workflowData, graph)
 
     function activateLoadedGraph(workflow: ComfyWorkflow) {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
-      workflow.adoptGraph(useApp().rootGraph)
+      workflow.adoptGraph(graph)
     }
 
     // Determine the initial app mode for fresh loads from serialized state.
@@ -815,7 +808,6 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
-          if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateLoadedGraph(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -851,13 +843,11 @@ export const useWorkflowService = () => {
       }
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
-      if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateLoadedGraph(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateLoadedGraph(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
