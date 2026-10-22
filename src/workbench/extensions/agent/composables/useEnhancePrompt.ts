@@ -5,18 +5,18 @@ import { computed, onScopeDispose, shallowRef } from 'vue'
 import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import type { EnhancePromptFn } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 
-export type EnhancePromptState =
+type EnhancePromptState =
   | { phase: 'idle' }
   | { phase: 'processing'; original: string }
   | { phase: 'revealing'; original: string; target: string }
 
-export type RevealPromptInput = {
+type RevealPromptInput = {
   text: string
   write: (shown: string) => void
   signal: AbortSignal
 }
 
-export type RevealPrompt = (input: RevealPromptInput) => Promise<void>
+type RevealPrompt = (input: RevealPromptInput) => Promise<void>
 
 const WORD_REVEAL_MS = 24
 
