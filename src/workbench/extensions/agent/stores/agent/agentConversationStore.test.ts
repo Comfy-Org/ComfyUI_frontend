@@ -2151,7 +2151,10 @@ describe('useAgentConversationStore', () => {
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
       store.dismissOpenAsks()
-      store.retireAsk('turn-1:call-1', { status: 'answered', selected: ['run'] })
+      store.retireAsk('turn-1:call-1', {
+        status: 'answered',
+        selected: ['run']
+      })
 
       expect(store.messages[0].parts).toContainEqual(
         expect.objectContaining({ type: 'runApproval', dismissed: true })
