@@ -1,3 +1,4 @@
+import type { AgentPanelOpenedMetadata } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
@@ -37,7 +38,10 @@ function resolveNodes(nodeIds: readonly NodeId[]): SelectedNode[] {
  * Adds each node as a composer reference chip, focuses the composer after the
  * last chip, and opens the agent panel if it is closed.
  */
-export function referenceNodesInAgent(nodeIds: readonly NodeId[]): boolean {
+export function referenceNodesInAgent(
+  nodeIds: readonly NodeId[],
+  source: AgentPanelOpenedMetadata['source'] = 'selection_toolbox'
+): boolean {
   const panel = useAgentPanelStore()
   if (!panel.enabled) return false
 
@@ -56,6 +60,6 @@ export function referenceNodesInAgent(nodeIds: readonly NodeId[]): boolean {
     ...nodes.filter((node) => !existingKeys.has(selectedNodeKey(node)))
   ])
   composer.requestEditorFocus()
-  if (!panel.isOpen) panel.open('selection_toolbox')
+  if (!panel.isOpen) panel.open(source)
   return true
 }

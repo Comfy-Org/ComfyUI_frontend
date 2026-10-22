@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect } from 'storybook/test'
 
+import { seedAskAgentComposerFromNode } from '@/components/graph/seedAskAgentComposerFromNode'
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
@@ -90,6 +91,44 @@ export const OneNodeChip: Story = {
       template: '<story />'
     })
   ]
+}
+
+export const StarterPromptFilled: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        seedAskAgentComposerFromNode({
+          id: 5,
+          title: 'ModelSamplingAuraFlow',
+          text: 'Explain this node for me'
+        })
+        return {}
+      },
+      template: '<story />'
+    })
+  ],
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
+}
+
+export const PartnerStarterPromptFilled: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        seedAskAgentComposerFromNode({
+          id: 9,
+          title: 'ByteDance Seedance 2.5 First-Last-Frame to Video',
+          text: 'Enhance the prompt considering the purpose of this workflow'
+        })
+        return {}
+      },
+      template: '<story />'
+    })
+  ],
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
 }
 
 export const MultipleNodeChips: Story = {

@@ -663,6 +663,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'automatic_consent'
     | 'activation'
     | 'selection_toolbox'
+    | 'node_hover'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'

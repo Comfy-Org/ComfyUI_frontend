@@ -32,6 +32,7 @@ import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/compos
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -769,6 +770,36 @@ describe('LGraphNode', () => {
     expect(
       screen.queryByRole('button', { name: /show advanced/i })
     ).not.toBeInTheDocument()
+  })
+
+  describe('Ask agent hover mount', () => {
+    it('does not mount the hover when the agent panel is disabled', () => {
+      useAgentPanelStore().enabled = false
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(screen.queryByTestId('node-ask-agent-hover')).toBeNull()
+    })
+
+    it('mounts the hover when the agent panel is enabled', () => {
+      useAgentPanelStore().enabled = true
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(screen.getByTestId('node-ask-agent-hover')).toBeInTheDocument()
+    })
+
+    it('does not mount the hover on reroute or ghost nodes', () => {
+      useAgentPanelStore().enabled = true
+      const { unmount } = renderLGraphNode({
+        nodeData: mockRerouteNodeData
+      })
+      expect(screen.queryByTestId('node-ask-agent-hover')).toBeNull()
+      unmount()
+
+      renderLGraphNode({
+        nodeData: { ...mockNodeData, flags: { ghost: true } }
+      })
+      expect(screen.queryByTestId('node-ask-agent-hover')).toBeNull()
+    })
   })
 
   describe('Reroute node sizing', () => {

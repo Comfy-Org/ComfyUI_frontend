@@ -250,6 +250,10 @@
         </svg>
       </div>
     </template>
+    <NodeAskAgentHover
+      v-if="panel.enabled && !isRerouteNode && !nodeData.flags?.ghost"
+      :node-id="nodeData.id"
+    />
   </div>
 </template>
 
@@ -259,6 +263,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
+import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -306,6 +311,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -336,6 +342,7 @@ const { nodeData } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const panel = useAgentPanelStore()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()

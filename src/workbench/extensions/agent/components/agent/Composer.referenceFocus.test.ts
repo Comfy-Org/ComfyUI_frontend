@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { seedAskAgentComposerFromNode } from '@/components/graph/seedAskAgentComposerFromNode'
 import { i18n } from '@/i18n'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
@@ -10,6 +11,7 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/telemetry'))
 
 function renderComposer() {
   const store = useAgentComposerStore()
@@ -66,5 +68,26 @@ describe('composer focus after node reference chips', () => {
 
     expect(store.prompt.text).toBe(' hello')
     expect(store.prompt.references[0]?.textOffset).toBe(0)
+  })
+
+  it('focuses after a hover starter fills chip plus template text', async () => {
+    const { editor, store } = renderComposer()
+    expect(
+      seedAskAgentComposerFromNode({
+        id: 5,
+        title: 'KSampler',
+        text: 'Explain this node for me',
+        instanceId: 'workflow-A'
+      })
+    ).toBe(true)
+
+    await waitFor(() => expect(editor).toHaveFocus())
+    await userEvent.keyboard('!')
+
+    expect(store.prompt.text).toBe('Explain this node for me!')
+    expect(store.prompt.references[0]?.textOffset).toBe(0)
+    expect(store.insertionPoint.textOffset).toBe(
+      'Explain this node for me!'.length
+    )
   })
 })

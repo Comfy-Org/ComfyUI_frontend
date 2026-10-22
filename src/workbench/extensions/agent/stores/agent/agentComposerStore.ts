@@ -550,6 +550,18 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     releaseUnusedAssets()
   }
 
+  const submitRequestId = ref(0)
+
+  function requestSubmit(): void {
+    submitRequestId.value += 1
+  }
+
+  function consumeSubmitRequest(): boolean {
+    if (submitRequestId.value === 0) return false
+    submitRequestId.value = 0
+    return true
+  }
+
   return {
     draftState,
     draft,
@@ -564,6 +576,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     insertionPoint,
     editorFocusEpoch,
     submission,
+    submitRequestId,
     setText,
     setInsertionPoint,
     requestEditorFocus,
@@ -588,6 +601,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    requestSubmit,
+    consumeSubmitRequest
   }
 })
