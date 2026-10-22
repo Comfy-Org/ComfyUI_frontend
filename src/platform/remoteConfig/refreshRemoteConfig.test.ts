@@ -382,9 +382,9 @@ describe('refreshRemoteConfig', () => {
           useAuth: false,
           timeoutMs: 12_000
         })
-        await vi.advanceTimersByTimeAsync(5_001)
+        await vi.advanceTimersByTimeAsync(11_999)
         expect(signal?.aborted).toBe(false)
-        await vi.advanceTimersByTimeAsync(7_000)
+        await vi.advanceTimersByTimeAsync(1)
         expect(signal?.aborted).toBe(true)
         await refresh
         expect(remoteConfigState.value).toBe('error')
