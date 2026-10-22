@@ -34,9 +34,16 @@ beforeEach(() => {
 const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
-    props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
+    props: [
+      'widget',
+      'modelValue',
+      'nodeId',
+      'nodeType',
+      'widgetId',
+      'hideEnhance'
+    ],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" :data-widget-id="widgetId ?? \'\'" :data-hide-enhance="hideEnhance ? \'true\' : \'\'" />'
   }
 }))
 
@@ -144,8 +151,8 @@ function getStubWidget(container: Element) {
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
     value: el.getAttribute('data-widget-value'),
-    widgetId: el.getAttribute('widget-id'),
-    hideEnhance: el.hasAttribute('hide-enhance')
+    widgetId: el.getAttribute('data-widget-id'),
+    hideEnhance: el.getAttribute('data-hide-enhance') === 'true'
   }
 }
 
@@ -424,7 +431,7 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(spy).not.toHaveBeenCalled()
-      expect(stub.widgetId).toBeNull()
+      expect(stub.widgetId).toBe('')
       expect(stub.hideEnhance).toBe(false)
       spy.mockRestore()
     })
