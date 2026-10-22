@@ -300,7 +300,9 @@ test.describe(
         await page.evaluate((id) => window.app!.graph.removeLink(id), linkId!)
       })
 
-      await expect.poll(() => childSlot(host)?.link ?? null).toBeNull()
+      await expect
+        .poll(() => childSlot(host))
+        .toEqual(expect.objectContaining({ name: CHILD, link: null }))
       expect(host.projection().links).toEqual([])
       expect(
         hostSocket
