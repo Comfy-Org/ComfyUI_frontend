@@ -10,7 +10,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -79,6 +81,10 @@ vi.mock<unknown>(
     }
   }
 )
+
+vi.mock(import('@/platform/assets/utils/assetUrlUtil'), { spy: true })
+
+vi.mock(import('@/base/common/downloadUtil'))
 
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
@@ -370,9 +376,7 @@ describe('AssetsSidebarTab gallery selection', () => {
       'b.png'
     )
 
-    /* oxlint-disable testing-library/prefer-user-event -- keyDown on the dialog element drives lightbox navigation; there is no text input to type into */
-    await fireEvent.keyDown(screen.getByRole('dialog'), { key: 'ArrowRight' })
-    /* oxlint-enable testing-library/prefer-user-event */
+    await userEvent.keyboard('{ArrowRight}')
     expect(screen.getByTestId('lightbox-filename')).toHaveTextContent('c.png')
 
     useAssetsStore().outputAssets.items = [
@@ -384,5 +388,23 @@ describe('AssetsSidebarTab gallery selection', () => {
     await nextTick()
 
     expect(screen.getByTestId('lightbox-filename')).toHaveTextContent('c.png')
+  })
+
+  it('downloads the asset file rather than its preview rendition', async () => {
+    const asset = {
+      ...folderAsset,
+      id: 'b',
+      name: 'b.png',
+      preview_url: '/api/assets/b/preview'
+    }
+    useAssetsStore().outputAssets.items = [asset]
+    vi.mocked(getAssetFileUrl).mockReturnValueOnce('/api/assets/b/content')
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    await userEvent.click(await screen.findByLabelText('Download'))
+
+    expect(downloadFile).toHaveBeenCalledWith('/api/assets/b/content', 'b.png')
   })
 })

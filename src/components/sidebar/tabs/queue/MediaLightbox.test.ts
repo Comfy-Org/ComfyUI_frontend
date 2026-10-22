@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -70,7 +70,7 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      url: 'image2.jpg',
+      url: '/api/assets/2/preview',
       id: '2'
     },
     {
@@ -165,7 +165,30 @@ describe('MediaLightbox', () => {
 
     await user.click(screen.getByLabelText('Download'))
 
-    expect(downloadFile).toHaveBeenCalledWith('image2.jpg', 'image2.jpg')
+    expect(downloadFile).toHaveBeenCalledWith(
+      '/api/assets/2/preview',
+      'image2.jpg'
+    )
+  })
+
+  it('downloads the item file rather than the preview it renders', async () => {
+    const { user } = renderGallery({
+      allGalleryItems: [
+        {
+          ...mockGalleryItems[0],
+          url: '/api/assets/1/preview',
+          downloadUrl: '/api/assets/1/content'
+        }
+      ]
+    })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Download'))
+
+    expect(downloadFile).toHaveBeenCalledWith(
+      '/api/assets/1/content',
+      'image1.jpg'
+    )
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
@@ -221,57 +244,47 @@ describe('MediaLightbox', () => {
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
 
-  /* oxlint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowRight'
-      })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(1)
     })
 
     it('navigates to previous item on ArrowLeft', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(0)
     })
 
     it('wraps to last item on ArrowLeft from first', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'ArrowLeft'
-      })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
     it('closes gallery on Escape', async () => {
-      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
+      const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await fireEvent.keyDown(screen.getByRole('dialog'), {
-        key: 'Escape'
-      })
+      await user.keyboard('{Escape}')
       await nextTick()
 
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
     })
   })
-  /* oxlint-enable testing-library/prefer-user-event */
 
   /* oxlint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {
