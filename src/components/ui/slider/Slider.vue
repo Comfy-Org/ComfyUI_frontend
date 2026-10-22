@@ -15,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<
   SliderRootProps & {
+    ariaLabel?: HTMLAttributes['aria-label']
     class?: HTMLAttributes['class']
     rangeClass?: HTMLAttributes['class']
     thumbClass?: HTMLAttributes['class']
@@ -28,7 +29,13 @@ const setPressed = (val: boolean) => {
 
 const emits = defineEmits<SliderRootEmits>()
 
-const delegatedProps = reactiveOmit(props, 'class', 'rangeClass', 'thumbClass')
+const delegatedProps = reactiveOmit(
+  props,
+  'class',
+  'rangeClass',
+  'thumbClass',
+  'ariaLabel'
+)
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
@@ -76,6 +83,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       v-for="(_, key) in modelValue"
       :key="key"
       data-slot="slider-thumb"
+      :aria-label="props.ariaLabel"
       :class="
         cn(
           'block size-3.5 shrink-0 rounded-full bg-muted-foreground shadow-sm ring-foreground transition-[color,box-shadow]',

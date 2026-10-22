@@ -25,7 +25,7 @@
             :min="MIN_TIDY_GAP"
             :max="MAX_TIDY_GAP"
             :step="1"
-            :aria-label="t('g.arrangeSpacing')"
+            :aria-label="t('g.gapHandle')"
             @update:model-value="onSliderUpdate"
             @value-commit="onSliderCommit"
           />

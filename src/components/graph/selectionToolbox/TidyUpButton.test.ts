@@ -28,7 +28,7 @@ const i18n = createI18n({
         tidyUp: 'Tidy up',
         tidyUpTooltip: 'Tidy up the selection',
         gapHandle: 'Gap between nodes',
-        arrangeSpacing: 'Arrangement spacing'
+        gapValue: '{value} canvas units'
       }
     }
   }
@@ -122,6 +122,8 @@ describe('TidyUpButton', () => {
     const { lift } = useSelectionToolboxLift()
     const { user } = await openBar()
 
+    expect(screen.getByRole('slider')).toHaveAccessibleName('Gap between nodes')
+
     await user.click(screen.getByRole('button', { name: 'Bypass' }))
     await nextTick()
 
@@ -191,8 +193,7 @@ describe('TidyUpButton', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     await user.click(screen.getByRole('button', { name: 'Tidy up' }))
     const slider = await screen.findByRole('slider')
-    const handle = await screen.findByRole('separator')
-    expect(handle).toHaveAttribute('aria-orientation', 'vertical')
+    const handle = await screen.findByRole('spinbutton')
 
     await user.type(slider, 'a')
     expect(second.pos[0] - first.pos[0] - 160).toBe(30)

@@ -50,13 +50,14 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     const node = await comfyPage.nodeOps.getNodeRefByTitle('Markdown Note')
     const position = async () =>
       Array.from(await node.getProperty<[number, number]>('pos'))
-    const handle = page.getByRole('separator', { name: 'Gap between nodes' })
+    const handle = page.getByRole('spinbutton', { name: 'Gap between nodes' })
 
     await test.step('open the slider and gap handles', async () => {
       await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
-      await expect(page.getByRole('slider')).toBeVisible()
+      await expect(
+        page.getByRole('slider', { name: 'Gap between nodes' })
+      ).toBeVisible()
       await expect(handle).toBeVisible()
-      await expect(handle).toHaveAttribute('aria-orientation', 'horizontal')
     })
 
     const before = await position()
@@ -81,11 +82,11 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
 
     await test.step('held arrow presses create one undoable edit', async () => {
       await handle.focus()
-      await page.keyboard.down('ArrowDown')
+      await page.keyboard.down('ArrowUp')
       await comfyPage.nextFrame()
-      await page.keyboard.down('ArrowDown')
-      await page.keyboard.down('ArrowDown')
-      await page.keyboard.up('ArrowDown')
+      await page.keyboard.down('ArrowUp')
+      await page.keyboard.down('ArrowUp')
+      await page.keyboard.up('ArrowUp')
       const after = [before[0], before[1] + 3]
       await expect.poll(position).toEqual(after)
       await comfyPage.keyboard.undo()

@@ -28,7 +28,14 @@ const row: LayoutBox[] = [
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { gapHandle: 'Gap between nodes' } } }
+  messages: {
+    en: {
+      g: {
+        gapHandle: 'Gap between nodes',
+        gapValue: '{value} canvas units'
+      }
+    }
+  }
 })
 
 describe('SelectionGapHandles', () => {
@@ -82,7 +89,7 @@ describe('SelectionGapHandles', () => {
     const view = render(SelectionGapHandles, {
       global: { plugins: [i18n] }
     })
-    const handle = await screen.findByRole('separator', {
+    const handle = await screen.findByRole('spinbutton', {
       name: 'Gap between nodes'
     })
     return { ...view, handle }
@@ -97,6 +104,65 @@ describe('SelectionGapHandles', () => {
     pointerName,
     target: document.body,
     coords: { clientX, clientY: 50 }
+  })
+
+  it.for([
+    { key: 'ArrowUp', gap: 151, vertical: false },
+    { key: 'ArrowDown', gap: 149, vertical: false },
+    { key: 'ArrowRight', gap: 151, vertical: false },
+    { key: 'ArrowLeft', gap: 149, vertical: false },
+    { key: 'ArrowDown', gap: 149, vertical: true }
+  ])(
+    'announces an unbounded gap after $key, vertical: $vertical',
+    async ({ key, gap, vertical }) => {
+      let boxes = row.map((box, index) =>
+        vertical ? { ...box, x: 0, y: index * 250 } : { ...box, x: index * 350 }
+      )
+      vi.mocked(useSelectionGrid).mockReturnValue({
+        ...useSelectionGrid(),
+        measure: () => boxes
+      })
+      moveBoxes.mockImplementation((_nodes, positions) => {
+        boxes = boxes.map((box) => ({
+          ...box,
+          ...positions.find(({ id }) => id === box.id)
+        }))
+        return true
+      })
+      const user = userEvent.setup()
+      const { handle } = await renderHandles()
+      expect(handle).toHaveAttribute('aria-valuenow', '150')
+      expect(handle).toHaveAttribute('aria-valuemin', '0')
+      expect(handle).not.toHaveAttribute('aria-valuemax')
+      handle.focus()
+
+      await user.keyboard(`{${key}}`)
+
+      await waitFor(() =>
+        expect(handle).toHaveAttribute('aria-valuenow', String(gap))
+      )
+      expect(handle).toHaveAttribute('aria-valuetext', `${gap} canvas units`)
+      expect(recordUndoStep).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('announces the shrink limit imposed by another row', async () => {
+    vi.mocked(useSelectionGrid).mockReturnValue({
+      ...useSelectionGrid(),
+      measure: () => [
+        { id: toNodeId('a'), x: 0, y: 0, width: 200, height: 100 },
+        { id: toNodeId('b'), x: 350, y: 0, width: 150, height: 100 },
+        { id: toNodeId('c'), x: 0, y: 200, width: 300, height: 100 },
+        { id: toNodeId('d'), x: 350, y: 200, width: 150, height: 100 }
+      ]
+    })
+    render(SelectionGapHandles, { global: { plugins: [i18n] } })
+
+    const handles = await screen.findAllByRole('spinbutton')
+    const wideGap = handles.find(
+      (handle) => handle.getAttribute('aria-valuenow') === '150'
+    )
+    expect(wideGap).toHaveAttribute('aria-valuemin', '100')
   })
 
   it('follows only the pointer that started the drag', async () => {

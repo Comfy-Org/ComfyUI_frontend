@@ -7,11 +7,14 @@
       v-for="bar in screenBars"
       :key="bar.key"
       data-gap-handle
-      role="separator"
+      role="spinbutton"
       tabindex="0"
       :aria-label="t('g.gapHandle')"
-      :aria-orientation="AXIS_STYLES[bar.axis].orientation"
+      :aria-valuemin="
+        Math.min(Math.ceil(bar.gap - bar.clearance), Math.round(bar.gap))
+      "
       :aria-valuenow="Math.round(bar.gap)"
+      :aria-valuetext="t('g.gapValue', { value: Math.round(bar.gap) })"
       :class="
         cn(
           'group pointer-events-auto absolute flex -translate-1/2 touch-none items-center justify-center rounded-full outline-none',
@@ -88,29 +91,21 @@ interface ScreenBar extends GapBar {
 const AXIS_STYLES: Record<
   GapAxis,
   {
-    orientation: 'vertical' | 'horizontal'
     hitArea: string
     pill: string
     label: string
   }
 > = {
   x: {
-    orientation: 'vertical',
     hitArea: 'h-8 w-3 cursor-ew-resize',
     pill: 'h-7 w-1',
     label: 'top-full mt-1'
   },
   y: {
-    orientation: 'horizontal',
     hitArea: 'h-3 w-8 cursor-ns-resize',
     pill: 'h-1 w-7',
     label: 'left-full ml-1'
   }
-}
-
-const NUDGE_KEYS: Record<GapAxis, [decrease: string, increase: string]> = {
-  x: ['ArrowLeft', 'ArrowRight'],
-  y: ['ArrowUp', 'ArrowDown']
 }
 
 const MODIFIER_KEYS = new Set([
@@ -326,9 +321,8 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
 }
 
 const nudgeDirectionOf = (key: string, axis: GapAxis): number => {
-  const [decrease, increase] = NUDGE_KEYS[axis]
-  if (key === increase) return 1
-  if (key === decrease) return -1
+  if (key === 'ArrowUp' || (axis === 'x' && key === 'ArrowRight')) return 1
+  if (key === 'ArrowDown' || (axis === 'x' && key === 'ArrowLeft')) return -1
   return 0
 }
 
@@ -353,7 +347,7 @@ const commitPendingNudges = () => {
 }
 
 function onKeyUp(event: KeyboardEvent, bar: ScreenBar) {
-  if (NUDGE_KEYS[bar.axis].includes(event.key)) commitPendingNudges()
+  if (nudgeDirectionOf(event.key, bar.axis) !== 0) commitPendingNudges()
 }
 
 const unregisterEscapeOverride = registerEscapeOverride(

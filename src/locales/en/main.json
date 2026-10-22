@@ -403,6 +403,7 @@
     "tidyUp": "Tidy up",
     "tidyUpTooltip": "Line the nodes up in rows and columns and even out the gaps",
     "gapHandle": "Gap between nodes",
+    "gapValue": "{value} canvas units",
     "mixedGaps": "Mixed",
     "listening": "Listening...",
     "ready": "Ready",
