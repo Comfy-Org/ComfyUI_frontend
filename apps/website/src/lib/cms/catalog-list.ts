@@ -12,6 +12,7 @@ import type { AuthoringSession } from './authoring-session'
 import { readCatalogCards } from './catalog-cards-response'
 import { catalogPresentation } from './catalog-presentation'
 import { cmsEnabled } from './cms-enabled'
+import { catalogApiOrigin } from './catalog-origin'
 
 export type CatalogListSection = 'models' | 'workflows' | 'apps'
 type ListCccWebsiteCardsQuery = NonNullable<ListCccWebsiteCardsData['query']>
@@ -145,7 +146,7 @@ export async function loadSiteCatalogList(
   params = new URLSearchParams()
 ) {
   const unavailable = { ok: false, status: 503 } as const
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || !cmsEnabled()) return unavailable
   const query = cardQuery(params, section, locale)
   if (!query.success) return unavailable

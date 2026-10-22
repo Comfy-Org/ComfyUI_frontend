@@ -1,5 +1,6 @@
+import { catalogApiOrigin } from './catalog-origin'
+
 // Server-only configuration. Browser islands read same-origin JSON endpoints.
-// Production keeps the static Hub even if the variable is set there.
-export const cmsEnabled = () =>
-  Boolean(process.env.SITE_CATALOG_API_URL) &&
-  process.env.VERCEL_ENV !== 'production'
+// On in deployed previews (the site's own Cloud base URL) and wherever
+// SITE_CATALOG_API_URL is set; production keeps the static Hub regardless.
+export const cmsEnabled = () => Boolean(catalogApiOrigin())

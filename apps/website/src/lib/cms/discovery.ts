@@ -1,3 +1,5 @@
+import { catalogApiOrigin } from './catalog-origin'
+
 function unavailableDocumentation() {
   return new Response('Catalog documentation temporarily unavailable', {
     status: 503,
@@ -37,7 +39,7 @@ function documentationType(path: DocumentationPath) {
   return path.endsWith('/docs') ? 'text/html' : 'text/plain'
 }
 export async function proxyCatalogDocumentation(path: DocumentationPath) {
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || process.env.VERCEL_ENV === 'production')
     return unavailableDocumentation()
   const url = documentationURL(origin, path)

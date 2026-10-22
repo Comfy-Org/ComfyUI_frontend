@@ -278,7 +278,14 @@ run a workflow.
 Unsupported codecs, unavailable verifier and configured lower limits still fail
 closed; this local demo change does not activate any production media service.
 
-With `SITE_CATALOG_API_URL` configured in a non-production review environment,
+The catalog is read from the site's own Cloud base URL: a Vercel preview uses
+the family `PUBLIC_WORKSHOP_CLOUD_ENV` selects (staging, or test with the
+`workshop-test` label), so nothing is configured in Vercel. `SITE_CATALOG_API_URL`
+overrides it for local development and the local demo; without it, local
+development keeps the static Hub. Production keeps the static Hub until the
+catalog's production gates pass (`src/lib/cms/catalog-origin.ts`).
+
+With the catalog on in a non-production review environment,
 `/api/v1/catalog/agents`, `/api/v1/catalog/openapi.json` and
 `/api/v1/catalog/docs` proxy the deployed catalog's editing instructions,
 OpenAPI and self-contained read-only viewer unchanged. Temporary `/agents` and

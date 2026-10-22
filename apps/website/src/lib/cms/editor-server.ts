@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 import type { AuthoringSession } from './authoring-session'
 import { blankDocument, contentTypes, editorSnapshot } from './editor-document'
+import { catalogApiOrigin } from './catalog-origin'
 
 export const editorHeaders = {
   'Cache-Control': 'private, no-store',
@@ -20,7 +21,7 @@ export async function catalogAuthoring(
   path: string,
   init: RequestInit = {}
 ) {
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || process.env.VERCEL_ENV === 'production')
     return editorFailure(503)
   if (

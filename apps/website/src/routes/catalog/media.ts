@@ -1,6 +1,7 @@
 import type { APIRoute, APIContext } from 'astro'
 import { z } from 'astro/zod'
 import { editorHeaders } from '@/lib/cms/editor-server'
+import { catalogApiOrigin } from '@/lib/cms/catalog-origin'
 
 function validPreviewRevision(rev: string | undefined) {
   return Boolean(
@@ -39,7 +40,7 @@ export const GET: APIRoute = async (context) => {
   const request = mediaRequest(context)
   if (!request) return deny()
   const { uid, version, rev, preview, session } = request
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || process.env.VERCEL_ENV === 'production') return deny()
   try {
     const response = await fetch(

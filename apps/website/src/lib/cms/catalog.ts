@@ -8,6 +8,7 @@ import { normalizeProjection } from './catalog-contract'
 import { boundedBody } from './editor-server'
 import { loadSiteCatalogList } from './catalog-list'
 import { cmsEnabled } from './cms-enabled'
+import { catalogApiOrigin } from './catalog-origin'
 
 export { cmsEnabled }
 
@@ -81,7 +82,7 @@ export async function loadSiteCatalog(
   workflowSlug?: string,
   includeRelated = true
 ) {
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || !workflowSlug || !cmsEnabled())
     return { ok: false, status: 503 } as const
   const data = await fetchDetail(origin, workflowSlug, session)

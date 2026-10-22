@@ -2,6 +2,7 @@ import type { AuthoringSession } from './authoring-session'
 import { boundedBody, editorFailure } from './editor-server'
 import type { ReviewFilter } from './staging-review'
 import { filterQuery, stagingSnapshot, finalSnapshot } from './staging-review'
+import { catalogApiOrigin } from './catalog-origin'
 
 export async function catalogReview(
   session: AuthoringSession,
@@ -14,7 +15,7 @@ export async function catalogReview(
   filter: ReviewFilter = {},
   init: RequestInit = {}
 ) {
-  const origin = process.env.SITE_CATALOG_API_URL
+  const origin = catalogApiOrigin()
   if (!origin || process.env.VERCEL_ENV === 'production')
     return editorFailure(503)
   const query = operation === 'staging' ? filterQuery(filter).toString() : ''
