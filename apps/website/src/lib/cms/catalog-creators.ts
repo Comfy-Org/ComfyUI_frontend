@@ -124,19 +124,21 @@ export async function loadCatalogCreator(
   const origin = catalogOrigin()
   if (!origin) return unavailable
   if (!isCreatorUsername(username)) return { status: 'missing' } as const
-  const read = await fetchCatalogJson(
-    new URL(`${CREATORS_PATH}/${encodeURIComponent(username)}`, origin)
-  )
+  const author = username.toLowerCase()
+  const [read, cards] = await Promise.all([
+    fetchCatalogJson(
+      new URL(`${CREATORS_PATH}/${encodeURIComponent(author)}`, origin)
+    ),
+    loadSiteCatalogList(
+      session,
+      locale,
+      'workflows',
+      new URLSearchParams({ author })
+    )
+  ])
   if (read.status === 404) return { status: 'missing' } as const
   const profile = creatorProfileSchema.safeParse(read.data)
-  if (!profile.success) return unavailable
-  const cards = await loadSiteCatalogList(
-    session,
-    locale,
-    'workflows',
-    new URLSearchParams({ author: profile.data.username })
-  )
-  if (!cards.ok) return unavailable
+  if (!profile.success || !cards.ok) return unavailable
   return {
     status: 'ok',
     creator: creatorFromProfile(profile.data),
