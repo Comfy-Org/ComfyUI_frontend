@@ -1,10 +1,10 @@
-import type { BillingDeclineReason } from '../operationState.js'
+import type { BillingDeclineReason } from '#/core/billing/operationState'
 import type {
   BillingFailed,
   BillingRecoveredSucceeded,
   BillingStarted
-} from './stages.js'
-import type { PaymentIntentSource, ResubscribeSource } from './vocabulary.js'
+} from './stages'
+import type { PaymentIntentSource, ResubscribeSource } from './vocabulary'
 
 export type ResubscribeBillingEvent = {
   operation: 'resubscribe'

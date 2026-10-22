@@ -41,6 +41,14 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBloodDrips
+      v-if="
+        !isRerouteNode &&
+        !isCollapsed &&
+        !nodeData.flags?.ghost &&
+        ['spooky', 'zombie'].includes(settingStore.get('Comfy.ColorPalette'))
+      "
+    />
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -309,9 +317,10 @@ import { isTransparent } from '@/utils/colorUtil'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
-import { useNodeResize } from '../interactions/resize/useNodeResize'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
+import NodeBloodDrips from './NodeBloodDrips.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'

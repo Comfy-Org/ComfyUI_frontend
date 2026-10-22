@@ -2,17 +2,21 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { toTurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentChatEvent,
-  AgentEventTransport
-} from '../../services/agent/agentEventTransport'
-import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
+  AgentEventTransport,
+  CanvasSyncEvidence
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
   AssistantMessage
-} from '../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
   createAssistantMessage,
@@ -20,19 +24,19 @@ import {
   isPendingAskPart,
   retireAskParts,
   settleResolution
-} from '../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
   settleLiveMessage
-} from '../../services/agent/agentTranscript'
-import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { createUndeliverableAskReporter } from '@/workbench/extensions/agent/services/agent/undeliverableAskReporter'
 import type {
   NormalizedAgentTranscript,
   UserAttachment
-} from '../../services/agent/agentTranscript'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { SkillReference } from '../../types/skillReference'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
 export type { UserAttachment }
 
@@ -253,7 +257,7 @@ export const useAgentConversationStore = defineStore(
     // that already exist -- passing the variable itself would freeze each
     // transport onto whichever function this variable held at its own
     // creation time.
-    let canvasSyncGate: () => boolean = () => false
+    let canvasSyncGate: (_workflowId?: string) => boolean = () => false
     // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
     // outcome counter a transport compares its per-tool-call baseline
     // against (agentEventTransport.ts's canvasSyncBaseline). Same
@@ -510,7 +514,7 @@ export const useAgentConversationStore = defineStore(
         transport: createAgentEventTransport(
           message,
           replaceActive,
-          () => canvasSyncGate(),
+          (workflowId) => canvasSyncGate(workflowId),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
         )
@@ -644,7 +648,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setCanvasSyncGate(
-      gate: () => boolean,
+      gate: (_workflowId?: string) => boolean,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
@@ -658,15 +662,15 @@ export const useAgentConversationStore = defineStore(
      * catch-up can settle to 'done'. A no-op on a transport with nothing
      * pending.
      */
-    function notifyCanvasCaughtUp(): void {
-      activeSlot.value?.transport.notifyCanvasCaughtUp()
+    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        settledTransport.notifyCanvasCaughtUp(evidence)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+        entry.transport.notifyCanvasCaughtUp(evidence)
     }
 
     function abortActiveTurn(): void {
@@ -1147,7 +1151,7 @@ export const useAgentConversationStore = defineStore(
           transport: createAgentEventTransport(
             pending.message,
             replaceActive,
-            () => canvasSyncGate(),
+            (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
           )

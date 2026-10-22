@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useDialogService as realUseDialogService } from '../dialogService'
+import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 
 type DialogService = ReturnType<typeof realUseDialogService>
 

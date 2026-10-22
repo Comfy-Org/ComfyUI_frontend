@@ -18,7 +18,7 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { IWidgetLocator, ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type {
   ISubgraphInput,
   INodeInputSlot
@@ -36,11 +36,15 @@ import type {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
+  IWidgetLocator,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  coerceRestoredWidgetValue,
+  deriveWidgetRenderState
+} from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -505,8 +509,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
         : widgetValues?.[valueIndex]
-      if (value !== undefined) {
-        useWidgetValueStore().setValue(input.widgetId, value)
+      const state = useWidgetValueStore().getWidget(input.widgetId)
+      if (value !== undefined && state) {
+        useWidgetValueStore().setValue(
+          input.widgetId,
+          coerceRestoredWidgetValue(state, value)
+        )
       }
       valueIndex += 1
     }

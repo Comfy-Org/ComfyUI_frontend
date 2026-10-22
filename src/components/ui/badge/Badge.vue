@@ -11,16 +11,19 @@ import { badgeVariants } from './badge.variants'
 const {
   variant,
   severity,
-  removable = false,
+  removable,
   removeLabel,
   class: customClass = ''
-} = defineProps<{
-  variant?: BadgeVariants['variant']
-  severity?: BadgeVariants['severity']
-  removable?: boolean
-  removeLabel?: string
-  class?: HTMLAttributes['class']
-}>()
+} = defineProps<
+  {
+    variant?: BadgeVariants['variant']
+    severity?: BadgeVariants['severity']
+    class?: HTMLAttributes['class']
+  } & (
+    | { removable: true; removeLabel: string }
+    | { removable?: false; removeLabel?: string }
+  )
+>()
 
 const emit = defineEmits<{ remove: [event: MouseEvent] }>()
 </script>
@@ -35,7 +38,7 @@ const emit = defineEmits<{ remove: [event: MouseEvent] }>()
       variant="textonly"
       size="icon-sm"
       class="-mr-1 rounded-full text-current"
-      :aria-label="removeLabel ?? $t('g.remove')"
+      :aria-label="removeLabel"
       @click="emit('remove', $event)"
     >
       <i class="icon-[lucide--x] size-3" aria-hidden="true" />

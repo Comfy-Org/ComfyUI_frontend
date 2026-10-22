@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { useWorkspaceUI as realUseWorkspaceUI } from '../useWorkspaceUI'
+import type { useWorkspaceUI as realUseWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 function defaults(): ReturnType<typeof realUseWorkspaceUI> {
   return {

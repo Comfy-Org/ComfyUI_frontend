@@ -220,7 +220,7 @@ import {
   menuButtonClass,
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
-import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   AnimationItem,
@@ -230,7 +230,7 @@ import type {
   MaterialMode,
   ModelConfig,
   SceneConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

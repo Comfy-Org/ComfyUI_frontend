@@ -83,8 +83,8 @@ import Button from '@/components/ui/button/Button.vue'
 import {
   SUPPORTED_HDRI_EXTENSIONS,
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
-} from '@/extensions/core/load3d/constants'
-import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/constants'
+import type { HDRIConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

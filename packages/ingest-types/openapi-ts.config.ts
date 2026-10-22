@@ -4,8 +4,7 @@ export default defineConfig({
   input: process.env.INGEST_OPENAPI_SOURCE ?? './openapi.yaml',
   output: {
     path: './src',
-    clean: true,
-    importFileExtension: '.js'
+    clean: true
   },
   parser: {
     filters: {

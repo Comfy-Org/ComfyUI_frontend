@@ -6,6 +6,9 @@ import type { HTMLAttributes, MaybeRefOrGetter } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
+  accessibleLabel,
+  clearLabel,
+  placeholder,
   searcher = async () => {},
   updateKey,
   autofocus = false,
@@ -13,6 +16,9 @@ const {
   debounceMaxWaitMs = 1000,
   class: customClass
 } = defineProps<{
+  accessibleLabel: string
+  clearLabel: string
+  placeholder?: string
   searcher?: (
     query: string,
     onCleanup: (cleanupFn: () => void) => void
@@ -115,7 +121,8 @@ function handleKeydownEnter(event: KeyboardEvent) {
       v-model="searchQuery"
       type="text"
       class="mx-2 my-1.5 h-5 w-full min-w-0 border-0 bg-transparent text-sm ring-0 outline-0"
-      :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+      :placeholder
+      :aria-label="accessibleLabel"
       :autofocus
       @focus="handleFocus"
       @keydown.enter="handleKeydownEnter"
@@ -123,7 +130,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
     <button
       v-if="searchQuery.trim().length > 0"
       class="m-0 flex shrink-0 items-center justify-center border-0 bg-transparent p-0 pr-3 pl-1 text-muted-foreground ring-0 outline-0 transition-all duration-150 hover:scale-108 hover:text-foreground"
-      :aria-label="$t('g.clear')"
+      :aria-label="clearLabel"
       @click="searchQuery = ''"
     >
       <i :class="cn('icon-[lucide--delete] size-4 cursor-pointer')" />

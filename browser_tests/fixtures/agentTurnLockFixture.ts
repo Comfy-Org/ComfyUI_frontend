@@ -7,6 +7,7 @@ import type {
   AgentError,
   AgentMessage,
   AgentPendingAsk,
+  AgentThreadListResponse,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import {
@@ -401,7 +402,7 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(
       jsonRoute({
         threads: [
@@ -429,7 +430,7 @@ async function routeTurnLock(
           }
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      })
+      } satisfies AgentThreadListResponse)
     )
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
@@ -451,13 +452,6 @@ async function routeTurnLock(
     })
   })
 
-  /**
-   * The glob accepts any thread and any ask id, so without these checks an
-   * answer posted against the wrong ask -- or an option this ask never offered
-   * -- would still be recorded and `answeredAsks()` would report success. The
-   * assertion this fixture exists to support is "the answer left the client for
-   * *this* ask", so the route has to be the thing that enforces it.
-   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
     const url = new URL(route.request().url())
     const segments = url.pathname.split('/').map(decodeURIComponent)

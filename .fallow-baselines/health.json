@@ -2028,11 +2028,6 @@
         "count": 1
       }
     },
-    "src/platform/assets/components/ActiveMediaAssetCard.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "src/platform/assets/components/AssetCard.vue": {
       "complexity_high": {
         "count": 1

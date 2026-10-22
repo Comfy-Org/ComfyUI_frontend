@@ -9,6 +9,7 @@ const funded: BillingBannerInputs = {
   isEnterprise: false,
   isKnownPersonalTier: false,
   isLoaded: true,
+  billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   hasFunds: true,
   isCancelled: false,
@@ -29,6 +30,53 @@ function derive(overrides: Partial<BillingBannerInputs>, now?: number) {
 describe('deriveBillingBanner', () => {
   it('shows no banner for a healthy funded team', () => {
     expect(derive({})).toBeNull()
+  })
+
+  describe('paused', () => {
+    const paused: Partial<BillingBannerInputs> = {
+      billingStatus: 'paused',
+      canAccessSubscriptionFeatures: false
+    }
+
+    it.for<{ name: string; inputs: Partial<BillingBannerInputs> }>([
+      { name: 'a funded team', inputs: {} },
+      { name: 'an exhausted team', inputs: { hasFunds: false } },
+      { name: 'an ended plan', inputs: { isPlanEnded: true } },
+      {
+        name: 'an ending plan',
+        inputs: { isCancelled: true, endDate: '2026-08-01T00:00:00Z' }
+      },
+      { name: 'a scheduled change', inputs: { hasScheduledChange: true } },
+      {
+        name: 'a known personal tier',
+        inputs: { isTeamPlan: false, isKnownPersonalTier: true }
+      },
+      { name: 'an Enterprise plan', inputs: { isEnterprise: true } },
+      { name: 'a member', inputs: { canManage: false } },
+      {
+        name: 'billing control rolled back',
+        inputs: { billingControlEnabled: false }
+      },
+      { name: 'a subscription not yet read', inputs: { isLoaded: false } }
+    ])('ranks paused above everything for $name', ({ inputs }) => {
+      expect(derive({ ...paused, ...inputs })).toBe('paused')
+    })
+
+    it.for<{ name: string; inputs: Partial<BillingBannerInputs> }>([
+      {
+        name: 'payment failed',
+        inputs: {
+          billingStatus: 'payment_failed',
+          canAccessSubscriptionFeatures: false
+        }
+      },
+      {
+        name: 'inactive access with a paid status',
+        inputs: { billingStatus: 'paid', canAccessSubscriptionFeatures: false }
+      }
+    ])('shows no paused banner for $name', ({ inputs }) => {
+      expect(derive(inputs)).not.toBe('paused')
+    })
   })
 
   describe('personal plan', () => {

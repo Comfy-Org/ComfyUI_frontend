@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Mobile Baseline Snapshots',
@@ -11,15 +12,13 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'mobile-empty-canvas.png'
-      )
+      await expectElementScreenshot(comfyPage.canvas, 'mobile-empty-canvas.png')
     })
 
     test('@mobile default workflow', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('default')
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectElementScreenshot(
+        comfyPage.canvas,
         'mobile-default-workflow.png'
       )
     })
@@ -32,14 +31,15 @@ test.describe(
       )
       await expect(minimapButton).toBeVisible()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectElementScreenshot(
+        comfyPage.canvas,
         'mobile-graph-canvas-toolbar.png'
       )
     })
 
     test('@mobile settings dialog', async ({ comfyPage }) => {
       await comfyPage.settingDialog.open()
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         comfyPage.settingDialog.root,
         'mobile-settings-dialog.png',
         {

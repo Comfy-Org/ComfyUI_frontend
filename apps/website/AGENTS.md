@@ -86,7 +86,7 @@ test to make it pass, and never resolve a human reviewer's comment.
 ## What your tools can and cannot show you
 
 - The local dev server shows the page as built from your working files. It does
-  not show production data: careers, cloud nodes, and model lists fall back to
+  not show production data: careers and model lists fall back to
   committed snapshots without their API keys, which is expected.
 - A browser screenshot shows layout, colour, and type at one width. It cannot
   show motion, hover, or video playback; check those by interacting, and say so

@@ -18,6 +18,7 @@
     "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
+    "attachmentInvalidVideo": "{name} אינו קובץ וידאו תקין. הסר אותו ונסה קובץ אחר.",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
     "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
     "attachmentsAlreadyAdded": "{name} כבר נמצא במגש הנכסים | דולגו על {count} נכסים כפולים",
@@ -173,6 +174,7 @@
     "selectWorkflowForNodes": "יש לבחור תחילה תהליך עבודה",
     "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
     "send": "שלח",
+    "sendBlockedByInvalidVideo": "{name} אינו סרטון וידאו תקין. הסר אותו כדי לשלוח. | {count} קבצים אינם סרטוני וידאו תקינים. הסר אותם כדי לשלוח.",
     "sendBusy": "הודעה כבר נשלחת",
     "sendFailed": "שליחת ההודעה נכשלה",
     "sendTurnInProgress": "בצ'אט זה עדיין פועלת תגובה. המתן לסיומה, או עצור אותה, ולאחר מכן שלח שוב.",
@@ -3415,6 +3417,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -4390,7 +4393,6 @@
     "viewControls": "בקרות תצוגה"
   },
   "sideToolbar": {
-    "activeJobStatus": "משימה פעילה: {status}",
     "assets": "נכסים",
     "backToAssets": "חזרה לכל הנכסים",
     "browseTemplates": "עיון בתבניות לדוגמה",
@@ -5547,22 +5549,6 @@
     "retry": "נסה שוב"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "קרדיטים",
-        "date": "תאריך",
-        "eventDetails": "פרטי אירוע",
-        "eventType": "סוג אירוע",
-        "user": "משתמש"
-      },
-      "empty": "אין פעילות עדיין.",
-      "fullActivity": "כל הפעילות",
-      "hoverCard": {
-        "lastActivity": "פעילות אחרונה",
-        "partnerNodeUsed": "צומת שותף בשימוש",
-        "totalCreditsUsed": "סך הקרדיטים שנוצלו"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "לא תחויב שוב. לחברים תישמר גישה מלאה עד אז. חדש את התוכנית שלך כדי לשמור על הקרדיטים המשותפים של הצוות.",
@@ -5698,12 +5684,6 @@
         "removeMember": "הסרת החבר",
         "resendInvite": "שלח הזמנה מחדש",
         "setCreditLimit": "הגדר מגבלת קרדיטים"
-      },
-      "activity": {
-        "daysAgo": "לפני {count} יום | לפני {count} ימים",
-        "hoursAgo": "לפני {n} שעות",
-        "justNow": "הרגע",
-        "minutesAgo": "לפני {n} דקות"
       },
       "columns": {
         "creditsUsed": "קרדיטים שנוצלו החודש",
