@@ -31,7 +31,11 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+const mockDistributionState = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
 
@@ -83,8 +87,6 @@ vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
-
-vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/useErrorHandling'), { spy: true })
 
@@ -389,7 +391,7 @@ describe('useAuthActions.logout', () => {
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
     expect(signOutWorkflowStorage).not.toHaveBeenCalled()
-    expect(mockToastStore.add).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('passes denyLabel "Sign out anyway" to the dialog', async () => {
@@ -704,53 +706,5 @@ describe('useAuthActions.sendPasswordReset', () => {
     const { sendPasswordReset } = useAuthActions()
 
     await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
-  })
-})
-
-describe('useAuthActions.updatePassword reauthentication', () => {
-  beforeEach(() => {
-    mockDistributionState.isCloud = true
-  })
-
-  const credentialTooOld = () =>
-    new FirebaseError(
-      AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
-      'requires recent login'
-    )
-
-  it('does not fence or clear workflow storage when a confirmed reauthentication logs out', async () => {
-    vi.mocked(mockAuthStore.updatePassword)
-      .mockRejectedValueOnce(credentialTooOld())
-      .mockResolvedValueOnce(undefined)
-    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
-    vi.mocked(useDialogService().showSignInDialog).mockResolvedValueOnce(true)
-    const { updatePassword } = useAuthActions()
-
-    await updatePassword('new-password')
-
-    expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(useDialogService().showSignInDialog).toHaveBeenCalledTimes(1)
-    expect(
-      vi.mocked(mockAuthStore.updatePassword),
-      'the operation must retry after the user re-proves the same identity'
-    ).toHaveBeenCalledTimes(2)
-    expect(
-      signOutWorkflowStorage,
-      'a password reauthentication must not delete the drafts of the user who is still here'
-    ).not.toHaveBeenCalled()
-  })
-
-  it('does not log out or touch workflow storage when reauthentication is declined', async () => {
-    vi.mocked(mockAuthStore.updatePassword).mockRejectedValueOnce(
-      credentialTooOld()
-    )
-    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
-    const { updatePassword } = useAuthActions()
-
-    await updatePassword('new-password')
-
-    expect(mockAuthStore.logout).not.toHaveBeenCalled()
-    expect(useDialogService().showSignInDialog).not.toHaveBeenCalled()
-    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 })

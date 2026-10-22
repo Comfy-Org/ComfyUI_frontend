@@ -1,6 +1,8 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'

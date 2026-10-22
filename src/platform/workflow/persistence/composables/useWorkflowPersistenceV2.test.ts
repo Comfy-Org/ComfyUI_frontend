@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -824,7 +825,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { marker: 'before-foreign-auth-change' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
@@ -839,14 +840,14 @@ describe('useWorkflowPersistenceV2', () => {
     expect(storageIO.isStorageAvailable()).toBe(true)
 
     mocks.state.currentGraph = { marker: 'after-foreign-auth-change' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const payload = JSON.parse(localStorage.getItem(payloadKey)!)
     expect(JSON.parse(payload.data)).toEqual({
       marker: 'after-foreign-auth-change'
     })
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps drafts and persistence alive when another window rewrites the shared auth record', async () => {
@@ -863,7 +864,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { marker: 'before-foreign-auth-record-write' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
@@ -890,14 +891,14 @@ describe('useWorkflowPersistenceV2', () => {
     expect(storageIO.isStorageAvailable()).toBe(true)
 
     mocks.state.currentGraph = { marker: 'after-foreign-auth-record-write' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const payload = JSON.parse(localStorage.getItem(payloadKey)!)
     expect(JSON.parse(payload.data)).toEqual({
       marker: 'after-foreign-auth-record-write'
     })
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('abandons persistence when another window broadcasts deliberate sign-out', async () => {
@@ -914,7 +915,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { marker: 'before-sign-out' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     localStorage.clear()
@@ -940,7 +941,7 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
 
     mocks.state.currentGraph = { marker: 'after-sign-out' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     window.dispatchEvent(new Event('pagehide'))
     await vi.runAllTimersAsync()
 
@@ -960,7 +961,7 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { marker: 'queued-before-sign-out' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
@@ -978,7 +979,7 @@ describe('useWorkflowPersistenceV2', () => {
     await vi.runAllTimersAsync()
 
     expect(localStorage.getItem(payloadKey)).toBeNull()
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {

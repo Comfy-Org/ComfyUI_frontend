@@ -7,6 +7,10 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
@@ -212,6 +216,31 @@ describe('useCurrentUser', () => {
       expect(needsFirebaseSignIn.value).toBe(false)
     }
   )
+
+  it.for([
+    { sso: true, provider: 'saml.workos', isEmailProvider: false },
+    { sso: true, provider: 'oidc.workos', isEmailProvider: false },
+    { sso: true, provider: 'google.com', isEmailProvider: true },
+    { sso: false, provider: 'saml.workos', isEmailProvider: true }
+  ])(
+    'offers a password change beside a $provider session only when it is not SSO (sso_enabled $sso)',
+    ({ sso, provider, isEmailProvider }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      mockAuthState.currentUser = fromPartial<User>({
+        uid: 'session-user',
+        providerData: [{ providerId: 'password' }]
+      })
+      Object.assign(mockAuthState, {
+        sessionUser: fakeWebSessionUser({
+          id: 'session-user',
+          signInProvider: provider
+        })
+      })
+
+      expect(useCurrentUser().isEmailProvider.value).toBe(isEmailProvider)
+    }
+  )
+
   describe('handleSignOut', () => {
     function signInWithApiKeyOnly(): void {
       Object.assign(mockApiKeyState, { isAuthenticated: true })
@@ -232,7 +261,7 @@ describe('useCurrentUser', () => {
 
       await handleSignOut()
 
-      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalledWith(
+      expect(useCommandStore().execute).not.toHaveBeenCalledWith(
         'Comfy.User.SignOut'
       )
       expect(localStorage.getItem(draftIndexKey)).toBeNull()
@@ -261,7 +290,7 @@ describe('useCurrentUser', () => {
       const { handleSignOut } = useCurrentUser()
       await handleSignOut()
 
-      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Comfy.User.SignOut'
       )
       expect(localStorage.getItem(draftIndexKey)).toBe('{}')

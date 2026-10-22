@@ -43,7 +43,7 @@ const defaults: CurrentUser = {
     )
   ),
   onTokenRefreshed: vi.fn(createWatchHandle),
-  onUserLogout: vi.fn((callback) => {
+  onUserLogout: vi.fn((callback) =>
     trackResolvedUserWatcher(
       watch(
         () => currentUser.resolvedUserInfo.value,
@@ -52,7 +52,7 @@ const defaults: CurrentUser = {
         }
       )
     )
-  })
+  )
 }
 
 const currentUser = { ...defaults }
