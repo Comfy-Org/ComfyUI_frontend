@@ -205,6 +205,10 @@ export class AgentFollowerHostSocket {
     this.comfySocket.send(JSON.stringify(frame))
   }
 
+  comfyConnectionCount(): number {
+    return this.comfyConnections
+  }
+
   sendExecutionBinary(frame: Buffer): void {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     this.comfySocket.send(frame)

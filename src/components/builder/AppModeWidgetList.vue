@@ -163,14 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode && [
-          'draggable-item drag-handle pointer-events-auto cursor-grab [&.is-draggable]:cursor-grabbing',
-          draggableItemClass
-        ]
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
