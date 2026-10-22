@@ -325,6 +325,11 @@ describe('loadCatalogCreator', () => {
     assert(result.status === 'ok')
     expect(result.creator.username).toBe('purz')
     expect(result.creator.description).toHaveLength(5000)
+    const cards = vi
+      .mocked(fetch)
+      .mock.calls.map(([input]) => new URL(String(input)))
+      .find(({ pathname }) => pathname === '/api/v1/catalog/cards')
+    expect(cards?.searchParams.get('author')).toBe('purz')
   })
 
   it.for(['..', '../admin', 'a'.repeat(31)])(
