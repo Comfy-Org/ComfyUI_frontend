@@ -2833,10 +2833,7 @@ describe('useAgentSession (v1 composition root)', () => {
         cancelled: [['th-2', 'msg-9']]
       }
     ])('$name', async ({ duringPost, outcome, cancelled }) => {
-      const { session, rest } = await sessionWaitingOnACard(
-        duringPost,
-        outcome
-      )
+      const { session, rest } = await sessionWaitingOnACard(duringPost, outcome)
 
       await session.sendMessage('actually, do this instead')
 

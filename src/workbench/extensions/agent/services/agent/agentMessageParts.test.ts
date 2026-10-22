@@ -421,10 +421,22 @@ describe('retireAskParts', () => {
 
   it.for<{ name: string; part: MessagePart; resolution: AskUserResolution }>([
     { name: 'run approval, closed', part: dismissedRun, resolution: closed },
-    { name: 'run approval, answered', part: dismissedRun, resolution: answered },
+    {
+      name: 'run approval, answered',
+      part: dismissedRun,
+      resolution: answered
+    },
     { name: 'question, closed', part: dismissedQuestion, resolution: closed },
-    { name: 'question, answered', part: dismissedQuestion, resolution: answered },
-    { name: 'delete approval, closed', part: dismissedDeletion, resolution: closed },
+    {
+      name: 'question, answered',
+      part: dismissedQuestion,
+      resolution: answered
+    },
+    {
+      name: 'delete approval, closed',
+      part: dismissedDeletion,
+      resolution: closed
+    },
     {
       name: 'delete approval, answered',
       part: dismissedDeletion,
