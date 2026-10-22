@@ -293,7 +293,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     expect(dataBefore).not.toBeNull()
     const pixelsBefore = dataBefore!.nonTransparentPixels
 
-    const invertButton = dialog.getByRole('button', { name: 'Invert' })
+    const invertButton = dialog.getByRole('button', { name: 'Invert Mask' })
     await expect(invertButton).toBeVisible()
     await invertButton.click()
 

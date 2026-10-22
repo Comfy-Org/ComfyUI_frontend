@@ -53,9 +53,12 @@ const i18n = createI18n({
       maskEditor: {
         title: 'Mask Editor',
         invert: 'Invert',
+        invertMask: 'Invert Mask',
         clear: 'Clear',
         undo: 'Undo',
         redo: 'Redo',
+        image: 'Image',
+        imageTransformations: 'Image Transformations',
         rotateLeft: 'Rotate Left',
         rotateRight: 'Rotate Right',
         mirrorHorizontal: 'Mirror Horizontal',
@@ -82,7 +85,7 @@ describe('TopBarHeader', () => {
   })
 
   describe('history buttons', () => {
-    it('should call canvasHistory.undo when undo button is clicked', async () => {
+    it('should call canvasHistory.undo when undo is clicked', async () => {
       const user = userEvent.setup()
       renderHeader()
 
@@ -91,7 +94,7 @@ describe('TopBarHeader', () => {
       expect(mockStore.canvasHistory.undo).toHaveBeenCalledTimes(1)
     })
 
-    it('should call canvasHistory.redo when redo button is clicked', async () => {
+    it('should call canvasHistory.redo when redo is clicked', async () => {
       const user = userEvent.setup()
       renderHeader()
 
@@ -101,23 +104,23 @@ describe('TopBarHeader', () => {
     })
   })
 
-  describe('canvas transform buttons', () => {
+  describe('image menu', () => {
     it.for([
       ['Rotate Left', 'rotateCounterclockwise'],
       ['Rotate Right', 'rotateClockwise'],
       ['Mirror Horizontal', 'mirrorHorizontal'],
       ['Mirror Vertical', 'mirrorVertical']
-    ] as const)(
-      'should call canvasTransform.%s when %s button is clicked',
-      async ([label, method]) => {
-        const user = userEvent.setup()
-        renderHeader()
+    ] as const)('should call canvasTransform.%s', async ([label, method]) => {
+      const user = userEvent.setup()
+      renderHeader()
 
-        await user.click(screen.getByRole('button', { name: label }))
+      await user.click(
+        screen.getByRole('button', { name: 'Image Transformations' })
+      )
+      await user.click(screen.getByRole('menuitem', { name: label }))
 
-        expect(mockCanvasTransform[method]).toHaveBeenCalledTimes(1)
-      }
-    )
+      expect(mockCanvasTransform[method]).toHaveBeenCalledTimes(1)
+    })
 
     it.for([
       ['Rotate Left', 'rotateCounterclockwise', 'Rotate left failed:'],
@@ -131,7 +134,10 @@ describe('TopBarHeader', () => {
         const user = userEvent.setup()
         renderHeader()
 
-        await user.click(screen.getByRole('button', { name: label }))
+        await user.click(
+          screen.getByRole('button', { name: 'Image Transformations' })
+        )
+        await user.click(screen.getByRole('menuitem', { name: label }))
 
         expect(console.error).toHaveBeenCalledWith(
           `[TopBarHeader] ${expectedMsg}`,
@@ -140,19 +146,27 @@ describe('TopBarHeader', () => {
         vi.mocked(console.error).mockRestore()
       }
     )
+
+    it('should name the trigger as image transformations', () => {
+      renderHeader()
+
+      expect(
+        screen.getByRole('button', { name: 'Image Transformations' })
+      ).toHaveAttribute('aria-label', 'Image Transformations')
+    })
   })
 
   describe('mask edit buttons', () => {
-    it('should call canvasTools.invertMask on Invert click', async () => {
+    it('should call canvasTools.invertMask on Invert', async () => {
       const user = userEvent.setup()
       renderHeader()
 
-      await user.click(screen.getByRole('button', { name: 'Invert' }))
+      await user.click(screen.getByRole('button', { name: 'Invert Mask' }))
 
       expect(mockCanvasTools.invertMask).toHaveBeenCalledTimes(1)
     })
 
-    it('should call clearMask and store.triggerClear on Clear click', async () => {
+    it('should call clearMask and store.triggerClear on Clear', async () => {
       const user = userEvent.setup()
       renderHeader()
 
@@ -164,7 +178,7 @@ describe('TopBarHeader', () => {
   })
 
   describe('save', () => {
-    it('should hide brush, save, and close the dialog on success', async () => {
+    it('should hide the brush, save, and close the dialog on success', async () => {
       const user = userEvent.setup()
       renderHeader()
       mockStore.brushVisible = true
@@ -176,7 +190,7 @@ describe('TopBarHeader', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
     })
 
-    it('should switch the button text to "Saving" and disable the button while saving', async () => {
+    it('should switch the button to Saving and disable it while saving', async () => {
       let resolve!: () => void
       mockSaver.save.mockReturnValueOnce(
         new Promise<void>((r) => {
@@ -196,7 +210,7 @@ describe('TopBarHeader', () => {
       await clickPromise
     })
 
-    it('should restore brush + button state and log on save failure', async () => {
+    it('should restore the brush and button and log when saving fails', async () => {
       mockSaver.save.mockRejectedValueOnce(new Error('save failed'))
       const user = userEvent.setup()
       renderHeader()
@@ -209,7 +223,6 @@ describe('TopBarHeader', () => {
         expect.any(Error)
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
-      // After failure, the Save button reads "Save" again (not "Saving")
       expect(
         screen.getByRole('button', { name: /save/i }).textContent.trim()
       ).toBe('Save')

@@ -1,31 +1,37 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
-      {{ t('maskEditor.brushSettings') }}
-    </h3>
+    <div class="mt-2.5 flex items-center justify-between">
+      <h3 class="m-0 font-sans text-[15px] text-muted-foreground">
+        {{ t('maskEditor.brushSettings') }}
+      </h3>
+      <Button
+        variant="base"
+        size="icon"
+        :title="t('maskEditor.resetToDefault')"
+        :aria-label="t('maskEditor.resetToDefault')"
+        @click="resetToDefault"
+      >
+        <i class="icon-[lucide--rotate-ccw] size-4" aria-hidden="true" />
+      </Button>
+    </div>
 
-    <Button
-      variant="outline"
-      size="unset"
-      class="h-7.5 w-32 rounded-[10px] bg-background"
-      @click="resetToDefault"
-    >
-      {{ t('maskEditor.resetToDefault') }}
-    </Button>
-
-    <!-- Brush Shape -->
-    <div class="flex flex-col gap-3 pb-3">
-      <span class="text-left font-sans text-xs text-muted-foreground">
+    <div class="flex flex-col gap-2">
+      <span
+        id="brush-shape-label"
+        class="text-left font-sans text-xs text-muted-foreground"
+      >
         {{ t('maskEditor.brushShape') }}
       </span>
-
       <div
+        role="radiogroup"
+        aria-labelledby="brush-shape-label"
         class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-accent"
       >
         <button
           type="button"
+          role="radio"
+          :aria-checked="store.brushSettings.type === BrushShape.Arc"
           :aria-label="t('maskEditor.brushShapeCircle')"
-          :aria-pressed="store.brushSettings.type === BrushShape.Arc"
           :class="
             cn(
               'ml-2 size-[35px] cursor-pointer appearance-none rounded-full border border-solid p-0 transition-colors',
@@ -36,11 +42,11 @@
           "
           @click="setBrushShape(BrushShape.Arc)"
         />
-
         <button
           type="button"
+          role="radio"
+          :aria-checked="store.brushSettings.type === BrushShape.Rect"
           :aria-label="t('maskEditor.brushShapeSquare')"
-          :aria-pressed="store.brushSettings.type === BrushShape.Rect"
           :class="
             cn(
               'size-[35px] cursor-pointer appearance-none border border-solid p-0 transition-colors',
@@ -54,196 +60,152 @@
       </div>
     </div>
 
-    <!-- Color -->
-    <div class="flex flex-col gap-3 pb-3">
-      <span class="text-left font-sans text-xs text-muted-foreground">
-        {{ t('maskEditor.colorSelector') }}
-      </span>
-      <input
-        ref="colorInputRef"
-        v-model="store.rgbColor"
-        type="color"
-        class="h-10 cursor-pointer rounded-md"
-      />
-    </div>
-
-    <!-- Thickness -->
     <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-muted-foreground">
+      <div class="flex items-center justify-between gap-2">
+        <label
+          id="brush-thickness-label"
+          for="brush-thickness-input"
+          class="text-left font-sans text-xs text-muted-foreground"
+        >
           {{ t('maskEditor.thickness') }}
-        </span>
-        <input
-          v-model.number="brushSize"
-          data-testid="brush-thickness-input"
-          type="number"
-          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
-          :min="1"
-          :max="250"
-          :step="1"
-        />
+        </label>
+        <div class="flex items-center gap-1">
+          <input
+            id="brush-thickness-input"
+            data-testid="brush-thickness-input"
+            :value="brushSize"
+            type="number"
+            class="w-16 [appearance:textfield] rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            :min="1"
+            :max="250"
+            :step="1"
+            @input="onThicknessInput"
+            @change="onThicknessCommit"
+          />
+          <span class="text-xs text-muted-foreground" aria-hidden="true">
+            px
+          </span>
+        </div>
       </div>
-      <SliderControl
-        v-model="brushSizeSliderValue"
+      <Slider
+        :model-value="[thicknessSliderValue]"
         class="flex-1"
-        label=""
         :min="0"
         :max="1"
         :step="0.001"
+        aria-labelledby="brush-thickness-label"
+        @update:model-value="onThicknessSliderChange"
       />
     </div>
 
-    <!-- Opacity -->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-muted-foreground">
-          {{ t('maskEditor.opacity') }}
-        </span>
-        <input
-          v-model.number="brushOpacity"
-          type="number"
-          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
-          :min="0"
-          :max="1"
-          :step="0.01"
-        />
-      </div>
-      <SliderControl
-        v-model="brushOpacity"
-        class="flex-1"
-        label=""
-        :min="0"
-        :max="1"
-        :step="0.01"
-      />
-    </div>
-
-    <!-- Hardness -->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-muted-foreground">
-          {{ t('maskEditor.hardness') }}
-        </span>
-        <input
-          v-model.number="brushHardness"
-          type="number"
-          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
-          :min="0"
-          :max="1"
-          :step="0.01"
-        />
-      </div>
-      <SliderControl
-        v-model="brushHardness"
-        class="flex-1"
-        label=""
-        :min="0"
-        :max="1"
-        :step="0.01"
-      />
-    </div>
-
-    <!-- Step Size -->
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <span class="text-left font-sans text-xs text-muted-foreground">
-          {{ t('maskEditor.stepSize') }}
-        </span>
-        <input
-          v-model.number="brushStepSize"
-          type="number"
-          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
-          :min="1"
-          :max="100"
-          :step="1"
-        />
-      </div>
-      <SliderControl
-        v-model="brushStepSize"
-        class="flex-1"
-        label=""
-        :min="1"
-        :max="100"
-        :step="1"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.opacity')"
+      :model-value="brushOpacity"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      @update:model-value="onBrushOpacityChange"
+    />
+    <SliderField
+      :label="t('maskEditor.hardness')"
+      :model-value="brushHardness"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      @update:model-value="onBrushHardnessChange"
+    />
+    <SliderField
+      :label="t('maskEditor.stepSize')"
+      :model-value="store.brushSettings.stepSize"
+      :min="1"
+      :max="100"
+      :step="1"
+      suffix="px"
+      @update:model-value="onBrushStepSizeChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import Slider from '@/components/ui/slider/Slider.vue'
 import { BrushShape } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SliderControl from './controls/SliderControl.vue'
+import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
 
-const colorInputRef = ref<HTMLInputElement>()
-
-/* Computed properties that use store setters for validation */
-const brushSize = computed({
-  get: () => store.brushSettings.size,
-  set: (value: number) => store.setBrushSize(value)
-})
-
 const rawSliderValue = ref<number | null>(null)
 
-const brushSizeSliderValue = computed({
-  get: () => {
-    if (rawSliderValue.value !== null) {
-      const cachedSize = Math.round(Math.pow(250, rawSliderValue.value))
-      if (cachedSize === brushSize.value) {
-        return rawSliderValue.value
-      }
-    }
+const brushSize = computed(() => Math.round(store.brushSettings.size))
 
-    return Math.log(brushSize.value) / Math.log(250)
-  },
-  set: (value: number) => {
-    rawSliderValue.value = value
-    const size = Math.round(Math.pow(250, value))
-    store.setBrushSize(size)
+const thicknessSliderValue = computed(() => {
+  if (rawSliderValue.value !== null) {
+    const cachedSize = Math.round(Math.pow(250, rawSliderValue.value))
+    if (cachedSize === brushSize.value) return rawSliderValue.value
   }
+  return Math.log(Math.max(brushSize.value, 1)) / Math.log(250)
 })
 
-const brushOpacity = computed({
-  get: () => store.brushSettings.opacity,
-  set: (value: number) => store.setBrushOpacity(value)
-})
+function commitThickness(value: number) {
+  if (!Number.isFinite(value)) return
+  store.setBrushSize(Math.round(Math.min(250, Math.max(1, value))))
+}
 
-const brushHardness = computed({
-  get: () => store.brushSettings.hardness,
-  set: (value: number) => store.setBrushHardness(value)
-})
+function onThicknessInput(event: Event) {
+  commitThickness((event.target as HTMLInputElement).valueAsNumber)
+}
 
-const brushStepSize = computed({
-  get: () => store.brushSettings.stepSize,
-  set: (value: number) => store.setBrushStepSize(value)
-})
+function onThicknessCommit(event: Event) {
+  const input = event.target as HTMLInputElement
+  const parsed = input.valueAsNumber
+  if (!Number.isFinite(parsed)) {
+    input.value = String(brushSize.value)
+    return
+  }
+  commitThickness(parsed)
+}
 
-/* Brush shape */
-const setBrushShape = (shape: BrushShape) => {
+function onThicknessSliderChange(value: number[] | undefined) {
+  const next = value?.[0]
+  if (next === undefined || !Number.isFinite(next)) return
+  rawSliderValue.value = next
+  commitThickness(Math.pow(250, next))
+}
+
+const brushOpacity = computed(() =>
+  Math.round(store.brushSettings.opacity * 100)
+)
+const brushHardness = computed(() =>
+  Math.round(store.brushSettings.hardness * 100)
+)
+
+function onBrushOpacityChange(value: number) {
+  store.setBrushOpacity(value / 100)
+}
+
+function onBrushHardnessChange(value: number) {
+  store.setBrushHardness(value / 100)
+}
+
+function onBrushStepSizeChange(value: number) {
+  store.setBrushStepSize(value)
+}
+
+function setBrushShape(shape: BrushShape) {
   store.brushSettings.type = shape
 }
 
-/* Reset */
-const resetToDefault = () => {
+function resetToDefault() {
+  rawSliderValue.value = null
   store.resetBrushToDefault()
 }
-
-onMounted(() => {
-  if (colorInputRef.value) {
-    store.colorInput = colorInputRef.value
-  }
-})
-
-onBeforeUnmount(() => {
-  store.colorInput = null
-})
 </script>

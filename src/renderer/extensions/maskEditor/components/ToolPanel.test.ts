@@ -18,7 +18,13 @@ const i18n = createI18n({
   messages: {
     en: {
       maskEditor: {
-        clickToResetZoom: 'Click to reset zoom'
+        clickToResetZoom: 'Click to reset zoom',
+        colorSelector: 'Color Selector',
+        toolPen: 'Pen',
+        toolPaintPen: 'Paint pen',
+        toolEraser: 'Eraser',
+        toolPaintBucket: 'Paint bucket',
+        toolColorSelect: 'Color select'
       }
     }
   }
@@ -34,12 +40,8 @@ const renderPanel = () =>
     props: { toolManager: mockToolManager as unknown as ToolManager }
   })
 
-const getToolButton = (tool: Tools): HTMLElement => {
-  const btns = screen.getAllByTestId('tool-button')
-  const match = btns.find((b) => b.dataset.tool === tool)
-  if (!match) throw new Error(`tool button for "${tool}" not found`)
-  return match
-}
+const getToolButton = (name: string): HTMLElement =>
+  screen.getByRole('button', { name })
 
 describe('ToolPanel', () => {
   beforeEach(() => {
@@ -47,13 +49,25 @@ describe('ToolPanel', () => {
     mockStore.$patch({
       currentTool: Tools.MaskPen,
       displayZoomRatio: 1,
-      image: null
+      image: null,
+      rgbColor: '#ff0000',
+      colorInput: null
     })
   })
 
   describe('tool list rendering', () => {
-    it('should render one button per tool in allTools', () => {
+    it('should render one named button per tool', () => {
       renderPanel()
+
+      for (const name of [
+        'Pen',
+        'Paint pen',
+        'Eraser',
+        'Paint bucket',
+        'Color select'
+      ]) {
+        expect(getToolButton(name)).toBeInTheDocument()
+      }
       expect(screen.getAllByTestId('tool-button')).toHaveLength(allTools.length)
     })
 
@@ -66,28 +80,28 @@ describe('ToolPanel', () => {
   })
 
   describe('current tool highlight', () => {
-    it.for([Tools.MaskPen, Tools.Eraser, Tools.PaintPen] as const)(
-      'should mark the %s button as selected when it is the current tool',
-      (tool) => {
+    it.for([
+      [Tools.MaskPen, 'Pen'],
+      [Tools.Eraser, 'Eraser'],
+      [Tools.PaintPen, 'Paint pen']
+    ] as const)(
+      'should press the %s button when it is current',
+      ([tool, name]) => {
         mockStore.currentTool = tool
         renderPanel()
 
-        expect(getToolButton(tool).className).toContain(
+        expect(getToolButton(name)).toHaveAttribute('aria-pressed', 'true')
+        expect(getToolButton(name).className).toContain(
           'maskEditor_toolPanelContainerSelected'
         )
       }
     )
 
-    it('should not mark non-current tools as selected', () => {
+    it('should not press the other tools', () => {
       mockStore.currentTool = Tools.MaskPen
       renderPanel()
 
-      for (const tool of allTools) {
-        if (tool === Tools.MaskPen) continue
-        expect(getToolButton(tool).className).not.toContain(
-          'maskEditor_toolPanelContainerSelected'
-        )
-      }
+      expect(getToolButton('Eraser')).toHaveAttribute('aria-pressed', 'false')
     })
   })
 
@@ -96,14 +110,37 @@ describe('ToolPanel', () => {
       const user = userEvent.setup()
       renderPanel()
 
-      await user.click(getToolButton(Tools.Eraser))
+      await user.click(getToolButton('Eraser'))
 
       expect(mockToolManager.switchTool).toHaveBeenCalledWith(Tools.Eraser)
     })
   })
 
+  describe('color picker', () => {
+    it.for([Tools.MaskPen, Tools.Eraser] as const)(
+      'should show the color picker for %s',
+      (tool) => {
+        mockStore.currentTool = tool
+        renderPanel()
+
+        const input = screen.getByLabelText('Color Selector')
+        expect(useMaskEditorStore().colorInput).toBe(input)
+      }
+    )
+
+    it('should clear the store ref when the panel unmounts', () => {
+      mockStore.currentTool = Tools.Eraser
+      const { unmount } = renderPanel()
+      expect(useMaskEditorStore().colorInput).not.toBeNull()
+
+      unmount()
+
+      expect(useMaskEditorStore().colorInput).toBeNull()
+    })
+  })
+
   describe('zoom indicator', () => {
-    it('should render rounded zoom percentage from displayZoomRatio', () => {
+    it('should render the rounded zoom percentage', () => {
       mockStore.displayZoomRatio = 1.236
       renderPanel()
 
@@ -117,18 +154,20 @@ describe('ToolPanel', () => {
       expect(screen.getByTestId('zoom-dimensions').textContent).toBe('800x600')
     })
 
-    it('should render a single-space placeholder when no image', () => {
+    it('should render a single-space placeholder when there is no image', () => {
       mockStore.image = null
       renderPanel()
 
       expect(screen.getByTestId('zoom-dimensions').textContent).toBe(' ')
     })
 
-    it('should call resetZoom when the zoom indicator is clicked', async () => {
+    it('should call resetZoom from the zoom button', async () => {
       const user = userEvent.setup()
       renderPanel()
 
-      await user.click(screen.getByTestId('zoom-percentage'))
+      await user.click(
+        screen.getByRole('button', { name: 'Click to reset zoom' })
+      )
 
       expect(mockStore.resetZoom).toHaveBeenCalledTimes(1)
     })
