@@ -644,6 +644,20 @@ describe('AgentMessage run approval', () => {
     ])
   })
 
+  it('shows a dismissed card read-only, without counting it as shown', () => {
+    const { emitted } = render(AgentMessage, {
+      props: { message: approvalMessage({ dismissed: true }) },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Dismissed: you sent a new message instead.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Portrait workflow')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(emitted().approvalShown).toBeUndefined()
+  })
+
   it('keeps both labels in place while disabling an in-flight answer', () => {
     render(AgentMessage, {
       props: {

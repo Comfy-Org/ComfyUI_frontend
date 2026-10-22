@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
+  dismissAskParts,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart,
@@ -333,6 +334,38 @@ describe('toAskOrNoticePart', () => {
       type: 'askUnavailable',
       askId: 'turn-1:call-1'
     })
+  })
+})
+
+describe('dismissAskParts', () => {
+  it('closes open question and delete cards and leaves answered ones alone', () => {
+    const question = toAskPart(askUser({ ask_id: 'q' }))
+    const deletion = toAskPart(
+      askUser({
+        ask_id: 'd',
+        kind: 'delete_approval',
+        options: [
+          { id: 'delete', label: 'Delete' },
+          { id: 'keep', label: 'Keep' }
+        ],
+        context: {
+          action: 'delete_nodes',
+          nodes: [{ id: '12', type: 'KSampler', title: 'Hero sampler' }]
+        }
+      })
+    )
+    assert(question && deletion?.type === 'deleteApproval')
+    const answered: MessagePart = {
+      ...question,
+      askId: 'a',
+      resolution: { status: 'answered', selected: ['flux'] }
+    }
+
+    expect(dismissAskParts([question, deletion, answered])).toEqual([
+      { ...question, resolution: { status: 'closed' } },
+      { ...deletion, resolution: { status: 'closed' } },
+      answered
+    ])
   })
 })
 

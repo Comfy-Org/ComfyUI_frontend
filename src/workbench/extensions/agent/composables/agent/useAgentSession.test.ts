@@ -2690,11 +2690,74 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      status(false)
       await session.sendMessage('actually, do this instead')
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
       expect(
         useAgentConversationStore().messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toEqual([expect.objectContaining({ dismissed: true })])
+    })
+
+    it('stops the replacement turn, not the waiting one, when Stop lands before the ack', async () => {
+      const { source, emit, status } = fakeEvents()
+      const cancelMessage = vi.fn(
+        async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      )
+      let session!: ReturnType<typeof useAgentSession>
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockImplementationOnce(async () => {
+          await session.stopTurn()
+          return { thread_id: 'th-1', message_id: 'msg-2' }
+        })
+      session = useAgentSession({
+        rest: fakeRest({ postMessage, cancelMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      await session.sendMessage('actually, do this instead')
+
+      expect(cancelMessage.mock.calls).toEqual([['th-1', 'msg-2']])
+    })
+
+    it('keeps the card greyed and the old turn running when the replacement send fails', async () => {
+      const { source, emit, status } = fakeEvents()
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await session.sendMessage('actually, do this instead')).toBe(false)
+
+      const store = useAgentConversationStore()
+      expect(store.activeTurnId).toBe('msg-1')
+      expect(session.askOpen.value).toBe(false)
+      expect(
+        store.messages.flatMap((message) =>
           message.parts.filter((part) => part.type === 'runApproval')
         )
       ).toEqual([expect.objectContaining({ dismissed: true })])

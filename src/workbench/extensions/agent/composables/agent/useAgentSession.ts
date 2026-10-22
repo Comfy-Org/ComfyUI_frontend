@@ -1137,7 +1137,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stopPendingActiveTurn(): void {
     const pendingStop = consumeStopPendingAck()
-    if (pendingStop !== null) void stopTurn(pendingStop.method)
+    const threadId = conversationStore.threadId
+    const turnId = conversationStore.activeTurnId
+    if (pendingStop === null || threadId === null || turnId === null) return
+    void cancelTurn(threadId, turnId, pendingStop.method)
   }
 
   function recordSendError(
@@ -1362,7 +1365,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId,
         onAccepted
       )
-      if (!sent) stopPendingAck = null
+      if (!sent) stopPendingActiveTurn()
       return sent
     } finally {
       sending.value = false
@@ -1487,15 +1490,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
-    const threadId = conversationStore.threadId
-    const turnId = conversationStore.activeTurnId
-    if (threadId === null || turnId === null) {
-      // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+    // The POST has not acked yet; remember the intent and cancel on ack.
+    // sendInFlight, not this instance's sending: the panel that posted may
+    // have been remounted, and the stop arrives through the new instance.
+    if (sendInFlight) {
+      stopPendingAck = { method }
       return
     }
+    const threadId = conversationStore.threadId
+    const turnId = conversationStore.activeTurnId
+    if (threadId === null || turnId === null) return
+    await cancelTurn(threadId, turnId, method)
+  }
+
+  async function cancelTurn(
+    threadId: string,
+    turnId: TurnId,
+    method: AgentStopMethod | undefined
+  ): Promise<void> {
     if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(

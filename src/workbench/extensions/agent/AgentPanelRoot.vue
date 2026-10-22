@@ -947,6 +947,10 @@ const {
     draft: targetWorkflowDraft
   }
 })
+const sendDismissesAsk = computed(
+  () =>
+    askOpen.value && api.getServerFeature('agent.ask_send_dismisses') === true
+)
 
 provide(
   agentBoundWorkflowIdKey,
@@ -2040,7 +2044,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
-      :ask-open="askOpen"
+      :ask-open="sendDismissesAsk"
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"

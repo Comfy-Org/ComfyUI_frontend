@@ -410,6 +410,42 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  it('turns Stop into Send once a draft is typed, and sends on click', async () => {
+    const { emitted } = mount({ streaming: true, askOpen: true })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it red instead')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toEqual([['make it red instead', []]])
+    expect(emitted().stop).toBeUndefined()
+  })
+
+  it('shows a disabled Send, not Stop, while a card waits on an uploading attachment', async () => {
+    useAgentComposerStore().addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: '',
+      uploading: true
+    })
+    const { emitted } = mount({ streaming: true, askOpen: true })
+    const send = screen.getByRole('button', { name: 'Send' })
+    expect(send).toBeDisabled()
+    await userEvent.click(send)
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it('stops through the Escape override with a draft while the turn waits on a card', async () => {
+    useAgentComposerStore().setText('make it red instead')
+    const { emitted } = mount({ streaming: true, askOpen: true })
+    expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument()
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
   it('still stops on Escape with a draft while the turn waits on a card', async () => {
     const { emitted } = mount({ streaming: true, askOpen: true })
     await userEvent.click(screen.getByRole('textbox'))

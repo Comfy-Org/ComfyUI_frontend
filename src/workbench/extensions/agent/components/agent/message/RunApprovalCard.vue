@@ -23,7 +23,9 @@ const emit = defineEmits<{
   shown: [askId: string, workflowId: string | null]
 }>()
 
-onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
+onMounted(() => {
+  if (!part.dismissed) emit('shown', part.askId, part.workflowId ?? null)
+})
 
 const { t } = useI18n()
 const workflowLabel = computed(
@@ -43,7 +45,6 @@ const workflowLabel = computed(
         part.dismissed && 'opacity-50 shadow-none'
       )
     "
-    :aria-disabled="part.dismissed || undefined"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p class="m-0">
@@ -61,7 +62,7 @@ const workflowLabel = computed(
       >
         <li>
           <Button
-            v-if="part.workflowId"
+            v-if="part.workflowId && !part.dismissed"
             type="button"
             variant="link"
             size="unset"

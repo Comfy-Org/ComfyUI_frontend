@@ -6143,6 +6143,80 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot sending while a run card waits', () => {
+  function showRunCard(): void {
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-approval' as TurnId
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+  }
+
+  async function typeInComposer(text: string): Promise<void> {
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(text)
+  }
+
+  it('sends over the card and greys it out when the backend supports it', async () => {
+    getServerFeature.mockImplementation((name: string, defaultValue?: unknown) =>
+      name === 'agent.ask_send_dismisses' ? true : defaultValue
+    )
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'turn-2' })
+    )
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Run' })
+    ).not.toBeInTheDocument()
+    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
+      1
+    )
+  })
+
+  it('keeps Stop over the card when the backend does not advertise it', async () => {
+    respondToFetch({}, () => json(200, {}))
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Send' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+  })
+})
+
 describe('AgentPanelRoot ask_user answer telemetry', () => {
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
     respondToFetch({}, () => json(200, {}))

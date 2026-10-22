@@ -97,11 +97,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 
-const turnRunning = computed(() => streaming || submitting)
-const running = computed(
-  () => submitting || (streaming && !(askOpen && composer.canSend.value))
-)
-
 const composer = useComposer({
   onSend: (_text, attachments) => {
     if (workflowSelecting || submitting) return
@@ -135,6 +130,11 @@ const composer = useComposer({
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
 })
+
+const turnRunning = computed(() => streaming || submitting)
+const running = computed(
+  () => submitting || (streaming && !(askOpen && composer.hasContent.value))
+)
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')

@@ -2135,10 +2135,10 @@ describe('useAgentConversationStore', () => {
       expect(store.activeAskOpen).toBe(true)
 
       store.dismissOpenAsks()
+      expect(store.activeAskOpen).toBe(false)
       store.startTurn(T2)
       store.retireAsk('turn-1:call-1', { status: 'closed' })
 
-      expect(store.activeAskOpen).toBe(false)
       expect(store.messages[0].parts).toContainEqual(
         expect.objectContaining({ type: 'runApproval', dismissed: true })
       )
@@ -2162,6 +2162,21 @@ describe('useAgentConversationStore', () => {
         })
       )
       expect(store.activeAskOpen).toBe(false)
+    })
+
+    it("leaves another thread's stashed card open", () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('other')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.stashActiveTurn()
+
+      store.setThreadId('th')
+      store.dismissOpenAsks()
+      store.setThreadId('other')
+      store.resumeBackgroundTurn()
+
+      expect(store.activeAskOpen).toBe(true)
     })
   })
 
