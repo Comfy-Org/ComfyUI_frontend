@@ -1,8 +1,7 @@
 /**
- * Stripe appends these on the return leg. They are stripped through
- * `history.replaceState`, which the router does not observe, so anything that
- * later writes the router's own query has to drop them too or it puts them —
- * the client secret included — back in the address bar.
+ * Stripe appends these on the return leg. Stripped before the router is
+ * created, and dropped by anything that writes the router's query, so the
+ * client secret never returns to the address bar.
  */
 export const STRIPE_RETURN_PARAMS = [
   'payment_intent',

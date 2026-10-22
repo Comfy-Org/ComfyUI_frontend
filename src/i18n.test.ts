@@ -552,12 +552,10 @@ describe('i18n', () => {
     })
   })
 
-  describe('i18n', () => {
-    it('reads the browser locale on first use rather than at import', () => {
-      vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN'])
+  it('reads the browser locale on first use rather than at import', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN'])
 
-      expect(i18n.global.locale.value).toBe('zh')
-    })
+    expect(i18n.global.locale.value).toBe('zh')
   })
 
   describe('te', () => {
