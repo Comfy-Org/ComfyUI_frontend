@@ -9,7 +9,7 @@ import CheckoutSavedMethods from './CheckoutSavedMethods.vue'
 import { checkoutCopy } from './__fixtures__/copy'
 
 const SelectStub = defineComponent({
-  name: 'CheckoutSavedMethodSelect',
+  name: 'SingleSelect',
   props: {
     options: { type: Array<{ name: string; value: string }>, required: true }
   },
@@ -50,7 +50,7 @@ function renderMethods(methods: SavedPaymentMethod[]) {
       onChangePaymentMethod,
       'onUpdate:selectedMethodId': onUpdate
     },
-    global: { stubs: { CheckoutSavedMethodSelect: SelectStub } }
+    global: { stubs: { SingleSelect: SelectStub } }
   })
   return { onChangePaymentMethod, onUpdate }
 }
