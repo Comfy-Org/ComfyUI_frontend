@@ -2,15 +2,9 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { fillNodeAskAgentPrompt } from '@/components/graph/askAgentFromNode'
+import { seedAskAgentComposerFromNode } from '@/components/graph/seedAskAgentComposerFromNode'
 import { i18n } from '@/i18n'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { toNodeId } from '@/types/nodeId'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -77,23 +71,15 @@ describe('composer focus after node reference chips', () => {
   })
 
   it('focuses after a hover starter fills chip plus template text', async () => {
-    const node = new LGraphNode('KSampler')
-    node.id = toNodeId(5)
-    const graph = new LGraph()
-    graph.add(node)
-    useCanvasStore().currentGraph = graph
-    useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
-      path: 'workflows/a.json',
-      instanceId: 'workflow-A'
-    })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.isOpen = true
-
     const { editor, store } = renderComposer()
-    expect(fillNodeAskAgentPrompt(node.id, 'Explain this node for me')).toBe(
-      true
-    )
+    expect(
+      seedAskAgentComposerFromNode({
+        id: 5,
+        title: 'KSampler',
+        text: 'Explain this node for me',
+        instanceId: 'workflow-A'
+      })
+    ).toBe(true)
 
     await waitFor(() => expect(editor).toHaveFocus())
     await userEvent.keyboard('!')

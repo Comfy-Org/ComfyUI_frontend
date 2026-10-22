@@ -8,8 +8,6 @@ import {
   sendNodeAskAgentPrompt
 } from '@/components/graph/askAgentFromNode'
 import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -164,27 +162,5 @@ describe('NodeAskAgentHover', () => {
       'Enhance the prompt considering the purpose of this workflow'
     )
     expect(sendNodeAskAgentPrompt).not.toHaveBeenCalled()
-  })
-
-  it('includes Enhance the prompt when the graph node is an api_node', async () => {
-    class PartnerApiNode extends LGraphNode {
-      static override nodeData = {
-        name: 'ByteDanceSeedance',
-        api_node: true
-      }
-    }
-    const node = new PartnerApiNode('ByteDance Seedance')
-    node.id = toNodeId(12)
-    const graph = new LGraph()
-    graph.add(node)
-    useCanvasStore().currentGraph = graph
-    renderHover()
-
-    await userEvent
-      .setup()
-      .click(screen.getByRole('button', { name: 'Ask agent' }))
-    expect(
-      screen.getByRole('button', { name: 'Enhance the prompt' })
-    ).toBeVisible()
   })
 })

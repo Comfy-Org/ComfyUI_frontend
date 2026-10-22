@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { isPartnerApiNode } from '@/components/graph/isPartnerApiNode'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -40,13 +41,24 @@ describe('isPartnerApiNode', () => {
     const node = new LGraphNode('StorePartner')
     node.id = toNodeId(3)
     node.type = 'StorePartner'
-    useNodeDefStore().nodeDefsByName['StorePartner'] = fromPartial<
-      ComfyNodeDefImpl
-    >({
-      name: 'StorePartner',
-      api_node: true
-    })
+    useNodeDefStore().nodeDefsByName['StorePartner'] =
+      fromPartial<ComfyNodeDefImpl>({
+        name: 'StorePartner',
+        api_node: true
+      })
 
     expect(isPartnerApiNode(node)).toBe(true)
+  })
+
+  it('reads api_node after the node is added to the current graph', () => {
+    const node = new PartnerApiNode('ByteDance Seedance')
+    node.id = toNodeId(12)
+    const graph = new LGraph()
+    graph.add(node)
+    useCanvasStore().currentGraph = graph
+
+    expect(
+      isPartnerApiNode(useCanvasStore().currentGraph?.getNodeById(node.id))
+    ).toBe(true)
   })
 })

@@ -5,7 +5,11 @@ import { provide } from 'vue'
 import { t } from '@/i18n'
 import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
 import { nodeAskAgentHoverAlwaysVisibleKey } from '@/components/graph/nodeAskAgentHoverAlwaysVisible'
-import { LGraph, LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LGraphNodeVue from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { toNodeId } from '@/types/nodeId'
