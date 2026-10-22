@@ -27,6 +27,7 @@ import type {
   BillingActions,
   BillingContext,
   BillingPortalOutcome,
+  BillingRefreshOptions,
   CancelRail,
   BillingState,
   SubscriptionInfo
@@ -338,16 +339,14 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  // Passive reads do nothing while unknown; the watcher above re-initializes
-  // once the workspace type loads.
-  async function fetchStatus(): Promise<void> {
+  async function fetchStatus(options?: BillingRefreshOptions): Promise<void> {
     if (type.value === 'unknown') return
-    return activeContext.value.fetchStatus()
+    return activeContext.value.fetchStatus(options)
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchBalance(options?: BillingRefreshOptions): Promise<void> {
     if (type.value === 'unknown') return
-    return activeContext.value.fetchBalance()
+    return activeContext.value.fetchBalance(options)
   }
 
   // Reconcile and the checkout-operation read run once after a Stripe redirect

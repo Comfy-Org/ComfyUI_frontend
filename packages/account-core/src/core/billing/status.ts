@@ -3,7 +3,7 @@ import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
-import { createScopedReader } from './scopedReader'
+import { createFreshRead, createScopedReader } from './scopedReader'
 
 export const BILLING_STATUS_ROUTE = '/billing/status'
 
@@ -19,6 +19,7 @@ export interface BillingStatusSnapshot {
 
 export interface BillingStatusReadOptions {
   readonly signal?: AbortSignal
+  readonly fresh?: boolean
 }
 
 export interface BillingStatusReader {
@@ -53,11 +54,12 @@ export function createBillingStatusReader(
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { status: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
   return {
-    read: reader.read,
+    read: createFreshRead(reader),
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

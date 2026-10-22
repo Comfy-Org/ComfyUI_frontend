@@ -179,6 +179,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const sessionUser = computed(() => cloudWebSessionStore.signedInUser)
+  const isIdentityReady = computed(
+    () => isInitialized.value || (!isCloud && isDesktopHostSignedIn())
+  )
   const isAuthenticated = computed(
     () => isDesktopHostSignedIn() || !!currentUser.value || !!sessionUser.value
   )
@@ -1160,6 +1163,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Getters
     isAuthenticated,
+    isIdentityReady,
     sessionUser,
     hasPersonalWorkspace,
     sessionOnlyUser,

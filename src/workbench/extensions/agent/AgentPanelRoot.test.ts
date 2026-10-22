@@ -22,7 +22,8 @@ import {
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  toValue
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -38,6 +39,8 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
+import { useLocalAgentGrant } from './composables/agent/useLocalAgentGrant'
+import type { LocalAgentGrantArm } from './composables/agent/useLocalAgentGrant'
 
 setupInlinePromptEditorDom()
 
@@ -115,6 +118,7 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
+vi.mock(import('./composables/agent/useLocalAgentGrant'), { spy: true })
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -175,6 +179,9 @@ const appMock = vi.hoisted(() => {
   }
   Object.assign(graph, { rootGraph: graph })
   return {
+    extensionManager: {
+      dialog: { showTopUpCreditsDialog: vi.fn(async () => undefined) }
+    },
     loadGraphData: vi.fn(),
     ui: { autoQueueEnabled: false },
     graph,
@@ -259,7 +266,8 @@ const paywallBilling = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
   status: 'paid' as BillingStatus | null,
   isActive: true,
-  fetchStatus: vi.fn<() => Promise<void>>()
+  fetchStatus: vi.fn<() => Promise<void>>(),
+  fetchBalance: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
@@ -329,6 +337,7 @@ function syncFakeSelection() {
 beforeEach(() => {
   distribution.isCloud = true
   distribution.isDesktop = false
+  vi.mocked(useLocalAgentGrant).mockReturnValue({ arm: ref('unknown') })
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
     socketSend(frame)
@@ -390,7 +399,8 @@ beforeEach(() => {
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
       canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
-      fetchStatus: paywallBilling.fetchStatus
+      fetchStatus: paywallBilling.fetchStatus,
+      fetchBalance: paywallBilling.fetchBalance
     })
   )
   vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -505,6 +515,7 @@ beforeEach(() => {
   paywallBilling.status = 'paid'
   paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
+  paywallBilling.fetchBalance.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
@@ -755,6 +766,387 @@ describe('AgentPanelRoot first-use experience', () => {
     conversation.resolvePaywalls()
 
     expect(await freeUseNotice()).toBeInTheDocument()
+  })
+})
+
+describe('AgentPanelRoot Local grant messaging', () => {
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    Object.assign(useAgentConsentStore(), {
+      accepted: true,
+      identity: 'account-a/workspace-a/0'
+    })
+    paywallHasFunds.value = true
+    mockMessagesEndpoint('wf-local')
+  })
+
+  function assignArm(assignment: LocalAgentGrantArm) {
+    const arm = ref(assignment)
+    vi.mocked(useLocalAgentGrant).mockReturnValue({ arm })
+    return arm
+  }
+
+  it.for([
+    { arm: 'treatment', scoped: true, free: 1, credits: 0 },
+    { arm: 'treatment', scoped: false, free: 0, credits: 0 },
+    { arm: 'treatment', scoped: undefined, free: 0, credits: 0 },
+    { arm: 'control', scoped: true, free: 0, credits: 1 },
+    { arm: 'control', scoped: false, free: 0, credits: 1 },
+    { arm: 'control', scoped: undefined, free: 0, credits: 1 },
+    { arm: 'unknown', scoped: true, free: 0, credits: 0 }
+  ] satisfies {
+    arm: LocalAgentGrantArm
+    scoped: boolean | undefined
+    free: number
+    credits: number
+  }[])(
+    'renders $arm with scoped funds $scoped without inferring an allowance',
+    async ({ arm, scoped, free, credits }) => {
+      assignArm(arm)
+      paywallAgentScopedHasFunds.value = scoped
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
+        free
+      )
+      expect(screen.queryAllByText('Agent chats use credits.')).toHaveLength(
+        credits
+      )
+      expect(useFreeUsePlacement).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([true, false])(
+    'refreshes consent-time funds with accepted-on-mount=%s',
+    async (acceptedOnMount) => {
+      assignArm('treatment')
+      const consent = useAgentConsentStore()
+      Object.assign(consent, { accepted: acceptedOnMount })
+      paywallAgentScopedHasFunds.value = false
+      const balance = vi.fn(async () => {})
+      useBillingContext().fetchBalance = balance
+      paywallBilling.fetchStatus.mockImplementation(async () => {
+        paywallAgentScopedHasFunds.value = true
+      })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      Object.assign(consent, { accepted: true })
+
+      expect(
+        await screen.findByText('Try agent chat for free.')
+      ).toBeInTheDocument()
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledExactlyOnceWith({
+        fresh: true
+      })
+      expect(balance).toHaveBeenCalledExactlyOnceWith({ fresh: true })
+      expect(
+        fetchRequests({ method: 'POST', url: /\/api\/global-settings$/ })
+      ).toHaveLength(0)
+    }
+  )
+
+  it.for([
+    {
+      label: 'signed out',
+      cloud: false,
+      desktop: true,
+      signedIn: false,
+      consent: true
+    },
+    {
+      label: 'consent pending',
+      cloud: false,
+      desktop: true,
+      signedIn: true,
+      consent: false
+    },
+    {
+      label: 'Cloud',
+      cloud: true,
+      desktop: false,
+      signedIn: true,
+      consent: true
+    },
+    {
+      label: 'a local browser',
+      cloud: false,
+      desktop: false,
+      signedIn: true,
+      consent: true
+    }
+  ])(
+    'withholds the Local notice for $label',
+    async ({ cloud, desktop, signedIn, consent }) => {
+      distribution.isCloud = cloud
+      distribution.isDesktop = desktop
+      useCurrentUser().isLoggedIn = computed(() => signedIn)
+      Object.assign(useAgentConsentStore(), { accepted: consent })
+      assignArm('treatment')
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(
+        screen.queryByRole('note', { name: 'Agent credits' })
+      ).not.toBeInTheDocument()
+      expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+      expect(paywallBilling.fetchBalance).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { remote: false, free: 1, placementCalls: 0 },
+    { remote: true, free: 0, placementCalls: 1 }
+  ])(
+    'keeps Desktop 2 remote=$remote grant eligibility separate from onboarding',
+    async ({ remote, free, placementCalls }) => {
+      distribution.isDesktop = false
+      vi.stubGlobal('__comfyDesktop2', { isRemote: () => remote })
+      vi.stubGlobal('__comfyDesktop2Remote', !remote)
+      assignArm('treatment')
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('textbox')
+
+      expect(screen.queryAllByText('Try agent chat for free.')).toHaveLength(
+        free
+      )
+      expect(useFreeUsePlacement).toHaveBeenCalledTimes(placementCalls)
+      const scope = vi.mocked(useLocalAgentGrant).mock.calls[0]?.[0]
+      expect(toValue(scope)).toBe(remote ? null : 'account-a/workspace-a/0')
+    }
+  )
+
+  it('removes the free notice when consent scope is invalidated', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+
+    Object.assign(useAgentConsentStore(), { identity: null })
+    await nextTick()
+
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('refreshes a replacement consent scope without refreshing for a new chat', async () => {
+    assignArm('unknown')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(1)
+
+    Object.assign(useAgentConsentStore(), { identity: null })
+    await nextTick()
+    Object.assign(useAgentConsentStore(), {
+      identity: 'account-b/workspace-b/1'
+    })
+    await nextTick()
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledTimes(2)
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps sending available while a consent balance refresh fails', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = false
+    paywallBilling.fetchStatus.mockRejectedValue(
+      new Error('billing unavailable')
+    )
+    const bodies = mockMessagesEndpoint('wf-local')
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-local', tab.path)
+    renderWithSelectedTarget()
+
+    await sendFromComposer('Build a workflow')
+
+    expect(bodies).toHaveLength(1)
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+    expect(
+      screen.queryByText('Try agent chat for free.')
+    ).not.toBeInTheDocument()
+    expect(withConsent).not.toHaveBeenCalled()
+  })
+
+  it('does not inherit the Cloud notice dismissal', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    localStorage.setItem(
+      'Comfy.AgentPanel.freeUseNoticeDismissed.account-a',
+      'true'
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      await screen.findByText('Try agent chat for free.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers ordinary Add credits without reporting a refused send or exhausted credits', async () => {
+    assignArm('control')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(
+      appMock.extensionManager.dialog.showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      isInsufficientCredits: false
+    })
+    expect(openAccountPrecondition).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPaywallCtaClicked).not.toHaveBeenCalled()
+  })
+
+  it('keeps control copy but omits Add credits when canTopUp is false', async () => {
+    assignArm('control')
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      await screen.findByText('Agent chats use credits.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows control copy again for a new empty conversation, without a has-seen flag', async () => {
+    assignArm('control')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Agent chats use credits.')
+
+    activateThread()
+    await nextTick()
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+
+    expect(
+      await screen.findByText('Agent chats use credits.')
+    ).toBeInTheDocument()
+  })
+
+  it('does not backfill a late control assignment after the first user message', async () => {
+    const arm = assignArm('unknown')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    activateThread()
+
+    arm.value = 'control'
+    await nextTick()
+
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('lets an unknown arm and unknown funds send the consent-approved draft exactly once', async () => {
+    assignArm('unknown')
+    paywallHasFunds.value = null
+    const bodies = mockMessagesEndpoint('wf-local')
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-local', tab.path)
+    renderWithSelectedTarget()
+
+    await sendFromComposer('Build a workflow')
+
+    expect(bodies).toHaveLength(1)
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it.for(['control', 'treatment'] as const)(
+    'gives an existing paywall priority over the %s notice',
+    async (assignment) => {
+      assignArm(assignment)
+      paywallAgentScopedHasFunds.value = true
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await screen.findByRole('note', { name: 'Agent credits' })
+
+      useAgentConversationStore().recordPaywall(
+        toTurnId('msg-paywall'),
+        'continue'
+      )
+      await findInlinePaywallButton('Add credits')
+
+      expect(
+        screen.queryByRole('note', { name: 'Agent credits' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('gives the existing credit-transition notice priority over control copy', async () => {
+    assignArm('control')
+    paywallAgentScopedHasFunds.value = false
+    const panel = useAgentPanelStore()
+    panel.observeAgentScopedFunds(useBillingIdentity().value, true)
+    panel.observeAgentScopedFunds(useBillingIdentity().value, false)
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await screen.findByTestId('agent-credit-transition-notice')
+
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides the free notice for the latest inline error and restores it after a healthy turn', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+    const conversation = useAgentConversationStore()
+
+    conversation.recordFailedSend(
+      toTurnId('failed'),
+      'Try a prompt',
+      'Billing is unavailable'
+    )
+    await screen.findByRole('alert')
+
+    expect(executionErrors.isErrorOverlayOpen).toBe(false)
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
+
+    activateThread()
+
+    expect(
+      await screen.findByText('Try agent chat for free.')
+    ).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Billing is unavailable'
+    )
+  })
+
+  it('gives the existing error overlay priority over a free notice', async () => {
+    assignArm('treatment')
+    paywallAgentScopedHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByText('Try agent chat for free.')
+
+    executionErrors.isErrorOverlayOpen = true
+    await nextTick()
+
+    expect(
+      screen.queryByRole('note', { name: 'Agent credits' })
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -6816,6 +7208,12 @@ describe('AgentPanelRoot workflow binding', () => {
     const persistence = new Promise<Response>((resolve) => {
       confirmPersistence = resolve
     })
+    let finishBillingRefresh!: () => void
+    const billingRefresh = new Promise<void>((resolve) => {
+      finishBillingRefresh = resolve
+    })
+    paywallBilling.fetchStatus.mockReturnValue(billingRefresh)
+    paywallBilling.fetchBalance.mockReturnValue(billingRefresh)
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
         await signIn
@@ -6876,6 +7274,13 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentConsentStore().accepted).toBe(true)
     expect(fetchRequests(consentPost)).toHaveLength(1)
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    expect(paywallBilling.fetchStatus).toHaveBeenCalledWith({ fresh: true })
+    expect(paywallBilling.fetchBalance).toHaveBeenCalledExactlyOnceWith({
+      fresh: true
+    })
+    finishBillingRefresh()
+    await nextTick()
+    expect(bodies).toHaveLength(1)
   })
 
   it('restores a consent-held Desktop draft when its scope changes during the coach', async () => {

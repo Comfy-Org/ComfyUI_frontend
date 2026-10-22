@@ -7,13 +7,22 @@ import type {
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import type {
+  DesktopHostAuthBridge,
+  DesktopHostAuthState
+} from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  desktopHostUser,
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -55,7 +64,8 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
-  refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
+  refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options),
+  invalidateRemoteConfig: vi.fn()
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -257,6 +267,140 @@ describe('WorkspaceAuthGate', () => {
       expect(useTeamWorkspaceStore().resetForIdentityChange).toHaveBeenCalled()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledTimes(2)
     })
+  })
+
+  describe('Desktop host sessions', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    function deferredWorkspace() {
+      let resolve!: () => void
+      const promise = new Promise<void>((complete) => {
+        resolve = complete
+      })
+      return { promise, resolve }
+    }
+
+    function hostBridge(initial: DesktopHostAuthState) {
+      const listeners = new Set<(state: DesktopHostAuthState) => void>()
+      return {
+        bridge: fromPartial<DesktopHostAuthBridge>({
+          getState: async () => initial,
+          onChanged: (listener) => {
+            listeners.add(listener)
+            return () => listeners.delete(listener)
+          }
+        }),
+        push: (state: DesktopHostAuthState) => {
+          for (const listener of listeners) listener(state)
+        }
+      }
+    }
+
+    it('initializes billing capabilities without waiting for Firebase', async () => {
+      const { bridge } = hostBridge({
+        status: 'signed_in',
+        userId: 'desktop-user',
+        workspaceId: 'workspace-123'
+      })
+      await startDesktopHostSession(bridge)
+
+      mountComponent()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+      })
+      expect(useAuthStore().isInitialized).toBe(false)
+      expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('waits for workspace initialization already started by the host session', async () => {
+      Object.assign(useAuthStore(), { isInitialized: true })
+      const workspaceReady = deferredWorkspace()
+      vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+        async () => {
+          Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+          await workspaceReady.promise
+          Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+        }
+      )
+      const { bridge } = hostBridge({
+        status: 'signed_in',
+        userId: 'desktop-user',
+        workspaceId: 'workspace-123'
+      })
+      await startDesktopHostSession(bridge)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+
+      workspaceReady.resolve()
+      await waitFor(() => {
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+      })
+    })
+
+    it.for<{
+      next: DesktopHostAuthState
+      billingInitializations: number
+    }>([
+      { next: { status: 'signed_out' }, billingInitializations: 0 },
+      {
+        next: {
+          status: 'signed_in',
+          userId: 'next-desktop-user',
+          workspaceId: 'workspace-123'
+        },
+        billingInitializations: 1
+      }
+    ])(
+      'ignores stale initialization after host changes to $next.status',
+      async ({ next, billingInitializations }) => {
+        Object.assign(useAuthStore(), { isInitialized: true })
+        const initialWorkspace = deferredWorkspace()
+        const nextWorkspace = deferredWorkspace()
+        vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+          async () => {
+            const userId = desktopHostUser.value?.id
+            Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+            await (userId === 'desktop-user'
+              ? initialWorkspace.promise
+              : nextWorkspace.promise)
+            if (desktopHostUser.value?.id === userId) {
+              Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+            }
+          }
+        )
+        const { bridge, push } = hostBridge({
+          status: 'signed_in',
+          userId: 'desktop-user',
+          workspaceId: 'workspace-123'
+        })
+        await startDesktopHostSession(bridge)
+        mountComponent()
+        await flushPromises()
+
+        push(next)
+        await flushPromises()
+        initialWorkspace.resolve()
+        await flushPromises()
+
+        expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+
+        nextWorkspace.resolve()
+        await flushPromises()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledTimes(
+          billingInitializations
+        )
+      }
+    )
   })
 
   describe('cloud builds - unauthenticated user', () => {
@@ -787,6 +931,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error without a ready workspace context', async () => {
       Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+      vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
 
       mountComponent()
       await flushPromises()

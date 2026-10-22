@@ -545,6 +545,26 @@ describe('AgentPanel', () => {
     )
   })
 
+  it('shows the top notice only in the conversation view', async () => {
+    render(AgentPanel, {
+      props: { entries: [], historyGroups: createHistoryGroups() },
+      slots: { topNotice: '<div role="note">Grant information</div>' },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent('Grant information')
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+
   it('groups chat options with the title and separates history navigation', () => {
     const title = 'A comfortably short title'
     render(AgentPanel, {

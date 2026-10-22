@@ -163,11 +163,11 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
+  const { isIdentityReady, isAuthenticated } = storeToRefs(authStore)
 
   try {
-    if (!isInitialized.value) {
-      await until(isInitialized).toBe(true, {
+    if (!isIdentityReady.value) {
+      await until(isIdentityReady).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
         throwOnTimeout: true
       })
@@ -271,16 +271,8 @@ async function handleSignOut(): Promise<void> {
 }
 
 async function initializeWorkspaceMode(): Promise<void> {
-  // Initialize the full workspace store which handles:
-  // - Restoring workspace token from session (fast path for refresh)
-  // - Fetching workspace list
-  // - Switching to last used workspace if needed
-  // - Setting active workspace
   const workspaceStore = useTeamWorkspaceStore()
-  if (
-    workspaceStore.initState === 'uninitialized' ||
-    workspaceStore.initState === 'error'
-  ) {
+  if (workspaceStore.initState !== 'ready') {
     await workspaceStore.initialize()
   }
   if (
@@ -291,18 +283,15 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
-// The local session identity: the Firebase uid, or the validated API key for
-// key-only sessions. Workspace initialization keys off this so an API-key
-// login boots workspace context the same way a Firebase login does.
 function localSessionIdentity(): string | null {
-  const { currentUser } = storeToRefs(useAuthStore())
-  if (currentUser.value?.uid) return currentUser.value.uid
+  const { userId } = useAuthStore()
+  if (userId) return userId
   const apiKeyStore = useApiKeyAuthStore()
   return apiKeyStore.isAuthenticated ? apiKeyStore.getApiKey() : null
 }
 
 function initializeWorkspacesInBackground(): Promise<void> {
-  const { isInitialized } = storeToRefs(useAuthStore())
+  const { isIdentityReady } = storeToRefs(useAuthStore())
   const sessionId = localSessionIdentity()
   if (
     backgroundInitialization &&
@@ -316,8 +305,8 @@ function initializeWorkspacesInBackground(): Promise<void> {
   backgroundInitializationUserId = sessionId
 
   const operation = (async () => {
-    if (!isInitialized.value) {
-      await until(isInitialized).toBe(true, {
+    if (!isIdentityReady.value) {
+      await until(isIdentityReady).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
         throwOnTimeout: true
       })

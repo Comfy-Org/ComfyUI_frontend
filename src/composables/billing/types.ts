@@ -116,10 +116,14 @@ export type BillingPortalOutcome =
       reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
     }
 
+export interface BillingRefreshOptions {
+  fresh?: boolean
+}
+
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
-  fetchBalance: () => Promise<void>
+  fetchStatus: (options?: BillingRefreshOptions) => Promise<void>
+  fetchBalance: (options?: BillingRefreshOptions) => Promise<void>
   subscribe: (
     planSlug: string,
     options?: SubscribeOptions

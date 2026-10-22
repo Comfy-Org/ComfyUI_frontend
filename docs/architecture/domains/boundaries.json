@@ -511,7 +511,6 @@
           "src/platform/auth/sso/SsoAccountOutsideOrganizationDialogContent.vue",
           "src/platform/auth/sso/SsoRequiredDialogContent.test.ts",
           "src/platform/auth/sso/SsoRequiredDialogContent.vue",
-          "src/platform/workspace/auth/**",
           "src/views/UserSelectView.test.ts",
           "src/views/UserSelectView.vue"
         ]
@@ -522,6 +521,7 @@
           "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
           "src/platform/auth/webSessionFlagOff.test.ts",
           "src/platform/auth/webSessionFlagOn.test.ts",
+          "src/platform/workspace/auth/WorkspaceAuthGate.test.ts",
           "src/utils/__tests__/stubAccountIdentityPort.ts"
         ]
       },
@@ -3581,6 +3581,10 @@
         ]
       },
       {
+        "name": "authentication/presentation/outer-1",
+        "patterns": ["src/platform/workspace/auth/**"]
+      },
+      {
         "name": "billing/application/outer-1",
         "patterns": ["src/storybook/**"]
       },
@@ -4096,6 +4100,7 @@
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-reporting/application/outer-1",
@@ -4142,6 +4147,7 @@
           "workflow-management/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-reporting/application/outer-1",
@@ -4321,6 +4327,7 @@
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
+          "authentication/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -4333,6 +4340,7 @@
           "authentication/presentation",
           "authentication/integration",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6071,6 +6079,7 @@
           "settings/domain",
           "settings/application",
           "settings/presentation",
+          "authentication/presentation/outer-1",
           "settings/application/outer-1",
           "dialog-host/presentation/outer-2",
           "unclassified"
@@ -6093,6 +6102,7 @@
           "settings/presentation",
           "settings/integration",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "settings/application/outer-1",
           "dialog-host/presentation/outer-2",
           "unclassified"
@@ -6766,6 +6776,7 @@
           "workflow-management/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
           "error-reporting/application/outer-1",
@@ -6845,6 +6856,16 @@
           "authentication/application",
           "authentication/infrastructure",
           "authentication/infrastructure/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "authentication/presentation/outer-1",
+        "allow": [
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
+          "authentication/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -8000,6 +8021,7 @@
           "assets/presentation/outer-1",
           "assets/integration/outer-1",
           "authentication/infrastructure/outer-1",
+          "authentication/presentation/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
           "billing/presentation/outer-1",

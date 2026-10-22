@@ -11,7 +11,7 @@ import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
-import { createScopedReader } from './scopedReader'
+import { createFreshRead, createScopedReader } from './scopedReader'
 import { wireCents } from './wireCents'
 
 export const CREDITS_ROUTE = '/billing/balance'
@@ -33,6 +33,7 @@ export interface CreditsSnapshot {
 
 export interface CreditsReadOptions {
   readonly signal?: AbortSignal
+  readonly fresh?: boolean
 }
 
 export interface CreditsReader {
@@ -74,11 +75,12 @@ export function createCreditsReader(
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { balance: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
   return {
-    read: reader.read,
+    read: createFreshRead(reader),
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }
