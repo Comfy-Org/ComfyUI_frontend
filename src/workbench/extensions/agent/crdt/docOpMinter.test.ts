@@ -756,6 +756,102 @@ describe('attachDocOpMinter', () => {
       ])
       doc.destroy()
     })
+
+    // PM-2080: ResizeImageMaskNode grows `resize_type.match` only while
+    // `resize_type` is 'match size'. A document minted under another selection
+    // has no such slot, so the human link into it, and its later removal,
+    // never reached the document the agent reads.
+    it('grows a dynamic-combo input the document minted under another selection lacks, so its connect and disconnect both land', async () => {
+      const resizeType: ComfyNodeDefV1['input'] = {
+        required: {
+          resize_type: [
+            'COMFY_DYNAMICCOMBO_V3',
+            {
+              options: [
+                {
+                  key: 'scale by multiplier',
+                  inputs: { required: { multiplier: ['FLOAT', {}] } }
+                },
+                {
+                  key: 'match size',
+                  inputs: { required: { match: ['IMAGE,MASK', {}] } }
+                }
+              ]
+            }
+          ]
+        }
+      }
+      useNodeDefStore().addNodeDef({
+        name: 'TestResize',
+        display_name: 'Test Resize',
+        category: 'test',
+        python_module: 'custom_nodes.test',
+        description: '',
+        input: resizeType,
+        output: ['IMAGE'],
+        output_name: ['IMAGE'],
+        output_is_list: [false],
+        output_node: false
+      })
+      const source = new TestSource()
+      const resize = new LGraphNode('Test Resize', 'TestResize')
+      resize.widgets = []
+      useLitegraphService().addNodeInput(
+        resize,
+        transformInputSpecV1ToV2(resizeType.required!.resize_type, {
+          name: 'resize_type'
+        })
+      )
+      withGraphIntentSource('load', () => {
+        graph.add(source)
+        graph.add(resize)
+      })
+      const doc = mintDocFrom(graph)
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      withGraphIntentSource('load', () => {
+        resize.widgets![0].value = 'match size'
+      })
+      const match = resize.findInputSlot('resize_type.match')
+      expect(match).toBeGreaterThanOrEqual(0)
+      expect(docInputs(doc, resize.id)?.map(({ name }) => name)).not.toContain(
+        'resize_type.match'
+      )
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      const handWired = resize.inputs[match].link
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          link_id: handWired,
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(docInputs(doc, resize.id)).toContainEqual({
+        name: 'resize_type.match',
+        link: handWired
+      })
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'disconnect', link_id: handWired })
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(docInputs(doc, resize.id)).toContainEqual({
+        name: 'resize_type.match',
+        link: null
+      })
+      expect(reportError).not.toHaveBeenCalled()
+      doc.destroy()
+    })
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {

@@ -20,6 +20,7 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -402,14 +403,39 @@ export function docInputIndex(
   return index === -1 ? undefined : index
 }
 
+/**
+ * Whether `name` is an input the node's definition grows from a dynamic
+ * input's current value (`resize_type.match` exists only while `resize_type`
+ * selects the option that declares it), resolved from the definition rather
+ * than the name's shape. A document minted under another selection lacks such
+ * a slot without having diverged.
+ */
+function isSelectionDependentInput(node: LGraphNode, name: string): boolean {
+  const inputs = useNodeDefStore().fromLGraphNode(node)?.input
+  if (!inputs) return false
+  if (Object.hasOwn(inputs.required ?? {}, name)) return false
+  if (Object.hasOwn(inputs.optional ?? {}, name)) return false
+  return (
+    resolveDynamicInputSpec(
+      inputs,
+      name,
+      (widgetName) =>
+        node.widgets?.find((widget) => widget.name === widgetName)?.value
+    ) !== undefined
+  )
+}
+
 function growForMissingSlot(
   target: LGraphNode | null | undefined,
   input: INodeInputSlot | undefined
 ): { name: string; type: string; widget?: string } | undefined {
   if (!target || !input) return undefined
   const widgetBacked = !!input.widget && !target.isSubgraphNode()
-  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
-    return undefined
+  const grows =
+    widgetBacked ||
+    !!liveAutogrowGroupOf(target, input.name) ||
+    isSelectionDependentInput(target, input.name)
+  if (!grows) return undefined
   return {
     name: input.name,
     type: String(input.type),
