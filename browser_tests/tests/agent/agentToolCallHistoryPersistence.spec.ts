@@ -20,12 +20,30 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 // This test mimics that verbatim content pass-through (the shared fixture's
 // own GET mock does not carry tool_calls) and asserts the summary survives a
 // refresh.
+const THINKING_ROUND_1 =
+  'The user wants a loader node, so I will search for one.'
+const THINKING_ROUND_2 = 'Found a match; adding it to the graph.'
+const THINKING_FINAL = 'Both steps succeeded, so I can answer.'
+const TRACE = [
+  THINKING_ROUND_1,
+  'Search nodes',
+  THINKING_ROUND_2,
+  'Add node',
+  THINKING_FINAL
+]
+
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
-  'keeps a completed turn work summary after reload and chat switching',
-  { tag: ['@cloud', '@ui'] },
+  'keeps a completed turn work summary, thinking included, after reload and chat switching',
+  {
+    tag: ['@cloud', '@ui'],
+    annotation: {
+      type: 'source',
+      description: 'https://linear.app/comfyorg/issue/PM-717'
+    }
+  },
   async ({ page, promptHistory, workflowSelection }) => {
     await new AgentPanel(page).open()
     await page
@@ -89,6 +107,11 @@ test(
           status: 'complete',
           content: {
             text: 'Found it.',
+            thinking: [
+              { text: THINKING_ROUND_1, tool_call_id: 'call-1' },
+              { text: THINKING_ROUND_2, tool_call_id: 'call-2' },
+              { text: THINKING_FINAL }
+            ],
             tool_calls: [
               {
                 id: 'call-1',
@@ -135,10 +158,7 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
-    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
-    ])
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText(TRACE)
     const restoredThreadId = promptHistory.historyRequestThreadIds.at(-1)
     expect(restoredThreadId).toBeTruthy()
     const historyRequestCount = promptHistory.historyRequestThreadIds.length
@@ -169,9 +189,6 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
-    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
-    ])
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText(TRACE)
   }
 )

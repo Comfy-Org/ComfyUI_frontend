@@ -2,6 +2,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import type { PermanentDocSubscribeRefusalCode } from './docFrameCodes'
+import { isPermanentSubscribeRefusalCode } from './docFrameCodes'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -41,28 +43,12 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
 export type SubscribeGiveUpReason = 'refused' | 'timeout'
 
-// PM-1604 / BE-11437: the doc-host's terminal classifications for a
-// document this build can never read back - unlike every other refusal
-// reason, no amount of backoff retry changes that outcome, so these codes
-// skip the retry ladder entirely and latch the same give-up exit an
-// unanswered ack times out into. `schema_version_mismatch` and
-// `catalog_mismatch` are cloud's `socketDocCode()` sibling arms sharing the
-// same "retrying will not help" contract; `unsupported` (`docSurfaceOffReason`)
-// is permanent for the life of the connection.
-const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'schema_version_mismatch',
-  'catalog_mismatch',
-  'unsupported'
-])
+const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
+  new Set(['unsupported'])
 
-// `unsupported` means the doc surface is off for this whole deployment, so
-// every user hits it - latching it must not paint an "incompatible document
-// version" toast that has nothing to do with any one person's workflow.
-const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'unsupported'
-])
-
-function isNotifyingPermanentRefusalCode(code: string): boolean {
+function isNotifyingPermanentRefusalCode(
+  code: PermanentDocSubscribeRefusalCode
+): boolean {
   return !SILENT_PERMANENT_REFUSAL_CODES.has(code)
 }
 
@@ -251,10 +237,7 @@ export class AgentCrdtDocLifecycle {
 
   /** Returns whether this refusal newly triggered a give-up notification. */
   onSubscribeRefused(code?: string): boolean {
-    if (code !== undefined && PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)) {
-      // See `confirmedSinceLastSend`: bail out before touching any timer,
-      // so a stale straggler can't clear the probe/backoff state the
-      // confirm it raced behind already armed.
+    if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
       if (this.confirmedSinceLastSend) return false
       this.clearAckTimer()
       this.clearStaleProbe()

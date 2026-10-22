@@ -114,10 +114,6 @@ const config: StorybookConfig = {
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },
           {
-            find: '@/composables/queue/useJobActions',
-            replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
-          },
-          {
             find: '@/composables/billing/useBillingContext',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingContext.ts'

@@ -935,11 +935,6 @@
       "count": 2
     }
   },
-  "src/platform/workspace/composables/useAutoPageSize.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/composables/useDowngradeToPersonal.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2

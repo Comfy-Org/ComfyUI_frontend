@@ -108,7 +108,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: website-snapshot-updates-${{ matrix.shardIndex }}
+          name: website-snapshot-updates-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: apps/website/snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
