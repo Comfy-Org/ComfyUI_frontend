@@ -64,6 +64,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -105,7 +106,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { AgentActiveTabData } from './schemas/agentApiSchema'
+import type { AgentActiveTabData, AgentWsEvent } from './schemas/agentApiSchema'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
@@ -915,6 +916,16 @@ function reportPendingSend(): void {
   })
 }
 
+function adoptAgentRunJob(event: AgentWsEvent): void {
+  if (event.type !== 'agent_tool_call') return
+  const { job_id: jobId, job_workflow_id: workflowId } = event.data
+  if (!jobId || !workflowId) return
+  const workflow = boundOrOpenWorkflowFor(workflowId)
+  if (workflow) useExecutionStore().registerJobOwner(jobId, workflow)
+}
+
+const agentNodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
+
 const {
   sendMessage,
   stopTurn,
@@ -940,7 +951,10 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
-  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
+  onAgentEvent: (event) => {
+    agentNodeDefinitionRefresh.observeAgentEvent(event)
+    adoptAgentRunJob(event)
+  },
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
