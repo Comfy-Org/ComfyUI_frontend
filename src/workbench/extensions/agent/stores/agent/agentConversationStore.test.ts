@@ -2143,6 +2143,19 @@ describe('useAgentConversationStore', () => {
         expect.objectContaining({ type: 'runApproval', dismissed: true })
       )
     })
+
+    it('stays greyed when its stashed turn comes back', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.stashActiveTurn()
+
+      store.dismissOpenAsks()
+      store.resumeBackgroundTurn()
+
+      expect(store.activeAskOpen).toBe(false)
+    })
   })
 
   describe('a dropped approval ask is reported', () => {

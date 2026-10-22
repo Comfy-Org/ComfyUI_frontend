@@ -445,6 +445,8 @@ export const useAgentConversationStore = defineStore(
       activeSlot.value?.transport.dismissAsks()
       for (const settledTransport of settledActiveTransports)
         settledTransport.dismissAsks()
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === threadKey()) entry.transport.dismissAsks()
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()

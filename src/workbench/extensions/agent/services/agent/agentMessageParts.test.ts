@@ -433,6 +433,12 @@ describe('retireAskParts', () => {
       expected: { status: 'closed' }
     },
     {
+      name: 'an empty answer replaces a dismissal',
+      shown: { status: 'closed' },
+      next: { status: 'answered', selected: [] },
+      expected: { status: 'answered', selected: [] }
+    },
+    {
       name: 'a named answer replaces an unnamed one',
       shown: { status: 'answered', selected: [] },
       next: { status: 'answered', selected: ['flux'] },

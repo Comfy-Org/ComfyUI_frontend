@@ -92,7 +92,9 @@ export function settleResolution(
   shown: AskUserResolution | undefined,
   next: AskUserResolution
 ): AskUserResolution {
-  return shown === undefined || resolutionScore(next) > resolutionScore(shown)
+  return shown === undefined ||
+    (next.status === 'answered' && shown.status === 'closed') ||
+    resolutionScore(next) > resolutionScore(shown)
     ? next
     : shown
 }
