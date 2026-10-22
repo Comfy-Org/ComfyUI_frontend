@@ -6,8 +6,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { planCheckoutBannerFor } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
-import type { PlanCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
+import { planCheckoutBannerFor } from '@/platform/billing/components/billingTab/planCheckoutBanner'
+import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export function usePlanCheckoutBanner() {

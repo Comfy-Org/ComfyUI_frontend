@@ -16,8 +16,8 @@ import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscriptio
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
-import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -238,7 +238,7 @@ export function useBillingDialogs() {
     }
 
     const { default: component } =
-      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+      await import('@/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
     const dialogKey = 'downgrade-remove-members'
     dialogStore.closeDialog({ key: dialogKey })
     return new Promise((resolve) => {

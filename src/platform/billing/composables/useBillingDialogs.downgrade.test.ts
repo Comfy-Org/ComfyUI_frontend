@@ -3,7 +3,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useToast } from '@/components/ui/toast/toastStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
-import type DowngradeContent from '@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
+import type DowngradeContent from '@/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
 /**
@@ -72,7 +72,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue'),
+  import('@/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue'),
   () => ({ default: { name: 'DowngradeRemoveMembersDialogContent' } })
 )
 

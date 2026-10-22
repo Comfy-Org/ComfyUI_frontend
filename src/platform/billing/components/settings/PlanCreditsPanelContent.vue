@@ -60,8 +60,8 @@ import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.v
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
-import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
-import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
+import SubscriptionPanelContentWorkspace from '@/platform/billing/components/SubscriptionPanelContentWorkspace.vue'
+import WorkspaceInvoicesContent from '@/platform/billing/components/settings/WorkspaceInvoicesContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type View = 'overview' | 'activity' | 'invoices'

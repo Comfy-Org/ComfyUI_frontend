@@ -1,6 +1,6 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
-import type { PlanRowState } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
   balance: BalanceInfo | null

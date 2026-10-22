@@ -79,7 +79,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
-import InviteMembersForm from './InviteMembersForm.vue'
+import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 
 const {
   tierKey,

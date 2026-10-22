@@ -9,7 +9,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
-import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
+import PricingTableWorkspace from '@/platform/billing/components/PricingTableWorkspace.vue'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 

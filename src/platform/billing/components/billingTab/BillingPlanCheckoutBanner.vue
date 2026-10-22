@@ -50,7 +50,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { PlanCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
+import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
 
 const { banner } = defineProps<{
   banner: PlanCheckoutBanner | null

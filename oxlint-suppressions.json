@@ -670,6 +670,26 @@
       "count": 1
     }
   },
+  "src/platform/billing/components/PricingTableWorkspace.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/UnifiedPricingTable.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
   "src/platform/billing/composables/useBillingContext.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -940,27 +960,7 @@
       "count": 4
     }
   },
-  "src/platform/workspace/components/PricingTableWorkspace.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/components/UnifiedPricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }

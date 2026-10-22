@@ -5,8 +5,8 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
-import { resolveSubscriptionTierKey } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
-import { derivePlanRow } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+import { resolveSubscriptionTierKey } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
+import { derivePlanRow } from '@/platform/billing/components/billingTab/planRow'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 
 export function useBillingPlanRow() {

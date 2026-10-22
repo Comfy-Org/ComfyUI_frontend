@@ -220,7 +220,7 @@
 
 <script setup lang="ts">
 import Badge from '@/components/ui/badge/Badge.vue'
-import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'

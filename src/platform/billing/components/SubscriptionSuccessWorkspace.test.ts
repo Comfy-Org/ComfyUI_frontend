@@ -14,36 +14,39 @@ const mockOccupiedSeats = ref(1)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock<unknown>(import('./InviteMembersForm.vue'), () => ({
-  default: {
-    name: 'InviteMembersForm',
-    props: [
-      'maxSeats',
-      'occupiedSeats',
-      'source',
-      'submitLabel',
-      'placeholder'
-    ],
-    emits: ['submitted'],
-    setup(
-      _: unknown,
-      {
-        emit,
-        expose
-      }: {
-        emit: (event: string, emails: string[]) => void
-        expose: (exposed: Record<string, unknown>) => void
-      }
-    ) {
-      mockInviteSubmit.mockImplementation(async () => {
-        emit('submitted', ['a@b.com'])
-      })
-      expose({ canSubmit: true, loading: false, submit: mockInviteSubmit })
-    },
-    template:
-      '<div data-testid="invite-form">max:{{ maxSeats }} occupied:{{ occupiedSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/workspace/components/InviteMembersForm.vue'),
+  () => ({
+    default: {
+      name: 'InviteMembersForm',
+      props: [
+        'maxSeats',
+        'occupiedSeats',
+        'source',
+        'submitLabel',
+        'placeholder'
+      ],
+      emits: ['submitted'],
+      setup(
+        _: unknown,
+        {
+          emit,
+          expose
+        }: {
+          emit: (event: string, emails: string[]) => void
+          expose: (exposed: Record<string, unknown>) => void
+        }
+      ) {
+        mockInviteSubmit.mockImplementation(async () => {
+          emit('submitted', ['a@b.com'])
+        })
+        expose({ canSubmit: true, loading: false, submit: mockInviteSubmit })
+      },
+      template:
+        '<div data-testid="invite-form">max:{{ maxSeats }} occupied:{{ occupiedSeats }}<button data-testid="stub-submit" @click="$emit(\'submitted\', [\'a@b.com\'])">submit</button></div>'
+    }
+  })
+)
 
 function makePreviewData(
   priceCents: number,

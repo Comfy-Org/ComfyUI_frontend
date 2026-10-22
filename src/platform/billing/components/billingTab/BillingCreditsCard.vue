@@ -147,7 +147,7 @@ import {
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import type { CreditsCardState } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'
+import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
 
 const { state, canTopUp } = defineProps<{
   state: CreditsCardState

@@ -31,7 +31,7 @@ import type {
   Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
-import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useDowngradeToPersonal } from '@/platform/billing/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'

@@ -10,7 +10,7 @@ import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuard
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
-import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+import SubscriptionRequiredDialogContentUnified from '@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock<unknown>(

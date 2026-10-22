@@ -14,7 +14,7 @@ import type {
   BillingSubscriptionStatus,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
-import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+import UnifiedPricingTable from '@/platform/billing/components/UnifiedPricingTable.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type PlanDecision = Pick<

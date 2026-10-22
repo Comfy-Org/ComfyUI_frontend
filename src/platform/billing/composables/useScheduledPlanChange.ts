@@ -9,7 +9,7 @@ import {
 import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
-} from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
+} from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 
 export function useScheduledPlanChange() {
   const { t, locale } = useI18n()

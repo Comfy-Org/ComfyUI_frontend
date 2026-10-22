@@ -253,7 +253,7 @@
 </template>
 
 <script setup lang="ts">
-import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import Popover from '@/components/ui/Popover.vue'

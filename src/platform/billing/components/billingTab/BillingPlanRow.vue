@@ -34,12 +34,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import BillingPlanLifecycle from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanLifecycle.vue'
-import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+import BillingPlanLifecycle from '@/platform/billing/components/billingTab/BillingPlanLifecycle.vue'
+import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import type {
   PlanRowAction,
   PlanRowState
-} from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+} from '@/platform/billing/components/billingTab/planRow'
 
 const { state, action, canManageSubscription } = defineProps<{
   state: PlanRowState

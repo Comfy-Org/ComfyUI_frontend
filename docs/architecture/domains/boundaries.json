@@ -535,7 +535,7 @@
           "src/platform/billing/customerActionParity.test.ts",
           "src/platform/billing/customerAttention.test.ts",
           "src/platform/billing/customerAttention.ts",
-          "src/platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
+          "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
           "src/platform/billing/utils/checkoutJourney.test.ts",
           "src/platform/billing/utils/checkoutJourney.ts"
         ]
@@ -625,46 +625,47 @@
           "src/components/topbar/TopbarSubscribeButton.test.ts",
           "src/components/topbar/TopbarSubscribeButton.vue",
           "src/components/ui/credit-slider/**",
-          "src/platform/workspace/components/InsufficientCreditsMemberDialog.vue",
-          "src/platform/workspace/components/PricingTableWorkspace.test.ts",
-          "src/platform/workspace/components/PricingTableWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionCheckoutSteps.stories.ts",
-          "src/platform/workspace/components/SubscriptionInactiveMemberDialog.test.ts",
-          "src/platform/workspace/components/SubscriptionInactiveMemberDialog.vue",
-          "src/platform/workspace/components/SubscriptionPanelContentWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionPausedDialog.test.ts",
-          "src/platform/workspace/components/SubscriptionPausedDialog.vue",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.test.ts",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionSuccessWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionSuccessWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
-          "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts",
-          "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue",
-          "src/platform/workspace/components/UnifiedPricingTable.stories.ts",
-          "src/platform/workspace/components/UnifiedPricingTable.test.ts",
-          "src/platform/workspace/components/UnifiedPricingTable.vue",
-          "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
-          "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
-          "src/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.stories.ts",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.stories.ts",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.test.ts",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue",
-          "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.test.ts",
-          "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
-          "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts",
-          "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue",
+          "src/platform/billing/components/InsufficientCreditsMemberDialog.vue",
+          "src/platform/billing/components/PricingTableWorkspace.test.ts",
+          "src/platform/billing/components/PricingTableWorkspace.vue",
+          "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.vue",
+          "src/platform/billing/components/SubscriptionCheckoutSteps.stories.ts",
+          "src/platform/billing/components/SubscriptionInactiveMemberDialog.test.ts",
+          "src/platform/billing/components/SubscriptionInactiveMemberDialog.vue",
+          "src/platform/billing/components/SubscriptionPanelContentWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue",
+          "src/platform/billing/components/SubscriptionPausedDialog.test.ts",
+          "src/platform/billing/components/SubscriptionPausedDialog.vue",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.test.ts",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue",
+          "src/platform/billing/components/SubscriptionSuccessWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionSuccessWorkspace.vue",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.vue",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue",
+          "src/platform/billing/components/UnifiedPricingTable.stories.ts",
+          "src/platform/billing/components/UnifiedPricingTable.test.ts",
+          "src/platform/billing/components/UnifiedPricingTable.vue",
+          "src/platform/billing/components/billingTab/**",
+          "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
+          "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
+          "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
+          "src/platform/billing/components/settings/BillingStatusBanner.stories.ts",
+          "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
+          "src/platform/billing/components/settings/BillingStatusBanner.vue",
+          "src/platform/billing/components/settings/MemberUpsellBanner.stories.ts",
+          "src/platform/billing/components/settings/MemberUpsellBanner.test.ts",
+          "src/platform/billing/components/settings/MemberUpsellBanner.vue",
+          "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts",
+          "src/platform/billing/components/settings/PlanCreditsPanelContent.vue",
+          "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts",
+          "src/platform/billing/components/settings/WorkspaceInvoicesContent.vue",
           "src/platform/billing/composables/useCheckoutCopy.ts",
           "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
           "src/platform/billing/composables/useWorkspaceTierLabel.ts"
@@ -3530,7 +3531,8 @@
           "src/platform/workspace/components/InviteMembersForm.vue",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
           "src/platform/workspace/components/WorkspaceSwitcherPopover.test.ts",
-          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue"
+          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue",
+          "src/platform/workspace/components/dialogs/**"
         ]
       },
       {
@@ -3905,10 +3907,6 @@
       {
         "name": "workflow-thumbnails/application/outer-1",
         "patterns": ["src/renderer/core/thumbnail/**"]
-      },
-      {
-        "name": "workspace/presentation/outer-1",
-        "patterns": ["src/platform/workspace/components/dialogs/**"]
       },
       {
         "name": "assets/domain/outer-2",
@@ -6706,7 +6704,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
-          "workspace/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6718,7 +6715,6 @@
           "workspace/infrastructure",
           "workspace/presentation",
           "workspace/integration",
-          "workspace/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -7545,16 +7541,6 @@
         ]
       },
       {
-        "from": "workspace/presentation/outer-1",
-        "allow": [
-          "workspace/domain",
-          "workspace/application",
-          "workspace/presentation",
-          "workspace/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "assets/domain/outer-2",
         "allow": ["assets/domain", "assets/domain/outer-2", "unclassified"]
       },
@@ -8053,7 +8039,6 @@
           "workflow-sharing/application/outer-1",
           "workflow-templates/application/outer-1",
           "workflow-thumbnails/application/outer-1",
-          "workspace/presentation/outer-1",
           "assets/domain/outer-2",
           "browser-interaction/domain/outer-2",
           "cloud/presentation/outer-2",

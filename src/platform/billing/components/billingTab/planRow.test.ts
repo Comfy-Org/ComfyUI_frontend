@@ -5,11 +5,11 @@ import {
   derivePlanRow,
   formatPlanDate,
   planRowAction
-} from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+} from '@/platform/billing/components/billingTab/planRow'
 import type {
   PlanRowFacts,
   PlanRowState
-} from '@/platform/workspace/components/dialogs/settings/billing/planRow'
+} from '@/platform/billing/components/billingTab/planRow'
 
 const baseFacts: PlanRowFacts = {
   subscriptionStatus: 'active',

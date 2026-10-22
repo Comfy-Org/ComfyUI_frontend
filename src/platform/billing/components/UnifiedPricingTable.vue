@@ -421,7 +421,7 @@
 
 <script setup lang="ts">
 import Badge from '@/components/ui/badge/Badge.vue'
-import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
 import Card from '@/components/ui/card/Card.vue'
 import {
   BILLING_ACTION_NAME,
@@ -458,7 +458,7 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
-import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
+import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'

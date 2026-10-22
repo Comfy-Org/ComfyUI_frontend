@@ -82,15 +82,15 @@ import {
   reducePlanConfirm,
   resumeIntent,
   stayIntent
-} from '@/platform/workspace/components/dialogs/settings/billing/planLifecycle'
+} from '@/platform/billing/components/billingTab/planLifecycle'
 import type {
   PlanConfirmEvent,
   PlanConfirmState,
   PlanLifecycleIntent
-} from '@/platform/workspace/components/dialogs/settings/billing/planLifecycle'
-import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import type { PlanRowState } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { usePlanLifecycleCommands } from '@/platform/workspace/components/dialogs/settings/billing/usePlanLifecycleCommands'
+} from '@/platform/billing/components/billingTab/planLifecycle'
+import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
+import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import { usePlanLifecycleCommands } from '@/platform/billing/components/billingTab/usePlanLifecycleCommands'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 const { state } = defineProps<{ state: PlanRowState }>()

@@ -100,7 +100,7 @@ export const useSubscriptionDialog = () => {
       key: DIALOG_KEY,
       component: defineAsyncComponent(
         () =>
-          import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+          import('@/platform/billing/components/SubscriptionInactiveMemberDialog.vue')
       ),
       props: { onClose: hide }
     })
@@ -140,7 +140,7 @@ export const useSubscriptionDialog = () => {
           key: DIALOG_KEY,
           component: defineAsyncComponent(
             () =>
-              import('@/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue')
+              import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
           ),
           props: {
             onClose: hide,
@@ -162,7 +162,7 @@ export const useSubscriptionDialog = () => {
         key: DIALOG_KEY,
         component: defineAsyncComponent(
           () =>
-            import('@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue')
+            import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
         ),
         props: {
           onClose: hide,

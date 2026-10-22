@@ -196,167 +196,171 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/components/InsufficientCreditsMemberDialog.vue",
+      "path": "src/platform/billing/components/InsufficientCreditsMemberDialog.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/PricingTableWorkspace.test.ts",
+      "path": "src/platform/billing/components/PricingTableWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/PricingTableWorkspace.vue",
+      "path": "src/platform/billing/components/PricingTableWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+      "path": "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
+      "path": "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionCheckoutSteps.stories.ts",
+      "path": "src/platform/billing/components/SubscriptionCheckoutSteps.stories.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionInactiveMemberDialog.test.ts",
+      "path": "src/platform/billing/components/SubscriptionInactiveMemberDialog.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionInactiveMemberDialog.vue",
+      "path": "src/platform/billing/components/SubscriptionInactiveMemberDialog.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionPanelContentWorkspace.test.ts",
+      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
+      "path": "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionPausedDialog.test.ts",
+      "path": "src/platform/billing/components/SubscriptionPausedDialog.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionPausedDialog.vue",
+      "path": "src/platform/billing/components/SubscriptionPausedDialog.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.test.ts",
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue",
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue",
+      "path": "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionSuccessWorkspace.test.ts",
+      "path": "src/platform/billing/components/SubscriptionSuccessWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionSuccessWorkspace.vue",
+      "path": "src/platform/billing/components/SubscriptionSuccessWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.vue",
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
+      "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts",
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue",
+      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/UnifiedPricingTable.stories.ts",
+      "path": "src/platform/billing/components/UnifiedPricingTable.stories.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/UnifiedPricingTable.test.ts",
+      "path": "src/platform/billing/components/UnifiedPricingTable.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/UnifiedPricingTable.vue",
+      "path": "src/platform/billing/components/UnifiedPricingTable.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
+      "path": "src/platform/billing/components/billingTab/**",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
+      "path": "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue",
+      "path": "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.stories.ts",
+      "path": "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.stories.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.stories.ts",
+      "path": "src/platform/billing/components/settings/BillingStatusBanner.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.test.ts",
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.stories.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue",
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.test.ts",
+      "path": "src/platform/billing/components/settings/MemberUpsellBanner.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
+      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts",
+      "path": "src/platform/billing/components/settings/PlanCreditsPanelContent.vue",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue",
+      "path": "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
+      "path": "src/platform/billing/components/settings/WorkspaceInvoicesContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
       "role": "domain"
     },
     {
@@ -547,9 +551,9 @@
         "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
         "src/platform/billing/composables/useResubscribe.test.ts",
         "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
-        "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.test.ts",
-        "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
-        "src/platform/workspace/components/UnifiedPricingTable.test.ts",
+        "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+        "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+        "src/platform/billing/components/UnifiedPricingTable.test.ts",
         "src/platform/billing/utils/checkoutJourney.test.ts",
         "src/platform/billing/utils/checkoutJourneyTelemetry.test.ts",
         "src/platform/billing/utils/pendingSubscriptionCheckout.test.ts"
@@ -568,7 +572,7 @@
         "src/platform/billing/composables/useTopupOperation.test.ts",
         "src/platform/billing/composables/usePendingTopup.test.ts",
         "src/platform/billing/composables/topupBalanceRefresh.test.ts",
-        "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts"
+        "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts"
       ]
     },
     {
@@ -578,7 +582,7 @@
         "src/platform/billing/api/capabilityRevision.test.ts",
         "src/platform/billing/composables/useBillingBanner.test.ts",
         "src/platform/billing/composables/deriveBillingBanner.test.ts",
-        "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
+        "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
         "src/platform/billing/customerAttention.test.ts",
         "src/platform/billing/customerActionParity.test.ts",
         "src/platform/billing/hostedBillingRoutes.test.ts",
@@ -587,7 +591,7 @@
         "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
         "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
         "src/platform/billing/composables/useNextInvoice.test.ts",
-        "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts"
+        "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts"
       ]
     },
     {

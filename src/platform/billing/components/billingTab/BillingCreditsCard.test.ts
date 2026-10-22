@@ -5,8 +5,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
-import { deriveCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'
-import type { CreditsCardFacts } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'
+import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
+import type { CreditsCardFacts } from '@/platform/billing/components/billingTab/creditsCard'
 
 import BillingCreditsCard from './BillingCreditsCard.vue'
 

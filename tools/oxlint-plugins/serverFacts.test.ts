@@ -717,7 +717,7 @@ const canManage = facts['receiveServerFact']('can_manage_members', true)
       },
       {
         name: 'an aliased import in a component',
-        filename: 'src/platform/workspace/components/UnifiedPricingTable.vue',
+        filename: 'src/platform/billing/components/UnifiedPricingTable.vue',
         code: `import { receiveServerFact as fact } from '@/platform/serverFacts/serverFact'`,
         errors: [{ messageId: 'stray' }]
       }
