@@ -2069,6 +2069,37 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'persisted thinking replaces the streamed thinking',
+      persisted: [
+        { type: 'thinking', text: 'planning the whole turn', state: 'done' },
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning the whole turn', 'done']
+    },
+    {
+      name: 'a row without thinking keeps the streamed thinking',
+      persisted: [
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning', 'done']
+    }
+  ])('settles a recovered turn so $name', ({ persisted, expected }) => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(thinking('t1', 'planning'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+    expect(
+      store.messages[0].parts.map((part) =>
+        part.type === 'thinking' || part.type === 'text' ? part.text : part.type
+      )
+    ).toEqual(expected)
+  })
+
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

@@ -19,6 +19,20 @@ function useConsentedAgentPanelStore() {
 }
 
 describe('agentPanelStore funds rechecks', () => {
+  it('releases pending recheck owners and timers when the store is disposed', () => {
+    const store = useAgentPanelStore()
+    const release = vi.fn()
+    const initialTimers = vi.getTimerCount()
+    store.beginFundsRecheck('account-a', release)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    store.$dispose()
+
+    expect(release).toHaveBeenCalledOnce()
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+    expect(vi.getTimerCount()).toBe(initialTimers)
+  })
+
   it('releases a stalled recheck after a bounded hold', () => {
     vi.useFakeTimers()
     onTestFinished(() => {
