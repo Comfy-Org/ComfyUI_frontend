@@ -1,5 +1,5 @@
 <template>
-  <ContextMenu :model="menuItems">
+  <ContextMenu :model="menuItems" @close-auto-focus.prevent>
     <UiTree
       v-bind="$attrs"
       v-model:expanded="expandedNodeKeys"
