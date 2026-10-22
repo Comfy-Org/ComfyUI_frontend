@@ -5,11 +5,10 @@
       :can-manage-billing="capabilities.canManageBilling.value"
     />
     <BillingPlanCheckoutBanner
-      v-if="!isPaused && planCheckout.banner.value"
       :banner="planCheckout.banner.value"
       @dismiss="planCheckout.dismiss"
     />
-    <BillingLocalCreditBanner v-if="!isPaused && !planCheckout.banner.value" />
+    <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -90,7 +89,7 @@ import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/setting
 import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
 import BillingPlanCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanCheckoutBanner.vue'
 import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
-import { usePlanCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/usePlanCheckoutBanner'
+import { usePlanCheckoutBanner } from '@/platform/workspace/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -108,6 +107,9 @@ const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
 const { isPaused } = usePausedBanner()
 const planCheckout = usePlanCheckoutBanner()
+const suppressCreditBanner = computed(
+  () => isPaused.value || planCheckout.banner.value != null
+)
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)

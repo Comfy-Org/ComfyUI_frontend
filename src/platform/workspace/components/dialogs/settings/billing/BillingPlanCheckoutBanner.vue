@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="copy"
+    v-if="banner"
     role="status"
     class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-plan-checkout-banner"
@@ -18,9 +18,9 @@
           "
           aria-hidden="true"
         />
-        <span class="text-sm text-foreground">{{ copy.title }}</span>
+        <span class="text-sm text-foreground">{{ copy?.title }}</span>
       </div>
-      <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy.body }}</p>
+      <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy?.body }}</p>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 sm:pl-0">
       <Button variant="textonly" size="lg" @click="emit('dismiss')">
@@ -53,7 +53,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { PlanCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
 
 const { banner } = defineProps<{
-  banner: PlanCheckoutBanner
+  banner: PlanCheckoutBanner | null
 }>()
 
 const emit = defineEmits<{
@@ -63,6 +63,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const copy = computed(() => {
+  if (!banner) return null
   const key =
     banner.kind === 'verifyPayment' ? 'verifyPayment' : 'paymentReceived'
   const prefix = `workspacePanel.billingStatus.planCheckout.${key}`
