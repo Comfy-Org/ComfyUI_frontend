@@ -3,6 +3,8 @@
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         class="max-w-96"
         size="lg"
         autofocus
@@ -15,7 +17,7 @@
     <Teleport defer to="#keybinding-panel-actions">
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
-          :preset-names="presetNames"
+          :preset-names
           @presets-changed="refreshPresetList"
         />
         <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
@@ -53,7 +55,7 @@
           <KeybindingCommandRows
             v-for="command in visibleCommands"
             :key="command.id"
-            :command="command"
+            :command
             :expanded="expandedCommandIds.has(command.id)"
             :selected="selectedCommandId === command.id"
             @activate="activateRow(command)"
@@ -68,7 +70,7 @@
         </TableBody>
       </RovingFocusGroup>
     </Table>
-    <Pagination
+    <AppPagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
       v-model:items-per-page="commandsPerPage"
@@ -101,7 +103,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
+
 const { name, isPopular = false } = defineProps<{
   name: string
   isPopular?: boolean
@@ -6,15 +8,15 @@ const { name, isPopular = false } = defineProps<{
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-2">
-    <span class="font-inter text-base/normal font-bold text-base-foreground">
-      {{ name }}
-    </span>
-    <div
+  <div class="flex items-center justify-between gap-2 font-bold">
+    <span class="text-base/normal">{{ name }}</span>
+    <Badge
       v-if="isPopular"
-      class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
+      variant="pill"
+      severity="contrast"
+      class="font-bold tracking-tight uppercase"
     >
       {{ $t('subscription.mostPopular') }}
-    </div>
+    </Badge>
   </div>
 </template>

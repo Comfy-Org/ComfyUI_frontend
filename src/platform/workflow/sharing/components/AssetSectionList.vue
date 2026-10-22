@@ -48,7 +48,7 @@
             />
             <Tooltip :disabled="!item.name">
               <TooltipTrigger as-child>
-                <span class="truncate text-xs text-base-foreground">
+                <span class="truncate text-xs text-foreground">
                   {{ item.name }}
                 </span>
               </TooltipTrigger>

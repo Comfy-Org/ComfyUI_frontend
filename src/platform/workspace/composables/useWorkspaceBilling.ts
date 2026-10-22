@@ -33,6 +33,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -53,9 +54,10 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type {
   BalanceInfo,
   BillingActions,
+  BillingPortalOutcome,
   BillingState,
   SubscriptionInfo
-} from '../../../composables/billing/types'
+} from '@/composables/billing/types'
 
 export class CancellationScopeChangedError extends Error {
   constructor(message: string) {
@@ -253,14 +255,20 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       currency: data.currency,
       effectiveBalanceMicros:
         data.effective_balance_micros ?? data.amount_micros,
+      effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
+      suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      lowBalance: data.low_balance
     }
   })
 
   const billingStatus = computed(() => statusData.value?.billing_status ?? null)
   const subscriptionStatus = computed(
     () => statusData.value?.subscription_status ?? null
+  )
+  const subscriptionState = computed(
+    () => statusData.value?.subscription_state ?? null
   )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
@@ -588,6 +596,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     })
   }
 
+  function reportBillingPortalUnavailable(): void {
+    useToast().error(t('g.error'), {
+      description: t('subscription.billingPortalUnavailable')
+    })
+  }
+
   /** The rail's portal URL, or the legacy client's when the rail declines. */
   async function requestPortalUrl(): Promise<{
     url: string | undefined
@@ -616,33 +630,34 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the one
-  // before them doesn't serve this workspace. The portal tab is reserved
-  // before the first request: one opened after it resolves has lost the
-  // click's activation, and a refused reservation mints no portal session.
-  async function manageSubscription(): Promise<void> {
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
     error.value = null
     const hosted = openHostedBillingTabOutcome('payment-methods')
-    if (hosted === 'opened') return
-    if (hosted === 'blocked') return reportBillingTabBlocked()
+    if (hosted === 'opened') return { ok: true }
+    if (hosted === 'blocked') {
+      reportBillingTabBlocked()
+      return { ok: false, reason: 'blocked' }
+    }
 
     const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalTab = window.open('', '_blank')
+    const portalTab = reserveBillingTab()
     if (!portalTab) {
       portal.blocked()
-      return reportBillingTabBlocked()
+      reportBillingTabBlocked()
+      return { ok: false, reason: 'blocked' }
     }
     try {
       const { url, billingClient } = await requestPortalUrl()
       if (!url) {
         portal.failed(undefined, billingClient)
-        return portalTab.close()
+        portalTab.close()
+        reportBillingPortalUnavailable()
+        return { ok: false, reason: 'missing_url' }
       }
-      portalTab.location.href = url
+      portalTab.navigate(url)
       portal.opened(billingClient)
       refreshOnPortalReturn()
+      return { ok: true }
     } catch (err) {
       portalTab.close()
       portal.failed(err)
@@ -807,7 +822,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'
@@ -847,6 +862,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isFreeTier,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice,

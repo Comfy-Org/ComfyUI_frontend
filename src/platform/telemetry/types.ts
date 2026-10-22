@@ -683,7 +683,7 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * must split by `exit`; a total is not a quantity.**
  *
  * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `already_offered`.
+ * `already_offered`, `consent_declined`.
  * Owed and not made: everything else.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
@@ -724,6 +724,8 @@ export type AgentConsentOfferExit =
   | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
+  /** A prior explicit rejection suppressed this automatic offer. */
+  | 'consent_declined'
   /**
    * The consent scope moved while it was being resolved - a different account,
    * a workspace transition, or a switch that started - so the read that would
@@ -807,6 +809,17 @@ export type AgentOnboardingNotShownMetadata =
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
+}
+/** How far the open panel got before its content was drawn. */
+export type AgentPanelRenderStage =
+  | 'dock_unresolved'
+  | 'root_unresolved'
+  | 'root_resolved_not_mounted'
+export interface AgentPanelRenderStalledMetadata extends Record<
+  string,
+  unknown
+> {
+  stage: AgentPanelRenderStage
 }
 export interface AgentEntryButtonClickedMetadata extends Record<
   string,
@@ -964,6 +977,15 @@ export interface AgentStarterPromptClickedMetadata
   prompt_index: number
   /** Size of the rendered set, so a set that grew or shrank is visible too. */
   prompt_count: number
+  /**
+   * How many of that set the viewer could actually see. A panel narrower than
+   * 460px hides everything past the third chip with a container query, so this
+   * is 3 there and `prompt_count` elsewhere. Deliberately not folded into
+   * `prompt_count`: that field has to keep meaning "set size" for the
+   * starter-prompt set experiment to read it, and a reader cannot otherwise
+   * tell a shrunken set from a narrow panel.
+   */
+  visible_prompt_count: number
   /**
    * FNV-1a of the *displayed* text, 8 hex chars. Here so a copy change under a
    * stable `prompt_id` is detectable — without it, a before/after read cannot
@@ -1548,6 +1570,7 @@ export interface TelemetryProvider {
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentPanelRenderStalled?(metadata: AgentPanelRenderStalledMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
   trackAgentCloseButtonClicked?(): void
   trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
@@ -1739,6 +1762,7 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
   AGENT_PANEL_OPENED: 'app:agent_panel_opened',
   AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_PANEL_RENDER_STALLED: 'app:agent_panel_render_stalled',
   AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
   AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
   AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',

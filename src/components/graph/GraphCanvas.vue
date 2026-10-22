@@ -7,7 +7,7 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke/50 bg-comfy-menu-bg shadow-interface"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-border/50 bg-background shadow-md"
       >
         <WorkflowTabs />
       </div>
@@ -125,6 +125,7 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
+import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -169,6 +170,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -372,9 +374,10 @@ watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
 })
 watchEffect(() => {
-  LiteGraph.nodeLightness = colorPaletteStore.completedActivePalette.light_theme
-    ? 0.5
-    : undefined
+  LiteGraph.nodeLightness =
+    colorPaletteStore.colorScheme === 'light'
+      ? LIGHT_THEME_NODE_LIGHTNESS
+      : undefined
 })
 
 watchEffect(() => {
@@ -491,6 +494,11 @@ watch(
   }
 )
 
+watch(
+  () => canvasStore.selectedNodeIds,
+  () => canvasStore.canvas?.setDirty(true, true)
+)
+
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',
@@ -507,6 +515,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useNodeEmphasis()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
@@ -549,6 +558,16 @@ function finishStartup(outcome: 'completed' | 'failed') {
   activeStartup = undefined
   workspaceStore.spinner = false
   bootstrapTracer.complete(outcome)
+}
+
+function showDeploymentLookupToast() {
+  toast.error(t('deploymentSwitcher.lookupUnavailable'), {
+    description: t('deploymentSwitcher.lookupUnavailableDetail'),
+    action: {
+      label: t('deploymentSwitcher.reload'),
+      onClick: () => window.location.reload()
+    }
+  })
 }
 
 onMounted(async () => {
@@ -594,24 +613,10 @@ onMounted(async () => {
 
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
-    const deploymentConfirmed = !isCloud || (await waitForDeploymentPick())
+    const deploymentConfirmed =
+      !isCloud || (await waitForDeploymentPick(showDeploymentLookupToast))
     if (disposed) return
-    if (!deploymentConfirmed) {
-      // The pick is an HttpOnly cookie the editor cannot read, so with no
-      // listing it cannot tell a browser on a deployment from one on Comfy
-      // Cloud. It boots on Comfy Cloud's models, as it did before
-      // deployments, so a failed lookup never blocks the editor. A browser
-      // that is on a deployment then offers models its Release may not have
-      // (its nodes and jobs are still the deployment's), so the toast says
-      // so and stays until closed, with a reload to try again.
-      toast.error(t('deploymentSwitcher.lookupUnavailable'), {
-        description: t('deploymentSwitcher.lookupUnavailableDetail'),
-        action: {
-          label: t('deploymentSwitcher.reload'),
-          onClick: () => window.location.reload()
-        }
-      })
-    }
+    if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false

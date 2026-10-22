@@ -200,7 +200,7 @@ describe('CurrentUserPopoverLegacy', () => {
         name: /We've unified payments across Comfy/
       })
       await user.hover(helpButton)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
         enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })
@@ -434,19 +434,14 @@ describe('CurrentUserPopoverLegacy', () => {
 
       const trigger = screen.getByTestId('workspace-switcher-trigger')
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
-      expect(trigger).toHaveAttribute(
-        'aria-controls',
-        'workspace-switcher-panel'
-      )
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
       expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
 
       await user.click(trigger)
 
-      const panel = screen.getByTestId('workspace-switcher-panel')
-      expect(panel).toBeInTheDocument()
-      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
-      expect(panel).toHaveAttribute('role', 'menu')
+      const panel = screen.getByRole('dialog')
+      expect(panel).toBe(screen.getByTestId('workspace-switcher-panel'))
+      expect(trigger).toHaveAttribute('aria-controls', panel.id)
       expect(trigger).toHaveAttribute('aria-expanded', 'true')
     })
 
@@ -464,10 +459,15 @@ describe('CurrentUserPopoverLegacy', () => {
     })
 
     it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceName: 'Personal Workspace'
+      })
       const { user } = renderComponent(readyWorkspaceState)
 
       screen.getByTestId('workspace-switcher-trigger').focus()
-      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Personal Workspace'
+      )
 
       await user.keyboard('{Escape}')
       expect(screen.queryByRole('tooltip')).toBeNull()

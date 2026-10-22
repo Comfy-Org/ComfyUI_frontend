@@ -1,19 +1,19 @@
 <template>
-  <DialogPanel class="w-[360px]" @close="onCancel">
+  <AppDialogPanel
+    size="compact"
+    body-class="flex flex-col gap-4 text-[14px] text-muted-foreground"
+    @close="onCancel"
+  >
     <template #title>
       {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4 text-[14px] text-text-secondary">
-      <p class="m-0">
-        {{
-          t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription')
-        }}
-      </p>
-      <p class="m-0">
-        {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogAssetsNote') }}
-      </p>
-    </div>
+    <p class="m-0">
+      {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogDescription') }}
+    </p>
+    <p class="m-0">
+      {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogAssetsNote') }}
+    </p>
 
     <template #footer>
       <div class="flex items-center gap-4 leading-none">
@@ -29,11 +29,11 @@
         >
       </div>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

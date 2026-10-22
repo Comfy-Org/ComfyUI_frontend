@@ -4,6 +4,46 @@
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
 }
 
+.node-blood-drips {
+  color: #990c20;
+}
+
+.node-blood-drips::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0 auto;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.node-blood-drop {
+  transform: translateY(5px) scaleX(0.8);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.disable-animations) .node-blood-drop {
+    animation: blood-fall 3.7s infinite both;
+  }
+}
+
+@keyframes blood-fall {
+  0% {
+    transform: translateY(0) scale(0.8, 0.6);
+    animation-timing-function: ease-out;
+  }
+  60% {
+    transform: translateY(12px) scale(0.8, 1.2);
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  90%,
+  100% {
+    transform: translateY(70px) scale(0.8, 1.4);
+    opacity: 0;
+  }
+}
+
 @layer base {
   .pi {
     font-size: 1rem;
@@ -39,7 +79,7 @@
   background: linear-gradient(
     115deg,
     transparent 42%,
-    var(--color-base-foreground) 50%,
+    var(--color-foreground) 50%,
     transparent 58%
   );
   background-size: 200% auto;

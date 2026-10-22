@@ -1,8 +1,8 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="onClose">
+  <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <template v-if="step === 'invited'">
-        <i class="pi pi-check-circle size-4 text-success-background" />
+        <i class="pi pi-check-circle size-4 text-success" />
         {{
           $t(
             'workspacePanel.inviteLinks.sentTitle',
@@ -26,7 +26,7 @@
           :placeholder="$t('workspacePanel.inviteMemberDialog.placeholder')"
           :max-seats="inviteFormMaxSeats"
           :occupied-seats="inviteFormOccupiedSeats"
-          tags-input-class="min-h-10 w-full bg-secondary-background"
+          tags-input-class="min-h-10 w-full bg-secondary"
           @submitted="onInvited"
         />
       </div>
@@ -84,11 +84,11 @@
         </Button>
       </div>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 

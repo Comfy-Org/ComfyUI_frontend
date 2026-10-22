@@ -6,22 +6,14 @@
   </TooltipProvider>
   <div
     v-show="isLoading"
-    ref="loadingOverlay"
     data-testid="app-loading-overlay"
-    class="fixed inset-0 bg-black/10"
+    class="fixed inset-0 z-blocking bg-black/10"
     :aria-busy="isLoading"
   />
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  markRaw,
-  onMounted,
-  useTemplateRef,
-  watch,
-  watchPostEffect
-} from 'vue'
+import { computed, markRaw, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
@@ -36,7 +28,6 @@ import { app } from '@/scripts/app'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -46,15 +37,6 @@ app.extensionManager = Object.assign(workspaceStore, {
 
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const loadingOverlay = useTemplateRef<HTMLDivElement>('loadingOverlay')
-
-watchPostEffect((onCleanup) => {
-  const overlay = loadingOverlay.value
-  if (!isLoading.value || !overlay) return
-
-  raiseModalLayer(overlay)
-  onCleanup(() => releaseModalLayer(overlay))
-})
 
 watch(
   isLoading,

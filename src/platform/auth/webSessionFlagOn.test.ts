@@ -179,7 +179,8 @@ vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 await import('@/extensions/core/cloudSessionCookie')
-const { default: router } = await import('@/router')
+const { createAppRouter } = await import('@/router')
+const router = await createAppRouter()
 
 installCloudApiAuth()
 installWorkspaceApiAuth()
@@ -664,6 +665,18 @@ function capabilitiesResponse({
       can_change_seats: false,
       can_invite_members: false,
       can_manage_members: false,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_open_plans: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: false
     },
     rollout_defaults_applied: {
@@ -747,6 +760,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     return jsonResponse({
       token: `session-jwt-${ingest.mints}`,
       expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: []
@@ -2561,6 +2575,7 @@ describe.for([{ unified: false }, { unified: true }])(
           return jsonResponse({
             token: 'session-jwt-1',
             expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
+            user_id: 'uid-1',
             workspace: {
               id: 'ws-personal',
               name: 'Personal',

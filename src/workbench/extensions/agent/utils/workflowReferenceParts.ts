@@ -1,4 +1,4 @@
-import type { WorkflowReference } from '../types/workflowReference'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { promptReferenceParts } from './promptReferenceParts'
 
 export function workflowReferenceParts(

@@ -5,6 +5,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import { definitionsObserverRoot } from './agentSubgraphDefinitions'
 import type { FrameChanges, NodeChange } from './liveGraphApplier'
 import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
 
@@ -21,14 +22,22 @@ export class DocChangeCollector {
   private readonly widgets = new Map<string, Set<string> | 'all'>()
   private readonly resyncNodes = new Set<string>()
   private readonly links = new Set<string>()
+  private readonly interiors = new Map<
+    string,
+    Map<string, Set<string> | 'all'>
+  >()
+  private readonly interiorDefinitions = new Set<string>()
   private readonly nodesMap: Y.Map<Y.Map<unknown>>
   private readonly linksMap: Y.Map<unknown>
+  private readonly definitionsMap: Y.Map<unknown>
 
   constructor(doc: Y.Doc) {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
+    this.definitionsMap = definitionsObserverRoot(doc)
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
+    this.definitionsMap.observeDeep(this.onDefinitionsChanged)
   }
 
   /** Returns everything collected so far without clearing it. */
@@ -37,7 +46,14 @@ export class DocChangeCollector {
       nodes: new Map(this.nodes),
       widgets: new Map(this.widgets),
       resyncNodes: new Set(this.resyncNodes),
-      links: new Set(this.links)
+      links: new Set(this.links),
+      interiors: new Map(
+        [...this.interiors].map(([definitionId, nodes]) => [
+          definitionId,
+          new Map(nodes)
+        ])
+      ),
+      interiorDefinitions: new Set(this.interiorDefinitions)
     }
   }
 
@@ -53,12 +69,83 @@ export class DocChangeCollector {
     this.widgets.clear()
     this.resyncNodes.clear()
     this.links.clear()
+    this.interiors.clear()
+    this.interiorDefinitions.clear()
   }
 
   destroy(): void {
     this.nodesMap.unobserveDeep(this.onNodesChanged)
     this.linksMap.unobserve(this.onLinksChanged)
+    this.definitionsMap.unobserveDeep(this.onDefinitionsChanged)
     this.discard()
+  }
+
+  private markInterior(
+    definitionId: string,
+    nodeId: string,
+    names: ReadonlySet<string> | 'all'
+  ): void {
+    let nodes = this.interiors.get(definitionId)
+    if (!nodes) {
+      nodes = new Map()
+      this.interiors.set(definitionId, nodes)
+    }
+    if (names === 'all') {
+      if (nodes.get(nodeId) === undefined) nodes.set(nodeId, 'all')
+      return
+    }
+    const current = nodes.get(nodeId)
+    const merged = current === 'all' || !current ? new Set<string>() : current
+    for (const name of names) merged.add(name)
+    nodes.set(nodeId, merged)
+  }
+
+  private readonly onDefinitionsChanged = (
+    events: Y.YEvent<Y.AbstractType<unknown>>[]
+  ): void => {
+    for (const event of events) this.collectDefinitionEvent(event)
+  }
+
+  private collectDefinitionEvent(
+    event: Y.YEvent<Y.AbstractType<unknown>>
+  ): void {
+    const path = event.path.map(String)
+    const nodesIndex = path.lastIndexOf('nodes')
+    if (nodesIndex >= 1 && path.length > nodesIndex + 1) {
+      this.collectInteriorEvent(event, path, nodesIndex)
+      return
+    }
+    this.collectDefinitionResync(event, path)
+  }
+
+  private collectInteriorEvent(
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    path: string[],
+    nodesIndex: number
+  ): void {
+    const definitionId = path[nodesIndex - 1]
+    const nodeId = path[nodesIndex + 1]
+    const tail = path[nodesIndex + 2]
+    if (tail === 'widgets' && event instanceof Y.YMapEvent) {
+      this.markInterior(definitionId, nodeId, new Set(event.keysChanged))
+      return
+    }
+    this.markInterior(definitionId, nodeId, 'all')
+  }
+
+  private collectDefinitionResync(
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    path: string[]
+  ): void {
+    const subgraphsIndex = path.lastIndexOf('subgraphs')
+    const definitionId =
+      subgraphsIndex >= 0 && path.length > subgraphsIndex + 1
+        ? path[subgraphsIndex + 1]
+        : path[0]
+    if (definitionId) this.interiorDefinitions.add(definitionId)
+    if (event.target === this.definitionsMap && event instanceof Y.YMapEvent) {
+      for (const id of event.keysChanged) this.interiorDefinitions.add(id)
+    }
   }
 
   private readonly onNodesChanged = (

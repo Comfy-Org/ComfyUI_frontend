@@ -158,7 +158,7 @@ function replayAppModeTour() {
     <section
       v-if="!mobile"
       data-testid="linear-workflow-info"
-      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border/50 bg-background px-4 py-2 contain-size"
     >
       <span
         class="min-w-0 flex-1 truncate font-bold"
@@ -167,22 +167,22 @@ function replayAppModeTour() {
       <Button
         :tooltip="t('onboardingCoachmarks.appMode.replay')"
         tooltip-side="bottom"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        class="border border-solid hover:border-border hover:text-foreground"
         @click="replayAppModeTour"
       >
         <i class="icon-[lucide--circle-question-mark] size-4" />
       </Button>
     </section>
     <div
-      class="flex h-full flex-col gap-2 border-x border-interface-stroke bg-comfy-menu-bg px-2 md:border-y"
+      class="flex h-full flex-col gap-2 border-x bg-background px-2 md:border-y"
     >
       <section
         v-coachmark="COACH_IDS.inputsList"
         data-testid="linear-widgets"
-        class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
+        class="grow scroll-shadows-background overflow-y-auto contain-size"
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
       </section>
@@ -193,12 +193,10 @@ function replayAppModeTour() {
         :to="toastTo"
       >
         <div
-          class="flex h-10 items-center gap-2 rounded-lg bg-base-foreground p-1 pr-2 text-base-background md:h-8 md:bg-secondary-background md:text-base-foreground"
+          class="flex h-10 items-center gap-2 rounded-lg bg-foreground p-1 pr-2 text-background md:h-8 md:bg-secondary md:text-foreground"
         >
           <template v-if="pendingJobQueues === 0">
-            <i
-              class="icon-[lucide--check] size-5 not-md:bg-success-background"
-            />
+            <i class="icon-[lucide--check] size-5 not-md:bg-success" />
             <span class="mr-auto" v-text="t('queue.jobAddedToQueue')" />
             <Button
               v-if="mobile"
@@ -219,7 +217,7 @@ function replayAppModeTour() {
         :id="linearInputDownloadStatusId"
         role="status"
         data-testid="linear-input-download-status"
-        class="mx-2 flex flex-col gap-2 rounded-lg border border-border-default bg-base-background p-3 text-sm"
+        class="mx-2 flex flex-col gap-2 rounded-lg border bg-background p-3 text-sm"
       >
         <div class="flex items-center gap-2">
           <Loader size="sm" />
@@ -236,12 +234,12 @@ function replayAppModeTour() {
           aria-valuemin="0"
           aria-valuemax="100"
           :aria-valuenow="inputDownloadProgress ?? undefined"
-          class="block h-1 overflow-hidden rounded-full bg-secondary-background"
+          class="block h-1 overflow-hidden rounded-full bg-secondary"
         >
           <span
             :class="
               cn(
-                'block h-full rounded-full bg-primary-background transition-[width]',
+                'block h-full rounded-full bg-primary transition-[width]',
                 inputDownloadProgress === null && 'w-1/3 animate-pulse'
               )
             "
@@ -257,7 +255,7 @@ function replayAppModeTour() {
       <section
         v-if="mobile"
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
@@ -278,7 +276,7 @@ function replayAppModeTour() {
                 </Button>
               </template>
               <div
-                class="m-1 mb-2 text-node-component-slot-text"
+                class="m-1 mb-2 text-muted-foreground"
                 v-text="t('linearMode.runCount')"
               />
               <ScrubableNumberInput
@@ -316,12 +314,12 @@ function replayAppModeTour() {
       <section
         v-else
         :data-testid="linearRunButtonTestId"
-        class="border-t border-node-component-border p-4 pb-6"
+        class="border-t p-4 pb-6"
       >
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
           <div
-            class="m-1 mb-2 text-node-component-slot-text"
+            class="m-1 mb-2 text-muted-foreground"
             v-text="t('linearMode.runCount')"
           />
           <ScrubableNumberInput
@@ -364,7 +362,7 @@ function replayAppModeTour() {
   </div>
   <div
     v-else-if="mobile"
-    class="flex size-full items-center bg-base-background p-4 text-center"
+    class="flex size-full items-center bg-background p-4 text-center"
     v-text="t('linearMode.mobileNoWorkflow')"
   />
 </template>

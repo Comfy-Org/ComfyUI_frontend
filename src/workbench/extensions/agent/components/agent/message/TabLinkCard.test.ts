@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -10,7 +11,9 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import TabLinkCard from './TabLinkCard.vue'
-import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
+
+const apiEvents: EventTarget = api
 
 vi.hoisted(() => {
   vi.stubGlobal(
@@ -24,16 +27,18 @@ vi.hoisted(() => {
 })
 
 const mocks = vi.hoisted(() => ({
-  api: new EventTarget(),
   navigate: vi.fn(),
   reportError: vi.fn()
 }))
 
-vi.mock(import('../../../composables/agent/useAgentTargetNavigation'), () => ({
-  useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
-}))
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'),
+  () => ({
+    useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
+  })
+)
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: mocks.api }))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
@@ -42,9 +47,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const { useAgentWorkflowTabBindingStore } =
-  await import('../../../stores/agent/agentWorkflowTabBindingStore')
+  await import('@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore')
 const { useAgentPanelStore } =
-  await import('../../../stores/agent/agentPanelStore')
+  await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
 
 function mount(workflowId: string, name?: string) {
   return render(TabLinkCard, {
@@ -140,7 +145,7 @@ describe('TabLinkCard', () => {
     const link = screen.getByRole('button')
     expect(link).toHaveAccessibleDescription('1 node')
 
-    mocks.api.dispatchEvent(
+    apiEvents.dispatchEvent(
       new CustomEvent('graphChanged', { detail: { nodes: [{}, {}] } })
     )
 
@@ -165,7 +170,7 @@ describe('TabLinkCard', () => {
 
     mount('wf-1')
     const link = screen.getByRole('button')
-    mocks.api.dispatchEvent(
+    apiEvents.dispatchEvent(
       new CustomEvent('graphChanged', { detail: { nodes: [{}, {}, {}] } })
     )
 
@@ -174,7 +179,6 @@ describe('TabLinkCard', () => {
   })
 
   it('removes its graph listener when unmounted', () => {
-    const removeListener = vi.spyOn(mocks.api, 'removeEventListener')
     const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
@@ -188,9 +192,11 @@ describe('TabLinkCard', () => {
     view.unmount()
 
     expect(
-      removeListener.mock.calls.some(([type]) => type === 'graphChanged')
+      vi
+        .mocked(api.removeEventListener)
+        .mock.calls.some(([type]) => type === 'graphChanged')
     ).toBe(true)
-    removeListener.mockRestore()
+    vi.mocked(api.removeEventListener).mockRestore()
   })
 
   it('renders no link when the workflow has no open tab to point at', () => {

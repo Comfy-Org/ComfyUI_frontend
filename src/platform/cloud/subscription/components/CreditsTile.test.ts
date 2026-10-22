@@ -1,3 +1,4 @@
+import { paymentRecoveryAvailableFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -17,7 +18,10 @@ import { useCustomerEventsService } from '@/services/customerEventsService'
 
 type Balance = Pick<
   BalanceInfo,
-  'amountMicros' | 'cloudCreditBalanceMicros' | 'prepaidBalanceMicros'
+  | 'amountMicros'
+  | 'cloudCreditBalanceMicros'
+  | 'prepaidBalanceMicros'
+  | 'effectiveBalanceMicros'
 >
 type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
@@ -467,14 +471,26 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('Credits refill')
   })
 
-  it('hides the breakdown and forces zeros in the zero state while add-credits follows can_top_up', () => {
+  it('hides the plan breakdown in the zero state and keeps the server balance', () => {
     activeProSubscription()
-    const { container } = renderTile({ zeroState: true })
-    expect(container.textContent).toContain('0')
-    expect(container.textContent).not.toContain('left of')
-    expect(container.textContent).not.toContain('Additional credits')
+    renderTile({ zeroState: true })
+    expect(screen.getByText('1,055')).toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
     expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
+  })
+
+  it('shows the effective balance in the zero state when it differs from amount', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      effectiveBalanceMicros: 3_000,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 3_000
+    }
+    renderTile({ zeroState: true })
+    expect(screen.getByText('6,330')).toBeInTheDocument()
   })
 
   it('shows disabled credit details for an inactive plan and still renders add-credits from can_top_up', () => {
@@ -501,6 +517,20 @@ describe('CreditsTile', () => {
       expect(screen.queryByText(/to use credits on Cloud/)).toBeNull()
     }
   )
+
+  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+    renderTile()
+
+    await userEvent.click(screen.getByText('Add credits'))
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
+  })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
     activeProSubscription()
@@ -632,8 +662,8 @@ describe('CreditsTile', () => {
     )
     expect(screen.getByText('In use')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-interface-menu-component-surface-selected',
-      'hover:bg-secondary-background-hover'
+      'bg-muted',
+      'hover:bg-accent'
     )
   })
 
@@ -653,7 +683,7 @@ describe('CreditsTile', () => {
     )
     expect(screen.queryByText('In use')).toBeNull()
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
-      'bg-base-foreground'
+      'bg-foreground'
     )
   })
 

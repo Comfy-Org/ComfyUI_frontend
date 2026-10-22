@@ -13,19 +13,18 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
-// Mock the api module
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getHistory: vi.fn(),
-    internalURL: vi.fn((path) => `http://localhost:3000${path}`),
-    apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
-    addEventListener: vi.fn(),
-    fetchApi: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false),
-    user: 'test-user'
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `http://localhost:3000${path}`
+  )
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:3000/api${path}`
+  )
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+  api.user = 'test-user'
+})
 
 vi.mock(import('@/platform/assets/services/assetService'))
 

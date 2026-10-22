@@ -163,6 +163,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
   distribution.isCloud = false
@@ -216,8 +217,10 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
+    distribution.isCloud = true
     useAgentPanelStore().enabled = true
     api.serverFeatureFlagsSettled.value = false
+    api.serverFeatureFlags.value = {}
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -255,6 +258,70 @@ describe('WorkflowTabs agent entry button', () => {
     expect(screen.getByTestId('agent-entry-separator')).toBeInTheDocument()
   })
 
+  it("shows ComfyUI's agent starting, then failed with its reason, inert until ready", async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', reason: null }
+    }
+    const { user } = renderComponent()
+
+    const starting = screen.getByRole('button', {
+      name: enMessages.agent.entryStarting
+    })
+    expect(starting).toHaveAttribute('aria-disabled', 'true')
+    expect(starting).not.toHaveAttribute('title')
+    await user.click(starting)
+    expect(withConsent).not.toHaveBeenCalled()
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'failed', reason: 'not_found' }
+    }
+    await nextTick()
+    const failed = screen.getByRole('button', {
+      name: enMessages.agent.entryFailed
+    })
+    expect(failed).toHaveAttribute('aria-disabled', 'true')
+    await user.click(failed)
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(failed).toHaveAttribute(
+      'title',
+      'ComfyUI could not start the agent: not_found'
+    )
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', reason: 'crashed' }
+    }
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.entryStarting })
+    ).toHaveAttribute('title', 'ComfyUI is starting the agent: crashed')
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', reason: null }
+    }
+    store.enabled = true
+    await nextTick()
+    const ready = screen.getByRole('button', {
+      name: enMessages.agent.entryButton
+    })
+    expect(ready).not.toHaveAttribute('aria-disabled')
+    await user.click(ready)
+    expect(withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('hides the entry button when the agent is ready but the panel extension is off', () => {
+    useAgentPanelStore().enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', reason: null }
+    }
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
+    ).toBeNull()
+  })
+
   // Two entry controls once shipped side by side after a merge, which broke
   // every role-based lookup of the button in the Playwright suite.
   it('renders exactly one agent entry control', () => {
@@ -278,6 +345,50 @@ describe('WorkflowTabs agent entry button', () => {
     expect(withConsent.mock.calls[0][0]).toBe('button_click')
     expect(useAgentPanelStore().isVisible).toBe(true)
     expect(button).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it.for([
+    { host: 'the legacy Desktop build', desktop: true, bridge: undefined },
+    {
+      host: 'a local Desktop 2 window',
+      desktop: false,
+      bridge: { isRemote: () => false }
+    }
+  ])(
+    'toggles the locked panel without consent in $host',
+    async ({ desktop, bridge }) => {
+      distribution.isCloud = false
+      distribution.isDesktop = desktop
+      window.__comfyDesktop2 = bridge
+      const { user } = renderComponent()
+      const button = screen.getByRole('button', {
+        name: enMessages.agent.entryButton
+      })
+
+      await user.click(button)
+      expect(useAgentPanelStore().isVisible).toBe(true)
+      expect(useAgentPanelStore().consentAccepted).toBe(false)
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(button)
+      expect(useAgentPanelStore().isVisible).toBe(false)
+      expect(withConsent).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { host: 'a browser tab on a local Core', bridge: undefined },
+    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
+  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
+    distribution.isCloud = false
+    window.__comfyDesktop2 = bridge
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(withConsent).toHaveBeenCalledOnce()
   })
 
   it('closes the visible panel when the entry button is clicked again', async () => {
