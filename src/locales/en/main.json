@@ -3589,6 +3589,7 @@
           "updatePayment": "Update payment"
         },
         "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "turnedOff": "Turned off after 3 declined charges. Update your payment method, then turn it back on.",
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
@@ -3599,6 +3600,7 @@
         "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
         "status": {
           "failed": "Failed",
+          "turnedOff": "Turned off",
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
@@ -3687,6 +3689,14 @@
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
+      },
+      "autoTopUpFailed": {
+        "title": "Auto top-up failed",
+        "body": "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
+      },
+      "autoTopUpOff": {
+        "title": "Auto top-up turned off",
+        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",

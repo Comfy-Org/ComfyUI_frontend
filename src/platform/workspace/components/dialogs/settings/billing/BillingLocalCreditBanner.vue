@@ -1,6 +1,20 @@
 <template>
+  <BillingAutoTopUpBanner v-if="autoTopUpKind" :kind="autoTopUpKind">
+    <Button
+      as="a"
+      :href
+      target="_blank"
+      rel="noopener"
+      variant="inverted"
+      size="lg"
+      class="shrink-0"
+      @click="track"
+    >
+      {{ $t('workspacePanel.billingStatus.updatePayment') }}
+    </Button>
+  </BillingAutoTopUpBanner>
   <div
-    v-if="banner"
+    v-else-if="banner"
     class="@container"
     data-testid="billing-local-credit-banner"
   >
@@ -57,6 +71,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import BillingAutoTopUpBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpBanner.vue'
+import { useAutoTopUpBannerKind } from '@/platform/workspace/composables/useAutoTopUpBannerKind'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -67,6 +83,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
@@ -99,9 +116,17 @@ const subscription = computed(() => billing.subscription?.value ?? null)
 const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
+const autoTopUp = useAutoTopUpBannerKind()
+const { href, track } = usePlatformHandoff('/profile/billing', {
+  target: 'auto_top_up',
+  action: 'update_payment'
+})
+
 const kind = computed(() => {
-  if (suppressed || isCloud) return null
+  if (suppressed) return null
+  if (isCloud) return autoTopUp.value
   return deriveLocalCreditBanner({
+    autoTopUp: autoTopUp.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     hasFunds: subscription.value?.hasFunds ?? null,
     lowBalance: balance.value?.lowBalance,
@@ -109,6 +134,12 @@ const kind = computed(() => {
     lowCreditsDismissed: lowCreditsDismissed.value
   })
 })
+
+const autoTopUpKind = computed(() =>
+  kind.value === 'autoTopUpFailed' || kind.value === 'autoTopUpOff'
+    ? kind.value
+    : null
+)
 
 watch(
   () => subscription.value?.hasFunds === false,
