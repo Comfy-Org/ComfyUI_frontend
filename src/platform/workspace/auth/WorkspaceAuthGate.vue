@@ -96,7 +96,6 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
@@ -164,11 +163,11 @@ async function initialize(): Promise<void> {
   initializationController = controller
 
   const authStore = useAuthStore()
-  const { isInitialized, isAuthenticated } = storeToRefs(authStore)
+  const { isIdentityReady, isAuthenticated } = storeToRefs(authStore)
 
   try {
-    if (!isInitialized.value) {
-      await until(isInitialized).toBe(true, {
+    if (!isIdentityReady.value) {
+      await until(isIdentityReady).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
         throwOnTimeout: true
       })
@@ -292,7 +291,7 @@ function localSessionIdentity(): string | null {
 }
 
 function initializeWorkspacesInBackground(): Promise<void> {
-  const { isInitialized } = storeToRefs(useAuthStore())
+  const { isIdentityReady } = storeToRefs(useAuthStore())
   const sessionId = localSessionIdentity()
   if (
     backgroundInitialization &&
@@ -306,8 +305,8 @@ function initializeWorkspacesInBackground(): Promise<void> {
   backgroundInitializationUserId = sessionId
 
   const operation = (async () => {
-    if (!isInitialized.value && !isDesktopHostSignedIn()) {
-      await until(isInitialized).toBe(true, {
+    if (!isIdentityReady.value) {
+      await until(isIdentityReady).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
         throwOnTimeout: true
       })

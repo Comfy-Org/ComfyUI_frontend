@@ -264,6 +264,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/platform/workspace/auth/WorkspaceAuthGate.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
       "role": "infrastructure"
     },

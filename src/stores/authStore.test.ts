@@ -2584,6 +2584,65 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     afterEach(() => stopDesktopHostSession())
 
+    it.for<{
+      name: string
+      isCloud: boolean
+      firebaseReady: boolean
+      hostState: DesktopHostAuthState
+      expected: boolean
+    }>([
+      {
+        name: 'Desktop supplies identity before Firebase',
+        isCloud: false,
+        firebaseReady: false,
+        hostState: { status: 'signed_in', userId: 'host-user' },
+        expected: true
+      },
+      {
+        name: 'disabled Desktop still waits for Firebase',
+        isCloud: false,
+        firebaseReady: false,
+        hostState: { status: 'disabled' },
+        expected: false
+      },
+      {
+        name: 'signed-out Desktop still waits for Firebase',
+        isCloud: false,
+        firebaseReady: false,
+        hostState: { status: 'signed_out' },
+        expected: false
+      },
+      {
+        name: 'local Firebase initialization supplies readiness',
+        isCloud: false,
+        firebaseReady: true,
+        hostState: { status: 'signed_out' },
+        expected: true
+      },
+      {
+        name: 'Cloud still waits for Firebase with a signed-in host',
+        isCloud: true,
+        firebaseReady: false,
+        hostState: { status: 'signed_in', userId: 'host-user' },
+        expected: false
+      },
+      {
+        name: 'Cloud Firebase initialization supplies readiness',
+        isCloud: true,
+        firebaseReady: true,
+        hostState: { status: 'signed_out' },
+        expected: true
+      }
+    ])('$name', async ({ isCloud, firebaseReady, hostState, expected }) => {
+      mockDistributionTypes.isCloud = isCloud
+      store.isInitialized = firebaseReady
+      vi.spyOn(useTeamWorkspaceStore(), 'initialize').mockResolvedValue()
+
+      await startDesktopHostSession(hostBridge(hostState))
+
+      expect(store.isIdentityReady).toBe(expected)
+    })
+
     it('uses the Desktop account over the Firebase user and stored API key', async () => {
       const bridge = hostBridge({
         status: 'signed_in',
