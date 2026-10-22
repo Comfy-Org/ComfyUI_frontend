@@ -4,9 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
+
+vi.mock(import('@/base/common/downloadUtil'))
 
 const i18n = createI18n({
   legacy: false,
@@ -18,6 +21,7 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
+        download: 'Download',
         videoFailedToLoad: 'Video failed to load',
         textFailedToLoad: 'Text failed to load'
       }
@@ -132,6 +136,36 @@ describe('MediaLightbox', () => {
 
     expect(screen.queryByLabelText('Previous')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Next')).not.toBeInTheDocument()
+  })
+
+  it('shows the file name of the item being viewed', async () => {
+    renderGallery()
+    await nextTick()
+
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent(
+      'image1.jpg'
+    )
+  })
+
+  it('keeps the file name in sync with navigation', async () => {
+    const { rerender } = renderGallery({ activeIndex: 0 })
+    await nextTick()
+
+    await rerender({ allGalleryItems: mockGalleryItems, activeIndex: 1 })
+    await nextTick()
+
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent(
+      'image2.jpg'
+    )
+  })
+
+  it('downloads the item being viewed under its own file name', async () => {
+    const { user } = renderGallery({ activeIndex: 1 })
+    await nextTick()
+
+    await user.click(screen.getByLabelText('Download'))
+
+    expect(downloadFile).toHaveBeenCalledWith('image2.jpg', 'image2.jpg')
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
