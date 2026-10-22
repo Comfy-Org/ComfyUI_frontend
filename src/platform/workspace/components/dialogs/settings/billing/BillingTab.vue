@@ -122,7 +122,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 
