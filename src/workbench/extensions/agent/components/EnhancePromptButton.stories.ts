@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { expect, fn } from 'storybook/test'
 import { provide, reactive } from 'vue'
 
 import WidgetItem from '@/components/rightSidePanel/parameters/WidgetItem.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { registerApp } from '@/scripts/appRegistry'
+import type { ComfyApp } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -22,6 +24,62 @@ const ENHANCED_PROMPT =
 
 const GRAPH_ID = 'story-graph'
 const NODE_ID = toNodeId(1)
+
+function registerStoryApp() {
+  registerApp(
+    fromPartial<ComfyApp>({
+      rootGraphOrUndefined: undefined
+    })
+  )
+}
+
+function storyNode(): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id: NODE_ID,
+    type: 'CLIPTextEncode',
+    title: 'CLIP Text Encode (Prompt)',
+    isSubgraphNode: () => false,
+    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } },
+    inputs: []
+  })
+}
+
+function storyWidget(value: string): IBaseWidget {
+  return reactive({
+    name: 'prompt',
+    type: 'customtext',
+    value,
+    y: 0,
+    widgetId: widgetId(GRAPH_ID, NODE_ID, 'prompt'),
+    options: {}
+  })
+}
+
+function renderPropertiesPanel(prompt: string): Story['render'] {
+  return () => ({
+    components: { WidgetItem },
+    setup() {
+      registerStoryApp()
+      useAgentPanelStore().enabled = true
+      provide(HideLayoutFieldKey, true)
+      const widget = storyWidget(prompt)
+      const node = storyNode()
+      function onUpdate(value: WidgetValue) {
+        widget.value = value
+      }
+      return { widget, node, onUpdate }
+    },
+    template: `
+      <div class="w-80 rounded-lg bg-background p-4 text-foreground">
+        <WidgetItem
+          :widget="widget"
+          :node="node"
+          @update:widget-value="onUpdate"
+        />
+      </div>
+    `
+  })
+}
 
 const meta: Meta<typeof EnhancePromptButton> = {
   title: 'Agent/EnhancePromptButton',
@@ -51,53 +109,6 @@ export const Processing: Story = {
     loading: true,
     disabled: true
   }
-}
-
-function storyNode(): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    id: NODE_ID,
-    type: 'CLIPTextEncode',
-    title: 'CLIP Text Encode (Prompt)',
-    isSubgraphNode: () => false,
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } },
-    inputs: []
-  })
-}
-
-function storyWidget(value: string): IBaseWidget {
-  return reactive({
-    name: 'prompt',
-    type: 'customtext',
-    value,
-    y: 0,
-    widgetId: widgetId(GRAPH_ID, NODE_ID, 'prompt'),
-    options: {}
-  })
-}
-
-function renderPropertiesPanel(prompt: string): Story['render'] {
-  return () => ({
-    components: { WidgetItem },
-    setup() {
-      provide(HideLayoutFieldKey, true)
-      useAgentPanelStore().enabled = true
-      const widget = storyWidget(prompt)
-      const node = storyNode()
-      function onUpdate(value: WidgetValue) {
-        widget.value = value
-      }
-      return { widget, node, onUpdate }
-    },
-    template: `
-      <div class="w-80 rounded-lg bg-background p-4 text-foreground">
-        <WidgetItem
-          :widget="widget"
-          :node="node"
-          @update:widget-value="onUpdate"
-        />
-      </div>
-    `
-  })
 }
 
 export const InPropertiesPanel: Story = {
