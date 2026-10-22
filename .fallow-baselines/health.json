@@ -1407,7 +1407,7 @@
         "count": 1
       }
     },
-    "src/renderer/extensions/maskEditor/composables/useToolManager.ts": {
+    "packages/mask-editor/src/useToolManager.ts": {
       "crap_high": {
         "count": 1
       },

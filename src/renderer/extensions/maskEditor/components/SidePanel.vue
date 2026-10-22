@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 
 import ImageLayerSettingsPanel from './ImageLayerSettingsPanel.vue'
 import SettingsPanelContainer from './SettingsPanelContainer.vue'

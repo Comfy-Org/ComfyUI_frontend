@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import PointerZone from '@/renderer/extensions/maskEditor/components/PointerZone.vue'
 import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
-import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>

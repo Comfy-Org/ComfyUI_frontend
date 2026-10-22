@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 
 import SidePanel from '@/renderer/extensions/maskEditor/components/SidePanel.vue'
 

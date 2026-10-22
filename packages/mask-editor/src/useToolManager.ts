@@ -1,45 +1,26 @@
 import { ref, watch } from 'vue'
 
-import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
-import type {
-  Point,
-  ImageLayer,
-  ToolInternalSettings
-} from '@comfyorg/mask-editor/types'
-import { Tools } from '@comfyorg/mask-editor/types'
-import { useApp } from '@/scripts/appInstance'
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
-import { useBrushDrawing } from '@comfyorg/mask-editor/useBrushDrawing'
-import { useBrushPersistence } from './useBrushPersistence'
-import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
-import { useCoordinateTransform } from '@comfyorg/mask-editor/useCoordinateTransform'
-import type { useKeyboard } from '@comfyorg/mask-editor/useKeyboard'
-import type { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
+import { isMiddleButtonHeld, isMiddlePointerInput } from './pointer'
+
+import type { Point, ImageLayer, ToolInternalSettings } from './types'
+import { Tools } from './types'
+import { useMaskEditorStore } from './maskEditorStore'
+import { useBrushDrawing } from './useBrushDrawing'
+import { useCanvasTools } from './useCanvasTools'
+import { useCoordinateTransform } from './useCoordinateTransform'
+import type { useKeyboard } from './useKeyboard'
+import type { usePanAndZoom } from './usePanAndZoom'
 
 export function useToolManager(
   keyboard: ReturnType<typeof useKeyboard>,
-  panZoom: ReturnType<typeof usePanAndZoom>
+  panZoom: ReturnType<typeof usePanAndZoom>,
+  brushAdjustment?: Parameters<typeof useBrushDrawing>[0]
 ) {
   const store = useMaskEditorStore()
 
   const coordinateTransform = useCoordinateTransform()
 
-  const useDominantAxis = useApp().extensionManager.setting.get(
-    'Comfy.MaskEditor.UseDominantAxis'
-  )
-  const brushAdjustmentSpeed = useApp().extensionManager.setting.get(
-    'Comfy.MaskEditor.BrushAdjustmentSpeed'
-  )
-  const brushDrawing = useBrushDrawing({
-    useDominantAxis:
-      typeof useDominantAxis === 'boolean' ? useDominantAxis : undefined,
-    brushAdjustmentSpeed:
-      typeof brushAdjustmentSpeed === 'number'
-        ? brushAdjustmentSpeed
-        : undefined
-  })
-  const brushPersistence = useBrushPersistence()
-  brushPersistence.loadAndApply()
+  const brushDrawing = useBrushDrawing(brushAdjustment)
   const canvasTools = useCanvasTools()
 
   const mouseDownPoint = ref<Point | null>(null)
@@ -251,7 +232,6 @@ export function useToolManager(
     handlePointerMove,
     handlePointerUp,
 
-    brushDrawing,
-    saveBrushSettings: brushPersistence.save
+    brushDrawing
   }
 }

@@ -132,7 +132,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
-import type { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { ImageLayer } from '@comfyorg/mask-editor/types'
 import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'

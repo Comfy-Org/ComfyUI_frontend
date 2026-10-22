@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MaskEditorContent from '@/renderer/extensions/maskEditor/components/MaskEditorContent.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 
 const mockKeyboard = vi.hoisted(() => ({
   addListeners: vi.fn(),
@@ -23,8 +25,12 @@ const mockBrushDrawing = vi.hoisted(() => ({
 }))
 
 const mockToolManager = vi.hoisted(() => ({
-  brushDrawing: mockBrushDrawing,
-  saveBrushSettings: vi.fn()
+  brushDrawing: mockBrushDrawing
+}))
+
+const mockBrushPersistence = vi.hoisted(() => ({
+  loadAndApply: vi.fn(),
+  save: vi.fn()
 }))
 
 const mockImageLoader = vi.hoisted(() => ({
@@ -45,10 +51,14 @@ vi.mock<unknown>(import('@comfyorg/mask-editor/usePanAndZoom'), () => ({
   usePanAndZoom: () => mockPanZoom
 }))
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/composables/useToolManager'),
+vi.mock<unknown>(import('@comfyorg/mask-editor/useToolManager'), () => ({
+  useToolManager: vi.fn(() => mockToolManager)
+}))
+
+vi.mock(
+  import('@/renderer/extensions/maskEditor/composables/useBrushPersistence'),
   () => ({
-    useToolManager: () => mockToolManager
+    useBrushPersistence: () => mockBrushPersistence
   })
 )
 
@@ -312,6 +322,26 @@ describe('MaskEditorContent', () => {
     })
   })
 
+  describe('brush settings', () => {
+    it('loads persisted brush settings and passes the brush adjustment settings to the tool manager', () => {
+      vi.mocked(useSettingStore().get).mockImplementation(
+        (key: string) =>
+          ({
+            'Comfy.MaskEditor.UseDominantAxis': true,
+            'Comfy.MaskEditor.BrushAdjustmentSpeed': 2.5
+          })[key]
+      )
+
+      renderContent()
+
+      expect(mockBrushPersistence.loadAndApply).toHaveBeenCalledTimes(1)
+      expect(useToolManager).toHaveBeenCalledWith(mockKeyboard, mockPanZoom, {
+        useDominantAxis: true,
+        brushAdjustmentSpeed: 2.5
+      })
+    })
+  })
+
   describe('unmount cleanup', () => {
     it('should run the full cleanup chain on unmount', async () => {
       const { unmount } = renderContent()
@@ -321,7 +351,7 @@ describe('MaskEditorContent', () => {
 
       unmount()
 
-      expect(mockToolManager.saveBrushSettings).toHaveBeenCalledTimes(1)
+      expect(mockBrushPersistence.save).toHaveBeenCalledTimes(1)
       expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
       expect(mockStore.canvasHistory.clearStates).toHaveBeenCalledTimes(1)
       expect(mockStore.resetState).toHaveBeenCalledTimes(1)

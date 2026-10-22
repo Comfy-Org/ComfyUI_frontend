@@ -1,12 +1,11 @@
-import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useMaskEditorStore } from './maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { useBrushDrawing } from '@comfyorg/mask-editor/useBrushDrawing'
-import { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
-import { Tools } from '@comfyorg/mask-editor/types'
-import { app } from '@/scripts/app'
+import { useBrushDrawing } from './useBrushDrawing'
+import { useToolManager } from './useToolManager'
+import { Tools } from './types'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
@@ -32,19 +31,17 @@ const mockCoordinateTransform = {
   canvasToScreen: vi.fn()
 }
 
-vi.mock<unknown>(import('@comfyorg/mask-editor/useBrushDrawing'), () => ({
+vi.mock<unknown>(import('./useBrushDrawing'), () => ({
   useBrushDrawing: vi.fn(() => mockBrushDrawing)
 }))
 
-vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasTools'), () => ({
+vi.mock<unknown>(import('./useCanvasTools'), () => ({
   useCanvasTools: vi.fn(() => mockCanvasTools)
 }))
 
-vi.mock(import('@comfyorg/mask-editor/useCoordinateTransform'), () => ({
+vi.mock(import('./useCoordinateTransform'), () => ({
   useCoordinateTransform: vi.fn(() => mockCoordinateTransform)
 }))
-
-vi.mock(import('@/scripts/app'))
 
 const mockKeyboard = {
   isKeyDown: vi.fn().mockReturnValue(false),
@@ -100,16 +97,16 @@ let scope: EffectScope | null = null
 
 const setup = (): ReturnType<typeof useToolManager> => {
   scope = effectScope()
-  return scope.run(() => useToolManager(mockKeyboard, mockPanZoom))!
+  return scope.run(() =>
+    useToolManager(mockKeyboard, mockPanZoom, {
+      useDominantAxis: true,
+      brushAdjustmentSpeed: 2.5
+    })
+  )!
 }
 
 describe('useToolManager', () => {
   beforeEach(() => {
-    vi.mocked(app.extensionManager.setting.get).mockImplementation((key) => {
-      if (key === 'Comfy.MaskEditor.UseDominantAxis') return false
-      if (key === 'Comfy.MaskEditor.BrushAdjustmentSpeed') return 1
-      return undefined
-    })
     mockStore = useMaskEditorStore()
     mockStore.currentTool = Tools.MaskPen
     mockStore.activeLayer = 'mask'
@@ -127,12 +124,12 @@ describe('useToolManager', () => {
   })
 
   describe('useBrushDrawing factory', () => {
-    it('should construct useBrushDrawing with settings from the extension manager', () => {
+    it('passes the host brush adjustment settings to useBrushDrawing', () => {
       setup()
 
       expect(useBrushDrawing).toHaveBeenCalledWith({
-        useDominantAxis: false,
-        brushAdjustmentSpeed: 1
+        useDominantAxis: true,
+        brushAdjustmentSpeed: 2.5
       })
     })
   })

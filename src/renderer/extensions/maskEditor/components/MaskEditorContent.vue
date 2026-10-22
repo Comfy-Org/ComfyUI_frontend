@@ -73,12 +73,14 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composables/useBrushPersistence'
 import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
 import { useKeyboard } from '@comfyorg/mask-editor/useKeyboard'
 import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import { usePanAndZoom } from '@comfyorg/mask-editor/usePanAndZoom'
-import { useToolManager } from '@/renderer/extensions/maskEditor/composables/useToolManager'
+import { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
@@ -116,7 +118,16 @@ const initialized = ref(false)
 const keyboard = useKeyboard(containerRef)
 const panZoom = usePanAndZoom()
 
-const toolManager = useToolManager(keyboard, panZoom)
+const settingStore = useSettingStore()
+const brushPersistence = useBrushPersistence()
+brushPersistence.loadAndApply()
+
+const toolManager = useToolManager(keyboard, panZoom, {
+  useDominantAxis: settingStore.get('Comfy.MaskEditor.UseDominantAxis'),
+  brushAdjustmentSpeed: settingStore.get(
+    'Comfy.MaskEditor.BrushAdjustmentSpeed'
+  )
+})
 
 let resizeObserver: ResizeObserver | null = null
 
@@ -201,7 +212,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  toolManager.saveBrushSettings()
+  brushPersistence.save()
 
   keyboard?.removeListeners()
 
