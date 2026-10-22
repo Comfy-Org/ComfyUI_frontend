@@ -116,31 +116,49 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
+        v-else-if="displayPacks.length === 0 && !hasPendingPages"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
         :button-label="retryLabel"
         @action="retrySearch"
       />
-      <div v-else class="size-full" @click="handleGridContainerClick">
-        <VirtualGrid
-          id="results-grid"
-          :items="resultsWithKeys"
-          :buffer-rows="4"
-          :grid-style="GRID_STYLE"
-          :on-load-more="loadMorePacks"
-          :can-load-more="canLoadMorePacks"
+      <div v-else class="flex size-full flex-col">
+        <div class="min-h-0 flex-1" @click="handleGridContainerClick">
+          <VirtualGrid
+            id="results-grid"
+            :items="resultsWithKeys"
+            :buffer-rows="4"
+            :grid-style="GRID_STYLE"
+            :on-load-more="loadMorePacks"
+            :can-load-more="canLoadMorePacks"
+          >
+            <template #item="{ item }">
+              <PackCard
+                :node-pack="item"
+                :is-selected="
+                  selectedNodePacks.some((pack) => pack.id === item.id)
+                "
+                @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+              />
+            </template>
+          </VirtualGrid>
+        </div>
+        <Message
+          :visible="isNextPageFailed"
+          severity="warning"
+          class="mx-2 mt-2 w-auto items-center"
         >
-          <template #item="{ item }">
-            <PackCard
-              :node-pack="item"
-              :is-selected="
-                selectedNodePacks.some((pack) => pack.id === item.id)
-              "
-              @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
-            />
-          </template>
-        </VirtualGrid>
+          <div class="flex items-center justify-between gap-3">
+            {{ $t('manager.loadMoreFailed') }}
+            <Button
+              ref="retryButton"
+              variant="secondary"
+              @click="retryNextPage"
+            >
+              {{ $t('g.retry') }}
+            </Button>
+          </div>
+        </Message>
       </div>
     </template>
 
@@ -159,12 +177,14 @@ import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   onUnmounted,
   provide,
   ref,
   toValue,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -416,6 +436,25 @@ const isSearchFailed = computed(
     isFirstPageForInput.value &&
     packs.firstPage.value.status === 'failed'
 )
+const isNextPageFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.isNextPageFailed.value
+)
+const retryButton = useTemplateRef<InstanceType<typeof Button>>('retryButton')
+async function retryNextPage() {
+  await packs.retryNextPage()
+  if (!isNextPageFailed.value) return
+  await nextTick()
+  if (document.activeElement && document.activeElement !== document.body) return
+  const button: HTMLElement | undefined = retryButton.value?.$el
+  button?.focus()
+}
+const hasPendingPages = computed(
+  () =>
+    isSearchBacked.value && (hasMorePacks.value || packs.isNextPageFailed.value)
+)
 const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
@@ -519,7 +558,7 @@ const isSettledWithNoPacks = computed(
     displayPacks.value.length === 0 &&
     !isLoading.value &&
     !isManagerErrorRelevant.value &&
-    !hasMorePacks.value
+    !hasPendingPages.value
 )
 
 const isUnmatchedLegacyManagerSearch = computed(() => {

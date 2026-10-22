@@ -107,6 +107,7 @@ vi.mock(
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
+  failNextRegistration: false,
   isCloud: true,
   isDesktop: false
 }))
@@ -138,6 +139,10 @@ vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (ext: ComfyExtension) => {
+        if (mocks.failNextRegistration) {
+          mocks.failNextRegistration = false
+          throw new Error(`Extension named '${ext.name}' already registered.`)
+        }
         mocks.capturedExtensions.push(ext)
       }
     })
@@ -160,7 +165,19 @@ function setAgentReady(ready: boolean): void {
 
 const { registerAgentPanelExtension } = await import('./agentPanel')
 const importRegistrationCount = mocks.capturedExtensions.length
+
+function attemptRegistration(): unknown {
+  try {
+    registerAgentPanelExtension()
+  } catch (error) {
+    return error
+  }
+}
+
+mocks.failNextRegistration = true
+const failedRegistrationError = attemptRegistration()
 registerAgentPanelExtension()
+const registrationsAfterRetry = mocks.capturedExtensions.length
 
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
@@ -2225,5 +2242,10 @@ describe('AgentPanel extension flag gate', () => {
 
   it('does not self-register when its module is imported', () => {
     expect(importRegistrationCount).toBe(0)
+  })
+
+  it('registers on a later call after a failed registration', () => {
+    expect(failedRegistrationError).toBeInstanceOf(Error)
+    expect(registrationsAfterRetry).toBe(1)
   })
 })

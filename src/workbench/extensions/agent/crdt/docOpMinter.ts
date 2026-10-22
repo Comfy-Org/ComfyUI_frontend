@@ -53,6 +53,7 @@ import {
 } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -450,12 +451,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (node.graph !== graph) return null
     const snapshot = wireNodeSnapshot(node)
     if (!snapshot) {
-      reportOnce(
-        `snapshot:${nodeKey(graph.id, node.id)}`,
-        'Agent node add has no snapshot',
-        'agent_crdt_node_snapshot_missing',
-        { graphId: graph.id, nodeId: node.id }
-      )
+      const key = `snapshot:${nodeKey(graph.id, node.id)}`
+      if (reported.has(key)) return null
+      reported.add(key)
+      reportLostEdit('mint_divergence', [{ op: 'add_node' }], {
+        code: 'missing_node_snapshot',
+        errorType: 'agent_crdt_node_snapshot_missing',
+        graphId: graph.id,
+        nodeId: node.id
+      })
       return null
     }
     return {
@@ -589,7 +593,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
-      reportUnresolvedOwner(routed.unresolvedGraphId, event)
+      reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
       return
     }
     if ('reason' in routed) {
@@ -599,6 +603,21 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'op', operation: routed })
   }
 
+  function reportUnresolvedWidgetOwner(
+    graphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    if (reportedRefusals.has(key)) return
+    reportedRefusals.add(key)
+    reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
+      code: 'unresolvable_widget_owner',
+      errorType: 'agent_crdt_widget_owner_unresolved',
+      graphId,
+      nodeId: event.nodeId
+    })
+  }
+
   function takeHeldWrite(
     event: IntentOf<'set_widget'>
   ): HeldPromotedWrite | null {
@@ -606,19 +625,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const held = heldPromotedWrites.get(key) ?? null
     heldPromotedWrites.delete(key)
     return held
-  }
-
-  function reportUnresolvedOwner(
-    graphId: string,
-    event: IntentOf<'set_widget'>
-  ): void {
-    reportOnce(
-      `owner:${nodeKey(graphId, event.nodeId)}`,
-      'Agent widget write has an unresolvable owner',
-      'agent_crdt_widget_owner_unresolved',
-      { graphId, nodeId: event.nodeId },
-      reportedRefusals
-    )
   }
 
   function holdOrRefuseWidgetWrite(

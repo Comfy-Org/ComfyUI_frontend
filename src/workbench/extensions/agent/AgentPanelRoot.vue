@@ -35,7 +35,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -150,10 +152,12 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
   isCrdtDebugEnabled,
-  resolveDebugPanelEnabled
+  resolveDebugPanelEnabled,
+  startCrdtDebugGate
 } from './crdt/crdtDebugGate'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
@@ -214,6 +218,8 @@ const { resolvedUserInfo, userDisplayName } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
+
+onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
@@ -1827,11 +1833,17 @@ const attachment = useAttachment({
     const filename = uploaded.name ?? file.name
     return {
       ref: filename,
-      url: api.apiURL(
-        `/view?filename=${encodeURIComponent(filename)}&type=input`
-      )
+      url: isHdrImageFilename(file.name)
+        ? undefined
+        : api.apiURL(
+            `/view?filename=${encodeURIComponent(filename)}&type=input`
+          )
     }
   },
+  resolveStoredPreview: async (file, ref) =>
+    isHdrImageFilename(file.name)
+      ? ((await findServerPreviewUrl(ref)) ?? undefined)
+      : undefined,
   // The library caches input assets; without this refresh a just-uploaded file
   // is neither listed in the Assets tab nor mentionable this session. One run
   // per settled batch, chained, because the query queue coalesces an
@@ -2039,6 +2051,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   if (await attachment.addFiles(files))
     useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
+
+const agentPanelRenderStore = useAgentPanelRenderStore()
+onMounted(() => agentPanelRenderStore.reach('drawn'))
 </script>
 
 <template>

@@ -122,7 +122,8 @@ const { section } = defineProps<{
 const { t, d } = useI18n()
 const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
-const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
+  useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -283,6 +284,7 @@ const pastDueView = (): BannerView => ({
 })
 
 const outOfCreditsView = (): BannerView | null => {
+  if (runDeniedPaymentPastDue.value) return pastDueView()
   if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
   if (!canManage.value) {
     return {

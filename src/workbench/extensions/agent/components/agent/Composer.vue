@@ -14,6 +14,8 @@ import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@/types/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
@@ -164,6 +166,7 @@ const {
   mentionActive,
   mentionMatches,
   mentionVisible,
+  mentionActiveNode,
   mentionHasResults,
   skillQueryEmpty,
   graphDupes,
@@ -190,6 +193,10 @@ const {
   pickNode: (node) => emit('mentionPick', node),
   pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
+})
+useNodeEmphasisSource(() => {
+  const node = mentionActiveNode.value
+  return node && toNodeId(node.id)
 })
 
 function onSelectNodes(event: Event): void {

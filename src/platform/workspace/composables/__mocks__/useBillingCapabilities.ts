@@ -12,6 +12,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_billing', true)
   ),
   canSubscribeSelfServe: computed(() => false),
+  canOpenPlans: computed(() => receiveServerFact('can_open_plans', false)),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
   canRevertScheduledChange: computed(() =>
@@ -43,6 +44,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_auto_top_up', false)
   ),
   autoTopUpSetup: computed(() => null),
+  canRunWorkflows: computed(() => false),
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),

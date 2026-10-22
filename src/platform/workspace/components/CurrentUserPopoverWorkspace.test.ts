@@ -1,3 +1,4 @@
+import { paymentRecoveryAvailableFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
@@ -103,10 +104,6 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
   `
 })
 
-const DeploymentSwitcherStub = defineComponent({
-  template: '<div data-testid="deployment-switcher" />'
-})
-
 const SubscribeButtonStub = defineComponent({
   props: {
     label: { type: String, required: true }
@@ -139,8 +136,7 @@ function renderComponent(
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
         WorkspaceProfilePic: true,
-        Divider: true,
-        DeploymentSwitcher: DeploymentSwitcherStub
+        Divider: true
       }
     }
   })
@@ -306,19 +302,6 @@ describe('CurrentUserPopoverWorkspace', () => {
         !canSwitch
       )
     })
-  })
-
-  it('shows the deployment switcher on Cloud', () => {
-    renderComponent()
-
-    expect(screen.getByTestId('deployment-switcher')).toBeInTheDocument()
-  })
-
-  it('does not show the deployment switcher on Local', () => {
-    state.isCloud = false
-    renderComponent()
-
-    expect(screen.queryByTestId('deployment-switcher')).not.toBeInTheDocument()
   })
 
   it('exposes the full workspace name on hover', async () => {
@@ -500,6 +483,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     renderComponent('personal')
 
     expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps Add credits for a past-due owner so it can open Update payment', async () => {
+    const user = userEvent.setup()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(true)
+
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('add-credits-button'))
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'avatar_menu_plans' })
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {

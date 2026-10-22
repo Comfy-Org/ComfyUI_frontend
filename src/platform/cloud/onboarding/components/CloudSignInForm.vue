@@ -81,7 +81,6 @@ import {
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
@@ -100,7 +99,7 @@ const emit = defineEmits<{
 const emailInputId = 'cloud-sign-in-email'
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signInSchema),
+  validationSchema: signInSchema,
   initialValues: { email: '', password: '' }
 })
 

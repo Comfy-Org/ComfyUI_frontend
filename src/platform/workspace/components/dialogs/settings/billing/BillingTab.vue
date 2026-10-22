@@ -4,6 +4,7 @@
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
     />
+    <BillingLocalCreditBanner />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -31,6 +32,7 @@
         :state="planRow"
         :action="action"
         :can-manage-subscription="capabilities.canManageSubscription.value"
+        @open-plan="openPlan"
       />
       <BillingCreditsCard
         :state="creditsCard"
@@ -75,10 +77,12 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
 import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
@@ -98,6 +102,7 @@ const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
 
 const HANDOFF = {
@@ -120,7 +125,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 
@@ -131,6 +136,10 @@ const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
+}
+
+function openPlan() {
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits() {

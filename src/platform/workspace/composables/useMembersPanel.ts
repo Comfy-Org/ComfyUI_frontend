@@ -133,7 +133,7 @@ export function useMembersPanel() {
   const { maxSeats } = useBillingContext()
   const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
-  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
+  const { isPlanEnded, isSalesManagedPlan } = usePlanEnded()
 
   const permissions = computed((): MembersPanelPermissions => {
     const canManage = canManageMembers.value
@@ -368,7 +368,6 @@ export function useMembersPanel() {
     isOnTeamPlan,
     isPlanEnded,
     isSalesManagedPlan,
-    isEnterprisePlan,
     hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,
