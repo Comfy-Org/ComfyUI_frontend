@@ -1506,7 +1506,6 @@ export class LiveGraphApplier {
     createdGroups: readonly LGraphGroup[],
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
-    if (created.length === 0) return
     const createdSet = new Set(created)
     const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
       x: item.pos[0],
