@@ -1,6 +1,6 @@
 export const WORD_STAGGER_MS = 35
-export const TALK_WORD_ANIMATION_MS = 350
-export const WORD_REVEAL_BUDGET_MS = 900
+const TALK_WORD_ANIMATION_MS = 350
+const WORD_REVEAL_BUDGET_MS = 900
 
 interface SpeechPart {
   text: string
