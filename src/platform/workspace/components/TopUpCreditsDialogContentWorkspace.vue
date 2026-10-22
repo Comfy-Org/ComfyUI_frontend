@@ -736,7 +736,7 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
-async function handleBuy() {
+async function handleBuy(options?: { keepRefusalUntilSettled?: boolean }) {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
@@ -744,7 +744,7 @@ async function handleBuy() {
   purchaseAttempt += 1
   const attempt = purchaseAttempt
   const isCurrentAttempt = () => attempt === purchaseAttempt
-  checkoutRecovery.value = null
+  if (!options?.keepRefusalUntilSettled) checkoutRecovery.value = null
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -866,6 +866,7 @@ function reportPurchaseError(
     if (currentAttempt) checkoutRecovery.value = 'refused'
     return
   }
+  if (currentAttempt) checkoutRecovery.value = null
   toast.error(t('credits.topUp.purchaseError'), {
     description: purchaseErrorDetail(error)
   })
@@ -913,24 +914,18 @@ function watchCheckoutCompletion() {
   })
 }
 
-function refreshOnDefaultCardReturn() {
+function armPayRetryOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const [paymentMethods] = await Promise.allSettled([
-      workspaceApi.listSavedPaymentMethods(),
-      fetchStatus(),
-      fetchBalance(),
-      billingCapabilities.refresh()
-    ])
-    if (
-      paymentMethods.status !== 'fulfilled' ||
-      !paymentMethods.value.some((method) => method.is_default)
-    ) {
-      return
-    }
-    stopDefaultCardReturnRefresh?.()
+    const stop = stopDefaultCardReturnRefresh
     stopDefaultCardReturnRefresh = null
-    checkoutRecovery.value = null
+    stop?.()
+    const attempt = purchaseAttempt
+    await handleBuy({ keepRefusalUntilSettled: true })
+    if (unmounted) return
+    if (purchaseAttempt === attempt || checkoutRecovery.value === 'refused') {
+      armPayRetryOnCardReturn()
+    }
   })
 }
 
@@ -954,7 +949,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    refreshOnDefaultCardReturn()
+    armPayRetryOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -964,7 +959,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  refreshOnDefaultCardReturn()
+  armPayRetryOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
