@@ -28,49 +28,38 @@
 
     <Popover
       v-if="showWorkspaceSwitcher"
-      v-model:open="isWorkspaceSwitcherOpen"
+      side="left"
+      align="start"
+      :side-offset="16"
+      :collision-padding="8"
+      prioritize-position
+      data-testid="workspace-switcher-panel"
     >
-      <PopoverAnchor>
-        <Tooltip v-model:open="isWorkspaceTooltipOpen">
-          <TooltipTrigger as-child>
-            <PopoverTrigger as-child>
-              <Button
-                variant="muted-textonly"
-                class="flex h-auto w-full justify-between px-4 py-2"
-                data-testid="workspace-switcher-trigger"
-                @keydown.escape.stop="isWorkspaceTooltipOpen = false"
-              >
-                <div class="flex w-0 flex-1 items-center gap-2">
-                  <WorkspaceProfilePic
-                    class="size-6 shrink-0 text-xs"
-                    :workspace-name
-                    :subscription-tier="tier"
-                  />
-                  <span class="truncate text-sm text-foreground">
-                    {{ workspaceName }}
-                  </span>
-                </div>
-                <i
-                  class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
-                />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>{{ workspaceName }}</TooltipContent>
-        </Tooltip>
-      </PopoverAnchor>
-
-      <PopoverContent
-        side="left"
-        align="start"
-        :side-offset="16"
-        :collision-padding="8"
-        prioritize-position
-        class="w-auto rounded-lg p-0"
-        data-testid="workspace-switcher-panel"
-      >
-        <WorkspaceSwitcherPopover @select="isWorkspaceSwitcherOpen = false" />
-      </PopoverContent>
+      <template #button>
+        <Button
+          variant="muted-textonly"
+          class="flex h-auto w-full justify-between px-4 py-2"
+          :tooltip="workspaceName"
+          data-testid="workspace-switcher-trigger"
+        >
+          <div class="flex w-0 flex-1 items-center gap-2">
+            <WorkspaceProfilePic
+              class="size-6 shrink-0 text-xs"
+              :workspace-name
+              :subscription-tier="tier"
+            />
+            <span class="truncate text-sm text-foreground">
+              {{ workspaceName }}
+            </span>
+          </div>
+          <i
+            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+          />
+        </Button>
+      </template>
+      <template #default="{ close }">
+        <WorkspaceSwitcherPopover @select="close" />
+      </template>
     </Popover>
 
     <!-- Credits Section -->
@@ -161,19 +150,14 @@
 import Badge from '@/components/ui/badge/Badge.vue'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { storeToRefs } from 'pinia'
-import { PopoverAnchor, PopoverTrigger } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Popover from '@/components/ui/Popover.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -211,9 +195,6 @@ const { locale } = useI18n()
 const { initState, workspaces, workspaceName } = storeToRefs(
   useTeamWorkspaceStore()
 )
-const isWorkspaceSwitcherOpen = ref(false)
-const isWorkspaceTooltipOpen = ref(false)
-
 const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )

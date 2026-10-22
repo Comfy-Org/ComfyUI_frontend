@@ -459,10 +459,15 @@ describe('CurrentUserPopoverLegacy', () => {
     })
 
     it('closes the keyboard-opened workspace name tooltip on Escape', async () => {
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceName: 'Personal Workspace'
+      })
       const { user } = renderComponent(readyWorkspaceState)
 
       screen.getByTestId('workspace-switcher-trigger').focus()
-      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Personal Workspace'
+      )
 
       await user.keyboard('{Escape}')
       expect(screen.queryByRole('tooltip')).toBeNull()
