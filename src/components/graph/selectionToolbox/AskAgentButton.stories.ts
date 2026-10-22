@@ -1,20 +1,52 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { fn } from 'storybook/test'
-import { ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { expect, within } from 'storybook/test'
+import { onMounted, useTemplateRef } from 'vue'
 
-import { t } from '@/i18n'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
+import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import { useSelectionStore } from '@/core/selection/selectionStore'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import AskAgentButton from './AskAgentButton.vue'
+
+function prepareAskAgentToolbox() {
+  const graph = new LGraph()
+  const node = new LGraphNode('KSampler')
+  node.pos = [240, 180]
+  graph.add(node)
+
+  const canvasEl = document.createElement('canvas')
+  canvasEl.className = 'absolute inset-0 size-full'
+  const canvasStore = useCanvasStore()
+  canvasStore.canvas = fromPartial<LGraphCanvas>({
+    canvas: canvasEl,
+    graph,
+    ds: { scale: 1, offset: [0, 0] },
+    isDragging: false,
+    selectedItems: new Set([node]),
+    getNodeMenuOptions: () => [],
+    read_only: false,
+    setDirty: () => {}
+  })
+  useSelectionStore().apply(graphScopeOf(graph), {
+    type: 'selection.add',
+    key: selectableKeyOf(node)
+  })
+  useAgentPanelStore().enabled = true
+  return { canvasEl }
+}
 
 const meta: Meta<typeof AskAgentButton> = {
   title: 'Graph/SelectionToolbox/AskAgent',
   component: AskAgentButton,
   tags: ['autodocs'],
-  parameters: { layout: 'centered' }
+  parameters: { layout: 'padded' }
 }
 
 export default meta
@@ -22,125 +54,50 @@ type Story = StoryObj<typeof meta>
 
 export const Toolbar: Story = {
   render: () => ({
-    components: { AskAgentButton, Button, TooltipProvider },
+    components: { SelectionToolbox, NodeContextMenu },
     setup() {
-      return { t }
+      const host = useTemplateRef<HTMLElement>('host')
+      const { canvasEl } = prepareAskAgentToolbox()
+      onMounted(() => {
+        host.value?.prepend(canvasEl)
+      })
+      return {}
     },
     template: `
-      <TooltipProvider :delay-duration="0">
       <div
-        data-testid="selection-toolbox"
-        class="selection-toolbox pointer-events-auto floating-panel"
+        ref="host"
+        class="relative min-h-96 w-[40rem] bg-background"
       >
-        <div class="flex h-8 gap-1">
-          <Button
-            :tooltip="t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
-            variant="muted-textonly"
-            :aria-label="t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
-          >
-            <i class="icon-[lucide--trash-2]" />
-          </Button>
-          <div class="h-6 w-px self-center bg-border" />
-          <Button
-            :tooltip="t('g.info')"
-            variant="muted-textonly"
-            :aria-label="t('g.info')"
-          >
-            <i class="icon-[lucide--info]" />
-          </Button>
-          <Button
-            :tooltip="t('g.color')"
-            variant="muted-textonly"
-            :aria-label="t('g.color')"
-          >
-            <div class="flex items-center gap-1 px-0">
-              <i class="pi pi-circle-fill" />
-              <i class="icon-[lucide--chevron-down]" />
-            </div>
-          </Button>
-          <Button
-            :tooltip="t('commands.Comfy_Graph_ConvertToSubgraph.label')"
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="t('commands.Comfy_Graph_ConvertToSubgraph.label')"
-          >
-            <i class="icon-[lucide--shrink] size-4" />
-          </Button>
-          <div class="h-6 w-px self-center bg-border" />
-          <Button
-            :tooltip="t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
-            variant="muted-textonly"
-            :aria-label="t('commands.Comfy_Canvas_ToggleSelectedNodes_Bypass.label')"
-          >
-            <i class="icon-[lucide--redo-dot] size-4" />
-          </Button>
-          <AskAgentButton />
-          <Button
-            :tooltip="t('g.moreOptions')"
-            variant="muted-textonly"
-            :aria-label="t('g.moreOptions')"
-          >
-            <i class="icon-[lucide--more-vertical]" />
-          </Button>
-        </div>
+        <SelectionToolbox />
+        <NodeContextMenu />
       </div>
-      </TooltipProvider>
     `
   })
 }
 
 export const MoreMenu: Story = {
-  parameters: { layout: 'padded' },
-  render: () => ({
-    components: { AskAgentButton, Button, Menu, TooltipProvider },
-    setup() {
-      const open = ref(true)
-      const items: MenuItem[] = [
-        { label: t('contextMenu.Rename'), command: fn() },
-        { label: t('contextMenu.Copy'), shortcut: 'Ctrl+C', command: fn() },
-        {
-          label: t('contextMenu.Duplicate'),
-          shortcut: 'Ctrl+D',
-          command: fn()
-        },
-        { separator: true },
-        {
-          label: t('agent.referenceInAgent'),
-          icon: 'icon-[lucide--astroid]',
-          command: fn()
-        },
-        { separator: true },
-        { label: t('contextMenu.Delete'), icon: 'icon-[lucide--trash-2]' }
-      ]
-      return { t, open, items }
-    },
-    template: `
-      <TooltipProvider :delay-duration="0">
-        <div class="flex min-h-80 items-start justify-center pt-8">
-          <div
-            data-testid="selection-toolbox"
-            class="selection-toolbox pointer-events-auto floating-panel"
-          >
-            <div class="flex h-8 gap-1">
-              <Button variant="muted-textonly" :aria-label="t('g.info')">
-                <i class="icon-[lucide--info]" />
-              </Button>
-              <AskAgentButton />
-              <Menu v-model:open="open" :items="items" align="end">
-                <template #trigger>
-                  <Button
-                    variant="muted-textonly"
-                    :aria-label="t('g.moreOptions')"
-                    data-testid="more-options-button"
-                  >
-                    <i class="icon-[lucide--more-vertical]" />
-                  </Button>
-                </template>
-              </Menu>
-            </div>
-          </div>
-        </div>
-      </TooltipProvider>
-    `
-  })
+  ...Toolbar,
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument
+    const button = doc.querySelector('[data-testid="more-options-button"]')
+    if (!(button instanceof HTMLElement)) {
+      throw new Error('more-options-button is missing')
+    }
+    const rect = button.getBoundingClientRect()
+    button.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        view: doc.defaultView ?? window
+      })
+    )
+    const page = within(doc.body)
+    await expect(page.getByRole('menu')).toBeVisible()
+    await expect(
+      page.getByRole('menuitem', { name: /Reference in agent/i })
+    ).toBeVisible()
+  }
 }

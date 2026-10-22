@@ -35,8 +35,8 @@ function resolveNodes(nodeIds: readonly NodeId[]): SelectedNode[] {
 }
 
 /**
- * Adds each node as a composer reference chip and opens the agent panel if it
- * is closed. Does not send or change the prompt text.
+ * Adds each node as a composer reference chip, focuses the composer after the
+ * last chip, and opens the agent panel if it is closed.
  */
 export function referenceNodesInAgent(
   nodeIds: readonly NodeId[],
@@ -59,6 +59,7 @@ export function referenceNodesInAgent(
     ...composer.nodes,
     ...nodes.filter((node) => !existingKeys.has(selectedNodeKey(node)))
   ])
+  composer.requestEditorFocus()
   if (!panel.isOpen) panel.open(source)
   return true
 }

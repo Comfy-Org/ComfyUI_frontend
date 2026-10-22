@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect } from 'storybook/test'
 
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -71,13 +72,19 @@ export const WithHistory: Story = {
   }
 }
 
+function seedNodeChips(nodes: { id: string; title: string }[], focus = false) {
+  const composer = useAgentComposerStore()
+  composer.restorePrompt({ text: '', references: [] })
+  composer.setNodeScope('story-workflow')
+  composer.setNodes(nodes)
+  if (focus) composer.requestEditorFocus()
+}
+
 export const OneNodeChip: Story = {
   decorators: [
     () => ({
       setup() {
-        const composer = useAgentComposerStore()
-        composer.setNodeScope('story-workflow')
-        composer.setNodes([{ id: '5', title: 'KSampler' }])
+        seedNodeChips([{ id: '5', title: 'KSampler' }])
         return {}
       },
       template: '<story />'
@@ -123,9 +130,7 @@ export const MultipleNodeChips: Story = {
   decorators: [
     () => ({
       setup() {
-        const composer = useAgentComposerStore()
-        composer.setNodeScope('story-workflow')
-        composer.setNodes([
+        seedNodeChips([
           { id: '5', title: 'KSampler' },
           { id: '12', title: 'VAE Decode' }
         ])
@@ -134,6 +139,21 @@ export const MultipleNodeChips: Story = {
       template: '<story />'
     })
   ]
+}
+
+export const FocusedAfterChip: Story = {
+  decorators: [
+    () => ({
+      setup() {
+        seedNodeChips([{ id: '5', title: 'KSampler' }], true)
+        return {}
+      },
+      template: '<story />'
+    })
+  ],
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
 }
 
 export const ChipStates: Story = {

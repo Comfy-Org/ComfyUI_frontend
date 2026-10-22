@@ -9,6 +9,7 @@ import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
 import {
   getCurrentInstance,
   h,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   render,
@@ -19,6 +20,7 @@ import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import {
@@ -90,9 +92,11 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const skillPacks = useSkillPacksStore()
+const composerStore = useAgentComposerStore()
 const appContext = getCurrentInstance()?.appContext
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | undefined
+let appliedFocusEpoch = 0
 const activeAssetReferences = new Map<HTMLElement, string>()
 const insertions = new Set<{ from: number; to: number }>()
 const plugins = [
@@ -598,7 +602,27 @@ onMounted(() => {
       }
     }
   })
+  void nextTick(applyPendingEditorFocus)
 })
+
+function applyPendingEditorFocus() {
+  if (!view) return
+  const epoch = composerStore.editorFocusEpoch
+  if (epoch === 0 || epoch === appliedFocusEpoch) return
+  const point = composerStore.insertionPoint
+  const position = Math.min(
+    promptDocumentPosition(view.state.doc, point.textOffset),
+    view.state.doc.content.size
+  )
+  view.dispatch(
+    view.state.tr
+      .setSelection(TextSelection.create(view.state.doc, position))
+      .scrollIntoView()
+  )
+  view.focus()
+  appliedFocusEpoch = epoch
+  emit('selectionChange')
+}
 
 watch(
   [model, () => historyEpoch],
@@ -615,12 +639,19 @@ watch(
         )
       )
       emit('selectionChange')
+      applyPendingEditorFocus()
       return
     }
     const start = view.state.doc.content.findDiffStart(doc.content)
-    if (start === null) return
+    if (start === null) {
+      applyPendingEditorFocus()
+      return
+    }
     const end = view.state.doc.content.findDiffEnd(doc.content)
-    if (!end) return
+    if (!end) {
+      applyPendingEditorFocus()
+      return
+    }
     const overlap = Math.max(0, start - Math.min(end.a, end.b))
     const before = promptDraft(view.state.doc)
     const metadataOnly =
@@ -633,8 +664,16 @@ watch(
     view.dispatch(
       closeHistory(transaction.setMeta('addToHistory', !metadataOnly))
     )
+    applyPendingEditorFocus()
   },
   { flush: 'post', deep: true }
+)
+
+watch(
+  () => composerStore.editorFocusEpoch,
+  () => {
+    void nextTick(applyPendingEditorFocus)
+  }
 )
 
 watch(
