@@ -88,11 +88,16 @@ const meta: Meta<typeof EnhancePromptButton> = {
   args: {
     loading: false,
     disabled: false,
+    size: 'icon-sm',
     onClick: fn()
   },
   argTypes: {
     loading: { control: 'boolean' },
-    disabled: { control: 'boolean' }
+    disabled: { control: 'boolean' },
+    size: {
+      control: 'select',
+      options: ['icon-sm', 'icon']
+    }
   },
   parameters: {
     layout: 'centered'
@@ -104,6 +109,12 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const Icon: Story = {
+  args: {
+    size: 'icon'
+  }
+}
+
 export const Processing: Story = {
   args: {
     loading: true,
@@ -112,7 +123,13 @@ export const Processing: Story = {
 }
 
 export const InPropertiesPanel: Story = {
-  render: renderPropertiesPanel(SAMPLE_PROMPT)
+  render: renderPropertiesPanel(SAMPLE_PROMPT),
+  play: async ({ canvas }) => {
+    await canvas.findByRole('textbox')
+    await expect(
+      canvas.getAllByRole('button', { name: 'Enhance prompt' })
+    ).toHaveLength(1)
+  }
 }
 
 export const InPropertiesPanelProcessing: Story = {

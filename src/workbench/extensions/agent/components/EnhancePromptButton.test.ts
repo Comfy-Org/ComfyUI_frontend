@@ -18,15 +18,23 @@ const i18n = createI18n({
 })
 
 describe('EnhancePromptButton', () => {
-  it('uses the library icon button size and muted-textonly variant', () => {
-    render(EnhancePromptButton, {
-      global: { plugins: [i18n] }
-    })
+  it.for([
+    { size: undefined, buttonClass: 'size-5', iconClass: 'size-3' },
+    { size: 'icon-sm' as const, buttonClass: 'size-5', iconClass: 'size-3' },
+    { size: 'icon' as const, buttonClass: 'size-8', iconClass: 'size-4' }
+  ])(
+    'uses $buttonClass and $iconClass when size is $size',
+    ({ size, buttonClass, iconClass }) => {
+      render(EnhancePromptButton, {
+        props: size ? { size } : {},
+        global: { plugins: [i18n] }
+      })
 
-    const button = screen.getByRole('button', { name: 'Enhance prompt' })
-    expect(button).toHaveClass('size-8')
-    expect(button.dataset.variant).toBe('muted-textonly')
-    expect(button.innerHTML).toContain('icon-[lucide--astroid]')
-    expect(button.innerHTML).toContain('size-4')
-  })
+      const button = screen.getByRole('button', { name: 'Enhance prompt' })
+      expect(button).toHaveClass(buttonClass)
+      expect(button.dataset.variant).toBe('muted-textonly')
+      expect(button.innerHTML).toContain('icon-[lucide--astroid]')
+      expect(button.innerHTML).toContain(iconClass)
+    }
+  )
 })

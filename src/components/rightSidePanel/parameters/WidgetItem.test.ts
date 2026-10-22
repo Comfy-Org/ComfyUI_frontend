@@ -430,6 +430,26 @@ describe('WidgetItem', () => {
       expect(button.innerHTML).toContain('size-4')
     })
 
+    it('keeps enhance on the label row and hides the in-field button', () => {
+      useAgentPanelStore().enabled = true
+      vi.mocked(getComponent).mockReturnValue(WidgetTextarea)
+      renderWidgetItem(
+        createMockWidget({
+          type: 'customtext',
+          name: 'prompt',
+          value: 'a cat'
+        }),
+        createMockNode({ type: 'CLIPTextEncode' })
+      )
+
+      expect(
+        screen.getAllByRole('button', { name: 'Enhance prompt' })
+      ).toHaveLength(1)
+      const button = screen.getByRole('button', { name: 'Enhance prompt' })
+      expect(button).toHaveClass('size-8')
+      expect(button.innerHTML).toContain('size-4')
+    })
+
     it('replaces the prompt in place when enhance succeeds', async () => {
       useAgentPanelStore().enabled = true
       const widget = createMockWidget({

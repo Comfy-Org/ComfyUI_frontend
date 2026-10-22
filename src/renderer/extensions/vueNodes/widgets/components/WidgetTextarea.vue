@@ -112,12 +112,14 @@ const {
   widget,
   placeholder = '',
   nodeType,
-  widgetId
+  widgetId,
+  hideEnhance = false
 } = defineProps<{
   widget: SimplifiedWidget<string>
   placeholder?: string
   nodeType?: string
   widgetId?: WidgetId
+  hideEnhance?: boolean
 }>()
 
 const textAreaRef = useTemplateRef('textAreaRef')
@@ -150,6 +152,7 @@ const panelEnhance = inject(EnhancePromptStateKey, null)
 const resolvedNodeType = computed(() => nodeType ?? widget.nodeType)
 const showEnhance = computed(() => {
   if (
+    hideEnhance ||
     hideLayoutField ||
     panelEnhance ||
     !agentEnabled.value ||

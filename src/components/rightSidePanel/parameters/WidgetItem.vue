@@ -270,6 +270,7 @@ const displayLabel = customRef((track, trigger) => {
       >
         <EnhancePromptButton
           v-if="showEnhance"
+          size="icon"
           tooltip-side="bottom"
           :loading="isProcessing"
           :disabled="isLocked"
@@ -301,6 +302,7 @@ const displayLabel = customRef((track, trigger) => {
       v-model="widgetValue"
       :widget="simplifiedWidget"
       :widget-id="enhanceWidgetId"
+      :hide-enhance="isPromptTextareaWidget(simplifiedWidget.type)"
       :node-id="node.id"
       :node-type="node.type"
       :class="

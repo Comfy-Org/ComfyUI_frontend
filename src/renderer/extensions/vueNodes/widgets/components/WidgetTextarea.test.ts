@@ -337,6 +337,38 @@ describe('WidgetTextarea enhance prompt', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses the small in-field icon button size', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    const button = screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    expect(button).toHaveClass('size-5')
+    expect(button.innerHTML).toContain('size-3')
+  })
+
+  it('hides the in-field button when hideEnhance is set', () => {
+    useAgentPanelStore().enabled = true
+    const widget = createTextareaWidget('a prompt')
+    render(WidgetTextarea, {
+      props: {
+        widget,
+        modelValue: 'a prompt',
+        nodeType: 'CLIPTextEncode',
+        hideEnhance: true
+      },
+      global: {
+        mocks: {
+          $t: (msg: string) => msg
+        }
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: 'agent.enhancePrompt' })
+    ).not.toBeInTheDocument()
+  })
+
   it('hides the in-field button when the properties panel owns the control', () => {
     useAgentPanelStore().enabled = true
     const widget = createTextareaWidget('a prompt')
