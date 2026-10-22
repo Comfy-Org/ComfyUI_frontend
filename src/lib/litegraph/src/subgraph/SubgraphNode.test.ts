@@ -28,6 +28,12 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
+vi.hoisted(() => {
+  globalThis.Image = vi.fn(class extends globalThis.Image {})
+})
+
+const imagesConstructedOnImport = vi.mocked(Image).mock.calls.length
+
 beforeEach(() => {
   resetSubgraphFixtureState()
 })
@@ -1013,6 +1019,34 @@ describe('SubgraphNode Edge Cases', () => {
     for (const dto of flattened) {
       expect(dto.id).toMatch(/^\d+:\d+$/)
     }
+  })
+})
+
+describe('SubgraphNode workflow badge icon', () => {
+  it('allocates the icon image on first title box draw and reuses it afterwards', () => {
+    const subgraphNode = createTestSubgraphNode(createTestSubgraph())
+    const ctx = fromPartial<CanvasRenderingContext2D>({
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      fill: vi.fn(),
+      translate: vi.fn(),
+      scale: vi.fn(),
+      drawImage: vi.fn()
+    })
+
+    expect(imagesConstructedOnImport).toBe(0)
+
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+    subgraphNode.drawTitleBox(ctx, { scale: 1 })
+
+    expect(Image).toHaveBeenCalledTimes(1)
+    const [firstIcon, secondIcon] = vi
+      .mocked(ctx.drawImage)
+      .mock.calls.map(([image]) => image)
+    expect(firstIcon).toBeInstanceOf(HTMLImageElement)
+    expect(secondIcon).toBe(firstIcon)
   })
 })
 
