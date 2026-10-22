@@ -1,0 +1,307 @@
+// Use type-only imports to avoid pulling THREE.js into the main bundle
+// These imports are erased at compile time and don't create runtime dependencies
+import type * as THREE from 'three'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+
+export type MaterialMode =
+  | 'original'
+  | 'pointCloud'
+  | 'normal'
+  | 'wireframe'
+  | 'depth'
+  | 'clay'
+export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+export type CameraType = 'perspective' | 'orthographic'
+export type BackgroundRenderModeType = 'tiled' | 'panorama'
+export type LoadFolder = 'temp' | 'output'
+
+interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
+export interface CameraState {
+  position: THREE.Vector3
+  target: THREE.Vector3
+  zoom: number
+  cameraType: CameraType
+  quaternion?: CameraQuaternion
+  useCustomUp?: boolean
+  customUp?: { x: number; y: number; z: number }
+  fov?: number
+  aspect?: number
+  near?: number
+  far?: number
+  frustum?: CameraFrustum
+}
+
+// Coordinate system: right-handed, Y-up, world space
+export interface Model3DTransform {
+  position: { x: number; y: number; z: number } // scene units
+  quaternion: { x: number; y: number; z: number; w: number } // normalized, dimensionless; world rotation
+  scale: { x: number; y: number; z: number } // dimensionless multiplier
+}
+
+export type Model3DInfo = Model3DTransform[]
+
+export interface SceneConfig {
+  showGrid: boolean
+  backgroundColor: string
+  backgroundImage?: string
+  backgroundRenderMode?: BackgroundRenderModeType
+  models?: Model3DInfo
+}
+
+export type GizmoMode = 'translate' | 'rotate' | 'scale'
+
+export interface GizmoConfig {
+  enabled: boolean
+  mode: GizmoMode
+  position: { x: number; y: number; z: number }
+  rotation: { x: number; y: number; z: number }
+  scale: { x: number; y: number; z: number }
+}
+
+export interface ModelConfig {
+  upDirection: UpDirection
+  materialMode: MaterialMode
+  showSkeleton: boolean
+  gizmo?: GizmoConfig
+}
+
+/** `Model Config` as persisted in node properties by older workflows. */
+export type StoredModelConfig = Omit<Partial<ModelConfig>, 'gizmo'> & {
+  gizmo?: Partial<GizmoConfig>
+}
+
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+
+export type CameraConfig = {
+  cameraType: CameraType
+  fov: number
+  state?: CameraState
+} & CustomUpConfig
+
+export interface LightConfig {
+  intensity: number
+  hdri?: HDRIConfig
+}
+
+export interface HDRIConfig {
+  enabled: boolean
+  hdriPath: string
+  showAsBackground: boolean
+  intensity: number
+}
+
+export interface EventCallback<T = unknown> {
+  (data: T): void
+}
+
+export interface Load3DOptions {
+  // Optional target dimensions for aspect ratio control
+  width?: number
+  height?: number
+
+  // Dynamic dimension provider (called on every render)
+  // Use this for reactive dimensions that change over time
+  getDimensions?: () => { width: number; height: number } | null
+
+  // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
+  // Used to scale the renderer pixel ratio so the 3D scene renders at the
+  // correct resolution when the graph is zoomed in or out.
+  getZoomScale?: () => number
+
+  // Viewer mode flag (affects aspect ratio behavior)
+  isViewerMode?: boolean
+
+  // Optional context menu callback
+  onContextMenu?: (event: MouseEvent) => void
+}
+
+export interface CaptureResult {
+  scene: string
+  mask: string
+  normal: string
+}
+
+interface BaseManager {
+  init(): void
+  dispose(): void
+  reset(): void
+}
+
+export interface AnimationItem {
+  name: string
+  index: number
+}
+
+export interface SceneManagerInterface extends BaseManager {
+  scene: THREE.Scene
+  gridHelper: THREE.GridHelper
+  toggleGrid(showGrid: boolean): void
+  setBackgroundColor(color: string): void
+  setBackgroundImage(uploadPath: string, imageUrl: string): Promise<void>
+  removeBackgroundImage(): void
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void
+  handleResize(width: number, height: number): void
+  captureScene(width: number, height: number): Promise<CaptureResult>
+}
+
+export interface CameraManagerInterface extends BaseManager {
+  activeCamera: THREE.Camera
+  perspectiveCamera: THREE.PerspectiveCamera
+  orthographicCamera: THREE.OrthographicCamera
+  getCurrentCameraType(): CameraType
+  toggleCamera(cameraType?: CameraType): void
+  setFOV(fov: number): void
+  setCameraState(state: CameraState): void
+  getCameraState(): CameraState
+  setUseCustomUp(use: boolean): void
+  handleResize(width: number, height: number): void
+  setControls(controls: OrbitControls): void
+}
+
+export interface ControlsManagerInterface extends BaseManager {
+  controls: OrbitControls
+  handleResize(): void
+}
+
+export interface LightingManagerInterface extends BaseManager {
+  lights: THREE.Light[]
+  setLightIntensity(intensity: number): void
+}
+
+export interface ViewHelperManagerInterface extends BaseManager {
+  viewHelper: ViewHelper | null
+  viewHelperContainer: HTMLDivElement | null
+  createViewHelper(container: Element | HTMLElement): void
+  update(delta: number): void
+  handleResize(): void
+}
+
+export interface EventManagerInterface {
+  addEventListener<T>(event: string, callback: EventCallback<T>): void
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void
+  emitEvent(event: string, data: unknown): void
+}
+
+export interface AnimationManagerInterface extends BaseManager {
+  currentAnimation: THREE.AnimationMixer | null
+  animationActions: THREE.AnimationAction[]
+  animationClips: THREE.AnimationClip[]
+  selectedAnimationIndex: number
+  isAnimationPlaying: boolean
+  animationSpeed: number
+
+  setupModelAnimations(
+    model: THREE.Object3D,
+    originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  ): void
+  updateAnimationList(): void
+  setAnimationSpeed(speed: number): void
+  updateSelectedAnimation(index: number): void
+  toggleAnimation(play?: boolean): void
+  update(delta: number): void
+  getAnimationTime(): number
+  getAnimationDuration(): number
+  setAnimationTime(time: number): void
+}
+
+export interface ModelManagerInterface {
+  originalFileName: string | null
+  originalURL: string | null
+  currentModel: THREE.Object3D | null
+  originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  originalRotation: THREE.Euler | null
+  currentUpDirection: UpDirection
+
+  init(): void
+  dispose(): void
+  clearModel(): void
+  disposeCurrentModel(): void
+  reset(): void
+  setupModel(model: THREE.Object3D): Promise<void>
+  addModelToScene(model: THREE.Object3D): void
+  setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
+  setUpDirection(direction: UpDirection): void
+  materialMode: MaterialMode
+  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
+  normalMaterial: THREE.MeshNormalMaterial
+  standardMaterial: THREE.MeshStandardMaterial
+  wireframeMaterial: THREE.MeshBasicMaterial
+  depthMaterial: THREE.MeshDepthMaterial
+  setMaterialMode(mode: MaterialMode): void
+  setupModelMaterials(model: THREE.Object3D): void
+}
+
+/** Services the host application provides to the Load3D engine. */
+export interface Load3dHost {
+  fetchApi(route: string, init: { signal?: AbortSignal }): Promise<Response>
+  getPLYEngine(): 'threejs' | 'fastply'
+  resolveImageURL(uploadPath: string): string
+}
+
+export interface LoadModelOptions {
+  /** Cancels network work when the caller abandons the load. */
+  signal?: AbortSignal
+  /**
+   * When true, reject instead of returning a failure outcome, without logging
+   * the untrusted URL. Use for offscreen renders such as thumbnail generation.
+   */
+  silent?: boolean
+}
+
+export interface SceneOverlay {
+  attach(scene: THREE.Scene): void
+  detach(): void
+  update?(deltaSeconds: number): void
+  onActiveCameraChange?(camera: THREE.Camera): void
+  dispose(): void
+}
+
+/**
+ * Outcome of a `loadModel` call. Check it before running post-load steps
+ * (camera restore, widget commit, capability capture):
+ * - `'loaded'`: a model was fetched, parsed, and set up.
+ * - `'cancelled'`: a newer `loadModel` or `dispose()` superseded this load;
+ *   the manager may already be torn down.
+ * - `'empty'`: for a normal call, the URL had no filename, no adapter claimed
+ *   the file, or the adapter produced no model.
+ * - `'unknown-type'`: the file type could not be determined from the name.
+ * - `'not-found'`: the model file responded with HTTP 404.
+ * - `'failed'`: fetching, parsing, or model setup threw.
+ *
+ * With `{ silent: true }`, every outcome except `'loaded'` and `'cancelled'`
+ * rejects instead.
+ */
+export type LoadModelOutcome =
+  | 'loaded'
+  | 'cancelled'
+  | 'empty'
+  | 'unknown-type'
+  | 'not-found'
+  | 'failed'
+
+export interface LoaderManagerInterface {
+  init(): void
+  dispose(): void
+  loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<LoadModelOutcome>
+}

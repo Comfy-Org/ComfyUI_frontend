@@ -15,6 +15,7 @@ export enum ServerFeatureFlag {
   PARTNER_NODE_TOKEN = 'partner_node_token',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
+  DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
@@ -26,15 +27,14 @@ export enum ServerFeatureFlag {
   LOCAL_WEB_SSO = 'local_web_sso',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
-  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   AUTO_TOP_UP_ENABLED = 'auto_top_up_enabled',
-  FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
-  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
+  AGENT = 'agent'
 }

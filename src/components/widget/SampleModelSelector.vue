@@ -12,7 +12,14 @@
     </template>
 
     <template #header>
-      <SearchInput v-model="searchQuery" size="lg" class="max-w-96 flex-1" />
+      <SearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+        size="lg"
+        class="max-w-96 flex-1"
+      />
     </template>
 
     <template #header-right-area>
@@ -36,7 +43,7 @@
 
     <template #contentFilter>
       <div class="relative flex gap-2 px-6 pb-4">
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
           class="w-[250px]"
@@ -46,12 +53,12 @@
           :show-selected-count="true"
           :show-clear-button="true"
         />
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedProjects"
           :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
-        <SingleSelect
+        <AppSingleSelect
           v-model="selectedSort"
           :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
@@ -60,7 +67,7 @@
           <template #icon>
             <i class="icon-[lucide--filter]" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -117,8 +124,8 @@ import Tag from '@/components/chip/Tag.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

@@ -25,6 +25,22 @@ describe('catalog staging view model', () => {
   ])('rejects an unsupported query %s', (query) => {
     expect(filterFromQuery(new URLSearchParams(query))).toBeUndefined()
   })
+  it('keeps the server save time of each change and refuses a malformed one', () => {
+    const snapshot = fixtureReview()
+    const first = snapshot.items[0]
+    assert.isDefined(first)
+    const saved = '2026-10-21T04:48:55.669254Z'
+    expect(
+      stagingSnapshot({ ...snapshot, items: [{ ...first, saved_at: saved }] })
+        ?.items[0]?.saved_at
+    ).toBe(saved)
+    expect(
+      stagingSnapshot({
+        ...snapshot,
+        items: [{ ...first, saved_at: 'yesterday' }]
+      })
+    ).toBeUndefined()
+  })
   it('preserves canonical account identity in author filtering and reviewed saves', () => {
     const author = 'fPc7irbKt2VLbuIkRrWuC5TH5lX2'
     expect(

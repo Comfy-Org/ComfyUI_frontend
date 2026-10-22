@@ -7,8 +7,11 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
-import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
 

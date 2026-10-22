@@ -1,9 +1,9 @@
-import { DEFAULT_CAMERA_INFO_STATE } from './types'
+import { DEFAULT_CAMERA_INFO_STATE } from '@comfyorg/viewport3d/cameraInfo/types'
 import type {
   CameraInfoCameraType,
   CameraInfoMode,
   CameraInfoState
-} from './types'
+} from '@comfyorg/viewport3d/cameraInfo/types'
 
 interface WidgetLike {
   name: string

@@ -338,11 +338,11 @@ test.describe(
           await comfyPage.nextFrame()
           await comfyPage.page.evaluate(
             (names) => {
-              graph!.nodes[0].images.splice(
+              graph!.nodes[0].images!.splice(
                 0,
                 1,
                 ...names.map((filename) => ({
-                  type: 'input',
+                  type: 'input' as const,
                   filename,
                   subfolder: ''
                 }))

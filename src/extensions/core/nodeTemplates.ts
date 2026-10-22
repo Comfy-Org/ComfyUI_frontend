@@ -10,10 +10,10 @@ import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
-import { ComfyDialog } from '../../scripts/ui'
-import { $el } from '../../scripts/ui/utils'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:

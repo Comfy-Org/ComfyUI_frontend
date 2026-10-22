@@ -16,24 +16,24 @@ import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
-import { useSkillMenuDescription } from '../../composables/agent/useSkillMenuDescription'
-import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
+import { useSkillMenuDescription } from '@/workbench/extensions/agent/composables/agent/useSkillMenuDescription'
+import { useWorkflowReferencePicker } from '@/workbench/extensions/agent/composables/agent/useWorkflowReferencePicker'
 import type {
   AttachmentValidationError,
   ComposerAttachment
-} from '../../types/composerAttachment'
-import type { MentionSection } from '../../composables/agent/mentionPickerState'
-import { useComposer } from '../../composables/agent/useComposer'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+} from '@/workbench/extensions/agent/types/composerAttachment'
+import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
+import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AssetTray from './composer/AssetTray.vue'

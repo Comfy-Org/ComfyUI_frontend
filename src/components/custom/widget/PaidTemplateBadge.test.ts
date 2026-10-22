@@ -33,7 +33,7 @@ describe('PaidTemplateBadge', () => {
 
     await user.hover(badge)
 
-    const tooltip = await screen.findByRole('tooltip')
+    const tooltip = await screen.findByTestId('tooltip-content')
     expect(within(tooltip).getByText('Premium template')).toBeInTheDocument()
     expect(within(tooltip).getByText('Runs with credits')).toBeInTheDocument()
   })

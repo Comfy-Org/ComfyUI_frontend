@@ -413,7 +413,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["comfyui-api", "node-definition"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -489,7 +489,7 @@
   "compatibilityPromises": [
     "Serialised workflow graph shapes (nodes, links, groups, reroutes, extra) stay compatible with existing workflows.",
     "Extension-facing LGraph, LGraphNode, LLink, Reroute, LGraphGroup, and slot callbacks and fields keep their current behaviour; changes need ecosystem migration guidance.",
-    "Inventory grants no new cross-domain permissions; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
+    "Graph-model may depend only on the comfyui-api and node-definition public entry points; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
   ],
   "deepImports": "inventory"
 }

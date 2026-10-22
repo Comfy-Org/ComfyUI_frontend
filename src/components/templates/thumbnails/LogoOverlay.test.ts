@@ -112,7 +112,9 @@ describe('LogoOverlay', () => {
     expect(extraLabel).toMatch(/,/)
 
     await user.pointer({ keys: '[TouchA]', target: extras })
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(extraLabel)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      extraLabel
+    )
   })
 
   it('keeps the pill visible when its only image fails but an icon remains', async () => {
