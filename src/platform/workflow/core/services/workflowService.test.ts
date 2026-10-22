@@ -169,6 +169,7 @@ beforeEach(() => {
 
 describe('useWorkflowService', () => {
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     vi.mocked(app.loadGraphData).mockResolvedValue(true)
     resetWorkflowLoadQueueForTests()
     vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(true)

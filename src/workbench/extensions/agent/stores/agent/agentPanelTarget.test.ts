@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
@@ -9,6 +9,10 @@ import { useAgentPanelStore } from './agentPanelStore'
 vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
+
+beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
+})
 
 async function setup() {
   const workflows = useWorkflowStore()
