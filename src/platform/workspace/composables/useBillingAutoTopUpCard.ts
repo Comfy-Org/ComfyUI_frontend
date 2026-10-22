@@ -34,25 +34,30 @@ function useBillingAutoTopUpCardInternal() {
   })
 
   let requested = false
-  let inFlightScope: string | null = null
+  let refreshSerial = 0
+  let committed: ScopedRead | null = null
 
   async function readCurrentScope(): Promise<ScopedRead | null> {
     const requestScope = scope.value
     if (requestScope === null) return null
-    inFlightScope = requestScope
+    const serial = ++refreshSerial
     try {
-      return {
+      const next = {
         scope: requestScope,
         settings: await workspaceApi.getBillingAutoReload()
       }
+      if (serial !== refreshSerial) return committed
+      committed = next
+      return next
     } catch (error) {
       reportError(error, {
         errorType: 'auto_top_up_read_failed',
         surface: 'billing'
       })
-      return { scope: requestScope, settings: null }
-    } finally {
-      inFlightScope = null
+      if (serial !== refreshSerial) return committed
+      const failed = { scope: requestScope, settings: null }
+      committed = failed
+      return failed
     }
   }
 
@@ -68,19 +73,23 @@ function useBillingAutoTopUpCardInternal() {
 
   const state = computed<AutoTopUpCardState>(() => {
     const settings = answer.value?.settings
+    if (read.isLoading.value && !settings) return { kind: 'loading' }
     if (settings) return { kind: 'loaded', settings }
-    if (answer.value === null && read.isLoading.value)
-      return { kind: 'loading' }
     return { kind: 'unavailable' }
   })
 
   const isReady = computed(() => answer.value !== null && !read.isLoading.value)
 
+  function refresh() {
+    if (scope.value === null) return
+    void read.execute()
+  }
+
   function ensureRead() {
     requested = true
     if (scope.value === null) return
-    if (answer.value !== null || inFlightScope === scope.value) return
-    void read.execute()
+    if (answer.value !== null) return
+    refresh()
   }
 
   async function retry() {
@@ -92,7 +101,7 @@ function useBillingAutoTopUpCardInternal() {
   })
 
   watch(useDocumentVisibility(), (visibility) => {
-    if (visibility === 'visible' && requested) void read.execute()
+    if (visibility === 'visible' && requested) refresh()
   })
 
   return { state, isReady, ensureRead, retry }

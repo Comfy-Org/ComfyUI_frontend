@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -14,13 +14,23 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { activateBillingScope } from '@/platform/workspace/composables/activateBillingScope.testUtils'
-import { useBillingAutoTopUpCard } from '@/platform/workspace/composables/useBillingAutoTopUpCard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  activateBillingScope,
+  grantedAutoTopUpFact
+} from '@/platform/workspace/composables/activateBillingScope.testUtils'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
+import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/workspace/composables/usePausedBanner'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/telemetry'))
@@ -65,6 +75,20 @@ const RULE = 'Adds $25 (5,275 credits) when below 1,000 credits.'
 const FAILED =
   "Your charge didn't go through. Update your payment method or add credits manually."
 
+function i18nOptions() {
+  return {
+    global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: enMessages }
+        })
+      ]
+    }
+  }
+}
+
 function renderCard(
   settings: AutoReloadSettings,
   setup: AutoTopUpSetup | null = null
@@ -77,17 +101,7 @@ function renderCard(
   )
   return {
     setupRef,
-    ...render(BillingAutoTopUpCard, {
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'en',
-            messages: { en: enMessages }
-          })
-        ]
-      }
-    })
+    ...render(BillingAutoTopUpCard, i18nOptions())
   }
 }
 
@@ -121,10 +135,17 @@ describe('BillingAutoTopUpCard', () => {
   it('reports no view while the read is shared with a banner that mounted first', async () => {
     activateBillingScope('actor-a', 'workspace-a')
     vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
-    const banner = effectScope()
-    const read = banner.run(() => useBillingAutoTopUpCard())!
-    read.ensureRead()
-    await vi.waitFor(() => expect(read.isReady.value).toBe(true))
+    vi.mocked(usePausedBanner).mockReturnValue({
+      isPaused: computed(() => false)
+    })
+    vi.mocked(useFeatureFlags().flags).autoTopUpEnabled = true
+    useBillingCapabilities().canManageAutoTopUp = grantedAutoTopUpFact()
+    render(BillingLocalCreditBanner, i18nOptions())
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
+    )
+    await nextTick()
+    expect(trackedEvents()).not.toHaveBeenCalled()
 
     renderCard(configured, {
       state: 'unavailable',
@@ -133,8 +154,8 @@ describe('BillingAutoTopUpCard', () => {
     await nextTick()
 
     expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
+    expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     expect(trackedEvents()).not.toHaveBeenCalled()
-    banner.stop()
   })
 
   it.for<{

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -19,7 +20,7 @@ vi.mock(import('@/platform/telemetry/reportError'))
 async function switchBillingScope(actorId: string, workspaceId: string) {
   stubFirebaseAuthHarness()
   const auth = useAuthStore()
-  auth.currentUser = { uid: actorId } as User
+  auth.currentUser = fromPartial<User>({ uid: actorId })
   expect(auth.userId).toBe(actorId)
 
   const store = useTeamWorkspaceStore()
@@ -50,9 +51,27 @@ async function switchBillingScope(actorId: string, workspaceId: string) {
   expect(store.workspaceTransitionGeneration).toBe(generation + 1)
 }
 
-function settingsWith(status: AutoReloadSettings['status']) {
-  const settings: Partial<AutoReloadSettings> = { status }
-  return settings as AutoReloadSettings
+function settingsWith(
+  status: AutoReloadSettings['status']
+): AutoReloadSettings {
+  return {
+    configured: status !== 'off',
+    cycle_resets_at: '2026-11-28T00:00:00Z',
+    disabled_reason: null,
+    enabled: status === 'on' || status === 'failed',
+    last_failure_at: null,
+    last_failure_reason: null,
+    max_monthly_budget_cents: 100000,
+    min_reload_credits: 1000,
+    monthly_budget_cents: 20000,
+    paused_by_budget: false,
+    paused_by_decline: false,
+    reload_amount_cents: 2500,
+    reload_credits: 5275,
+    spent_this_cycle_cents: 0,
+    status,
+    threshold_credits: 1000
+  }
 }
 
 function heldReads() {
@@ -138,5 +157,21 @@ describe('useBillingAutoTopUpCard across a workspace switch', () => {
     await nextTick()
 
     expect(card.state.value.kind).not.toBe('loaded')
+  })
+
+  it('shows loading while a failed read is retried', async () => {
+    await switchBillingScope('actor-a', 'workspace-a')
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+      new Error('auto reload down')
+    )
+    const card = mountRead()
+    card.ensureRead()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('unavailable'))
+
+    vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValue(
+      new Promise(() => {})
+    )
+    void card.retry()
+    await vi.waitFor(() => expect(card.state.value.kind).toBe('loading'))
   })
 })
