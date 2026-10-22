@@ -1,3 +1,4 @@
+import { once } from 'es-toolkit'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -163,10 +164,10 @@ export const useExtensionService = () => {
       )
     }
 
-    return () => {
+    return once(() => {
       authHookHandles.forEach((stop) => stop())
       extensionStore.unregisterExtension(extension.name)
-    }
+    })
   }
 
   type RemoveLastAppParam<T> = T extends (

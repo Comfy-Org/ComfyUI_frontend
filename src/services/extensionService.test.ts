@@ -439,7 +439,7 @@ describe('registerExtension auth hooks', () => {
     }
   }
 
-  it('installs exactly one of each auth hook after dispose and re-registration', () => {
+  it('keeps exactly one of each auth hook after dispose, re-registration and a stale dispose', () => {
     const authEvents = createAuthEvents()
     const extension = {
       name: 'auth-hooks',
@@ -452,10 +452,12 @@ describe('registerExtension auth hooks', () => {
     const dispose = service.registerExtension(extension)
     dispose()
     service.registerExtension(extension)
+    dispose()
     authEvents.emit()
 
     expect(extension.onAuthUserResolved).toHaveBeenCalledOnce()
     expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
     expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
+    expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
   })
 })
