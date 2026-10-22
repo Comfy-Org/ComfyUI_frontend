@@ -101,7 +101,7 @@
   }
 }
 
-@keyframes prompt-enhance-shimmer {
+@keyframes agent-shimmer {
   from {
     background-position: 150% center;
   }
@@ -110,7 +110,7 @@
   }
 }
 
-.prompt-enhance-shimmer {
+.agent-shimmer-text {
   background: linear-gradient(
     90deg,
     var(--muted-foreground) 35%,
@@ -120,11 +120,17 @@
   background-size: 200% auto;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: prompt-enhance-shimmer 1.8s linear infinite;
+  animation: agent-shimmer 1.8s linear infinite;
+}
+
+.disable-animations .agent-shimmer-text {
+  animation: none;
+  color: var(--muted-foreground);
+  -webkit-text-fill-color: currentcolor;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .prompt-enhance-shimmer {
+  .agent-shimmer-text {
     animation: none;
     color: var(--muted-foreground);
     -webkit-text-fill-color: currentcolor;

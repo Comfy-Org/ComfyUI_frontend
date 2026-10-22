@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { enhancePromptRequest } from '@/workbench/extensions/agent/services/enhancePromptRequest'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -20,6 +21,16 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
+
+vi.mock(
+  import('@/workbench/extensions/agent/services/enhancePromptRequest'),
+  () => ({
+    enhancePromptRequest: vi.fn(async () => ({
+      ok: true as const,
+      prompt: 'enhanced prompt'
+    }))
+  })
+)
 
 function createTextareaWidget(
   value: string = 'default text',
@@ -315,6 +326,23 @@ describe('WidgetTextarea enhance prompt', () => {
     expect(
       screen.getByRole('button', { name: 'agent.enhancePrompt' })
     ).toBeInTheDocument()
+  })
+
+  it('shimmers the prompt text and locks the input while enhance is in flight', async () => {
+    useAgentPanelStore().enabled = true
+    vi.mocked(enhancePromptRequest).mockReturnValue(new Promise(() => {}))
+    const widget = createTextareaWidget('a prompt')
+    renderComponent(widget, 'a prompt', undefined, undefined, 'CLIPTextEncode')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'agent.enhancePrompt' })
+    )
+
+    expect(screen.getByRole('textbox')).toHaveAttribute('readonly')
+    expect(
+      screen.getByRole('button', { name: 'agent.enhancingPrompt' })
+    ).toBeDisabled()
+    expect(screen.getByText('a prompt')).toHaveClass('agent-shimmer-text')
   })
 })
 

@@ -42,7 +42,7 @@
       aria-hidden="true"
       :class="
         cn(
-          'prompt-enhance-shimmer pointer-events-none absolute inset-0 overflow-hidden px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
+          'agent-shimmer-text pointer-events-none absolute inset-0 overflow-hidden px-3 py-2 font-mono text-(length:--comfy-textarea-font-size) leading-normal whitespace-pre-wrap',
           !hideLayoutField && 'pt-5'
         )
       "
