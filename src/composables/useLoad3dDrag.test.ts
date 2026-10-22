@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
-import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockFileList } from '@/utils/__tests__/litegraphTestUtils'
 

@@ -20,6 +20,7 @@ const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.PasteFromClipboard',
   'Comfy.Canvas.PasteFromClipboardWithConnect',
   'Comfy.Canvas.Resize',
+  'Comfy.Canvas.ShowSelectedLinks',
   'Comfy.Canvas.ToggleSelected.Pin',
   'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   'Comfy.Canvas.ToggleSelectedNodes.Collapse',

@@ -2,8 +2,8 @@ import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import {
   isInaccessible,
   render,
@@ -23,8 +23,8 @@ import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -33,7 +33,7 @@ setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -353,7 +353,9 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Send'
+    )
   })
 
   it('renders without vue-i18n message compilation errors', async () => {

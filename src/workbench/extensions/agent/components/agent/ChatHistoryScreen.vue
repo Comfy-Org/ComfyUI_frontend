@@ -13,7 +13,7 @@ import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 import type {
   ChatSession,
   HistoryGroups
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 const {
   groups,

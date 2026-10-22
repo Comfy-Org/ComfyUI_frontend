@@ -2,6 +2,8 @@
   <div class="extension-panel flex flex-col gap-2">
     <SearchInput
       v-model="searchQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
     <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">

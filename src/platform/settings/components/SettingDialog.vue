@@ -15,6 +15,8 @@
       <div class="px-3">
         <SearchInput
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"

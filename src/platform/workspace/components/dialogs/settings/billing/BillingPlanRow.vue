@@ -95,6 +95,9 @@ function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
 
 const statusLine = computed(() => {
   const key = 'workspacePanel.billingTab.plan'
+  if (state.kind === 'activating') {
+    return t(`${key}.activating`, { plan: state.planName })
+  }
   if (state.kind === 'active') return activeLine(state)
   if (state.kind === 'noPlan') return noPlanLine(state)
   if (state.kind === 'ending') {

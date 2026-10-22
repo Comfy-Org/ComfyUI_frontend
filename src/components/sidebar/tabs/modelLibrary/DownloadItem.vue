@@ -5,6 +5,7 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Badge
+        :remove-label="$t('g.remove')"
         variant="chip"
         severity="danger"
         class="mt-2 h-6 text-sm font-light"

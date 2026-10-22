@@ -2,6 +2,8 @@
   <div class="flex min-w-0 items-center gap-2">
     <SearchInput
       v-if="showSearch"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
       :placeholder="searchPlaceholderText"

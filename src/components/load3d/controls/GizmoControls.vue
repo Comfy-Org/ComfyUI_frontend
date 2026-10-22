@@ -81,7 +81,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type {
   GizmoConfig,
   GizmoMode
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

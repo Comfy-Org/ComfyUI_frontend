@@ -1,6 +1,6 @@
 import { useTimeoutFn } from '@vueuse/core'
 
-import type { AgentEventSource } from '../../composables/agent/useAgentSession'
+import type { AgentEventSource } from '@/workbench/extensions/agent/composables/agent/useAgentSession'
 
 export interface AgentEventSocket extends AgentEventSource {
   send(frame: string): boolean

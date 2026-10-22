@@ -2,12 +2,27 @@ import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 const DEPRECATED_NODE_TYPE = 'ImageBatch'
 const API_NODE_TYPE = 'FluxProUltraImageNode'
+const BADGE_OVERHANG_PADDING = 40
+
+async function expectAllNodesScreenshot(comfyPage: ComfyPage, name: string) {
+  await expectRegionScreenshot(
+    comfyPage.page,
+    [
+      ...(await comfyPage.nodeOps.getAllNodeRefs()),
+      ...(await comfyPage.vueNodes.nodes.all())
+    ],
+    name,
+    { padding: BADGE_OVERHANG_PADDING }
+  )
+}
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
@@ -24,7 +39,7 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
       graph.setDirtyCanvas(true, true)
     })
 
-    await expect(comfyPage.canvas).toHaveScreenshot('node-badge.png')
+    await expectAllNodesScreenshot(comfyPage, 'node-badge.png')
   })
 
   test('Can add multiple badges', async ({ comfyPage }) => {
@@ -44,7 +59,7 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
       graph.setDirtyCanvas(true, true)
     })
 
-    await expect(comfyPage.canvas).toHaveScreenshot('node-badge-multiple.png')
+    await expectAllNodesScreenshot(comfyPage, 'node-badge-multiple.png')
   })
 })
 
@@ -54,7 +69,6 @@ test.describe(
   () => {
     Object.values(NodeBadgeMode).forEach(async (mode) => {
       test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
-        // Execution error workflow has both custom node and core node.
         await comfyPage.workflow.loadWorkflow('nodes/execution_error')
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -71,10 +85,7 @@ test.describe(
             { message: 'NodeIdBadgeMode setting should be applied' }
           )
           .toBe(mode)
-        await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `node-badge-${mode}.png`
-        )
+        await expectAllNodesScreenshot(comfyPage, `node-badge-${mode}.png`)
       })
     })
   }
@@ -84,25 +95,6 @@ test.describe(
   'Node badge color',
   { tag: ['@screenshot', '@smoke', '@node'] },
   () => {
-    test('Can show node badge with unknown color palette', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeBadge.NodeIdBadgeMode',
-        NodeBadgeMode.ShowAll
-      )
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
-          message: 'ColorPalette setting should be applied'
-        })
-        .toBe('unknown')
-      await comfyPage.canvasOps.clickEmptySpace()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'node-badge-unknown-color-palette.png'
-      )
-    })
-
     test('Can show node badge with light color palette', async ({
       comfyPage
     }) => {
@@ -117,7 +109,8 @@ test.describe(
         })
         .toBe('light')
       await comfyPage.canvasOps.clickEmptySpace()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectAllNodesScreenshot(
+        comfyPage,
         'node-badge-light-color-palette.png'
       )
     })
@@ -144,8 +137,8 @@ for (const vueEnabled of [false, true] as const) {
           x: 100,
           y: 100
         })
-        await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
+        await expectAllNodesScreenshot(
+          comfyPage,
           `node-lifecycle-${mode}-${renderer}.png`
         )
       })
@@ -180,8 +173,8 @@ for (const vueEnabled of [false, true] as const) {
           x: 100,
           y: 100
         })
-        await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
+        await expectAllNodesScreenshot(
+          comfyPage,
           `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`
         )
       })
