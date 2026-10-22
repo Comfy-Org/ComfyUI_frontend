@@ -371,6 +371,7 @@ const turnStartedAt = new Map<TurnId, number>()
  * flight, consumed exactly once at ack.
  */
 let sendInFlight = false
+let sendThreadId: string | null = null
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
 
 function consumeStopPendingAck() {
@@ -1132,28 +1133,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
-    stopPendingActiveTurn()
+    stopPendingTurn(ack.thread_id, turnId)
   }
 
-  function settleStopAfterFailedSend(
-    generation: number,
-    threadAtSend: string | null
-  ): void {
-    if (
-      generation === loadGeneration &&
-      threadAtSend !== null &&
-      conversationStore.threadId === threadAtSend
-    )
-      stopPendingActiveTurn()
-    else consumeStopPendingAck()
-  }
-
-  function stopPendingActiveTurn(): void {
+  function stopPendingTurn(threadId: string | null, turnId: TurnId | null): void {
     const pendingStop = consumeStopPendingAck()
-    const threadId = conversationStore.threadId
-    const turnId = conversationStore.activeTurnId
     if (pendingStop === null || threadId === null || turnId === null) return
-    void cancelTurn(threadId, turnId, pendingStop.method)
+    if (turnId === conversationStore.activeTurnId)
+      void cancelTurn(threadId, turnId, pendingStop.method)
+    else
+      void rest
+        .cancelMessage(threadId, turnId)
+        .catch((error: unknown) => handleStopFailure(error, turnId))
   }
 
   function recordSendError(
@@ -1259,7 +1250,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) stopPendingActiveTurn()
+    if (adoptedActiveTurn) stopPendingTurn(threadAtSend, activeTurnId)
     return adoptedActiveTurn
   }
 
@@ -1302,7 +1293,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      if (!observeAcceptedTurn(generation, onAccepted)) {
+        stopPendingTurn(ack.thread_id, toTurnId(ack.message_id))
+        return false
+      }
       acceptTurn(
         ack,
         text,
@@ -1367,9 +1361,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
-    stopPendingAck = null
-    const generation = loadGeneration
     const threadAtSend = conversationStore.threadId
+    const waitingTurnId = conversationStore.activeTurnId
+    sendThreadId = threadAtSend
+    stopPendingAck = null
     try {
       const sent = await performSend(
         text,
@@ -1380,7 +1375,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId,
         onAccepted
       )
-      if (!sent) settleStopAfterFailedSend(generation, threadAtSend)
+      if (!sent) stopPendingTurn(threadAtSend, waitingTurnId)
       return sent
     } finally {
       sending.value = false
@@ -1505,11 +1500,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
-    if (sendInFlight) {
+    const threadId = conversationStore.threadId
+    if (sendInFlight && threadId === sendThreadId) {
       stopPendingAck = { method }
       return
     }
-    const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) return
     await cancelTurn(threadId, turnId, method)

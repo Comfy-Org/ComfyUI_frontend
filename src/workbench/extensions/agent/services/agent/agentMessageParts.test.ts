@@ -398,16 +398,31 @@ describe('retireAskParts', () => {
     ])
   })
 
-  it('keeps a dismissed run approval through any resolution', () => {
-    const dismissed: MessagePart[] = [
-      { type: 'runApproval', askId: 'run', dismissed: true }
-    ]
-    expect(retireAskParts(dismissed, 'run', { status: 'closed' })).toBe(
-      dismissed
-    )
-    expect(
-      retireAskParts(dismissed, 'run', { status: 'answered', selected: [] })
-    ).toBe(dismissed)
+  it.for<{ kind: string; part: MessagePart }>([
+    {
+      kind: 'run approval',
+      part: { type: 'runApproval', askId: 'x', dismissed: true }
+    },
+    { kind: 'question', part: { ...question, askId: 'x', dismissed: true } },
+    {
+      kind: 'delete approval',
+      part: {
+        type: 'deleteApproval',
+        askId: 'x',
+        prompt: 'Delete 1 node?',
+        nodes: [{ id: '12', name: 'Hero sampler' }],
+        hiddenNodeCount: 0,
+        dismissed: true
+      }
+    }
+  ])('keeps a dismissed $kind dismissed through a later answer', ({ part }) => {
+    for (const resolution of [
+      { status: 'closed' },
+      { status: 'answered', selected: ['run'] }
+    ] satisfies AskUserResolution[])
+      expect(retireAskParts([part], 'x', resolution)).toEqual([
+        expect.objectContaining({ type: part.type, dismissed: true })
+      ])
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
