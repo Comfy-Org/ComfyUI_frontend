@@ -30,7 +30,10 @@ async function agentAuthHeader(): Promise<AuthHeader | null> {
   const workspaceToken = await useAuthStore().getWorkspaceAuthToken()
   if (workspaceToken) return { Authorization: `Bearer ${workspaceToken}` }
   if (isApiKeySession()) return useApiKeyAuthStore().getAuthHeader()
-  if (useTeamWorkspaceStore().activeWorkspaceId) {
+  if (
+    useAuthStore().isAuthenticated &&
+    useTeamWorkspaceStore().activeWorkspaceId
+  ) {
     return useAuthStore().getWorkspaceAuthHeaderOrThrow()
   }
   return null

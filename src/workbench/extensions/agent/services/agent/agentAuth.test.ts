@@ -139,6 +139,17 @@ describe('withAgentAuth', () => {
     expect(headers.has('Authorization')).toBe(false)
   })
 
+  it('sends nothing for a signed-out user whose last workspace is still selected', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
+    workspaceToken(undefined)
+
+    const headers = new Headers(
+      (await withAgentAuth({ method: 'POST' })).headers
+    )
+
+    expect(headers.has('Authorization')).toBe(false)
+  })
+
   it('leaves a cloud request to fetchApi, never attaching the personal token', async () => {
     distribution.isCloud = true
     signInPersonal()
