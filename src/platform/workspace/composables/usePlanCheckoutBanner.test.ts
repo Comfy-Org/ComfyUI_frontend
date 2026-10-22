@@ -4,6 +4,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 
@@ -38,6 +39,9 @@ describe('usePlanCheckoutBanner', () => {
 
   beforeEach(() => {
     distribution.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration: 0
+    })
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
     vi.mocked(workspaceApi.getBillingStatus).mockReset()
     vi.mocked(workspaceApi.getBillingOpStatus).mockReset()
@@ -122,5 +126,46 @@ describe('usePlanCheckoutBanner', () => {
     })
 
     expect(checkout.banner.value).toBeNull()
+  })
+
+  it('drops workspace A when this tab switches before A answers', async () => {
+    let resolveOperation: (value: {
+      id: string
+      started_at: string
+      status: 'pending'
+      checkout_state: 'verify_payment'
+      action_url: string
+    }) => void = () => {}
+    vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue({
+      ...status,
+      latest_subscription_op_id: 'op-a'
+    })
+    vi.mocked(workspaceApi.getBillingOpStatus).mockReturnValue(
+      new Promise((resolve) => {
+        resolveOperation = resolve
+      })
+    )
+
+    const checkout = banner()
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-a')
+    )
+
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration: 1
+    })
+    await vi.waitFor(() => expect(checkout.banner.value).toBeNull())
+
+    resolveOperation({
+      id: 'op-a',
+      started_at: '2026-10-22T00:00:00Z',
+      status: 'pending',
+      checkout_state: 'verify_payment',
+      action_url: 'https://pay.example/a'
+    })
+    await Promise.resolve()
+
+    expect(checkout.banner.value).toBeNull()
+    expect(checkout.banner.value?.kind).not.toBe('verifyPayment')
   })
 })

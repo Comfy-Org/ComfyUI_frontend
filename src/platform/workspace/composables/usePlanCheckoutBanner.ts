@@ -8,12 +8,15 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { planCheckoutBannerFor } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
 import type { PlanCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/planCheckoutBanner'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export function usePlanCheckoutBanner() {
   const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
   const operation = shallowRef<BillingOpStatusResponse | null>(null)
   const dismissed = shallowRef<ReadonlySet<string>>(new Set())
   const shown = computed(() => isCloud && flags.unifiedBillingSettingsEnabled)
+  let refreshGeneration = 0
 
   const banner = computed<PlanCheckoutBanner | null>(() => {
     if (!shown.value || !operation.value) return null
@@ -22,18 +25,31 @@ export function usePlanCheckoutBanner() {
     return next
   })
 
+  function currentRefreshIs(refreshId: number, launchedGeneration: number) {
+    return (
+      refreshId === refreshGeneration &&
+      workspaceStore.workspaceTransitionGeneration === launchedGeneration
+    )
+  }
+
   async function refresh() {
+    const launchedGeneration = workspaceStore.workspaceTransitionGeneration
+    const refreshId = ++refreshGeneration
     if (!shown.value) {
       operation.value = null
       return
     }
     try {
       const status = await workspaceApi.getBillingStatus()
+      if (!currentRefreshIs(refreshId, launchedGeneration)) return
       const opId = status.latest_subscription_op_id
-      operation.value = opId
+      const nextOperation = opId
         ? await workspaceApi.getBillingOpStatus(opId)
         : null
+      if (!currentRefreshIs(refreshId, launchedGeneration)) return
+      operation.value = nextOperation
     } catch (error) {
+      if (!currentRefreshIs(refreshId, launchedGeneration)) return
       reportError(error, {
         errorType: 'plan_checkout_banner_read_failed',
         surface: 'billing'
@@ -50,6 +66,14 @@ export function usePlanCheckoutBanner() {
   }
 
   void refresh()
+  watch(
+    () => workspaceStore.workspaceTransitionGeneration,
+    () => {
+      refreshGeneration++
+      operation.value = null
+      dismissed.value = new Set()
+    }
+  )
   watch(useDocumentVisibility(), (visibility) => {
     if (visibility === 'visible') void refresh()
   })
