@@ -1,4 +1,4 @@
-import dompurify from 'dompurify'
+import DOMPurify from 'dompurify'
 
 import type {
   ContextMenuDivElement,
@@ -16,7 +16,9 @@ const ALLOWED_STYLE_PROPS = new Set([
   'border-left'
 ])
 
-dompurify.addHook('uponSanitizeAttribute', (_node, data) => {
+const menuSanitizer = DOMPurify(window)
+
+menuSanitizer.addHook('uponSanitizeAttribute', (_node, data) => {
   if (data.attrName === 'style') {
     const sanitizedStyle = data.attrValue
       .split(';')
@@ -33,7 +35,7 @@ dompurify.addHook('uponSanitizeAttribute', (_node, data) => {
 })
 
 function sanitizeMenuHTML(html: string): string {
-  return dompurify.sanitize(html, {
+  return menuSanitizer.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR: ['style']
   })

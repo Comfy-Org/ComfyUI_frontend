@@ -55,6 +55,14 @@ describe('useBrowserTabTitle', () => {
     scope.stop()
   })
 
+  it('falls back to the document title present when the composable starts', () => {
+    document.title = 'Comfy Cloud'
+    const scope = effectScope()
+    scope.run(() => useBrowserTabTitle())
+    expect(document.title).toBe('Comfy Cloud')
+    scope.stop()
+  })
+
   it('sets workflow name as title when workflow exists and menu enabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
     workflowStore.activeWorkflow = fromPartial<

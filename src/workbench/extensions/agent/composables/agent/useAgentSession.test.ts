@@ -1918,13 +1918,23 @@ describe('useAgentSession (v1 composition root)', () => {
       events: fakeEvents().source
     })
     session.start()
+    const onAccepted = vi.fn()
 
-    const send = session.sendMessage('late reply')
+    const send = session.sendMessage(
+      'late reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      onAccepted
+    )
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
     session.stop()
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
+    expect(onAccepted).toHaveBeenCalledOnce()
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
@@ -4802,6 +4812,28 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.entries.value[0]).toMatchObject({
       role: 'user',
       attachments: [{ mediaUrl: '/api/view?filename=clip.mp4&type=input' }]
+    })
+  })
+
+  it('keeps the kind and stored preview on a sent EXR', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this plate', [
+      {
+        ref: 'a1b2c3',
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/stored-preview.png'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ kind: 'image', previewUrl: '/stored-preview.png' }]
     })
   })
 

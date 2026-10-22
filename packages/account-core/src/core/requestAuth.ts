@@ -4,7 +4,7 @@
  * every other service takes a Bearer workspace token. Firebase and API-key
  * principals keep the single header they send today, whatever the target.
  */
-import packageManifest from '#package.json' with { type: 'json' }
+import { name, version } from '#package.json' with { type: 'json' }
 
 import type { WebSession } from './sessionContracts'
 
@@ -40,7 +40,7 @@ export interface RequestAuthOptions {
   ) => Promise<string>
 }
 
-export const COMFY_CLIENT = `${packageManifest.name}/${packageManifest.version}`
+export const COMFY_CLIENT = `${name}/${version}`
 
 const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS'])
 
