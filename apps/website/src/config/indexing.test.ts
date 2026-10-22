@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { websiteRoot } from '@website/paths'
 import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
@@ -44,6 +44,8 @@ const MODELS_PAGES_BY_KIND = [
   ['catalogue', '/models/catalogue.json'],
   ['page data', `/models/${modelSlug}/page.json`]
 ] as const
+
+beforeEach(() => vi.stubEnv('SITE_CATALOG_API_URL', ''))
 
 function serveCmsList() {
   vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
@@ -283,22 +285,16 @@ describe('model page launch', () => {
 
   it.for(
     ['/hub/workflows/', '/hub/apps/'].flatMap((path) =>
-      [false, true].flatMap((workflowsLaunched) =>
-        [false, true].map((cms) => ({ path, workflowsLaunched, cms }))
-      )
+      [false, true].map((cms) => ({ path, cms }))
     )
   )(
-    'indexes $path only where the CMS list renders (CMS $cms, workflows launched $workflowsLaunched)',
-    ({ path, workflowsLaunched, cms }) => {
+    'indexes $path only where the CMS list renders (CMS $cms)',
+    ({ path, cms }) => {
       if (cms) serveCmsList()
-      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(cms)
-      expect(
-        isExcludedFromSitemap(
-          `https://comfy.org${path}`,
-          'all',
-          workflowsLaunched
-        )
-      ).toBe(!cms)
+      expect(isIndexableModelPage(path, 'all')).toBe(cms)
+      expect(isExcludedFromSitemap(`https://comfy.org${path}`, 'all')).toBe(
+        !cms
+      )
     }
   )
 
