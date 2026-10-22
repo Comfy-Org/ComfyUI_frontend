@@ -1,3 +1,5 @@
+import { once } from 'es-toolkit'
+
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
@@ -88,12 +90,7 @@ export const STALE_AFTER_MS = 30_000
  */
 export const SUBSCRIBE_CATCHUP_GRACE_MS = 2_000
 
-// One nonce per page load (module scope = one per top-level navigation, since
-// a full reload re-evaluates the module). A tab duplicated mid-session
-// inherits sessionStorage's persisted record but gets its own module
-// instance and thus its own nonce, so the inherited record's nonce mismatches
-// and is refused.
-const pageSessionNonce = createUuidv4()
+const pageSessionNonce = once(createUuidv4)
 
 interface PersistedDocIdRecord {
   docId: string
@@ -113,12 +110,12 @@ function persistDocId(docId: string): void {
   try {
     const record: PersistedDocIdRecord = {
       docId,
-      nonce: pageSessionNonce,
+      nonce: pageSessionNonce(),
       expiresAt: Date.now() + DOC_ID_TTL_MS
     }
     safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
-    // Quota / privacy mode: persistence is best-effort.
+    return
   }
 }
 
@@ -133,11 +130,9 @@ function readPersistedDocId(): string | null {
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number'
     ) {
-      // Legacy/malformed record (e.g. pre-FEC-5 bare-string value): treat as
-      // absent rather than trusting an unscoped id.
       return null
     }
-    if (record.nonce !== pageSessionNonce) return null
+    if (record.nonce !== pageSessionNonce()) return null
     if (Date.now() >= record.expiresAt) return null
     return record.docId
   } catch {

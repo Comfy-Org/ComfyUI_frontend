@@ -1085,6 +1085,12 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'tour_active' }
       },
       {
+        event: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPanelRenderStalled({ stage: 'dock_unresolved' }),
+        properties: { stage: 'dock_unresolved' }
+      },
+      {
         event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentOfferExited({
