@@ -47,7 +47,7 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 | `./select.variants`             | Select class recipes                                                             |
 | `./tag.variants`                | Tag class recipes                                                                |
 | `./<folder>/<Component>`        | Compiled Vue components, for example `./card/Card`                               |
-| `./components.css`              | Scoped component styles and animations                                           |
+| `./components.css`              | Built scoped component styles and animations, for published consumers only       |
 | `./lib/<folder>/<module>`       | Component support types, recipes and composables, for example `./lib/menu/types` |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`

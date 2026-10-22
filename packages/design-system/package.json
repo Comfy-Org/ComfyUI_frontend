@@ -67,75 +67,93 @@
     "exports": {
       "./*": {
         "types": "./dist/*.vue.d.ts",
-        "import": "./dist/*.vue.js"
+        "import": "./dist/*.vue.js",
+        "default": "./dist/*.vue.js"
       },
       "./lib/composables/useAttrsClass": {
         "types": "./dist/composables/useAttrsClass.d.ts",
-        "import": "./dist/composables/useAttrsClass.js"
+        "import": "./dist/composables/useAttrsClass.js",
+        "default": "./dist/composables/useAttrsClass.js"
       },
       "./lib/composables/usePopoverSizing": {
         "types": "./dist/composables/usePopoverSizing.d.ts",
-        "import": "./dist/composables/usePopoverSizing.js"
+        "import": "./dist/composables/usePopoverSizing.js",
+        "default": "./dist/composables/usePopoverSizing.js"
       },
       "./lib/dialog/dialog.variants": {
         "types": "./dist/dialog/dialog.variants.d.ts",
-        "import": "./dist/dialog/dialog.variants.js"
+        "import": "./dist/dialog/dialog.variants.js",
+        "default": "./dist/dialog/dialog.variants.js"
       },
       "./lib/dialog/types": {
         "types": "./dist/dialog/types.d.ts",
-        "import": "./dist/dialog/types.js"
+        "import": "./dist/dialog/types.js",
+        "default": "./dist/dialog/types.js"
       },
       "./lib/input-group/inputGroup.variants": {
         "types": "./dist/input-group/inputGroup.variants.d.ts",
-        "import": "./dist/input-group/inputGroup.variants.js"
+        "import": "./dist/input-group/inputGroup.variants.js",
+        "default": "./dist/input-group/inputGroup.variants.js"
       },
       "./lib/menu/menuAnchor": {
         "types": "./dist/menu/menuAnchor.d.ts",
-        "import": "./dist/menu/menuAnchor.js"
+        "import": "./dist/menu/menuAnchor.js",
+        "default": "./dist/menu/menuAnchor.js"
       },
       "./lib/menu/menuStyles": {
         "types": "./dist/menu/menuStyles.d.ts",
-        "import": "./dist/menu/menuStyles.js"
+        "import": "./dist/menu/menuStyles.js",
+        "default": "./dist/menu/menuStyles.js"
       },
       "./lib/menu/types": {
         "types": "./dist/menu/types.d.ts",
-        "import": "./dist/menu/types.js"
+        "import": "./dist/menu/types.js",
+        "default": "./dist/menu/types.js"
       },
       "./lib/message/message.variants": {
         "types": "./dist/message/message.variants.d.ts",
-        "import": "./dist/message/message.variants.js"
+        "import": "./dist/message/message.variants.js",
+        "default": "./dist/message/message.variants.js"
       },
       "./lib/multi-select/types": {
         "types": "./dist/multi-select/types.d.ts",
-        "import": "./dist/multi-select/types.js"
+        "import": "./dist/multi-select/types.js",
+        "default": "./dist/multi-select/types.js"
       },
       "./lib/popover/usePopoverViewportDismiss": {
         "types": "./dist/popover/usePopoverViewportDismiss.d.ts",
-        "import": "./dist/popover/usePopoverViewportDismiss.js"
+        "import": "./dist/popover/usePopoverViewportDismiss.js",
+        "default": "./dist/popover/usePopoverViewportDismiss.js"
       },
       "./lib/select/types": {
         "types": "./dist/select/types.d.ts",
-        "import": "./dist/select/types.js"
+        "import": "./dist/select/types.js",
+        "default": "./dist/select/types.js"
       },
       "./lib/select/useSelectSearch": {
         "types": "./dist/select/useSelectSearch.d.ts",
-        "import": "./dist/select/useSelectSearch.js"
+        "import": "./dist/select/useSelectSearch.js",
+        "default": "./dist/select/useSelectSearch.js"
       },
       "./lib/single-select/types": {
         "types": "./dist/single-select/types.d.ts",
-        "import": "./dist/single-select/types.js"
+        "import": "./dist/single-select/types.js",
+        "default": "./dist/single-select/types.js"
       },
       "./lib/table/tableUtils": {
         "types": "./dist/table/tableUtils.d.ts",
-        "import": "./dist/table/tableUtils.js"
+        "import": "./dist/table/tableUtils.js",
+        "default": "./dist/table/tableUtils.js"
       },
       "./lib/tooltip/tooltipConfig": {
         "types": "./dist/tooltip/tooltipConfig.d.ts",
-        "import": "./dist/tooltip/tooltipConfig.js"
+        "import": "./dist/tooltip/tooltipConfig.js",
+        "default": "./dist/tooltip/tooltipConfig.js"
       },
       "./lib/tree/treeStyles": {
         "types": "./dist/tree/treeStyles.d.ts",
-        "import": "./dist/tree/treeStyles.js"
+        "import": "./dist/tree/treeStyles.js",
+        "default": "./dist/tree/treeStyles.js"
       },
       "./components.css": "./dist/components.css",
       "./css/*": "./src/css/*",
