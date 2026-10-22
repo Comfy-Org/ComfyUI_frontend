@@ -6202,7 +6202,34 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     expect(
       screen.queryByRole('button', { name: 'Run' })
     ).not.toBeInTheDocument()
-    expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(1)
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
+        1
+      )
+    )
+  })
+
+  it('keeps Stop over a running turn with no card, even when the backend supports it', async () => {
+    getServerFeature.mockImplementation((name: string, defaultValue?: unknown) =>
+      name === 'agent'
+        ? { state: 'ready', ask_send_dismisses: true }
+        : defaultValue
+    )
+    respondToFetch({}, () => json(200, {}))
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    store.recordUser('turn-running' as TurnId, 'make it')
+    store.startTurn('turn-running' as TurnId)
+
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.paste('make it red instead')
+
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Send' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps Stop over the card when the backend does not advertise it', async () => {
