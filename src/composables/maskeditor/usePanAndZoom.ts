@@ -235,6 +235,7 @@ export function usePanAndZoom() {
   }
 
   const zoom = async (event: WheelEvent): Promise<void> => {
+    const { deltaMode, deltaY } = event
     const cursorPosition = { x: event.clientX, y: event.clientY }
 
     if (!maskCanvas.value) {
@@ -248,7 +249,7 @@ export function usePanAndZoom() {
 
     const result = calculateZoomAroundPoint(
       zoom_ratio.value,
-      getWheelZoomFactor(event.deltaY),
+      getWheelZoomFactor(deltaY, deltaMode),
       pan_offset.value,
       focalX,
       focalY

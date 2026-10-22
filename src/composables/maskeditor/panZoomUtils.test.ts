@@ -71,19 +71,45 @@ describe('panZoomUtils', () => {
   })
 
   describe('getWheelZoomFactor', () => {
-    it('returns 1.1 for negative deltaY (scroll up = zoom in)', () => {
-      expect(getWheelZoomFactor(-100)).toBe(1.1)
-      expect(getWheelZoomFactor(-1)).toBe(1.1)
+    it('preserves the conventional wheel step for a 100px delta', () => {
+      expect(getWheelZoomFactor(-100)).toBeCloseTo(1.1)
+      expect(getWheelZoomFactor(100)).toBeCloseTo(0.9)
     })
 
-    it('returns 0.9 for positive deltaY (scroll down = zoom out)', () => {
-      expect(getWheelZoomFactor(100)).toBe(0.9)
-      expect(getWheelZoomFactor(1)).toBe(0.9)
+    it('scales small deltas proportionally to their magnitude', () => {
+      expect(getWheelZoomFactor(-1)).toBeCloseTo(1.000953556, 6)
+      expect(getWheelZoomFactor(-10)).toBeCloseTo(1.009576583, 6)
+      expect(getWheelZoomFactor(1)).toBeCloseTo(0.99894695, 6)
+      expect(getWheelZoomFactor(10)).toBeCloseTo(0.989519258, 6)
     })
 
-    it('returns 0.9 for zero deltaY', () => {
-      expect(getWheelZoomFactor(0)).toBe(0.9)
+    it('returns 1 for zero deltaY', () => {
+      expect(getWheelZoomFactor(0)).toBe(1)
     })
+
+    it.for([
+      { deltaY: -3, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 1.1 },
+      { deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 0.9 },
+      { deltaY: -1, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 1.1 },
+      { deltaY: 1, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 0.9 },
+      { deltaY: 0, deltaMode: WheelEvent.DOM_DELTA_LINE, factor: 1 },
+      { deltaY: 0, deltaMode: WheelEvent.DOM_DELTA_PAGE, factor: 1 }
+    ])(
+      'preserves non-pixel wheel behavior for $deltaY in mode $deltaMode',
+      ({ deltaY, deltaMode, factor }) => {
+        expect(getWheelZoomFactor(deltaY, deltaMode)).toBe(factor)
+      }
+    )
+
+    it.for([-1, 1])(
+      'does not depend on pixel event grouping in direction %s',
+      (direction) => {
+        const smallStep = getWheelZoomFactor(direction * 0.5)
+        const combinedStep = getWheelZoomFactor(direction * 100)
+
+        expect(smallStep ** 200).toBeCloseTo(combinedStep, 12)
+      }
+    )
   })
 
   describe('calculateZoomAroundPoint', () => {
