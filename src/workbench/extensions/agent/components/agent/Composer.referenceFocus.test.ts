@@ -1,37 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
-import { computed, defineComponent, h, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
-import { useCanvasSelection } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function renderComposer() {
   const store = useAgentComposerStore()
   store.setNodeScope('workflow-A')
-  const selected = ref<SelectedNode[]>([])
-  const Host = defineComponent({
-    setup() {
-      const selection = useCanvasSelection({
-        staged: computed({ get: () => store.nodes, set: store.setNodes }),
-        selection: selected,
-        scope: () => store.nodeScope,
-        isLive: true
-      })
-      return () =>
-        h(Composer, {
-          hasWorkflowTarget: true,
-          selectionTags: selection.staged.value
-        })
-    }
-  })
-  render(Host, {
+  render(Composer, {
+    props: { hasWorkflowTarget: true },
     global: { plugins: [i18n] }
   })
   return { store, editor: screen.getByRole('textbox') }
@@ -71,7 +55,11 @@ describe('composer focus after node reference chips', () => {
     store.setNodes([{ id: '5', title: 'KSampler' }])
     store.requestEditorFocus()
 
-    const { editor } = renderComposer()
+    render(Composer, {
+      props: { hasWorkflowTarget: true },
+      global: { plugins: [i18n] }
+    })
+    const editor = screen.getByRole('textbox')
 
     await waitFor(() => expect(editor).toHaveFocus())
     await userEvent.keyboard('hello')

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, within } from 'storybook/test'
 import { onMounted, useTemplateRef } from 'vue'
 
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
@@ -78,8 +78,23 @@ export const Toolbar: Story = {
 export const MoreMenu: Story = {
   ...Toolbar,
   play: async ({ canvasElement }) => {
-    const page = within(canvasElement.ownerDocument.body)
-    await userEvent.click(page.getByTestId('more-options-button'))
+    const doc = canvasElement.ownerDocument
+    const button = doc.querySelector('[data-testid="more-options-button"]')
+    if (!(button instanceof HTMLElement)) {
+      throw new Error('more-options-button is missing')
+    }
+    const rect = button.getBoundingClientRect()
+    button.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        detail: 1,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+        view: doc.defaultView ?? window
+      })
+    )
+    const page = within(doc.body)
     await expect(page.getByRole('menu')).toBeVisible()
     await expect(
       page.getByRole('menuitem', { name: /Reference in agent/i })
