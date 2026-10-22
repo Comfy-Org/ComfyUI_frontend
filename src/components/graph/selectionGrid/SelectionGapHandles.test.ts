@@ -10,6 +10,7 @@ import type { LayoutBox } from '@/components/graph/selectionGrid/selectionGridLa
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import en from '@/locales/en/main.json'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -28,14 +29,7 @@ const row: LayoutBox[] = [
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: {
-        gapHandle: 'Gap between nodes',
-        gapValue: '{value} canvas units'
-      }
-    }
-  }
+  messages: { en }
 })
 
 describe('SelectionGapHandles', () => {
@@ -145,6 +139,20 @@ describe('SelectionGapHandles', () => {
       expect(recordUndoStep).toHaveBeenCalledTimes(1)
     }
   )
+
+  it.for([
+    { gap: 1, label: '1 canvas unit' },
+    { gap: 2, label: '2 canvas units' }
+  ])('announces $label', async ({ gap, label }) => {
+    vi.mocked(useSelectionGrid).mockReturnValue({
+      ...useSelectionGrid(),
+      measure: () =>
+        row.map((box, index) => ({ ...box, x: index * (200 + gap) }))
+    })
+    const { handle } = await renderHandles()
+
+    expect(handle).toHaveAttribute('aria-valuetext', label)
+  })
 
   it('announces the shrink limit imposed by another row', async () => {
     vi.mocked(useSelectionGrid).mockReturnValue({

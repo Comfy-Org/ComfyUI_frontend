@@ -14,7 +14,9 @@
         Math.min(Math.ceil(bar.gap - bar.clearance), Math.round(bar.gap))
       "
       :aria-valuenow="Math.round(bar.gap)"
-      :aria-valuetext="t('g.gapValue', { value: Math.round(bar.gap) })"
+      :aria-valuetext="
+        t('g.gapValue', { value: Math.round(bar.gap) }, Math.round(bar.gap))
+      "
       :class="
         cn(
           'group pointer-events-auto absolute flex -translate-1/2 touch-none items-center justify-center rounded-full outline-none',
