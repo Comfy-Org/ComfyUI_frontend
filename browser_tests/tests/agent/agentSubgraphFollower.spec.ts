@@ -419,7 +419,7 @@ test.describe(
       const outboundFrames: string[] = []
 
       const socket = await test.step('open the agent panel', async () => {
-        await loadSeedIntoActiveTab(page, subgraphWorkflow)
+        await loadSeedIntoActiveTab(page, { nodes: [], links: [] })
         const agentPanel = new AgentPanel(page)
         await agentPanel.open()
         const opened = await getAgentSocket()
