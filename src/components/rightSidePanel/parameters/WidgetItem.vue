@@ -161,7 +161,7 @@ const displayLabel = customRef((track, trigger) => {
         'widget-item group col-span-full grid grid-cols-subgrid rounded-lg',
         isDraggable && [
           draggableItemClass,
-          'draggable-item drag-handle cursor-grab bg-background outline-background will-change-auto [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+          'bg-background outline-background will-change-auto [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4'
         ]
       )
     "
