@@ -263,7 +263,6 @@ import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
@@ -299,6 +298,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -341,13 +342,10 @@ useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
-const { highlightedNodeIds } = storeToRefs(useNodeHighlightStore())
+const { isGhostPlacing } = storeToRefs(useCanvasStore())
 const isEmphasized = computed(() => {
-  return (
-    selectedNodeIds.value.has(nodeId.value) ||
-    highlightedNodeIds.value.has(nodeId.value)
-  )
+  const graph = canvasStore.currentGraph
+  return isNodeEmphasized(graph ? graphScopeOf(graph) : undefined, nodeId.value)
 })
 
 const nodeLocatorId = computed(

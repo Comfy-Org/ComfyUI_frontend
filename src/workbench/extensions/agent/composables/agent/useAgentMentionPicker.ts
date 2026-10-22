@@ -183,6 +183,11 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
           (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
         ))
   )
+  const mentionActiveNode = computed(() => {
+    if (!mentionVisible.value) return undefined
+    const match = mentionMatches.value.at(mentionActive.value)
+    return match?.kind === 'node' ? match.node : undefined
+  })
   const skillQueryEmpty = computed(
     () => mentionSection.value === 'skills' && mentionQuery.value === ''
   )
@@ -438,6 +443,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mentionActive,
     mentionMatches,
     mentionVisible,
+    mentionActiveNode,
     mentionHasResults,
     skillQueryEmpty,
     graphDupes,

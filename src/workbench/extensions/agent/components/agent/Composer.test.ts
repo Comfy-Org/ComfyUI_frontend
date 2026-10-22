@@ -19,6 +19,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@/types/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1086,42 +1088,44 @@ describe('Composer', () => {
       }
     )
 
-    it('reports the active node for pointer and keyboard highlighting', async () => {
-      const { emitted } = mount({ getMentionNodes: () => NODES })
+    it('emphasizes the active node on the canvas for pointer and keyboard browsing', async () => {
+      mount({ getMentionNodes: () => NODES })
+      const emphasized = () =>
+        NODES.filter(({ id }) => isNodeEmphasized(undefined, toNodeId(id)))
       const menu = await openReferenceSection('Nodes')
 
-      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+      expect(emphasized()).toEqual([])
 
       await userEvent.keyboard('{ArrowDown}')
-      expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[0]])
+      expect(emphasized()).toEqual([NODES[0]])
 
       await userEvent.keyboard('{ArrowDown}')
-      expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[1]])
+      expect(emphasized()).toEqual([NODES[1]])
 
       await userEvent.hover(
         within(menu).getByRole('menuitem', { name: 'Back' })
       )
-      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+      expect(emphasized()).toEqual([])
 
       await userEvent.hover(
         within(menu).getByRole('menuitem', { name: 'VAE Decode' })
       )
-      expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[2]])
+      expect(emphasized()).toEqual([NODES[2]])
 
       await userEvent.keyboard('{Escape}')
-      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+      expect(emphasized()).toEqual([])
     })
 
-    it('releases the highlight when the composer unmounts', async () => {
-      const { emitted, unmount } = mount({ getMentionNodes: () => NODES })
+    it('stops emphasizing the node when the composer unmounts', async () => {
+      const { unmount } = mount({ getMentionNodes: () => NODES })
       await openReferenceSection('Nodes')
 
       await userEvent.keyboard('{ArrowDown}')
-      expect(emitted().mentionHighlight.at(-1)).toEqual([NODES[0]])
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(true)
 
       unmount()
 
-      expect(emitted().mentionHighlight.at(-1)).toEqual([null])
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(false)
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.

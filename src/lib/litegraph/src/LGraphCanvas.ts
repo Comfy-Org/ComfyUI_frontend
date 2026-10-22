@@ -46,7 +46,6 @@ import {
 } from '@/core/selection/selectionIntent'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useNodeHighlightStore } from '@/renderer/core/canvas/nodeHighlightStore'
 import {
   applyLogicalCanvasStyle,
   applyViewport,
@@ -5699,14 +5698,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.clip()
     }
 
-    this.drawNodeShape(
-      node,
-      ctx,
-      size,
-      color,
-      bgcolor,
-      node.selected || useNodeHighlightStore().isHighlighted(node.id)
-    )
+    // draw shape
+    this.drawNodeShape(node, ctx, size, color, bgcolor, node.selected)
 
     // Render title buttons (if not collapsed)
     if (!node.flags.collapsed) {
@@ -5843,7 +5836,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param size Size of the background to draw, in graph units.  Differs from node size if collapsed, etc.
    * @param fgcolor Foreground colour - used for text
    * @param bgcolor Background colour of the node
-   * @param _selected Whether to render the node's selection emphasis: its selected state, or a transient highlight that does not change graph selection.
+   * @param _selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the selected property of the node.
    */
   drawNodeShape(
     node: LGraphNode,
@@ -5927,16 +5920,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.drawTitleText(ctx, {
         scale: this.ds.scale,
         default_title_color: this.node_title_color,
-        low_quality,
-        selected: _selected
+        low_quality
       })
 
       // custom title render
       node.onDrawTitle?.(ctx)
     }
 
+    // Draw stroke styles
     for (const getStyle of Object.values(node.strokeStyles)) {
-      const strokeStyle = getStyle.call(node, _selected)
+      const strokeStyle = getStyle.call(node)
       if (strokeStyle) {
         strokeShape(ctx, area, {
           shape,

@@ -78,11 +78,24 @@ for (const mode of renderModes) {
 
         const idleNode = await screenshotNode()
 
-        await test.step('emphasizes the hovered node without selecting it', async () => {
+        const expectEmphasized = async (emphasized: boolean) => {
           await expect
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
+          await expect
+            .poll(async () => (await screenshotNode()).equals(idleNode))
+            .toBe(!emphasized)
+          if (mode.vueNodesEnabled) {
+            const vueNode = comfyPage.vueNodes
+              .getNodeByTitle('KSampler')
+              .first()
+            if (emphasized)
+              await expect(vueNode).toHaveClass(/outline-foreground/)
+            else await expect(vueNode).not.toHaveClass(/outline-foreground/)
+          }
+        }
 
+        await test.step('emphasizes the keyboard-active node without selecting it', async () => {
           await agentPanel.composer.fill('@')
           await panel
             .getByRole('menuitem', {
@@ -90,34 +103,28 @@ for (const mode of renderModes) {
               exact: true
             })
             .click()
-          await nodeMention.hover()
+          // Park the pointer off the menu so only the keyboard moves the active row.
+          await agentPanel.composer.hover()
+          await expect(nodeMention).toBeVisible()
+          await expectEmphasized(false)
 
-          await expect
-            .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-            .toEqual([])
-          await expect
-            .poll(async () => (await screenshotNode()).equals(idleNode))
-            .toBe(false)
-          if (mode.vueNodesEnabled) {
-            await expect(
-              comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-            ).toHaveClass(/outline-foreground/)
-          }
+          await agentPanel.composer.press('ArrowDown')
+          await expectEmphasized(true)
+
+          await agentPanel.composer.press('ArrowUp')
+          await expectEmphasized(false)
+        })
+
+        await test.step('emphasizes the hovered node without selecting it', async () => {
+          await nodeMention.hover()
+          await expectEmphasized(true)
         })
 
         await test.step('Escape removes the emphasis', async () => {
           await agentPanel.composer.press('Escape')
           await expect(nodeMention).toHaveCount(0)
           await comfyPage.nextFrame()
-
-          await expect
-            .poll(async () => (await screenshotNode()).equals(idleNode))
-            .toBe(true)
-          if (mode.vueNodesEnabled) {
-            await expect(
-              comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-            ).not.toHaveClass(/outline-foreground/)
-          }
+          await expectEmphasized(false)
         })
       })
     }

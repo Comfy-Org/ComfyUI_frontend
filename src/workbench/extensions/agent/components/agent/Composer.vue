@@ -2,7 +2,6 @@
 import {
   computed,
   nextTick,
-  onBeforeUnmount,
   onMounted,
   onUnmounted,
   ref,
@@ -15,6 +14,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@/platform/telemetry/types'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@/types/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '../../utils/composerPrompt'
@@ -87,7 +88,6 @@ const emit = defineEmits<{
   selectNodes: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
-  mentionHighlight: [node: SelectedNode | null]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -166,6 +166,7 @@ const {
   mentionActive,
   mentionMatches,
   mentionVisible,
+  mentionActiveNode,
   mentionHasResults,
   skillQueryEmpty,
   graphDupes,
@@ -192,6 +193,10 @@ const {
   pickNode: (node) => emit('mentionPick', node),
   pickAsset: (asset) => composer.referenceAttachment(asset.id),
   requestWorkflows: () => emit('requestWorkflowReferences')
+})
+useNodeEmphasisSource(() => {
+  const node = mentionActiveNode.value
+  return node && toNodeId(node.id)
 })
 
 function onSelectNodes(event: Event): void {
@@ -335,17 +340,6 @@ const mentionMenuHeading = computed(() => {
   if (mentionSection.value === 'skills') return t('agent.skills')
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
-
-watch(
-  [mentionVisible, mentionActive, mentionMatches],
-  ([visible, active, matches]) => {
-    const match = visible ? matches[active] : undefined
-    emit('mentionHighlight', match?.kind === 'node' ? match.node : null)
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => emit('mentionHighlight', null))
 const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )

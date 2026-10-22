@@ -65,6 +65,7 @@ import type { DragAndScale } from './DragAndScale'
 
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { isDrawnEmphasized } from './nodeEmphasis'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 
@@ -325,7 +326,6 @@ interface DrawTitleOptions {
 
 interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
-  selected?: boolean
 }
 
 export interface DrawTitleBoxOptions extends DrawTitleOptions {
@@ -685,7 +685,7 @@ export class LGraphNode
    */
   strokeStyles: Record<
     string,
-    (this: LGraphNode, selected?: boolean) => IDrawBoundingOptions | undefined
+    (this: LGraphNode) => IDrawBoundingOptions | undefined
   >
 
   /**
@@ -1130,10 +1130,9 @@ export class LGraphNode
   }
 
   private _getSelectedStrokeStyle(
-    this: LGraphNode,
-    selected = this.selected
+    this: LGraphNode
   ): IDrawBoundingOptions | undefined {
-    if (selected) {
+    if (isDrawnEmphasized(this)) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
@@ -4056,11 +4055,12 @@ export class LGraphNode
       scale,
       default_title_color,
       low_quality = false,
-      selected = this.selected,
       title_height = LiteGraph.NODE_TITLE_HEIGHT
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
+    const selected = isDrawnEmphasized(this)
+
     if (this.onDrawTitleText) {
       this.onDrawTitleText(
         ctx,

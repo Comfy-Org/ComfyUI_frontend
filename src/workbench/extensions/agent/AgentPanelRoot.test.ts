@@ -190,7 +190,6 @@ const appMock = vi.hoisted(() => {
           selectItems: ReturnType<typeof vi.fn>
           deselect: (node: LGraphNode) => void
           canvas: HTMLCanvasElement
-          setDirty: ReturnType<typeof vi.fn>
         }
       | undefined
   }
@@ -12724,8 +12723,7 @@ describe('AgentPanelRoot workflow binding', () => {
       selectedItems: new Set<LGraphNode>(),
       selectItems: vi.fn(),
       deselect: vi.fn(),
-      canvas: document.createElement('canvas'),
-      setDirty: vi.fn()
+      canvas: document.createElement('canvas')
     }
 
     renderWithSelectedTarget()
