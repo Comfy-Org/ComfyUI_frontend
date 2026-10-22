@@ -611,8 +611,13 @@ describe('useReconnectQueueRefresh', () => {
           expectedActiveJobId: null
         },
         {
-          name: 'the active run',
-          follow: followRun,
+          name: 'the active run history still lists',
+          follow: (jobId: string) => {
+            followRun(jobId)
+            vi.mocked(api.getHistory).mockResolvedValue([
+              { ...makeJob(jobId, 'completed'), outputs_count: 3 }
+            ])
+          },
           expectedActiveJobId: 'job-0'
         }
       ])(
@@ -638,6 +643,18 @@ describe('useReconnectQueueRefresh', () => {
           expect(executionStore.activeJobId).toBeNull()
         }
       )
+
+      it('clears an active run the server lists nowhere on the first reconnect', async () => {
+        const executionStore = useExecutionStore()
+        followRun('job-0')
+
+        const refreshed = useReconnectQueueRefresh()()
+        await vi.runAllTimersAsync()
+        await refreshed
+
+        expect(executionStore.activeJobId).toBeNull()
+        expect(executionStore.queuedJobs).toEqual({})
+      })
     })
   })
 })

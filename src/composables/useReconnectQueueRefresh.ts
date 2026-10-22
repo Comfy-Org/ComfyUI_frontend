@@ -260,8 +260,10 @@ export function useReconnectQueueRefresh() {
         return
       }
       if (outcome.state === 'unknown') {
+        // An unreadable active run stays active while history lists it; one
+        // the server lists nowhere is stale and clears now.
         if (giveUpOnUnreadable(jobId)) unreadable.push(jobId)
-        else activeJobIds.add(jobId)
+        else if (historyByJobId.has(jobId)) activeJobIds.add(jobId)
         return
       }
       unreadableRefreshes.delete(jobId)
