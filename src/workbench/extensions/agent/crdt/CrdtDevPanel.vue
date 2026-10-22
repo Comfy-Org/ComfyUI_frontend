@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -14,7 +14,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -23,9 +23,11 @@ import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
+import type { CrdtLogScope, DevEvent, DevEventKind } from './crdtLog'
 import type { CrdtLogLevel } from './crdtLogLevel'
 import { CRDT_LOG_LEVELS } from './crdtLogLevel'
 import type {
@@ -38,14 +40,13 @@ import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
-import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
 import {
   DEV_EVENT_KINDS,
   clearDevEvents,
   devEventReplacer,
   devEvents,
   stringifyDevEvents
-} from './devPanelLog'
+} from './crdtLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -404,7 +405,7 @@ const reportCopyState = ref<
 >({ status: 'idle' })
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard()
 let itemCopyRequest = 0
 
 const copyReportLabel = computed(() => {
@@ -422,16 +423,13 @@ const copyLogLabel = computed(() => {
 })
 
 async function writeClipboard(text: string): Promise<boolean> {
-  try {
-    await copy(text)
-    return true
-  } catch (error) {
-    reportError(error, {
+  const copied = await copyToClipboard(text, { toastOnSuccess: false })
+  if (!copied)
+    reportError(new Error('Clipboard write failed'), {
       surface: 'agent',
       errorType: 'crdt_dev_panel_clipboard_write_failed'
     })
-    return false
-  }
+  return copied
 }
 
 async function copyItem(key: string, text: string) {
@@ -518,9 +516,7 @@ function collectCurrentMediaUiDiagnostics() {
 }
 
 async function copyCollectedReport(report: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(report)
-  } catch {
+  if (!(await writeClipboard(report))) {
     reportCopyState.value = { status: 'failed', report }
     return
   }
@@ -619,7 +615,9 @@ function collectIdentifiers(crdt: CrdtDebugSnapshot): ReportIdentifiers {
     crdtSequence: crdt.lastSeq,
     crdtLamport,
     clientId: read(() => api.clientId ?? null),
-    deployEnv: read(() => resolveDeployEnv() ?? null),
+    deployEnv: read(
+      () => useSystemStatsStore().systemStats?.system.deploy_environment ?? null
+    ),
     backendUrl: read(() => `${api.api_host}${api.api_base}`) ?? 'unknown'
   }
 }

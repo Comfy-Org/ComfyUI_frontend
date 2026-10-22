@@ -23,7 +23,7 @@ const devLogState = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('./devPanelLog'), () => ({
+vi.mock(import('./crdtLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 

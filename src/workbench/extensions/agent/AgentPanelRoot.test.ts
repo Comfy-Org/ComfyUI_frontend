@@ -273,7 +273,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 })
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
-vi.mock(import('./crdt/devPanelLog'), { spy: true })
+vi.mock(import('./crdt/crdtLog'), { spy: true })
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true

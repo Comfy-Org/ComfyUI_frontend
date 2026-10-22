@@ -3,7 +3,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 
 type LostEditKind =
   | 'undeliverable'
