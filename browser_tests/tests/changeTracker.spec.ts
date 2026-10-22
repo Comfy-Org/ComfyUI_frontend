@@ -22,7 +22,6 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
   return await comfyPage.page.evaluate(() => {
     type ChangeTrackerClassLike = {
       graphEqual: (left: unknown, right: unknown) => boolean
-      isLoadingGraph: boolean
     }
 
     type ChangeTrackerLike = {
@@ -30,6 +29,7 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
       activeState: unknown
       changeCount: number
       constructor: ChangeTrackerClassLike
+      isLoadingGraph: boolean
       redoQueue: unknown[]
       undoQueue: unknown[]
     }
@@ -56,7 +56,7 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
         tracker.activeState,
         currentState
       ),
-      isLoadingGraph: tracker.constructor.isLoadingGraph,
+      isLoadingGraph: tracker.isLoadingGraph,
       isModified: workflow.isModified,
       redoQueueSize: tracker.redoQueue.length,
       restoringState: tracker._restoringState,

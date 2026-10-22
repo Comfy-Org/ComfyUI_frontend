@@ -34,6 +34,7 @@ import {
 } from './nodeHistoryWidgetValues'
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { clipspace } from '@/scripts/clipspace'
 
 function clone<T>(obj: T): T {
@@ -338,8 +339,6 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
 
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
-  /** Set while loadGraphData reconfigures a graph in place; suppresses state capture. */
-  static isLoadingGraph = false
   /**
    * The active state of the workflow.
    */
@@ -352,6 +351,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+
+  /** Whether a workflow load is configuring this tracker's graph. */
+  get isLoadingGraph(): boolean {
+    return isGraphLoading(this.workflow.graph)
+  }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -489,7 +493,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       !graph ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph
+      this.isLoadingGraph
     )
       return
 
@@ -524,7 +528,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
   squashState = useDebounceFn(() => {
     const graph = this.workflow.graph
-    if (!graph || !isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
+    if (!graph || !isActiveTracker(this) || this.isLoadingGraph) return
 
     const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return

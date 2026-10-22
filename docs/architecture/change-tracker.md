@@ -115,8 +115,9 @@ The `litegraph:canvas` custom event also supports this with `before-change` /
 
 - `captureCanvasState()` asserts it is called on the active workflow's tracker;
   inactive trackers get an early return (and a warning log)
-- `captureCanvasState()` is a no-op during `loadGraphData` (guarded by
-  `isLoadingGraph`) to prevent cross-workflow corruption
+- `captureCanvasState()` is a no-op while `loadGraphData` is configuring the
+  tracker's graph (guarded by `isGraphLoading`) to prevent cross-workflow
+  corruption
 - `captureCanvasState()` is a no-op during undo/redo (guarded by
   `_restoringState`) to prevent undo history corruption
 - `captureCanvasState()` is a no-op when `changeCount > 0` (inside a transaction)
