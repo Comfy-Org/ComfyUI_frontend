@@ -831,3 +831,140 @@ describe('native CONTENT presentation', () => {
     expect(matched.catalogDetails?.inputMismatch).toBeUndefined()
   })
 })
+
+describe('example media inputs', () => {
+  const templateImage =
+    'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@abc/input/chair.png'
+
+  function withExample(
+    mediaInputs: readonly string[],
+    example: Record<string, unknown>,
+    referenceUrls: readonly string[]
+  ): ContentCatalogRecord {
+    const media = Object.fromEntries(
+      mediaInputs.map((name) => [
+        name,
+        { type: 'string', format: 'uri', pattern: '^https://' }
+      ])
+    )
+    return {
+      ...record,
+      data: {
+        ...record.data,
+        inputSchema: {
+          type: 'object',
+          properties: { prompt: { type: 'string' }, ...media }
+        },
+        inputs: Object.fromEntries(
+          ['prompt', ...mediaInputs].map((name) => [
+            name,
+            name === 'prompt'
+              ? { label: name, control: 'text-area' }
+              : { label: name, control: 'media', urlUpload: 'image' }
+          ])
+        ),
+        examples: [
+          {
+            name: 'example',
+            title: 'Example',
+            reference_media: referenceUrls.map((_, position) => ({
+              src: 'media',
+              id: `ref-${position}`,
+              file_version_uid: `version-${position}`
+            })),
+            ...example
+          }
+        ],
+        website_media: Object.fromEntries(
+          referenceUrls.map((url, position) => [
+            `$.examples[0].reference_media[${position}]`,
+            url
+          ])
+        )
+      }
+    }
+  }
+
+  function presentedValues(view: ReturnType<typeof catalogPresentation>) {
+    const detail = detailSchema.parse(view)
+    return examplesForModel(detail)[0].values
+  }
+
+  it.for([
+    {
+      case: 'fills the only empty media input from the first reference file',
+      inputs: ['image'],
+      example: { values: { prompt: 'Swap the chair' } },
+      references: ['/preview-media/2/ref-0/version-0'],
+      expected: {
+        prompt: 'Swap the chair',
+        image: '/preview-media/2/ref-0/version-0'
+      }
+    },
+    {
+      case: 'replaces a stored copy of a reference URL with its served address',
+      inputs: ['image'],
+      example: {
+        values: {
+          prompt: 'Swap the chair',
+          image: 'https://old-tunnel.example/catalog-media/ref-0/version-0'
+        }
+      },
+      references: ['/catalog-media/ref-0/version-0'],
+      expected: { image: '/catalog-media/ref-0/version-0' }
+    },
+    {
+      case: 'follows a declared inputMedia mapping for several inputs',
+      inputs: ['image', 'reference_image'],
+      example: {
+        values: { prompt: 'Swap the chair' },
+        presentation: { inputMedia: { image: 1, reference_image: 0 } }
+      },
+      references: ['/catalog-media/ref-0/v0', '/catalog-media/ref-1/v1'],
+      expected: {
+        image: '/catalog-media/ref-1/v1',
+        reference_image: '/catalog-media/ref-0/v0'
+      }
+    },
+    {
+      case: 'keeps an authored URL that is not one of the reference files',
+      inputs: ['image'],
+      example: { values: { prompt: 'Swap the chair', image: templateImage } },
+      references: ['/catalog-media/ref-0/v0'],
+      expected: { image: templateImage }
+    }
+  ])('$case', ({ inputs, example, references, expected }) => {
+    expect(
+      presentedValues(
+        catalogPresentation(withExample(inputs, example, references))
+      )
+    ).toMatchObject(expected)
+  })
+
+  it('leaves several unmapped media inputs empty rather than guessing their order', () => {
+    const values = presentedValues(
+      catalogPresentation(
+        withExample(
+          ['image', 'reference_image'],
+          { values: { prompt: 'Swap the chair' } },
+          ['/catalog-media/ref-0/v0', '/catalog-media/ref-1/v1']
+        )
+      )
+    )
+    expect(values).not.toHaveProperty('image')
+    expect(values).not.toHaveProperty('reference_image')
+  })
+
+  it('does not pass the inputMedia mapping on as example presentation', () => {
+    const view = catalogPresentation(
+      withExample(
+        ['image'],
+        { values: {}, presentation: { inputMedia: { image: 0 } } },
+        ['/catalog-media/ref-0/v0']
+      )
+    )
+    expect(view).toMatchObject({
+      examples: [expect.not.objectContaining({ inputMedia: expect.anything() })]
+    })
+  })
+})

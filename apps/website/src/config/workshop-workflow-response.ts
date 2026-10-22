@@ -27,6 +27,7 @@ export const workflowHttpsUrl = z
   .url()
   .max(8192)
   .refine((value) => {
+    if (!URL.canParse(value)) return false
     const url = new URL(value)
     return (
       url.protocol === 'https:' && !url.username && !url.password && !url.hash

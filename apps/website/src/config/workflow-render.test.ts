@@ -125,6 +125,70 @@ describe('shared workflow rendering', () => {
     })
   })
 
+  it.for([
+    '/catalog-media/reference-use/exact-bytes',
+    '/preview-media/2/reference-use/exact-bytes'
+  ])(
+    'uploads the example reference file %s for a media input on Run',
+    async (reference) => {
+      const definition = {
+        ...workflow,
+        inputs: {
+          ...workflow.inputs,
+          image: {
+            label: 'Image',
+            help: '',
+            hidden: false,
+            advanced: false,
+            control: 'media',
+            urlUpload: 'image'
+          }
+        },
+        cloud: {
+          ...workflow.cloud,
+          inputBindings: {
+            ...workflow.cloud.inputBindings,
+            image: {
+              encoding: 'cloud-asset',
+              mediaKind: 'image',
+              targets: [{ nodeId: '1', inputName: 'image' }]
+            }
+          }
+        },
+        inputSchema: {
+          ...workflow.inputSchema,
+          properties: {
+            ...workflow.inputSchema.properties,
+            image: { type: 'string', format: 'uri', pattern: '^https://' }
+          }
+        }
+      } satisfies WorkflowWorkshopModelDetail['workflow']
+      const upload = vi.fn().mockResolvedValue('uploaded-reference')
+      const prepared = await prepareWorkflowRender(
+        {
+          ...model,
+          workflow: definition,
+          form: formForWorkflow(definition),
+          examples: [
+            {
+              name: 'example',
+              title: 'Example',
+              description: '',
+              tags: [],
+              thumbnailUrl: '/catalog-media/output-use/exact-bytes',
+              values: { image: reference }
+            }
+          ]
+        },
+        {},
+        new AbortController().signal,
+        upload
+      )
+      expect(upload).toHaveBeenCalledWith(reference, expect.any(AbortSignal))
+      expect(prepared.appInputs).toMatchObject({ image: 'uploaded-reference' })
+    }
+  )
+
   it('draws a fresh seed for an empty randomize input and keeps an explicit one', async () => {
     const definition = {
       ...workflow,

@@ -347,25 +347,98 @@ function workflowDetails(
   })
 }
 
+function mediaInputNames(d: Document) {
+  const properties = objectPresentation(
+    objectPresentation(d.inputSchema).properties
+  )
+  const inputs = objectPresentation(d.inputs)
+  return Object.keys(properties).filter(
+    (name) =>
+      objectPresentation(properties[name]).format === 'uri' ||
+      objectPresentation(inputs[name]).control === 'media'
+  )
+}
+
+function referencePosition(value: unknown, references: readonly unknown[]) {
+  if (typeof value !== 'string') return -1
+  return references.findIndex((reference) => {
+    const id = objectPresentation(reference).id
+    return typeof id === 'string' && id !== '' && value.includes(id)
+  })
+}
+
+function exampleInputValues(
+  example: Document,
+  index: number,
+  urls: Document,
+  mediaInputs: readonly string[]
+): Document {
+  const values = objectPresentation(example.values)
+  const references = Array.isArray(example.reference_media)
+    ? example.reference_media
+    : []
+  const referenceUrls = references.map((_, position) => {
+    const url = urls[`$.examples[${index}].reference_media[${position}]`]
+    return typeof url === 'string' ? url : undefined
+  })
+  const declared = objectPresentation(
+    objectPresentation(example.presentation).inputMedia
+  )
+  const matched = mediaInputs.flatMap((name) => {
+    const position = Number.isInteger(declared[name])
+      ? Number(declared[name])
+      : referencePosition(values[name], references)
+    const url = referenceUrls[position]
+    return url ? [{ name, position, url }] : []
+  })
+  const unfilled = mediaInputs.filter(
+    (name) =>
+      !Object.hasOwn(values, name) &&
+      !matched.some((match) => match.name === name)
+  )
+  const unused = referenceUrls.flatMap((url, position) =>
+    url && !matched.some((match) => match.position === position)
+      ? [{ position, url }]
+      : []
+  )
+  const resolved =
+    unfilled.length === 1 && unused.length
+      ? [...matched, { name: unfilled[0], ...unused[0] }]
+      : matched
+  return {
+    ...values,
+    ...Object.fromEntries(resolved.map(({ name, url }) => [name, url]))
+  }
+}
+
+function examplePresentationHints(example: Document) {
+  return Object.fromEntries(
+    Object.entries(objectPresentation(example.presentation)).filter(
+      ([key]) => key !== 'inputMedia'
+    )
+  )
+}
+
 function examplePresentation(
   raw: unknown,
   index: number,
   urls: Document,
-  types: Document
+  types: Document,
+  mediaInputs: readonly string[]
 ) {
   const example = objectPresentation(raw)
   const field = `$.examples[${index}].media`
   const kind = mediaKind(types, field)
   const url = urls[field]
   return {
-    ...objectPresentation(example.presentation),
+    ...examplePresentationHints(example),
     name:
       typeof example.name === 'string' ? example.name : `example-${index + 1}`,
     title: typeof example.title === 'string' ? example.title : '',
     description:
       typeof example.description === 'string' ? example.description : '',
     tags: Array.isArray(example.tags) ? example.tags : [],
-    values: example.values ?? {},
+    values: exampleInputValues(example, index, urls, mediaInputs),
     ...(kind ? { mediaKind: kind } : {}),
     thumbnailUrl: typeof url === 'string' ? url : ''
   }
@@ -584,7 +657,7 @@ export function catalogPresentation(
     defaults: preserved.defaults ?? {},
     examples: Array.isArray(d.examples)
       ? d.examples.map((raw, index) =>
-          examplePresentation(raw, index, urls, types)
+          examplePresentation(raw, index, urls, types, mediaInputNames(d))
         )
       : [],
     ...heroPresentation(d, preserved),
