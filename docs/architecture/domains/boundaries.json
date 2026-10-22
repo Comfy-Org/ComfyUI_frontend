@@ -3442,10 +3442,6 @@
         "patterns": [
           "src/composables/useLazyPagination.test.ts",
           "src/composables/useLazyPagination.ts",
-          "src/composables/useTemplateFiltering.test.ts",
-          "src/composables/useTemplateFiltering.ts",
-          "src/composables/useWorkflowTemplateSelectorDialog.test.ts",
-          "src/composables/useWorkflowTemplateSelectorDialog.ts",
           "src/stores/templateInputDownloadStore.test.ts",
           "src/stores/templateInputDownloadStore.ts",
           "src/stores/templateRankingStore.test.ts",

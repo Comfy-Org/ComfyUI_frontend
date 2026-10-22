@@ -10,7 +10,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
 
 let defaultSettingStore: ReturnType<typeof useSettingStore>

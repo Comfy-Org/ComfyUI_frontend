@@ -28,22 +28,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useTemplateFiltering.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useTemplateFiltering.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowTemplateSelectorDialog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowTemplateSelectorDialog.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/templates/**",
       "role": "application"
     },
@@ -128,9 +112,9 @@
     {
       "name": "Template selector dialog filters, sorts, and lazily paginates templates",
       "checks": [
-        "src/composables/useTemplateFiltering.test.ts",
+        "src/platform/workflow/templates/composables/useTemplateFiltering.test.ts",
         "src/composables/useLazyPagination.test.ts",
-        "src/composables/useWorkflowTemplateSelectorDialog.test.ts"
+        "src/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog.test.ts"
       ]
     }
   ],
