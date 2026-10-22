@@ -414,7 +414,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": ["comfyui-api", "node-definition"],
-  "allowedConsumers": [],
+  "allowedConsumers": ["bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",
