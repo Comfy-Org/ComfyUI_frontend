@@ -5,7 +5,9 @@ import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent
 /** Adds the node chip and prompt text to the main composer. Does not send. */
 export function fillNodeAskAgentPrompt(nodeId: NodeId, text: string): boolean {
   if (!referenceNodesInAgent([nodeId], 'node_hover')) return false
-  useAgentComposerStore().setText(text)
+  const composer = useAgentComposerStore()
+  composer.setText(text)
+  composer.requestEditorFocus()
   return true
 }
 

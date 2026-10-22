@@ -1,121 +1,93 @@
 <template>
   <div
     v-if="visible"
-    ref="rootRef"
     data-testid="node-ask-agent-hover"
     :class="
       cn(
         'pointer-events-auto absolute top-0 left-full z-20 ml-2',
         !composerOpen &&
-          !alwaysVisible &&
+          !pinnedVisible &&
           'opacity-0 group-hover/node:opacity-100 focus-within:opacity-100'
       )
     "
     @pointerdown.stop
     @click.stop
   >
-    <Button
-      v-if="!composerOpen"
-      :tooltip="t('agent.askAgent')"
-      data-testid="node-ask-agent-button"
-      variant="base"
-      size="unset"
-      :aria-label="t('agent.askAgent')"
-      :class="
-        cn(
-          'size-7 rounded-lg bg-background shadow-lg',
-          'hover:shadow-xl hover:ring-2 hover:ring-foreground/30'
-        )
-      "
-      @click="openComposer"
-    >
-      <i class="icon-[lucide--astroid] size-4" />
-    </Button>
-    <div
-      v-else
-      data-testid="node-ask-agent-composer"
-      class="flex w-96 flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg"
-    >
-      <form
-        class="flex items-center gap-2 py-2 pr-2 pl-3"
-        @submit.prevent="onSend"
-      >
-        <input
-          ref="inputRef"
-          v-model="draft"
-          data-testid="node-ask-agent-input"
-          :placeholder="t('agent.nodeHover.placeholder')"
-          :aria-label="t('agent.nodeHover.placeholder')"
-          class="min-w-0 flex-1 border-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
-        />
+    <Popover :open="composerOpen" @update:open="setComposerOpen">
+      <PopoverTrigger as-child>
         <Button
-          type="submit"
-          variant="inverted"
+          :tooltip="t('agent.askAgent')"
+          data-testid="node-ask-agent-button"
+          variant="muted-textonly"
           size="icon"
-          data-testid="node-ask-agent-send"
-          :aria-label="t('agent.send')"
-          :disabled="!canSend"
+          :aria-label="t('agent.askAgent')"
+          class="hover:border-solid hover:border-border hover:bg-secondary"
         >
-          <i class="icon-[lucide--arrow-up] size-4" />
+          <i class="icon-[lucide--astroid] size-4" />
         </Button>
-      </form>
-      <div class="flex flex-col p-1">
-        <button
+      </PopoverTrigger>
+      <PopoverContent
+        side="right"
+        align="start"
+        data-testid="node-ask-agent-composer"
+        class="flex flex-col gap-1 p-1"
+        @open-auto-focus.prevent="focusComposerInput"
+      >
+        <form @submit.prevent="onSend">
+          <InputGroup>
+            <InputGroupInput
+              v-model="draft"
+              data-testid="node-ask-agent-input"
+              :placeholder="t('agent.nodeHover.placeholder')"
+              :aria-label="t('agent.nodeHover.placeholder')"
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                variant="inverted"
+                size="icon-sm"
+                data-testid="node-ask-agent-send"
+                :aria-label="t('agent.send')"
+                :disabled="!canSend"
+                @click="onSend"
+              >
+                <i class="icon-[lucide--arrow-up] size-4" />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </form>
+        <Button
           v-for="prompt in visiblePrompts"
           :key="prompt.id"
           type="button"
+          variant="textonly"
+          size="sm"
           data-testid="node-ask-agent-starter"
-          :class="
-            cn(
-              'flex h-8 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground',
-              'hover:bg-secondary'
-            )
-          "
+          :icon="prompt.icon"
+          class="w-full justify-start"
           @click="onPickStarter(prompt)"
         >
-          <span
-            :class="cn('size-4 shrink-0 text-foreground', prompt.icon)"
-            aria-hidden="true"
-          />
-          <span class="min-w-0 truncate">{{ t(prompt.labelKey) }}</span>
-        </button>
-        <div class="px-2 py-1">
-          <div class="h-px bg-border" />
-        </div>
-        <button
+          {{ t(prompt.labelKey) }}
+        </Button>
+        <div class="h-px bg-border" />
+        <Button
           type="button"
+          variant="textonly"
+          size="sm"
           data-testid="node-ask-agent-shuffle"
-          :class="
-            cn(
-              'flex h-8 items-center gap-2 rounded-sm px-2 text-left text-sm text-foreground',
-              'hover:bg-secondary'
-            )
-          "
+          icon="icon-[lucide--shuffle]"
+          class="w-full justify-start"
           @click="onShuffle"
         >
-          <span
-            class="icon-[lucide--shuffle] size-4 shrink-0 text-foreground"
-            aria-hidden="true"
-          />
-          <span class="min-w-0 truncate">{{
-            t('agent.nodeHover.shuffle')
-          }}</span>
-        </button>
-      </div>
-    </div>
+          {{ t('agent.nodeHover.shuffle') }}
+        </Button>
+      </PopoverContent>
+    </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onClickOutside } from '@vueuse/core'
-import {
-  computed,
-  nextTick,
-  onUnmounted,
-  ref,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { PopoverTrigger } from 'reka-ui'
+import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -123,6 +95,8 @@ import {
   fillNodeAskAgentPrompt,
   sendNodeAskAgentPrompt
 } from '@/components/graph/askAgentFromNode'
+import { isPartnerApiNode } from '@/components/graph/isPartnerApiNode'
+import { nodeAskAgentHoverAlwaysVisibleKey } from '@/components/graph/nodeAskAgentHoverAlwaysVisible'
 import type { NodeAskAgentPrompt } from '@/components/graph/nodeAskAgentPrompts'
 import {
   nextNodeAskAgentShuffleOffset,
@@ -130,6 +104,12 @@ import {
   rotateNodeAskAgentPrompts
 } from '@/components/graph/nodeAskAgentPrompts'
 import Button from '@/components/ui/button/Button.vue'
+import InputGroup from '@/components/ui/input-group/InputGroup.vue'
+import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
+import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
+import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
@@ -152,17 +132,17 @@ const panel = useAgentPanelStore()
 const canvasStore = useCanvasStore()
 const draft = ref('')
 const shuffleOffset = ref(0)
-const rootRef = useTemplateRef<HTMLElement>('rootRef')
-const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
+const injectedAlwaysVisible = inject(nodeAskAgentHoverAlwaysVisibleKey, false)
 
 const visible = computed(() => panel.enabled && !canvasStore.isPickingNodes)
 
 const composerOpen = computed(() => openComposerNodeId.value === nodeId)
 
+const pinnedVisible = computed(() => alwaysVisible || injectedAlwaysVisible)
+
 const partnerNode = computed(() => {
   if (isPartner != null) return isPartner
-  const node = canvasStore.currentGraph?.getNodeById(nodeId)
-  return Boolean(node?.constructor.nodeData?.api_node)
+  return isPartnerApiNode(canvasStore.currentGraph?.getNodeById(nodeId))
 })
 
 const promptPool = computed(() => nodeAskAgentPrompts(partnerNode.value))
@@ -184,7 +164,20 @@ function openComposer(): void {
   openComposerNodeId.value = nodeId
   draft.value = ''
   shuffleOffset.value = 0
-  void nextTick(() => inputRef.value?.focus())
+}
+
+function setComposerOpen(open: boolean): void {
+  if (open) openComposer()
+  else closeComposer()
+}
+
+function focusComposerInput(): void {
+  void nextTick(() => {
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-testid="node-ask-agent-input"]'
+    )
+    input?.focus()
+  })
 }
 
 function onSend(): void {
@@ -204,12 +197,9 @@ function onShuffle(): void {
   )
 }
 
-onClickOutside(rootRef, () => {
-  if (composerOpen.value) closeComposer()
-})
-
 watch(composerOpen, (open, _previous, onCleanup) => {
   if (!open) return
+  focusComposerInput()
   onCleanup(
     registerEscapeOverride((event) => {
       if (event.key !== 'Escape' || event.isComposing) return false

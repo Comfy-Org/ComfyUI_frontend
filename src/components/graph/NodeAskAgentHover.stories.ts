@@ -1,11 +1,51 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
+import { provide } from 'vue'
 
 import { t } from '@/i18n'
 import NodeAskAgentHover from '@/components/graph/NodeAskAgentHover.vue'
-import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
+import { nodeAskAgentHoverAlwaysVisibleKey } from '@/components/graph/nodeAskAgentHoverAlwaysVisible'
+import { LGraph, LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import LGraphNodeVue from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+class PartnerAskNode extends LGraphNode {
+  static override nodeData = {
+    name: 'ByteDanceSeedance',
+    api_node: true
+  }
+}
+
+function seedHoverNode(options: { title: string; partner?: boolean }) {
+  const graph = new LGraph()
+  const node = options.partner
+    ? new PartnerAskNode(options.title)
+    : new LGraphNode(options.title)
+  node.id = toNodeId(12)
+  node.pos = [32, 48]
+  graph.add(node)
+  useCanvasStore().currentGraph = graph
+  useAgentPanelStore().enabled = true
+  const nodeState: NodeState = {
+    flags: {},
+    graphId: graph.id,
+    id: node.id,
+    inputs: [],
+    mode: LGraphEventMode.ALWAYS,
+    outputs: [],
+    title: node.title,
+    type: node.type,
+    properties: {}
+  }
+  return nodeState
+}
+
+function pageOf(canvasElement: HTMLElement) {
+  return within(canvasElement.ownerDocument.body)
+}
 
 const meta: Meta<typeof NodeAskAgentHover> = {
   title: 'Graph/NodeAskAgentHover',
@@ -13,38 +53,26 @@ const meta: Meta<typeof NodeAskAgentHover> = {
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   args: {
-    nodeId: toNodeId(12),
-    alwaysVisible: true
+    nodeId: toNodeId(12)
   },
-  decorators: [
-    () => ({
-      components: { TooltipProvider },
-      setup() {
-        useAgentPanelStore().enabled = true
-        return {}
-      },
-      template: `
-        <TooltipProvider :delay-duration="0">
-          <div class="min-h-72 min-w-[780px] bg-background p-8">
-            <div
-              class="group/node relative w-80 rounded-xl border border-border bg-secondary text-foreground"
-            >
-              <div class="px-2 py-1.5 text-xs">ModelSamplingAuraFlow</div>
-              <div
-                class="rounded-b-xl px-3 py-2 text-xs text-muted-foreground"
-              >
-                <div class="flex justify-between">
-                  <span>model</span>
-                  <span>MODEL</span>
-                </div>
-              </div>
-              <story />
-            </div>
-          </div>
-        </TooltipProvider>
-      `
-    })
-  ]
+  render: (_args, { args }) => ({
+    components: { LGraphNodeVue },
+    setup() {
+      provide(nodeAskAgentHoverAlwaysVisibleKey, true)
+      const nodeState = seedHoverNode({
+        title: args.isPartner
+          ? 'ByteDance Seedance 2.5 First-Last-Frame to Video'
+          : 'ModelSamplingAuraFlow',
+        partner: args.isPartner
+      })
+      return { nodeState }
+    },
+    template: `
+      <div class="relative min-h-96 w-3xl overflow-visible bg-background p-16">
+        <LGraphNodeVue :node-data="nodeState" />
+      </div>
+    `
+  })
 }
 
 export default meta
@@ -52,25 +80,36 @@ type Story = StoryObj<typeof meta>
 
 export const FloatingButton: Story = {}
 
+export const ButtonHover: Story = {
+  play: async ({ canvasElement }) => {
+    const page = pageOf(canvasElement)
+    await userEvent.hover(
+      page.getByRole('button', { name: t('agent.askAgent') })
+    )
+  }
+}
+
 export const ComposerOpen: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvasElement }) => {
+    const page = pageOf(canvasElement)
     await userEvent.click(
-      canvas.getByRole('button', { name: t('agent.askAgent') })
+      page.getByRole('button', { name: t('agent.askAgent') })
     )
     await expect(
-      canvas.getByRole('textbox', { name: t('agent.nodeHover.placeholder') })
+      page.getByRole('textbox', { name: t('agent.nodeHover.placeholder') })
     ).toHaveFocus()
   }
 }
 
 export const PartnerComposerOpen: Story = {
   args: { isPartner: true },
-  play: async ({ canvas }) => {
+  play: async ({ canvasElement }) => {
+    const page = pageOf(canvasElement)
     await userEvent.click(
-      canvas.getByRole('button', { name: t('agent.askAgent') })
+      page.getByRole('button', { name: t('agent.askAgent') })
     )
     await expect(
-      canvas.getByRole('button', { name: t('agent.nodeHover.enhance') })
+      page.getByRole('button', { name: t('agent.nodeHover.enhance') })
     ).toBeVisible()
   }
 }

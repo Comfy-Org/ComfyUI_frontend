@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { expect } from 'storybook/test'
 
+import { fillNodeAskAgentPrompt } from '@/components/graph/askAgentFromNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
@@ -92,38 +100,62 @@ export const OneNodeChip: Story = {
   ]
 }
 
+function seedStarterFromNode(options: {
+  id: number
+  title: string
+  text: string
+}) {
+  const graph = new LGraph()
+  const node = new LGraphNode(options.title)
+  node.id = toNodeId(options.id)
+  graph.add(node)
+  useCanvasStore().currentGraph = graph
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+    path: 'workflows/portrait.json',
+    instanceId: 'story-workflow'
+  })
+  const panel = useAgentPanelStore()
+  panel.enabled = true
+  panel.isOpen = true
+  fillNodeAskAgentPrompt(node.id, options.text)
+}
+
 export const StarterPromptFilled: Story = {
   decorators: [
     () => ({
       setup() {
-        const composer = useAgentComposerStore()
-        composer.setNodeScope('story-workflow')
-        composer.setNodes([{ id: '5', title: 'ModelSamplingAuraFlow' }])
-        composer.setText('Explain this node for me')
+        seedStarterFromNode({
+          id: 5,
+          title: 'ModelSamplingAuraFlow',
+          text: 'Explain this node for me'
+        })
         return {}
       },
       template: '<story />'
     })
-  ]
+  ],
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
 }
 
 export const PartnerStarterPromptFilled: Story = {
   decorators: [
     () => ({
       setup() {
-        const composer = useAgentComposerStore()
-        composer.setNodeScope('story-workflow')
-        composer.setNodes([
-          { id: '9', title: 'ByteDance Seedance 2.5 First-Last-Frame to Video' }
-        ])
-        composer.setText(
-          'Enhance the prompt considering the purpose of this workflow'
-        )
+        seedStarterFromNode({
+          id: 9,
+          title: 'ByteDance Seedance 2.5 First-Last-Frame to Video',
+          text: 'Enhance the prompt considering the purpose of this workflow'
+        })
         return {}
       },
       template: '<story />'
     })
-  ]
+  ],
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
 }
 
 export const MultipleNodeChips: Story = {

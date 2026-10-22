@@ -16,6 +16,9 @@ describe('nodeAskAgentPrompts', () => {
     expect(nodeAskAgentPrompts(true)[0].fillKey).toBe(
       'agent.nodeHover.enhanceFill'
     )
+    expect(nodeAskAgentPrompts(true)[0].icon).toBe(
+      'icon-[comfy--text-prompt-enhance]'
+    )
   })
 
   it('keeps regular-node starters without Enhance the prompt', () => {

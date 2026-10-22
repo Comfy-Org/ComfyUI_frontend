@@ -54,6 +54,11 @@ describe('fillNodeAskAgentPrompt', () => {
     expect(composer.draft).toBe('Explain this node for me')
     expect(composer.submission).toBeNull()
     expect(composer.submitRequestId).toBe(0)
+    expect(composer.editorFocusEpoch).toBeGreaterThan(0)
+    expect(composer.insertionPoint).toEqual({
+      textOffset: 'Explain this node for me'.length,
+      referenceIndex: 1
+    })
     expect(useTelemetry()?.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'node_hover'
     })
@@ -98,6 +103,11 @@ describe('sendNodeAskAgentPrompt', () => {
     expect(composer.draft).toBe('Add an output that matches')
     expect(composer.submission).toBeNull()
     expect(composer.submitRequestId).toBe(1)
+    expect(composer.editorFocusEpoch).toBeGreaterThan(0)
+    expect(composer.insertionPoint).toEqual({
+      textOffset: 'Add an output that matches'.length,
+      referenceIndex: 1
+    })
     expect(useTelemetry()?.trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'node_hover'
     })

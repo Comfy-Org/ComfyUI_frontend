@@ -33,7 +33,7 @@ const PARTNER_NODE_ASK_PROMPTS = [
     id: 'enhance',
     labelKey: 'agent.nodeHover.enhance',
     fillKey: 'agent.nodeHover.enhanceFill',
-    icon: 'icon-[lucide--wand-sparkles]'
+    icon: 'icon-[comfy--text-prompt-enhance]'
   },
   {
     id: 'fixError',
