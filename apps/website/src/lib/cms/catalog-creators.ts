@@ -9,6 +9,7 @@ import { everyCursorPage } from './catalog-list-all'
 const CREATORS_PATH = '/api/v1/catalog/creators'
 const DIRECTORY_PAGE_LIMIT = 100
 const MAX_DIRECTORY_PAGES = 20
+const DIRECTORY_DEADLINE_MS = 8000
 
 const text = z.string().max(4096).nullish()
 
@@ -74,7 +75,9 @@ function mergedByUsername(items: readonly DirectoryItem[]) {
     .sort(busiestFirst)
 }
 
-export async function loadCatalogCreators() {
+export async function loadCatalogCreators(
+  deadline = AbortSignal.timeout(DIRECTORY_DEADLINE_MS)
+) {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
@@ -83,7 +86,7 @@ export async function loadCatalogCreators() {
     url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
     if (cursor) url.searchParams.set('cursor', cursor)
     const page = creatorsPageSchema.safeParse(
-      (await fetchCatalogJson(url)).data
+      (await fetchCatalogJson(url, undefined, deadline)).data
     )
     if (!page.success) return undefined
     return {

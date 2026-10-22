@@ -156,6 +156,26 @@ describe('loadCatalogCreators', () => {
     expect(fetch).toHaveBeenCalledTimes(20)
   })
 
+  it('aborts the next page read when the walk deadline ends', async () => {
+    const deadline = new AbortController()
+    const call = serve({
+      '/api/v1/catalog/creators': () => {
+        deadline.abort()
+        return Response.json({
+          items: [summary('purz', 1)],
+          next_cursor: 'page-2'
+        })
+      }
+    })
+
+    expect(await loadCatalogCreators(deadline.signal)).toEqual({
+      ok: false,
+      status: 503
+    })
+    expect(vi.mocked(fetch).mock.calls[1]?.[1]?.signal?.aborted).toBe(true)
+    expect(call(1).searchParams.get('cursor')).toBe('page-2')
+  })
+
   it('leaves out creators with no workflows and names a creator by username when the display name is empty', async () => {
     serve({
       '/api/v1/catalog/creators': () =>
