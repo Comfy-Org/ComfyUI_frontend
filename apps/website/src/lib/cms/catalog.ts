@@ -14,14 +14,18 @@ export { cmsEnabled }
 /** One bounded JSON read from the catalog, as the staff session when given. */
 export async function fetchCatalogJson(
   url: URL,
-  session?: AuthoringSession
+  session?: AuthoringSession,
+  deadline?: AbortSignal
 ): Promise<{ status: number; data?: unknown }> {
   try {
     const response = await fetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
         : {}),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.any([
+        AbortSignal.timeout(5000),
+        ...(deadline ? [deadline] : [])
+      ]),
       cache: 'no-store'
     })
     if (!response.ok) {

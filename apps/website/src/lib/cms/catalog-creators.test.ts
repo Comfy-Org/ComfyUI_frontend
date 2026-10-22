@@ -37,11 +37,15 @@ function cardsPage(): CccWebsiteCardsPage {
 function serve(routes: Partial<Record<string, () => Response>>) {
   vi.stubEnv('SITE_CATALOG_API_URL', origin)
   vi.stubEnv('VERCEL_ENV', 'development')
-  const upstream = vi.fn<typeof fetch>().mockImplementation(async (input) => {
-    const url = new URL(String(input))
-    const route = routes[`${url.pathname}${url.search}`] ?? routes[url.pathname]
-    return route ? route() : new Response(null, { status: 404 })
-  })
+  const upstream = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async (input, init) => {
+      init?.signal?.throwIfAborted()
+      const url = new URL(String(input))
+      const route =
+        routes[`${url.pathname}${url.search}`] ?? routes[url.pathname]
+      return route ? route() : new Response(null, { status: 404 })
+    })
   vi.mocked(fetch).mockImplementation(upstream)
   return (index: number) => new URL(String(upstream.mock.calls[index][0]))
 }
@@ -84,25 +88,6 @@ describe('loadCatalogCreators', () => {
       ['sirolim', 'Sirolim', 1]
     ])
     expect(call(1).searchParams.get('cursor')).toBe('page-2')
-  })
-
-  it('merges usernames that differ only in case into one lowercase creator', async () => {
-    serve({
-      '/api/v1/catalog/creators': () =>
-        Response.json({
-          items: [
-            summary('PurZ', 2, { display_name: 'PurZ' }),
-            summary('purz', 1)
-          ]
-        })
-    })
-
-    const result = await loadCatalogCreators()
-
-    assert.isTrue(result.ok)
-    expect(result.creators).toEqual([
-      { username: 'purz', displayName: 'PurZ', workflowCount: 3 }
-    ])
   })
 
   it.for([
@@ -165,7 +150,7 @@ describe('loadCatalogCreators', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
-  it('stops at the page cap even when the catalog has another page', async () => {
+  it('lists the creators read so far when the catalog has more pages than the cap', async () => {
     let page = 0
     serve({
       '/api/v1/catalog/creators': () =>
@@ -175,8 +160,31 @@ describe('loadCatalogCreators', () => {
         })
     })
 
-    expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+    const result = await loadCatalogCreators()
+
+    assert.isTrue(result.ok)
+    expect(result.creators).toHaveLength(20)
     expect(fetch).toHaveBeenCalledTimes(20)
+  })
+
+  it('aborts the next page read when the walk deadline ends', async () => {
+    const deadline = new AbortController()
+    const call = serve({
+      '/api/v1/catalog/creators': () => {
+        deadline.abort()
+        return Response.json({
+          items: [summary('purz', 1)],
+          next_cursor: 'page-2'
+        })
+      }
+    })
+
+    expect(await loadCatalogCreators(deadline.signal)).toEqual({
+      ok: false,
+      status: 503
+    })
+    expect(vi.mocked(fetch).mock.calls[1]?.[1]?.signal?.aborted).toBe(true)
+    expect(call(1).searchParams.get('cursor')).toBe('page-2')
   })
 
   it('leaves out creators with no workflows and names a creator by username when the display name is empty', async () => {

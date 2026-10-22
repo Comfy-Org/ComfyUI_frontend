@@ -16,6 +16,7 @@ import { everyCursorPage } from './catalog-list-all'
 const CREATORS_PATH = '/api/v1/catalog/creators'
 const DIRECTORY_PAGE_LIMIT = 100
 const MAX_DIRECTORY_PAGES = 20
+const DIRECTORY_DEADLINE_MS = 8000
 
 const text = z.string().max(4096).nullish()
 
@@ -54,24 +55,11 @@ type DirectoryItem = z.output<typeof creatorsPageSchema>['items'][number]
 function summaryOf(item: DirectoryItem): HubCreatorSummary {
   const avatarUrl = hubAvatarUrl(item.avatar_url)
   return {
-    username: item.username.toLowerCase(),
+    username: item.username,
     displayName: item.display_name || item.username,
     workflowCount: item.workflow_count,
     ...(avatarUrl && { avatarUrl })
   }
-}
-
-function withCounts(
-  known: HubCreatorSummary | undefined,
-  next: HubCreatorSummary
-): HubCreatorSummary {
-  return known
-    ? {
-        ...next,
-        ...known,
-        workflowCount: known.workflowCount + next.workflowCount
-      }
-    : next
 }
 
 function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
@@ -80,38 +68,37 @@ function busiestFirst(a: HubCreatorSummary, b: HubCreatorSummary) {
   )
 }
 
-function mergedByUsername(items: readonly DirectoryItem[]) {
-  const creators = new Map<string, HubCreatorSummary>()
-  for (const summary of items.map(summaryOf))
-    creators.set(
-      summary.username,
-      withCounts(creators.get(summary.username), summary)
-    )
-  return [...creators.values()]
+function directoryOf(items: readonly DirectoryItem[]) {
+  return items
+    .map(summaryOf)
     .filter(({ workflowCount }) => workflowCount > 0)
     .sort(busiestFirst)
 }
 
-export async function loadCatalogCreators() {
+export async function loadCatalogCreators(
+  deadline = AbortSignal.timeout(DIRECTORY_DEADLINE_MS)
+) {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items = await everyCursorPage(async (cursor) => {
+  const items = await everyCursorPage(async (cursor, pageNumber) => {
     const url = new URL(CREATORS_PATH, origin)
     url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
     if (cursor) url.searchParams.set('cursor', cursor)
     const page = creatorsPageSchema.safeParse(
-      (await fetchCatalogJson(url)).data
+      (await fetchCatalogJson(url, undefined, deadline)).data
     )
-    return page.success
-      ? {
-          items: page.data.items,
-          nextCursor: page.data.next_cursor ?? undefined
-        }
-      : undefined
-  }, MAX_DIRECTORY_PAGES)
+    if (!page.success) return undefined
+    return {
+      items: page.data.items,
+      nextCursor:
+        pageNumber < MAX_DIRECTORY_PAGES
+          ? (page.data.next_cursor ?? undefined)
+          : undefined
+    }
+  })
   return items
-    ? ({ ok: true, creators: mergedByUsername(items) } as const)
+    ? ({ ok: true, creators: directoryOf(items) } as const)
     : unavailable
 }
 
