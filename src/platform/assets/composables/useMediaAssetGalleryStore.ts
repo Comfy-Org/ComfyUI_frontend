@@ -3,7 +3,7 @@ import { ref, shallowRef } from 'vue'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 
 export const useMediaAssetGalleryStore = defineStore(
   'mediaAssetGallery',

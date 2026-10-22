@@ -6,6 +6,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
@@ -80,7 +81,7 @@ test.describe(
             }
           })
 
-        await expect(notice).toHaveScreenshot('agent-free-use-notice.png')
+        await expectElementScreenshot(notice, 'agent-free-use-notice.png')
       }
     )
 

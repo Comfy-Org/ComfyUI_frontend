@@ -14,6 +14,7 @@ const {
   enableEmptyState,
   tooltip,
   size = 'default',
+  variant = 'default',
   class: className
 } = defineProps<{
   disabled?: boolean
@@ -21,6 +22,7 @@ const {
   enableEmptyState?: boolean
   tooltip?: string
   size?: 'default' | 'lg'
+  variant?: 'default' | 'card'
   class?: string
 }>()
 
@@ -30,7 +32,15 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
 </script>
 
 <template>
-  <div :class="cn('flex flex-col bg-comfy-menu-bg', className)">
+  <div
+    :class="
+      cn(
+        'flex flex-col bg-background',
+        variant === 'card' && 'border-t bg-card',
+        className
+      )
+    "
+  >
     <div
       class="sticky top-0 z-10 flex items-center justify-between bg-inherit backdrop-blur-xl"
     >
@@ -41,7 +51,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
               type="button"
               :class="
                 cn(
-                  'group flex w-full items-center justify-between border-0 bg-transparent pr-3 pl-4 text-left ring-0 outline-0',
+                  'group flex w-full items-center justify-between border-0 bg-transparent pr-3 pl-4 text-left ring-0 outline-0 disabled:text-muted-foreground',
                   size === 'lg' ? 'min-h-16' : 'min-h-12',
                   !disabled && 'cursor-pointer'
                 )
@@ -49,7 +59,16 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
               :disabled="disabled"
               @click="isCollapse = !isCollapse"
             >
-              <span class="line-clamp-2 flex-1 text-sm font-semibold">
+              <span
+                :class="
+                  cn(
+                    'line-clamp-2 flex-1 font-semibold',
+                    variant === 'card'
+                      ? 'text-xs uppercase select-none'
+                      : 'text-sm'
+                  )
+                "
+              >
                 <slot name="label">
                   {{ label }}
                 </slot>
@@ -58,7 +77,7 @@ const isExpanded = computed(() => !isCollapse.value && !disabled)
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-base-foreground group-focus:text-base-foreground group-has-[.subbutton:hover]:text-muted-foreground',
+                    'icon-[lucide--chevron-up] size-4 text-muted-foreground transition-all group-hover:text-foreground group-focus:text-foreground group-has-[.subbutton:hover]:text-muted-foreground',
                     isCollapse && '-rotate-180',
                     disabled && 'opacity-0'
                   )

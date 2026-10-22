@@ -1,0 +1,180 @@
+#maskEditor_brush {
+  position: absolute;
+  z-index: 8889;
+  pointer-events: none;
+  border-radius: 50%;
+  overflow: visible;
+  outline: 1px dashed black;
+  box-shadow: 0 0 0 1px white;
+}
+#maskEditor_brushPreviewGradient {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: none;
+}
+
+.maskEditor_sidePanelBrushRange {
+  width: 180px;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.maskEditor_sidePanelBrushRange::-webkit-slider-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: grab;
+  margin-top: -8px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.maskEditor_sidePanelBrushRange::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: grab;
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
+  background: var(--border);
+  height: 3px;
+}
+.maskEditor_sidePanelBrushRange::-moz-range-track {
+  background: var(--border);
+  height: 3px;
+}
+
+.maskEditor_toolPanelContainer {
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s;
+}
+.maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
+  display: block;
+}
+.maskEditor_toolPanelContainer svg {
+  width: 75%;
+  aspect-ratio: 1/1;
+}
+
+.maskEditor_toolPanelIndicator {
+  display: none;
+  height: 100%;
+  width: 4px;
+  position: absolute;
+  left: 0;
+  background: currentColor;
+}
+
+#maskEditorCanvasContainer {
+  position: absolute;
+  width: 1000px;
+  height: 667px;
+  left: 359px;
+  top: 280px;
+}
+
+.maskEditor_sidePanelToggleContainer {
+  cursor: pointer;
+  display: inline-block;
+  position: absolute;
+  right: 0;
+}
+
+.maskEditor_sidePanelToggleSwitch {
+  display: inline-block;
+  border-radius: 16px;
+  width: 40px;
+  height: 24px;
+  position: relative;
+  vertical-align: middle;
+  transition: background 0.25s;
+  background: var(--muted);
+}
+
+.maskEditor_sidePanelToggleSwitch::before,
+.maskEditor_sidePanelToggleSwitch::after {
+  content: '';
+}
+.maskEditor_sidePanelToggleSwitch::before {
+  display: block;
+  background: linear-gradient(to bottom, #fff 0%, #eee 100%);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  transition: ease 0.2s;
+}
+.maskEditor_sidePanelToggleContainer:hover
+  .maskEditor_sidePanelToggleSwitch::before {
+  background: linear-gradient(to bottom, #fff 0%, #fff 100%);
+}
+.maskEditor_sidePanelToggleCheckbox:checked
+  + .maskEditor_sidePanelToggleSwitch {
+  background: var(--primary);
+}
+.maskEditor_sidePanelToggleCheckbox:checked
+  + .maskEditor_sidePanelToggleSwitch::before {
+  background: var(--background);
+  left: 20px;
+}
+.maskEditor_sidePanelToggleCheckbox {
+  position: absolute;
+  visibility: hidden;
+}
+
+.maskEditor_sidePanelDropdown {
+  border: 1px solid var(--border);
+  background: var(--background);
+  height: 24px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+
+.maskEditor_sidePanelDropdown option {
+  background: var(--background);
+}
+
+.maskEditor_sidePanelDropdown:focus {
+  outline: 1px solid var(--primary);
+}
+
+.maskEditor_sidePanelDropdown option:hover {
+  background: white;
+}
+.maskEditor_sidePanelDropdown option:active {
+  background: var(--muted);
+}
+
+.maskEditor_sidePanelLayerPreviewContainer {
+  width: 40px;
+  height: 30px;
+}
+
+.maskEditor_sidePanelLayerPreviewContainer > svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  fill: var(--foreground);
+}
+
+.maskEditor_sidePanelImageLayerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.maskEditor_sidePanelLayerCheckbox {
+  margin-left: 15px;
+}

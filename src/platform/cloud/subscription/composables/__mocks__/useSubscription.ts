@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import type { useSubscription as realUseSubscription } from '../useSubscription'
+import type { useSubscription as realUseSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
 function reactiveDefaults() {
   return {

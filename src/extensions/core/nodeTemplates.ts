@@ -10,10 +10,10 @@ import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
-import { ComfyDialog } from '../../scripts/ui'
-import { $el } from '../../scripts/ui/utils'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -40,6 +40,22 @@ interface NodeTemplate {
   data: string
 }
 
+type TemplatesLoad =
+  | { ok: true; templates: NodeTemplate[] }
+  | { ok: false; cause: unknown }
+
+async function fetchTemplates(): Promise<TemplatesLoad> {
+  try {
+    const res = await api.getUserData(file)
+    if (res.status === 200)
+      return { ok: true, templates: (await res.json()) ?? [] }
+    if (res.status !== 404) console.error(res.status + ' ' + res.statusText)
+    return { ok: true, templates: [] }
+  } catch (cause) {
+    return { ok: false, cause }
+  }
+}
+
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
   draggedEl: HTMLElement | null
@@ -49,9 +65,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    void this.load().then((v) => {
-      this.templates = v
-    })
+    void this.load()
 
     this.element.classList.add('comfy-manage-templates')
     this.element.dataset.testid = 'manage-node-templates-dialog'
@@ -66,7 +80,7 @@ class ManageTemplates extends ComfyDialog {
       accept: '.json',
       multiple: true,
       style: { display: 'none' },
-      parent: document.body,
+      parent: this.element,
       onchange: () => this.importAll()
     })
   }
@@ -98,28 +112,22 @@ class ManageTemplates extends ComfyDialog {
   }
 
   async load() {
-    let templates = []
-    const res = await api.getUserData(file)
-    if (res.status === 200) {
-      try {
-        templates = await res.json()
-      } catch (error) {
-        reportError(error, {
-          surface: 'graph',
-          errorType: 'failure_loading_node_templates',
-          tags: {
-            failure_kind: 'caught_unexpected',
-            feature_area: 'extensions',
-            operation: 'load',
-            outcome: 'recovered'
-          },
-          level: 'error'
-        })
-      }
-    } else if (res.status !== 404) {
-      console.error(res.status + ' ' + res.statusText)
+    const result = await fetchTemplates()
+    if (result.ok) {
+      this.templates = result.templates
+      return
     }
-    return templates ?? []
+    reportError(result.cause, {
+      surface: 'graph',
+      errorType: 'failure_loading_node_templates',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'extensions',
+        operation: 'load',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
   }
 
   async store() {
@@ -188,7 +196,7 @@ class ManageTemplates extends ComfyDialog {
                   gridTemplateColumns: '1fr auto',
                   border: '1px dashed transparent',
                   gap: '5px',
-                  backgroundColor: 'var(--comfy-menu-bg)'
+                  backgroundColor: 'var(--background)'
                 },
                 ondragstart: (e: DragEvent) => {
                   const row = e.currentTarget
@@ -285,7 +293,7 @@ class ManageTemplates extends ComfyDialog {
                         el.style.transitionDuration = '0s'
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
-                          el.style.backgroundColor = 'var(--comfy-input-bg)'
+                          el.style.backgroundColor = 'var(--input)'
                         }, 15)
                       },
                       onkeypress: (e: KeyboardEvent) => {
@@ -293,7 +301,7 @@ class ManageTemplates extends ComfyDialog {
                         if (!(el instanceof HTMLInputElement)) return
                         if (this.saveVisualCue) clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
-                        el.style.backgroundColor = 'var(--comfy-input-bg)'
+                        el.style.backgroundColor = 'var(--input)'
                       },
                       $: (el) => {
                         if (el instanceof HTMLInputElement) nameInput = el
@@ -354,7 +362,12 @@ class ManageTemplates extends ComfyDialog {
   }
 }
 
-const manage = new ManageTemplates()
+let manager: ManageTemplates | undefined
+
+function getManager(): ManageTemplates {
+  manager ??= new ManageTemplates()
+  return manager
+}
 
 const clipboardAction = async (cb: () => void | Promise<void>) => {
   // We use the clipboard functions but dont want to overwrite the current user clipboard
@@ -368,7 +381,12 @@ const clipboardAction = async (cb: () => void | Promise<void>) => {
 const ext: ComfyExtension = {
   name: id,
 
+  setup() {
+    getManager()
+  },
+
   getCanvasMenuItems(_canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+    const manage = getManager()
     const items: (IContextMenuValue | null)[] = []
 
     items.push(null)
@@ -396,7 +414,6 @@ const ext: ComfyExtension = {
       }
     })
 
-    // Map each template to a menu item
     const subItems: (IContextMenuValue | null)[] = manage.templates.map(
       (template) => {
         return {
@@ -412,7 +429,6 @@ const ext: ComfyExtension = {
                 return
               }
 
-              // Check for old clipboard format
               if (!data.reroutes) {
                 deserialiseAndCreate(template.data, app.canvas)
               } else {

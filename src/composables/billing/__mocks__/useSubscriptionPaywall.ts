@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useSubscriptionPaywall as realUseSubscriptionPaywall } from '../useSubscriptionPaywall'
+import type { useSubscriptionPaywall as realUseSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 
 const paywall = vi.mockObject<ReturnType<typeof realUseSubscriptionPaywall>>(
   { showSubscriptionDialog: () => {} },

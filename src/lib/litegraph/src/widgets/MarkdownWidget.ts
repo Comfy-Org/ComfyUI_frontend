@@ -1,4 +1,4 @@
-import type { IMarkdownWidget } from '../types/widgets'
+import type { IMarkdownWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { uploadTempFile } from '@/services/uploadTempFile'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()
 

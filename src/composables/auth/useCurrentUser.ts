@@ -51,11 +51,10 @@ export const useCurrentUser = () => {
   const onTokenRefreshed = (callback: () => void) =>
     whenever(() => authStore.tokenRefreshTrigger, callback)
 
-  const onUserLogout = (callback: () => void) => {
+  const onUserLogout = (callback: () => void) =>
     watch(resolvedUserInfo, (user, prevUser) => {
       if (prevUser && !user) callback()
     })
-  }
 
   const userDisplayName = computed(() => {
     if (desktopHostUser.value) return undefined

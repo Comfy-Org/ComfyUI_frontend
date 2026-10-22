@@ -7,7 +7,7 @@
     :theme="theme"
     :expired-message="t('auth.turnstile.expired')"
     :failed-message="t('auth.turnstile.failed')"
-    error-class="text-red-500"
+    error-class="text-destructive"
     :loader="loadTurnstile"
   />
 </template>
@@ -29,9 +29,7 @@ const { t } = useI18n()
 const colorPaletteStore = useColorPaletteStore()
 // The palette setting can settle after this dialog mounts; the shared widget
 // reads `theme` once its loader resolves, so a computed keeps that timing.
-const theme = computed(() =>
-  colorPaletteStore.completedActivePalette.light_theme ? 'light' : 'dark'
-)
+const theme = computed(() => colorPaletteStore.colorScheme)
 
 const widget = ref<InstanceType<typeof SharedTurnstileWidget>>()
 

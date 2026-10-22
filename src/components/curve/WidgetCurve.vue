@@ -1,42 +1,51 @@
 <template>
   <div class="flex flex-col gap-1">
-    <Select
-      v-if="!isDisabled"
-      :model-value="modelValue.interpolation"
-      @update:model-value="onInterpolationChange"
-    >
-      <SelectTrigger size="md">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem
-          v-for="interp in CURVE_INTERPOLATIONS"
-          :key="interp"
-          :value="interp"
+    <div v-if="!isDisabled" class="flex items-center gap-1">
+      <div class="min-w-0 flex-1">
+        <Select
+          :model-value="modelValue.interpolation"
+          @update:model-value="onInterpolationChange"
         >
-          {{ $t(`curveWidget.${interp}`) }}
-        </SelectItem>
-      </SelectContent>
-    </Select>
+          <SelectTrigger size="md">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem
+              v-for="interp in CURVE_INTERPOLATIONS"
+              :key="interp"
+              :value="interp"
+            >
+              {{ $t(`curveWidget.${interp}`) }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <WidgetHistoryButtons :can-undo :can-redo @undo="undo" @redo="redo" />
+    </div>
     <CurveEditor
       :model-value="effectiveCurve.points"
       :disabled="isDisabled"
       :interpolation="effectiveCurve.interpolation"
       :histogram="histogram"
       @update:model-value="onPointsChange"
+      @edit-end="commitAfterUpdate"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import {
   singleValueExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
@@ -49,8 +58,9 @@ import { isCurveData } from './curveUtils'
 import { CURVE_INTERPOLATIONS } from './types'
 import type { CurveData, CurveInterpolation, CurvePoint } from './types'
 
-const { widget } = defineProps<{
+const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget
+  nodeId?: NodeId
 }>()
 
 const modelValue = defineModel<CurveData>({
@@ -80,9 +90,23 @@ const upstreamValue = useUpstreamValue(
   singleValueExtractor(isCurveData)
 )
 
+const { canUndo, canRedo, undo, redo, commit, discardHistory } =
+  useWidgetValueHistory({
+    scope: () => widgetHistoryScope(widget, nodeId),
+    read: () => modelValue.value,
+    apply: (value) => {
+      if (isCurveData(value)) modelValue.value = value
+    }
+  })
+
+function commitAfterUpdate() {
+  void nextTick(() => commit())
+}
+
 watch(upstreamValue, (upstream) => {
   if (isDisabled.value && upstream) {
     modelValue.value = upstream
+    void nextTick(discardHistory)
   }
 })
 
@@ -102,5 +126,6 @@ function onInterpolationChange(value: unknown) {
     ...modelValue.value,
     interpolation: value as CurveInterpolation
   }
+  commitAfterUpdate()
 }
 </script>

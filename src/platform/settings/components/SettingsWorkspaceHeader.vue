@@ -5,9 +5,7 @@
         :workspace-name="workspaceName"
         :subscription-tier="subscriptionTier"
       />
-      <h1
-        class="m-0 truncate text-base font-bold text-base-foreground select-none"
-      >
+      <h1 class="m-0 truncate text-base font-bold text-foreground select-none">
         {{ workspaceName }}
       </h1>
     </template>

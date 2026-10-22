@@ -9,12 +9,12 @@ import {
   observeLinkId,
   observeNodeId,
   observeRerouteId
-} from '../idAllocation'
-import type { LGraphState } from '../idAllocation'
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences
-} from '../linkDeduplication'
+} from '@/lib/litegraph/src/linkDeduplication'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
@@ -26,7 +26,7 @@ import type {
   ExposedWidget,
   ISerialisedNode,
   SerialisableLLink
-} from '../types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
 
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =

@@ -7,7 +7,7 @@ import HdriMenuGroup from '@/components/load3d/menubar/HdriMenuGroup.vue'
 import type {
   HDRIConfig,
   LightConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({

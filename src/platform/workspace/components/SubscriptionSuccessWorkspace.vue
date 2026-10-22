@@ -11,7 +11,7 @@
   >
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
-        <h3 class="m-0 text-base font-normal text-base-foreground">
+        <h3 class="m-0 text-base font-normal">
           {{ $t('subscription.success.inviteTitle') }}
         </h3>
         <p class="m-0 text-muted-foreground">
@@ -22,7 +22,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="m-0 text-success-background"
+            class="m-0 text-success"
           >
             {{
               $t(

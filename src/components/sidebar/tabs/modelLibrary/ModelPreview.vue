@@ -48,14 +48,14 @@ const modelDef = props.modelDef
 </script>
 <style scoped>
 .model_preview {
-  background-color: var(--comfy-menu-bg);
-  color: var(--descrip-text);
-  border: 1px solid var(--descrip-text);
+  background-color: var(--background);
+  color: var(--muted-foreground);
+  border: 1px solid var(--muted-foreground);
   min-width: 300px;
   max-width: 500px;
   width: fit-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;

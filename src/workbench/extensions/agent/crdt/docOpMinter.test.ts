@@ -23,6 +23,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
@@ -31,7 +33,12 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
+import {
+  PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
+  PROMOTED_WRITE_RETRY_MS,
+  attachDocOpMinter,
+  wireNodeSnapshot
+} from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
@@ -212,7 +219,11 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
-  let refusals: number
+  let docDefinitionIds: Set<string>
+  let graphAvailable: boolean
+  let unbound: boolean
+  let refusals: Array<[string, string]>
+  let seededPromotedDocs: Set<ReturnType<typeof mint>>
 
   beforeEach(() => {
     graph = new LGraph()
@@ -223,23 +234,57 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     mayWrite = true
-    refusals = 0
+    docDefinitionIds = new Set()
+    graphAvailable = true
+    unbound = false
+    refusals = []
+    seededPromotedDocs = new Set()
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId,
+      getGraph: () => (graphAvailable ? graph : null),
+      boundRootGraphId: () => (unbound ? null : rootGraphId),
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
-      onWidgetWriteRefused: () => {
-        refusals += 1
-      }
+      docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
+      onWidgetWriteRefused: (nodeId, widgetName) =>
+        refusals.push([nodeId, widgetName])
     })
   })
 
-  afterEach(() => minter.detach())
+  afterEach(() => {
+    minter.detach()
+    for (const doc of seededPromotedDocs) {
+      if (!doc.isDestroyed) doc.destroy()
+    }
+  })
+
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
+  })
 
   describe('mints one op per graph command', () => {
     it.for([
@@ -526,6 +571,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: () => null,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
 
@@ -764,9 +810,28 @@ describe('attachDocOpMinter', () => {
       hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
+    seededPromotedDocs.add(doc)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
+
+  it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
+    const { host, doc } = seedPromotedHost()
+    expect(host.inputs[1].widget).toEqual({ name: 'text' })
+    const source = new LGraphNode('Text Source')
+    source.addOutput('STRING', 'STRING')
+    withGraphIntentSource('load', () => graph.add(source))
+    docInputNames = (nodeId) => (nodeId === host.id ? [] : null)
+
+    source.connect(0, host, 1)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+    doc.destroy()
+  })
 
   it('PM-1995: mints a promoted host write the doc host accepts', async () => {
     const { host, doc } = seedPromotedHost()
@@ -998,6 +1063,7 @@ describe('attachDocOpMinter', () => {
     {
       name: 'an unpromoted host widget',
       errorType: 'agent_crdt_promoted_widget_not_promoted',
+      widgetName: 'extra',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
         host.addWidget('text', 'extra', 'before', () => {}).value = 'after'
       }
@@ -1005,6 +1071,7 @@ describe('attachDocOpMinter', () => {
     {
       name: 'a drifted host layout',
       errorType: 'agent_crdt_promoted_widget_order_drift',
+      widgetName: 'text',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
         docPromotedWidgets = () => ({
           valueCount: 2,
@@ -1013,25 +1080,17 @@ describe('attachDocOpMinter', () => {
         })
         host.widgets[1].value = 'misplaced'
       }
-    },
-    {
-      name: 'a host the document cannot vouch for yet',
-      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
-      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
-        mayWrite = false
-        host.widgets[1].value = 'too early'
-      }
     }
   ])(
     'reports and notifies a refused write to $name',
-    async ({ errorType, act }) => {
+    async ({ errorType, widgetName, act }) => {
       const { host, doc } = seedPromotedHost()
 
       act(host)
       await afterFlush()
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, widgetName]])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({ errorType })
@@ -1039,6 +1098,368 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     }
   )
+
+  describe('PM-2003: a promoted write made while the document is catching up', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+    })
+
+    it('is held without a notice and minted once the document catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'randomized'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: host.id,
+          widget: 'text',
+          value: 'randomized',
+          promoted: expect.objectContaining({ value_index: 1 })
+        })
+      ])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      doc.destroy()
+    })
+
+    it('mints the latest value once when the same widget changes again before catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toHaveLength(1)
+      const [write] = minted
+      assert(write.op === 'set_widget')
+      expect(write.value).toBe('second')
+      expect(write.promoted?.host_widgets_values[1]).toBe('second')
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write to the same widget made after catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      mayWrite = true
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['newer'])
+      doc.destroy()
+    })
+
+    it('carries every held sibling in the host values once caught up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[0].value = 'prefix edit'
+      host.widgets[1].value = 'text edit'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted.map((op) => op.op === 'set_widget' && op.widget)).toEqual([
+        'prefix',
+        'text'
+      ])
+      const last = minted.at(-1)
+      assert(last?.op === 'set_widget')
+      expect(last.promoted?.host_widgets_values).toEqual([
+        'prefix edit',
+        'text edit'
+      ])
+      doc.destroy()
+    })
+
+    it('is refused with one notice when the document never catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'never synced'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1)
+      expect(refusals).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is checked against the caught-up layout, not the one it was made against', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'misplaced'
+      await afterFlush()
+      docPromotedWidgets = () => ({
+        valueCount: 2,
+        declaredNames: ['text', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is refused, not minted into another workflow, when the bound workflow changes first', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for the old workflow'
+      await afterFlush()
+      rootGraphId = toRootGraphId(createUuidv4())
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_workflow_changed'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('still lands when the catch-up arrives after one ack-timeout retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'slow relay'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(15_500)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['slow relay'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write made while the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'older'
+      await afterFlush()
+      bound = false
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped when the catch-up replaced the value on the canvas', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'human value'
+      await afterFlush()
+      withGraphIntentSource('agent-remote', () => {
+        host.widgets[1].value = 'agent value'
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is refused when a transient document unbind outlasts the catch-up deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('keeps waiting while the graph is briefly unavailable', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'during a load'
+      await afterFlush()
+      graphAvailable = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(refusals).toEqual([])
+      graphAvailable = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['during a load'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps waiting through a moment when the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'across a resend'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['across a resend'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('lands when the catch-up answers the last subscribe retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'third attempt'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(40_000)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['third attempt'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps the first deadline when a newer write replaces a held one', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(
+        PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1_000
+      )
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(1_000 + PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      doc.destroy()
+    })
+
+    it('is refused when the graph stays unavailable past the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'graph gone'
+      await afterFlush()
+      graphAvailable = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(vi.getTimerCount()).toBe(0)
+
+      graphAvailable = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(minted).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently at once when the chat unbinds the workflow', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      unbound = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(vi.getTimerCount()).toBe(0)
+      bound = true
+      unbound = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently on detach', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      expect(vi.getTimerCount()).toBe(1)
+      minter.detach()
+      expect(vi.getTimerCount()).toBe(0)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+  })
 
   it('still mints for a host the caught-up document does not hold yet', async () => {
     const { host, doc } = seedPromotedHost()
@@ -1050,7 +1471,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([
       expect.objectContaining({ node_id: host.id, widget: 'text' })
     ])
-    expect(refusals).toBe(0)
+    expect(refusals).toEqual([])
     doc.destroy()
   })
 
@@ -1293,6 +1714,84 @@ describe('attachDocOpMinter', () => {
       })
     ])
     expect(minted[0]).not.toHaveProperty('promoted')
+  })
+
+  function handAddedPromotedHost() {
+    const inner = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(inner.id, inner)
+    const outer = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(outer.id, outer)
+    withGraphIntentSource('load', () => {
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      outer.add(interior)
+      outer.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    const doc = mintDocFrom(graph)
+    seededPromotedDocs.add(doc)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    const host = createTestSubgraphNode(outer)
+    graph.add(host)
+    return { host, inner, outer, doc }
+  }
+
+  it('defines a hand-added host’s subgraphs the document lacks, so its promoted write places', async () => {
+    const { host, inner, outer, doc } = handAddedPromotedHost()
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', inner.id, outer.id])
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      promotedNames: ['text']
+    })
+
+    minted = []
+    host.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 0 })
+      })
+    ])
+    expect(refusals).toEqual([])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+  })
+
+  it('keeps the add and skips a definition that cannot serialize, with its dependents', async () => {
+    const { inner } = handAddedPromotedHost()
+    vi.spyOn(inner, 'asSerialisable').mockImplementation(() => {
+      throw new Error('extension serializer failed')
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(['add_node'])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: inner.id }
+      })
+    )
+  })
+
+  it('does not redefine a subgraph the document already holds', async () => {
+    const { inner, outer } = handAddedPromotedHost()
+    docDefinitionIds.add(inner.id)
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', outer.id])
   })
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
@@ -1655,21 +2154,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
@@ -1959,5 +2464,320 @@ describe('attachDocOpMinter', () => {
 
       expect(isRootGraphDocBound(graph.id)).toBe(false)
     })
+  })
+})
+
+describe('wireNodeSnapshot widget form (schema A24)', () => {
+  function nodeDef(
+    name: string,
+    required: NonNullable<ComfyNodeDefV1['input']>['required']
+  ): ComfyNodeDefV1 {
+    return {
+      name,
+      display_name: name,
+      category: 'test',
+      python_module: 'custom_nodes.test',
+      description: '',
+      input: { required },
+      output: [],
+      output_name: [],
+      output_is_list: [],
+      output_node: false
+    }
+  }
+
+  function nodeWith(
+    type: string,
+    build: (node: LGraphNode) => void
+  ): LGraphNode {
+    const node = new LGraphNode(type, type)
+    node.serialize_widgets = true
+    build(node)
+    return node
+  }
+
+  it.for([
+    {
+      case: 'an extension widget the definition does not describe',
+      definitions: [
+        nodeDef('Display Int', {
+          input: ['INT', { forceInput: true }]
+        })
+      ],
+      type: 'Display Int',
+      build: (n: LGraphNode) => {
+        n.addInput('input', 'INT')
+        n.addWidget('text', 'output', '', () => {})
+        n.addWidget('button', 'copy', 'copy', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'widgets the definition fully describes',
+      definitions: [nodeDef('Described', { steps: ['INT', {}] })],
+      type: 'Described',
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      },
+      values: { steps: 20 },
+      order: ['steps']
+    },
+    {
+      case: 'a companion linked to a described widget',
+      definitions: [nodeDef('Seeded', { seed: ['INT', {}] })],
+      type: 'Seeded',
+      build: (n: LGraphNode) => {
+        const seed = n.addWidget('number', 'seed', 1, () => {})
+        const control = n.addWidget(
+          'combo',
+          'control_after_generate',
+          'fixed',
+          () => {},
+          { values: ['fixed', 'randomize'] }
+        )
+        seed.linkedWidgets = [control]
+      },
+      values: { seed: 1, control_after_generate: 'fixed' },
+      order: ['seed', 'control_after_generate']
+    },
+    {
+      case: 'a class with no definition',
+      definitions: [],
+      type: 'Undefined Class',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'output', '', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'integer-like widget names',
+      definitions: [],
+      type: 'Integer Names',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', '2', 'two', () => {})
+        n.addWidget('text', '1', 'one', () => {})
+      },
+      values: { '2': 'two', '1': 'one' },
+      order: ['2', '1']
+    }
+  ])(
+    'declares the live widget order for $case',
+    ({ definitions, type, build, values, order }) => {
+      useNodeDefStore().updateNodeDefs(definitions)
+      const node = nodeWith(type, build)
+
+      expect(wireNodeSnapshot(node)).toMatchObject({
+        widgets_values: values,
+        widgets_values_form: { order }
+      })
+    }
+  )
+
+  it.for([
+    {
+      case: 'a dynamic combo input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'a dynamic group input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICGROUP_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.0.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'an autogrow input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_AUTOGROW_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'no value widgets',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('button', 'refresh', 'refresh', () => {})
+      }
+    },
+    {
+      case: 'an unnamed value widget',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', '', 'b', () => {})
+      }
+    },
+    {
+      case: 'two value widgets sharing a name',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'prompt', 'b', () => {})
+      }
+    },
+    {
+      case: 'a stored value whose widget its serializer removed',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'extra', 'b', () => {})
+        new LGraph().add(n)
+        n.onSerialize = () => {
+          n.widgets?.pop()
+        }
+      }
+    }
+  ])('declares no form for a node with $case', ({ definition, build }) => {
+    useNodeDefStore().addNodeDef(definition)
+    const node = nodeWith('Dynamic', build)
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the form for a node built by the real widget constructors', () => {
+    const required = {
+      seed: ['INT', { default: 1, control_after_generate: true }],
+      sampler_name: [['euler', 'dpmpp_2m'], {}],
+      model: ['MODEL', {}]
+    } satisfies NonNullable<ComfyNodeDefV1['input']>['required']
+    useNodeDefStore().addNodeDef(nodeDef('Real Sampler', required))
+    const node = nodeWith('Real Sampler', (n) => {
+      for (const [name, spec] of Object.entries(required))
+        useLitegraphService().addNodeInput(
+          n,
+          transformInputSpecV1ToV2(spec, { name })
+        )
+    })
+
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['seed', 'control_after_generate', 'sampler_name']
+    })
+  })
+
+  it('replaces a form the node carried in from a loaded projection with its live order', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+    const node = nodeWith('Described', (n) => {
+      n.addWidget('number', 'steps', 20, () => {})
+    })
+    node.configure(
+      Object.assign(node.serialize(), {
+        widgets_values_form: { order: ['steps', 'gone'] }
+      })
+    )
+
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['steps']
+    })
+  })
+
+  it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+    {
+      catalogCase: 'lists no widgets for the class',
+      catalog: { types: { Described: { widget_order: [] } } }
+    },
+    {
+      catalogCase: 'does not list the class',
+      catalog: { types: {} }
+    }
+  ])(
+    'mints a described node the applier accepts when the catalog $catalogCase',
+    ({ catalog }) => {
+      useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+      const node = nodeWith('Described', (n) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      })
+      const snapshot = wireNodeSnapshot(node)!
+      const doc = mint({ nodes: [], links: [] }, catalog)
+
+      const result = applyOps(
+        doc,
+        mintWireOps(
+          [
+            {
+              op: 'add_node',
+              node_id: snapshot.id,
+              class_type: snapshot.type,
+              pos: [0, 0],
+              node: snapshot
+            }
+          ],
+          {
+            actor: 'human:user:tab',
+            baseVersion: 1
+          }
+        ),
+        catalog
+      )
+
+      expect(result.outcomes).toEqual([
+        expect.objectContaining({ outcome: 'applied' })
+      ])
+      expect(project(doc, catalog).nodes).toEqual([
+        expect.objectContaining({
+          type: 'Described',
+          widgets_values: { steps: 20 },
+          widgets_values_form: { order: ['steps'] }
+        })
+      ])
+      doc.destroy()
+    }
+  )
+
+  it('keeps a catalogued dynamic combo writable after its selection changes', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+    const catalog: WidgetCatalog = {
+      types: {
+        Dynamic: {
+          widget_order: ['mode', 'mode.steps'],
+          dynamic_combos: {
+            mode: {
+              default: 'a',
+              options: {
+                a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+              }
+            }
+          }
+        }
+      }
+    }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+    const operations: GraphOperation[] = [
+      {
+        op: 'add_node',
+        node_id: node.id,
+        class_type: 'Dynamic',
+        pos: [0, 0],
+        node: wireNodeSnapshot(node)!
+      },
+      { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
+      { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
+    ]
+
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(operations, { actor: 'human:user:tab', baseVersion: 1 }),
+      catalog
+    )
+
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied',
+      'applied',
+      'applied'
+    ])
+    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
   })
 })
