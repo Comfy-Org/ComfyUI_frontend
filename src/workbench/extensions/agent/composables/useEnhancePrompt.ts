@@ -1,6 +1,13 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
 import type { ComputedRef, InjectionKey, MaybeRefOrGetter, Ref } from 'vue'
-import { computed, nextTick, onScopeDispose, shallowRef, toValue } from 'vue'
+import {
+  computed,
+  nextTick,
+  onScopeDispose,
+  shallowRef,
+  toValue,
+  watch
+} from 'vue'
 
 import {
   splitWords,
@@ -80,12 +87,16 @@ function animationsDisabled(): boolean {
   )
 }
 
-async function writePrompts(bindings: Iterable<BoundPrompt>, value: string) {
+async function writeSourcePrompt(
+  source: Ref<string>,
+  value: string,
+  bindings: Iterable<BoundPrompt>
+) {
   const scrolls = [...bindings].map((binding) => {
     const el = toValue(binding.textarea)
     return { el, scrollTop: el?.scrollTop }
   })
-  for (const binding of bindings) binding.prompt.value = value
+  source.value = value
   await nextTick()
   for (const { el, scrollTop } of scrolls) {
     if (el && scrollTop !== undefined) el.scrollTop = scrollTop
@@ -138,7 +149,7 @@ function createSession(): SharedSession {
     }
 
     if (reducedMotion.value === 'reduce' || animationsDisabled()) {
-      await writePrompts(bindings, result.prompt)
+      await writeSourcePrompt(source, result.prompt, bindings)
       activeController = null
       state.value = { phase: 'idle' }
       return
@@ -156,7 +167,7 @@ function createSession(): SharedSession {
     )
     if (!revealed) return
 
-    await writePrompts(bindings, result.prompt)
+    await writeSourcePrompt(source, result.prompt, bindings)
     activeController = null
     state.value = { phase: 'idle' }
   }
@@ -184,37 +195,67 @@ function createSession(): SharedSession {
   }
 }
 
+function sessionFor(id: WidgetId | undefined): SharedSession {
+  if (!id) return createSession()
+  const existing = sharedSessions.get(id)
+  if (existing) return existing
+  const created = createSession()
+  sharedSessions.set(id, created)
+  return created
+}
+
+function releaseSession(
+  session: SharedSession,
+  prompt: Ref<string>,
+  id: WidgetId | undefined
+) {
+  const empty = session.unbind(prompt)
+  if (!empty) return
+  session.abortActive()
+  if (id && sharedSessions.get(id) === session) {
+    sharedSessions.delete(id)
+  }
+}
+
 export function useEnhancePrompt(options: {
   prompt: Ref<string>
   request?: EnhancePromptFn
-  widgetId?: WidgetId
+  widgetId?: MaybeRefOrGetter<WidgetId | undefined>
   textarea?: MaybeRefOrGetter<HTMLTextAreaElement | null | undefined>
 }): EnhancePromptApi {
   const request = options.request ?? enhancePromptRequest
   const reducedMotion = usePreferredReducedMotion()
-  const widgetId = options.widgetId
-  const session = widgetId
-    ? (sharedSessions.get(widgetId) ??
-      (() => {
-        const created = createSession()
-        sharedSessions.set(widgetId, created)
-        return created
-      })())
-    : createSession()
+  const binding: BoundPrompt = {
+    prompt: options.prompt,
+    textarea: options.textarea
+  }
+  let session = sessionFor(toValue(options.widgetId))
+  let boundId = toValue(options.widgetId)
+  session.bind(binding)
 
-  session.bind({ prompt: options.prompt, textarea: options.textarea })
+  watch(
+    () => toValue(options.widgetId),
+    (id) => {
+      if (id === boundId) return
+      releaseSession(session, options.prompt, boundId)
+      boundId = id
+      session = sessionFor(id)
+      session.bind(binding)
+    },
+    { flush: 'sync' }
+  )
 
   onScopeDispose(() => {
-    const empty = session.unbind(options.prompt)
-    if (!empty) return
-    session.abortActive()
-    if (widgetId && sharedSessions.get(widgetId) === session) {
-      sharedSessions.delete(widgetId)
-    }
+    releaseSession(session, options.prompt, boundId)
   })
 
   return {
-    ...session.api,
+    phase: computed(() => session.api.phase.value),
+    isProcessing: computed(() => session.api.isProcessing.value),
+    isRevealing: computed(() => session.api.isRevealing.value),
+    isLocked: computed(() => session.api.isLocked.value),
+    revealText: computed(() => session.api.revealText.value),
+    revealStaggerMs: computed(() => session.api.revealStaggerMs.value),
     enhance: () => session.enhanceFrom(options.prompt, request, reducedMotion)
   }
 }

@@ -180,7 +180,7 @@ const {
   enhance
 } = useEnhancePrompt({
   prompt: modelValue,
-  widgetId,
+  widgetId: () => widgetId,
   textarea: promptTextarea
 })
 

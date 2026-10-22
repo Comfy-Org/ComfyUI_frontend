@@ -250,11 +250,51 @@ describe('useEnhancePrompt', () => {
     await pending
 
     expect(panel.value).toBe('rewritten prompt')
-    expect(canvas.value).toBe('rewritten prompt')
+    expect(canvas.value).toBe('original prompt')
     expect(panelSession.isLocked.value).toBe(false)
     expect(canvasSession.isLocked.value).toBe(false)
     panelSession.stop()
     canvasSession.stop()
+  })
+
+  it('follows a reactive widget id onto a different shared session', async () => {
+    vi.useFakeTimers()
+    allowMotion()
+    const idA = widgetId('story-graph', toNodeId(1), 'prompt-a')
+    const idB = widgetId('story-graph', toNodeId(1), 'prompt-b')
+    const currentId = ref(idA)
+    const prompt = ref('original prompt')
+    const peerA = ref('peer a')
+    const peerB = ref('peer b')
+    const { request, resolve } = deferredEnhance()
+    const moving = withEnhance({ prompt, request, widgetId: currentId })
+    const sessionA = withEnhance({ prompt: peerA, request, widgetId: idA })
+    const sessionB = withEnhance({ prompt: peerB, request, widgetId: idB })
+
+    currentId.value = idB
+
+    const pending = moving.enhance()
+    expect(sessionA.isProcessing.value).toBe(false)
+    expect(sessionB.isProcessing.value).toBe(true)
+    expect(moving.isProcessing.value).toBe(true)
+
+    resolve({ ok: true, prompt: 'rewritten prompt' })
+    await vi.advanceTimersByTimeAsync(250)
+    await vi.advanceTimersByTimeAsync(
+      spokenTextDurationMs(
+        'rewritten prompt',
+        0,
+        wordRevealStaggerMs(splitWords('rewritten prompt').length)
+      )
+    )
+    await pending
+
+    expect(prompt.value).toBe('rewritten prompt')
+    expect(peerA.value).toBe('peer a')
+    expect(peerB.value).toBe('peer b')
+    moving.stop()
+    sessionA.stop()
+    sessionB.stop()
   })
 
   function scrolledPrompt(scrollTop: number) {
