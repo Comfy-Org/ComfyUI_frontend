@@ -111,14 +111,20 @@ describe('WorkflowCatalogue analytics', () => {
   })
 
   it('reports a capability the visitor removes but not the one a shared link sets', async () => {
-    history.replaceState(null, '', '/hub/workflows/?capability=Upscale')
     const user = userEvent.setup()
     render(WorkflowCatalogue, {
       props: {
-        models: [
-          { ...models[0], capabilities: ['Upscale'] },
-          ...models.slice(1)
-        ]
+        models: [{ ...models[0], capabilities: ['Upscale'] }],
+        initialSearch: '?capability=Upscale',
+        serverPage: {
+          mode: 'cursor',
+          page: 1,
+          pageSize: 24,
+          count: 1,
+          hasPrevious: false,
+          hasNext: false
+        },
+        serverFacets: { categories: [], models: [] }
       }
     })
     const remove = await screen.findByRole('button', {
