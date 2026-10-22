@@ -22,17 +22,6 @@ import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-/**
- * PM-2080: `ResizeImageMaskNode` grows its `resize_type.match` input only while
- * `resize_type` selects 'match size'. A document minted under another
- * selection has no such slot, so a link the user wires into it, and its later
- * removal, never reached the document the agent reads: prod Sentry
- * CLOUD-FRONTEND-PROD-2BG (disconnect) followed a refused connect on the same
- * node ten minutes earlier.
- *
- * https://linear.app/comfyorg/issue/PM-2080
- */
-
 const RESIZE_TYPE = 'TestResizeImageMask'
 const SOURCE_TYPE = 'TestImageSource'
 const RESIZE_ID = 878
@@ -132,7 +121,6 @@ interface ProjectedInput {
   link?: number | null
 }
 
-/** The bound document's `resize_type.match` slot, as the agent reads it. */
 function childSlot(host: HostDoc): ProjectedInput | undefined {
   const node = host
     .projection()
@@ -291,7 +279,7 @@ test.describe(
           String(RESIZE_ID),
           childIndex
         )
-        // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
+        // oxlint-disable-next-line playwright/no-force-option
         await output.dragTo(input, { force: true })
       })
 
@@ -310,7 +298,6 @@ test.describe(
       ).toEqual([linkId])
 
       await test.step('the user deletes the link', async () => {
-        // The prod stack: the link context menu's Delete calls removeLink.
         await page.evaluate((id) => window.app!.graph.removeLink(id), linkId!)
       })
 
