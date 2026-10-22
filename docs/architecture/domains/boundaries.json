@@ -1694,6 +1694,7 @@
           "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
           "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/components/**",
+          "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
           "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts"
         ]
       },
@@ -5242,6 +5243,7 @@
       {
         "from": "image-compositor/domain",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5250,6 +5252,8 @@
       {
         "from": "image-compositor/infrastructure",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -5260,8 +5264,11 @@
       {
         "from": "image-compositor/presentation",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/presentation",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -5270,10 +5277,14 @@
       {
         "from": "image-compositor/integration",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
+          "dialog-host/presentation/outer-1",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
           "unclassified"
@@ -7155,6 +7166,8 @@
       {
         "from": "image-compositor/application/outer-1",
         "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
           "image-compositor/domain",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
@@ -7608,6 +7621,7 @@
       {
         "from": "image-compositor/domain/outer-2",
         "allow": [
+          "dialog-host/domain",
           "image-compositor/domain",
           "image-compositor/domain/outer-2",
           "unclassified"
