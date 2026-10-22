@@ -82,12 +82,6 @@ describe('static Run form fallback on a Workshop slug', () => {
       fields: { runnable: false },
       footer: false,
       notice: false
-    },
-    {
-      shape: 'runnable set to false and catalog details that do not parse',
-      fields: { runnable: false, script_code: 'print("hi")' },
-      footer: false,
-      notice: false
     }
   ])(
     'a record with $shape shows Run form: $footer, mismatch notice: $notice',
@@ -110,6 +104,15 @@ describe('static Run form fallback on a Workshop slug', () => {
     })
     if (page.kind !== 'page') throw new Error('Expected a page')
     expect(page.model.form).toEqual(legacy.form)
+  })
+
+  it('keeps the record workflow when its catalog details do not parse', async () => {
+    const { model } = await loadPage(
+      workflowRecord(STATIC_SLUG, { runnable: false, script_code: 'print()' })
+    )
+    if (model.type !== 'CLOUD') throw new Error('Not a workflow page')
+    expect(model.catalogDetails).toBeUndefined()
+    expect(model.workflow.inputs).toEqual({})
   })
 
   it('opens with the prefilled example of the static page', async () => {
