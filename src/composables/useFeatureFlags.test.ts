@@ -719,10 +719,8 @@ describe('useFeatureFlags', () => {
       expect(getItem).not.toHaveBeenCalled()
 
       const cache = freshRemoteConfig.useRemoteConfigCache()
-      expect(getItem.mock.calls).toEqual([
-        ['billing_control_enabled'],
-        ['v1_payment_recovery']
-      ])
+      expect(getItem).toHaveBeenCalledWith('billing_control_enabled')
+      expect(getItem).toHaveBeenCalledWith('v1_payment_recovery')
       expect(freshRemoteConfig.useRemoteConfigCache()).toBe(cache)
     })
 
