@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
 import {
@@ -41,7 +41,7 @@ const nearlyTouchingGrid: LayoutBox[] = [
 
 const firstBarOf = (boxes: LayoutBox[]): GapBar => {
   const bar = computeGapBars(detectSelectionGrid(boxes)).at(0)
-  if (!bar) throw new Error('expected a gap bar')
+  assert.exists(bar)
   return bar
 }
 
@@ -63,7 +63,6 @@ describe('useGapDragSession', () => {
   const recordUndoStep = vi.fn()
   const selectedNodes = shallowRef<LGraphNode[]>([])
   let measuredBoxes: LayoutBox[] = []
-  let frameCallbacks: FrameRequestCallback[]
   let rowNodes: LGraphNode[]
 
   const selectBoxes = (boxes: LayoutBox[]) => {
@@ -77,27 +76,19 @@ describe('useGapDragSession', () => {
       gridNodes: computed(() => selectedNodes.value),
       canTidy: computed(() => true),
       measure: () => measuredBoxes,
+      capturePositions: (nodes) => {
+        const positions = positionsOf(measuredBoxes)
+        return () => placeBoxes(nodes, positions)
+      },
       placeBoxes,
       moveBoxes,
       recordUndoStep,
       tidyUp: vi.fn()
     }))
     rowNodes = selectBoxes(row)
-    frameCallbacks = []
-    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-      frameCallbacks.push(cb)
-      return frameCallbacks.length
-    })
-    vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation((id) => {
-      frameCallbacks[id - 1] = () => {}
-    })
   })
 
-  const flushFrames = () => {
-    const callbacks = frameCallbacks
-    frameCallbacks = []
-    callbacks.forEach((cb) => cb(performance.now()))
-  }
+  const flushFrames = () => vi.advanceTimersToNextFrame()
 
   it('previews the dragged gap once per frame without an undo step', () => {
     const session = useGapDragSession()
@@ -130,7 +121,7 @@ describe('useGapDragSession', () => {
 
     expect(moveBoxes).toHaveBeenCalledTimes(1)
     expect(moveBoxes).toHaveBeenCalledWith(rowNodes, expect.any(Array), {
-      captureUndo: true
+      captureUndo: false
     })
     expect(session.drag.value).toBeNull()
   })
@@ -221,7 +212,7 @@ describe('useGapDragSession', () => {
   it('puts every node back when its owner goes away during a drag', () => {
     const scope = effectScope()
     const session = scope.run(() => useGapDragSession())
-    if (!session) throw new Error('the session did not start in its scope')
+    assert.exists(session)
     session.start(firstBarOf(row))
     session.preview(10)
     flushFrames()
@@ -253,7 +244,7 @@ describe('useGapDragSession', () => {
     expect(moveBoxes).not.toHaveBeenCalled()
   })
 
-  it('ends a drag without moving or recording anything once another graph is shown', async () => {
+  it('restores the dragged nodes once another graph is shown', async () => {
     const session = useGapDragSession()
     session.start(firstBarOf(row))
     session.preview(10)
@@ -266,8 +257,7 @@ describe('useGapDragSession', () => {
 
     expect(session.drag.value).toBeNull()
     expect(moveBoxes).toHaveBeenCalledTimes(1)
-    expect(placeBoxes).not.toHaveBeenCalled()
-    expect(recordUndoStep).not.toHaveBeenCalled()
+    expect(placeBoxes).toHaveBeenCalledWith(rowNodes, positionsOf(row))
   })
 
   it('does not start a drag on a read-only canvas', () => {
@@ -389,7 +379,7 @@ describe('useGapDragSession', () => {
     it('records the nudges it has not committed when its owner goes away', () => {
       const scope = effectScope()
       const session = scope.run(() => useGapDragSession())
-      if (!session) throw new Error('the session did not start in its scope')
+      assert.exists(session)
       session.nudge(firstBarOf(row), 1)
 
       scope.stop()

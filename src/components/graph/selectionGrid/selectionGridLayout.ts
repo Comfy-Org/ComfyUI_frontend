@@ -1,4 +1,4 @@
-import { clamp } from 'es-toolkit'
+import { clamp, median } from 'es-toolkit'
 
 import type { NodeId } from '@/types/nodeId'
 
@@ -40,7 +40,7 @@ export interface SelectionGrid {
 export interface GapBar {
   key: string
   axis: GapAxis
-  gutter: number
+  boundary: number
   clearance: number
   x: number
   y: number
@@ -107,13 +107,15 @@ function joinsBand(
   const stacked = members.filter((member) =>
     isStackedWith(member, box, crossAxis)
   )
-  const overlapsStacked = stacked.every(
-    (member) => start < endOf(spanOf(member, axis)) - OVERLAP_TOLERANCE
+  const overlapsStacked = stacked.every((member) =>
+    spansOverlap(spanOf(box, axis), spanOf(member, axis))
   )
   const reference = longestAlong(stacked.length > 0 ? stacked : members, axis)
-  const centreInReference = start + size / 2 <= endOf(reference)
+  const centre = start + size / 2
+  const centreInReference =
+    centre >= reference.start && centre <= endOf(reference)
   const nearbyStart =
-    start - reference.start <= Math.min(reference.size, size) / 2
+    Math.abs(start - reference.start) <= Math.min(reference.size, size) / 2
   return overlapsStacked && (centreInReference || nearbyStart)
 }
 
@@ -129,6 +131,33 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
     const band = bands.at(-1)
     if (band && joinsBand(band, box, axis)) band.push(box)
     else bands.push([box])
+  }
+  for (const [index, band] of bands.entries()) {
+    for (const box of band.slice()) {
+      if (band.length < 2) break
+      const distanceTo = (members: LayoutBox[]) =>
+        Math.min(
+          ...members
+            .filter((member) => member !== box)
+            .map((member) =>
+              Math.abs(spanOf(member, axis).start - spanOf(box, axis).start)
+            )
+        )
+      const nearest = bands
+        .slice(index + 1)
+        .reduce(
+          (best, candidate) =>
+            joinsBand(candidate, box, axis) &&
+            distanceTo(candidate) < distanceTo(best)
+              ? candidate
+              : best,
+          band
+        )
+      if (nearest !== band) {
+        band.splice(band.indexOf(box), 1)
+        nearest.push(box)
+      }
+    }
   }
   return bands
 }
@@ -396,14 +425,7 @@ function uniformGapsAlong(grid: SelectionGrid, axis: GapAxis): number[] {
 }
 
 function roundedMedian(values: number[]): number | undefined {
-  if (values.length === 0) return undefined
-  const sorted = [...values].sort((a, b) => a - b)
-  const middle = Math.floor(sorted.length / 2)
-  return Math.round(
-    sorted.length % 2
-      ? sorted[middle]
-      : (sorted[middle - 1] + sorted[middle]) / 2
-  )
+  return values.length === 0 ? undefined : Math.round(median(values))
 }
 
 function crowds(a: LayoutBox, b: LayoutBox, gap: number): boolean {
@@ -472,13 +494,15 @@ function isLaidOutAt(grid: SelectionGrid, gap: number): boolean {
 }
 
 function gapOf(grid: SelectionGrid): number {
-  const packedGap = roundedMedian(
-    AXES.flatMap((axis) => packedGapsAlong(grid, axis))
-  )
+  const packedGaps = AXES.flatMap((axis) => packedGapsAlong(grid, axis))
+  const uniformGaps = AXES.flatMap((axis) => uniformGapsAlong(grid, axis))
+  const packedGap = roundedMedian(packedGaps)
   if (packedGap === undefined) return DEFAULT_TIDY_GAP
-  const uniformGap = roundedMedian(
-    AXES.flatMap((axis) => uniformGapsAlong(grid, axis))
+  const exactGap = [median(packedGaps), median(uniformGaps)].find(
+    (gap) => gap >= 0 && isLaidOutAt(grid, gap)
   )
+  if (exactGap !== undefined) return exactGap
+  const uniformGap = roundedMedian(uniformGaps)
   const keptGap = [packedGap, uniformGap].find(
     (gap) => gap !== undefined && gap >= 0 && isLaidOutAt(grid, gap)
   )
@@ -507,11 +531,6 @@ export function tidiedGapOf(boxes: LayoutBox[]): number | undefined {
   return isLaidOutAt(grid, gap) ? gap : undefined
 }
 
-/**
- * Lines boxes up into rows and columns with facing nodes `gap` apart and the
- * top-left box in place; without `gap`, a tidy selection keeps its own gap.
- * Returns nothing when a position would not be finite.
- */
 export function computeTidyLayout(
   boxes: LayoutBox[],
   gap?: number
@@ -554,14 +573,20 @@ function clearanceAcross(
     (cell) => trackIndexOf(cell, axis) <= boundary
   )
   const after = grid.cells.filter((cell) => trackIndexOf(cell, axis) > boundary)
-  const facingGaps = after.flatMap((late) =>
-    before
-      .filter((early) =>
+  let clearance = Number.POSITIVE_INFINITY
+  for (const late of after) {
+    for (const early of before) {
+      if (
         spansOverlap(spanOf(early.box, crossAxis), spanOf(late.box, crossAxis))
-      )
-      .map((early) => startAlong(late, axis) - endAlong(early, axis))
-  )
-  return Math.min(Number.POSITIVE_INFINITY, ...facingGaps)
+      ) {
+        clearance = Math.min(
+          clearance,
+          startAlong(late, axis) - endAlong(early, axis)
+        )
+      }
+    }
+  }
+  return clearance
 }
 
 function overlapCentre(a: AxisSpan, b: AxisSpan): number {
@@ -590,7 +615,7 @@ function barBetween(
   return {
     key: JSON.stringify([axis, before.box.id, after.box.id]),
     axis,
-    gutter: trackIndexOf(before, axis),
+    boundary: trackIndexOf(before, axis),
     clearance: Math.max(0, Math.min(clearance, gap)),
     x: axis === 'x' ? along : across,
     y: axis === 'x' ? across : along,
@@ -598,11 +623,6 @@ function barBetween(
   }
 }
 
-/**
- * One handle per pair of neighbouring boxes, centred between them. `gap` is the
- * space between the pair; `clearance` is how far that gap can shrink before it
- * reaches zero or any nodes on either side touch.
- */
 export function computeGapBars(grid: SelectionGrid): GapBar[] {
   if (grid.kind === 'scattered') return []
   return AXES.flatMap((axis) => {

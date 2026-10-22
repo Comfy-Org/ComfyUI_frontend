@@ -11,6 +11,7 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   BoxPosition,
+  GapAxis,
   LayoutBox,
   SelectionLayoutKind
 } from '@/components/graph/selectionGrid/selectionGridLayout'
@@ -293,6 +294,49 @@ describe('detectSelectionGrid', () => {
 })
 
 describe('computeTidyLayout', () => {
+  it.for([
+    { y: 150, lowerY: 160, expectedY: 112 },
+    { y: 170, lowerY: 160, expectedY: 112 },
+    { y: 160, lowerY: 300, expectedY: 0 }
+  ])(
+    'groups a neighbour at $y with the nearest compatible row at $lowerY',
+    ({ y, lowerY, expectedY }) => {
+      const boxes = [
+        box('a', 0, 0, 200, 400),
+        box('b', 240, 0, 200, 100),
+        box('c', 240, lowerY, 200, 100),
+        box('d', 480, y, 200, 100)
+      ]
+      const tidied = moved(boxes, computeTidyLayout(boxes, 12))
+
+      expect(tidied.map(({ x, y }) => [x, y])).toEqual([
+        [0, 0],
+        [212, 0],
+        [212, 112],
+        [424, expectedY]
+      ])
+      expect(moved(tidied, computeTidyLayout(tidied))).toEqual(tidied)
+      expect(computeTidyLayout([...boxes].reverse(), 12)).toEqual(
+        computeTidyLayout(boxes, 12)
+      )
+    }
+  )
+
+  it('preserves a fractional explicit gap on subsequent default tidy', () => {
+    const boxes = Array.from({ length: 4 }, (_, i) =>
+      box(String(i), 150 * i, 0, 100, 100)
+    )
+    const tidied = moved(boxes, computeTidyLayout(boxes, 12.4))
+
+    expect(computeTidyLayout(tidied)).toEqual([
+      { id: '0', x: 0, y: 0 },
+      { id: '1', x: expect.closeTo(112.4, 10), y: 0 },
+      { id: '2', x: expect.closeTo(224.8, 10), y: 0 },
+      { id: '3', x: expect.closeTo(337.2, 10), y: 0 }
+    ])
+    expect(tidiedGapOf(tidied)).toBeCloseTo(12.4)
+  })
+
   it('aligns a row by its top edge and evens its gaps to the median gap', () => {
     const boxes = [
       box('a', 100, 50, 200, 100),
@@ -552,12 +596,17 @@ describe('computeGapLayout', () => {
     ]).toEqual([30, 60])
   })
 
-  it.for([
-    { axis: 'x' as const, still: 'y' as const, fixed: ['a', 'c'] },
-    { axis: 'y' as const, still: 'x' as const, fixed: ['a', 'b'] }
+  it.for<{
+    axis: GapAxis
+    still: GapAxis
+    fixed: string[]
+    coordinates: number[]
+  }>([
+    { axis: 'x', still: 'y', fixed: ['a', 'c'], coordinates: [0, 335, 0, 335] },
+    { axis: 'y', still: 'x', fixed: ['a', 'b'], coordinates: [0, 0, 275, 275] }
   ])(
     'moves only the grid nodes after the gap, along $axis',
-    ({ axis, still, fixed }) => {
+    ({ axis, still, fixed, coordinates }) => {
       const result = moved(
         alignedGrid,
         computeGapLayout(detectSelectionGrid(alignedGrid), axis, 0, 75)
@@ -566,6 +615,7 @@ describe('computeGapLayout', () => {
       expect(result.map((b) => b[still])).toEqual(
         alignedGrid.map((b) => b[still])
       )
+      expect(result.map((b) => b[axis])).toEqual(coordinates)
       expect(fixed.map((id) => byId(result, id))).toEqual(
         fixed.map((id) => byId(alignedGrid, id))
       )
@@ -588,6 +638,18 @@ describe('computeGapLayout', () => {
 })
 
 describe('computeGapBars', () => {
+  it('returns every handle for an 800-box row without overflowing arguments', () => {
+    const boxes = Array.from({ length: 800 }, (_, i) =>
+      box(String(i), 112 * i, 0, 100, 100)
+    )
+    const bars = computeGapBars(detectSelectionGrid(boxes))
+
+    expect(bars).toHaveLength(799)
+    expect(
+      new Set(bars.map(({ gap, clearance }) => `${gap}:${clearance}`))
+    ).toEqual(new Set(['12:12']))
+  })
+
   it('puts a bar in each gap between neighbours of a grid', () => {
     const bars = computeGapBars(
       detectSelectionGrid([
@@ -599,10 +661,10 @@ describe('computeGapBars', () => {
     )
 
     expect(bars.map(({ key, ...bar }) => bar)).toEqual([
-      { axis: 'x', gutter: 0, clearance: 40, x: 220, y: 50, gap: 40 },
-      { axis: 'x', gutter: 0, clearance: 40, x: 220, y: 190, gap: 40 },
-      { axis: 'y', gutter: 0, clearance: 40, x: 100, y: 120, gap: 40 },
-      { axis: 'y', gutter: 0, clearance: 40, x: 340, y: 120, gap: 40 }
+      { axis: 'x', boundary: 0, clearance: 40, x: 220, y: 50, gap: 40 },
+      { axis: 'x', boundary: 0, clearance: 40, x: 220, y: 190, gap: 40 },
+      { axis: 'y', boundary: 0, clearance: 40, x: 100, y: 120, gap: 40 },
+      { axis: 'y', boundary: 0, clearance: 40, x: 340, y: 120, gap: 40 }
     ])
   })
 

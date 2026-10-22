@@ -70,7 +70,6 @@ import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8
@@ -101,7 +100,7 @@ watch(isOpen, (open) => {
   else finish()
 })
 
-const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) => {
+const hasSameNodes = <T>(nodes: T[], previous: T[]) => {
   const previousNodes = new Set(previous)
   return (
     nodes.length === previousNodes.size &&

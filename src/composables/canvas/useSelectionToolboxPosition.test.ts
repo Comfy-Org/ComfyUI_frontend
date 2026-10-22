@@ -2,7 +2,15 @@ import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
@@ -15,6 +23,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
@@ -183,6 +192,14 @@ describe('useSelectionToolboxPosition', () => {
     expect(
       Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
     ).toBeGreaterThanOrEqual(590 - LiteGraph.NODE_TITLE_HEIGHT - 51)
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeLessThanOrEqual(590 - LiteGraph.NODE_TITLE_HEIGHT)
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${590 - LiteGraph.NODE_TITLE_HEIGHT}px`
+      )
+    )
     unmount()
   })
 
@@ -204,6 +221,49 @@ describe('useSelectionToolboxPosition', () => {
     await nextTick()
 
     expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    unmount()
+  })
+
+  it('moves to a new link-only selection while the lift eases away', async () => {
+    const source = addNode(graph, 100, 200)
+    const target = addNode(graph, 400, 200)
+    source.addOutput('out', '*')
+    target.addInput('in', '*')
+    const link = source.connect(0, target, 0)
+    assert.exists(link)
+    const selectionStore = useLinkSelectionStore()
+    selectionStore.selection = {
+      links: [link],
+      anchorX: 300,
+      marquee: { x: 300, y: 200, width: 0, height: 0 }
+    }
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe('139px')
+    )
+
+    lift.value = 0
+    selectionStore.selection = {
+      links: [link],
+      anchorX: 350,
+      marquee: { x: 350, y: 600, width: 0, height: 0 }
+    }
+    await nextTick()
+
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeGreaterThanOrEqual(539)
+    expect(Number.parseFloat(toolbox.style.getPropertyValue('--tb-x'))).toBe(
+      350
+    )
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe('590px')
+    )
     unmount()
   })
 
@@ -233,6 +293,14 @@ describe('useSelectionToolboxPosition', () => {
     expect(
       Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
     ).toBeGreaterThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT - 51)
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeLessThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT)
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
+      )
+    )
     unmount()
   })
 

@@ -67,6 +67,10 @@ describe('SelectionGapHandles', () => {
       ),
       canTidy: computed(() => true),
       measure: () => row,
+      capturePositions: (nodes) => {
+        const positions = row.map(({ id, x, y }) => ({ id, x, y }))
+        return () => placeBoxes(nodes, positions)
+      },
       placeBoxes,
       moveBoxes,
       recordUndoStep,
@@ -112,7 +116,7 @@ describe('SelectionGapHandles', () => {
     expect(moveBoxes).toHaveBeenLastCalledWith(
       expect.any(Array),
       expect.any(Array),
-      { captureUndo: true }
+      { captureUndo: false }
     )
   })
 
@@ -133,7 +137,7 @@ describe('SelectionGapHandles', () => {
     expect(moveBoxes).toHaveBeenLastCalledWith(
       expect.any(Array),
       expect.any(Array),
-      { captureUndo: true }
+      { captureUndo: false }
     )
     expect(emitted()).toHaveProperty('edited')
   })
@@ -159,7 +163,7 @@ describe('SelectionGapHandles', () => {
     })
 
     await user.pointer([press(handle, 215), moveTo(225)])
-    await new Promise(requestAnimationFrame)
+    vi.advanceTimersToNextFrame()
     await user.keyboard('{Shift}z')
 
     expect(placeBoxes).toHaveBeenCalledWith(expect.any(Array), [
@@ -180,7 +184,7 @@ describe('SelectionGapHandles', () => {
     const { handle, emitted } = await renderHandles()
 
     await user.pointer([press(handle, 215), moveTo(225)])
-    await new Promise(requestAnimationFrame)
+    vi.advanceTimersToNextFrame()
     await user.keyboard(keys)
 
     expect(placeBoxes).not.toHaveBeenCalled()
@@ -226,15 +230,18 @@ describe('SelectionGapHandles', () => {
     expect(emitted()).toHaveProperty('edited')
   })
 
-  it('records nothing for an arrow released during a drag', async () => {
+  it('does not nudge for an arrow released during a drag', async () => {
     const user = userEvent.setup()
     const { handle, emitted } = await renderHandles()
     handle.focus()
 
     await user.pointer([press(handle, 215), moveTo(225)])
+    vi.advanceTimersToNextFrame()
+    moveBoxes.mockClear()
     await user.keyboard('{ArrowRight}')
 
-    expect(recordUndoStep).not.toHaveBeenCalled()
+    vi.advanceTimersToNextFrame()
+    expect(moveBoxes).not.toHaveBeenCalled()
     expect(emitted()).not.toHaveProperty('edited')
   })
 

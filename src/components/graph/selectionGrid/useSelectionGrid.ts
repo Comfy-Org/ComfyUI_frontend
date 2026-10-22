@@ -61,6 +61,22 @@ export function useSelectionGrid() {
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
+  const capturePositions = (nodes: LGraphNode[]) => {
+    const graph = canvasStore.currentGraph
+    const positions = nodes.map((node) => ({
+      node,
+      position: { x: node.pos[0], y: node.pos[1] }
+    }))
+    return () => {
+      if (!graph) return
+      const updates = positions
+        .filter(({ node }) => graph.getNodeById(node.id) === node)
+        .map(({ node, position }) => ({ nodeId: node.id, position }))
+      mutations.batchMoveNodes(graph.rootGraph.id, updates)
+      canvasStore.canvas?.setDirty(true, true)
+    }
+  }
+
   const placeBoxes = (
     nodes: LGraphNode[],
     positions: BoxPosition[]
@@ -115,6 +131,7 @@ export function useSelectionGrid() {
     gridNodes,
     canTidy,
     measure,
+    capturePositions,
     placeBoxes,
     moveBoxes,
     recordUndoStep,

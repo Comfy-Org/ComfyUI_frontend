@@ -51,19 +51,74 @@ describe('useSelectionGrid', () => {
   })
 
   it.for([
-    { nodes: 'a pinned node', pinned: true, moved: false },
-    { nodes: 'a movable node', pinned: false, moved: true }
-  ])('reports a move for $nodes: $moved', ({ pinned, moved }) => {
+    {
+      nodes: 'a pinned node',
+      pinned: true,
+      isReadOnly: false,
+      moved: false,
+      position: [100, 200]
+    },
+    {
+      nodes: 'a movable node',
+      pinned: false,
+      isReadOnly: false,
+      moved: true,
+      position: [10, 40]
+    },
+    {
+      nodes: 'a read-only node',
+      pinned: false,
+      isReadOnly: true,
+      moved: false,
+      position: [100, 200]
+    }
+  ])(
+    'reports a move for $nodes: $moved',
+    ({ pinned, isReadOnly, moved, position }) => {
+      const graph = new LGraph()
+      const node = nodeIn(graph, 'Node')
+      node.pos = [100, 200]
+      node.flags.pinned = pinned
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = fromPartial<LGraphCanvas>({
+        graph,
+        setDirty: vi.fn()
+      })
+      canvasStore.currentGraph = graph
+      canvasStore.isReadOnly = isReadOnly
+      const { moveBoxes } = useSelectionGrid()
+
+      expect(
+        moveBoxes([node], [{ id: node.id, x: 10, y: 10 }], {
+          captureUndo: false
+        })
+      ).toBe(moved)
+      expect(Array.from(node.pos)).toEqual(position)
+    }
+  )
+
+  it('moves the drawn bounds to the target while preserving their offset from the raw position', () => {
     const graph = new LGraph()
     const node = nodeIn(graph, 'Node')
-    node.flags.pinned = pinned
+    node.pos = [100, 200]
+    node.onBounding = (bounds) => {
+      bounds[0] -= 15
+      bounds[1] -= 25
+    }
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
     canvasStore.currentGraph = graph
-    const { moveBoxes } = useSelectionGrid()
+    const { measure, moveBoxes } = useSelectionGrid()
+    const [before] = measure([node])
+    expect(before).toBeDefined()
 
     expect(
-      moveBoxes([node], [{ id: node.id, x: 10, y: 10 }], { captureUndo: false })
-    ).toBe(moved)
+      moveBoxes([node], [{ id: node.id, x: 300, y: 400 }], {
+        captureUndo: false
+      })
+    ).toBe(true)
+
+    expect(measure([node])).toEqual([{ ...before, x: 300, y: 400 }])
+    expect(Array.from(node.pos)).toEqual([315, 455])
   })
 })

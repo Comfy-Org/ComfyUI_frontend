@@ -5,6 +5,7 @@ import { effectScope, markRaw, nextTick, ref } from 'vue'
 import { computeGapBars, detectSelectionGrid } from './selectionGridLayout'
 import { useGapDragSession } from './useGapDragSession'
 import { useSelectionGrid } from './useSelectionGrid'
+import { useTidySession } from './useTidySession'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
@@ -52,7 +53,11 @@ describe('gap gestures with workflow history', () => {
     b.setSize([150, 100])
     app.canvas.graph = graph
     const canvasStore = useCanvasStore()
-    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph,
+      setDirty: vi.fn(),
+      deselect: vi.fn()
+    })
     canvasStore.currentGraph = graph
     setCanvasSelection([a, b])
     const workflow = fromPartial<
@@ -180,5 +185,44 @@ describe('gap gestures with workflow history', () => {
     expect(tracker.activeState.nodes[1].pos).toEqual([230, 0])
     expect(tracker.undoQueue).toEqual([])
     expect(tracker.changeCount).toBe(0)
+  })
+
+  it('commits slider previews once before a handle takes ownership', async () => {
+    const scope = effectScope()
+    const tidy = scope.run(useTidySession)
+    assert.exists(tidy)
+    tidy.start()
+    tracker.undoQueue.length = 0
+    tidy.previewGap(35)
+    vi.advanceTimersToNextFrame()
+    await vi.advanceTimersByTimeAsync(50)
+    tidy.previewGap(40)
+    tidy.finish()
+    session.start(firstBar())
+    session.preview(10)
+    vi.advanceTimersToNextFrame()
+    session.cancel()
+    scope.stop()
+
+    expect([...b.pos]).toEqual([240, 0])
+    expect(tracker.undoQueue.map((state) => state.nodes[1].pos)).toEqual([
+      [230, 0]
+    ])
+    expect(tracker.activeState.nodes[1].pos).toEqual([240, 0])
+  })
+
+  it('does not restore detached nodes over replacements with the same IDs', () => {
+    session.start(firstBar())
+    session.preview(10)
+    vi.advanceTimersToNextFrame()
+    const id = b.id
+    graph.clear()
+    const replacement = new LGraphNode('Replacement')
+    replacement.id = id
+    graph.add(replacement)
+    replacement.pos = [700, 100]
+    session.cancel()
+
+    expect([...replacement.pos]).toEqual([700, 100])
   })
 })

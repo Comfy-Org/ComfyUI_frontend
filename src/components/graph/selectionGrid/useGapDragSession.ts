@@ -1,5 +1,5 @@
 import { tryOnScopeDispose } from '@vueuse/core'
-import { readonly, ref, watch } from 'vue'
+import { readonly, shallowRef, watch } from 'vue'
 
 import {
   computeGapBars,
@@ -8,25 +8,22 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   BoxPosition,
-  GapAxis,
   GapBar,
   SelectionGrid
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 interface GapDrag {
   barKey: string
-  axis: GapAxis
   gap: number
-}
-
-interface DragStart {
   bar: GapBar
   grid: SelectionGrid
   nodes: LGraphNode[]
-  positions: BoxPosition[]
+  restore: () => void
+  finish: () => void
   startGap: number
   previewed: boolean
 }
@@ -44,18 +41,18 @@ function layoutAtGap(
   bar: GapBar,
   gap: number
 ): BoxPosition[] {
-  return computeGapLayout(grid, bar.axis, bar.gutter, gap - bar.gap)
+  return computeGapLayout(grid, bar.axis, bar.boundary, gap - bar.gap)
 }
 
 export function useGapDragSession() {
-  const { gridNodes, measure, placeBoxes, moveBoxes, recordUndoStep } =
+  const { gridNodes, measure, capturePositions, moveBoxes, recordUndoStep } =
     useSelectionGrid()
   const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
 
-  const drag = ref<GapDrag | null>(null)
-  let dragStart: DragStart | null = null
+  const drag = shallowRef<GapDrag | null>(null)
   let pendingFrame: number | null = null
-  let hasUncommittedNudges = false
+  let finishNudges: (() => void) | undefined
 
   const currentBar = (nodes: LGraphNode[], key: string) => {
     const boxes = measure(nodes)
@@ -72,26 +69,25 @@ export function useGapDragSession() {
 
   const end = () => {
     cancelPendingFrame()
+    const current = drag.value
     drag.value = null
-    dragStart = null
+    current?.finish()
   }
 
-  const layoutFor = (origin: DragStart, gap: number) =>
-    layoutAtGap(origin.grid, origin.bar, gap)
-
   const cancel = () => {
-    const origin = dragStart
-    if (origin?.previewed) {
+    const current = drag.value
+    if (current?.previewed) {
       cancelPendingFrame()
-      placeBoxes(origin.nodes, origin.positions)
+      current.restore()
     }
     end()
   }
 
   const commitNudges = (): boolean => {
-    if (dragStart || !hasUncommittedNudges) return false
-    hasUncommittedNudges = false
-    recordUndoStep()
+    if (!finishNudges) return false
+    const finish = finishNudges
+    finishNudges = undefined
+    finish()
     return true
   }
 
@@ -103,61 +99,71 @@ export function useGapDragSession() {
     const current = currentBar(nodes, bar.key)
     if (!current) return
     const startGap = Math.round(current.bar.gap)
-    dragStart = {
+    drag.value = {
+      barKey: current.bar.key,
+      gap: startGap,
       bar: current.bar,
       grid: current.grid,
       nodes,
-      positions: current.boxes.map(({ id, x, y }) => ({ id, x, y })),
+      restore: capturePositions(nodes),
+      finish:
+        workflowStore.activeWorkflow?.changeTracker.beginPreview(cancel) ??
+        recordUndoStep,
       startGap,
       previewed: false
-    }
-    drag.value = {
-      barKey: current.bar.key,
-      axis: current.bar.axis,
-      gap: startGap
     }
   }
 
   const preview = (delta: number) => {
     const current = drag.value
-    const origin = dragStart
-    if (!current || !origin || !Number.isFinite(delta)) return
-    const gap = clampBarGap(origin.bar, origin.startGap + Math.round(delta))
+    if (!current || !Number.isFinite(delta)) return
+    const gap = clampBarGap(current.bar, current.startGap + Math.round(delta))
     if (gap === current.gap) return
-    drag.value = { ...current, gap }
+    const updated = { ...current, gap }
+    drag.value = updated
     cancelPendingFrame()
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = null
-      const moved = moveBoxes(origin.nodes, layoutFor(origin, gap), {
-        captureUndo: false
-      })
-      if (moved) origin.previewed = true
+      const moved = moveBoxes(
+        current.nodes,
+        layoutAtGap(current.grid, current.bar, gap),
+        {
+          captureUndo: false
+        }
+      )
+      if (moved) updated.previewed = true
     })
   }
 
   const commit = () => {
     const current = drag.value
-    const origin = dragStart
-    if (!current || !origin || current.gap === origin.startGap) {
+    if (!current || current.gap === current.startGap) {
       cancel()
       return
     }
     cancelPendingFrame()
-    const moved = moveBoxes(origin.nodes, layoutFor(origin, current.gap), {
-      captureUndo: true
-    })
+    const moved = moveBoxes(
+      current.nodes,
+      layoutAtGap(current.grid, current.bar, current.gap),
+      {
+        captureUndo: false
+      }
+    )
     if (moved) end()
     else cancel()
   }
 
   const nudge = (bar: GapBar, step: number) => {
-    if (dragStart || !Number.isFinite(step)) return
+    if (drag.value || canvasStore.isReadOnly || !Number.isFinite(step)) return
     const nodes = [...gridNodes.value]
     const current = currentBar(nodes, bar.key)
     if (!current) return
     const shownGap = Math.round(current.bar.gap)
     const gap = clampBarGap(current.bar, shownGap + step)
     if (gap === shownGap) return
+    finishNudges ??=
+      workflowStore.activeWorkflow?.changeTracker.beginPreview(commitNudges) ??
+      recordUndoStep
     const moved = moveBoxes(
       nodes,
       layoutAtGap(current.grid, current.bar, gap),
@@ -165,15 +171,15 @@ export function useGapDragSession() {
         captureUndo: false
       }
     )
-    if (moved) hasUncommittedNudges = true
+    if (!moved) commitNudges()
   }
 
   const leaveGraph = () => {
-    end()
+    cancel()
     commitNudges()
   }
 
-  watch(() => canvasStore.currentGraph, leaveGraph)
+  watch(() => canvasStore.currentGraph, leaveGraph, { flush: 'sync' })
 
   tryOnScopeDispose(() => {
     cancel()

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -9,9 +9,11 @@ import { tidiedGapOf } from '@/components/graph/selectionGrid/selectionGridLayou
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/components/graph/selectionGrid/selectionGridLayout'), {
   spy: true
@@ -25,6 +27,7 @@ const i18n = createI18n({
       g: {
         tidyUp: 'Tidy up',
         tidyUpTooltip: 'Tidy up the selection',
+        gapHandle: 'Gap between nodes',
         arrangeSpacing: 'Arrangement spacing'
       }
     }
@@ -47,7 +50,10 @@ const handlesThatEmitOnMount = (event: 'edited' | 'update:dragging') =>
     }
   })
 
-function renderButton(SelectionGapHandles: Component | boolean = true) {
+function renderButton(
+  SelectionGapHandles: Component | boolean = true,
+  Slider: Component | boolean = false
+) {
   return render(
     defineComponent({
       render: () =>
@@ -58,7 +64,7 @@ function renderButton(SelectionGapHandles: Component | boolean = true) {
           ])
         )
     }),
-    { global: { plugins: [i18n], stubs: { SelectionGapHandles } } }
+    { global: { plugins: [i18n], stubs: { SelectionGapHandles, Slider } } }
   )
 }
 
@@ -147,6 +153,58 @@ describe('TidyUpButton', () => {
 
     await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '48'))
     expect(screen.getByText('60')).toBeInTheDocument()
+    unmount()
+  })
+
+  it('finishes a pending slider preview before the handles measure their edit', async () => {
+    const graph = new LGraph()
+    const first = markRaw(nodeWithId(1))
+    const second = markRaw(nodeWithId(2))
+    first.pos = [100, 200]
+    second.pos = [290, 200]
+    first.size = second.size = [160, 80]
+    graph.add(first)
+    graph.add(second)
+    const element = document.createElement('canvas')
+    element.getBoundingClientRect = () => new DOMRect(0, 0, 1000, 800)
+    element.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    const canvas = new LGraphCanvas(element, graph, { skip_render: true })
+    const store = useCanvasStore()
+    store.canvas = markRaw(canvas)
+    store.currentGraph = graph
+    setCanvasSelection([first, second])
+    const PreviewSlider = defineComponent({
+      props: { modelValue: { type: Array, required: true } },
+      emits: ['update:modelValue'],
+      setup(props, { emit }) {
+        return () =>
+          h('input', {
+            role: 'slider',
+            'aria-valuenow': props.modelValue[0],
+            onInput: () => emit('update:modelValue', [31])
+          })
+      }
+    })
+    const { unmount } = renderButton(false, PreviewSlider)
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    const slider = await screen.findByRole('slider')
+    const handle = await screen.findByRole('separator')
+    expect(handle).toHaveAttribute('aria-orientation', 'vertical')
+
+    await user.type(slider, 'a')
+    expect(second.pos[0] - first.pos[0] - 160).toBe(30)
+    handle.focus()
+    await user.keyboard('[ArrowRight>]')
+    expect(second.pos[0] - first.pos[0] - 160).toBe(32)
+    await user.keyboard('[/ArrowRight]')
+    vi.advanceTimersToNextFrame()
+    await nextTick()
+
+    expect(second.pos[0] - first.pos[0] - 160).toBe(32)
+    expect(slider).toHaveAttribute('aria-valuenow', '32')
     unmount()
   })
 })

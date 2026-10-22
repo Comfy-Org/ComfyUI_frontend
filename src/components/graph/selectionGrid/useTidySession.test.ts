@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, shallowRef } from 'vue'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
@@ -15,7 +15,6 @@ describe('useTidySession', () => {
   const tidyUp = vi.fn<ReturnType<typeof useSelectionGrid>['tidyUp']>(() => 30)
   const recordUndoStep = vi.fn()
   const selectedNodes = shallowRef<LGraphNode[]>([])
-  let frameCallbacks: FrameRequestCallback[]
 
   beforeEach(() => {
     selectedNodes.value = [a, b]
@@ -23,26 +22,15 @@ describe('useTidySession', () => {
       gridNodes: computed(() => selectedNodes.value),
       canTidy: computed(() => true),
       measure: () => [],
+      capturePositions: () => () => {},
       placeBoxes: vi.fn(),
       moveBoxes: vi.fn(),
       recordUndoStep,
       tidyUp
     }))
-    frameCallbacks = []
-    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
-      frameCallbacks.push(cb)
-      return frameCallbacks.length
-    })
-    vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation((id) => {
-      frameCallbacks[id - 1] = () => {}
-    })
   })
 
-  const flushFrames = () => {
-    const callbacks = frameCallbacks
-    frameCallbacks = []
-    callbacks.forEach((cb) => cb(performance.now()))
-  }
+  const flushFrames = () => vi.advanceTimersToNextFrame()
 
   const startedSession = () => {
     const session = useTidySession()
@@ -176,13 +164,12 @@ describe('useTidySession', () => {
 
     expect(session.gap.value).toBe(60)
     expect(tidyUp).not.toHaveBeenCalled()
-    expect(recordUndoStep).not.toHaveBeenCalled()
   })
 
   it('commits a previewed gap when its owner goes away', () => {
     const scope = effectScope()
     const session = scope.run(() => useTidySession())
-    if (!session) throw new Error('the session did not start in its scope')
+    assert.exists(session)
     session.start()
     tidyUp.mockClear()
 
