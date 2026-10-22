@@ -8,11 +8,13 @@ export function hubCreatorPath(username: string, locale = 'en') {
 
 export const CREATOR_USERNAME_MAX = 30
 
+const CREATOR_USERNAME = new RegExp(
+  `^[a-z0-9][a-z0-9-]{1,${CREATOR_USERNAME_MAX - 2}}[a-z0-9]$`,
+  'i'
+)
+
 export function isCreatorUsername(raw: string) {
-  return (
-    raw.length <= CREATOR_USERNAME_MAX &&
-    /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/i.test(raw)
-  )
+  return CREATOR_USERNAME.test(raw)
 }
 
 export const creatorEntityId = (siteUrl: string, username: string) =>

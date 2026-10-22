@@ -11,7 +11,13 @@ const { name, avatar, href } = defineProps<{
   <component
     :is="href ? 'a' : 'span'"
     :href
-    :class="cn('flex items-center gap-2', href && 'hover:underline')"
+    :class="
+      cn(
+        'flex items-center gap-2',
+        href &&
+          'underline underline-offset-4 hover:text-primary-comfy-yellow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-comfy-yellow'
+      )
+    "
     data-testid="workflow-author"
   >
     <img
