@@ -18,7 +18,7 @@ Check for:
 7. **Prop drilling** - passing props through 3+ component levels where provide/inject would be cleaner
 8. **VueUse opportunities** - manual implementations of common composables that VueUse already provides (useLocalStorage, useEventListener, useDebounceFn, useIntersectionObserver, etc.)
 9. **Computed vs method** - methods used in templates for derived state that should be computed properties, or computed properties that have side effects
-10. **PrimeVue usage in new code** - New components must NOT use PrimeVue. This project is migrating to shadcn-vue (Reka UI primitives). If new code imports from `primevue/*`, flag it and suggest the shadcn-vue equivalent.
+10. **PrimeVue reintroduction** - PrimeVue has been removed and `comfy/no-primevue-imports` bans it. If code imports from `primevue/*`, `@primevue/*`, or `@primeuix/*`, flag it and suggest the shadcn-vue equivalent.
 
 Available shadcn-vue replacements in `src/components/ui/`:
 
@@ -36,13 +36,11 @@ Available shadcn-vue replacements in `src/components/ui/`:
 
 For Reka UI primitives not yet wrapped, create a new component in `src/components/ui/` following the pattern in existing components (see `src/components/ui/AGENTS.md`): use `useForwardProps`, `cn()`, design tokens.
 
-Modifications to existing PrimeVue-based components are acceptable but should note the migration opportunity.
-
 Rules:
 
 - Only review .vue and composable .ts files — skip stores, services, utils
 - Do NOT flag existing Options API files being modified (only flag NEW files)
-- Flag new PrimeVue imports — the project is migrating to shadcn-vue/Reka UI
+- Flag PrimeVue imports — use the shadcn-vue/Reka UI components in `src/components/ui`
 - When suggesting shadcn-vue alternatives, reference `src/components/ui/AGENTS.md` for the component creation pattern
 - Use Iconify icons (`<i class="icon-[lucide--check]" />`) not PrimeIcons
 - "Major" for reactivity bugs and flush timing, "minor" for API style and VueUse opportunities, "nitpick" for preference-level patterns

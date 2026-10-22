@@ -115,6 +115,7 @@ const mockWorkspaceWithRole = {
 const mockTokenResponse = {
   token: 'workspace-token-abc',
   expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
+  user_id: 'uid-1',
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
@@ -393,6 +394,27 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(store.workspaceToken).toBeNull()
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+    })
+
+    it('keeps the workspace this tab loaded on after a mint persists another one', async () => {
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify({ ...mockWorkspaceWithRole, id: 'workspace-tab' })
+      )
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify(mockWorkspaceWithRole))
+      expect(store.bootTabWorkspaceId).toBe('workspace-tab')
     })
 
     it('stores workspace data in sessionStorage', async () => {
@@ -1935,6 +1957,7 @@ describe('useWorkspaceAuthStore', () => {
     const personalTokenResponse = {
       token: 'unified-token-1',
       expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+      user_id: 'uid-1',
       workspace: {
         id: 'workspace-personal',
         name: 'Personal',
@@ -2011,6 +2034,49 @@ describe('useWorkspaceAuthStore', () => {
       // Dormant slot proof: the legacy workspace token is never written.
       expect(workspaceToken.value).toBeNull()
     })
+
+    it.for([
+      {
+        name: 'a 5xx response',
+        respond: async () => new Response('upstream down', { status: 503 }),
+        httpStatus: 503
+      },
+      {
+        name: 'a 2xx response with an unusable body',
+        respond: async () => Response.json({ token: 'missing-fields' }),
+        httpStatus: 200
+      },
+      {
+        name: 'a network failure',
+        respond: async (): Promise<Response> => {
+          throw new TypeError('Failed to fetch')
+        },
+        httpStatus: 'none'
+      }
+    ])(
+      'reports a transient login mint failure from $name with its HTTP status',
+      async ({ respond, httpStatus }) => {
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        respondToFetch(TOKEN_URL, respond)
+
+        const store = useWorkspaceAuthStore()
+
+        await expect(store.mintAtLogin()).resolves.toBe(false)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            surface: 'auth',
+            errorType: 'unified_login_mint_failure',
+            tags: {
+              failure_code: 'TOKEN_EXCHANGE_FAILED',
+              http_status: httpStatus
+            }
+          })
+        )
+      }
+    )
 
     it('retires a saved legacy token when a unified mint enters the rail', async () => {
       const futureExpiry = Date.now() + 3600 * 1000
@@ -3563,6 +3629,7 @@ describe('useWorkspaceAuthStore constructed before authStore', () => {
       Response.json({
         token: 'unified-token-1',
         expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: 'workspace-personal',
           name: 'Personal',

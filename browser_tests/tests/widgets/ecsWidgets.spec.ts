@@ -19,7 +19,6 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 

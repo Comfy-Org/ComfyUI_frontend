@@ -7,6 +7,7 @@ import type {
 } from '@/platform/auth/session/webSessionFetch'
 import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
@@ -139,7 +140,7 @@ describe('WorkspaceAuthGate', () => {
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
-    it('initializes workspace context in the background for a signed-in user', async () => {
+    it('initializes workspace context and billing capabilities in the background for a signed-in user', async () => {
       mockIsCloud.value = false
       Object.assign(useAuthStore(), { isInitialized: true })
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
@@ -149,8 +150,21 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
-      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('does not read billing capabilities when the local workspace context fails', async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
     })
 
     it('initializes workspace context after a mid-session sign-in', async () => {
@@ -549,7 +563,8 @@ describe('WorkspaceAuthGate', () => {
       expect(splashLoader).not.toBeInTheDocument()
       expect(mockReportError).toHaveBeenCalledWith(error, {
         surface: 'auth',
-        errorType: 'workspace_auth_gate_initialization_failure'
+        errorType: 'workspace_auth_gate_initialization_failure',
+        level: 'error'
       })
     })
 
@@ -666,6 +681,24 @@ describe('WorkspaceAuthGate', () => {
         error: new Error('Workspace init failed'),
         heading: "Couldn't load your workspace",
         retry: true
+      },
+      {
+        name: 'sso off, session revoked',
+        sso: false,
+        error: new SessionRevokedError(
+          'This session was signed out; sign in again'
+        ),
+        heading: "Couldn't load your workspace",
+        retry: false
+      },
+      {
+        name: 'sso on, session revoked',
+        sso: true,
+        error: new SessionRevokedError(
+          'This session was signed out; sign in again'
+        ),
+        heading: "Couldn't load your workspace",
+        retry: false
       }
     ])(
       '$name: shows "$heading" with sign-out',
@@ -688,6 +721,41 @@ describe('WorkspaceAuthGate', () => {
         expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
       }
     )
+
+    it.for([
+      {
+        name: 'a revoked session',
+        error: new SessionRevokedError('signed out'),
+        report: {
+          level: 'warning',
+          tags: { failure_code: 'SESSION_REVOKED', outcome: 'gave_up' }
+        }
+      },
+      {
+        name: 'a revoked sign-in',
+        error: new SessionRevokedError('sign-in revoked', 'TOKEN_REVOKED'),
+        report: {
+          level: 'warning',
+          tags: { failure_code: 'TOKEN_REVOKED', outcome: 'gave_up' }
+        }
+      },
+      {
+        name: 'any other failure',
+        error: new Error('Workspace init failed'),
+        report: { level: 'error' }
+      }
+    ])('reports $name with $report', async ({ error, report }) => {
+      vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(error)
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        surface: 'auth',
+        errorType: 'workspace_auth_gate_initialization_failure',
+        ...report
+      })
+    })
 
     it('signs out from the no-workspace screen', async () => {
       const user = userEvent.setup()

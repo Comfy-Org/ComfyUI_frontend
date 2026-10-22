@@ -6,7 +6,7 @@ import type { useMissingModelStore } from '@/platform/missingModel/missingModelS
 import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
@@ -107,7 +107,7 @@ export function useNodeErrorFlagSync(
       showErrorsTab
     ],
     () => {
-      const rootGraph = app.rootGraphOrUndefined
+      const rootGraph = useApp().rootGraphOrUndefined
       if (!rootGraph) return
       // Legacy (LGraphNode) only: suppress missing-resource error flags
       // when the Errors tab is hidden, since legacy nodes lack the per-widget

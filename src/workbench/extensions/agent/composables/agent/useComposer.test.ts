@@ -2,10 +2,10 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { starterPromptAttribution } from '../../utils/starterPrompts'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { useComposer } from './useComposer'
 
 vi.mock(import('@/platform/telemetry'))
@@ -17,6 +17,7 @@ const CHIP: AgentStarterPromptAttribution = {
   promptId: 'slot_2',
   promptIndex: 1,
   promptCount: 5,
+  visiblePromptCount: 3,
   promptTextHash: 'deadbeef',
   locale: 'en',
   assignment: 'control'
@@ -173,6 +174,9 @@ describe('useComposer', () => {
       prompt_id: 'slot_2',
       prompt_index: 1,
       prompt_count: 5,
+      // Both counts travel, so a narrow panel is distinguishable from a
+      // shrunken set rather than overwriting it.
+      visible_prompt_count: 3,
       prompt_text_hash: 'deadbeef',
       locale: 'zh',
       click_id: expect.any(String),

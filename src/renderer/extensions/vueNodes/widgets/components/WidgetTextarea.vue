@@ -2,8 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
-        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
+        !isReadOnly && 'hover:bg-muted',
         widget.borderStyle
       )
     "
@@ -23,9 +23,8 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
-          // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
       "
@@ -41,13 +40,13 @@
       v-if="isReadOnly"
       variant="textonly"
       size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-base-foreground/10"
+      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-foreground/10"
       :title="$t('g.copyToClipboard')"
       :aria-label="$t('g.copyToClipboard')"
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+      <i class="icon-[lucide--copy] size-4 text-foreground" />
     </Button>
   </div>
 </template>

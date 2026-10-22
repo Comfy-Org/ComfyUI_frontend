@@ -2,8 +2,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { api } from '@/scripts/api'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,6 +13,8 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
+import { cloudReleaseModelOptions } from '@/platform/missingModel/releaseModelOptions'
 import type {
   ComfyWorkflowJSON,
   ModelFile
@@ -47,7 +51,8 @@ const { mockHandles } = vi.hoisted(() => {
         (
           _graph: LGraph,
           _isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-          _getDirectory?: (nodeType: string) => string | undefined
+          _getDirectory?: (nodeType: string) => string | undefined,
+          _releaseModelOptions?: ReleaseModelOptions
         ): MissingModelCandidate[] => []
       ),
       enrichWithEmbeddedMetadata: vi.fn(
@@ -67,9 +72,6 @@ const { mockHandles } = vi.hoisted(() => {
       ),
       assetService: {
         shouldUseWidgetAssetPicker: vi.fn()
-      },
-      api: {
-        getFolderPaths: vi.fn()
       },
       fetchModelMetadata: vi.fn()
     }
@@ -97,9 +99,15 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   scanAllModelCandidates: (
     graph: LGraph,
     isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-    getDirectory?: (nodeType: string) => string | undefined
+    getDirectory?: (nodeType: string) => string | undefined,
+    releaseModelOptions?: ReleaseModelOptions
   ) =>
-    mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
+    mockHandles.scanAllModelCandidates(
+      graph,
+      isAssetSupported,
+      getDirectory,
+      releaseModelOptions
+    ),
   enrichWithEmbeddedMetadata: (
     candidates: readonly MissingModelCandidate[],
     graphData: ComfyWorkflowJSON
@@ -110,10 +118,11 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getFolderPaths: () => mockHandles.api.getFolderPaths()
-  }
+vi.mock(import('@/scripts/api'))
+
+vi.mock(import('@/platform/missingModel/releaseModelOptions'), () => ({
+  cloudReleaseModelOptions: vi.fn(),
+  releaseModelOptions: vi.fn()
 }))
 
 vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
@@ -170,7 +179,7 @@ describe('missingModelPipeline', () => {
     mockHandles.verifyAssetSupportedCandidates.mockResolvedValue(undefined)
     mockHandles.hasPendingVerification.mockReturnValue(false)
     vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue(null)
-    mockHandles.api.getFolderPaths.mockResolvedValue({})
+    vi.mocked(api.getFolderPaths).mockResolvedValue({})
     mockHandles.fetchModelMetadata.mockResolvedValue({
       fileSize: null,
       gatedRepoUrl: null
@@ -604,7 +613,7 @@ describe('missingModelPipeline', () => {
           remoteCandidate.isMissing = true
         }
       )
-      mockHandles.api.getFolderPaths.mockResolvedValue({
+      vi.mocked(api.getFolderPaths).mockResolvedValue({
         checkpoints: ['/models/checkpoints']
       })
 
@@ -654,7 +663,7 @@ describe('missingModelPipeline', () => {
       } as unknown as LGraphNode)
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
-      mockHandles.api.getFolderPaths.mockReturnValueOnce(
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFolderPaths = resolve
         })
@@ -685,7 +694,7 @@ describe('missingModelPipeline', () => {
       mockHandles.state.enrichedCandidates = [confirmedCandidate]
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
-      mockHandles.api.getFolderPaths.mockReturnValueOnce(
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFolderPaths = resolve
         })
@@ -730,7 +739,7 @@ describe('missingModelPipeline', () => {
       })
       await vi.dynamicImportSettled()
 
-      expect(mockHandles.api.getFolderPaths).not.toHaveBeenCalled()
+      expect(api.getFolderPaths).not.toHaveBeenCalled()
       expect(
         useExecutionErrorStore().surfaceMissingModels
       ).toHaveBeenCalledWith([], { silent: false })
@@ -777,6 +786,25 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenCalledWith([staticCandidate, remoteCandidate], {
         silent: false
       })
+    })
+
+    it('hands the scan the lookup of the models the boot Release has', async () => {
+      const releaseModelOptions = vi.fn(async () => ['release.safetensors'])
+      vi.mocked(cloudReleaseModelOptions).mockReturnValue(releaseModelOptions)
+      const graph = createGraph()
+
+      await runMissingModelPipeline({
+        graph,
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+
+      expect(mockHandles.scanAllModelCandidates).toHaveBeenCalledWith(
+        graph,
+        expect.any(Function),
+        expect.any(Function),
+        releaseModelOptions
+      )
     })
 
     it('returns confirmed missing models and caches pending warning candidates', async () => {
@@ -1083,7 +1111,7 @@ describe('missingModelPipeline', () => {
       vi.mocked(
         useMissingModelStore().createVerificationAbortController
       ).mockReturnValueOnce(controller)
-      mockHandles.api.getFolderPaths.mockReturnValueOnce(folderPathsPromise)
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(folderPathsPromise)
 
       await runMissingModelPipeline({
         graph: createGraph(),

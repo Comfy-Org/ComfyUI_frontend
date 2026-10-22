@@ -91,8 +91,9 @@ Paste the recorder command it prints, one `--prompt` per turn.
    DEV_AGENT_COMFY_TOKEN=comfyui-… pnpm tsx scripts/dev-agent-integration.ts
    ```
 
-   Vite forwards it to the standalone agent as `X-Comfy-Token`. Without it, the panel
-   starts but model requests return 401.
+   Vite forwards it to the standalone agent: a token that starts with `comfyui-` as
+   `X-API-KEY`, anything else as a bearer token. The panel then sends without asking a
+   signed-out user to sign in. Without it, a signed-out send opens the sign-in dialog.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
@@ -131,9 +132,12 @@ until the agent publishes `agent.json`, then succeed.
 
 ## How it works
 
-The Vite proxy keeps the standalone session token server-side. Browser REST and event
-WebSocket traffic use same-origin `/api/agent` routes, while all other `/api` and `/ws`
-traffic continues to reach ComfyUI.
+The Vite proxy keeps the standalone session token server-side and sends it as
+`X-Comfy-Agent-Session`. Without `DEV_AGENT_COMFY_TOKEN`, the browser's own `Authorization`
+or `X-API-KEY` reaches the agent as the user's credential; with it, the proxy's header
+replaces the browser's header of the same name. Browser REST and event WebSocket traffic use
+same-origin `/api/agent` routes, and the saved-workflow index uses `/api/workflows`, while
+all other `/api` and `/ws` traffic continues to reach ComfyUI.
 
 ### Modes
 

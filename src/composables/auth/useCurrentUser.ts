@@ -1,6 +1,7 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -50,11 +51,10 @@ export const useCurrentUser = () => {
   const onTokenRefreshed = (callback: () => void) =>
     whenever(() => authStore.tokenRefreshTrigger, callback)
 
-  const onUserLogout = (callback: () => void) => {
+  const onUserLogout = (callback: () => void) =>
     watch(resolvedUserInfo, (user, prevUser) => {
       if (prevUser && !user) callback()
     })
-  }
 
   const userDisplayName = computed(() => {
     if (desktopHostUser.value) return undefined
@@ -154,3 +154,5 @@ export const useCurrentUser = () => {
     onUserLogout
   }
 }
+
+provideCurrentUser(useCurrentUser)

@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -16,7 +15,10 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -136,20 +138,17 @@ test.describe(
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
       }
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        DRAFT_WORKFLOW_ID,
+        new HostDoc(DRAFT_WORKFLOW_ID, emptySeed, { types: {} })
+      )
+      hostSocket.answerSubscribesWith(() => [])
+      await hostSocket.install()
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', (route) => {
@@ -219,13 +218,10 @@ test.describe(
 
       await test.step('the agent announces the draft it minted and the panel opens a tab for it', async () => {
         await expect(topbar.tabs).toHaveCount(1)
-        if (!socket) throw new Error('the app never opened /ws')
-        socket.send(
-          JSON.stringify({
-            type: 'agent_active_tab',
-            data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
-          })
-        )
+        hostSocket.send({
+          type: 'agent_active_tab',
+          data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
+        })
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
         await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
         await expect(unavailable).toBeHidden()

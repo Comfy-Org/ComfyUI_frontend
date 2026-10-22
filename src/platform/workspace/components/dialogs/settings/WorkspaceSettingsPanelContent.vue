@@ -1,5 +1,6 @@
 <template>
   <div class="@container flex size-full min-h-0 flex-col">
+    <WorkspaceHeaderMenu />
     <BillingStatusBanner :section class="mb-4" />
 
     <PlanCreditsPanelContent v-if="section === 'planCredits'" />
@@ -12,6 +13,7 @@
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
+import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import WorkspaceMembersPanelContent from '@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
 
 const { section } = defineProps<{

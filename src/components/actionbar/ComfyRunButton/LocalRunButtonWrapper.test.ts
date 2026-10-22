@@ -58,7 +58,7 @@ const i18n = createI18n({
 
 function renderWrapper() {
   return render(LocalRunButtonWrapper, {
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
 }
 

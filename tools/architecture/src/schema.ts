@@ -66,7 +66,7 @@ export const exceptionLedgerSchema = z
           id: z.string().regex(/^DDD-EX-\d{3}$/),
           owner: z.string().regex(/^@\S+$/),
           rationale: text,
-          sunset: z.string().date(),
+          sunset: z.iso.date(),
           removalCriteria: text,
           exactFingerprints: uniqueList(text, 1)
         })

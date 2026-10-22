@@ -8,7 +8,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-base font-semibold text-base-foreground">
+      <h2 class="text-base font-semibold text-foreground">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -31,7 +31,7 @@
           :disabled="openPending"
           size="unset"
           variant="muted-textonly"
-          class="shrink-0 gap-2 text-sm font-medium text-muted-foreground hover:bg-transparent"
+          class="shrink-0 hover:bg-transparent"
           @click="onBackToTemplates"
         >
           <i aria-hidden="true" class="icon-[lucide--arrow-left] size-4" />
@@ -43,16 +43,19 @@
         class="flex min-w-0 flex-1 items-center gap-2"
       >
         <h2
-          class="m-0 hidden shrink-0 truncate text-base font-medium text-base-foreground min-[880px]:block"
+          class="m-0 hidden shrink-0 truncate text-base font-medium text-foreground min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
         <AsyncSearchInput
           v-model="searchInput"
+          :clear-label="$t('g.clear')"
+          :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+          :accessible-label="$t('g.search')"
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
+          class="h-9 w-full min-w-0 border border-border/50 bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
           autofocus
         />
       </div>
@@ -70,7 +73,7 @@
         data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
-          <div class="flex min-w-0 shrink items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <Button
               v-for="tab in typeTabs"
               :key="tab.value"
@@ -89,11 +92,11 @@
           </div>
 
           <div
-            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+            class="ml-auto hidden min-w-0 items-center justify-end gap-2 @[58rem]/filters:flex"
           >
             <TemplateFilterControls
               v-bind="filterControlBindings"
-              trigger-class="min-w-0 shrink basis-40 border border-border-subtle bg-transparent"
+              trigger-class="min-w-0 shrink basis-40 border border-border/50 bg-transparent"
             />
           </div>
 
@@ -122,7 +125,7 @@
           <div class="grid grid-cols-2 gap-2 @max-[26rem]/filters:grid-cols-1">
             <TemplateFilterControls
               v-bind="filterControlBindings"
-              trigger-class="w-full border border-border-subtle bg-transparent"
+              trigger-class="w-full border border-border/50 bg-transparent"
             />
           </div>
         </div>
@@ -141,7 +144,7 @@
           <Button
             variant="link"
             size="unset"
-            class="ml-auto text-xs font-normal text-base-foreground underline opacity-70 hover:opacity-100"
+            class="ml-auto text-xs font-normal text-foreground underline opacity-70 hover:opacity-100"
             @click="resetFilters"
           >
             {{ $t('templateWorkflows.clearAllFilters') }}
@@ -154,7 +157,7 @@
       <!-- No Results State (only show when loaded and no results) -->
       <div
         v-if="!activeDetail && !isLoading && filteredTemplates.length === 0"
-        class="flex h-64 flex-col items-center justify-center px-6 text-neutral-500"
+        class="flex h-64 flex-col items-center justify-center px-6 text-muted-foreground"
       >
         <i class="mb-4 icon-[lucide--search] size-12 opacity-50" />
         <p class="mb-2 text-lg">
@@ -173,13 +176,13 @@
         <!-- Title -->
         <span
           v-if="isLoading"
-          class="inline-block h-8 w-48 animate-pulse rounded-sm bg-dialog-surface"
+          class="inline-block h-8 w-48 animate-pulse rounded-sm bg-muted"
         ></span>
 
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-stretch gap-2"
+          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -189,24 +192,20 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-base-background"
+            class="hover:bg-background"
           >
             <template #top>
               <CardTop ratio="landscape">
                 <template #default>
-                  <div class="size-full animate-pulse bg-dialog-surface"></div>
+                  <div class="size-full animate-pulse bg-muted"></div>
                 </template>
               </CardTop>
             </template>
             <template #bottom>
               <CardBottom>
                 <div class="px-4 py-3">
-                  <div
-                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
+                  <div class="mb-2 h-6 animate-pulse rounded-sm bg-muted"></div>
+                  <div class="h-4 animate-pulse rounded-sm bg-muted"></div>
                 </div>
               </CardBottom>
             </template>
@@ -221,7 +220,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary-background/50"
+            class="group/card h-full transition-colors hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
@@ -245,7 +244,7 @@
                     :hover-zoom="0"
                   >
                     <template #overlay>
-                      <Spinner
+                      <AppSpinner
                         v-if="loadingTemplateId === template.name"
                         class="absolute inset-0 z-10 m-auto size-12"
                       />
@@ -254,7 +253,7 @@
                 </template>
                 <template #top-left>
                   <div
-                    class="flex h-6 items-center gap-1 rounded-md bg-zinc-700/50 px-2 backdrop-blur-[20px]"
+                    class="flex h-6 items-center gap-1 rounded-md bg-zinc-700/50 px-2 text-white backdrop-blur-[20px]"
                   >
                     <i
                       :class="
@@ -262,11 +261,9 @@
                           ? 'icon-[lucide--app-window]'
                           : 'icon-[comfy--workflow]'
                       "
-                      class="size-3 text-white"
+                      class="size-3"
                     />
-                    <span
-                      class="text-xs font-medium whitespace-nowrap text-white"
-                    >
+                    <span class="text-xs font-medium whitespace-nowrap">
                       {{
                         isAppTemplate(template)
                           ? $t('builderToolbar.app')
@@ -330,7 +327,7 @@
                         <button
                           type="button"
                           :aria-label="tags.hidden.join(', ')"
-                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                           @click.stop
                         >
                           <Tag
@@ -357,24 +354,20 @@
             size="compact"
             variant="ghost"
             rounded="lg"
-            class="hover:bg-base-background"
+            class="hover:bg-background"
           >
             <template #top>
               <CardTop ratio="square">
                 <template #default>
-                  <div class="size-full animate-pulse bg-dialog-surface"></div>
+                  <div class="size-full animate-pulse bg-muted"></div>
                 </template>
               </CardTop>
             </template>
             <template #bottom>
               <CardBottom>
                 <div class="px-4 py-3">
-                  <div
-                    class="mb-2 h-6 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded-sm bg-dialog-surface"
-                  ></div>
+                  <div class="mb-2 h-6 animate-pulse rounded-sm bg-muted"></div>
+                  <div class="h-4 animate-pulse rounded-sm bg-muted"></div>
                 </div>
               </CardBottom>
             </template>
@@ -389,7 +382,7 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center px-6"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div v-if="isLoadingMore" class="text-sm text-muted-foreground">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
@@ -398,7 +391,7 @@
       <div
         v-if="!isLoading"
         v-show="!activeDetail"
-        class="mt-6 px-6 pb-10 text-sm text-muted"
+        class="mt-6 px-6 pb-10 text-sm text-muted-foreground"
       >
         {{
           $t('templateWorkflows.resultsCount', {
@@ -471,7 +464,7 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'

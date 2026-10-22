@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { useBillingRouting as realUseBillingRouting } from '../useBillingRouting'
+import type { useBillingRouting as realUseBillingRouting } from '@/composables/billing/useBillingRouting'
 
 const defaults: ReturnType<typeof realUseBillingRouting> = {
   type: computed(() => 'legacy'),

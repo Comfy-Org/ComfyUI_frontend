@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-import '../../agentPanel.css'
+import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -25,10 +26,13 @@ const meta: Meta<typeof AgentPanel> = {
     activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
     workflowTabs: [{ path: 'workflows/portrait.json', name: 'portrait' }]
   },
+  argTypes: {
+    freeUsePlacement: { control: 'select', options: FREE_USE_VARIANTS }
+  },
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-secondary-background h-screen w-100"><story /></div>'
+        '<div class="agent-scope bg-secondary h-screen w-100"><story /></div>'
     })
   ]
 }
@@ -98,32 +102,23 @@ export const ChipStates: Story = {
   }
 }
 
-/**
- * DES-1221 / FE-3142. One notice, five arms, and nothing else moves: the
- * starter prompts and the composer placeholder are identical in every cell, so
- * placement is the only variable between them.
- */
-export const FreeUseControl: Story = {
-  name: 'DES-1221 a / control',
-  args: { freeUsePlacement: 'control' }
-}
-
-export const FreeUseTopBanner: Story = {
-  name: 'DES-1221 b / top banner',
-  args: { freeUsePlacement: 'top-banner' }
-}
-
-export const FreeUseNearComposer: Story = {
-  name: 'DES-1221 c / near composer',
-  args: { freeUsePlacement: 'near-composer' }
-}
-
-export const FreeUseAboveInput: Story = {
-  name: 'DES-1221 d / above input',
-  args: { freeUsePlacement: 'above-input' }
-}
-
-export const FreeUseInsideInput: Story = {
-  name: 'DES-1221 e / inside input',
-  args: { freeUsePlacement: 'inside-input' }
+export const FreeUsePlacements: Story = {
+  name: 'DES-1221 a–e / placement arms',
+  render: (args) => ({
+    components: { AgentPanel },
+    setup() {
+      return { placements: FREE_USE_VARIANTS, args }
+    },
+    template: `
+      <div class="flex h-screen gap-4 overflow-x-auto">
+        <div v-for="placement in placements" :key="placement" class="shrink-0">
+          <div class="px-2 py-1 text-xs text-muted-foreground">{{ placement }}</div>
+          <div class="agent-scope bg-secondary h-full w-100">
+            <AgentPanel v-bind="args" :free-use-placement="placement" />
+          </div>
+        </div>
+      </div>
+    `
+  }),
+  decorators: [() => ({ template: '<story />' })]
 }

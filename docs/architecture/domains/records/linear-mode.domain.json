@@ -1,0 +1,146 @@
+{
+  "id": "linear-mode",
+  "capability": "App mode (linear mode) run surface",
+  "description": "App-mode workflow execution: state, the LinearView host, input and output presentation, run controls, history, and previews. Builder authoring belongs to app-builder.",
+  "modules": [
+    {
+      "path": "src/components/appMode/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/__mocks__/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useAppMode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/flattenNodeOutput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/getExecutionStatusMessage.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/getExecutionStatusMessage.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/linearModeTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/linearOutputStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/linearOutputStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/linearRunErrorWarningIds.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/useExecutionStatus.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/useOutputHistory.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/linearMode/useOutputHistory.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/appModeStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/appModeStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/appMode.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/views/LinearView.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/views/LinearView.vue",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Run controls, progress, and run errors preserve app-mode execution",
+      "checks": [
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "src/renderer/extensions/linearMode/LinearRunErrorWarning.test.ts",
+        "src/renderer/extensions/linearMode/getExecutionStatusMessage.test.ts",
+        "browser_tests/tests/appMode.spec.ts",
+        "browser_tests/tests/linearMode.spec.ts"
+      ]
+    },
+    {
+      "name": "Output preview and history follow queued and completed jobs",
+      "checks": [
+        "src/renderer/extensions/linearMode/linearOutputStore.test.ts",
+        "src/renderer/extensions/linearMode/useOutputHistory.test.ts",
+        "src/renderer/extensions/linearMode/OutputHistory.test.ts",
+        "src/renderer/extensions/linearMode/LinearPreview.test.ts",
+        "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
+        "browser_tests/tests/appModeMediaPreview.spec.ts"
+      ]
+    },
+    {
+      "name": "Welcome, drop zone, and mobile entry points remain reachable",
+      "checks": [
+        "src/renderer/extensions/linearMode/LinearWelcome.test.ts",
+        "src/renderer/extensions/linearMode/DropZone.test.ts",
+        "browser_tests/tests/appModeWelcome.spec.ts",
+        "browser_tests/tests/appModeMobileAssets.spec.ts"
+      ]
+    },
+    {
+      "name": "App-mode toolbar offers workflow actions and enters the builder only when the graph has nodes",
+      "checks": ["src/components/appMode/AppModeToolbar.test.ts"]
+    },
+    {
+      "name": "App-mode store keeps selected inputs and outputs valid across workflow, subgraph, and node changes",
+      "checks": [
+        "src/stores/appModeStore.test.ts",
+        "browser_tests/tests/appModePruning.spec.ts",
+        "browser_tests/tests/appModeInputPersistence.spec.ts"
+      ]
+    },
+    {
+      "name": "App-mode view lays out controls, preview, builder, and mobile display",
+      "checks": ["src/views/LinearView.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md"
+  ],
+  "compatibilityPromises": [
+    "Existing app-mode, builder, Vue node renderer, and workspace callers may continue importing linear mode internals during inventory; this record grants no new cross-domain permissions.",
+    "Saved app-mode input and output selections and workflow serialization remain unchanged."
+  ],
+  "deepImports": "inventory"
+}

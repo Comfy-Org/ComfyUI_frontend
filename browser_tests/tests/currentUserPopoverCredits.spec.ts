@@ -11,6 +11,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -37,6 +38,7 @@ const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
 const mockTokenResponse: WorkspaceTokenResponse = {
   token: 'mock-workspace-token',
   expires_at: FUTURE_DATE,
+  user_id: 'uid-1',
   workspace: {
     id: 'ws-personal',
     name: PERSONAL_WORKSPACE_NAME,
@@ -183,6 +185,46 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
 
+  test('keeps the user card inside the single popover frame', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await setupCloudApp(page, {
+      workspace: workspace('personal', 'owner'),
+      features: { subscription_required: false }
+    })
+    await page.goto(APP_URL)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
+    await page.getByRole('button', { name: 'Close dialog' }).click()
+    await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    const shell = page.getByRole('dialog').filter({ has: popover })
+
+    await expect(popover).toHaveCSS('border-top-width', '0px')
+    await expect(popover).toHaveCSS('box-shadow', 'none')
+    await expect
+      .poll(async () => {
+        const [card, frame] = await Promise.all([
+          popover.boundingBox(),
+          shell.boundingBox()
+        ])
+        if (!card || !frame) return false
+        return (
+          card.x >= frame.x &&
+          card.y >= frame.y &&
+          card.x + card.width <= frame.x + frame.width &&
+          card.y + card.height <= frame.y + frame.height
+        )
+      })
+      .toBe(true)
+  })
+
   test(
     'renders Manage plan as a plain full-width menu row',
     { tag: '@screenshot' },
@@ -203,19 +245,21 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
 
       const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
       await expect(workspaceSelector).toBeVisible()
-      await expect(workspaceSelector).toHaveScreenshot(
+      await expectElementScreenshot(
+        workspaceSelector,
         'workspace-selector-menu-item.png'
       )
 
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()
-      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+      await expectElementScreenshot(managePlan, 'manage-plan-menu-item.png')
 
       await managePlan.focus()
       await page.keyboard.press('Shift+Tab')
       await page.keyboard.press('Tab')
       await expect(managePlan).toBeFocused()
-      await expect(managePlan).toHaveScreenshot(
+      await expectElementScreenshot(
+        managePlan,
         'manage-plan-menu-item-focused.png'
       )
     }

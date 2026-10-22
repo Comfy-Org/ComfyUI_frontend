@@ -40,12 +40,13 @@ const titleHeightOf = (node: LGraphNode): number => {
 
 const toBox = (node: LGraphNode): NodeBox => {
   const titleHeight = titleHeightOf(node)
+  const [width, height] = node.renderingSize
   return {
     id: node.id,
     posX: node.pos[0],
     posY: node.pos[1],
-    visualWidth: node.size[0],
-    visualHeight: node.size[1] + titleHeight,
+    visualWidth: width,
+    visualHeight: height + titleHeight,
     titleHeight
   }
 }

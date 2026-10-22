@@ -3,7 +3,8 @@ import type {
   LGraphNode,
   Subgraph,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {

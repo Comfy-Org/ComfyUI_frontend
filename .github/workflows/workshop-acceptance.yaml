@@ -25,7 +25,7 @@ concurrency:
 jobs:
   acceptance:
     name: ${{ inputs.suite }} · ${{ matrix.browser }}
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     environment: ${{ inputs.suite == 'checkout' && 'workshop-test' || 'workshop-prod' }}
     timeout-minutes: 355

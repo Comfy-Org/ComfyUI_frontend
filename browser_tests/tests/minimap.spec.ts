@@ -9,6 +9,7 @@ import {
   MINIMAP_POINTER_OPTS,
   readMainCanvasOffset
 } from '@e2e/fixtures/utils/minimapUtils'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -156,7 +157,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const { container } = getMinimapLocators(comfyPage)
       await expect(container).toBeVisible()
 
-      await expect(container).toHaveScreenshot('minimap-before-pan.png')
+      await expectElementScreenshot(container, 'minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -165,7 +166,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await expect(container).toHaveScreenshot('minimap-after-pan.png')
+      await expectElementScreenshot(container, 'minimap-after-pan.png')
     }
   )
 
@@ -192,7 +193,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
       expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
 
-      await expect(container).toHaveScreenshot('minimap-with-viewport.png')
+      await expectElementScreenshot(container, 'minimap-with-viewport.png')
     }
   )
 
