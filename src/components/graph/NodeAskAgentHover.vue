@@ -30,11 +30,13 @@
         side="right"
         align="start"
         data-testid="node-ask-agent-composer"
-        class="flex flex-col overflow-hidden rounded-lg border-border/50 p-0"
+        class="flex flex-col overflow-hidden rounded-lg border-border p-0"
         @open-auto-focus.prevent="focusComposerInput"
       >
-        <form class="w-full" @submit.prevent="onSend">
-          <InputGroup>
+        <form class="w-full border-b border-border" @submit.prevent="onSend">
+          <InputGroup
+            class="has-[[data-slot=input-group-control]:focus-visible]:ring-0"
+          >
             <InputGroupInput
               v-model="draft"
               data-testid="node-ask-agent-input"
