@@ -52,6 +52,7 @@ function respondWithPartnerNodeToken() {
     Response.json({
       token: 'partner-node-token',
       expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-a', name: 'Team', type: 'team' },
       role: 'owner',
       permissions: []
@@ -269,6 +270,7 @@ describe('queueAuthToken', () => {
           Response.json({
             token: 'partner-node-token',
             expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+            user_id: 'uid-1',
             workspace: { id: 'ws-b', name: 'Other', type: 'team' },
             role: 'owner',
             permissions: []
@@ -394,6 +396,7 @@ describe('sign-out', () => {
       return Response.json({
         token: `partner-node-${workspace_id}`,
         expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: workspace_id, name: 'Team', type: 'team' },
         role: 'owner',
         permissions: []

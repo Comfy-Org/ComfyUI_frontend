@@ -1,4 +1,5 @@
 import _ from 'es-toolkit/compat'
+import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { app, ComfyApp } from '@/scripts/app'
@@ -30,6 +31,13 @@ function openMaskEditorFromClipspace(): void {
 
   openMaskEditor(node)
 }
+
+const warnOpenMaskEditorDeprecated = once(() =>
+  console.warn(
+    '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+      'Plugins should migrate to using the command system or direct node context menu integration.'
+  )
+)
 
 // Check if the dialog is already opened
 function isOpened(): boolean {
@@ -162,12 +170,9 @@ app.registerExtension({
     }
   },
   init() {
-    // Set up ComfyApp static methods for plugin compatibility (deprecated)
-    ComfyApp.open_maskeditor = openMaskEditorFromClipspace
-
-    console.warn(
-      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
-        'Plugins should migrate to using the command system or direct node context menu integration.'
-    )
+    ComfyApp.open_maskeditor = () => {
+      warnOpenMaskEditorDeprecated()
+      openMaskEditorFromClipspace()
+    }
   }
 })

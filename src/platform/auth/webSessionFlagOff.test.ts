@@ -21,7 +21,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -176,6 +176,7 @@ const CAPABILITIES = {
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
     can_manage_subscription: false,
+    can_open_plans: false,
     can_run_workflows: false,
     can_upgrade: false
   } satisfies BillingCapabilities,
@@ -211,6 +212,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']

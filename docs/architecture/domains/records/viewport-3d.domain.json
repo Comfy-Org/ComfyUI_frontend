@@ -22,98 +22,6 @@
     {
       "path": "src/composables/useViewportNodeWiring.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/CameraManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/CameraManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ControlsManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ControlsManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/EventManager.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/EventManager.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/LightingManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LightingManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ViewHelperManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ViewHelperManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/Viewport3d.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/Viewport3d.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/createViewport3d.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/interfaces.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dContextMenuGuard.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dRenderLoop.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dRenderLoop.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dViewport.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dViewport.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/three/**",
-      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -123,30 +31,30 @@
     {
       "name": "Viewport orchestration preserves sizing, render loop, and context-menu behavior",
       "checks": [
-        "src/extensions/core/load3d/Viewport3d.test.ts",
-        "src/extensions/core/load3d/load3dViewport.test.ts",
-        "src/extensions/core/load3d/load3dRenderLoop.test.ts",
-        "src/extensions/core/load3d/load3dContextMenuGuard.test.ts"
+        "packages/viewport3d/src/load3d/Viewport3d.test.ts",
+        "packages/viewport3d/src/load3d/load3dViewport.test.ts",
+        "packages/viewport3d/src/load3d/load3dRenderLoop.test.ts",
+        "packages/viewport3d/src/load3d/load3dContextMenuGuard.test.ts"
       ]
     },
     {
       "name": "Scene, camera, controls, lighting, and view helper managers preserve Three.js state",
       "checks": [
-        "src/extensions/core/load3d/SceneManager.test.ts",
-        "src/extensions/core/load3d/CameraManager.test.ts",
-        "src/extensions/core/load3d/ControlsManager.test.ts",
-        "src/extensions/core/load3d/LightingManager.test.ts",
-        "src/extensions/core/load3d/ViewHelperManager.test.ts",
-        "src/extensions/core/load3d/EventManager.test.ts"
+        "packages/viewport3d/src/load3d/SceneManager.test.ts",
+        "packages/viewport3d/src/load3d/CameraManager.test.ts",
+        "packages/viewport3d/src/load3d/ControlsManager.test.ts",
+        "packages/viewport3d/src/load3d/LightingManager.test.ts",
+        "packages/viewport3d/src/load3d/ViewHelperManager.test.ts",
+        "packages/viewport3d/src/load3d/EventManager.test.ts"
       ]
     },
     {
       "name": "Shared WebGL renderer views preserve output precision and resource lifetimes",
       "checks": [
-        "src/renderer/three/sharedWebGLRenderer.test.ts",
-        "src/renderer/three/RendererView.test.ts",
-        "src/renderer/three/WebGLViewport.test.ts",
-        "src/renderer/three/highPrecisionOutput.test.ts"
+        "packages/viewport3d/src/three/sharedWebGLRenderer.test.ts",
+        "packages/viewport3d/src/three/RendererView.test.ts",
+        "packages/viewport3d/src/three/WebGLViewport.test.ts",
+        "packages/viewport3d/src/three/highPrecisionOutput.test.ts"
       ]
     },
     {

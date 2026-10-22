@@ -8,6 +8,9 @@
       "path": "./packages/layer-editor/tsconfig.build.json"
     },
     {
+      "path": "./packages/viewport3d/tsconfig.build.json"
+    },
+    {
       "path": "./packages/account-core/tsconfig.declarations.json"
     },
     {

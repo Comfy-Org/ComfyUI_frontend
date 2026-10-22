@@ -14,6 +14,7 @@ interface PlacementInput {
   existing: readonly PlacementRect[]
   viewport: PlacementRect | null
   incoming: readonly PlacementRect[]
+  moveCollisions?: boolean
 }
 
 export const DISCONNECTED_GAP_PX = 600
@@ -50,15 +51,28 @@ function intersects(a: Bounds, b: Bounds): boolean {
   )
 }
 
-/**
- * One shared translation that moves a disconnected, offscreen batch of newly
- * inserted nodes beside the existing content's hull, or null when the batch
- * should keep the coordinates it arrived with. See ADR-CRDT-PLACEMENT-0035.
- */
+function collides(
+  existing: readonly PlacementRect[],
+  incoming: readonly PlacementRect[]
+): boolean {
+  const existingBounds = existing.map(toBounds)
+  return incoming.some((rect) => {
+    const bounds = toBounds(rect)
+    return existingBounds.some((other) => intersects(bounds, other))
+  })
+}
+
+/** Returns a batch translation, or null when its coordinates stay unchanged. */
 export function placementOffset(input: PlacementInput): PlacementOffset | null {
   if (input.existing.length === 0 || input.incoming.length === 0) return null
   const anchor = hull(input.existing)
   const batch = hull(input.incoming)
+  const offset = {
+    dx: anchor.right + PLACEMENT_GUTTER_PX - batch.left,
+    dy: anchor.top - batch.top
+  }
+  if (input.moveCollisions && collides(input.existing, input.incoming))
+    return offset
   const inflated = {
     left: anchor.left - DISCONNECTED_GAP_PX,
     top: anchor.top - DISCONNECTED_GAP_PX,
@@ -67,8 +81,5 @@ export function placementOffset(input: PlacementInput): PlacementOffset | null {
   }
   if (intersects(inflated, batch)) return null
   if (input.viewport && intersects(toBounds(input.viewport), batch)) return null
-  return {
-    dx: anchor.right + PLACEMENT_GUTTER_PX - batch.left,
-    dy: anchor.top - batch.top
-  }
+  return offset
 }

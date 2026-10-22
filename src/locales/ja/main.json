@@ -4393,7 +4393,6 @@
     "viewControls": "ビューコントロール"
   },
   "sideToolbar": {
-    "activeJobStatus": "アクティブジョブ: {status}",
     "assets": "アセット",
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",
@@ -5550,22 +5549,6 @@
     "retry": "再試行"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "クレジット",
-        "date": "日付",
-        "eventDetails": "イベント詳細",
-        "eventType": "イベントタイプ",
-        "user": "ユーザー"
-      },
-      "empty": "まだアクティビティがありません。",
-      "fullActivity": "すべてのアクティビティ",
-      "hoverCard": {
-        "lastActivity": "最終アクティビティ",
-        "partnerNodeUsed": "パートナーノード使用",
-        "totalCreditsUsed": "合計クレジット使用量"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "今後請求されることはありません。それまではメンバーはすべての機能を引き続き利用できます。チームの共有クレジットを維持するには、プランを再開してください。",
@@ -5701,12 +5684,6 @@
         "removeMember": "メンバーを削除",
         "resendInvite": "招待を再送信",
         "setCreditLimit": "クレジット上限を設定"
-      },
-      "activity": {
-        "daysAgo": "{count}日前",
-        "hoursAgo": "{n}時間前",
-        "justNow": "たった今",
-        "minutesAgo": "{n}分前"
       },
       "columns": {
         "creditsUsed": "今月使用したクレジット",

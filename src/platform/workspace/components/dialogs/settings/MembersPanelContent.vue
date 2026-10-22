@@ -1,25 +1,13 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        isInPersonalWorkspace &&
+        (maxSeats === 1 || isPlanEnded) &&
         permissions.canManageSubscription
       "
-      :variant="
-        showsEndedUpsell
-          ? isSalesManagedPlan
-            ? 'contactSales'
-            : 'reactivate'
-          : 'upgrade'
-      "
-      :enterprise="isEnterprisePlan"
-      @action="
-        showsEndedUpsell && isSalesManagedPlan
-          ? handleContactSales()
-          : showTeamPlans()
-      "
+      @action="showTeamPlans()"
     />
     <!-- Controls row: tabs, search, invite (outside the table frame). Once the
          panel scrolls it moves into the dialog header, left of the close
@@ -64,6 +52,8 @@
           <SearchInput
             v-if="showSearch"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
@@ -284,9 +274,9 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
-import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
+import MemberUpsellBanner from '@/platform/billing/components/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -303,7 +293,6 @@ const {
   isInPersonalWorkspace,
   isPlanEnded,
   isSalesManagedPlan,
-  isEnterprisePlan,
   hasMemberSeats,
   isPlanLoading,
   hasMultipleMembers,
@@ -345,12 +334,6 @@ watch(isHeaderCollapsed, async () => {
 
 const { t } = useI18n()
 
-// A personal workspace always pitches the Team plan here; its own plan
-// lifecycle lives on the Plan & Credits tab.
-const showsEndedUpsell = computed(
-  () => isPlanEnded.value && !isInPersonalWorkspace.value
-)
-
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
@@ -377,8 +360,6 @@ function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 
-// The ended banner and footer action: a sales-managed plan's route back is the
-// enterprise page, not the team-plan request form the Contact us link uses.
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }

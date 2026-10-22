@@ -4,14 +4,13 @@ import { isCloud } from '@/platform/distribution/types'
 
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from './remoteConfig'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
@@ -108,8 +107,11 @@ function commitRemoteConfigSuccess(
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'authenticated'
     authenticatedLoadingGeneration = undefined
-    cachedBillingControlEnabled.value = Boolean(config.billing_control_enabled)
-    cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
+    const cache = useRemoteConfigCache()
+    cache.cachedBillingControlEnabled.value = Boolean(
+      config.billing_control_enabled
+    )
+    cache.cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
     cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
   } else {
     authenticatedRemoteConfigState.value = 'unloaded'

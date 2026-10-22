@@ -11,17 +11,17 @@ import {
   getNodeWidgetValue,
   setNodeWidgetValue
 } from '@/core/graph/widgets/nodeWidgetValues'
-import { LightInfoViewport } from '@/extensions/core/lightInfo/LightInfoViewport'
-import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
-import { normalizeLightsValue } from '@/extensions/core/lightInfo/lightsValue'
+import { LightInfoViewport } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import { normalizeLightsValue } from '@comfyorg/viewport3d/lightInfo/lightsValue'
 import {
   cloneLights,
   createDefaultLight
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import type {
   LightInfoEntry,
   LightInfoType
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

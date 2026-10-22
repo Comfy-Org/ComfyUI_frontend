@@ -136,7 +136,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/platform/billing/components/settings/CreditsPanel.vue')
     )
   }
 
@@ -173,8 +173,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () =>
-        import('@/platform/workspace/components/dialogs/settings/billing/BillingTab.vue')
+      () => import('@/platform/billing/components/billingTab/BillingTab.vue')
     )
   }
 

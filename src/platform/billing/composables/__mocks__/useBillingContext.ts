@@ -1,0 +1,51 @@
+import { vi } from 'vitest'
+import { computed, ref } from 'vue'
+
+import type { BillingContext } from '@/platform/billing/composables/types'
+import type { useBillingContext as realUseBillingContext } from '@/platform/billing/composables/useBillingContext'
+
+function createBillingContextMock(): BillingContext {
+  return {
+    type: computed(() => 'legacy'),
+    isInitialized: ref(false),
+    isLoading: ref(false),
+    error: ref(null),
+    subscription: computed(() => null),
+    balance: computed(() => null),
+    plans: computed(() => []),
+    currentPlanSlug: computed(() => null),
+    teamCreditStops: computed(() => null),
+    currentTeamCreditStop: computed(() => null),
+    maxSeats: computed(() => null),
+    occupiedSeats: computed(() => null),
+    canAccessSubscriptionFeatures: computed(() => false),
+    isFreeTier: computed(() => false),
+    billingStatus: computed(() => null),
+    subscriptionStatus: computed(() => null),
+    subscriptionState: computed(() => null),
+    tier: computed(() => null),
+    renewalDate: computed(() => null),
+    renewalInvoice: computed(() => null),
+    isLegacyTeamPlan: computed(() => false),
+    isTeamPlan: computed(() => false),
+    canRunWorkflows: computed(() => false),
+    showsSubscribeToRunPrompt: computed(() => false),
+    getMaxSeats: vi.fn(() => 1),
+    initialize: vi.fn(async () => {}),
+    fetchStatus: vi.fn(async () => {}),
+    fetchBalance: vi.fn(async () => {}),
+    subscribe: vi.fn(async () => {}),
+    previewSubscribe: vi.fn(async () => null),
+    manageSubscription: vi.fn(async () => ({ ok: true }) as const),
+    cancelSubscription: vi.fn(async () => 'legacy' as const),
+    resubscribe: vi.fn(async () => {}),
+    topup: vi.fn(async () => {}),
+    fetchPlans: vi.fn(async () => {}),
+    reconcileSubscriptionSuccess: vi.fn(async () => {}),
+    whenRoutingKnown: vi.fn(async () => true)
+  }
+}
+
+export const useBillingContext = vi.fn<typeof realUseBillingContext>(
+  createBillingContextMock
+)
