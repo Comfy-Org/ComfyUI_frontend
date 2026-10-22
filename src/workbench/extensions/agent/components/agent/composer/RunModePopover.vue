@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   DropdownMenuPortal,
-  DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuRoot,
@@ -13,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
@@ -114,12 +114,12 @@ const options: {
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuPortal :key="Number(open)">
-      <DropdownMenuContent
+      <MenuContent
         side="top"
         align="end"
         :side-offset="8"
         :aria-describedby="descriptionId"
-        class="agent-scope z-overlay flex w-80 flex-col gap-2.5 rounded-lg border bg-secondary p-2.5 text-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="agent-scope flex w-80 flex-col gap-2.5 bg-secondary p-2.5"
       >
         <div class="flex flex-col gap-0.5">
           <div aria-hidden="true" class="text-sm/5 text-foreground">
@@ -196,7 +196,7 @@ const options: {
             </Button>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
+      </MenuContent>
       <span v-if="open" role="status" class="sr-only">
         {{ savingMode === null ? '' : t('g.saving') }}
       </span>
