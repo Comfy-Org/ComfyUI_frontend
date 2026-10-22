@@ -23,7 +23,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-import './draggableList.css'
+export const draggableItemClass =
+  'relative select-none will-change-transform [&.is-idle]:transition-transform [&.is-idle]:duration-250 [&.is-idle]:ease-[ease] [&.is-draggable]:z-10'
 
 export class DraggableList extends EventTarget {
   listContainer: HTMLElement
