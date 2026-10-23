@@ -30,16 +30,9 @@ export interface AgentLocalRunRig {
   turnPosts: () => readonly TurnPostBody[]
   /** `client_id` on the newest turn POST, or `undefined` when absent. */
   lastTurnClientId: () => string | undefined
-  /**
-   * Starts a server-submitted run and leaves it pinned mid-execution. Its
-   * execution frames reach this tab only when the turn carried this tab's
-   * `client_id`, as ComfyUI addresses them.
-   */
+  /** Starts a server-submitted run and leaves it pinned mid-execution. */
   startRunForUser: (jobId: string) => Promise<void>
-  /**
-   * Resolves once the execution-frame coalescer and the following Vue render
-   * have run, so a frame this tab was an addressee of has reached the canvas.
-   */
+  /** Waits two animation frames and a macrotask in the page. */
   settleExecutionFrames: () => Promise<void>
   /** Finishes that run with one image output on the output node. */
   finishRunForUser: (jobId: string) => Promise<void>
@@ -54,7 +47,6 @@ export interface AgentLocalRunRig {
 }
 
 interface AgentLocalRunOptions {
-  /** Whether the fake ComfyUI identifies its socket on the `status` frame. */
   socketReportsId: boolean
 }
 

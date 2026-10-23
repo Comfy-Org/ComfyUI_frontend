@@ -7,10 +7,6 @@ import {
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
 
-/**
- * Source: https://comfy-organization.slack.com/archives/C0BGH348Z0C/p1790791524330409
- * Ticket: https://linear.app/comfyorg/issue/PM-1875
- */
 test.describe(
   'Agent local run follows this canvas by borrowing its client id (PM-1875)',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },

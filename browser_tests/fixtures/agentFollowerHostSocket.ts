@@ -29,11 +29,7 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
-/**
- * The id the fake ComfyUI reports on its first `status` frame, and therefore
- * the value `api.clientId` takes. Exported so a spec can assert that the id a
- * run was submitted under is this tab's.
- */
+/** The sid the fake ComfyUI reports on its first `status` frame. */
 export const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
@@ -170,12 +166,7 @@ export class AgentFollowerHostSocket {
     private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
-  /**
-   * Pins the id the fake ComfyUI reports on its `status` frame, instead of the
-   * reconnection-derived default. Pass `''` to model a socket that never
-   * identifies itself, so `api.clientId` stays unset — the state the client is
-   * in before the first `status` frame and after `api.resetSocket()` clears it.
-   */
+  /** Pins the `status` sid; `''` models a socket with no id. */
   reportSocketSid(sid: string): this {
     this.fixedSid = sid
     return this

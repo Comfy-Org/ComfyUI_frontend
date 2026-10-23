@@ -28,21 +28,6 @@ export class AgentExecutionHelper {
   private readonly addressedJobs = new Set<string>()
   private jobCounter = 0
 
-  /**
-   * Whether a run's execution frames are addressed to THIS tab's socket.
-   *
-   * ComfyUI unicasts `execution_start`, `progress_state`, `executed` and
-   * `execution_error` to the single socket whose `client_id` submitted the
-   * prompt (`PromptServer.send_json` delivers to `self.sockets[sid]` and drops
-   * the message when that sid is not connected); only `status` is broadcast,
-   * with `sid=None`. The default is that this tab submitted every run here, so
-   * every frame is addressed to it.
-   *
-   * A spec covering a run submitted under some OTHER id replaces this via
-   * {@link addressFramesWhen}: the job's HTTP surface (`/api/jobs`,
-   * `/api/view`) then advances exactly as the server's does while this tab is
-   * told nothing — the shape PM-1875 reported.
-   */
   private addressedToThisTab: (jobId: string) => boolean = () => true
 
   constructor(
@@ -81,23 +66,16 @@ export class AgentExecutionHelper {
     })
   }
 
-  /**
-   * Narrows which runs this tab is an addressee of. See
-   * {@link addressedToThisTab}; `status` stays broadcast either way, so an
-   * unaddressed run is still visibly active to this tab and merely inert on
-   * its canvas.
-   */
+  /** Sends execution frames only for runs `predicate` accepts at submit. */
   addressFramesWhen(predicate: (jobId: string) => boolean): void {
     this.addressedToThisTab = predicate
   }
 
-  /** Sends an execution frame only to the socket it is addressed to. */
   private unicast(jobId: string, frame: ExecutionHostFrame): void {
     if (!this.addressedJobs.has(jobId)) return
     this.hostSocket.sendExecution(frame)
   }
 
-  /** Freezes the addressee when the run is submitted, as ComfyUI does. */
   private recordAddressing(jobId: string): void {
     if (this.addressedToThisTab(jobId)) this.addressedJobs.add(jobId)
   }
