@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "Exécuté sur {deployment}. Il n’est pas prêt, les tâches ne s’exécuteront donc pas tant qu’il ne le sera pas.",
     "pickGone": "Le déploiement que vous avez sélectionné n’existe plus.",
     "pickGoneDetail": "Ce navigateur s’exécute maintenant sur Comfy Cloud. Sélectionnez à nouveau un déploiement pour en utiliser un.",
+    "pickStopped": "{deployment} est arrêté, les tâches ne s’exécuteront donc pas. Démarrez-le, ou choisissez un déploiement prêt.",
     "reason": {
+      "failed": "{deployment} a échoué. Redémarrez-le pour y exécuter des tâches.",
+      "notAllowed": "{deployment} est arrêté. Demandez à un propriétaire de l’espace de travail de le démarrer.",
       "notReady": "{deployment} n’est pas prêt. Choisissez-le dès qu’il est prêt.",
       "startElsewhere": "{deployment} ne s’exécute pas. Démarrez-le sur la plateforme développeur, puis choisissez-le.",
-      "starting": "{deployment} est en cours de démarrage. Choisissez-le dès qu’il est prêt."
+      "starting": "{deployment} est en cours de démarrage. Choisissez-le dès qu’il est prêt.",
+      "stopped": "{deployment} est arrêté. Démarrez-le pour y exécuter des tâches."
     },
     "releaseChanged": "Ce déploiement exécute désormais une autre version. Rechargez pour obtenir ses nœuds.",
     "reload": "Recharger",
+    "retry": "Réessayer",
+    "retryLabel": "Réessayer de démarrer {deployment}",
     "runOn": "Exécuter sur",
+    "start": "Démarrer",
+    "startFailed": "{deployment} n’a pas démarré.",
+    "startFix": {
+      "failed": "Réessayez, ou vérifiez-le sur la plateforme développeur.",
+      "noCredits": "Ajoutez des crédits, puis réessayez.",
+      "notAllowed": "Demandez à un propriétaire de l’espace de travail de le démarrer.",
+      "tooManyRunning": "Arrêtez un autre déploiement, puis réessayez.",
+      "unavailable": "Pour l’instant, démarrez-le sur la plateforme développeur."
+    },
+    "startLabel": "Démarrer {deployment}",
     "status": {
       "failed": "Échec",
       "notReady": "Non prêt",
@@ -1478,6 +1494,7 @@
       "stopped": "Arrêté",
       "stopping": "Arrêt en cours"
     },
+    "stoppedStartTooltip": "Exécuté sur {deployment}. Il est arrêté, les tâches ne s’exécuteront donc pas. Ouvrez ce menu pour le démarrer.",
     "stoppedTooltip": "Exécuté sur {deployment}. Il est arrêté, les tâches ne s’exécuteront donc pas tant qu’il n’aura pas été démarré sur la plateforme développeur.",
     "switching": "Changement en cours",
     "switchingNote": "Le changement recharge l’éditeur. Vos onglets restent ouverts.",

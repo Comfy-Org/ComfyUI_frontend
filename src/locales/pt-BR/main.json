@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "Em execução em {deployment}. Ela não está pronta, portanto as tarefas não serão executadas até que esteja.",
     "pickGone": "A implantação que você selecionou não existe mais.",
     "pickGoneDetail": "Este navegador agora é executado no Comfy Cloud. Selecione uma implantação novamente para usar uma.",
+    "pickStopped": "{deployment} está parada, portanto as tarefas não serão executadas. Inicie-a ou escolha uma implantação pronta.",
     "reason": {
+      "failed": "{deployment} falhou. Inicie-a novamente para executar tarefas nela.",
+      "notAllowed": "{deployment} está parada. Peça a um proprietário do espaço de trabalho para iniciá-la.",
       "notReady": "{deployment} não está pronta. Escolha-a quando estiver pronta.",
       "startElsewhere": "{deployment} não está em execução. Inicie-a na Plataforma do Desenvolvedor e depois escolha-a.",
-      "starting": "{deployment} está iniciando. Escolha-a quando estiver pronta."
+      "starting": "{deployment} está iniciando. Escolha-a quando estiver pronta.",
+      "stopped": "{deployment} está parada. Inicie-a para executar tarefas nela."
     },
     "releaseChanged": "Esta implantação agora executa uma versão diferente. Recarregue para obter seus nós.",
     "reload": "Recarregar",
+    "retry": "Tentar novamente",
+    "retryLabel": "Tentar iniciar {deployment} novamente",
     "runOn": "Executar em",
+    "start": "Iniciar",
+    "startFailed": "{deployment} não foi iniciada.",
+    "startFix": {
+      "failed": "Tente novamente ou verifique-a na Plataforma do Desenvolvedor.",
+      "noCredits": "Adicione créditos e tente novamente.",
+      "notAllowed": "Peça a um proprietário do espaço de trabalho para iniciá-la.",
+      "tooManyRunning": "Pare outra implantação e tente novamente.",
+      "unavailable": "Por enquanto, inicie-a na Plataforma do Desenvolvedor."
+    },
+    "startLabel": "Iniciar {deployment}",
     "status": {
       "failed": "Falhou",
       "notReady": "Não está pronto",
@@ -1478,6 +1494,7 @@
       "stopped": "Interrompido",
       "stopping": "Parando"
     },
+    "stoppedStartTooltip": "Em execução em {deployment}. Ela está parada, portanto as tarefas não serão executadas. Abra este menu para iniciá-la.",
     "stoppedTooltip": "Em execução em {deployment}. Ela está parada, portanto as tarefas não serão executadas até que seja iniciada na Plataforma do Desenvolvedor.",
     "switching": "Alternando",
     "switchingNote": "A alternância recarrega o editor. Suas abas permanecem abertas.",

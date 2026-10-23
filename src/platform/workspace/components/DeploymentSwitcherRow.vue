@@ -23,7 +23,14 @@
         {{ deployment }}
       </span>
       <span :class="detailClass" data-testid="deployment-row-detail">
-        {{ detailText }}
+        <span
+          v-if="showsAction"
+          class="flex h-6 items-center rounded-md bg-accent px-2.5 text-foreground group-data-highlighted:bg-muted"
+          aria-hidden="true"
+        >
+          {{ actionLabel }}
+        </span>
+        <template v-else>{{ detailText }}</template>
       </span>
       <span :class="switcherTrailingSlotClass">
         <i
@@ -41,6 +48,18 @@
       <span v-if="note" :id="noteId" hidden>{{ note }}</span>
     </MenuRadioItem>
   </TextTooltip>
+  <div
+    v-if="problem"
+    role="status"
+    class="w-0 min-w-full pr-2 pb-2 pl-7.5 text-xs text-pretty"
+    data-testid="deployment-row-problem"
+  >
+    <p class="m-0 text-warning">
+      {{ problem.summary }}
+      <template v-if="problem.message">{{ problem.message }}</template>
+    </p>
+    <p class="m-0 mt-0.5 text-muted-foreground">{{ problem.fix }}</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -68,6 +87,8 @@ const {
   tooltip,
   tone,
   note = null,
+  actionLabel = null,
+  problem = null,
   muted = false,
   switching = false,
   disabled = false
@@ -84,6 +105,10 @@ const {
   tone?: DeploymentStatusTone
   /** Why the row cannot be picked or run the workflow, on hover and as its description. */
   note?: string | null
+  /** The action choosing the row takes, such as Start, shown as its button. */
+  actionLabel?: string | null
+  /** Why a Start did not happen, said under the row. */
+  problem?: { summary: string; message: string | null; fix: string } | null
   /** Dims the names of a row that cannot be picked, in place of fading it. */
   muted?: boolean
   switching?: boolean
@@ -113,10 +138,11 @@ const titleClass = computed(() =>
 )
 const detailClass = computed(() =>
   cn(
-    'w-14 shrink-0 truncate tabular-nums',
+    'flex w-14 shrink-0 truncate tabular-nums',
     tone === 'failed' && !switching ? 'text-warning' : 'text-muted-foreground'
   )
 )
+const showsAction = computed(() => actionLabel !== null && !switching)
 const detailText = computed(() =>
   switching ? t('deploymentSwitcher.switching') : detail
 )

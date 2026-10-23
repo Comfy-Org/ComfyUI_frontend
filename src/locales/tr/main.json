@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "{deployment} üzerinde çalışıyor. Hazır olmadığı için hazır olana kadar işler çalışmaz.",
     "pickGone": "Seçtiğiniz dağıtım artık mevcut değil.",
     "pickGoneDetail": "Bu tarayıcı artık Comfy Cloud üzerinde çalışıyor. Bir dağıtım kullanmak için yeniden seçin.",
+    "pickStopped": "{deployment} durduruldu, bu nedenle işler çalışmaz. Başlatın veya hazır bir dağıtım seçin.",
     "reason": {
+      "failed": "{deployment} başarısız oldu. Üzerinde iş çalıştırmak için yeniden başlatın.",
+      "notAllowed": "{deployment} durduruldu. Başlatması için bir çalışma alanı sahibine başvurun.",
       "notReady": "{deployment} hazır değil. Hazır olduğunda seçin.",
       "startElsewhere": "{deployment} çalışmıyor. Developer Platform'da başlatın, ardından seçin.",
-      "starting": "{deployment} başlatılıyor. Hazır olduğunda seçin."
+      "starting": "{deployment} başlatılıyor. Hazır olduğunda seçin.",
+      "stopped": "{deployment} durduruldu. Üzerinde iş çalıştırmak için başlatın."
     },
     "releaseChanged": "Bu dağıtım artık farklı bir Release çalıştırıyor. Node'larını almak için yeniden yükleyin.",
     "reload": "Yeniden yükle",
+    "retry": "Yeniden dene",
+    "retryLabel": "{deployment} başlatmayı yeniden dene",
     "runOn": "Şurada çalıştır",
+    "start": "Başlat",
+    "startFailed": "{deployment} başlatılamadı.",
+    "startFix": {
+      "failed": "Yeniden deneyin veya Developer Platform'da kontrol edin.",
+      "noCredits": "Kredi ekleyin, ardından yeniden deneyin.",
+      "notAllowed": "Başlatması için bir çalışma alanı sahibine başvurun.",
+      "tooManyRunning": "Başka bir dağıtımı durdurun, ardından yeniden deneyin.",
+      "unavailable": "Şimdilik Developer Platform'da başlatın."
+    },
+    "startLabel": "{deployment} başlat",
     "status": {
       "failed": "Başarısız",
       "notReady": "Hazır değil",
@@ -1478,6 +1494,7 @@
       "stopped": "Durduruldu",
       "stopping": "Durduruluyor"
     },
+    "stoppedStartTooltip": "{deployment} üzerinde çalışıyor. Durdurulduğu için işler çalışmaz. Başlatmak için bu menüyü açın.",
     "stoppedTooltip": "{deployment} üzerinde çalışıyor. Durdurulduğu için Developer Platform'da başlatılana kadar işler çalışmaz.",
     "switching": "Geçiş yapılıyor",
     "switchingNote": "Geçiş yapmak düzenleyiciyi yeniden yükler. Sekmeleriniz açık kalır.",
