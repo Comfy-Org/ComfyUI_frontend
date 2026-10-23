@@ -116,6 +116,7 @@ const CONFIG_REFRESH_TIMEOUT_MS = 12_000
 const CONFIG_REFRESH_BUDGET_MS = 20_000
 const CONFIG_REFRESH_ATTEMPTS = 2
 const CONFIG_RETRY_DELAY_MS = 500
+const CONFIG_FAST_FAILURE_MS = 3_000
 
 const initializationState = ref<
   'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
@@ -250,7 +251,8 @@ async function readAuthenticatedRemoteConfig(
   try {
     let outcome: RemoteConfigRefreshOutcome | undefined
     for (let attempt = 1; attempt <= CONFIG_REFRESH_ATTEMPTS; attempt++) {
-      const remaining = deadline - Date.now()
+      const startedAt = Date.now()
+      const remaining = deadline - startedAt
       if (remaining <= 0) break
       outcome = await Promise.race([
         refreshRemoteConfig({
@@ -261,6 +263,7 @@ async function readAuthenticatedRemoteConfig(
         backstop
       ])
       if (outcome.kind !== 'failed' || !outcome.transient) break
+      if (Date.now() - startedAt > CONFIG_FAST_FAILURE_MS) break
       if (attempt === CONFIG_REFRESH_ATTEMPTS) break
       const delay = CONFIG_RETRY_DELAY_MS * (1 + Math.random())
       await Promise.race([

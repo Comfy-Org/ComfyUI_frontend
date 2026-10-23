@@ -598,6 +598,23 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
     })
 
+    it('does not retry a transient failure that came back slowly', async () => {
+      remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig.mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve(TRANSIENT), 3_001))
+      )
+
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(5_000)
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+    })
+
     it('does not retry a read that timed out', async () => {
       remoteConfigState.value = 'error'
       mockRefreshRemoteConfig.mockImplementation(
