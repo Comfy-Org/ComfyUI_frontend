@@ -75,7 +75,7 @@ function isNotifyingPermanentRefusalCode(code: string): boolean {
 export const SUBSCRIBE_ACK_TIMEOUT_MS = 15_000
 // The third unanswered attempt is terminal: frames at 0 s, 15 s and 30 s,
 // give-up at 45 s. Silent attempts also count into the shared refusal budget.
-const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
+export const SUBSCRIBE_ACK_MAX_TIMEOUTS = 3
 
 /**
  * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
