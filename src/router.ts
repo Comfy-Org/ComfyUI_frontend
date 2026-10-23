@@ -253,7 +253,12 @@ if (isCloud) {
     // These routes need auth but handle their own routing logic
     if (to.name === 'cloud-user-check') {
       if (to.meta.requiresAuth && !isLoggedIn) {
-        return next({ name: 'cloud-login' })
+        return next({
+          name: 'cloud-login',
+          query: needsFirebaseForDesktopCode
+            ? { switchAccount: 'true' }
+            : undefined
+        })
       }
       return next()
     }
