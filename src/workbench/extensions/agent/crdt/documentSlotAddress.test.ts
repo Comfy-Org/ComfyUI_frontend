@@ -267,12 +267,13 @@ describe('a local link edit lands on the document slot that carries its input', 
     onTestFinished(() => doc.destroy())
     const unsent: GraphOperation[] = []
     const outcomes: string[] = []
+    let boundRootGraphId = toRootGraphId(graph.id)
     minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
       enqueue: (operations) => unsent.push(...operations),
       getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(graph.id),
+      boundRootGraphId: () => boundRootGraphId,
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
       docWidgetValue: (nodeId, widgetName) =>
@@ -293,13 +294,16 @@ describe('a local link edit lands on the document slot that carries its input', 
       const result = applyOps(doc, ops, CATALOG)
       outcomes.push(...result.outcomes.map(({ outcome }) => outcome))
     }
-    function refuse() {
+    function refuseAfterRebinding() {
+      boundRootGraphId = toRootGraphId(new LGraph().id)
       minter?.forgetUnappliedGrows(
+        toRootGraphId(graph.id),
         mintWireOps(unsent.splice(0), {
           actor: 'human:user:tab',
           baseVersion: ++stampCounter
         })
       )
+      boundRootGraphId = toRootGraphId(graph.id)
     }
     function foreignAppend(name: string) {
       assert.exists(sink)
@@ -313,7 +317,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       unsent,
       outcomes,
       echo,
-      refuse,
+      refuseAfterRebinding,
       foreignAppend
     }
   }
@@ -566,16 +570,16 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: ['agent_crdt_link_slot_not_in_doc']
     },
     {
-      name: 'a grow the host never applies frees its name for a fresh grow',
+      name: 'a grow the host never applies frees its name for a fresh grow, even when it settles after the binding moved',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
-      act: async ({ sources, sink, echo, refuse }) => {
+      act: async ({ sources, sink, echo, refuseAfterRebinding }) => {
         sources[1].connect(0, sink, 1)
         await afterFlush()
         echo()
         sources[2].connect(0, sink, 2)
         await afterFlush()
-        refuse()
+        refuseAfterRebinding()
         sources[0].connect(0, sink, 2)
         await afterFlush()
       },

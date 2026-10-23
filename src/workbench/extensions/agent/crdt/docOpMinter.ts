@@ -124,8 +124,8 @@ type PromotedWriteRefusal =
     }
 
 export interface DocOpMinter {
-  /** Drops the predicted slots of grows the host settled without applying. */
-  forgetUnappliedGrows(ops: readonly Op[]): void
+  /** Drops the predicted slots of a root graph's grows the host settled without applying. */
+  forgetUnappliedGrows(rootGraphId: RootGraphId, ops: readonly Op[]): void
   detach(): void
 }
 
@@ -1077,12 +1077,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
-  function forgetUnappliedGrows(ops: readonly Op[]): void {
-    const graphId = deps.boundRootGraphId() ?? deps.getGraph()?.id
-    if (graphId === undefined) return
+  function forgetUnappliedGrows(
+    rootGraphId: RootGraphId,
+    ops: readonly Op[]
+  ): void {
     for (const op of ops) {
       if (op.op !== 'connect' || !op.grow) continue
-      const key = nodeKey(graphId, op.to_node)
+      const key = nodeKey(rootGraphId, op.to_node)
       const grows = unechoedGrows.get(key)
       if (!grows) continue
       const names = grows.names.filter((name) => name !== op.grow.name)
