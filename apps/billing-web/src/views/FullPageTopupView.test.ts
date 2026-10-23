@@ -14,6 +14,7 @@ import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
+import { provideWebSessionCloudRead } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -175,6 +176,20 @@ function settledTopup(
 }
 
 const payButton = () => screen.getByRole('button', { name: 'Pay' })
+
+let featureReader = 0
+
+function serveFeatures(read: () => Promise<Response | undefined>) {
+  const uid = `uid-features-${++featureReader}`
+  provideWebSessionCloudRead(() => ({ uid, read }))
+}
+
+const unifiedBillingSettings = (on: boolean) => async () =>
+  new Response(JSON.stringify({ unified_billing_settings: on }))
+
+beforeEach(() => {
+  serveFeatures(unifiedBillingSettings(true))
+})
 
 afterEach(() => {
   sessionStorage.clear()
@@ -738,4 +753,42 @@ describe('FullPageTopupView paying once', () => {
     await waitFor(() => expect(fake.createTopupCheckout).toHaveBeenCalledOnce())
     expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
   })
+
+  it.for<{ name: string; read: () => Promise<Response | undefined> }>([
+    {
+      name: 'unified_billing_settings is off',
+      read: unifiedBillingSettings(false)
+    },
+    {
+      name: 'the flag read fails',
+      read: () => Promise.reject(new TypeError('Failed to fetch'))
+    },
+    {
+      name: 'the flag read answers a server error',
+      read: async () =>
+        new Response(JSON.stringify({ unified_billing_settings: true }), {
+          status: 500
+        })
+    }
+  ])(
+    'charges the method on file for a paying-once quote when $name',
+    async ({ read }) => {
+      serveFeatures(read)
+      const fake = renderTopup({
+        topupQuote: PAYS_ONCE,
+        topup: SUCCEEDED,
+        paymentMethods: { status: 'ok', value: [{ ...VISA, is_default: true }] }
+      })
+      await screen.findByText('Add credits · Acme Team')
+
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+      expect(form.mounts).toBe(0)
+      await userEvent.click(payButton())
+
+      await waitFor(() =>
+        expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
+      )
+      expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    }
+  )
 })

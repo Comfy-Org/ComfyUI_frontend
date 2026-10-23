@@ -20,6 +20,7 @@ const stripeKey = useBillingWebStripeKey()
 const {
   page,
   quote,
+  paysOnce,
   savedMethods,
   canPay,
   returnLink,
@@ -39,7 +40,8 @@ const {
 
 const charge = computed<CheckoutCharge | undefined>(() => {
   const configurationId = quote.value?.paymentMethodConfigurationId
-  if (!quote.value || configurationId === undefined) return undefined
+  if (!paysOnce.value || !quote.value || configurationId === undefined)
+    return undefined
   return {
     amountCents: quote.value.amountCents,
     currency: 'usd',

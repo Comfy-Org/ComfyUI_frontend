@@ -46,6 +46,7 @@ import {
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
+import { awaitUnifiedBillingSettings } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
@@ -95,9 +96,10 @@ function revisited(page: CheckoutPage): boolean {
  * The full-page credit top-up: the same `CheckoutPage` states as the
  * subscription checkout, driven by the top-up command. Arrival reconciles
  * with whatever the workspace is already waiting on, reads `can_top_up`, and
- * quotes the link's amount. A quote with a payment configuration pays once
- * with a new card or a chosen saved card, resending one purchase under one
- * key until the server answers it; one without charges the method on file.
+ * quotes the link's amount. With `unified_billing_settings` on, a quote with
+ * a payment configuration pays once with a new card or a chosen saved card,
+ * resending one purchase under one key until the server answers it; any
+ * other page charges the method on file.
  * The lifecycle's operation moves the page to its ending.
  */
 export function useFullPageTopup() {
@@ -120,8 +122,12 @@ export function useFullPageTopup() {
     return amountCents === undefined ? INVALID_AMOUNT_LINK : RESOLVING
   }
   const quote = shallowRef<TopupQuote>()
+  const unifiedBillingSettings = awaitUnifiedBillingSettings()
+  const interactiveAllowed = shallowRef(false)
   const paysOnce = computed(
-    () => quote.value?.paymentMethodConfigurationId !== undefined
+    () =>
+      interactiveAllowed.value &&
+      quote.value?.paymentMethodConfigurationId !== undefined
   )
   const offeredMethods = computed(() =>
     paysOnce.value ? eligibleCards(savedMethods.value) : savedMethods.value
@@ -189,7 +195,7 @@ export function useFullPageTopup() {
   ): Promise<CheckoutPageEvent> {
     if (quoted.status !== 'ok')
       return { type: 'unavailable', code: quoted.code }
-    if (quoted.value.paymentMethodConfigurationId === undefined)
+    if (!paysOnce.value)
       return { type: 'quoted', reactivation: false, method: 'on_file' }
     const [cards, stripeKey] = await Promise.all([saved, stripeKeyRead])
     return {
@@ -204,10 +210,12 @@ export function useFullPageTopup() {
   async function readCapture() {
     if (amountCents === undefined) return
     const saved = readSaved()
-    const [allowed, quoted] = await Promise.all([
+    const [allowed, quoted, unified] = await Promise.all([
       capabilities.read(),
-      topup.quoteTopup({ amountCents })
+      topup.quoteTopup({ amountCents }),
+      unifiedBillingSettings
     ])
+    interactiveAllowed.value = unified
     if (quoted.status === 'ok') quote.value = quoted.value
     const event = capabilityStop(allowed) ?? (await quoteEvent(quoted, saved))
     await latest
