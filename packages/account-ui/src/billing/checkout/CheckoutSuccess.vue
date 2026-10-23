@@ -133,7 +133,10 @@ const isYearly = computed(() =>
 
 const displayPrice = computed(() => {
   if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
+    const amountUsd = previewData.new_plan.price_cents / 100
+    const keepCents =
+      !plan.pricedByQuote && isYearly.value && !Number.isInteger(amountUsd)
+    return keepCents ? amountUsd.toFixed(2) : amountUsd.toFixed(0)
   }
   if (plan.pricedByQuote) return '0'
   return String(

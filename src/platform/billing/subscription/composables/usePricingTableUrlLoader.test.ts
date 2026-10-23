@@ -57,7 +57,7 @@ const TEAM_CREDIT_STOPS = {
       action: 'subscribe',
       list_price_cents: usd * 100,
       price_cents: usd * 100 - index * 1000,
-      period_charge_cents: (usd * 100 - index * 1000) * 12
+      period_charge_cents: (usd * 100 - index * 1000) * 12 + 1
     }
   }))
 } satisfies TeamCreditStops
@@ -250,7 +250,7 @@ describe('usePricingTableUrlLoader', () => {
           credits: 147700,
           usd: 700,
           discountedUsd: 680,
-          periodChargeUsd: { monthly: 690, yearly: 8160 }
+          periodChargeUsd: { monthly: 690, yearly: 8160.01 }
         },
         billingCycle: 'yearly'
       }
