@@ -9148,7 +9148,7 @@ describe('AgentPanelRoot workflow binding', () => {
           await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
           expect(lookupCount).toBe(1)
         } else {
-          await vi.waitFor(() => expect(lookupCount).toBe(2))
+          expect(lookupCount).toBe(1)
           expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
           expect(
             screen.getByRole('menuitemradio', { name: 'current' })
@@ -12039,7 +12039,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeVisible()
   })
 
-  it('does not let an older workflow refresh overwrite a newer result', async () => {
+  it('shares an older workflow refresh with a newer reference request', async () => {
     makeTab('wf-current')
     addTab('workflows/video_minimax_h3_i2v.json')
     let resolveInitial!: (response: Response) => void
@@ -12074,27 +12074,24 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
-    expect(
-      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
-    ).toBeVisible()
+    expect(workflowRequestCount).toBe(1)
 
     resolveInitial(
       json(200, {
-        data: [],
+        data: [{ id: 'wf-video', name: 'video_minimax_h3_i2v' }],
         pagination: {
           offset: 0,
           limit: 100,
-          total: 0,
+          total: 1,
           has_more: false
         }
       })
     )
-    await nextTick()
-    await nextTick()
 
     expect(
-      screen.getByRole('menuitem', { name: 'video_minimax_h3_i2v' })
+      await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
     ).toBeVisible()
+    expect(workflowRequestCount).toBe(1)
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {

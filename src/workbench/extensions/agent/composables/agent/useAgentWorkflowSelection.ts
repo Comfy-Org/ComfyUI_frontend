@@ -136,7 +136,7 @@ export function useAgentWorkflowSelection({
     }
     try {
       if (tab.isTemporary && cloudIdFor(tab) === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
         if (!isCurrent()) return
         const filename = nextSaveFilename(tab)
         if (!(await workflowService.saveWorkflowAs(tab, { filename })))
