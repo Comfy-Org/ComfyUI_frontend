@@ -493,6 +493,7 @@ function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
 }
 
 type RestoredGraph = GraphRestore['previous']
+type RestoredScope = Pick<RestoredGraph, 'nodes' | 'links'>
 type SerializedNode = RestoredGraph['nodes'][number]
 
 interface SerializedLink {
@@ -513,7 +514,7 @@ interface DocLink {
   target_slot: number
 }
 
-function serializedGraph(state: RestoredGraph): SerializedGraph {
+function serializedGraph(state: RestoredScope): SerializedGraph {
   const links = (state.links ?? []).map((link): SerializedLink => {
     const [id, originId, targetId, targetSlot] = Array.isArray(link)
       ? [link[0], link[1], link[3], link[4]]
@@ -529,6 +530,21 @@ function serializedGraph(state: RestoredGraph): SerializedGraph {
     nodes: new Map(state.nodes.map((node) => [String(node.id), node])),
     links: new Map(links.map((link) => [link.id, link]))
   }
+}
+
+function subgraphInteriors(state: RestoredGraph): Map<string, RestoredScope> {
+  return new Map(
+    (state.definitions?.subgraphs ?? []).flatMap(
+      (definition): [string, RestoredScope][] =>
+        hasRestoredScope(definition) ? [[definition.id, definition]] : []
+    )
+  )
+}
+
+function hasRestoredScope<T extends object>(
+  definition: T
+): definition is T & RestoredScope {
+  return 'nodes' in definition && Array.isArray(definition.nodes)
 }
 
 function sameLinkEnds(
@@ -1339,6 +1355,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (!deps.isEnabled() || !deps.isDocBound()) return
     const graph = deps.getGraph()
     if (!graph || !isMintableRootScope(graph, 'restore', graph.id)) return
+    mintRestoredScope(graph, previous, next)
+    const priorInteriors = subgraphInteriors(previous)
+    for (const [id, interior] of subgraphInteriors(next)) {
+      const prior = priorInteriors.get(id)
+      const subgraph = graph.subgraphs.get(id)
+      if (prior && subgraph) mintRestoredScope(subgraph, prior, interior)
+    }
+  }
+
+  function mintRestoredScope(
+    graph: LGraph,
+    previous: RestoredScope,
+    next: RestoredScope
+  ): void {
     const before = serializedGraph(previous)
     const after = serializedGraph(next)
     const liveNodes = new Map(
@@ -1357,6 +1387,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   ): void {
     for (const id of before.nodes.keys()) {
       if (after.nodes.has(id)) continue
+      if (!isMintableRootScope(graph, 'node_delete', id)) continue
       const removedLinks = [...before.links.values()]
         .filter((link) => link.origin_id === id || link.target_id === id)
         .map((link) => link.id)
@@ -1373,6 +1404,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       const target = liveNodes.get(link.target_id)
       if (!target || !after.nodes.has(link.origin_id)) continue
       if (sameLinkEnds(link, after.links.get(link.id))) continue
+      if (!isMintableRootScope(graph, 'disconnect', link.id)) continue
       scheduleDisconnect(
         graph,
         { id: link.id, target_id: target.id, target_slot: link.target_slot },

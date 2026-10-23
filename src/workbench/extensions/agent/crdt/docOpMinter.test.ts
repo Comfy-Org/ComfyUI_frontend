@@ -689,6 +689,79 @@ describe('attachDocOpMinter', () => {
 
       expect(minted).toEqual([])
     })
+
+    function seedSubgraphInterior() {
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph)
+      const interior = seedGraph(subgraph)
+      withGraphIntentSource('load', () => graph.add(host))
+      return { subgraph, host, ...interior }
+    }
+
+    it.for([
+      {
+        change: 'an interior widget value',
+        act: ({ host, source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.widgets![0].value = 42
+          return {
+            minted: [
+              {
+                op: 'set_widget',
+                node_id: source.id,
+                widget: 'steps',
+                value: 42,
+                old: 20,
+                path: [String(host.id), String(source.id)],
+                inner_widget: 'steps'
+              }
+            ],
+            reported: []
+          }
+        }
+      },
+      {
+        change: 'an interior node removal',
+        act: ({ subgraph, sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          subgraph.remove(sink)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_node_delete']
+          }
+        }
+      },
+      {
+        change: 'an interior link removal',
+        act: ({ sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          sink.disconnectInput(0)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_disconnect']
+          }
+        }
+      },
+      {
+        change: 'an interior rename',
+        act: ({ source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.title = 'Renamed'
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_set_node_field']
+          }
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const seeded = seedSubgraphInterior()
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => act(seeded))
+      emitGraphRestored({ previous, next: await workflowJson(graph) })
+      await afterFlush()
+
+      expect(minted).toEqual(expected.minted)
+      expect(
+        vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+      ).toEqual(expected.reported)
+    })
   })
 
   it('mints nothing for the same commands issued as agent-remote writes', async () => {
