@@ -17,12 +17,29 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
+function getExtensionPackPath(extension: string): string | undefined {
+  const pathname = new URL(extension, window.location.origin).pathname
+  return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+}
+
 export function shouldLoadExtension(
   extension: string,
-  isCloudBuild: boolean
+  {
+    isCloudBuild,
+    disabledPackPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    isCloudBuild: boolean
+    disabledPackPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  }
 ): boolean {
   if (extension.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
+  if (isCloudBuild && INLINED_CLOUD_EXTENSIONS.has(extension)) return false
+  if (disableAllCustomExtensions) return false
+
+  const packPath = getExtensionPackPath(extension)
+  return packPath === undefined || !disabledPackPaths.includes(packPath)
 }
 
 const MAX_EXTENSION_PATH_LENGTH = 512
@@ -113,11 +130,29 @@ export function reportExtensionLoadFailures(
  */
 export async function loadExtensions() {
   const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
   extensionStore.loadDisabledExtensionNames(
-    useSettingStore().get('Comfy.Extension.Disabled')
+    settingStore.get('Comfy.Extension.Disabled')
   )
+  const disabledPackPaths = settingStore.get('Comfy.Extension.DisabledPacks')
+  const disableAllCustomExtensions = new URLSearchParams(
+    window.location.search
+  ).has('safe')
 
   const extensions = await api.getExtensions()
+  extensionStore.loadExtensionPackPaths(
+    extensions
+      .filter((extension) =>
+        shouldLoadExtension(extension, {
+          isCloudBuild: __DISTRIBUTION__ === 'cloud'
+        })
+      )
+      .flatMap((extension) => {
+        const packPath = getExtensionPackPath(extension)
+        return packPath === undefined ? [] : [packPath]
+      }),
+    disabledPackPaths
+  )
 
   installErrorNodeWidgets()
   installTouchPointerGuards()
@@ -132,7 +167,11 @@ export async function loadExtensions() {
       Promise.all(
         extensions
           .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+            shouldLoadExtension(extension, {
+              isCloudBuild: __DISTRIBUTION__ === 'cloud',
+              disabledPackPaths,
+              disableAllCustomExtensions
+            })
           )
           .map((ext) => importCustomExtension(ext))
       )

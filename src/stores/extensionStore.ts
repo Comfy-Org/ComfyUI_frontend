@@ -30,6 +30,8 @@ export const useExtensionStore = defineStore('extension', () => {
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
+  const extensionPackPaths = ref<string[]>([])
+  const disabledExtensionPackPaths = ref<Set<string>>(new Set())
 
   // Disabled extension names that are currently not in the extension list.
   // If a node pack is disabled in the backend, we shouldn't remove the configuration
@@ -37,6 +39,11 @@ export const useExtensionStore = defineStore('extension', () => {
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
       (name) => !(name in extensionByName.value)
+    )
+  })
+  const inactiveDisabledExtensionPackPaths = computed(() => {
+    return Array.from(disabledExtensionPackPaths.value).filter(
+      (path) => !extensionPackPaths.value.includes(path)
     )
   })
 
@@ -85,6 +92,14 @@ export const useExtensionStore = defineStore('extension', () => {
     }
   }
 
+  function loadExtensionPackPaths(paths: string[], disabledPaths: string[]) {
+    extensionPackPaths.value = [...new Set(paths)]
+    disabledExtensionPackPaths.value = new Set(disabledPaths)
+  }
+
+  const isExtensionPackEnabled = (path: string) =>
+    !disabledExtensionPackPaths.value.has(path)
+
   /**
    * Core extensions are extensions that are defined in the core package.
    * See /extensions/core/index.ts for the list.
@@ -105,13 +120,17 @@ export const useExtensionStore = defineStore('extension', () => {
   return {
     extensions,
     enabledExtensions,
+    extensionPackPaths,
     inactiveDisabledExtensionNames,
+    inactiveDisabledExtensionPackPaths,
     isExtensionInstalled,
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,
     unregisterExtension,
     loadDisabledExtensionNames,
+    loadExtensionPackPaths,
+    isExtensionPackEnabled,
     captureCoreExtensions,
     isCoreExtension,
     hasThirdPartyExtensions

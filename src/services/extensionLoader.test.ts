@@ -40,25 +40,61 @@ describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, true)).toBe(false)
+      expect(shouldLoadExtension(extension, { isCloudBuild: true })).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, false)).toBe(true)
+      expect(shouldLoadExtension(extension, { isCloudBuild: false })).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadExtension('/extensions/core/foo.js', false)).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/core/foo.js', { isCloudBuild: false })
+    ).toBe(false)
   })
 
   it('loads other extensions', () => {
-    expect(shouldLoadExtension('/extensions/comfyui-foo/main.js', true)).toBe(
-      true
-    )
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: true
+      })
+    ).toBe(true)
+  })
+
+  it('skips every module from a disabled pack without prefix-matching peers', () => {
+    const disabled = ['/extensions/agent-cushions/']
+
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions/main.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions/nested/panel.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions-extra/main.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(true)
+  })
+
+  it('skips every custom extension during a safe boot', () => {
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: false,
+        disableAllCustomExtensions: true
+      })
+    ).toBe(false)
   })
 })
 

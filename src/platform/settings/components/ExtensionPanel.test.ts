@@ -164,4 +164,27 @@ describe('ExtensionPanel', () => {
       screen.queryByRole('button', { name: 'Reload to apply changes' })
     ).not.toBeInTheDocument()
   })
+
+  it('disables a whole extension pack without dropping absent disabled packs', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.loadExtensionPackPaths(
+      ['/extensions/agent-cushions/'],
+      ['/extensions/missing/']
+    )
+    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+
+    renderPanel()
+    await user.click(
+      screen.getByRole('switch', { name: 'Extension pack agent-cushions' })
+    )
+
+    expect(setSetting).toHaveBeenLastCalledWith(
+      'Comfy.Extension.DisabledPacks',
+      ['/extensions/missing/', '/extensions/agent-cushions/']
+    )
+    expect(
+      screen.getByRole('button', { name: 'Reload to apply changes' })
+    ).toBeVisible()
+  })
 })

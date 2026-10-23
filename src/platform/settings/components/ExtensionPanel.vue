@@ -14,6 +14,12 @@
           </span>
           {{ ext.name }}
         </li>
+        <li v-for="pack in changedExtensionPacks" :key="pack">
+          <span>
+            {{ editingEnabledExtensionPacks[pack] ? '[-]' : '[+]' }}
+          </span>
+          {{ extensionPackName(pack) }}
+        </li>
       </ul>
       <div class="flex justify-end">
         <Button variant="destructive" @click="applyChanges">
@@ -32,80 +38,22 @@
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead class="w-12">
-            <Checkbox
-              :model-value="selectAllState"
-              :aria-label="$t('g.selectAll')"
-              @update:model-value="toggleAllVisible"
-            />
-          </TableHead>
-          <TableSortHead v-model:direction="nameSortDirection">
-            {{ $t('g.extensionName') }}
-          </TableSortHead>
-          <TableHead class="w-20 text-right">
-            <Menu :items="extensionActions" align="end">
-              <template #trigger>
-                <Button
-                  size="icon"
-                  variant="muted-textonly"
-                  :aria-label="$t('g.moreOptions')"
-                >
-                  <i class="icon-[lucide--ellipsis]" />
-                </Button>
-              </template>
-            </Menu>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <TableRow
-          v-for="extension in visibleExtensions"
-          :key="extension.name"
-          class="cursor-pointer"
-          :data-state="
-            selectedExtensionNames.has(extension.name) ? 'selected' : undefined
-          "
-          @click="
-            setExtensionSelected(
-              extension.name,
-              !selectedExtensionNames.has(extension.name)
-            )
-          "
-        >
-          <TableCell>
-            <Checkbox
-              :model-value="selectedExtensionNames.has(extension.name)"
-              :aria-label="$t('g.selectItem', { name: extension.name })"
-              @click.stop
-              @update:model-value="
-                (selected) => setExtensionSelected(extension.name, selected)
-              "
-            />
-          </TableCell>
-          <TableCell>
-            {{ extension.name }}
-            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
-              {{ $t('g.core') }}
-            </Badge>
-            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
-          </TableCell>
-          <TableCell class="text-right">
-            <Switch
-              :model-value="editingEnabledExtensions[extension.name]"
-              :disabled="extensionStore.isExtensionReadOnly(extension.name)"
-              :aria-label="extension.name"
-              @click.stop
-              @update:model-value="
-                (enabled) => setExtensionEnabled(extension.name, enabled)
-              "
-            />
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
+    <ExtensionPackTable
+      :packs="extensionStore.extensionPackPaths"
+      :enabled-by-path="editingEnabledExtensionPacks"
+      @set-enabled="setExtensionPackEnabled"
+    />
+    <ExtensionListTable
+      v-model:direction="nameSortDirection"
+      :extensions="visibleExtensions"
+      :selected-names="selectedExtensionNames"
+      :enabled-by-name="editingEnabledExtensions"
+      :select-all-state="selectAllState"
+      :actions="extensionActions"
+      @toggle-all="toggleAllVisible"
+      @set-selected="setExtensionSelected"
+      @set-enabled="setExtensionEnabled"
+    />
   </div>
 </template>
 
@@ -114,24 +62,15 @@ import type { CheckboxCheckedState } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
+import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 
@@ -154,6 +93,7 @@ const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
+const editingEnabledExtensionPacks = ref<Record<string, boolean>>({})
 
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
@@ -214,7 +154,15 @@ onMounted(() => {
     editingEnabledExtensions.value[ext.name] =
       extensionStore.isExtensionEnabled(ext.name)
   })
+  extensionStore.extensionPackPaths.forEach((path) => {
+    editingEnabledExtensionPacks.value[path] =
+      extensionStore.isExtensionPackEnabled(path)
+  })
 })
+
+function extensionPackName(path: string) {
+  return path.split('/').filter(Boolean).at(-1) ?? path
+}
 
 const changedExtensions = computed(() => {
   return extensionStore.extensions.filter(
@@ -224,8 +172,18 @@ const changedExtensions = computed(() => {
   )
 })
 
+const changedExtensionPacks = computed(() => {
+  return extensionStore.extensionPackPaths.filter(
+    (path) =>
+      editingEnabledExtensionPacks.value[path] !==
+      extensionStore.isExtensionPackEnabled(path)
+  )
+})
+
 const hasChanges = computed(() => {
-  return changedExtensions.value.length > 0
+  return (
+    changedExtensions.value.length > 0 || changedExtensionPacks.value.length > 0
+  )
 })
 
 const updateExtensionStatus = async () => {
@@ -244,6 +202,20 @@ const updateExtensionStatus = async () => {
 async function setExtensionEnabled(name: string, enabled: boolean) {
   editingEnabledExtensions.value[name] = enabled
   await updateExtensionStatus()
+}
+
+async function setExtensionPackEnabled(path: string, enabled: boolean) {
+  editingEnabledExtensionPacks.value[path] = enabled
+  const editingDisabledExtensionPackPaths = Object.entries(
+    editingEnabledExtensionPacks.value
+  )
+    .filter(([_, isEnabled]) => !isEnabled)
+    .map(([packPath]) => packPath)
+
+  await settingStore.set('Comfy.Extension.DisabledPacks', [
+    ...extensionStore.inactiveDisabledExtensionPackPaths,
+    ...editingDisabledExtensionPackPaths
+  ])
 }
 
 const enableAllExtensions = async () => {

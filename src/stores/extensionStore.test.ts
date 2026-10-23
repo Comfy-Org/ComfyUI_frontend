@@ -48,6 +48,26 @@ describe('extensionStore', () => {
     })
   })
 
+  describe('extension packs', () => {
+    it('deduplicates discovered packs and retains disabled packs that are absent', () => {
+      const store = useExtensionStore()
+      store.loadExtensionPackPaths(
+        ['/extensions/a/', '/extensions/a/', '/extensions/b/'],
+        ['/extensions/b/', '/extensions/missing/']
+      )
+
+      expect(store.extensionPackPaths).toEqual([
+        '/extensions/a/',
+        '/extensions/b/'
+      ])
+      expect(store.isExtensionPackEnabled('/extensions/a/')).toBe(true)
+      expect(store.isExtensionPackEnabled('/extensions/b/')).toBe(false)
+      expect(store.inactiveDisabledExtensionPackPaths).toEqual([
+        '/extensions/missing/'
+      ])
+    })
+  })
+
   describe('isExtensionEnabled / loadDisabledExtensionNames', () => {
     it('all extensions are enabled by default', () => {
       const store = useExtensionStore()

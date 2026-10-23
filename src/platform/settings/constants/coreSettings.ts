@@ -690,6 +690,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
+    id: 'Comfy.Extension.DisabledPacks',
+    name: 'Disabled extension packs',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.59.0'
+  },
+  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
