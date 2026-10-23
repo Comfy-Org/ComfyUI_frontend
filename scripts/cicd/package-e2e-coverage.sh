@@ -64,7 +64,9 @@ ADD_ARGS=()
 for file in "${COVERAGE_FILES[@]}"; do
   ADD_ARGS+=(-a "$file")
 done
-lcov "${ADD_ARGS[@]}" -o "$COVERAGE_DIR/coverage.lcov"
+# lcov 2.4 rejects same-named closures in one file as duplicate functions.
+lcov "${ADD_ARGS[@]}" -o "$COVERAGE_DIR/coverage.lcov" \
+  --ignore-errors inconsistent
 
 MERGED_SF=$(grep -c '^SF:' "$COVERAGE_DIR/coverage.lcov" || true)
 MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$COVERAGE_DIR/coverage.lcov")

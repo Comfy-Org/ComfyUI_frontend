@@ -85,6 +85,7 @@ if [[ "$1" == "--remove" ]]; then
 fi
 inputs=()
 output=''
+ignored=''
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -a)
@@ -95,11 +96,20 @@ while [[ $# -gt 0 ]]; do
       output="$2"
       shift 2
       ;;
+    --ignore-errors)
+      ignored="$2"
+      shift 2
+      ;;
     *)
       shift
       ;;
   esac
 done
+if [[ ",$ignored," != *,inconsistent,* ]] &&
+  ! awk -F'[:,]' '/^SF:/ { delete start } /^FN:/ { if ($3 in start && start[$3] != $2) exit 1; start[$3] = $2 }' "\${inputs[@]}"; then
+  echo 'lcov: ERROR: (inconsistent) duplicate function' >&2
+  exit 1
+fi
 : > "$output"
 for input in "\${inputs[@]}"; do
   cat "$input" >> "$output"
@@ -220,6 +230,27 @@ describe('package-e2e-coverage.sh', () => {
     expect(summary).toContain('failed shard 1')
     expect(summary).toContain('the shard matrix did not pass')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(true)
+  })
+
+  it('merges shards whose file has same-named functions on different lines', () => {
+    using fixture = coverageFixture()
+    const sameNamedClosures =
+      'SF:src/canvas.ts\nFN:10,inner_clicked\nFN:20,inner_clicked\nDA:10,1\nLF:1\nLH:1\nend_of_record\n'
+    fixture.writeShard(
+      'e2e-coverage-shard-1',
+      sameNamedClosures + coverage('src')
+    )
+    fixture.writeShard(
+      'e2e-coverage-shard-2',
+      sameNamedClosures + coverage('src')
+    )
+
+    const result = fixture.run(true)
+
+    expect(result.status).toBe(0)
+    expect(
+      readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
+    ).toContain('SF:src/canvas.ts')
   })
 
   it('rejects a non-boolean shards-succeeded flag', () => {
