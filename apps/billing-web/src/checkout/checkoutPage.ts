@@ -1081,6 +1081,43 @@ function attributionOf(
     : 'followed'
 }
 
+function quoteOf(attempt: Attempt) {
+  return attempt.kind === 'sent' && attempt.quote !== undefined
+    ? { quote: attempt.quote }
+    : {}
+}
+
+function succeededInCapture(
+  page: Capture,
+  operation: Extract<BillingOperationState, { phase: 'succeeded' }>,
+  started: boolean
+): CheckoutPage {
+  return started
+    ? {
+        kind: 'terminal',
+        operation,
+        attribution: 'started',
+        ...quoteOf(page.attempt)
+      }
+    : { kind: 'terminal', operation, attribution: 'settled' }
+}
+
+function waitingInCapture(
+  page: Capture,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined,
+  started: boolean
+): CheckoutPage {
+  if (!isInFlight(operation) || outcome !== undefined)
+    return nothingPending(page)
+  return {
+    kind: 'waiting',
+    operation,
+    ...(started ? { started: true } : { sibling: true }),
+    rail: page.rail
+  }
+}
+
 /**
  * This page's own Pay stays on the form, following its operation through
  * the challenge, until a verdict: the Pay's own once it settles, or the
@@ -1090,12 +1127,6 @@ function attributionOf(
  * that sent it, so this form stays plain, and one parked on a card releases
  * a Pay held for the re-read.
  */
-function quoteOf(attempt: Attempt) {
-  return attempt.kind === 'sent' && attempt.quote !== undefined
-    ? { quote: attempt.quote }
-    : {}
-}
-
 function followedInCapture(
   page: Capture,
   operation: BillingOperationState,
@@ -1103,26 +1134,12 @@ function followedInCapture(
 ): CheckoutPage {
   const started = page.attempt.kind === 'sent' || rereadsOwnPay(page)
   if (operation.phase === 'succeeded')
-    return started
-      ? {
-          kind: 'terminal',
-          operation,
-          attribution: 'started',
-          ...quoteOf(page.attempt)
-        }
-      : { kind: 'terminal', operation, attribution: 'settled' }
+    return succeededInCapture(page, operation, started)
   if (outcomeUnknown(operation))
     return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
-  return isInFlight(operation) && outcome === undefined
-    ? {
-        kind: 'waiting',
-        operation,
-        ...(started ? { started: true } : { sibling: true }),
-        rail: page.rail
-      }
-    : nothingPending(page)
+  return waitingInCapture(page, operation, outcome, started)
 }
 
 /**
