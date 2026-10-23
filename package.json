@@ -47,7 +47,6 @@
     "knip": "knip --cache",
     "knip:components": "knip --production --workspace . --include files",
     "lint:eslint": "eslint --cache --concurrency auto",
-    "lint:fix:ci": "pnpm lint:fix",
     "lint:fix": "pnpm oxlint --fix && pnpm lint:eslint --fix --cache-strategy content && pnpm lint:packages",
     "lint:packages": "pnpm --filter './packages/*' -r --if-present run lint",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",
