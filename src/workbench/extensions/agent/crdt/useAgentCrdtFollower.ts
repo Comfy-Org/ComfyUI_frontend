@@ -48,11 +48,15 @@ import {
   readDocPromotedWidgets,
   readSubgraphDefinitionIds
 } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import {
+  forgetUnsyncedAtLoad,
+  recordUnsyncedHumanOps
+} from './unsyncedHumanOps'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -349,6 +353,8 @@ export function useAgentCrdtFollower(
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      follower.value?.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
@@ -507,6 +513,24 @@ function startAgentCrdtFollower(
       ])
   }
 
+  const workflowByUnsettledOpId = new Map<string, string>()
+  const workflowsWithLostOps = new Set<string>()
+  const recordUnsynced = (): void => {
+    const unsynced = new Set(workflowsWithLostOps)
+    for (const { workflowId, ops } of sender.pendingOps()) {
+      unsynced.add(workflowId)
+      for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
+    }
+    recordUnsyncedHumanOps(tabId, unsynced)
+  }
+  const noteSettledHumanOps = (outcome: BatchOutcome): void => {
+    const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
+    for (const op of outcome.ops) workflowByUnsettledOpId.delete(op.op_id)
+    if (workflowId !== undefined && outcome.state !== 'acknowledged')
+      workflowsWithLostOps.add(workflowId)
+    recordUnsynced()
+  }
+
   const settleHumanOps = (outcome: BatchOutcome) => {
     if (outcome.state === 'acknowledged') {
       trackAcknowledgedDeletes(outcome)
@@ -520,6 +544,7 @@ function startAgentCrdtFollower(
     )
     const unapplied = outcome.ops.filter((op) => !applied.has(op.op_id))
     if (unapplied.length > 0) events.onHumanOpsUnapplied?.(unapplied)
+    noteSettledHumanOps(outcome)
   }
 
   const sender = createOpSender({
@@ -544,7 +569,10 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
   })
-  const coalescer = createOpCoalescer(sender.admit, sender.flush)
+  const coalescer = createOpCoalescer((operations) => {
+    sender.admit(operations)
+    recordUnsynced()
+  }, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
   const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
@@ -762,6 +790,7 @@ function startAgentCrdtFollower(
         clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
+      forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)
@@ -849,6 +878,8 @@ function startAgentCrdtFollower(
     projection.replaceOnNextFrame(detail.workflowId)
     reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
+    workflowsWithLostOps.delete(detail.workflowId)
+    recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
     markCanvasStale()
@@ -1174,6 +1205,8 @@ function startAgentCrdtFollower(
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      readDocWidgetValue(bridge.follower.doc, String(nodeId), widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
     mayWritePromotedHost: (nodeId: NodeId) =>

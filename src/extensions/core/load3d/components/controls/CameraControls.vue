@@ -1,0 +1,73 @@
+<template>
+  <div class="flex flex-col">
+    <Button
+      :tooltip="$t('load3d.switchCamera')"
+      tooltip-side="right"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="$t('load3d.switchCamera')"
+      @click="switchCamera"
+    >
+      <i class="pi pi-camera text-lg text-foreground" />
+    </Button>
+    <Button
+      v-if="hasCustomUp"
+      :tooltip="
+        useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      "
+      tooltip-side="right"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="
+        useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      "
+      @click="toggleUp"
+    >
+      <i
+        :class="
+          cn(
+            useCustomUp
+              ? 'icon-[lucide--compass]'
+              : 'icon-[lucide--rotate-ccw]',
+            'size-5 text-foreground'
+          )
+        "
+      />
+    </Button>
+    <PopupSlider
+      v-if="showFOVButton"
+      v-model="fov"
+      :tooltip-text="$t('load3d.fov')"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import PopupSlider from '@/extensions/core/load3d/components/controls/PopupSlider.vue'
+import Button from '@/components/ui/button/Button.vue'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { hasCustomUp = false } = defineProps<{
+  hasCustomUp?: boolean
+}>()
+
+const cameraType = defineModel<CameraType>('cameraType')
+const fov = defineModel<number>('fov')
+const useCustomUp = defineModel<boolean>('useCustomUp', { default: false })
+
+const showFOVButton = computed(() => cameraType.value === 'perspective')
+
+const switchCamera = () => {
+  cameraType.value =
+    cameraType.value === 'perspective' ? 'orthographic' : 'perspective'
+}
+
+const toggleUp = () => {
+  useCustomUp.value = !useCustomUp.value
+}
+</script>

@@ -28,7 +28,11 @@ import { DocChangeCollector } from './docChangeCollector'
 import { attachDocOpMinter } from './docOpMinter'
 import type { DocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { LiveGraphApplier, readDocSlotNames } from './liveGraphApplier'
+import {
+  LiveGraphApplier,
+  readDocSlotNames,
+  readDocWidgetValue
+} from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -271,6 +275,8 @@ describe('a local link edit lands on the document slot that carries its input', 
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
+      docWidgetValue: (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName),
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
       docHasSubgraphDefinition: () => false,

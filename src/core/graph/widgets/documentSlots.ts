@@ -1,5 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 
 import { growAutogrowInput, liveAutogrowGroupOf } from './dynamicWidgets'
 
@@ -15,7 +17,7 @@ type InputGrow = {
 /** Where a live input lands in the document's input list. */
 export type DocumentInputSlot =
   | { kind: 'slot'; slot: number }
-  | { kind: 'grow'; grow: InputGrow }
+  | { kind: 'grow'; grow: InputGrow; selection?: DynamicComboSelection }
   | { kind: 'absent' }
 
 /**
@@ -45,20 +47,28 @@ export function documentInputSlot(
 ): DocumentInputSlot {
   const slot = documentInputIndex(documentNames, input, liveSlot)
   if (slot !== undefined) return { kind: 'slot', slot }
-  const grow = node && input ? inputGrow(node, input) : undefined
-  return grow ? { kind: 'grow', grow } : { kind: 'absent' }
+  return node && input ? inputGrowth(node, input) : { kind: 'absent' }
 }
 
-function inputGrow(
+function inputGrowth(
   node: LGraphNode,
   input: INodeInputSlot
-): InputGrow | undefined {
+): DocumentInputSlot {
   const widgetBacked = !!input.widget && !node.isSubgraphNode()
-  if (!widgetBacked && !liveAutogrowGroupOf(node, input.name)) return undefined
+  const selection = useNodeDefStore().getDynamicComboSelectionForInput(
+    node,
+    input.name
+  )
+  if (!widgetBacked && !liveAutogrowGroupOf(node, input.name) && !selection)
+    return { kind: 'absent' }
   return {
-    name: input.name,
-    type: String(input.type),
-    ...(input.widget ? { widget: input.widget.name } : {})
+    kind: 'grow',
+    grow: {
+      name: input.name,
+      type: String(input.type),
+      ...(input.widget ? { widget: input.widget.name } : {})
+    },
+    ...(selection ? { selection } : {})
   }
 }
 
