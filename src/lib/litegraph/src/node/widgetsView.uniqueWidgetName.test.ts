@@ -180,6 +180,7 @@ describe('unique widget name invariant', () => {
 
     node.widgets!.push(concrete)
 
+    expect(node.widgets).not.toContain(concrete)
     expect(names(node)).toEqual(['seed'])
     expect(storedNames(node)).toEqual(['seed'])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
