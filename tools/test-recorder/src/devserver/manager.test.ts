@@ -1,5 +1,5 @@
 import type * as childProcess from 'node:child_process'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 // The startup branch is worth asserting at the boundary it actually crosses,
 // so `spawn` is replaced rather than the argv helper behind it. `spawnedChild`
@@ -131,7 +131,9 @@ describe('the dev server the recorder starts for itself', () => {
   async function startDevServer(...args: Parameters<typeof ensureDevServer>) {
     const pending = ensureDevServer(...args)
     await vi.advanceTimersByTimeAsync(1_000)
-    return pending
+    const server = await pending
+    onTestFinished(() => server.stop())
+    return server
   }
 
   // Vite walks upwards from :5173 when the port is taken, so an unpinned start
