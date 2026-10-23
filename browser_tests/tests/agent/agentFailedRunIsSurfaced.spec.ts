@@ -5,7 +5,7 @@ import {
   runToolCallFrame,
   settleStoryTurn,
   startStoryTurn
-} from '@e2e/fixtures/agentExecutionStoryFixture'
+} from '@e2e/tests/agent/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { TARGET_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import { TestIds } from '@e2e/fixtures/selectors'

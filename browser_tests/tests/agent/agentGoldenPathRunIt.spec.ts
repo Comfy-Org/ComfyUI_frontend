@@ -8,7 +8,7 @@ import {
   runToolCallFrame,
   settleStoryTurn,
   startStoryTurn
-} from '@e2e/fixtures/agentExecutionStoryFixture'
+} from '@e2e/tests/agent/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {

@@ -4,7 +4,7 @@ import type { Locator, Page } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-import { agentExecutionStoryTest as test } from '@e2e/fixtures/agentExecutionStoryFixture'
+import { agentExecutionStoryTest as test } from '@e2e/tests/agent/agentExecutionStoryFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { SOURCE_NODE_ID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'

@@ -1,10 +1,14 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { AgentCancelAccepted } from '@comfyorg/ingest-types'
 
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import type { AgentExecutionRig } from '@e2e/fixtures/agentExecutionFixture'
+import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
+import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
@@ -12,6 +16,64 @@ import {
   THREAD_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+const JOB_CANCEL_ROUTE_PATTERN =
+  /\/api\/(?:interrupt|jobs\/(?:[^/]+\/)?cancel)$/
+
+/**
+ * `AgentExecutionHelper` plus the two surfaces only these user-story specs
+ * need, kept here rather than pushed into the shared helper: a recorder for
+ * job interrupt/cancel requests (so "the agent's turn stopped and the job did
+ * not" is observable as the *absence* of a cancel), and a per-job
+ * `GET /api/jobs/{id}` detail route.
+ *
+ * Registered after `super.install()`, which is what makes these routes win —
+ * Playwright runs the most-recently-registered matching handler first — and
+ * the same reason the base helper installs after the harness.
+ */
+export class AgentExecutionStoryHelper extends AgentExecutionHelper {
+  private readonly jobCancels: string[] = []
+  private readonly storyPage: Page
+  private readonly storyAssets: AssetsHelper
+
+  constructor(page: Page, hostSocket: AgentFollowerHostSocket) {
+    super(page, hostSocket)
+    this.storyPage = page
+    this.storyAssets = new AssetsHelper(page)
+  }
+
+  override async install(): Promise<void> {
+    await super.install()
+    await this.storyPage.route(JOB_CANCEL_ROUTE_PATTERN, (route) => {
+      this.jobCancels.push(new URL(route.request().url()).pathname)
+      return route.fulfill({ status: 200, body: '' })
+    })
+  }
+
+  /** Paths of job interrupt or cancel requests, in request order. */
+  jobCancelRequests(): readonly string[] {
+    return this.jobCancels
+  }
+
+  /**
+   * Serves `GET /api/jobs/{jobId}` — the detail record, which is separate from
+   * the list row `enqueueServerRun` and `upsertJob` maintain. Its `workflow`
+   * field is the body that was POSTed to `/api/prompt`, stored verbatim
+   * (cloud `services/ingest/.../prompt.go`, `SetWorkflowJSON`), and it is the
+   * only thing the "open as workflow" action has to rebuild a graph from.
+   * Without this route that fetch 404s, so a spec about what the action does
+   * with the detail must supply one rather than read a failed fetch as a
+   * product verdict.
+   */
+  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
+    await this.storyAssets.mockJobDetail(jobId, detail)
+  }
+}
+
+export interface AgentExecutionStoryRig {
+  harness: MultiAutogrowRealignHarness
+  execution: AgentExecutionStoryHelper
+}
 
 /**
  * The execution rig of `agentExecutionFixture`, but with no turn sent yet:
@@ -22,12 +84,12 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * story's message is what acks the turn and binds the CRDT follower.
  */
 export const agentExecutionStoryTest = agentTest.extend<{
-  rig: AgentExecutionRig
+  rig: AgentExecutionStoryRig
 }>({
   rig: async ({ page }, use) => {
     const harness = new MultiAutogrowRealignHarness(page)
     await harness.setUp({ settings: { 'Comfy.Queue.QPOV2': false } })
-    const execution = new AgentExecutionHelper(page, harness.hostSocket)
+    const execution = new AgentExecutionStoryHelper(page, harness.hostSocket)
     await execution.install()
     const accepted: AgentCancelAccepted = { status: 'cancelling' }
     await page.route('**/api/agent/threads/*/messages/*/cancel', (route) =>

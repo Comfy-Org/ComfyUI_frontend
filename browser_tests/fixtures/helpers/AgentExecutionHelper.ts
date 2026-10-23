@@ -1,18 +1,13 @@
 import type { Page } from '@playwright/test'
 
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
-const JOB_CANCEL_ROUTE_PATTERN =
-  /\/api\/(?:interrupt|jobs\/(?:[^/]+\/)?cancel)$/
 
 /**
  * Queue and execution surface for the black-box agent harness.
@@ -27,7 +22,6 @@ export class AgentExecutionHelper {
   > = {}
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
-  private readonly jobCancels: string[] = []
   private jobCounter = 0
 
   constructor(
@@ -39,10 +33,6 @@ export class AgentExecutionHelper {
 
   async install(): Promise<void> {
     await mockViewFiles(this.page, this.viewFiles)
-    await this.page.route(JOB_CANCEL_ROUTE_PATTERN, (route) => {
-      this.jobCancels.push(new URL(route.request().url()).pathname)
-      return route.fulfill({ status: 200, body: '' })
-    })
     await this.assets.mockOutputHistory([])
     await this.page.route(PROMPT_ROUTE_PATTERN, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
@@ -73,11 +63,6 @@ export class AgentExecutionHelper {
     return this.submitted
   }
 
-  /** Paths of job interrupt or cancel requests, in request order. */
-  jobCancelRequests(): readonly string[] {
-    return this.jobCancels
-  }
-
   lastSubmittedJobId(): string {
     if (this.jobCounter === 0) throw new Error('no prompt was submitted')
     return `agent-exec-job-${this.jobCounter}`
@@ -97,20 +82,6 @@ export class AgentExecutionHelper {
       execution_start_time: null,
       execution_end_time: null
     })
-  }
-
-  /**
-   * Serves `GET /api/jobs/{jobId}` — the detail record, which is separate from
-   * the list row `enqueueServerRun` and `upsertJob` maintain. Its `workflow`
-   * field is the body that was POSTed to `/api/prompt`, stored verbatim
-   * (cloud `services/ingest/.../prompt.go`, `SetWorkflowJSON`), and it is the
-   * only thing the "open as workflow" action has to rebuild a graph from.
-   * Without this route that fetch 404s, so a spec about what the action does
-   * with the detail must supply one rather than read a failed fetch as a
-   * product verdict.
-   */
-  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
-    await this.assets.mockJobDetail(jobId, detail)
   }
 
   async startJob(jobId: string): Promise<void> {
@@ -140,19 +111,7 @@ export class AgentExecutionHelper {
     jobId: string,
     { nodeId, filename }: { nodeId: string; filename: string }
   ): Promise<void> {
-    this.viewFiles[filename] = {}
-    await this.upsertJob(
-      createMockJob({
-        id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
-      })
-    )
+    await this.recordCompletedJob(jobId, { nodeId, filename })
     this.hostSocket.sendExecution({
       type: 'executed',
       data: {
@@ -167,6 +126,23 @@ export class AgentExecutionHelper {
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
     this.status(0)
+  }
+
+  async recordCompletedJob(
+    jobId: string,
+    { nodeId, filename }: { nodeId: string; filename: string }
+  ): Promise<void> {
+    this.viewFiles[filename] = {}
+    const output = { filename, subfolder: '', type: 'output' as const }
+    const job = createMockJob({
+      id: jobId,
+      preview_output: { ...output, nodeId, mediaType: 'images' }
+    })
+    await this.upsertJob(job)
+    await this.assets.mockJobDetail(jobId, {
+      ...job,
+      outputs: { [nodeId]: { images: [output] } }
+    })
   }
 
   async failJob(
