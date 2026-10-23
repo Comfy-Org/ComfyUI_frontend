@@ -260,6 +260,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       shapeDoc(graph.serialize() as unknown as WorkflowJSON),
       CATALOG
     )
+    onTestFinished(() => doc.destroy())
     const unsent: GraphOperation[] = []
     const outcomes: string[] = []
     minter = attachDocOpMinter({
@@ -651,7 +652,6 @@ describe('a local link edit lands on the document slot that carries its input', 
         docSlots
       )
       expect(reportedErrorTypes()).toEqual(reported)
-      bench.doc.destroy()
     }
   )
 
@@ -676,7 +676,6 @@ describe('a local link edit lands on the document slot that carries its input', 
       `1 -> ${IMAGES}.image_2`,
       `2 -> ${IMAGES}.image_3`
     ])
-    doc.destroy()
   })
 })
 
