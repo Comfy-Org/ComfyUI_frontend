@@ -7,7 +7,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
+vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

@@ -521,6 +521,9 @@ importers:
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
+      '@comfyorg/mask-editor':
+        specifier: workspace:*
+        version: link:packages/mask-editor
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
@@ -1428,6 +1431,52 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
+  packages/mask-editor:
+    dependencies:
+      '@alloc/quick-lru':
+        specifier: 'catalog:'
+        version: 5.2.0
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      pinia:
+        specifier: 'catalog:'
+        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+      typegpu:
+        specifier: 'catalog:'
+        version: 0.8.2
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+    devDependencies:
+      '@pinia/testing':
+        specifier: 'catalog:'
+        version: 2.0.1(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 5.0.2(vitest@5.0.2)
+      '@webgpu/types':
+        specifier: 'catalog:'
+        version: 0.1.71
+      happy-dom:
+        specifier: 'catalog:'
+        version: 20.14.5
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
       vitest:
         specifier: 'catalog:'
         version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))

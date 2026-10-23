@@ -10,8 +10,8 @@ import type {
   SwapNodeGroup
 } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
-import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 type OverlayCopy = { title?: string; message: string }
 

@@ -1,4 +1,4 @@
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
+import { extractWidgetStringValue } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
