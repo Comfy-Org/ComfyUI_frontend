@@ -1394,7 +1394,30 @@ describe('useAgentConversationStore', () => {
     expect(revoke).not.toHaveBeenCalled()
 
     store.reset()
-    expect(revoke.mock.calls).toEqual([['blob:image'], ['blob:video']])
+    expect(revoke).toHaveBeenCalledTimes(2)
+    expect(revoke).toHaveBeenCalledWith('blob:image')
+    expect(revoke).toHaveBeenCalledWith('blob:video')
+  })
+
+  it('keeps a re-recorded blob preview and releases one the turn no longer shows', () => {
+    vi.spyOn(URL, 'createObjectURL')
+      .mockReturnValueOnce('blob:kept')
+      .mockReturnValueOnce('blob:replacement')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const kept = createSharedObjectUrl(new Blob())
+    const replacement = createSharedObjectUrl(new Blob())
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.recordUser(T1, 'first', [{ name: 'a.png', previewUrl: kept }])
+    releaseSharedObjectUrl(kept)
+
+    store.recordUser(T1, 'same', [{ name: 'a.png', previewUrl: kept }])
+    expect(revoke).not.toHaveBeenCalled()
+
+    store.recordUser(T1, 'changed', [
+      { name: 'b.png', previewUrl: replacement }
+    ])
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:kept')
   })
 
   it('revokes transcript blob previews on hydrate', () => {
