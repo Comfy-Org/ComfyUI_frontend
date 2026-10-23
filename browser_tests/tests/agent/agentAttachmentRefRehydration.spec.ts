@@ -36,6 +36,10 @@ test(
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
+    await page.route(
+      '**/api/assets/asset-rehydrated/content?disposition=inline',
+      (route) => route.fulfill({ path: assetPath('image64x64.webp') })
+    )
     await serveHistory(page, promptHistory.requests, resolvedImageRefs)
 
     const panel = await openAgentPanel(page, workflowSelection)
@@ -108,6 +112,10 @@ test(
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
+    await page.route(
+      '**/api/assets/asset-rehydrated/content?disposition=inline',
+      (route) => route.fulfill({ path: assetPath('image64x64.webp') })
+    )
     await serveHistory(page, promptHistory.requests, (posted) => ({
       ...resolvedImageRefs(posted),
       attachment_refs: [
@@ -153,6 +161,10 @@ test(
 
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
+    )
+    await page.route(
+      '**/api/assets/asset-rehydrated/content?disposition=inline',
+      (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
     await page.route('**/api/agent/threads?*', (route) => {
       const listed = [

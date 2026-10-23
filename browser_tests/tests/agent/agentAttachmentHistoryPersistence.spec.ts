@@ -114,6 +114,22 @@ for (const scenario of [
             contentType: 'video/mp4'
           })
       )
+      await page.route(
+        '**/api/assets/asset-first/content?disposition=inline',
+        (route) => route.fulfill({ path: assetPath('image64x64.webp') })
+      )
+      await page.route(
+        '**/api/assets/asset-second/content?disposition=inline',
+        (route) => route.fulfill({ path: assetPath('image32x32.webp') })
+      )
+      await page.route(
+        '**/api/assets/asset-video/content?disposition=inline',
+        (route) =>
+          route.fulfill({
+            path: assetPath('workflowInMedia/workflow.mp4'),
+            contentType: 'video/mp4'
+          })
+      )
 
       // The real ingest API returns the message row's `content` map verbatim,
       // including `attachment_refs` once a turn's attachments resolve
