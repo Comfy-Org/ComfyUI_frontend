@@ -96,9 +96,10 @@ const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
 const kind = computed(() => {
-  if (isCloud) return null
   return deriveLocalCreditBanner({
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
+    isCloud,
+    isActive: subscription.value?.isActive === true,
     hasFunds: subscription.value?.hasFunds ?? null,
     lowBalance: balance.value?.lowBalance,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
