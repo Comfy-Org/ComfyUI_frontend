@@ -2134,7 +2134,7 @@ describe('useAgentConversationStore', () => {
       store.ingest(runApproval('t1', 'turn-1:call-1'))
       expect(store.activeAskOpen).toBe(true)
 
-      store.dismissOpenAsks()
+      store.dismissActiveAsks()
       expect(store.activeAskOpen).toBe(false)
       store.startTurn(T2)
       store.retireAsk('turn-1:call-1', { status: 'closed' })
@@ -2150,7 +2150,7 @@ describe('useAgentConversationStore', () => {
       store.startTurn(T1)
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      store.dismissOpenAsks()
+      store.dismissActiveAsks()
       store.retireAsk('turn-1:call-1', {
         status: 'answered',
         selected: ['run']
@@ -2161,26 +2161,6 @@ describe('useAgentConversationStore', () => {
       )
     })
 
-    it('stays dismissed when its stashed turn comes back', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.startTurn(T1)
-      store.ingest(runApproval('t1', 'turn-1:call-1'))
-      store.stashActiveTurn()
-
-      store.dismissOpenAsks()
-      store.resumeBackgroundTurn()
-
-      expect(store.messages[0].parts).toContainEqual(
-        expect.objectContaining({
-          type: 'runApproval',
-          askId: 'turn-1:call-1',
-          dismissed: true
-        })
-      )
-      expect(store.activeAskOpen).toBe(false)
-    })
-
     it('leaves a card whose answer is in flight alone', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -2189,26 +2169,47 @@ describe('useAgentConversationStore', () => {
       store.setAskAnswering('turn-1:call-1', true)
 
       expect(store.activeAskOpen).toBe(false)
-      store.dismissOpenAsks()
+      store.dismissActiveAsks()
 
       expect(
         store.messages[0].parts.find((part) => part.type === 'runApproval')
       ).not.toHaveProperty('dismissed')
     })
 
-    it("leaves another thread's stashed card open", () => {
+    it('leaves a card left on a finished turn alone', () => {
       const store = useAgentConversationStore()
-      store.setThreadId('other')
+      store.setThreadId('th')
       store.startTurn(T1)
       store.ingest(runApproval('t1', 'turn-1:call-1'))
-      store.stashActiveTurn()
+      store.ingest(done('t1'))
+      store.startTurn(T2)
 
+      expect(store.activeAskOpen).toBe(false)
+      store.dismissActiveAsks()
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'runApproval')
+      ).not.toHaveProperty('dismissed')
+    })
+
+    it.for<{ name: string; persisted: AssistantMessage['parts'] | undefined }>([
+      {
+        name: 'a persisted reply',
+        persisted: [{ type: 'text', text: 'done', state: 'done' }]
+      },
+      { name: 'an empty terminal row', persisted: undefined }
+    ])('keeps a dismissed card when $name settles the turn', ({ persisted }) => {
+      const store = useAgentConversationStore()
       store.setThreadId('th')
-      store.dismissOpenAsks()
-      store.setThreadId('other')
-      store.resumeBackgroundTurn()
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.dismissActiveAsks()
 
-      expect(store.activeAskOpen).toBe(true)
+      store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
     })
   })
 

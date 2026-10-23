@@ -438,18 +438,16 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    function dismissOpenAsks(): void {
+    function dismissActiveAsks(): void {
+      const slot = activeSlot.value
+      if (!slot) return
       const answering = answeringAskIds.value
-      messages.value = messages.value.map((message) => {
+      messages.value = messages.value.map((message, index) => {
+        if (index !== slot.index) return message
         const parts = dismissAskParts(message.parts, answering)
         return parts === message.parts ? message : { ...message, parts }
       })
-      activeSlot.value?.transport.dismissAsks(answering)
-      for (const settledTransport of settledActiveTransports)
-        settledTransport.dismissAsks(answering)
-      for (const entry of backgroundTurns.values())
-        if (entry.threadId === threadKey())
-          entry.transport.dismissAsks(answering)
+      slot.transport.dismissAsks(answering)
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1301,7 +1299,7 @@ export const useAgentConversationStore = defineStore(
       takeSubmittedAskAnswer,
       commitAsk,
       retireAsk,
-      dismissOpenAsks,
+      dismissActiveAsks,
       startTurn,
       ingest,
       setCanvasSyncGate,

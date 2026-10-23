@@ -1254,7 +1254,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1273,7 +1274,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
-      conversationStore.dismissOpenAsks()
+      if (dismissAsk) conversationStore.dismissActiveAsks()
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -1337,7 +1338,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1360,7 +1362,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        onAccepted
+        onAccepted,
+        dismissAsk
       )
       if (!sent) stopPendingAck = null
       return sent

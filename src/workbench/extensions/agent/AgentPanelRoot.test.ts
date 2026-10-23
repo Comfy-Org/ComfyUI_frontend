@@ -6233,7 +6233,11 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps Stop over the card when the backend does not advertise it', async () => {
+  it('keeps Stop over the card when a ready backend does not advertise it', async () => {
+    getServerFeature.mockImplementation(
+      (name: string, defaultValue?: unknown) =>
+        name === 'agent' ? { state: 'ready' } : defaultValue
+    )
     respondToFetch({}, () => json(200, {}))
     showRunCard()
     await typeInComposer('make it red instead')

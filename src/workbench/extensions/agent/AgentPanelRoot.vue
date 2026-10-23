@@ -1640,6 +1640,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
+    const dismissAsk = sendDismissesAsk.value
     if (!hasAgentCredential() && !(await ensureSignedIn())) return false
     const submissionId = composerStore.submission?.id
     if (
@@ -1686,7 +1687,8 @@ const { submit: onSend } = useAgentDraftSubmission({
           // makes the message -> turn step attributable instead of only
           // countable.
           meta.clientMessageId,
-          onAccepted
+          onAccepted,
+          dismissAsk
         )
       )
     } finally {

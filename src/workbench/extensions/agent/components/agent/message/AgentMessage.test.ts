@@ -747,6 +747,25 @@ describe('AgentMessage ask_user question', () => {
     thinking: false
   })
 
+  it('hides the choice hint on a dismissed multi-select question', () => {
+    const message = askMessage()
+    const [question] = message.parts
+    assert(question.type === 'askUser')
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...message,
+          parts: [
+            { ...question, minSelections: 0, maxSelections: 2, dismissed: true }
+          ]
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText('Choose all that apply')).not.toBeInTheDocument()
+  })
+
   it('keeps a dismissed question showing as dismissed after another tab answers it', () => {
     const message = askMessage()
     const [question] = message.parts

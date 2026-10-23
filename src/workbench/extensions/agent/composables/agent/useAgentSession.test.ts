@@ -406,6 +406,22 @@ async function restoredTurnStaysStreaming(
   return streaming
 }
 
+function sendOverCard(
+  session: ReturnType<typeof useAgentSession>,
+  text: string
+): Promise<boolean> {
+  return session.sendMessage(
+    text,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    true
+  )
+}
+
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -2600,6 +2616,19 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(cardOnScreen()).toBe(false)
     })
 
+    it('stays answerable across a normal send after its turn completed', async () => {
+      const { session, answerAsk, emit } = await parkedOnApproval()
+      emit(done('msg-1'))
+
+      await session.sendMessage('something else')
+      expect(cardOnScreen()).toBe(true)
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['run']
+      })
+    })
+
     it('dismisses itself once answered, since no resolution frame can reach it', async () => {
       const { session, emit } = await parkedOnApproval()
       emit(done('msg-1'))
@@ -2690,7 +2719,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      await session.sendMessage('actually, do this instead')
+      await sendOverCard(session, 'actually, do this instead')
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
       expect(
         useAgentConversationStore().messages.flatMap((message) =>
@@ -2717,7 +2746,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
 
-      expect(await session.sendMessage('actually, do this instead')).toBe(false)
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(false)
 
       expect(rest.cancelMessage).not.toHaveBeenCalled()
       const store = useAgentConversationStore()
@@ -2753,7 +2782,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
 
-      await session.sendMessage('actually, do this instead')
+      await sendOverCard(session, 'actually, do this instead')
 
       expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
         ['th-1', 'msg-1']
