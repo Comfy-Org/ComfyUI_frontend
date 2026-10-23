@@ -52,6 +52,24 @@ export function interactivePaymentOf(
   return { confirmationToken: choice.confirmationToken, returnUrl }
 }
 
+/** Whether two interactive payments name the same card and confirmation. */
+export function isSamePayment(
+  held: InteractiveTopupPayment,
+  next: InteractiveTopupPayment | undefined
+): boolean {
+  if (next === undefined) return false
+  if ('savedPaymentMethodId' in held)
+    return (
+      'savedPaymentMethodId' in next &&
+      held.savedPaymentMethodId === next.savedPaymentMethodId
+    )
+  return (
+    'confirmationToken' in next &&
+    held.confirmationToken === next.confirmationToken &&
+    held.returnUrl === next.returnUrl
+  )
+}
+
 /**
  * Whether the server answered this purchase for good, so the next Pay is a
  * new purchase. A pending, conflicting, rate-limited, unanswered or 5xx

@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { assert } from 'vitest'
 import type { VNode } from 'vue'
 
 import type {
@@ -550,9 +551,8 @@ describe('FullPageTopupView paying once', () => {
     const { payment } = fake.createInteractiveTopup.mock.calls[0][0]
     expect(payment).not.toHaveProperty('savedPaymentMethodId')
     expect(payment).toMatchObject({ confirmationToken: 'ctoken_1' })
-    const back = new URL(
-      'returnUrl' in payment ? payment.returnUrl : 'https://missing.invalid'
-    )
+    assert('returnUrl' in payment)
+    const back = new URL(payment.returnUrl)
     expect(back.pathname).toBe('/v1/top-up')
     expect(back.searchParams.get('amount_cents')).toBe('2500')
     expect(back.searchParams.get('workspace')).toBe('ws-team')
@@ -601,12 +601,12 @@ describe('FullPageTopupView paying once', () => {
 
     await userEvent.click(payButton())
     await screen.findByRole('alert')
-    await userEvent.click(savedPicker())
-    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
     await userEvent.click(payButton())
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Payment declined')
     )
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
     await userEvent.click(payButton())
 
     await waitFor(() =>
@@ -618,6 +618,43 @@ describe('FullPageTopupView paying once', () => {
     expect(unresolved.payment).toStrictEqual(first.payment)
     expect(fresh.idempotencyKey).not.toBe(first.idempotencyKey)
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
+  })
+
+  it('checks the unresolved purchase instead of charging the old card when the customer picks another one', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+    })
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 503
+      })
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+    await screen.findByRole('alert')
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    const recoversBefore = fake.recover.mock.calls.length
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
+    )
+    expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, chosen] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(chosen.idempotencyKey).not.toBe(first.idempotencyKey)
+    expect(chosen.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
 
   it.for([1, 2])(
@@ -637,11 +674,19 @@ describe('FullPageTopupView paying once', () => {
       expect(
         (await screen.findAllByTestId('checkout-waiting')).length
       ).toBeGreaterThan(0)
-      for (const fake of fakes) {
-        expect(fake.recover).toHaveBeenCalled()
-        expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
-        expect(fake.createTopupCheckout).not.toHaveBeenCalled()
-      }
+      expect(
+        fakes.map((fake) => ({
+          recovered: fake.recover.mock.calls.length > 0,
+          paidInteractively: fake.createInteractiveTopup.mock.calls.length,
+          openedCheckout: fake.createTopupCheckout.mock.calls.length
+        }))
+      ).toStrictEqual(
+        fakes.map(() => ({
+          recovered: true,
+          paidInteractively: 0,
+          openedCheckout: 0
+        }))
+      )
     }
   )
 

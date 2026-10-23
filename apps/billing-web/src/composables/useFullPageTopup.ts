@@ -38,6 +38,7 @@ import {
 import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
 import {
   interactivePaymentOf,
+  isSamePayment,
   settlesAttempt,
   topupReturnUrl
 } from '@/checkout/topupRequest'
@@ -65,6 +66,7 @@ function capabilityStop(
 
 const CARD_METHOD_TYPE = 'card'
 const CARD_REQUIRED = 'CARD_REQUIRED'
+const HELD_FOR_ANOTHER_PAYMENT = 'HELD_FOR_ANOTHER_PAYMENT'
 
 function eligibleCards(
   methods: readonly SavedPaymentMethod[]
@@ -288,12 +290,17 @@ export function useFullPageTopup() {
   let held: HeldAttempt | undefined
   const billedWorkspace = useBilledWorkspace()
 
-  function attemptFor(choice: NonNullable<PayChoice>): HeldAttempt | undefined {
-    if (held !== undefined) return held
+  function attemptFor(
+    choice: NonNullable<PayChoice>
+  ): HeldAttempt | typeof HELD_FOR_ANOTHER_PAYMENT | undefined {
     const returnUrl =
       arrival &&
       topupReturnUrl(arrival, billedWorkspace(), window.location.origin)
     const payment = interactivePaymentOf(choice, returnUrl)
+    if (held !== undefined)
+      return isSamePayment(held.payment, payment)
+        ? held
+        : HELD_FOR_ANOTHER_PAYMENT
     if (payment === undefined) return undefined
     held = { payment, idempotencyKey: crypto.randomUUID() }
     return held
@@ -315,11 +322,23 @@ export function useFullPageTopup() {
   function sendFor(
     choice: PayChoice,
     amount: number
-  ): (() => Promise<TopupResult>) | typeof CARD_REQUIRED | undefined {
+  ):
+    | (() => Promise<TopupResult>)
+    | typeof CARD_REQUIRED
+    | typeof HELD_FOR_ANOTHER_PAYMENT
+    | undefined {
     if (!paysOnce.value) return () => purchase.submit()
     if (choice === undefined) return undefined
     const attempt = attemptFor(choice)
-    return attempt === undefined ? CARD_REQUIRED : () => send(attempt, amount)
+    if (attempt === undefined) return CARD_REQUIRED
+    if (attempt === HELD_FOR_ANOTHER_PAYMENT) return attempt
+    return () => send(attempt, amount)
+  }
+
+  async function settleHeldBeforeAnotherPayment() {
+    dispatch({ type: 'payRejectedAsPending' })
+    await reconcile()
+    held = undefined
   }
 
   async function follow(verdict: PayVerdict) {
@@ -337,6 +356,8 @@ export function useFullPageTopup() {
     if (!canPay.value || amountCents === undefined) return
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
+    if (run === HELD_FOR_ANOTHER_PAYMENT)
+      return settleHeldBeforeAnotherPayment()
     if (run === CARD_REQUIRED)
       return dispatch({
         type: 'payFailed',
