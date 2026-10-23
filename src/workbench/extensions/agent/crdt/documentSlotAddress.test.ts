@@ -297,7 +297,6 @@ describe('a local link edit lands on the document slot that carries its input', 
     function refuseAfterRebinding() {
       boundRootGraphId = toRootGraphId(new LGraph().id)
       minter?.forgetUnappliedGrows(
-        toRootGraphId(graph.id),
         mintWireOps(unsent.splice(0), {
           actor: 'human:user:tab',
           baseVersion: ++stampCounter

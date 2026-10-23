@@ -1052,11 +1052,7 @@ const {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       }),
-    onHumanOpsUnapplied: (workflowId, ops) => {
-      const id = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
-      if (id !== undefined)
-        docOpMinter.forgetUnappliedGrows(toRootGraphId(id), ops)
-    }
+    onHumanOpsUnapplied: (ops) => docOpMinter.forgetUnappliedGrows(ops)
   },
   applierDeps: {
     getCanvas: () => app.canvas,

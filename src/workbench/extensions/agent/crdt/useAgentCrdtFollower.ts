@@ -226,8 +226,8 @@ interface AgentCrdtFollowerEvents {
    * single message for every permanent reason.
    */
   onSyncError?: (message?: string, code?: string) => void
-  /** Human ops the host settled without applying, with the workflow they were sent to. */
-  onHumanOpsUnapplied?: (workflowId: string, ops: readonly Op[]) => void
+  /** Human ops the host settled without applying. */
+  onHumanOpsUnapplied?: (ops: readonly Op[]) => void
 }
 
 function notifyAppliedUpdate(
@@ -543,9 +543,7 @@ function startAgentCrdtFollower(
       outcome.state === 'acknowledged' ? outcome.result.applied : []
     )
     const unapplied = outcome.ops.filter((op) => !applied.has(op.op_id))
-    const workflowId = workflowByUnsettledOpId.get(unapplied[0]?.op_id ?? '')
-    if (workflowId !== undefined)
-      events.onHumanOpsUnapplied?.(workflowId, unapplied)
+    if (unapplied.length > 0) events.onHumanOpsUnapplied?.(unapplied)
     noteSettledHumanOps(outcome)
   }
 
