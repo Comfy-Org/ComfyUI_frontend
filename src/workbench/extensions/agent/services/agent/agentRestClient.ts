@@ -115,16 +115,13 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `client_message_id` and `client_id`.
+ * The turn POST body, plus `client_message_id`.
  *
- * Widened here because the generated types come from the cloud repo's
- * `openapi.yaml`: `client_id` is in that spec and is typed locally only until
- * the next package release carries it; `client_message_id` is not in the spec.
+ * Widened here rather than in `agentApiSchema.ts` because the generated types are
+ * published from the cloud repo's `openapi.yaml`, so the field is only typed
+ * locally until the next package release carries it. One line to delete then.
  */
-type TurnPostBody = AgentPostMessageRequest & {
-  client_message_id?: string
-  client_id?: string
-}
+type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -425,8 +422,7 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId,
-      client_id: api.clientId
+      client_message_id: req.clientMessageId
     })
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,

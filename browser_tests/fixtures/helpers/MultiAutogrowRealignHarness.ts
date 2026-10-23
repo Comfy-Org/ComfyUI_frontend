@@ -109,22 +109,12 @@ export class MultiAutogrowRealignHarness {
       .locator('img[src*="/api/view"]')
   }
 
-  /**
-   * @param options.socketSid The id the fake ComfyUI reports on its `status`
-   * frame. Defaults to {@link SOCKET_SID}, i.e. a socket that has identified
-   * itself. Pass `''` to model one that never does — `api.clientId` then stays
-   * `undefined`, as it is before the first `status` frame and after
-   * `api.resetSocket()` clears it on an identity change.
-   */
-  constructor(
-    private readonly page: Page,
-    options: { socketSid?: string } = {}
-  ) {
+  constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
       WORKFLOW_ID,
       this.host,
-      options.socketSid ?? SOCKET_SID,
+      SOCKET_SID,
       'apply'
     )
     this.topbar = new Topbar(page)
