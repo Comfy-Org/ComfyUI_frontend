@@ -287,9 +287,6 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  // `max` is Core's executability policy, so the follower preserves a document
-  // count above it rather than refusing. Boundary:
-  // docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md
   it('applies a remote row count above max', () => {
     const { rows, setRows } = remoteGroup('AboveMaxDynamicGroup')
 
@@ -356,9 +353,6 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  // Previously refused: the ceiling read the rows the document carried values
-  // for, so a bare count could not grow a restored group. The follower now
-  // preserves the count and new rows show template defaults.
   it('applies a remote row count that grows a restored group further above max', () => {
     const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
 

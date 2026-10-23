@@ -63,12 +63,12 @@ Enforcement splits by role, not by layer. One value source, three jobs:
   the frontend's local UI are producers: the add button stops at `max` and is
   disabled there. A producer may be as strict as the policy, because it is
   creating the content.
-- **Transports and followers preserve the count the document carries and bound
-  only allocation.** comfy-multi-player and the frontend's remote-apply path
-  are in this role. They do not read `max`. They refuse a count only when
-  materialising it would allocate unbounded widgets, and that refusal is a
-  safety bound every layer may hold independently — it is not a policy
-  decision and carries no product meaning.
+- **Transports and followers preserve the count the document carries within
+  their own resource bounds.** comfy-multi-player and the frontend's
+  remote-apply path are in this role. They do not read `max`. They refuse a
+  count only when materialising it would cross a safety bound that layer can
+  evaluate; those bounds need not be identical because the document package
+  counts serialized fields while the frontend allocates widgets and inputs.
 
 Concretely in this repository:
 
@@ -78,21 +78,23 @@ Concretely in this repository:
    group did not reach it. `documentedRowCount` is deleted.
 2. The allocation bound moves into the controller's setter in
    `dynamicGroupWidget.ts`, which is the one semantic path every writer
-   funnels through — a restored file, the local UI, a peer, the agent. It is
-   `MAX_DYNAMIC_GROUP_ROW_WIDGETS / fields per row`, mirroring
-   comfy-multi-player's `MAX_OVERFLOW_WIDGETS`, and **must not be lower than
-   it**: a follower stricter than the document layer recreates the divergence
-   this ADR removes. `dynamicGroupEnforcementBoundary.test.ts` pins the
-   relation against the package's exported constant.
-3. `validateSavedRowCount` is declared an authoring/restore guard and does not
-   run against a followed document. Its `max` term is therefore no longer
-   reachable from remote apply. It keeps its existing local behaviour, including
-   its throw, because a saved count the file cannot account for is a corrupt
-   file rather than a count a peer asked for.
+   funnels through — a restored file, the local UI, a peer, the agent. The
+   frontend allows at most 256 rows and derives a lower per-group ceiling from
+   a 4096-resource budget. Each row is charged for its header plus, per field,
+   one input, one primary widget and one possible built-in auxiliary widget.
+   The hard row ceiling also bounds the existing quadratic row-layout work.
+3. The saved-value-count heuristic is removed; the allocation bound replaces
+   its only safety role without treating a missing serialized row value as a
+   `max` policy violation. Every remote `node.configure` call as well as the
+   ordinary widget-write path carries node-scoped remote provenance. A count
+   beyond the allocation bound aborts configuration rather than allowing
+   positional restoration to continue over missing row widgets; an ordinary
+   remote write is rejected before callbacks or graph-version changes occur.
 
-The bound is held per-group rather than globally because a row's cost is its
-field count: the controller records how many fields its template declares when
-it is registered, and the bound is derived from that.
+The bound is held per-group because a row's cost depends on its template. The
+controller records the template field count when it is registered. Custom
+widget constructors are trusted local code and can allocate more than the
+built-in estimate, but the 256-row ceiling still bounds remote amplification.
 
 ## Alternatives considered
 
@@ -107,12 +109,12 @@ makes `max` unchangeable without a coordinated release across Core, the CLI, the
 package, the doc host and the frontend. It also contradicts the retained-rows
 behaviour users already rely on, since a workflow saved above `max` loads today.
 
-**Import `MAX_OVERFLOW_WIDGETS` directly into the shared widget.** Rejected to
-keep `src/core/graph/widgets/` free of a dependency on the CRDT package: the
-frontend's budget is about frontend widget and input allocation, and the package
-documents its own constant as "the package-level floor under every caller, not a
-replacement for it". The relation is asserted in a test instead of assumed by an
-import, which is what catches a future drift.
+**Reuse `MAX_OVERFLOW_WIDGETS` as the frontend limit.** Rejected because the
+package counts serialized field entries while the frontend allocates row
+headers, inputs, primary widgets, auxiliary widgets, and repeatedly rebuilds
+input layout. The cross-boundary test compares the derived limits explicitly
+so a future change cannot silently pretend that both budgets measure the same
+resource.
 
 **Leave the applier ceiling and fix only `validateSavedRowCount`.** Rejected:
 both paths refuse, so either alone leaves the divergence reachable.
@@ -121,14 +123,15 @@ both paths refuse, so either alone leaves the divergence reachable.
 
 ### Positive
 
-- A count the document layer accepted is applied by the follower, so the
-  document and the canvas cannot disagree about a group's row count.
+- Above-`max` counts used by retained workflows are applied uniformly on named,
+  positional, DynamicCombo, and ordinary widget-write paths.
 - `max` has one enforcement story. Changing the product rule is a Core and
   producer change; no transport has to be re-released to follow it.
 - The applier gets smaller: a three-term hybrid ceiling and a helper are
   deleted, and the remaining code states the follower's whole job.
-- Allocation safety is now held on the path every writer takes rather than only
-  on the one path the applier walks, which closes the `node.configure` hole.
+- Allocation safety is held on the path every writer takes, and remote
+  configuration is provenance-bracketed, which closes the `node.configure`
+  hole without allowing a rejected positional restore to continue.
 - The opaque-positional-array regrow case in #21288's second comment is fixed
   as a side effect, because no term reads the document's row keys any more.
 
@@ -139,8 +142,9 @@ both paths refuse, so either alone leaves the divergence reachable.
   is already true for saved workflows; this ADR makes it uniform rather than
   introducing it. A clearer in-canvas signal for an unexecutable row count is
   worth having and is not part of this change.
-- The frontend's bound is a second constant that must track the package's. The
-  pinning test makes a drift loud, but it is still duplication.
+- A document count above the frontend's resource ceiling is refused even if the
+  document package accepted it. That explicit, reported safety mismatch is
+  preferable to freezing the tab or silently misaligning positional values.
 - Three of the frontend's existing assertions encoded the old boundary and were
   rewritten. They asserted where enforcement happened, which is exactly what
   moved; the user-visible refusal of an unbounded count is still asserted.
@@ -150,9 +154,10 @@ both paths refuse, so either alone leaves the divergence reachable.
 `max` enforcement in a transport would have been agent policy in a shared layer
 had it been written as a flag or a trailing context parameter on the shared
 widget. It was not: provenance reaches the shared layer only as
-`applyRemoteDynamicGroupRowCount`, which brackets the call for the duration of
-the write, and `isRemoteDynamicGroupRowWrite` reads that bracket. That is
-call-scoped provenance and the mechanism predates this change.
+`applyRemoteDynamicGroupRowCount`, which brackets both configure and ordinary
+widget writes for the duration of the call, and
+`isRemoteDynamicGroupRowWrite` reads that bracket. That is call-scoped
+provenance and the mechanism predates this change.
 
 Related issues decided elsewhere, deliberately not settled here:
 [#21091](https://github.com/Comfy-Org/ComfyUI_frontend/issues/21091) (a new
