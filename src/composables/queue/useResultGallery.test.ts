@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 vi.mock(import('@/services/hdrViewerService'))
@@ -201,6 +202,112 @@ describe('useResultGallery', () => {
     expect(openHdrViewer).not.toHaveBeenCalled()
   })
 
+  it('ignores a stale async refresh that lands after the watcher claims sync items', async () => {
+    const first = createResultItem('first.png')
+    const job = createMockJob('stale-refresh-job', 2)
+    const initialTask = new TaskItemImpl(job, {}, [first])
+    let releaseRefresh!: (task: TaskItemImpl) => void
+    initialTask.loadFullOutputs = () =>
+      new Promise((resolve) => {
+        releaseRefresh = resolve
+      })
+
+    const sources = ref([initialTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+    const view = onViewItem(createJobViewItem('job-stale', initialTask))
+    await Promise.resolve()
+
+    const rerunTask = new TaskItemImpl(job, {}, [first, first])
+    void onViewItem(createJobViewItem('job-stale', rerunTask))
+    sources.value = [rerunTask]
+    await Promise.resolve()
+    releaseRefresh(new TaskItemImpl(job, {}, [first]))
+    await view
+    await Promise.resolve()
+
+    expect(galleryItems.value).toEqual([first, first])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('keeps an open gallery closed when slow full outputs resolve after close', async () => {
+    const image = createResultItem('image.png')
+    const job = createMockJob('close-during-load', 2)
+    const task = new TaskItemImpl(job, {}, [image])
+    let release!: (task: TaskItemImpl) => void
+    task.loadFullOutputs = () =>
+      new Promise((resolve) => {
+        release = resolve
+      })
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+    const view = onViewItem(createJobViewItem('job-close', task))
+    await Promise.resolve()
+    galleryActiveIndex.value = -1
+    release(new TaskItemImpl(job, {}, [image, image]))
+    await view
+
+    expect(galleryItems.value).toEqual([image])
+    expect(galleryActiveIndex.value).toBe(-1)
+  })
+
+  it('stays in the gallery when refresh surfaces HDR-first full outputs', async () => {
+    const image = createResultItem('image.png')
+    const exr = {
+      ...createResultItem('/api/view?filename=out.exr'),
+      filename: 'out.exr'
+    }
+    const job = createMockJob('hdr-refresh-job', 2)
+    const task = new TaskItemImpl(job, {}, [image])
+    let release!: (task: TaskItemImpl) => void
+    task.loadFullOutputs = () =>
+      new Promise((resolve) => {
+        release = resolve
+      })
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    const view = onViewItem(createJobViewItem('job-hdr-refresh', task))
+    await Promise.resolve()
+
+    expect(galleryItems.value).toEqual([image])
+    expect(galleryActiveIndex.value).toBe(0)
+
+    release(new TaskItemImpl(job, {}, [exr, image]))
+    await view
+    await Promise.resolve()
+
+    expect(openHdrViewer).not.toHaveBeenCalled()
+    expect(galleryItems.value).toEqual([image])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
+  it('re-anchors the active item by URL when new items arrive while open', async () => {
+    const first = createResultItem('first.png')
+    const second = createResultItem('second.png')
+    const job = createMockJob('reanchor-job', 1)
+    const initialTask = new TaskItemImpl(job, {}, [first, second])
+    const sources = ref([initialTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+
+    await onViewItem(createJobViewItem('job-reanchor', initialTask))
+    galleryActiveIndex.value = 1
+
+    sources.value = [new TaskItemImpl(job, {}, [second, first])]
+    await nextTick()
+    await nextTick()
+
+    expect(galleryItems.value).toEqual([second, first])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
   it.for(['resolves', 'rejects'])(
     'does not open a slower gallery request that %s over a later HDR selection',
     async (outcome) => {
@@ -209,7 +316,7 @@ describe('useResultGallery', () => {
         ...createResultItem('/api/view?filename=out.exr'),
         filename: 'out.exr'
       }
-      const imageJob = createMockJob('slow-image-job', 2)
+      const imageJob = createMockJob(`slow-image-job-${outcome}`, 2)
       const imageTask = new TaskItemImpl(imageJob, {}, [image])
       let settle!: () => void
       imageTask.loadFullOutputs = () =>

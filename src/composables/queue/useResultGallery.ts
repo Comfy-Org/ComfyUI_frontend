@@ -1,4 +1,4 @@
-import { ref, shallowRef } from 'vue'
+import { ref, shallowRef, watch } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -14,37 +14,97 @@ import { resultItemUrl } from '@/utils/resultItemUrl'
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<AugmentedResultItem[]>([])
+  const galleryTaskId = shallowRef<string | null>(null)
+  let openSequence = 0
+
+  function resolveItems(
+    targetTask: TaskItemImpl | undefined,
+    tasks: TaskItemImpl[]
+  ): AugmentedResultItem[] {
+    return (
+      targetTask
+        ? [...targetTask.previewableOutputs]
+        : tasks.map((t) => t.previewOutput).filter((o) => !!o)
+    ).filter((o) => !isHdrImageFilename(o.filename))
+  }
+
+  function urlAt(
+    items: readonly AugmentedResultItem[],
+    index: number
+  ): string | undefined {
+    const item = items.at(index)
+    return item ? resultItemUrl(item) : undefined
+  }
+
+  watch(getFilteredTasks, (tasks) => {
+    const taskId = galleryTaskId.value
+    const index = galleryActiveIndex.value
+    if (taskId === null || index === -1) return
+    const targetTask = tasks.find((task) => task.jobId === taskId)
+    const activeUrl = urlAt(galleryItems.value, index)
+    const rerun = resolveItems(targetTask, tasks)
+    if (rerun.length) {
+      openSequence += 1
+      galleryItems.value = rerun
+      galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
+    }
+    if (!targetTask) return
+    const refreshId = openSequence
+    void getOutputsForTask(targetTask).then((targetOutputs) => {
+      if (refreshId !== openSequence) return
+      if (galleryTaskId.value !== taskId) return
+      if (galleryActiveIndex.value === -1) return
+      if (targetOutputs === null) return
+      const previewOutput = targetTask.previewOutput
+      if (previewOutput && isHdrImageFilename(previewOutput.filename)) return
+      const items = (targetOutputs.length ? targetOutputs : rerun).filter(
+        (o) => !isHdrImageFilename(o.filename)
+      )
+      if (!items.length) return
+      const currentUrl =
+        urlAt(galleryItems.value, galleryActiveIndex.value) ?? activeUrl
+      galleryItems.value = items
+      galleryActiveIndex.value = findActiveIndex(items, currentUrl)
+    })
+  })
 
   async function onViewItem(item: JobListItem) {
     const tasks = getFilteredTasks()
     if (!tasks.length) return
+    const openId = ++openSequence
 
     const targetTask = item.taskRef
-    const targetOutputs = targetTask
-      ? await getOutputsForTask(targetTask)
-      : null
-
-    // Request was superseded by a newer one
-    if (targetOutputs === null && targetTask) return
-
     const previewOutput = targetTask?.previewOutput
     if (previewOutput && isHdrImageFilename(previewOutput.filename)) {
+      galleryItems.value = []
+      galleryActiveIndex.value = -1
+      galleryTaskId.value = targetTask.jobId
       openHdrViewer(resultItemUrl(previewOutput))
       return
     }
 
-    const items = (
-      targetOutputs?.length
-        ? targetOutputs
-        : tasks.map((t) => t.previewOutput).filter((o) => !!o)
-    ).filter((o) => !isHdrImageFilename(o.filename))
+    const items = resolveItems(targetTask, tasks)
     if (!items.length) return
 
+    const openedTaskId = targetTask?.jobId ?? null
     galleryItems.value = items
+    galleryTaskId.value = openedTaskId
     galleryActiveIndex.value = findActiveIndex(
       items,
       previewOutput ? resultItemUrl(previewOutput) : undefined
     )
+    if (!targetTask) return
+    const targetOutputs = await getOutputsForTask(targetTask)
+    if (openId !== openSequence) return
+    if (galleryActiveIndex.value === -1) return
+    if (galleryTaskId.value !== openedTaskId) return
+    if (targetOutputs === null) return
+    const refreshed = targetOutputs.length ? targetOutputs : items
+    const activeUrl = urlAt(galleryItems.value, galleryActiveIndex.value)
+    const filtered = refreshed.filter((o) => !isHdrImageFilename(o.filename))
+    if (!filtered.length) return
+    galleryItems.value = filtered
+    galleryActiveIndex.value = findActiveIndex(filtered, activeUrl)
   }
 
   return {
