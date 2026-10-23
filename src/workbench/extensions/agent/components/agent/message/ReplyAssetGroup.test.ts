@@ -68,8 +68,6 @@ function renderGroup(assets: ReplyAsset[]) {
       plugins: [i18n],
       stubs: {
         MediaLightbox: {
-          // Typed, not an array: `autoplayVideo` has to cast the valueless
-          // attribute the way the real boolean prop does.
           props: {
             allGalleryItems: Array,
             activeIndex: Number,
@@ -239,8 +237,6 @@ describe('ReplyAssetGroup', () => {
       .mockRejectedValue(new Error('NotAllowedError'))
     renderGroup([video])
 
-    // No `playing` event follows a refused `play()`, so the badge is still the
-    // only thing telling the user this tile is a video.
     await userEvent.hover(screen.getByTestId('reply-video-preview'))
     expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
 

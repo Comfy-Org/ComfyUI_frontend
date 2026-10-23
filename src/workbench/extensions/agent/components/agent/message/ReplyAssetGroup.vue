@@ -187,10 +187,6 @@ function inspect(asset: ReplyAsset): void {
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
 
-/* URL of the tile whose hover preview is currently playing, so the play badge
-   can step out of the way instead of sitting on top of the moving frame. Driven
-   by the element's own `playing`/`pause` events rather than by the hover
-   handlers: a `play()` the browser refuses must leave the badge in place. */
 const previewing = ref<string | null>(null)
 
 function playPreview(event: Event): void {
@@ -220,9 +216,6 @@ function clearPreviewing(asset: ReplyAsset): void {
             ? t(
                 'agent.openVideo',
                 { name: asset.label ?? asset.filename },
-                // Plain-text attribute, never parsed as HTML: the app-wide
-                // `escapeParameter: true` would otherwise announce a clip
-                // named `a&b.mp4` as `a&amp;b.mp4`.
                 { escapeParameter: false }
               )
             : (asset.label ?? asset.filename)
@@ -334,9 +327,6 @@ function clearPreviewing(asset: ReplyAsset): void {
       </Button>
     </div>
 
-    <!-- A video tile carries a play badge, so clicking it has to produce
-         playback rather than a second paused player. An image tile makes no
-         such promise, including when the user later navigates to a video. -->
     <MediaLightbox
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"

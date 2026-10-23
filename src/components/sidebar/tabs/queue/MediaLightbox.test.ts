@@ -325,10 +325,6 @@ describe('MediaLightbox', () => {
       expect(video()).not.toBe(first)
     })
 
-    /* PM-1895: a caller whose thumbnail showed a play badge must not open onto
-       a second, paused play button. Retention is what makes this more than an
-       `autoplay` attribute — a revisited video reactivates, so the attribute
-       never fires again. */
     it('PM-1895 starts an opt-in video on open and again on return', async () => {
       const play = vi
         .spyOn(HTMLMediaElement.prototype, 'play')

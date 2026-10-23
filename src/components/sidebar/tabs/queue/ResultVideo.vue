@@ -28,16 +28,11 @@ defineOptions({ name: 'ResultVideo' })
 
 const props = defineProps<{
   result: AugmentedResultItem
-  /** See `MediaLightbox`'s `autoplayVideo`. Off by default. */
   autoplay?: boolean
 }>()
 
 const videoElement = useTemplateRef<HTMLVideoElement>('video')
 
-/* The `autoplay` attribute only fires on a fresh load, and `KeepAlive` above
-   reactivates a revisited video instead of remounting it — so autoplay has to
-   be re-applied here. Sticky activation from the click that opened the lightbox
-   is what lets this play unmuted. */
 onActivated(() => {
   if (props.autoplay) void videoElement.value?.play().catch(() => {})
 })
