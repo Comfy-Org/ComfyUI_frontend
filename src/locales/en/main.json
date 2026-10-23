@@ -3696,7 +3696,7 @@
       },
       "autoTopUpOff": {
         "title": "Auto top-up turned off",
-        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
+        "body": "Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",
@@ -5834,6 +5834,7 @@
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
@@ -6009,6 +6010,8 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",
+    "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
+    "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",

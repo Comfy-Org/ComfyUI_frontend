@@ -7,7 +7,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type {
   generateModelThumbnail as generateModelThumbnailContract,
   ModelThumbnailResult
-} from '@/components/load3d/modelThumbnail'
+} from '@/extensions/core/load3d/components/modelThumbnail'
 
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -30,7 +30,7 @@ const generateModelThumbnail = vi.hoisted(() =>
     async (): Promise<ModelThumbnailResult> => ({ status: 'failed' })
   )
 )
-vi.mock(import('@/components/load3d/modelThumbnail'), () => ({
+vi.mock(import('@/extensions/core/load3d/components/modelThumbnail'), () => ({
   generateModelThumbnail
 }))
 

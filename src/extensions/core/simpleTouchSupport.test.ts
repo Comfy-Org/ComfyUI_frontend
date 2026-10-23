@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
+
+import { simpleTouchSupportExtension } from './simpleTouchSupport'
+import { installTouchPointerGuards } from './touchPointerGuards'
 
 type Viewport = Pick<
   DragAndScale,
@@ -30,7 +32,6 @@ vi.mock(import('@/scripts/app'), () => {
   }
   return {
     app: fromPartial<typeof comfyApp>({
-      registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
       canvasEl,
       canvas: fromPartial({
         ds,
@@ -49,8 +50,7 @@ function canvasPointerHandlers() {
   return { processMouseDown, processMouseMove }
 }
 
-await import('./simpleTouchSupport')
-const { installTouchPointerGuards } = await import('./touchPointerGuards')
+await simpleTouchSupportExtension.setup?.(fromPartial({}))
 const handlersAtImport = canvasPointerHandlers()
 installTouchPointerGuards()
 const handlersAfterInstall = canvasPointerHandlers()
