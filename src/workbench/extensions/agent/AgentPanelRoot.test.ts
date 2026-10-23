@@ -5725,26 +5725,47 @@ describe('AgentPanelRoot history', () => {
             error instanceof Error &&
             error.message === 'Agent thread list ended before its last page'
         )
-    respondToFetch(threadListRoute, () =>
-      json(
-        200,
-        agentThreadList(
-          [
-            agentThread({
-              id: 'th-partial',
-              title: 'Partial chat',
-              last_message_at: '2026-07-07T11:00:00Z'
-            })
-          ],
-          { has_more: true }
-        )
-      )
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat',
+                last_message_at: '2026-07-07T11:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
     )
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(warnings()).toHaveLength(1))
 
-    // Opening the history refreshes again, and the server is still truncating.
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat refreshed',
+                last_message_at: '2026-07-07T12:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
     await openHistory()
+    await screen.findByRole('button', { name: 'Partial chat refreshed' })
 
     expect(warnings()).toHaveLength(1)
     expect(truncationReports()).toHaveLength(1)
