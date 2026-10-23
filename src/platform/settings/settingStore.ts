@@ -7,10 +7,15 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import type {
+  SettingParams,
+  SettingWriteResult,
+  Settings
+} from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
+import { toError } from '@/utils/errorUtil'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -218,12 +223,79 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
+    await persistSetting(key, value, false)
+  }
+
+  /**
+   * Set a setting value, returning the key to the value it held before when
+   * the server refuses the write or cannot be reached.
+   *
+   * Use this when the stored value is the only record of a control the user
+   * just operated: keeping a refused value leaves every reader — including
+   * that control, once it is remounted — showing a state the backend never
+   * accepted. {@link set} is the one to use where an optimistic local value is
+   * wanted even though the write failed, as a dismissal that should stay
+   * dismissed for the rest of the session is.
+   *
+   * Unlike {@link set} this reports an unreachable backend as a value rather
+   * than a rejection, so the two failures are one branch for the caller.
+   */
+  async function setOrRevert<K extends keyof Settings>(
+    key: K,
+    value: Settings[K]
+  ) {
+    return persistSetting(key, value, true)
+  }
+
+  async function persistSetting<K extends keyof Settings>(
+    key: K,
+    value: Settings[K],
+    revertOnFailure: boolean
+  ): Promise<SettingWriteResult> {
+    const hadValue = exists(key)
     const applied = await applySettingLocally(key, value)
-    if (applied === undefined) return
-    await api.storeSetting(key, applied.newValue)
+    if (applied === undefined) return { ok: true }
+    const write = latestWrite.get(key)
+
+    let failure: SettingWriteResult | undefined
+    try {
+      const response = await api.storeSetting(key, applied.newValue)
+      // `api.fetchApi` resolves for any status it got a response for, so a
+      // refusal arrives here looking exactly like a saved value. Reported as
+      // data rather than thrown: whether one matters is the caller's call.
+      if (!response.ok) {
+        failure = {
+          ok: false,
+          reason: 'refused',
+          detail: `${response.status} ${response.statusText}`
+        }
+      }
+    } catch (cause) {
+      // Rethrown for `set`, whose callers have always seen a rejection for an
+      // unreachable backend and some of which depend on it.
+      if (!revertOnFailure) throw cause
+      failure = {
+        ok: false,
+        reason: 'unreachable',
+        detail: toError(cause).message
+      }
+    }
+
+    if (failure) {
+      // Skipped when a later write has landed — that value owns the key now,
+      // exactly as in `applySettingLocally`. The revert deliberately does not
+      // re-run `onChange`: handlers may cascade into further writes, and
+      // re-entering them here would let a refused save trigger more of them.
+      if (revertOnFailure && latestWrite.get(key) === write) {
+        if (hadValue) settingValues.value[key] = applied.previousValue
+        else delete settingValues.value[key]
+      }
+      return failure
+    }
 
     const event = settingChangedEvent(settingsById.value[key], key, applied)
     if (event) useTelemetry()?.trackSettingChanged(event)
+    return { ok: true }
   }
 
   /**
@@ -437,6 +509,7 @@ export const useSettingStore = defineStore('setting', () => {
     load,
     addSetting,
     set,
+    setOrRevert,
     setMany,
     get,
     exists,
