@@ -47,6 +47,13 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <p
+      v-if="planCreditCopy && (step === 'amount' || step === 'confirm')"
+      class="m-0 px-8 pb-4 text-sm text-muted-foreground"
+    >
+      {{ planCreditCopy }}
+    </p>
+
     <template v-if="step === 'confirm'">
       <p class="m-0 px-8 text-sm text-muted-foreground">
         {{ $t('credits.topUp.confirmSubtitle') }}
@@ -429,6 +436,7 @@ import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrem
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTopUpPlanCreditCopy } from '@/platform/workspace/composables/useTopUpPlanCreditCopy'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -480,6 +488,7 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
+const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
