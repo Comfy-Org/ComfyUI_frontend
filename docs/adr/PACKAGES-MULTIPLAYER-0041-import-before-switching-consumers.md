@@ -10,7 +10,8 @@ Proposed
 
 The frontend and Cloud doc host must execute the same multiplayer semantics.
 Moving their shared package does not make their deployments atomic. At import,
-the frontend pins npm 0.3.6, Cloud main pins 0.3.7, and the package is 0.3.10.
+the frontend's exact npm pin is recorded in the root `pnpm-workspace.yaml`
+catalog, Cloud main pins 0.3.7, and the imported package is 0.3.12.
 These repository pins do not establish what is deployed.
 
 ## Decision
@@ -34,8 +35,9 @@ human-approved `Release` version-bump PR convention, with its own
 not publish. Package releases never become the frontend's GitHub Latest release.
 
 Before the first monorepo release, a maintainer must configure npm's trusted
-publisher and tag protection. Publish a version newer than 0.3.10, pin it in
-Cloud, and verify browser/host conformance and rollout order before enabling
+publisher and tag protection. Publish a version newer than 0.3.12, the last
+standalone release. Pin it in Cloud, and verify browser/host conformance and
+rollout order before enabling
 workspace consumption. Retiring the standalone repository is a separate action.
 
 ## Alternatives

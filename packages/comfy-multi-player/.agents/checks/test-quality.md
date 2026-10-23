@@ -35,7 +35,7 @@ Repo conventions:
 
 - **`*.regression.test.*` files get more scrutiny, not less.** Each one is the sole evidence that a specific bug is closed, so a vacuous regression test retires a bug that is still live. This profile's naming and assertion-style conventions are relaxed there (a regression test may pin a concrete reproduction rather than assert a general property); its correctness conventions are not. Items 2, 4, 8, 9 and 10 above apply in full, and items 8 and 9 apply with priority.
 
-- Tests use **Vitest** (`npm test`) and live under **`test/`** (not colocated). Property tests use **fast-check**; conformance fixtures are SHA-pinned and verified in CI (`npm run verify:corpus`); mutation testing is **Stryker** (`npm run test:mutation`, then `npm run check:mutation-report` — a score quoted without the second command is not a measurement, because Stryker scores a timeout as a kill; see `docs/mutation-testing.md`).
+- Tests use **Vitest** (`pnpm test`) and live under **`test/`** (not colocated). Property tests use **fast-check**; conformance fixtures are SHA-pinned and verified in CI (`pnpm run verify:corpus`); mutation testing is **Stryker** (`pnpm run test:mutation`, then `pnpm run check:mutation-report` — a score quoted without the second command is not a measurement, because Stryker scores a timeout as a kill; see `docs/mutation-testing.md`).
 - Never use `any` in tests; deliberate invalid inputs are cast narrowly (`as unknown as Op`) at the single line under test.
 - "Major" for missing tests on applier/ordering/fail-closed logic; "minor" for a missing peripheral edge case. An inadequate observable (see above) is "major" wherever a missing test would be: the coverage it reports is not coverage.
 
@@ -85,7 +85,7 @@ line under test. Tests use Vitest under packages/comfy-multi-player/test/.
 
 ## Claim anchors
 
-Every checkable fact this profile restates, and every phrase it has retired, pinned by `npm run check:profile-claims` (see [`README.md`](README.md)). Grouped, not scattered, because item 2's history is that the anchors are the load-bearing part of the document.
+Every checkable fact this profile restates, and every phrase it has retired, pinned by `pnpm run check:profile-claims` (see [`README.md`](README.md)). Grouped, not scattered, because item 2's history is that the anchors are the load-bearing part of the document.
 
 The item-2 oracle, and the deference to the profile that owns it:
 

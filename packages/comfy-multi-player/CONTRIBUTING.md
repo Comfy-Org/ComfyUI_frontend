@@ -143,8 +143,8 @@ Dispatch at the **tag**, never at a branch: the run's ref is checked against
 dispatch fails the first gate by design. Never push a bare `v<version>` tag for
 this package: in this repository those tags are frontend releases. The
 standalone-era `v<version>` tags stay in `Comfy-Org/comfy-multi-player`, and
-versions up to `0.3.10` carry that repository's provenance, so the first
-release from this repository must be a new version.
+versions up to `0.3.12` carry that repository's provenance, so the first
+release from this repository must be a new version above `0.3.12`.
 
 ## Where to send things that are not pull requests
 

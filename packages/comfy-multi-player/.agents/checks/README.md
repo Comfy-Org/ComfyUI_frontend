@@ -22,7 +22,7 @@ Concern profiles a reviewer agent (or a human) applies to a change. Apply every 
 
 A gate must therefore report its unit of work (modules cruised, files linted, packages audited, tests executed) and exit `2` when that unit falls below a floor, because an empty result is otherwise ambiguous between "clean" and "did not run" and every tool resolves that ambiguity in favour of green.
 
-Reference implementation: [`../../scripts/check-import-graph.mjs`](../../scripts/check-import-graph.mjs), which exits `2` when it cruises fewer modules than the op layer has (`MIN_MODULES`; raise it if the layer grows, never lower it to make a run pass). `npm run check:purity` follows the same convention: `2` means no `dist/` or no `node_modules`. New gates should copy the shape.
+Reference implementation: [`../../scripts/check-import-graph.mjs`](../../scripts/check-import-graph.mjs), which exits `2` when it cruises fewer modules than the op layer has (`MIN_MODULES`; raise it if the layer grows, never lower it to make a run pass). `pnpm run check:purity` follows the same convention: `2` means no `dist/` or no `node_modules`. New gates should copy the shape.
 
 **Recorded exception, with a sunset.** `scripts/verify-corpus.mjs` fails closed when the manifest lists zero fixtures and when a fixture is present but unlisted, and its success output reports the verified file count. It still exits only `0` or `1`: malformed input and empty-work preconditions are reported as failures (`1`), not as the convention's distinct INCONCLUSIVE outcome (`2`). Until it distinguishes those outcomes, report the failure reason rather than treating every nonzero result as evidence that the corpus contents are wrong. Writing the convention down while one gate violates part of it is exactly the assertive-documentation failure [`vacuity.md`](vacuity.md) P5 is about, so it is named here rather than glossed.
 
@@ -38,7 +38,7 @@ So, for every profile that runs a command:
 
 - **Report what was analyzed, not just what was found.** Quote the counts — modules cruised, files linted, packages audited, rules loaded. A count of zero is the finding.
 - **A tool that did not run is INCONCLUSIVE, never green.** Distinguish "ran and found nothing" from "could not run", "found no files to look at", and "silently skipped every file". Only the first is "No issues found".
-- **Prefer a checked-in gate over a copy-pasted command.** `npm run check:imports` and `npm run check:purity` can enforce their own floors; a shell snippet in a Markdown file cannot, and it rots without anyone noticing.
+- **Prefer a checked-in gate over a copy-pasted command.** `pnpm run check:imports` and `pnpm run check:purity` can enforce their own floors; a shell snippet in a Markdown file cannot, and it rots without anyone noticing.
 - **When a profile asserts a fact about the code** (an export exists, a file re-exports another), it is a claim that can go stale. Re-read the source before relying on it, and fix the profile in the same change.
 
 ## CRDT / op-layer profiles (this repo's core)
@@ -60,13 +60,13 @@ So, for every profile that runs a command:
 | [`error-handling.md`](error-handling.md) | fail-closed, no swallow, mutate-before-throw (issue #10), abort-remainder |
 | [`regression-risk.md`](regression-risk.md) | git-blame bugfix-line detection |
 | [`test-quality.md`](test-quality.md) | assertion strength, convergence/idempotency coverage, Vitest/`test/` conventions |
-| [`import-graph.md`](import-graph.md) | circular deps, layer/purity boundaries (`npm run check:imports`, rules in [`../../.dependency-cruiser.cjs`](../../.dependency-cruiser.cjs)) |
+| [`import-graph.md`](import-graph.md) | circular deps, layer/purity boundaries (`pnpm run check:imports`, rules in [`../../.dependency-cruiser.cjs`](../../.dependency-cruiser.cjs)) |
 | [`api-contract.md`](api-contract.md) | exports, op vocabulary, wire envelope, schema/catalog versioning |
 | [`dep-secrets-scan.md`](dep-secrets-scan.md) | npm audit + gitleaks; yjs-only dep set |
 | [`semgrep-sast.md`](semgrep-sast.md) | dangerous patterns, weak randomness on the mint path |
 | [`sonarjs-lint.md`](sonarjs-lint.md) | SonarJS bug/smell rules (config: [`eslint.strict.config.js`](eslint.strict.config.js)) |
 
-The general profiles were adapted from the frontend versions: FE-only context (Vue/Pinia, `window` globals, LiteGraph, `pnpm`, colocated tests, `useErrorHandling`) was replaced with this repo's reality — a pure `yjs`-only op-layer, `npm`, Vitest under `test/`, `OpRejectedError`/fail-closed semantics, and the `src/index.ts` + wire-envelope contract.
+The general profiles were adapted from the frontend versions: FE-only context (Vue/Pinia, `window` globals, LiteGraph, colocated tests, `useErrorHandling`) was replaced with this repo's reality — a pure `yjs`-only op-layer, `pnpm`, Vitest under `test/`, `OpRejectedError`/fail-closed semantics, and the `src/index.ts` + wire-envelope contract.
 
 ## Keeping restated code facts from going stale
 
@@ -80,7 +80,7 @@ These profiles are prose, so any code fact they restate (an exported symbol name
 
 (Indented here only because they are examples. **This file is not scanned for markers** — it is the convention doc, so its examples would otherwise run as claims — and a marker written here at column 0 is a hard error rather than a silent no-op, because an inert marker is the exact failure this gate exists to stop. Put real markers in the profile that owns the fact.) The third form is a tombstone for a defect you have diagnosed and are deliberately not fixing; it has its own section below.
 
-`npm run check:profile-claims` ([`../../scripts/check-profile-claims.mjs`](../../scripts/check-profile-claims.mjs)) asserts every `claim` substring is still present verbatim in its cited file, and every `claim-absent` substring is still *missing* from it. If an export is renamed or a file moves, the claim goes stale and the gate fails, forcing the prose to be corrected. The gate exits `2` (INCONCLUSIVE) if a profile set carries no **presence** claims — bans and tombstones do not count towards that floor, because neither anchors a restated fact — so a profile that restates code facts without anchoring them is treated as an unverified pass, not a clean one. Keep the substring narrow enough to actually break when the fact changes.
+`pnpm run check:profile-claims` ([`../../scripts/check-profile-claims.mjs`](../../scripts/check-profile-claims.mjs)) asserts every `claim` substring is still present verbatim in its cited file, and every `claim-absent` substring is still *missing* from it. If an export is renamed or a file moves, the claim goes stale and the gate fails, forcing the prose to be corrected. The gate exits `2` (INCONCLUSIVE) if a profile set carries no **presence** claims — bans and tombstones do not count towards that floor, because neither anchors a restated fact — so a profile that restates code facts without anchoring them is treated as an unverified pass, not a clean one. Keep the substring narrow enough to actually break when the fact changes.
 
 **Use `claim-absent` for the two things the positive form structurally cannot say.** First, a fact whose content is an absence — `test-quality.md` argues that a projection is the wrong oracle for a rejection *because* `src/project.ts` reads neither the stamps nor the applied-ops ledger. Second, **advice that was retired for being wrong**: point a `claim-absent` at the profile itself so re-typing the retired sentence fails the gate. `test-quality.md` §2 told reviewers to compare a `project()` snapshot across a rejection, an oracle that cannot see most of the damage a rejection does. It survived a correction pass over its own file — #56 rewrote the conventions block lower down and left it standing — and four later changes (#34, #58, #60, #62) whose review notes named the defect and deferred it, because a prose profile is never in a code PR's diff. (Those notes are kept outside this repository, in the in-app-agent workspace, the same convention `test/ka4-rejection-byte-identity.test.ts` uses.) Prose alone would let it survive a fifth. Claim markers are stripped from a target's text before either test runs, which is what makes a self-targeted ban work and also stops a positive claim being satisfied by nothing but another marker.
 
@@ -115,7 +115,7 @@ The third marker form is the deposit:
 
 (indented, like the examples above, because this file is not scanned for markers)
 
-It asserts the defective text is **still there** and fails when it is gone, telling whoever removed it to delete the tombstone and close the issue. `npm run check:profile-claims` prints the standing roster on every green run.
+It asserts the defective text is **still there** and fails when it is gone, telling whoever removed it to delete the tombstone and close the issue. `pnpm run check:profile-claims` prints the standing roster on every green run.
 
 Four properties, and each one is why a cheaper option was rejected:
 
@@ -126,7 +126,7 @@ Four properties, and each one is why a cheaper option was rejected:
 
 What it deliberately does **not** do:
 
-- **It cannot tell whether the issue is still open**, so a tombstone for an issue closed as wontfix stands forever. That check needs the network. It is implementable as an opt-in flag the way `check:pins -- --verify-remote` is, and it is deliberately not built: this gate is merge-blocking on every PR, and a merge-blocking verdict that depends on GitHub being reachable is worse than no verdict. The roster is a prompt to look, not an assertion that the issue is live, and its printed header says so.
+- **It cannot tell whether the issue is still open**, so a tombstone for an issue closed as wontfix stands forever. That check needs the network. It is implementable as an opt-in flag the way `pnpm run check:pins --verify-remote` is, and it is deliberately not built: this gate is merge-blocking on every PR, and a merge-blocking verdict that depends on GitHub being reachable is worse than no verdict. The roster is a prompt to look, not an assertion that the issue is live, and its printed header says so.
 - **It does not live at the site.** Markers are only read from `.agents/checks/*.md`, so a tombstone is hosted by the profile whose concern the defect belongs to and points at the site. Widening the scan to the whole tree would make every file a marker surface for a much smaller gain.
 - **It is a substring test, so the needle is the whole design.** Reword the defect without fixing it and the tombstone goes red — a false alarm whose fix is one line. Worse and quieter: point it at prose *near* the defect rather than at the defect, and the real fix leaves the needle standing, so the roster keeps advertising a defect that is gone. Pick text that only the actual fix can change, and check that by applying the fix and watching the gate go red. Keep tombstones few and load-bearing.
 - **A defect of pure omission cannot be tombstoned.** There is no substring to point at. Use `claim-absent` when the *wrong* thing is present, and an issue alone when nothing is.

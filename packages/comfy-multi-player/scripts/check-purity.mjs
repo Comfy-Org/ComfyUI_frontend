@@ -138,7 +138,7 @@ console.log(`dependency tree clean (${BANNED.length} ban patterns, no matches)`)
 
 const distEntry = join(root, "dist", "index.js");
 if (!existsSync(distEntry)) {
-  console.error("dist/index.js not found — run `npm run build` before check:purity");
+  console.error("dist/index.js not found — run `pnpm run build` before check:purity");
   process.exit(2);
 }
 

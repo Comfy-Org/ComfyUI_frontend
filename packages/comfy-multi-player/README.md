@@ -709,13 +709,13 @@ way.
 Published to npm as [`@comfyorg/comfy-multi-player`](https://www.npmjs.com/package/@comfyorg/comfy-multi-player):
 
 ```bash
-npm install --save-exact @comfyorg/comfy-multi-player@0.3.10
+npm install --save-exact @comfyorg/comfy-multi-player@0.3.12
 ```
 
-0.3.10 was published from the standalone repository before the source moved
+0.3.12 was published from the standalone repository before the source moved
 into the frontend monorepo. Releases from the monorepo are tagged
 `comfy-multi-player-v<version>`, and the first one is a new version above
-0.3.10, never a republish of it. Version 0.3.0 and later require schema 4,
+0.3.12, never a republish of it. Version 0.3.0 and later require schema 4,
 while 0.2.1 used schema 2. Old layouts are refused, not migrated in place.
 Coordinate version upgrades and new-lineage cutover across consumers as
 described in [`docs/release-handoff.md`](docs/release-handoff.md).
@@ -757,8 +757,9 @@ package's standalone history is preserved in the import. CI is
 [`.github/workflows/ci-comfy-multi-player.yaml`](../../.github/workflows/ci-comfy-multi-player.yaml)
 at the repository root, and nightly mutation testing is
 [`.github/workflows/mutation-comfy-multi-player.yaml`](../../.github/workflows/mutation-comfy-multi-player.yaml).
-The frontend app still consumes the published 0.3.6 from npm rather than this
-workspace source; see [`docs/ROADMAP.md`](docs/ROADMAP.md#repository-plan).
+The frontend app still consumes the exact published npm version in the root
+`pnpm-workspace.yaml` catalog rather than this workspace source; see
+[`docs/ROADMAP.md`](docs/ROADMAP.md#repository-plan).
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting
 and final workflows, six conflict-resolution vectors, and the pinned catalog.

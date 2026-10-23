@@ -7,6 +7,27 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+These changes are local to the monorepo import, not part of the published
+standalone `0.3.12` artifact at `f63f689`. The manifest still reads `0.3.12`;
+publishing requires a separate version-bump decision above that last standalone
+release.
+
+### Fixed
+
+- `observedDocCounter` skips `grow_request` and `interior_route` metadata rows
+  in `__stamps` instead of rejecting them as malformed stamp tuples. Stamp
+  tuples and clock reservations still contribute to the counter floor and
+  remain validated.
+
+### Changed
+
+- Removed the redundant `OPAQUE_WIDGETS_KEY` and `WIDGET_FORM_KEY` re-exports
+  from the internal `read.ts` module. Public entrypoint exports are unchanged.
+- Made `assertSchemaVersionAgainst` private to `schema-version.ts`; the public
+  schema-read gate is unchanged.
+- Changed the ambient `structuredClone` generic default from `any` to
+  `unknown`. This affects types, not runtime cloning.
+
 ## 0.3.12 - 2026-10-21
 
 The first MIT release of the current line. (0.3.11 is a maintenance release of

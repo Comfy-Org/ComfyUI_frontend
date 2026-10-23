@@ -218,7 +218,7 @@ reviews:
         non-fatal) are correctness issues. Keep the purity gate a positive
         yjs-only assertion, not merely a denylist (comfy-multi-player issue
         #22).
-    - path: '{packages/comfy-multi-player/package.json,packages/comfy-multi-player/tsconfig.json,packages/comfy-multi-player/stryker.config.mjs,.github/workflows/*-comfy-multi-player.yaml}'
+    - path: '{packages/comfy-multi-player/package.json,packages/comfy-multi-player/tsconfig.json,packages/comfy-multi-player/stryker.config.mjs,.github/workflows/*-comfy-multi-player*.yaml}'
       # source: packages/comfy-multi-player/.agents/checks/purity.md
       instructions: >-
         Guard the build and CI contract of packages/comfy-multi-player. The
@@ -236,10 +236,12 @@ reviews:
         `permutation-exhaustive` job running `pnpm run test:exhaustive`.
         `Install` runs `pnpm install --frozen-lockfile --ignore-scripts` at the
         repository root; every other gate runs in packages/comfy-multi-player.
-        Both CI and release (publish-comfy-multi-player.yaml) must also run the
-        shared `Verify package contents` step after `Build` and propagate its
-        failure. Jobs triggered by pull_request or merge_group must not
-        reference secrets.
+        Both CI and release (publish-comfy-multi-player.yaml) must run artifact
+        checks through `Verify package contents` after `Build` and propagate
+        its failure. Read-only CI runs `pnpm run verify:package`, including the
+        live-registry consumer smoke; the OIDC publish job runs `pnpm run
+        verify:package --skip-consumer` without that smoke. Jobs triggered by
+        pull_request or merge_group must not reference secrets.
     - path: 'packages/comfy-multi-player/test/**'
       # source: packages/comfy-multi-player/.agents/checks/test-quality.md
       instructions: >-

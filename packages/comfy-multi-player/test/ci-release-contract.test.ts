@@ -88,7 +88,10 @@ function requireWorkflow(document: unknown, jobId: string): void {
   assert.equal(job.defaults?.run?.shell, undefined, "required gates must use the default runner shell");
   const steps = job.steps ?? [];
   const requiredSteps = jobId === "ci" ? { ...REQUIRED_STEPS, ...CI_ONLY_STEPS } : REQUIRED_STEPS;
-  for (const [name, command] of Object.entries(requiredSteps)) {
+  for (const [name, sharedCommand] of Object.entries(requiredSteps)) {
+    const command = jobId === "publish" && name === "Verify package contents"
+      ? `${VERIFY_COMMAND} --skip-consumer`
+      : sharedCommand;
     const matches = steps.filter((step) => step.name === name);
     const message = `missing active, failure-propagating ${name}: ${command}`;
     assert.equal(matches.length, 1, message);
@@ -106,6 +109,14 @@ function requireWorkflow(document: unknown, jobId: string): void {
 }
 
 function requireRelease(workflow: Workflow, job: Job, steps: Step[]): void {
+  const ancestry = steps.find((step) => step.name === "Require release commit on main");
+  assert(ancestry);
+  assert(unconditionalGate(ancestry));
+  assert.equal(ancestry.run, 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main');
+  assert.equal(workingDirectory(workflow, job, ancestry), ".");
+  assert(steps.indexOf(ancestry) < steps.findIndex((step) => step.name === "Install"));
+  const checkout = steps.find((step) => step.uses?.startsWith("actions/checkout@"));
+  assert.equal(checkout?.with?.["fetch-depth"], 0);
   const recovery = steps.filter((step) => step.name === "Verify identity and recover release");
   assert.equal(recovery.length, 1);
   const [recover] = recovery;
@@ -130,8 +141,8 @@ function requireRelease(workflow: Workflow, job: Job, steps: Step[]): void {
   const node = steps.find((step) => step.uses?.startsWith("actions/setup-node@"));
   assert(node);
   assert(unconditionalGate(node));
-  assert.equal(node.with?.["node-version-file"], ".nvmrc");
-  assert.equal(node.with?.["node-version"], undefined);
+  assert.equal(node.with?.["node-version-file"], undefined);
+  assert.match(String(node.with?.["node-version"]), /^26\.\d+\.\d+$/);
   if (steps.some((step) => /(?:npm|pnpm) publish|gh release create/.test(step.run ?? ""))) {
     throw new Error("release writes must go through identity/recovery gate");
   }
@@ -161,7 +172,7 @@ describe("monorepo package ownership", () => {
   it("installs a specific published version and saves an exact dependency", () => {
     const install = section(readPackage("README.md"), "## Install");
     expect(install).toBeDefined();
-    expect(install).toContain("npm install --save-exact @comfyorg/comfy-multi-player@0.3.10");
+    expect(install).toMatch(/^npm install --save-exact @comfyorg\/comfy-multi-player@\d+\.\d+\.\d+$/m);
     expect(install).toContain("comfy-multi-player-v");
   });
 
@@ -170,7 +181,7 @@ describe("monorepo package ownership", () => {
     expect(plan).toBeDefined();
     expect(plan).toContain("canonical writable source");
     expect(plan).toContain(PACKAGE_DIR);
-    expect(plan).toContain("0.3.6");
+    expect(plan).toContain("catalog");
     expect(plan).toContain("cloud rollout");
     expect(plan).toContain("comfy-multi-player-v");
     expect(plan).not.toMatch(/migration[^.]*is closed and deferred/);
@@ -278,7 +289,7 @@ describe("parsed CI and release contracts", () => {
     ["moving Node", (steps: Step[]) => {
       const node = steps.find((step) => step.uses?.startsWith("actions/setup-node@"))!;
       delete node.with!["node-version-file"];
-      node.with!["node-version"] = 24;
+      node.with!["node-version"] = 26;
     }],
     ["unguarded npm publication", (steps: Step[]) => { steps.push({ run: "npm publish --provenance --access public" }); }],
     ["unguarded pnpm publication", (steps: Step[]) => { steps.push({ run: "pnpm publish --no-git-checks" }); }],
@@ -370,7 +381,7 @@ describe("root CodeRabbit delivery", () => {
     const rule = rules().find(({ path }) => path.includes(".github/workflows/"));
     expect(rule?.path).toBe(
       `{${PACKAGE_DIR}/package.json,${PACKAGE_DIR}/tsconfig.json,${PACKAGE_DIR}/stryker.config.mjs,` +
-        ".github/workflows/*-comfy-multi-player.yaml}",
+        ".github/workflows/*-comfy-multi-player*.yaml}",
     );
     for (const name of Object.keys({ ...REQUIRED_STEPS, ...CI_ONLY_STEPS })) {
       expect(rule?.instructions).toContain(`\`${name}\``);

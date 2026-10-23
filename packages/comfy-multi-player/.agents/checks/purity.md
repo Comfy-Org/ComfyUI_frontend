@@ -2,16 +2,16 @@
 
 Apply this profile to changes to `src/**`, exports, package metadata, build configuration, and dependencies. It protects KA-3 and FC-3.
 
-- Positively verify that `yjs` is the only declared and resolved production dependency root. `scripts/check-purity.mjs` walks `npm ls --omit=dev --json --all`; a denylist alone is insufficient.
+- Positively verify that `yjs` is the only declared and resolved production dependency root. `scripts/check-purity.mjs` walks `pnpm --filter @comfyorg/comfy-multi-player list --prod --depth Infinity --json`; a denylist alone is insufficient.
 - Reject DOM globals, UI frameworks, LiteGraph, browser-only APIs, server-only APIs, credentials, filesystem, network, and process-specific state in applier, projection, or mint paths.
 - Verify the built public entrypoint imports in bare Node without creating globals and remains browser-compatible.
 - Treat any second op-to-document implementation, including one in Go, as a blocking FC-3 violation. Browser and Node doc host must consume this package.
-- Require `npm run build`, `npm run check:purity`, `npm run check:imports`, and `npm test`. `check:purity` reasons about the installed dependency tree and a bare-Node import of `dist/`; `check:imports` covers the same contract at the module-graph level, which is where a per-file DOM or server-only import is visible.
-- Read `check:purity`'s exit code, not only its output: `0` pure, `1` violation, `2` preconditions missing (no `dist/`, no `node_modules`). Exit `2` is INCONCLUSIVE — run `npm ci && npm run build` and retry; never record it as a pass.
+- Require `pnpm run build`, `pnpm run check:purity`, `pnpm run check:imports`, and `pnpm test` from `packages/comfy-multi-player`. `check:purity` reasons about the installed dependency tree and a bare-Node import of `dist/`; `check:imports` covers the same contract at the module-graph level, which is where a per-file DOM or server-only import is visible.
+- Read `check:purity`'s exit code, not only its output: `0` pure, `1` violation, `2` preconditions missing (no `dist/`, no `node_modules`). Exit `2` is INCONCLUSIVE — run `pnpm install --frozen-lockfile --ignore-scripts` at the repository root, then `pnpm run build` from `packages/comfy-multi-player` and retry; never record it as a pass.
 
 <!-- Staleness anchors for the exit codes and the gate list this profile restates. -->
 <!-- claim: runtime dependency roots exactly {yjs} (declared and resolved production graph) :: scripts/check-purity.mjs -->
-<!-- claim: dist/index.js not found — run `npm run build` before check:purity :: scripts/check-purity.mjs -->
+<!-- claim: dist/index.js not found — run `pnpm run build` before check:purity :: scripts/check-purity.mjs -->
 <!-- claim: "check:imports": "node scripts/check-import-graph.mjs" :: package.json -->
 <!-- claim: "check:purity": "node scripts/check-purity.mjs" :: package.json -->
 
@@ -41,7 +41,7 @@ merely a denylist (comfy-multi-player issue #22).
 ```
 <!-- /coderabbit-instructions -->
 
-<!-- coderabbit-instructions: /{packages/comfy-multi-player/package.json,packages/comfy-multi-player/tsconfig.json,packages/comfy-multi-player/stryker.config.mjs,.github/workflows/*-comfy-multi-player.yaml} -->
+<!-- coderabbit-instructions: /{packages/comfy-multi-player/package.json,packages/comfy-multi-player/tsconfig.json,packages/comfy-multi-player/stryker.config.mjs,.github/workflows/*-comfy-multi-player*.yaml} -->
 ```text
 Guard the build and CI contract of packages/comfy-multi-player. The
 production dependency set must stay yjs-only (KA-3/FC-3) — flag any new
@@ -57,8 +57,11 @@ check:pins, lint, or test CI steps. Required named steps (exact) in
 `permutation-exhaustive` job running `pnpm run test:exhaustive`. `Install`
 runs `pnpm install --frozen-lockfile --ignore-scripts` at the repository
 root; every other gate runs in packages/comfy-multi-player. Both CI and
-release (publish-comfy-multi-player.yaml) must also run the shared
-`Verify package contents` step after `Build` and propagate its failure. Jobs
+release (publish-comfy-multi-player.yaml) must run artifact checks through
+`Verify package contents` after `Build` and propagate its failure. Read-only
+CI runs `pnpm run verify:package`, including the live-registry consumer smoke;
+the OIDC publish job runs `pnpm run verify:package --skip-consumer` without
+that smoke. Jobs
 triggered by pull_request or merge_group must not reference secrets.
 ```
 <!-- /coderabbit-instructions -->

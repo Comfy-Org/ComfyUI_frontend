@@ -27,16 +27,19 @@ These are follow-up behavior/CI tickets. The remaining ones do not change op sem
 the canonical writable source for package code, tests, documentation, and release
 tooling. It was imported from upstream
 [Comfy-Org/comfy-multi-player](https://github.com/Comfy-Org/comfy-multi-player)
-`main` at 0.3.10 with that history preserved; target frontend `main`.
+`main` at 0.3.12 with that history preserved; target frontend `main`.
 
 The migration is stacked, and only the first step is done:
 
 1. **Source import (this step).** The package source, its gates
    (`ci-comfy-multi-player.yaml`, `mutation-comfy-multi-player.yaml`), and its
    CodeRabbit rules live in the frontend repository. The frontend app still
-   consumes the published 0.3.6 from npm through the pnpm catalog, so the import
-   changes no shipped behavior. The package version stays 0.3.10; the first
-   monorepo release must be a new version, tagged `comfy-multi-player-v<version>`.
+   consumes the exact published npm version in the root `pnpm-workspace.yaml`
+   catalog, so the import changes no shipped frontend behavior. The imported
+   package manifest remains at 0.3.12; local changes are recorded under
+   `Unreleased` in `CHANGELOG.md` and are not part of npm 0.3.12. The first
+   monorepo release must be a new version above 0.3.12, tagged
+   `comfy-multi-player-v<version>`.
 2. **Workspace switch (blocked).** Pointing the frontend at the workspace package
    is blocked on the cloud rollout. Browser and server must still run the same
    exact version (ADR-006).

@@ -24,8 +24,8 @@ gates, provenance, and the rest of this handoff are unchanged, and the coordinat
 confirming the published version before any consumer pins it.
 
 The package source lives in the frontend repository, but the frontend app is still a consumer:
-it pins an exact published version (currently `0.3.6`) and moves to a new one only through its
-own pin change, after cloud has accepted that version. Sharing a repository does not shorten this
+it pins the exact published version in the root `pnpm-workspace.yaml` catalog and moves to a new
+one only through its own pin change, after cloud has accepted that version. Sharing a repository does not shorten this
 order.
 
 Both consumers must resolve the same accepted package version. Cloud compatibility comes first so

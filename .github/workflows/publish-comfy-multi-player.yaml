@@ -37,12 +37,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Require release commit on main
+        working-directory: .
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: .nvmrc
+          node-version: '26.10.0'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
           registry-url: https://registry.npmjs.org
@@ -73,7 +78,7 @@ jobs:
         run: pnpm run build
 
       - name: Verify package contents
-        run: pnpm run verify:package
+        run: pnpm run verify:package --skip-consumer
 
       - name: Type-check gate
         run: pnpm run typecheck

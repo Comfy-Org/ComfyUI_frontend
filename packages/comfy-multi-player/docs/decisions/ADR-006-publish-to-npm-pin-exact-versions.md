@@ -105,9 +105,9 @@ release identity:
   provenance for new versions names `Comfy-Org/ComfyUI_frontend`, that
   workflow path, and the tag ref, and `scripts/release-retry.mjs` verifies
   exactly that identity before treating an existing registry version as this
-  release. Versions up to `0.3.10` carry the standalone repository's
+  release. Versions up to `0.3.12` carry the standalone repository's
   provenance, so recovery of those versions from this repository fails closed
-  by design.
+  by design. The first monorepo release must use a version above `0.3.12`.
 - `pnpm pack` builds the tarball so `publishConfig.exports` replaces the
   source `exports` used inside the workspace and `catalog:` specifiers become
   concrete ranges. npm 11.19.0 then publishes that exact tarball, which keeps
