@@ -4,6 +4,8 @@ import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -15,6 +17,8 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 import { useBillingBanner as createBillingBanner } from './useBillingBanner'
 
@@ -113,14 +117,18 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBe('outOfCredits')
   })
 
-  it.for<{ status: BillingStatus; canAccess: boolean }>([
-    { status: 'paused', canAccess: false },
-    { status: 'paused', canAccess: true },
-    { status: 'payment_failed', canAccess: false },
-    { status: 'payment_failed', canAccess: true }
+  it.for<{
+    status: BillingStatus
+    canAccess: boolean
+    kind: 'paused' | null
+  }>([
+    { status: 'paused', canAccess: false, kind: 'paused' },
+    { status: 'paused', canAccess: true, kind: 'paused' },
+    { status: 'payment_failed', canAccess: false, kind: null },
+    { status: 'payment_failed', canAccess: true, kind: null }
   ])(
-    'shows no Paused banner for $status with access $canAccess',
-    async ({ status, canAccess }) => {
+    'reads the $status billing status with access $canAccess as $kind',
+    async ({ status, canAccess, kind: expected }) => {
       const billing = setupBilling()
       const { kind } = useBillingBanner()
 
@@ -129,7 +137,21 @@ describe('useBillingBanner', () => {
       billing.canAccessSubscriptionFeatures.value = canAccess
       await nextTick()
 
-      expect(kind.value).toBeNull()
+      expect(kind.value).toBe(expected)
     }
   )
+
+  it('keeps the out-of-credits banner when run is denied for a past-due payment and access is locked', async () => {
+    const billing = setupBilling()
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    const { kind } = useBillingBanner()
+
+    billing.tier.value = 'PRO'
+    billing.subscription.value = { hasFunds: false }
+    billing.canAccessSubscriptionFeatures.value = false
+    await nextTick()
+
+    expect(kind.value).toBe('outOfCredits')
+  })
 })

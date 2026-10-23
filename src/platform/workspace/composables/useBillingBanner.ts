@@ -1,3 +1,4 @@
+import type { BillingStatus } from '@comfyorg/ingest-types'
 import { createSharedComposable, useTimestamp } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
@@ -7,10 +8,13 @@ import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/co
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
+import { isTopUpDeniedPastDue } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
+  | 'paused'
   | 'planEnded'
   | 'outOfCredits'
   | 'ending'
@@ -24,6 +28,7 @@ export interface BillingBannerInputs {
   isEnterprise: boolean
   isKnownPersonalTier: boolean
   isLoaded: boolean
+  billingStatus: BillingStatus | null
   canAccessSubscriptionFeatures: boolean
   hasFunds: boolean | null
   isCancelled: boolean
@@ -35,6 +40,8 @@ export interface BillingBannerInputs {
   outOfCreditsDismissed: boolean
   planChangeDismissed: boolean
   hasScheduledChange: boolean
+  topUpDeniedPastDue: boolean
+  runDeniedPastDue: boolean
 }
 
 // An Enterprise cancel_at is an agreed end date — an operator pilot term or
@@ -93,12 +100,21 @@ function deriveLifecycleNotice(
   return showsPlanChange ? 'planChange' : null
 }
 
+function showsPastDueOutOfCredits(inputs: BillingBannerInputs): boolean {
+  return (
+    (inputs.topUpDeniedPastDue || inputs.runDeniedPastDue) &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  )
+}
+
 function deriveNoticeBanner(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
-  if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
+  if (showsPastDueOutOfCredits(inputs)) return 'outOfCredits'
+  if (!inputs.canAccessSubscriptionFeatures) return null
   if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
@@ -120,6 +136,7 @@ export function deriveBillingBanner(
   inputs: BillingBannerInputs,
   now: number = Date.now()
 ): BillingBannerKind | null {
+  if (inputs.billingStatus === 'paused') return 'paused'
   if (!inputs.isLoaded) return null
   const audience = billingBannerAudience(inputs)
   if (hasPlanEnded(inputs, audience)) {
@@ -161,10 +178,15 @@ function readSubscriptionInputs(
 }
 
 function useBillingBannerInternal() {
-  const { canAccessSubscriptionFeatures, subscription, isTeamPlan } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    isTeamPlan,
+    billingStatus
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
+  const { topUpDenial, runDeniedPaymentPastDue } = useBillingCapabilities()
 
   const { isPlanEnded, isPlanTerminal } = usePlanEnded()
   const planEndedDismissed = ref(false)
@@ -176,6 +198,7 @@ function useBillingBannerInternal() {
   const bannerInputs = computed<BillingBannerInputs>(() => ({
     billingControlEnabled: flags.billingControlEnabled,
     isTeamPlan: isTeamPlan.value,
+    billingStatus: billingStatus.value,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     canManage: permissions.value.canManageSubscription,
     isPlanEnded: isPlanEnded.value,
@@ -183,6 +206,8 @@ function useBillingBannerInternal() {
     planEndedDismissed: planEndedDismissed.value,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
     planChangeDismissed: planChangeDismissed.value,
+    topUpDeniedPastDue: isTopUpDeniedPastDue(topUpDenial.value),
+    runDeniedPastDue: runDeniedPaymentPastDue.value,
     ...readSubscriptionInputs(subscription.value)
   }))
 

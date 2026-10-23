@@ -196,6 +196,25 @@
         {{ creditsUseNote }}
       </span>
     </div>
+    <div v-else-if="paymentRecoveryAvailable" class="flex flex-col gap-3">
+      <Button
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        size="lg"
+        :class="
+          cn(
+            'w-full font-normal',
+            !isOutOfCredits && 'bg-muted text-foreground'
+          )
+        "
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
+        @click="handleAddCredits"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+        {{ creditsUseNote }}
+      </span>
+    </div>
   </div>
 </template>
 
@@ -208,7 +227,10 @@ import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 
-import { formatCredits } from '@/base/credits/comfyCredits'
+import {
+  formatCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -229,7 +251,7 @@ import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
-  /** Forces the zero-credit display (e.g. unsubscribed / member view). */
+  /** Hides the plan breakdown. The total stays the server balance. */
   zeroState?: boolean
   inactivePlan?: boolean
 }>()
@@ -245,7 +267,7 @@ const {
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp } = useBillingCapabilities()
+const { canTopUp, paymentRecoveryAvailable } = useBillingCapabilities()
 const {
   prepaidCredits,
   totalCredits,
@@ -365,11 +387,17 @@ const creditPoolTotalCompact = computed(() => {
   return total === null ? '—' : compactNumber.value.format(total)
 })
 
-const displayTotal = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : totalCredits.value
-)
+const displayTotal = computed(() => {
+  if (showsInactivePlanState.value) return formatCreditCount(0)
+  if (!zeroState) return totalCredits.value
+  const cents =
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
+})
 // An ended sales-managed plan retains its prepaid balance: the note beside
 // this number says the credits become spendable once the plan is restored,
 // so the amount must survive the inactive state rather than read 0.

@@ -1061,8 +1061,7 @@ describe('useWorkspaceBilling', () => {
         expect(useToast().toasts).toEqual([
           expect.objectContaining({
             kind: 'error',
-            description:
-              "Couldn't open the billing page. Try again in a moment."
+            description: "Couldn't open billing. Try again."
           })
         ])
       }
