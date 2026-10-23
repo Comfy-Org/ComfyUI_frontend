@@ -927,8 +927,10 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
   docInputNames,
+  docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   notifyWidgetWriteRefused
 } = useAgentCrdtFollower(
   boundWorkflowId,
@@ -985,8 +987,10 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
+  docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({

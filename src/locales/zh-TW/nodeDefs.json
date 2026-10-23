@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -1002,9 +1002,31 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "使用 Bria 從影像中移除背景，同時保留提示詞所描述的內容。原始像素會以完整解析度搭配新的透明度通道傳回。如只需一般去背，Bria Remove Image Background 的費用較低。",
+    "display_name": "Bria 導引式移除背景",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "要保留、移除或縮限的內容，例如「拿著墊子和植物的人」、「坐在桌前且沒有檯燈的女子」或「只有椅子」。若提示詞未匹配任何內容，將傳回完全透明的影像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
-    "description": "使用 Bria 最新模型編輯圖像",
-    "display_name": "Bria FIBO 圖像編輯",
+    "description": "使用 Bria FIBO 2.0 編輯影像。",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1055,6 +1077,49 @@
       }
     }
   },
+  "BriaImageGenerate": {
+    "description": "使用 Bria FIBO 2.0，根據文字提示、參考影像或結構化提示生成影像。",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 及其後的比例需要 1MP，且 prompt 或 structured_prompt 中必須恰有一個。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用於參考的影像。結果會是採用所選長寬比的新影像，而非對此影像進行編輯。"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "內容審核設定"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "來自先前 Bria FIBO 結果的 JSON 結構化提示。使用相同的 seed 可重新建立該影像；變更 JSON 或加入 prompt 可進一步微調。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "生成影像的結構化描述，可透過此節點重新建立或微調該影像。"
+      }
+    }
+  },
   "BriaIncreaseResolution": {
     "description": "使用 Bria 將圖像放大 2 倍或 4 倍，同時保留原始內容。",
     "display_name": "Bria 解析度提升",
@@ -1073,6 +1138,42 @@
       "moderation": {
         "name": "內容審核",
         "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "使用 Bria 將產品放到人物手中。會保留人物的身分、姿勢和背景，並以約 100 萬像素重新渲染場景。",
+    "display_name": "Bria 產品持握",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "auto 會以約 100 萬像素保留人物照片的構圖。固定比例會傳回 60 萬至 100 萬像素，例如 3:4 的 768x1024。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "可選的額外指示，會加入 Bria 的內建指示中，例如使用哪一隻手或標籤朝向哪個方向。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "person_image": {
+        "name": "人物影像"
+      },
+      "product_images": {
+        "name": "產品影像",
+        "tooltip": "同一產品的 1 至 3 張影像：產品本身、包裝、其他角度或搭配商品。批次輸入中的每張影像各計一次。透明區域會視為白色。"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -1107,7 +1208,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -1236,7 +1337,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -1262,7 +1363,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -1284,7 +1385,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯影像的結構化描述，可使用 Bria FIBO 2.0 Image Edit 進行後續編輯。"
       }
     }
   },
@@ -1388,6 +1489,42 @@
       "video": {
         "name": "影片",
         "tooltip": "要更換背景的前景影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "使用 Bria 為人物穿上服裝或配件。會保留人物的身分、姿勢和背景，並以約 100 萬像素重新渲染場景。",
+    "display_name": "Bria 虛擬試穿",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "auto 會以約 100 萬像素保留人物照片的構圖。固定比例會傳回 60 萬至 100 萬像素，例如 3:4 的 768x1024。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "garment_images": {
+        "name": "服裝影像",
+        "tooltip": "一同穿戴的 1 至 3 件服裝或配件，每件都會替換人物身上對應的物品。批次輸入中的每張影像各計一次。透明區域會視為白色。"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "可選的額外指示，會加入 Bria 的內建指示中，例如使用哪一隻手或標籤朝向哪個方向。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "person_image": {
+        "name": "人物影像"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -2413,7 +2550,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "配方：\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226 個 token 填補）\ncosmos: 舊版 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（建議）或 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ",
+    "description": "配方：\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226 個 token 填補）\ncosmos: 舊版 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（建議）或 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 或 Music3 Qwen/RVQ\nflux3: qwen3-vl 4B\nfibo2: qwen3-vl 4B",
     "display_name": "載入 CLIP",
     "inputs": {
       "clip_name": {
@@ -2766,6 +2903,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "透過 3D 預覽選擇環繞主體的相機角度。輸出供 3D 節點使用的 camera_info，以及用於提示的白話英文鏡頭描述。",
+    "display_name": "建立相機角度提示",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "以度數表示的主體周圍方位角。0 為正面，90 為右側，180 為背面。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "選用的參考影像，會顯示在 3D 預覽中主體立方體的正面。"
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "以度數表示的仰角。負值表示從下方往上看，正值表示從上方往下看。"
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "鏡頭對主體的變焦：0 為廣角鏡頭，10 為特寫。會帶入 camera_info.zoom。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +3072,45 @@
       "start_sigma": {
         "name": "起始 sigma",
         "tooltip": "這些選項將生效的第一個 sigma 值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Upscaler 放大影像。這是一款高保真放大器，能忠實保留原始影像，並修復臉部、皮膚與細微紋理。最大輸出：100 百萬畫素。",
+    "display_name": "Clarity AI Crystal 放大",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Video Upscaler 放大影片；這是一款高擬真且忠於來源的放大工具。每個影格的輸出上限為 900 萬像素（例如 4000x2250），較長的片段會以較低解析度傳回。超過 30 fps 的片段費用為 2 倍，超過 60 fps 為 3 倍，依此類推。",
+    "display_name": "Clarity AI Crystal 影片放大",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4289,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "建立 camera_info。模式 'orbit' 以目標為中心進行偏航/俯仰/距離的環繞；'look_at' 則將相機放置於世界座標位置。座標為觀者的世界空間（右手座標系，Y 軸向上）。",
+    "description": "建立 camera_info。「orbit」模式會以環繞目標的偏航／俯仰／距離進行瞄準；「look_at」會將相機放置於世界座標位置。座標採用檢視者的世界空間（右手座標系，Y 軸向上）。",
     "display_name": "建立相機資訊",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "相機類型",
         "tooltip": "Render Splat 使用的投影方式：透視（有透視縮短）或正交（平行投影）。"
@@ -5642,7 +5856,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)），並可透過 {'@'}Voice1/{'@'}Voice2 標籤搭配多個已連接的語音進行多說話者對話。",
+    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)）、drama-3 的自然語言 [directions] 與 `<whisper>...</whisper>` 詞語標籤，以及透過 {'@'}Voice1/{'@'}Voice2 標籤搭配多個已連接語音進行多說話者對話。",
     "display_name": "Fish Audio 文字轉語音",
     "inputs": {
       "control_after_generate": {
@@ -5834,8 +6048,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "使用 FLUX 3 根據提示詞生成圖像，或編輯並合併最多 10 張參考圖像。在提示詞中，請將參考圖像稱為圖像 1、圖像 2，依此類推。",
-    "display_name": "Flux 3 圖像",
+    "description": "使用提示詞透過 FLUX 3 Image 產生影像，或編輯並合併最多 10 張參考影像。在提示詞中將參考影像稱為影像 1、影像 2，依此類推。",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "長寬比",
@@ -5929,6 +6143,118 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "將 Create Bounding Boxes 的方框作為版面配置表格，附加至 FLUX 3 Image 提示詞。",
+    "display_name": "FLUX 3 Image 版面配置提示詞",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "來自 Create Bounding Boxes 節點的提示詞元素。不使用調色盤，請在描述中說明顏色。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "提示詞文字。將方框 N 引用為 <obj_N>，以將文字與其連結。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxImageToVideoNode": {
+    "description": "使用 FLUX 3 Max 為 1 到 10 張影像製作動畫。每張影像都會成為片段的一個影格：一張影像會作為開場，兩張影像會成為首尾影格，更多影像則會分散於片段中，或固定在您選擇的時間點。",
+    "display_name": "FLUX 3 Max 影像轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出長寬比。文字提示詞時，「auto」為 16:9；否則會依循第一張影像。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段長度，以秒為單位。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "產生同步音訊。關閉時會產生沒有音軌的影片。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "依播放順序排列的 1 到 10 張影像。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "「spread across the clip」會將第一張影像放在開頭、最後一張放在結尾，其餘均勻置於中間；「at times」會將每張影像固定在您選擇的秒數。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "場景應如何移動與發出聲音。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "模型在產生前對提示詞進行推理與擴充的程度。「high」需要較長時間；價格相同。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出解析度。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "透過 FLUX 3 Max，根據文字提示生成含有同步音訊的影片。",
+    "display_name": "FLUX 3 Max 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。對於文字提示，'auto' 為 16:9；否則會依循第一張影像。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "片段長度，單位為秒。"
+      },
+      "generate_audio": {
+        "name": "生成音訊",
+        "tooltip": "生成同步音訊。關閉時會產生沒有音軌的影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "以自然語言描述你想要的內容。若要製作分層音訊，請分別描述環境音、音樂與語音。"
+      },
+      "reasoning_level": {
+        "name": "推理等級",
+        "tooltip": "模型在生成前對提示詞進行推理與擴充的程度。'high' 所需時間較長；價格相同。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "透過 FLUX 3，從文字提示詞產生帶有同步音訊的影片。",
     "display_name": "Flux 3 文字轉影片",
@@ -6008,7 +6334,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要續接的片段。"
+        "tooltip": "要延續的片段。面積超過 3840x2160 像素的片段會縮小以符合限制。"
       }
     },
     "outputs": {
@@ -6840,7 +7166,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "透過 Google Vertex API 同步生成或編輯影像。",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -6890,7 +7216,7 @@
       },
       "2": {
         "name": "思考影像",
-        "tooltip": "模型思考過程中的第一張影像。僅於思考層級為 HIGH 且回應型態為 IMAGE+TEXT 時提供。"
+        "tooltip": "模型思考過程中的第一張影像。僅適用於 IMAGE+TEXT 模態。"
       }
     }
   },
@@ -7164,6 +7490,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "傳回音訊 latent 的長度、音訊聲道數量與批次大小。",
+    "display_name": "取得音訊 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要檢查的音訊或音訊／影片 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "長度",
+        "tooltip": "音訊 latent 的長度。"
+      },
+      "1": {
+        "name": "音訊聲道",
+        "tooltip": "音訊聲道數量。沒有音訊聲道維度的 latent 視為一個聲道。"
+      },
+      "2": {
+        "name": "批次大小",
+        "tooltip": "批次中的 latent 數量。"
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "從已載入 LoRA 模型的 safetensors 中提取 IC-LoRA 參數，並將其輸出給 LTXVAddGuide（例如 reference_downscale_factor）。",
     "display_name": "取得 IC-LoRA 參數",
@@ -7216,6 +7566,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "傳回影像或影片 latent 的寬度、高度、影格數與批次大小。",
+    "display_name": "取得影像／影片 latent 大小",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "要檢查的影像或影片 latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "寬度",
+        "tooltip": "latent 的寬度。"
+      },
+      "1": {
+        "name": "高度",
+        "tooltip": "latent 的高度。"
+      },
+      "2": {
+        "name": "影格",
+        "tooltip": "latent 影格數量。影像 latent 有一個影格。"
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "批次中的 latent 數量。"
       }
     }
   },
@@ -7987,6 +8365,66 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "使用 HeyGen Voice 1.0，從一位說話者的錄音複製聲音。將 voice_id 連接至 HeyGen Voice 1.0 文字轉語音，或連接至 HeyGen Avatar Video 和 HeyGen Talking Photo 中的 custom_voice_id。",
+    "display_name": "HeyGen Voice 1.0 即時複製",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "一位說話者的錄音。請使用至少 10 秒的清晰語音；僅會使用前 3 分鐘。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "language": {
+        "name": "語言",
+        "tooltip": "錄音中所說的語言。"
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "變更種子以再次複製錄音；每次複製都會產生略有不同的聲音。"
+      },
+      "similarity": {
+        "name": "相似度",
+        "tooltip": "聲音與錄音的貼近程度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "以使用 HeyGen Voice 1.0 即時複製所複製的聲音朗讀文字。",
+    "display_name": "HeyGen Voice 1.0 文字轉語音",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "語言"
+      },
+      "model_text": {
+        "name": "文字"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "在取樣後期，於多個偏移的區塊網格位置平均模型輸出。可消除接縫。",
     "display_name": "HiDream-O1 區塊接縫平滑",
@@ -8047,6 +8485,33 @@
       },
       "1": {
         "name": "負向",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "根據參考影像，以新的角色、場景或風格重製影片，同時保留其動作、鏡頭運動和時間節奏。",
+    "display_name": "Higgsfield Genjutsu 動作轉移",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8700,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "使用 Ideogram Vector，根據文字提示詞產生可編輯的 SVG，並可選擇以最多 5 張影像作為引導。",
+    "display_name": "Ideogram Vector 產生 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "使用 Ideogram Vector 將影像轉換為可編輯的 SVG。影像中具有 alpha 的透明區域會維持透明。",
+    "display_name": "Ideogram Vector 影像轉 SVG",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_mode": {
+        "name": "模式"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "圖片添加雜訊",
     "inputs": {
@@ -8776,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "在 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 與 HDR ACEScct 之間轉換。LogC3 使用 EI 800 曲線、Rec.709 原色，且編碼值會限制於 [0, 1]。ACEScct 使用 AP1 原色與 D60 白點，並透過 Bradford 適應轉換至 D65。儲存 EXR 時，請將 LogC3 或 ACEScct 轉換為線性。線性 1.0 使用與 sRGB 相同的 203 尼特參考白點；HLG 使用 1000 尼特參考顯示器。線性和 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留高光；HLG 和 PQ 輸出會裁切負值色彩通道。SDR 輸出及 PQ 轉 HLG 會針對整個批次對超出範圍的亮度進行色調映射，並壓縮色域外色彩。轉換會以 float32 計算，並回傳中間結果的裝置與 dtype。未預乘 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、線性 ACEScg 與 HDR ACEScct。LogC3 使用 EI 800 曲線、Rec.709 原色，並將編碼值限制於 [0, 1]。ACEScg 是採用 D60 白點的場景線性 AP1。ACEScct 是 ACEScg 的對數編碼。兩者皆使用 Bradford 適應至 D65。儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性 ACEScg（AP1 場景線性）或線性（Rec.709）。線性 1.0 與 ACEScg 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性、ACEScg 與 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留高光；HLG 與 PQ 輸出會裁切負值色彩通道。SDR 輸出及 PQ 轉 HLG 的轉換會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與資料型別。直通 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性；在儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。若要儲存 ACEScg EXR，請將 LogC3 或 ACEScct 轉換為線性 ACEScg；若要儲存 Rec.709 EXR，請轉換為線性。儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -9204,6 +9717,28 @@
       },
       "rotation": {
         "name": "旋轉"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "將 sRGB 亮度擴展為 Rec.2020 HLG HDR。請以選取 HDR 色彩空間的方式儲存結果。會保留 Alpha 通道。",
+    "display_name": "將 SDR 轉換為 HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "演算法",
+        "tooltip": "將 Lottes 風格的有理函數擴展與經校準的單調對數增益曲線混合。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "sRGB 色彩空間中的 SDR 影像。"
       }
     },
     "outputs": {
@@ -10364,6 +10899,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "為人物穿上服裝。結果會與人物影像保持相同尺寸，最長邊上限為 2048px。",
+    "display_name": "Kling 虛擬試穿",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "garment_image": {
+        "name": "服裝影像",
+        "tooltip": "要穿上的服裝：商品照、平鋪照、人台照或模特兒穿著照。模特兒穿著照可能會連同該套穿搭的其他部分一併帶入。僅支援服裝；不支援鞋子、包包與配件。"
+      },
+      "keep_pose": {
+        "name": "保持姿勢",
+        "tooltip": "關閉後可讓姿勢變更，以呈現更好的服裝效果。"
+      },
+      "person_image": {
+        "name": "人物影像",
+        "tooltip": "一名人物的照片，最好是正面或四分之三側面。任一邊超過 2048px 的影像會先縮小。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "使用 Kling V3 產生影片。支援文字轉影片與圖片轉影片，可選擇分鏡多提示與音訊生成。",
     "display_name": "Kling 3.0 影片",
@@ -10474,6 +11039,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "使用 Krea 3 編輯影像；未連接影像時，則從文字生成新影像。",
+    "display_name": "Krea 3 影像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_precise_edit": {
+        "name": "精確編輯"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_thinking_mode": {
+        "name": "思考模式"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11322,11 +11922,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "潛空間應用操作 CFG",
     "inputs": {
+      "end_percent": {
+        "name": "結束百分比",
+        "tooltip": "在模型去噪排程的此比例停止套用操作。1 為終點。"
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "起始百分比",
+        "tooltip": "在模型去噪排程的此比例開始套用操作。0 為起點。"
       }
     },
     "outputs": {
@@ -11561,6 +12169,24 @@
       },
       "samples": {
         "name": "樣本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "將整個 latent 朝參考 latent 混合，必要時會以最近鄰插值調整參考影像大小。",
+    "display_name": "latent 操作混合",
+    "inputs": {
+      "reference": {
+        "name": "參考"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "0 會保持 latent 不變；1 會與調整大小後的參考 latent 相符。"
       }
     },
     "outputs": {
@@ -11970,6 +12596,80 @@
     "inputs": {
       "latent": {
         "name": "潛在空間"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "將一組 LoRA 套用至擴散模型。每個 LoRA 新增一列；每列選擇一個 LoRA 檔案及其強度。",
+    "display_name": "載入 LoRA（模型）",
+    "inputs": {
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "每一列會將一個 LoRA 套用至模型。"
+      },
+      "loras_$add": {
+        "name": "新增 LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 已啟用"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 強度"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要套用 LoRA 的擴散模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改後的擴散模型。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "將一組 LoRA 套用至 CLIP 文字編碼器。每個 LoRA 新增一列；每列選擇一個 LoRA 檔案及其強度。",
+    "display_name": "載入 LoRA（文字編碼器）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "將套用 LoRA 的 CLIP 文字編碼器。"
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "每一列會將一個 LoRA 套用至文字編碼器。"
+      },
+      "loras_$add": {
+        "name": "新增 LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "啟用 LoRA #1"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 強度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改後的 CLIP 文字編碼器。"
       }
     }
   },
@@ -12977,6 +13677,83 @@
       }
     }
   },
+  "MOSSImageControl": {
+    "description": "為透過 LoRA 載入器載入的 MOSS-Image 色彩／深度控制適配器加入色彩區域與深度圖。",
+    "display_name": "MOSS-Image 色彩／深度控制",
+    "inputs": {
+      "color_map": {
+        "name": "色彩圖",
+        "tooltip": "輸出尺寸下每個區域使用一種純色。這些色彩僅作為區域 ID。"
+      },
+      "depth_map": {
+        "name": "深度圖",
+        "tooltip": "輸出尺寸的深度圖，近處為白色。"
+      },
+      "end_percent": {
+        "name": "結束百分比",
+        "tooltip": "控制結束生效時的採樣百分比。提早結束可保留版面配置與深度，而其餘步驟會放寬形狀限制。"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "start_percent": {
+        "name": "開始百分比",
+        "tooltip": "控制開始生效時的採樣百分比。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "調整圖對影像權杖的貢獻程度。0.0 等同於沒有圖，1.0 為訓練時的強度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "根據提示詞以及「建立邊界框」中的方框建立 MOSS-Image 版面配置提示詞。",
+    "display_name": "MOSS-Image 版面配置提示詞",
+    "inputs": {
+      "character_boxes": {
+        "name": "角色方框",
+        "tooltip": "要標記為角色而非物件的物件方框編號，如同在「建立邊界框」預覽中標記，例如「1, 3」。"
+      },
+      "element": {
+        "name": "元素",
+        "tooltip": "來自「建立邊界框」節點的提示詞元素。描述為方框的標題，文字方框也會呈現其中的文字。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成影像的高度；方框會依其像素放置。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "整張影像的描述。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "生成影像的寬度；方框會依其像素放置。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "透過光線調整與可選的參考光線轉移，重新打光圖像。",
     "display_name": "Magnific 圖像重光",
@@ -13626,6 +14403,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "直接依指定的目標面數產生可用於遊戲的三角形網格。",
+    "display_name": "Meshy：影像轉模型（智慧拓撲）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "生成網格中三角形的大約數量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多圖轉模型",
     "inputs": {
@@ -13836,6 +14665,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "直接依指定的目標面數產生可用於遊戲的三角形網格。",
+    "display_name": "Meshy：文字轉模型（智慧拓撲）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "生成網格中三角形的大約數量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -14523,6 +15392,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "使用 Mirelo SFX 根據文字描述產生音效。",
+    "display_name": "Mirelo 文字轉 SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_duration": {
+        "name": "持續時間"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "使用 Mirelo SFX 產生與影片同步的音效。",
+    "display_name": "Mirelo 影片轉 SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_preserve_speech": {
+        "name": "保留語音"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音訊",
+        "tooltip": null
+      },
+      "1": {
+        "name": "語音",
+        "tooltip": "從音軌分離出的對白；未偵測到語音時為靜音。"
       }
     }
   },
@@ -17442,6 +18376,47 @@
       }
     }
   },
+  "PadImageNode": {
+    "description": "以純色或其邊緣的鏡像副本填補影像。",
+    "display_name": "填補影像",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "padding_style": {
+        "name": "填補樣式",
+        "tooltip": "填補區域要填入的內容。"
+      },
+      "padding_style_color": {
+        "name": "顏色"
+      },
+      "padding_style_feathering": {
+        "name": "羽化"
+      },
+      "padding_type": {
+        "name": "填補類型",
+        "tooltip": "選擇要加入多少填補：每一側的精確數量、尺寸倍數，或填補至下一個倍數。"
+      },
+      "padding_type_bottom": {
+        "name": "底部"
+      },
+      "padding_type_left": {
+        "name": "左側"
+      },
+      "padding_type_right": {
+        "name": "右側"
+      },
+      "padding_type_top": {
+        "name": "頂部"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      }
+    }
+  },
   "PaintMesh": {
     "description": "使用輸入體素場中最接近的體素顏色，為每個網格頂點著色。",
     "display_name": "繪製網格",
@@ -18669,7 +19644,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "使用 Quiver AI 將點陣圖像向量化為 SVG。",
-    "display_name": "Quiver 圖像轉 SVG",
+    "display_name": "Quiver 影像轉 SVG（舊版）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18700,7 +19675,7 @@
       },
       "reasoning_effort": {
         "name": "推理強度",
-        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多 Token。僅由 Arrow 2 模型使用。"
+        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多權杖。"
       },
       "seed": {
         "name": "seed",
@@ -18713,9 +19688,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "使用 Quiver AI 將點陣影像向量化為 SVG。",
+    "display_name": "Quiver 影像轉 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於 SVG 向量化的模型。"
+      },
+      "model_auto_crop": {
+        "name": "自動裁切"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_presence_penalty": {
+        "name": "存在懲罰"
+      },
+      "model_reasoning_effort": {
+        "name": "推理強度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_target_size": {
+        "name": "目標尺寸"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "使用 Quiver AI 根據文字提示生成 SVG。",
-    "display_name": "Quiver 文字轉 SVG",
+    "display_name": "Quiver 文字轉 SVG（舊版）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18743,7 +19763,7 @@
       },
       "reasoning_effort": {
         "name": "推理強度",
-        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多 Token。僅由 Arrow 2 模型使用。"
+        "tooltip": "模型在繪製前投入的推理量。較高等級可提升細節，但會消耗更多權杖。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -18752,6 +19772,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "使用 Quiver AI 根據文字提示詞生成 SVG。",
+    "display_name": "Quiver 文字轉 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於產生 SVG 的模型。"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_instructions": {
+        "name": "指令"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "寬度"
       }
     },
     "outputs": {
@@ -19557,6 +20622,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "編碼參考圖像，並將其潛空間附加至正向條件與可選的負向條件，供編輯模型使用。",
+    "display_name": "設定多重參考潛空間",
+    "inputs": {
+      "images": {
+        "name": "圖像"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "未連接 VAE 時會忽略參考圖像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": "未連接負向條件時，傳回正向輸出。"
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "第一個參考潛空間乘以 0.0，或者是在所選解析度下的正方形空白潛空間。"
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "此節點設定 timbre 的參考音訊（適用於 ace step 1.5）",
     "display_name": "ReferenceTimbreAudio",
@@ -19671,7 +20772,7 @@
     "inputs": {
       "band": {
         "name": "窄帶",
-        "tooltip": "以體素為單位的窄帶寬度。在 UDF 模式中也會偏移表面。"
+        "tooltip": "以體素為單位的狹帶寬度。在 udf 模式中也會偏移表面；在 solid 模式中則是封閉半徑：此尺寸下會將折痕倒圓角並橋接間隙，表面會向外偏移半個體素。"
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19698,7 +20799,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf：可穩健處理雜亂／非流形輸入。sdf：使用 QEF（二次誤差函數）銳利特徵復原產生乾淨的單一表面，但需要一致的環繞方向。"
+        "tooltip": "udf：對雜亂／非流形輸入具穩健性。sdf：使用 QEF（二次誤差函數）進行尖銳特徵恢復，可產生乾淨的單一表面，但需要一致的繞向。solid：從雜亂輸入產生單一水密實體：全域內部／外部圖割（CelloCut）會移除雙層殼並封閉小孔。較慢。"
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
@@ -24053,6 +25154,54 @@
       }
     }
   },
+  "TextEncodeFibo2": {
+    "description": "編碼 Fibo 2.0 提示詞、結構化 JSON 圖像描述或純文字。使用圖像時，提示詞會是編輯指令，或是含有 edit_instruction 鍵的結果 JSON 圖像描述；連接 vae 時，圖像會成為兩個輸出的參考潛空間。對潛空間輸出進行取樣，其尺寸即為圖像裁切所使用的結果尺寸。",
+    "display_name": "TextEncodeFibo2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "結果的高度。0 = Fibo 2.0 針對第一張圖像長寬比訓練時使用的尺寸，約為 100 萬像素；沒有圖像時為 1024。"
+      },
+      "images": {
+        "name": "圖像",
+        "tooltip": "要編輯的圖像，在指令中會稱為 <image_1>、<image_2> 等。由於編輯結果會與單張圖像逐像素對齊，單張圖像會縮放並從中心裁切至結果尺寸；多張圖像則各自調整為其訓練時使用的尺寸。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "留空會使用 Fibo 2.0 為搭配編輯工作流程進行 CFG 而訓練的空白描述。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "結果的寬度。0 = Fibo 2.0 針對第一張圖像長寬比訓練時使用的尺寸，約為 100 萬像素；沒有圖像時為 1024。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "文字編碼 HunyuanVideo 影像轉影片",
     "inputs": {
@@ -24084,6 +25233,33 @@
       },
       "images": {
         "name": "影像"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "使用參考圖片為 MOSS-Image 編輯 LoRA 編碼編輯指令；負面提示詞也請使用此節點。參考圖片會依其輸入時的尺寸使用，請先進行縮放。",
+    "display_name": "文字編碼 MOSS-Image 編輯",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "編輯格式",
+        "tooltip": "編輯 LoRA 訓練時採用的版面配置：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 選項開啟或關閉）或 Moss-Image-Edit。若 kv_cache 關閉，參考圖片也會對正在生成的圖片進行注意力運算，因此每一步都會重新計算。"
+      },
+      "images": {
+        "name": "圖片"
       },
       "prompt": {
         "name": "提示詞"
@@ -24309,7 +25485,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會調整草稿深度；2-5 會固定該深度。採樣輸出仍維持正確分布，但在相同 seed 下會與非 MTP 輸出不同。"
+        "tooltip": "使用檢查點的多 token 預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會依據觀察到的 token 比對結果與執行成本，自動調整草稿深度及寬度；2-5 會固定草稿深度；tree 模式則同時固定寬度與深度。採樣輸出仍維持正確的分佈，但相同種子下會與非 MTP 輸出不同。"
       },
       "prompt": {
         "name": "提示詞"
@@ -24383,7 +25559,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。若無 MTP 權重則無效果。auto 會自動調整草稿深度；2-5 則將其固定。取樣輸出仍維持正確分布，但相同種子下會與非 MTP 輸出不同。"
+        "tooltip": "使用檢查點的多 token 預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會依據觀察到的 token 比對結果與執行成本，自動調整草稿深度及寬度；2-5 會固定草稿深度；tree 模式則同時固定寬度與深度。採樣輸出仍維持正確的分佈，但相同種子下會與非 MTP 輸出不同。"
       },
       "prompt": {
         "name": "提示詞"
@@ -27007,6 +28183,119 @@
       }
     }
   },
+  "VeedCleanAudioNode": {
+    "description": "使用 VEED 移除語音中的背景雜訊。適用於任何語言的語音：音樂與音效也會一併移除。輸出 48 kHz 單聲道音訊。",
+    "display_name": "VEED 清除音訊",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "長度少於 30 分鐘的語音錄音。"
+      },
+      "loudness": {
+        "name": "響度"
+      },
+      "loudness_target_lufs": {
+        "name": "目標 LUFS"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "移除語音底下雜訊的程度。較低的值會保留更多人聲後方的環境底噪；字詞之間的停頓一律會完全清除，而高於預設值的數值差異不大。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "使用 VEED 移除影片中語音的背景雜訊。僅會變更音軌：將替換為清理後的 48 kHz 單聲道語音。",
+    "display_name": "VEED 清除音訊（影片中）",
+    "inputs": {
+      "loudness": {
+        "name": "響度"
+      },
+      "loudness_target_lufs": {
+        "name": "目標 LUFS"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "移除語音期間雜訊的程度。較低的值會在聲音後方保留更多室內環境音；字詞之間的停頓一律會完全清理，且高於預設值的數值變化不大。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "含有語音音軌、長度短於 30 分鐘的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "使用 VEED Fabric 將靜態影像和語音音軌轉換為會說話、嘴型同步的影片。適用於照片、插畫和吉祥物；影片長度與音訊相同。",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "使用 VEED Lipsync 將影片中說話者的嘴型重新同步至新的語音音軌。每部影片限一位說話者；輸出會維持影片的解析度與 25 fps，且長度與音訊相同。",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "使用 VEED 將主體從影片中去背，並傳回影格與 Alpha 遮罩。可用於合成，或與 Join Image with Alpha 和 Save WEBM 結合以輸出透明影片。",
+    "display_name": "VEED 移除影片背景",
+    "inputs": {
+      "model": {
+        "name": "模型",
+        "tooltip": "standard：適用於任何背景，邊緣效果最佳，輸出最高可達 3840x2160。fast：速度較快，輸出最高可達 1920x1080。green screen：去除綠幕背景，輸出最高可達 3840x2160。較大的影片會縮小。"
+      },
+      "model_refine_foreground_edges": {
+        "name": "細化前景邊緣"
+      },
+      "model_subject_is_person": {
+        "name": "主體為人物"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": "背景已移除的位置為 1。使用 Join Image with Alpha 和 Save WEBM 建立透明影片；請在 Image Composite Masked 前加入 Invert Mask。"
+      }
+    }
+  },
   "Veo3FirstLastFrameNode": {
     "description": "使用提示詞及首尾影格生成影片。",
     "display_name": "Google Veo 3 首尾影格生成影片",
@@ -27551,6 +28840,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "根據起始影格和可選的提示詞生成影片。輸出會保留輸入圖像的長寬比。",
+    "display_name": "Vidu Q4 圖像轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "生成影片的起始影格。長寬比必須介於 1:5 與 5:1 之間。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "根據參考圖像、可選的參考音訊和提示詞生成影片。",
+    "display_name": "Vidu Q4 參考圖像轉影片生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
       }
     },
     "outputs": {

@@ -1,25 +1,13 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        isInPersonalWorkspace &&
+        (maxSeats === 1 || isPlanEnded) &&
         permissions.canManageSubscription
       "
-      :variant="
-        showsEndedUpsell
-          ? isSalesManagedPlan
-            ? 'contactSales'
-            : 'reactivate'
-          : 'upgrade'
-      "
-      :enterprise="isEnterprisePlan"
-      @action="
-        showsEndedUpsell && isSalesManagedPlan
-          ? handleContactSales()
-          : showTeamPlans()
-      "
+      @action="showTeamPlans()"
     />
     <!-- Controls row: tabs, search, invite (outside the table frame). Once the
          panel scrolls it moves into the dialog header, left of the close
@@ -303,7 +291,6 @@ const {
   isInPersonalWorkspace,
   isPlanEnded,
   isSalesManagedPlan,
-  isEnterprisePlan,
   hasMemberSeats,
   isPlanLoading,
   hasMultipleMembers,
@@ -344,12 +331,6 @@ watch(isHeaderCollapsed, async () => {
 
 const { t } = useI18n()
 
-// A personal workspace always pitches the Team plan here; its own plan
-// lifecycle lives on the Plan & Credits tab.
-const showsEndedUpsell = computed(
-  () => isPlanEnded.value && !isInPersonalWorkspace.value
-)
-
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
@@ -376,8 +357,6 @@ function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 
-// The ended banner and footer action: a sales-managed plan's route back is the
-// enterprise page, not the team-plan request form the Contact us link uses.
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
