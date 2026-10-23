@@ -184,7 +184,16 @@ type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
 
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
-  | { status: 'incomplete'; reason: PaginationStopReason }
+  /**
+   * Pagination stopped before the last page. The threads already fetched are a
+   * prefix of the real list, so they are carried here rather than dropped:
+   * a truncated listing is partial data, not a failed request.
+   */
+  | {
+      status: 'incomplete'
+      reason: PaginationStopReason
+      threads: AgentThreadSummary[]
+    }
   | { status: 'failed'; cause: unknown }
   | { status: 'aborted' }
 
@@ -720,7 +729,7 @@ export function createAgentRestClient() {
     if (!result.ok) return { status: 'failed', cause: result.cause }
     const { items, stopReason } = result.value
     return stopReason
-      ? { status: 'incomplete', reason: stopReason }
+      ? { status: 'incomplete', reason: stopReason, threads: items }
       : { status: 'complete', threads: items }
   }
 

@@ -1554,15 +1554,10 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
   history,
   untitledChat: () => t('agent.untitledChat'),
   onFailure: (failure) => {
-    const error =
-      failure.status === 'failed'
-        ? failure.cause
-        : new Error('Agent thread list ended before its last page')
+    const error = failure.cause
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_thread_list_load_failed',
-      tags:
-        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
+      errorType: 'agent_thread_list_load_failed'
     })
     surfaceAgentError(
       'agent_api_failed',
@@ -1572,11 +1567,22 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       'thread_list_load_failed',
       'pre_acceptance',
       'error_overlay',
-      {
-        retryable:
-          failure.status === 'failed' && isRetryableRequestFailure(error, false)
-      }
+      { retryable: isRetryableRequestFailure(error, false) }
     )
+  },
+  // A truncated listing still shows the chats it reached, so it gets a toast
+  // rather than the blocking error overlay: a user with more than one page of
+  // chats was losing the whole history to a server paging bug (OBL-287).
+  onPartial: (partial) => {
+    reportError(new Error('Agent thread list ended before its last page'), {
+      surface: 'agent',
+      errorType: 'agent_thread_list_load_failed',
+      tags: { reason: partial.reason }
+    })
+    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
+    trackAgentError('thread_list_load_failed', 'pre_acceptance', 'toast', {
+      retryable: false
+    })
   }
 })
 
