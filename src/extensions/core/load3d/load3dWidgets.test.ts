@@ -5,18 +5,27 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
+import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
 
 import { load3dWidgets } from './load3dWidgets'
 
-const { waitForLoad3d, markLoad3dSceneDirty } = vi.hoisted(() => ({
-  waitForLoad3d: vi.fn(),
-  markLoad3dSceneDirty: vi.fn()
-}))
+const { waitForLoad3d, markLoad3dSceneDirty, useLoad3dModule } = vi.hoisted(
+  () => ({
+    waitForLoad3d: vi.fn(),
+    markLoad3dSceneDirty: vi.fn(),
+    useLoad3dModule: { unavailable: false }
+  })
+)
 
 vi.mock(import('@/extensions/core/load3d/composables/useLoad3d'), () => ({
   useLoad3d: () => fromPartial<ReturnType<typeof useLoad3d>>({ waitForLoad3d }),
-  markLoad3dSceneDirty
+  get markLoad3dSceneDirty() {
+    if (useLoad3dModule.unavailable)
+      throw new TypeError('Failed to fetch dynamically imported module')
+    return markLoad3dSceneDirty
+  }
 }))
 vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: fromAny({
@@ -28,6 +37,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
 }))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/i18n'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const app = fromPartial<ComfyApp>({})
 
@@ -87,7 +97,7 @@ describe('load3dWidgets LOAD_3D', () => {
 
   it('uploads the chosen model to input/3d, selects it and loads it into the viewer', async () => {
     const node = makeNode('Load3D', ['model_file'])
-    const load3d = { loadModel: vi.fn().mockResolvedValue({ ok: true }) }
+    const load3d = { loadModel: vi.fn().mockResolvedValue('loaded') }
     waitForLoad3d.mockImplementation((cb: (l: typeof load3d) => void) =>
       cb(load3d)
     )
@@ -105,6 +115,7 @@ describe('load3dWidgets LOAD_3D', () => {
     )
     expect(load3d.loadModel).toHaveBeenCalledOnce()
     expect(markLoad3dSceneDirty).toHaveBeenCalledWith(node)
+    expect(useToast().toasts).toEqual([])
   })
 
   it('shows a toast when the uploaded model fails to load', async () => {
@@ -128,5 +139,29 @@ describe('load3dWidgets LOAD_3D', () => {
     expect(useToast().toasts.map(({ kind, title }) => [kind, title])).toEqual([
       ['warning', 'toastMessages.failedToLoadModel']
     ])
+  })
+  it('keeps the model when clearing cannot load the 3D module, and clears it on retry', async () => {
+    const node = makeNode('Load3D', ['model_file'])
+    load3dWidgets.LOAD_3D(node, 'image', ['LOAD_3D', {}], app)
+    const modelWidget = node.widgets!.find(({ name }) => name === 'model_file')!
+    const clearButton = node.widgets!.find(({ name }) => name === 'clear')!
+    modelWidget.value = '3d/model.glb'
+    useLoad3dModule.unavailable = true
+
+    clearButton.callback?.(clearButton.value)
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(TypeError),
+        expect.objectContaining({ errorType: 'error_loading_3d_extensions' })
+      )
+    )
+    expect(modelWidget.value).toBe('3d/model.glb')
+
+    useLoad3dModule.unavailable = false
+    clearButton.callback?.(clearButton.value)
+    await vi.waitFor(() =>
+      expect(markLoad3dSceneDirty).toHaveBeenCalledWith(node)
+    )
+    expect(modelWidget.value).toBe(LOAD3D_NONE_MODEL)
   })
 })
