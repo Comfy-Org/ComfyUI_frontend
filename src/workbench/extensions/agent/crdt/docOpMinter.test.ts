@@ -1255,6 +1255,48 @@ describe('attachDocOpMinter', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('cancels an unsent dynamic-combo grow when its added source is removed in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      const unsentSource = new TestSource()
+      graph.add(unsentSource)
+      unsentSource.connect(0, resize, match)
+      graph.remove(unsentSource)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          from_node: source.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
       const { source, resize, doc, catalog, match } =
         registeredDynamicComboScenario()
