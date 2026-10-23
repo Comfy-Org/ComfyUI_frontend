@@ -1,9 +1,6 @@
 <!-- A popover that shows current user information and actions -->
 <template>
-  <div
-    data-testid="current-user-popover"
-    class="current-user-popover -m-3 w-fit max-w-96 min-w-80 rounded-lg border border-border-default bg-base-background p-2 shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <div data-testid="current-user-popover" class="current-user-popover p-2">
     <!-- User Info Section -->
     <div class="mb-4 flex flex-col items-center px-0 py-3">
       <UserAvatar
@@ -256,7 +253,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -474,9 +471,7 @@ const closeWorkspaceSwitcherFromKeyboard = () => {
   isWorkspaceNameTooltipOpen.value = false
 }
 
-const refreshBalance = () => {
+onMounted(() => {
   if (!accountActionsOnly) void fetchBalance()
-}
-
-defineExpose({ refreshBalance })
+})
 </script>

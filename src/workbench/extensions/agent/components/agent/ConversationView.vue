@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -41,7 +42,7 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -253,10 +254,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
-                  emit('answerAsk', askId, selection)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)

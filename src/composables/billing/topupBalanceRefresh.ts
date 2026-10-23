@@ -20,21 +20,32 @@ const MAX_SCHEDULED_RUNS = 5
 
 let stopActiveWatch: (() => void) | null = null
 
+interface TopupBalanceSource {
+  current: () => number | null
+  fetch: () => Promise<number | null>
+}
+
+const customerBalanceSource: TopupBalanceSource = {
+  current: () => useAuthStore().balance?.amount_micros ?? null,
+  fetch: async () =>
+    (await useAuthStore().fetchBalance())?.amount_micros ?? null
+}
+
 /**
  * Watch for the user returning from a Stripe top-up and refresh the balance.
  * Safe to call repeatedly: a new call replaces any watch still pending.
  */
-export function watchForTopupBalanceUpdate(): void {
+export function watchForTopupBalanceUpdate(
+  source: TopupBalanceSource = customerBalanceSource
+): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
   stopActiveWatch?.()
 
-  const authStore = useAuthStore()
-
   // Null until a balance is known: treating "not loaded yet" as 0 would let the
   // first read of the *pre-purchase* balance count as the increase we are
   // waiting for, stopping the watch on the stale amount.
-  let baselineMicros: number | null = authStore.balance?.amount_micros ?? null
+  let baselineMicros: number | null = source.current()
 
   const timeouts = new Set<ReturnType<typeof setTimeout>>()
   let stopped = false
@@ -62,8 +73,7 @@ export function watchForTopupBalanceUpdate(): void {
   /** Fetch the balance; true once it has risen above the arming baseline. */
   const refresh = async (): Promise<boolean> => {
     try {
-      const balance = await authStore.fetchBalance()
-      const amountMicros = balance?.amount_micros ?? 0
+      const amountMicros = (await source.fetch()) ?? 0
       if (baselineMicros === null) {
         baselineMicros = amountMicros
         return false

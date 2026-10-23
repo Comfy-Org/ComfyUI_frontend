@@ -98,32 +98,41 @@ async function emptyCanvasPointBelow(
   return point
 }
 
-/**
- * `CLIPTextEncode` is the class the person adds and the host refuses;
- * `KSampler` seeds both the canvas and the document so the refusal can be
- * shown to remove the added node and nothing else.
- */
-const ADDED_CLASS = 'CLIPTextEncode'
+const ADDED_CLASS = 'DynamicModePicker'
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = '1'
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
   [ADDED_CLASS]: {
     name: ADDED_CLASS,
-    display_name: 'CLIP Text Encode',
+    display_name: 'Dynamic Mode Picker',
     description: '',
-    category: 'conditioning',
-    python_module: 'nodes',
+    category: 'testing',
+    python_module: 'custom_nodes.test',
     output_node: false,
     input: {
       required: {
-        clip: ['CLIP', { forceInput: true }],
-        text: ['STRING', { default: '', multiline: true }]
+        mode: [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              { key: 'creative', inputs: { required: {} } },
+              {
+                key: 'faithful',
+                inputs: {
+                  required: {
+                    detail: ['INT', { default: 80, min: 0, max: 100 }]
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     },
-    output: ['CONDITIONING'],
+    output: ['STRING'],
     output_is_list: [false],
-    output_name: ['CONDITIONING']
+    output_name: ['STRING']
   },
   [SEED_CLASS]: {
     name: SEED_CLASS,
@@ -148,18 +157,6 @@ const nodeDefs: Record<string, ComfyNodeDef> = {
   }
 }
 
-/**
- * The host's catalog describes `KSampler` and NOT `CLIPTextEncode`. That is
- * not a contrived gap: the widget catalog is a sha256-pinned projection of
- * one `object_info` (KEEP-ALIVE 12, pinned at mint via `meta.catalog_version`),
- * so a browser talking to a newer server can create a class the pinned catalog
- * has never described. `wireNodeSnapshot` mints NAME-KEYED `widgets_values`
- * for any non-virtual class, and the real applier refuses a name-keyed payload
- * it cannot project — `uncatalogued_widget_write`, raised by
- * `rejectUnprojectableWidgets`, because accepting it would make the whole
- * document unprojectable on every later read. No wire frame is fabricated
- * here; the verdict below is the applier's own.
- */
 const catalog: WidgetCatalog = {
   types: { [SEED_CLASS]: { widget_order: ['seed', 'steps'] } }
 }

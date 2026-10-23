@@ -101,6 +101,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -114,7 +115,7 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -130,18 +131,36 @@ const pagination = ref({
   total: 0
 })
 
-function eventAmount(event: AuditLog) {
-  const amount = event.params?.amount
-  const value = typeof amount === 'string' ? Number(amount) : amount
+function toFiniteNumber(raw: unknown) {
+  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+function eventAmount(event: AuditLog) {
+  return toFiniteNumber(event.params?.amount)
+}
+
+function formatChargeCredits(microUsd: number) {
+  const amount = formatCreditsFromUsd({
+    usd: microUsd / 1_000_000,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
+  return `${amount} ${t('credits.credits')}`
+}
+
+function formatParam(key: string, value: unknown) {
+  const microUsd =
+    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+  if (microUsd !== undefined) {
+    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
+  }
+  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
 }
 
 function additionalInfoTooltip(event: AuditLog) {
   return Object.entries(event.params ?? {})
-    .map(
-      ([key, value]) =>
-        `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-    )
+    .map(([key, value]) => formatParam(key, value))
     .join('\n')
 }
 

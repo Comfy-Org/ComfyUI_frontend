@@ -9,6 +9,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { render } from '@testing-library/vue'
@@ -25,9 +26,10 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 
-const bridgeState = vi.hoisted(() => {
+const bridgeState = (() => {
   class FakeBridge extends EventTarget {
     subscribe = vi.fn()
     unsubscribe = vi.fn()
@@ -51,7 +53,7 @@ const bridgeState = vi.hoisted(() => {
     FakeBridge,
     current: null as InstanceType<typeof FakeBridge> | null
   }
-})
+})()
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
@@ -115,15 +117,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  LayoutFollowerBridge: class {
-    constructor() {
-      const bridge = new bridgeState.FakeBridge()
-      bridgeState.current = bridge
-      return bridge
-    }
-  }
-}))
+vi.mock(import('./layoutFollowerBridge'), { spy: true })
 
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
@@ -258,6 +252,11 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
+    vi.mocked(LayoutFollowerBridge).mockImplementation(function () {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return fromPartial<LayoutFollowerBridge>(bridge)
+    })
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -927,6 +926,40 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('asks for a reload once when the document is newer than this build reads', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    const found = SCHEMA_VERSION + 1
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', found })
+
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
+    )
+    unmount()
+  })
+
+  it('does not ask for a reload when the document is older than this build reads', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      found: SCHEMA_VERSION - 1
+    })
+
     expect(onSyncError).not.toHaveBeenCalled()
     unmount()
   })

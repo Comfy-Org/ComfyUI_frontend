@@ -1,4 +1,8 @@
-import { OPAQUE_WIDGETS_KEY, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  OPAQUE_WIDGETS_KEY,
+  WIDGET_FORM_KEY,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -113,7 +117,8 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION || !isReadableKey(key)) return
+    if (key === NODE_INCARNATION || key === WIDGET_FORM_KEY) return
+    if (!isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
         [...value.entries()].flatMap(([name, widgetValue]) =>

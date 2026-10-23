@@ -4062,6 +4062,28 @@ export type DesktopLoginCodeCreateRequest = {
 }
 
 /**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export type DeployToCloudError = {
+  error:
+    | 'offline'
+    | 'multiple_credentials'
+    | 'invalid_api_key_format'
+    | 'invalid_body'
+    | 'missing_credentials'
+    | 'unauthorized'
+    | 'too_large'
+    | 'too_many_bundles'
+    | 'builder_rejected'
+    | 'builder_unavailable'
+    | 'builder_busy'
+  /**
+   * Human-readable detail, present for invalid_body and builder_rejected.
+   */
+  message?: string
+}
+
+/**
  * Response after deleting a session cookie
  */
 export type DeleteSessionResponse = {
@@ -9906,6 +9928,121 @@ export type GetDefaultWorkflowResponses = {
 export type GetDefaultWorkflowResponse =
   GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
 
+export type CreateDeployBundleData = {
+  /**
+   * A JSON object; `{}` is valid. Null members count as absent.
+   */
+  body: {
+    /**
+     * Optional label for the bundle.
+     */
+    name?: string | null
+    /**
+     * The workflow open in ComfyUI, sent as is.
+     */
+    workflow?: {
+      [key: string]: unknown
+    } | null
+  }
+  path?: never
+  query?: never
+  url: '/api/deploy/bundle'
+}
+
+export type CreateDeployBundleErrors = {
+  /**
+   * Rejected before upload: `multiple_credentials` (both headers sent), `invalid_api_key_format` (X-API-Key is not comfyui- followed by 64 hex characters) or `invalid_body` (not a JSON object, or a bad workflow or name).
+   */
+  400: DeployToCloudError
+  /**
+   * `missing_credentials` (no credential sent) or `unauthorized` (the builder refused the credential).
+   */
+  401: DeployToCloudError
+  /**
+   * `offline` (the server runs with --offline) or `unauthorized` (the builder refused the credential).
+   */
+  403: DeployToCloudError
+  /**
+   * The bundle exceeds the builder's size cap (`too_large`).
+   */
+  413: DeployToCloudError
+  /**
+   * The user already holds the builder's limit of unexpired bundles in this workspace (`too_many_bundles`); clears as older bundles expire.
+   */
+  429: DeployToCloudError
+  /**
+   * `builder_rejected` (the builder refused the bundle as invalid; `message` carries its reason, at most 500 characters) or `builder_unavailable` (the builder could not be reached or answered unexpectedly).
+   */
+  502: DeployToCloudError
+  /**
+   * The builder is busy (`builder_busy`); retry after Retry-After seconds when present.
+   */
+  503: DeployToCloudError
+}
+
+export type CreateDeployBundleError =
+  CreateDeployBundleErrors[keyof CreateDeployBundleErrors]
+
+export type CreateDeployBundleResponses = {
+  /**
+   * Bundle stored on comfy-builder
+   */
+  200: {
+    bundle_id: string
+    /**
+     * When the bundle stops being readable (24 hours after creation).
+     */
+    expires_at: string
+    /**
+     * The Create a Build wizard link that opens the bundle (/profile/builds/new?step=import&bundle=&workspace=&bundle_workspace=).
+     */
+    url: string
+    /**
+     * The workspace the bundle belongs to (the credential's).
+     */
+    workspace_id: string
+  }
+}
+
+export type CreateDeployBundleResponse =
+  CreateDeployBundleResponses[keyof CreateDeployBundleResponses]
+
+export type GetDeploySummaryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/deploy/summary'
+}
+
+export type GetDeploySummaryErrors = {
+  /**
+   * The server runs with --offline (error `offline`)
+   */
+  403: DeployToCloudError
+}
+
+export type GetDeploySummaryError =
+  GetDeploySummaryErrors[keyof GetDeploySummaryErrors]
+
+export type GetDeploySummaryResponses = {
+  /**
+   * Counts of what the bundle would include
+   */
+  200: {
+    /**
+     * Custom node packages found in the custom_nodes folders
+     */
+    custom_nodes: number
+    /**
+     * Model files found across the model folders
+     */
+    models: number
+  }
+}
+
+export type GetDeploySummaryResponse =
+  GetDeploySummaryResponses[keyof GetDeploySummaryResponses]
+
 export type GetEmbeddingsData = {
   body?: never
   path?: never
@@ -10183,6 +10320,10 @@ export type GetFeaturesResponses = {
      * Because absence carries that meaning, the field is only ever the authority's answer: unlike the flags beside it, it cannot be set from dynamic configuration, and it is removed from the response rather than left at a configured value when it is unresolvable. It is likewise absent from the WebSocket feature_flags push, which resolves no capability, so a client refreshing from the socket reads "unknown" and fails open rather than inheriting a stale answer.
      */
     can_run_partner_nodes?: boolean
+    /**
+     * Local ComfyUI only: whether the UI should offer Deploy to Cloud. True when the server is not --offline and this installation has ever had a prompt queued by a non-browser client (a persistent marker in the user directory). A discovery hint only: it grants nothing, and the /api/deploy* routes do not check it. Not settable with --feature-flag.
+     */
+    deploy_to_cloud?: boolean
     /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */

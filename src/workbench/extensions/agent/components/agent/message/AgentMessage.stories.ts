@@ -160,6 +160,58 @@ export const ApprovalPending: Story = {
   args: { ...Approval.args, answeringAskIds: new Set(['approval']) }
 }
 
+const deleteApproval: MessagePart = {
+  type: 'deleteApproval',
+  askId: 'delete',
+  prompt: 'Delete the 2 nodes you added?',
+  nodes: [
+    { id: '12', name: 'Hero sampler' },
+    { id: '13', name: 'VAEDecode' }
+  ],
+  hiddenNodeCount: 0
+}
+
+export const DeleteApproval: Story = {
+  args: { message: message([deleteApproval], false) }
+}
+
+export const DeleteApprovalPending: Story = {
+  args: { ...DeleteApproval.args, answeringAskIds: new Set(['delete']) }
+}
+
+export const DeleteApprovalLongList: Story = {
+  args: {
+    message: message(
+      [
+        {
+          ...deleteApproval,
+          prompt: 'Delete the 80 nodes you added?',
+          nodes: Array.from({ length: 50 }, (_, index) => ({
+            id: String(index + 1),
+            name: `KSampler ${index + 1}`
+          })),
+          hiddenNodeCount: 30
+        }
+      ],
+      false
+    )
+  }
+}
+
+export const DeleteApprovalResolved: Story = {
+  args: {
+    message: message(
+      [
+        {
+          ...deleteApproval,
+          resolution: { status: 'answered', selected: ['keep'] }
+        }
+      ],
+      false
+    )
+  }
+}
+
 export const ErrorNotice: Story = {
   args: {
     message: message(

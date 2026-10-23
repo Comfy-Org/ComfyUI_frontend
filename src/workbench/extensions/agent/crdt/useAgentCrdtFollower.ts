@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -36,10 +37,13 @@ import { DocFrameClient } from './docFrameClient'
 import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import {
+  readDocPromotedWidgets,
+  readSubgraphDefinitionIds
+} from './agentSubgraphDefinitions'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
@@ -190,9 +194,8 @@ function notifyAgentMaterialization(
     const nodeId = parseNodeId(id)
     if (nodeId) pendingLiveNodeIds.delete(nodeId)
   }
-  const isLiveAgentUpdate =
-    !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate) {
+  const liveAgentUpdate = isLiveAgentUpdate(update)
+  if (liveAgentUpdate) {
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
@@ -205,7 +208,7 @@ function notifyAgentMaterialization(
   ])
   emitPendingMaterializations(
     update.workflowId,
-    isLiveAgentUpdate ? update.actor : undefined,
+    liveAgentUpdate ? update.actor : undefined,
     available,
     pendingLiveNodeIds,
     events
@@ -387,10 +390,14 @@ export function useAgentCrdtFollower(
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      follower.value?.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    docHasSubgraphDefinition: (definitionId: string) =>
+      follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: () => follower.value?.notifyWidgetWriteRefused()
   }
 }
@@ -778,6 +785,7 @@ function startAgentCrdtFollower(
       projection.bind(workflowId, bridge.follower)
     }
   }
+  const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -787,7 +795,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
+        ? (event.detail as { workflowId?: string; found?: unknown } | null)
         : null
     if (detail?.workflowId !== undefined) {
       projection.discardPending(detail.workflowId)
@@ -797,6 +805,20 @@ function startAgentCrdtFollower(
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+    notifyStaleClient(detail)
+  }
+  function notifyStaleClient(
+    detail: { workflowId?: string; found?: unknown } | null
+  ): void {
+    const found = newerDocSchema(detail?.found)
+    const workflowId = detail?.workflowId
+    if (found === null || workflowId === undefined) return
+    if (staleClientNotified.has(workflowId)) return
+    staleClientNotified.add(workflowId)
+    events.onSyncError?.(
+      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -1066,13 +1088,21 @@ function startAgentCrdtFollower(
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      readDocWidgetValue(bridge.follower.doc, String(nodeId), widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
     mayWritePromotedHost: (nodeId: NodeId) =>
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    docHasSubgraphDefinition: (definitionId: string) =>
+      readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: () =>
       rejectedOpNotifier.notifyWidgetWriteRefused()
   }
+}
+
+function newerDocSchema(found: unknown): number | null {
+  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
 }

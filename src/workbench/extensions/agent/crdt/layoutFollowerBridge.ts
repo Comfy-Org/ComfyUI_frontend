@@ -19,6 +19,13 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
+}
+
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that

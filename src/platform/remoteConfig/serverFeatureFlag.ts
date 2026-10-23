@@ -15,6 +15,7 @@ export enum ServerFeatureFlag {
   PARTNER_NODE_TOKEN = 'partner_node_token',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
+  DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',

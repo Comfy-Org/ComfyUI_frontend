@@ -999,7 +999,11 @@ export class AgentConversationHarness {
     await nextFrame(this.page)
   }
 
-  async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
+  async switchAwayAndBack(
+    nodeId: string,
+    widget: string,
+    expectedValue?: string
+  ): Promise<void> {
     const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
@@ -1012,6 +1016,10 @@ export class AgentConversationHarness {
       this.topbar.getTab(0).and(this.topbar.getActiveTab())
     ).toBeVisible()
     await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    if (expectedValue !== undefined)
+      await expect(
+        this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
+      ).toHaveValue(expectedValue)
     await this.waitForPendingFrames(
       nodeId,
       widget,
