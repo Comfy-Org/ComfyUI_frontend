@@ -104,7 +104,8 @@ const i18n = createI18n({
         close: 'Close',
         previous: 'Previous',
         next: 'Next',
-        download: 'Download'
+        download: 'Download',
+        moreOptions: 'More Options'
       },
       sideToolbar: {
         backToAssets: 'Back to all assets',
@@ -388,6 +389,26 @@ describe('AssetsSidebarTab gallery selection', () => {
     await nextTick()
 
     expect(screen.getByTestId('lightbox-filename')).toHaveTextContent('c.png')
+  })
+
+  it('opens the asset menu for the viewed asset from the lightbox', async () => {
+    const first = pngAsset('a', 'a.png')
+    const second = { ...pngAsset('b', 'b.png'), name: 'b.png' }
+    useAssetsStore().outputAssets.items = [first, second]
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    await screen.findByTestId('lightbox-filename')
+
+    await userEvent.click(screen.getByLabelText('More Options'))
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.download'
+      })
+    )
+
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([second])
   })
 
   it('downloads the asset file rather than its preview rendition', async () => {

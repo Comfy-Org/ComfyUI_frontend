@@ -15,6 +15,17 @@
       <!-- Top-right actions -->
       <div class="absolute top-4 right-4 z-10 flex gap-2">
         <Button
+          v-if="hasContextMenu"
+          variant="secondary"
+          size="icon-lg"
+          class="rounded-full"
+          :title="$t('g.moreOptions')"
+          :aria-label="$t('g.moreOptions')"
+          @click="emit('context-menu', $event)"
+        >
+          <i class="icon-[lucide--ellipsis] size-5" />
+        </Button>
+        <Button
           v-if="activeItem"
           variant="secondary"
           size="icon-lg"
@@ -123,7 +134,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  watch
+} from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -147,6 +165,7 @@ import ResultVideo from './ResultVideo.vue'
 
 const emit = defineEmits<{
   (e: 'update:activeIndex', value: number): void
+  (e: 'context-menu', event: MouseEvent): void
 }>()
 
 const props = defineProps<{
@@ -164,6 +183,12 @@ const dialogRef = ref<HTMLElement>()
 let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
+
+const hasContextMenu = computed(
+  () =>
+    !!getCurrentInstance()?.vnode.props?.['onContextMenu'] &&
+    activeItem.value !== undefined
+)
 
 const contentRef = ref<HTMLElement>()
 
