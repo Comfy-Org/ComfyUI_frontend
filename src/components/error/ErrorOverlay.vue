@@ -47,6 +47,8 @@
           </p>
         </div>
 
+        <ErrorOverlayDeploymentOffer v-if="isCloud && hasMissingNodes" />
+
         <div class="flex w-full items-center justify-end pt-2">
           <Button
             variant="secondary"
@@ -83,6 +85,8 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import ErrorOverlayDeploymentOffer from '@/components/error/ErrorOverlayDeploymentOffer.vue'
+import { isCloud } from '@/platform/distribution/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
@@ -93,7 +97,7 @@ const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 
-const { hasError, isVisible, overlayMessage, overlayTitle } =
+const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
   useErrorOverlayState()
 
 function dismiss() {
