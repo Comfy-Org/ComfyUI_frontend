@@ -11,7 +11,7 @@ import {
   widgetId as createWidgetId
 } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 import {
   applyLegacyHiddenWrite,
@@ -153,6 +153,17 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return positionalIndex < restoration.positional.length
       ? { value: restoration.positional[positionalIndex] }
       : undefined
+  }
+
+  function getRestoredWidgetValueCount(
+    graphId: UUID,
+    nodeId: NodeId
+  ): number | undefined {
+    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
+    if (!restoration) return
+    return restoration.restoreNamed && restoration.named
+      ? Object.keys(restoration.named).length
+      : restoration.positional.length
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
@@ -318,6 +329,25 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!state) return false
     state.value = value
     return true
+  }
+
+  /**
+   * Announces a newly created widget's current value as a `set_widget`
+   * intent. Registration alone announces nothing, so a widget a local edit
+   * creates (a new DynamicGroup row) would otherwise reach the document only
+   * if its value later changes.
+   */
+  function announceValue(widgetId: WidgetId): void {
+    const state = getWidget(widgetId)
+    if (!state) return
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: parseWidgetId(widgetId).graphId,
+      nodeId: state.nodeId,
+      name: state.name,
+      value: state.value ?? null,
+      previous: undefined
+    })
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
@@ -530,10 +560,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
+    getRestoredWidgetValueCount,
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
     setValue,
+    announceValue,
     setLabel,
     setOptions,
     updateOptions,

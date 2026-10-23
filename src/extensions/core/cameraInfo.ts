@@ -3,9 +3,9 @@ import { nextTick } from 'vue'
 import CameraInfo from '@/components/cameraInfo/CameraInfo.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
-useExtensionService().registerExtension({
+export const cameraInfoExtension: ComfyExtension = {
   name: 'Comfy.CreateCameraInfo',
 
   getCustomWidgets() {
@@ -20,7 +20,7 @@ useExtensionService().registerExtension({
             type: 'CAMERA_INFO_STATE',
             isPreview: false
           },
-          options: { serialize: false }
+          options: { serialize: false, hideInPanel: true }
         })
         widget.type = 'cameraInfo'
         widget.serialize = false
@@ -38,4 +38,4 @@ useExtensionService().registerExtension({
 
     await nextTick()
   }
-})
+}

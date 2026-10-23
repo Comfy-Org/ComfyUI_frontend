@@ -11,16 +11,16 @@ import {
 } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import { isWorkflowSlug } from '../../config/models-catalogue'
-import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { t } from '../../i18n/translations'
+import { isWorkflowSlug } from '@/config/models-catalogue'
+import { fetchModelsCatalogue } from '@/config/models-catalogue-data'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { translationsFor } from '@/i18n/translations'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
 import type { CatalogueTab } from './CatalogueTabs.vue'
 import WorkshopGate from './WorkshopGate.vue'
@@ -30,6 +30,7 @@ import {
   workshopHeadingClass
 } from './workshopHeadingClasses'
 
+const { t } = translationsFor('en')
 const {
   slug,
   workflowId,
@@ -42,7 +43,7 @@ const {
   section?: CatalogueTab
 }>()
 
-const loadingLabel = t('workshop.load.pending', 'en')
+const loadingLabel = t('workshop.load.pending')
 const isWorkflow = computed(() => (slug ? isWorkflowSlug(slug) : false))
 const mounted = useMounted()
 const catalogueRevision = shallowRef(0)
@@ -76,6 +77,11 @@ const catalogueView = computed(() => {
     ? 'granted'
     : 'denied'
 })
+// Inside a category the category's own title carries the page, so the hub's
+// eyebrow and heading give up their space to it. They stay in the document
+// rather than leaving: the page keeps the one heading it is supposed to have,
+// and the category reads as the section of it that it is.
+const inSection = shallowRef(false)
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
 const session =
@@ -95,7 +101,7 @@ watch(
     if (!id || !uid || !workspaceId) return
     try {
       const { workflowStorage } =
-        await import('../../config/workshop-workflow-storage')
+        await import('@/config/workshop-workflow-storage')
       if (current)
         savedWorkflow.value = Boolean(
           workflowStorage(
@@ -137,7 +143,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed')),
       h(
         'button',
         {
@@ -149,7 +155,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', 'en')
+        t('workshop.error.retry')
       )
     ]
   )
@@ -163,8 +169,7 @@ function createContent() {
           ? import('./WorkflowPage.vue')
           : import('./ModelPage.vue')
         void preload.catch(() => undefined)
-        const { fetchModelsPage } =
-          await import('../../config/models-page-data')
+        const { fetchModelsPage } = await import('@/config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
         if (model.routerId === undefined) {
           const { default: WorkflowPage } = await import('./WorkflowPage.vue')
@@ -197,6 +202,9 @@ function createContent() {
             h(ModelsCatalogue, {
               key: `${section}:${catalogueRevision.value}`,
               initialSearch: catalogueSearch.value,
+              onSection: (open: boolean) => {
+                inSection.value = open
+              },
               models: models.filter(
                 (model) =>
                   model.routerId !== undefined ||
@@ -225,12 +233,17 @@ const Content = shallowRef(createContent())
   <template v-if="!slug">
     <div
       v-if="heading && catalogueView !== 'denied'"
-      class="mx-auto max-w-10xl animate-soft-in px-6 pt-8 pb-4 max-sm:pt-5 lg:px-8 lg:pt-12 sm:short:pb-3"
+      class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
-      <p :class="workshopEyebrowClass">
-        {{ t('workshop.catalogue.eyebrow', 'en') }}
-      </p>
-      <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+      <div
+        data-testid="workshop-heading"
+        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
+      >
+        <p :class="workshopEyebrowClass">
+          {{ t('workshop.catalogue.eyebrow') }}
+        </p>
+        <h1 :class="workshopHeadingClass">{{ heading }}</h1>
+      </div>
     </div>
     <component :is="Content" v-if="catalogueView === 'granted'" />
     <WorkshopLoading

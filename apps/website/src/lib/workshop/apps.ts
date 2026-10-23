@@ -1,12 +1,13 @@
-import type { AppWorkshopModel } from '../../config/models-catalogue'
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
+import type { AppWorkshopModel } from '@/config/models-catalogue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
 import type { CinematicCopyKey } from './cinematic-studio/copy'
 
 export type WorkshopAppId = AppWorkshopModel['appId']
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
   const routes = getRoutes(locale)
+  if (app === 'openjutsu') return routes.openjutsu
   return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
 }
 
@@ -21,7 +22,7 @@ export interface WorkshopAppCard {
   readonly summary: CinematicCopyKey
   readonly badge: CinematicCopyKey
   readonly meta?: CinematicCopyKey
-  readonly image?: string
+  readonly thumbnail?: AppWorkshopModel['thumbnail']
   readonly href?: string
 }
 
@@ -37,6 +38,12 @@ const appCopy = {
     summary: 'cinematic.hub.reshootSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.reshootMeta'
+  },
+  openjutsu: {
+    name: 'cinematic.hub.openjutsu',
+    summary: 'cinematic.hub.openjutsuSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.openjutsuMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,
@@ -56,7 +63,7 @@ export function workshopApps(
   return models.map((app) => ({
     key: app.appId,
     ...appCopy[app.appId],
-    image: app.thumbnail?.url ?? app.thumbnailUrl,
+    thumbnail: app.thumbnail,
     href: workshopAppHref(app.appId, locale)
   }))
 }

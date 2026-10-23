@@ -1,8 +1,21 @@
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { defineComponent, markRaw } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  markRaw,
+  ref
+} from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { testI18n } from '@/utils/__tests__/testI18n'
+import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -10,34 +23,30 @@ import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
 
-const observers = vi.hoisted(() => {
-  const observers: TestResizeObserver[] = []
-  class TestResizeObserver implements ResizeObserver {
-    elements = new Set<Element>()
-    constructor(readonly callback: ResizeObserverCallback) {
-      observers.push(this)
-    }
-    observe(element: Element) {
-      this.elements.add(element)
-    }
-    unobserve(element: Element) {
-      this.elements.delete(element)
-    }
-    disconnect() {
-      this.elements.clear()
-    }
-    resize(element: Element) {
-      if (this.elements.has(element)) {
-        this.callback(
-          [fromPartial<ResizeObserverEntry>({ target: element })],
-          this
-        )
-      }
+const observers: TestResizeObserver[] = []
+class TestResizeObserver implements ResizeObserver {
+  elements = new Set<Element>()
+  constructor(readonly callback: ResizeObserverCallback) {
+    observers.push(this)
+  }
+  observe(element: Element) {
+    this.elements.add(element)
+  }
+  unobserve(element: Element) {
+    this.elements.delete(element)
+  }
+  disconnect() {
+    this.elements.clear()
+  }
+  resize(element: Element) {
+    if (this.elements.has(element)) {
+      this.callback(
+        [fromPartial<ResizeObserverEntry>({ target: element })],
+        this
+      )
     }
   }
-  vi.stubGlobal('ResizeObserver', TestResizeObserver)
-  return observers
-})
+}
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
@@ -58,6 +67,11 @@ const WidgetStub = markRaw(
   })
 )
 
+const AttrsDroppingWidgetStub = defineComponent({
+  inheritAttrs: false,
+  template: '<div><input data-testid="widget-control" /></div>'
+})
+
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
@@ -72,8 +86,10 @@ const AppInputStub = defineComponent({
   props: {
     name: { type: String, required: true }
   },
-  template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+  template: `
+    <div data-testid="app-input" :data-widget-name="name"><slot /></div>
+    <span data-testid="app-input-sibling" />
+  `
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -107,7 +123,6 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
           messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
         })
       ],
-      directives: { tooltip: {} },
       stubs: { AppInput: AppInputStub }
     }
   })
@@ -146,7 +161,8 @@ function renderLayoutGrid(syncLayout = true) {
 
 describe('WidgetGrid', () => {
   beforeEach(() => {
-    for (const observer of observers) observer.disconnect()
+    observers.length = 0
+    vi.stubGlobal('ResizeObserver', TestResizeObserver)
     useCanvasStore().canvas = fromPartial({
       canvas: document.createElement('canvas'),
       graph: fromPartial({ rootGraph: { id: 'widget-grid-graph' } }),
@@ -194,6 +210,135 @@ describe('WidgetGrid', () => {
     expect(screen.queryByText('prompt')).not.toBeInTheDocument()
   })
 
+  it.for([
+    { label: 'LoRA #1 model', displayed: 'model', first: 0 },
+    { label: 'My model', displayed: 'My model', first: 0 },
+    { label: 'LoRA #1 model', displayed: 'LoRA #1 model', first: 1 }
+  ])(
+    'displays $displayed while keeping the accessible name $label',
+    ({ label, displayed, first }) => {
+      const items: WidgetGridItem[] = [
+        {
+          renderKey: 'header',
+          visible: true,
+          simplified: {
+            name: 'loras.0',
+            type: 'dynamic_group_row',
+            value: undefined,
+            label: 'LoRA #1'
+          },
+          vueComponent: markRaw(WidgetDynamicGroupRow)
+        },
+        {
+          renderKey: 'model',
+          visible: true,
+          simplified: {
+            name: 'loras.0.model',
+            type: 'combo',
+            value: 'A',
+            label,
+            options: { values: ['A', 'B'] }
+          },
+          vueComponent: markRaw(WidgetSelectDefault)
+        }
+      ]
+      renderGrid(items.slice(first), false)
+
+      expect(
+        screen.getByTestId('widget-layout-field-label').textContent.trim()
+      ).toBe(displayed)
+      expect(screen.getByRole('combobox', { name: label })).toBeVisible()
+    }
+  )
+
+  it.for([0, 1])(
+    'identifies repeated fields and restores keyboard focus after deletion with min = %s',
+    async (min) => {
+      const user = userEvent.setup()
+      const rows = ref(['A', 'B', 'C'])
+      const items = computed<WidgetGridItem[]>(() => [
+        ...rows.value.flatMap((id, index) => [
+          {
+            renderKey: `${id}-header`,
+            visible: true,
+            simplified: {
+              name: `loras.${index}`,
+              type: 'dynamic_group_row',
+              value: undefined,
+              label: `LoRA #${index + 1}`,
+              options: { disabled: rows.value.length <= min },
+              callback: () => {
+                rows.value = rows.value.filter((row) => row !== id)
+              }
+            },
+            vueComponent: markRaw(WidgetDynamicGroupRow)
+          },
+          {
+            renderKey: `${id}-model`,
+            visible: true,
+            simplified: {
+              name: `loras.${index}.model`,
+              type: 'combo',
+              value: id,
+              label: 'Model',
+              options: { values: ['A', 'B', 'C'] }
+            },
+            vueComponent: markRaw(WidgetSelectDefault)
+          }
+        ]),
+        {
+          renderKey: 'add',
+          visible: true,
+          simplified: {
+            name: 'loras.$add',
+            type: 'button',
+            value: undefined,
+            label: 'Add LoRA'
+          },
+          vueComponent: markRaw(WidgetButton)
+        }
+      ])
+      const Host = defineComponent({
+        setup: () => () =>
+          h(WidgetGrid, {
+            processedWidgets: items.value,
+            nodeType: 'TestNode',
+            syncLayout: false
+          })
+      })
+      render(Host, {
+        global: {
+          plugins: [testI18n],
+          stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
+        }
+      })
+
+      for (const index of [1, 2, 3]) {
+        const group = screen.getByRole('group', { name: `LoRA #${index}` })
+        expect(
+          within(group).getByRole('combobox', { name: 'Model' })
+        ).toBeInTheDocument()
+      }
+      screen.getByRole('button', { name: 'Remove LoRA #2' }).focus()
+      await user.keyboard('{Enter}')
+      expect(
+        screen.getByRole('button', { name: 'Remove LoRA #2' })
+      ).toHaveFocus()
+      expect(
+        screen.queryByRole('group', { name: 'LoRA #3' })
+      ).not.toBeInTheDocument()
+      await user.keyboard('{Enter}')
+      if (min === 0) {
+        expect(
+          screen.getByRole('button', { name: 'Remove LoRA #1' })
+        ).toHaveFocus()
+        await user.keyboard('{Enter}')
+      }
+      expect(screen.getByRole('button', { name: 'Add LoRA' })).toHaveFocus()
+      expect(screen.queryAllByRole('group')).toHaveLength(min)
+    }
+  )
+
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
@@ -211,7 +356,6 @@ describe('WidgetGrid', () => {
         ]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: {
           AppInput: AppInputStub,
           InputSlot: InputSlotStub
@@ -236,6 +380,38 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
+  it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
+    const user = userEvent.setup()
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('seed', 'number', 0),
+            tooltipText: 'Widget value',
+            vueComponent: markRaw(
+              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+            )
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: InputSlotStub
+        }
+      }
+    })
+
+    await user.hover(await screen.findByTestId('widget-control'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    await waitFor(() =>
+      expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
+    )
+  })
+
   it('passes execution errors to the widget control API', () => {
     render(WidgetGrid, {
       props: {
@@ -244,7 +420,6 @@ describe('WidgetGrid', () => {
         processedWidgets: [{ ...widget('seed', 'string', 0), hasError: true }]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
       }
     })

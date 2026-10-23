@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { t } from '../src/i18n/translations'
+import { getRoutes } from '@/config/routes'
+import { t } from '@/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = getRoutes('en').minimaxLicenseProfessionalRequest

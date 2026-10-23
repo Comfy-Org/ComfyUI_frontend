@@ -1,4 +1,4 @@
-import type { FieldValue, FormValues } from '../../config/workshop-playground'
+import type { FieldValue, FormValues } from '@/config/workshop-playground'
 
 function sameField(left: FieldValue, right: FieldValue): boolean {
   if (Array.isArray(left) || Array.isArray(right))

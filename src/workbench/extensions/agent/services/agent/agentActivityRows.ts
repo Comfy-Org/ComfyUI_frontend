@@ -7,6 +7,7 @@ interface ToolRow {
   state: PartState
   ok?: boolean
   count: number
+  canvasConfirmed?: boolean
 }
 
 interface ThinkingRow {
@@ -17,22 +18,27 @@ interface ThinkingRow {
 
 export type ActivityRow = ToolRow | ThinkingRow
 
-function isSameToolStep(
+function matchingToolStep(
   previous: ActivityRow | undefined,
   part: ToolPart
-): previous is ToolRow {
-  return (
-    previous?.kind === 'tool' &&
-    previous.name === part.name &&
-    previous.skill === part.skill
+): ToolRow | undefined {
+  if (
+    previous?.kind !== 'tool' ||
+    previous.name !== part.name ||
+    (part.name === 'load_skill' && previous.skill !== part.skill)
   )
+    return undefined
+  return previous
 }
 
-/**
- * Consecutive calls to the same tool read as one step carrying a count: the
- * transport keeps every call so a single one stays addressable, the trace only
- * needs the shape of the work.
- */
+function foldCanvasConfirmed(
+  previous: boolean | undefined,
+  next: boolean | undefined
+): boolean | undefined {
+  if (previous === false || next === false) return false
+  return previous ?? next
+}
+
 export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
@@ -44,11 +50,15 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       })
       continue
     }
-    const previous = rows.at(-1)
-    if (isSameToolStep(previous, part)) {
+    const previous = matchingToolStep(rows.at(-1), part)
+    if (previous) {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
-      if (part.ok === false) previous.ok = false
+      if (part.ok !== undefined) previous.ok = part.ok
+      previous.canvasConfirmed = foldCanvasConfirmed(
+        previous.canvasConfirmed,
+        part.canvasConfirmed
+      )
     } else {
       rows.push({
         kind: 'tool',
@@ -56,6 +66,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
         skill: part.skill,
         state: part.state,
         ok: part.ok,
+        canvasConfirmed: part.canvasConfirmed,
         count: 1
       })
     }

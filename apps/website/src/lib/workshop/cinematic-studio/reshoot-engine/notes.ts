@@ -1,6 +1,6 @@
-import type { Locale } from '../../../../i18n/translations'
-import type { ReshootSize } from '../reshoot'
-import { rc } from '../reshoot-copy'
+import type { Locale } from '@/i18n/translations'
+import type { ReshootSize } from '@/lib/workshop/cinematic-studio/reshoot'
+import { translationsFor } from '@/i18n/translations'
 import type { ReshootQuote } from './transport'
 import { ReshootError } from './transport'
 import { sizeTier } from './workflow'
@@ -8,20 +8,13 @@ import { sizeTier } from './workflow'
 const HOUR = 3600
 const DAY = 24 * HOUR
 
-function fill(text: string, values: Record<string, string | number>): string {
-  return Object.entries(values).reduce(
-    (out, [key, value]) => out.replaceAll(`{${key}}`, String(value)),
-    text
-  )
-}
-
 /** The rolling free-run period as a reader says it: today, this week, per 12 hours. */
 function periodPhrase(seconds: number, locale: Locale): string {
-  if (seconds === DAY) return rc('reshoot.period.day', locale)
-  if (seconds === 7 * DAY) return rc('reshoot.period.week', locale)
-  if (seconds % DAY === 0)
-    return fill(rc('reshoot.period.days', locale), { n: seconds / DAY })
-  return fill(rc('reshoot.period.hours', locale), {
+  const { t } = translationsFor(locale)
+  if (seconds === DAY) return t('reshoot.period.day')
+  if (seconds === 7 * DAY) return t('reshoot.period.week')
+  if (seconds % DAY === 0) return t('reshoot.period.days', { n: seconds / DAY })
+  return t('reshoot.period.hours', {
     n: Math.max(1, Math.round(seconds / HOUR))
   })
 }
@@ -33,21 +26,24 @@ function relativeTime(seconds: number, locale: Locale): string {
   return format.format(Math.ceil(seconds / DAY), 'day')
 }
 
-const credits = (price: number, locale: Locale) =>
-  fill(rc('reshoot.quote.paid', locale), {
+function credits(price: number, locale: Locale) {
+  const { t } = translationsFor(locale)
+  return t('reshoot.quote.paid', {
     price: price.toLocaleString(locale)
   })
+}
 
 function exhausted(
   inSeconds: number | undefined,
   price: number,
   locale: Locale
 ): string {
+  const { t } = translationsFor(locale)
   const when =
     inSeconds === undefined
-      ? rc('reshoot.quote.later', locale)
+      ? t('reshoot.quote.later')
       : relativeTime(inSeconds, locale)
-  const note = fill(rc('reshoot.quote.exhausted', locale), { when })
+  const note = t('reshoot.quote.exhausted', { when })
   return price > 0 ? `${note} · ${credits(price, locale)}` : note
 }
 
@@ -75,11 +71,12 @@ export function runPrice(
 }
 
 function priceText(quote: ReshootQuote, run: ReshootRun, locale: Locale) {
+  const { t } = translationsFor(locale)
   const price = runPrice(quote, run)
   if (price !== undefined) return credits(price, locale)
   const rate = perSecondRate(quote, run.size)
-  if (rate === undefined) return rc('reshoot.quote.priceUnknown', locale)
-  return fill(rc('reshoot.quote.perSecond', locale), {
+  if (rate === undefined) return t('reshoot.quote.priceUnknown')
+  return t('reshoot.quote.perSecond', {
     rate: rate.toLocaleString(locale)
   })
 }
@@ -91,22 +88,23 @@ export function quoteNote(
   run: ReshootRun,
   now = Date.now()
 ): string {
+  const { t } = translationsFor(locale)
   const { free_runs_allowance: allowance } = quote
   if (quote.next_run === 'free')
     return allowance
-      ? fill(rc('reshoot.quote.free', locale), {
+      ? t('reshoot.quote.free', {
           left: quote.free_runs_remaining,
           runs: allowance.runs,
           period: periodPhrase(allowance.period_seconds, locale)
         })
-      : rc('reshoot.quote.freeOnly', locale)
+      : t('reshoot.quote.freeOnly')
   if (
     quote.next_run === 'paid' ||
     quote.blocked_reason === 'insufficient_credits'
   )
     return priceText(quote, run, locale)
   if (quote.blocked_reason === 'concurrent_run_limit')
-    return rc('reshoot.error.busy', locale)
+    return t('reshoot.error.busy')
   const resets = quote.resets_at ? Date.parse(quote.resets_at) : NaN
   return exhausted(
     Number.isFinite(resets) ? Math.max(0, (resets - now) / 1000) : undefined,
@@ -117,6 +115,7 @@ export function quoteNote(
 
 /** Why a run did not happen, in the reader's words. */
 export function failureNote(error: unknown, locale: Locale, price = 0): string {
+  const { t } = translationsFor(locale)
   const code = error instanceof ReshootError ? error.code : ''
   const retry =
     error instanceof ReshootError ? error.retryAfterSeconds : undefined
@@ -124,21 +123,21 @@ export function failureNote(error: unknown, locale: Locale, price = 0): string {
     case 'free_runs_exhausted':
       return exhausted(retry, price, locale)
     case 'concurrent_run_limit':
-      return rc('reshoot.error.busy', locale)
+      return t('reshoot.error.busy')
     case 'unmetered_rate_limited':
     case 'upload_rate_limited':
-      return fill(rc('reshoot.error.rateLimited', locale), {
+      return t('reshoot.error.rateLimited', {
         when:
           retry === undefined
-            ? rc('reshoot.quote.later', locale)
+            ? t('reshoot.quote.later')
             : relativeTime(retry, locale)
       })
     case 'app_unavailable':
     case 'not_found':
-      return rc('reshoot.unavailable', locale)
+      return t('reshoot.unavailable')
     case 'unauthorized':
-      return rc('reshoot.signIn', locale)
+      return t('reshoot.signIn')
     default:
-      return rc('reshoot.error.failed', locale)
+      return t('reshoot.error.failed')
   }
 }

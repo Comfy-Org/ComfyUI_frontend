@@ -1,13 +1,13 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access --
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access --
  * The scene is a decorative aria-hidden SVG with no accessible roles or text;
  * its structure and animation can only be asserted through the DOM. */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import DistributionsScene from './DistributionsScene.vue'
 
-vi.mock(import('../../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn(() => false)
 }))
 

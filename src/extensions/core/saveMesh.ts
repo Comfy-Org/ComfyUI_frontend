@@ -5,25 +5,21 @@ import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   NodeExecutionOutput,
   NodeOutputWith,
   ResultItem
 } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyExtension } from '@/types/comfy'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -58,20 +54,10 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
     config.configureForSaveMesh(loadFolder, filePath, {
       silentOnNotFound: true
     })
-
-    if (isAssetPreviewSupported()) {
-      const filename = fileInfo.filename ?? ''
-      void load3d
-        .whenLoadIdle()
-        .then(() => load3d.captureThumbnail(256, 256))
-        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-        .then((blob) => persistThumbnail(filename, blob))
-        .catch(() => {})
-    }
   })
 }
 
-useExtensionService().registerExtension({
+export const saveMeshExtension: ComfyExtension = {
   name: 'Comfy.SaveGLB',
 
   async beforeRegisterNodeDef(
@@ -191,19 +177,8 @@ useExtensionService().registerExtension({
           config.configureForSaveMesh(loadFolder, filePath, {
             silentOnNotFound: true
           })
-
-          if (isAssetPreviewSupported()) {
-            const filename = fileInfo.filename ?? ''
-
-            void load3d
-              .whenLoadIdle()
-              .then(() => load3d.captureThumbnail(256, 256))
-              .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-              .then((blob) => persistThumbnail(filename, blob))
-              .catch(() => {})
-          }
         }
       })
     }
   }
-})
+}

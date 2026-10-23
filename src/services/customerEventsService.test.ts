@@ -12,6 +12,7 @@ import {
   WebSessionTokenError,
   webSessionResourceHeader
 } from '@/platform/auth/session/webSessionFetch'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
@@ -82,7 +83,7 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    vi.mocked(webSessionResourceHeader).mockReset()
+    remoteConfig.value = { comfy_api_base_url: 'https://api.example.com' }
     vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
       mockAuthHeaders
@@ -102,16 +103,16 @@ describe('useCustomerEventsService', () => {
     })
 
     service = useCustomerEventsService()
+
+    return () => {
+      remoteConfig.value = {}
+    }
   })
 
   describe('initialization', () => {
     it('should initialize with default state', () => {
       expect(service.isLoading.value).toBe(false)
       expect(service.error.value).toBeNull()
-    })
-
-    it('should initialize i18n date formatter', () => {
-      expect(mockI18n.d).toBeDefined()
     })
   })
 
@@ -126,6 +127,7 @@ describe('useCustomerEventsService', () => {
 
       expect(useAuthStore().getUserAuthHeader).toHaveBeenCalled()
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://api.example.com',
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
       })
@@ -135,12 +137,26 @@ describe('useCustomerEventsService', () => {
       expect(service.error.value).toBeNull()
     })
 
+    it('sends the request to the base URL configured after service creation', async () => {
+      remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
+      mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
+
+      await service.getMyEvents()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://changed.example.com',
+        params: { page: 1, limit: 10 },
+        headers: mockAuthHeaders
+      })
+    })
+
     it('should use default parameters when none provided', async () => {
       mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
 
       await service.getMyEvents()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://api.example.com',
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
       })
@@ -169,7 +185,11 @@ describe('useCustomerEventsService', () => {
 
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
           '/customers/events',
-          { params: { page: 1, limit: 10 }, headers }
+          {
+            baseURL: 'https://api.example.com',
+            params: { page: 1, limit: 10 },
+            headers
+          }
         )
         expect(useAuthStore().getUserAuthHeader).toHaveBeenCalledTimes(
           userHeaderCalls
@@ -339,7 +359,8 @@ describe('useCustomerEventsService', () => {
       account_created: 'credits.eventTypes.accountCreated',
       api_usage_completed: 'credits.eventTypes.apiUsage',
       gpu_usage: 'credits.eventTypes.gpuUsage',
-      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+      api_node_usage: 'credits.eventTypes.apiNodeUsage',
+      agent_usage: 'credits.eventTypes.agentUsage'
     }
 
     it('maps known legacy and unified event types to expected i18n keys', () => {
@@ -369,6 +390,7 @@ describe('useCustomerEventsService', () => {
     it('returns warning for unified usage events', () => {
       expect(service.getEventSeverity('gpu_usage')).toBe('warning')
       expect(service.getEventSeverity('api_node_usage')).toBe('warning')
+      expect(service.getEventSeverity('agent_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {
@@ -453,50 +475,6 @@ describe('useCustomerEventsService', () => {
       }
 
       expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
-  })
-
-  describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
-      expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
-      expect(result).toContain('<br>')
-    })
-
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
     })
   })
 

@@ -27,7 +27,7 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -1301,6 +1301,27 @@ describe('SubgraphWidgetPromotion', () => {
         reorderSubgraphInputsByName(host, ['second', 'first'])
 
         expect(host.serialize().widgets_values).toEqual(['second value', null])
+      })
+
+      it('restores a numeric string saved for a promoted number widget as a number', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'number',
+          7
+        )
+        const serialized = setupPromotedWidget(
+          subgraph,
+          interiorNode
+        ).serialize()
+        serialized.widgets_values = ['42']
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBe(42)
       })
     })
 

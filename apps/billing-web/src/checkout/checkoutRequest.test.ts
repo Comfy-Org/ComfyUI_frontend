@@ -2,6 +2,7 @@ import { previewOf } from '@/test/fakeBillingClient'
 
 import {
   buildSubscribeRequest,
+  paysOnOwnSite,
   teamCheckoutPlan,
   tierCheckoutPlan
 } from './checkoutRequest'
@@ -34,8 +35,16 @@ describe('teamCheckoutPlan', () => {
               {
                 id: 'stop_700',
                 credits: 147_700n,
-                monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
-                yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+                monthly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 66_500n
+                },
+                yearly: {
+                  action: 'subscribe',
+                  list_price_cents: 70_000n,
+                  price_cents: 63_000n
+                }
               }
             ]
           },
@@ -121,5 +130,16 @@ describe('buildSubscribeRequest', () => {
         { confirmationToken: 'ctok' }
       )
     ).toEqual({ plan_slug: 'pro_monthly', confirmation_token: 'ctok' })
+  })
+})
+
+describe('paysOnOwnSite', () => {
+  it.for<{ name: string; methodType: string | undefined; away: boolean }>([
+    { name: 'an Alipay account', methodType: 'alipay', away: true },
+    { name: 'any other non-card method', methodType: 'sepa_debit', away: true },
+    { name: 'a card', methodType: 'card', away: false },
+    { name: 'a method nobody named', methodType: undefined, away: false }
+  ])('says $name pays on its own site: $away', ({ methodType, away }) => {
+    expect(paysOnOwnSite(methodType)).toBe(away)
   })
 })

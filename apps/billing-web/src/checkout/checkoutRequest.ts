@@ -63,8 +63,14 @@ export function tierCheckoutPlan(
 
 export interface PaymentChoice {
   readonly confirmationToken?: string
+  readonly methodType?: string
   readonly savedPaymentMethodId?: string
   readonly confirmReactivation?: boolean
+}
+
+/** A method other than a card authenticates on its own site, so the page leaves while it pays. */
+export function paysOnOwnSite(methodType: string | undefined): boolean {
+  return methodType !== undefined && methodType !== 'card'
 }
 
 export interface SubscribeContext {

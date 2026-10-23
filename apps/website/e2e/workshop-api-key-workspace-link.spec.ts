@@ -32,7 +32,8 @@ const WORKSPACES: ListWorkspacesResponse = {
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z'
     }
-  ]
+  ],
+  can_create_workspace: true
 }
 
 const TEAM = WORKSPACES.workspaces[1]
@@ -60,6 +61,7 @@ async function mockWorkspaces(page: Page) {
       body: JSON.stringify({
         token: 'mock-team-jwt',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: TEAM.id, name: TEAM.name, type: TEAM.type },
         role: TEAM.role,
         permissions: []

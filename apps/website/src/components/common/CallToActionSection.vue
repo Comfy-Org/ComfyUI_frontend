@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
-import Button from '../ui/button/Button.vue'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   locale = 'en',
@@ -24,6 +24,7 @@ const {
   secondaryHref?: string
   secondaryTarget?: string
 }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
@@ -32,7 +33,7 @@ const {
       <h2
         class="max-w-5xl text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
       >
-        {{ t(headingKey, locale) }}
+        {{ t(headingKey) }}
       </h2>
       <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
         <Button
@@ -41,7 +42,7 @@ const {
           :rel="resolveRel({ target: primaryTarget })"
           variant="default"
         >
-          {{ t(primaryLabelKey, locale) }}
+          {{ t(primaryLabelKey) }}
         </Button>
         <Button
           v-if="secondaryLabelKey"
@@ -50,7 +51,7 @@ const {
           :rel="resolveRel({ target: secondaryTarget })"
           variant="outline"
         >
-          {{ t(secondaryLabelKey, locale) }}
+          {{ t(secondaryLabelKey) }}
         </Button>
       </div>
     </div>

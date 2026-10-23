@@ -1,5 +1,5 @@
-import type { RunFailure } from '../../config/workshop-run'
-import type { TranslationKey } from '../../i18n/translations'
+import type { RunFailure } from '@/config/workshop-run'
+import type { TranslationKey } from '@/i18n/translations'
 
 export const failureLabelKey: Record<RunFailure, TranslationKey> = {
   validation: 'workshop.error.validation',

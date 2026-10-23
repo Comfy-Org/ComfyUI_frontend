@@ -1,7 +1,7 @@
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import ModelLaunchHeroSection from '../templates/model-launch/ModelLaunchHeroSection.vue'
+import ModelLaunchHeroSection from '@/templates/model-launch/ModelLaunchHeroSection.vue'
 import { wan3Page } from './wan3'
 
 // The Wan 3.0 hero clip is ~10 MB against a ~4 MB mobile encode and a ~370 KB
@@ -35,7 +35,7 @@ function renderHero() {
 function renderedVideoSrc() {
   // <video> carries no implicit ARIA role, so Testing Library queries cannot
   // reach it and the src assertion has to touch the node directly.
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const videos = document.querySelectorAll('video')
   expect(videos.length).toBe(1)
   return videos[0].getAttribute('src')

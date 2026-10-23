@@ -8,41 +8,39 @@ import {
   vi
 } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { CapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import type { CreditsReader } from './credits.js'
+} from './billingContracts'
+import type { CapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import type { CreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import {
-  OPERATION_POLL_BUDGET,
-  OPERATION_POLL_TIMING
-} from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_BUDGET, OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
 import type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusSnapshot
-} from './status.js'
-import type { SubscriptionPreview } from './subscriptionCommands.js'
+} from './status'
+import type { SubscriptionPreview } from './subscriptionCommands'
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
   PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
+  cancelOperationRoute,
   createBillingCommands
-} from './subscriptionCommands.js'
+} from './subscriptionCommands'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
@@ -246,6 +244,7 @@ const POST_CANCEL = `POST ${CANCEL_SUBSCRIPTION_ROUTE}`
 const POST_PORTAL = `POST ${PAYMENT_PORTAL_ROUTE}`
 const POST_PREVIEW = `POST ${PREVIEW_SUBSCRIBE_ROUTE}`
 const GET_OP = `GET ${operationRoute('op-1')}`
+const POST_CANCEL_OP = `POST ${cancelOperationRoute('op-1')}`
 
 const subscribed = http(200, { billing_op_id: 'op-1', status: 'subscribed' })
 const pendingPayment = http(200, {
@@ -656,6 +655,48 @@ describe('createBillingCommands', () => {
       expect(h.posts()[0]?.idempotencyKey).toBeUndefined()
     })
 
+    it("keeps the server's credit counts, which converting the cents can miss by one", async () => {
+      const granted = http(200, {
+        ...QUOTE_BODY,
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        credits_today: 4200,
+        credits_next_period: 4200
+      })
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [granted] } })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { credits_today: 4200, credits_next_period: 4200 }
+      })
+    })
+
+    it.for([
+      ['a fraction of a credit', 'credits_today', 4200.5],
+      ['a fraction of a credit', 'credits_next_period', 4200.5],
+      ['a negative count', 'credits_today', -1],
+      ['a negative count', 'credits_next_period', -1]
+    ] as const)('refuses %s at %s', async ([, field, count]) => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_PREVIEW]: [http(200, { ...QUOTE_BODY, [field]: count })]
+        }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
+    })
+
     it('hands the applied discounts back, echoing the promotion code it sent', async () => {
       const discounted = http(200, {
         ...QUOTE_BODY,
@@ -830,13 +871,17 @@ describe('createBillingCommands', () => {
       'credits_today_cents',
       'renewal_amount_cents',
       'subtotal_cents',
-      'balance_applied_cents'
+      'balance_applied_cents',
+      'proration_remaining_cents',
+      'proration_unused_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview)[]
 
     const PLAN_CENT_FIELDS = [
       'credits_cents',
       'price_cents',
-      'list_price_cents'
+      'list_price_cents',
+      'monthly_list_price_cents',
+      'monthly_price_cents'
     ] as const satisfies readonly (keyof SubscriptionPreview['new_plan'])[]
 
     const SEAT_CENT_FIELDS = [
@@ -1303,6 +1348,91 @@ describe('createBillingCommands', () => {
         serverMessage: SERVER_TEXT
       })
       expect(h.invalidate).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('cancelOperation', () => {
+    it.for([
+      {
+        answer: http(200, { billing_op_id: 'op-1', status: 'canceled' }),
+        result: { status: 'canceled' }
+      },
+      {
+        answer: http(202, {
+          billing_op_id: 'op-1',
+          status: 'cancel_requested'
+        }),
+        result: { status: 'cancel_requested' }
+      },
+      {
+        answer: serverError(409, 'NOT_CANCELABLE'),
+        result: { status: 'not_canceled', code: 'NOT_CANCELABLE' }
+      },
+      {
+        answer: serverError(409, 'PAYMENT_IN_FLIGHT'),
+        result: { status: 'not_canceled', code: 'PAYMENT_IN_FLIGHT' }
+      },
+      {
+        answer: serverError(404, 'NOT_FOUND'),
+        result: { status: 'error', code: 'NOT_FOUND', httpStatus: 404 }
+      },
+      {
+        answer: serverError(502, 'PAYMENT_IN_FLIGHT'),
+        result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 502 }
+      },
+      {
+        answer: http(200, { billing_op_id: 'op-1', status: 'charged' }),
+        result: { status: 'error', code: 'MALFORMED_RESPONSE' }
+      }
+    ])(
+      'answers $result.status ($result.code) for a $answer.value.httpStatus',
+      async ({ answer, result }) => {
+        const h = harness({
+          status: PRO_ACTIVE,
+          script: { [POST_CANCEL_OP]: [answer] }
+        })
+
+        await expect(h.commands.cancelOperation('op-1')).resolves.toMatchObject(
+          result
+        )
+        expect(h.posts()).toEqual([
+          expect.objectContaining({ route: cancelOperationRoute('op-1') })
+        ])
+      }
+    )
+
+    it('reads the followed operation back at once after the server cancels it', async () => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_SUBSCRIBE]: [pendingPayment],
+          [POST_CANCEL_OP]: [
+            http(200, { billing_op_id: 'op-1', status: 'canceled' })
+          ],
+          [GET_OP]: [
+            http(200, opStatus({ authentication_state: 'requires_action' })),
+            http(
+              200,
+              opStatus({
+                status: 'failed',
+                decline_reason: 'authentication_failed'
+              })
+            )
+          ]
+        }
+      })
+      const subscribed = h.commands.subscribe(PLAN)
+      await flush()
+      expect(h.lifecycle.get('op-1')).toMatchObject({ phase: 'pending' })
+
+      await h.commands.cancelOperation('op-1')
+      await flush()
+
+      expect(h.lifecycle.get('op-1')).toMatchObject({ phase: 'failed' })
+      await expect(subscribed).resolves.toMatchObject({
+        status: 'ok',
+        value: { phase: 'failed' }
+      })
     })
   })
 

@@ -59,6 +59,61 @@ describe('useCheckout', () => {
     expect(openUrl).toHaveBeenCalledExactlyOnceWith(PAYMENT_PAGE, 'new_tab')
   })
 
+  it.for([
+    { navigationMode: 'redirect', navigation: 'redirect' },
+    { navigationMode: 'new_tab', navigation: 'new_tab' },
+    { navigationMode: 'preopened', navigation: 'new_tab' }
+  ] as const)(
+    'reports the hosted step as a $navigation, with the host method, before the host leaves for it ($navigationMode)',
+    async ({ navigationMode, navigation }) => {
+      const { client, answer, telemetry } = createBillingHarness()
+      answer(
+        'POST',
+        SUBSCRIBE_ROUTE,
+        httpOk({
+          billing_op_id: 'op-1',
+          status: 'needs_payment_method',
+          payment_method_url: PAYMENT_PAGE
+        })
+      )
+      answer(
+        'GET',
+        operationRoute('op-1'),
+        httpOk(
+          opStatus({
+            phase: 'awaiting_payment_method',
+            action_url: PAYMENT_PAGE
+          })
+        )
+      )
+      const reportedWhenOpened: string[][] = []
+      const openUrl = vi.fn(() => {
+        reportedWhenOpened.push(telemetry.map((event) => event.name))
+      })
+
+      const checkout = useCheckout({
+        client,
+        openUrl,
+        navigationMode,
+        autoContinue: () => false,
+        methodKind: () => 'alipay'
+      })
+      void checkout.subscribe(PLAN)
+      await vi.advanceTimersByTimeAsync(0)
+      checkout.continueVerification()
+
+      expect(reportedWhenOpened).toEqual([
+        ['billing.operation.started', 'billing.checkout.redirect_started']
+      ])
+      expect(telemetry[1]).toMatchObject({
+        destination: 'stripe',
+        step: 'payment_method',
+        navigation,
+        method_kind: 'alipay'
+      })
+    }
+  )
+
   it('hands the hosted payment page the server offered to the host and settles the subscription', async () => {
     const { client, answer, calls } = createBillingHarness()
     answer(

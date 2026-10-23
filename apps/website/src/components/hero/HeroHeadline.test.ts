@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 

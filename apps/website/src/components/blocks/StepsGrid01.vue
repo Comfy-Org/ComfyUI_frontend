@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import NodeUnionIcon from '../icons/NodeUnionIcon.vue'
+import NodeUnionIcon from '@/components/icons/NodeUnionIcon.vue'
 
-type Step = { id: string; label: string; description: string }
+type Step = { id: string; label: string; description: string; title?: string }
 
-defineProps<{
+const { layout = 'grid', highlightedId } = defineProps<{
   heading: string
+  layout?: 'grid' | 'timeline'
+  highlightedId?: string
   steps: readonly Step[]
 }>()
 
@@ -29,6 +31,18 @@ function hasLgVertical(i: number, total: number) {
   return i % 2 === 1 && i + 1 < total
 }
 
+function hasVerticalConnector(i: number, total: number) {
+  return hasMobileVertical(i, total) || hasLgVertical(i, total)
+}
+
+function verticalConnectorClass(i: number, total: number) {
+  return cn(
+    'absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150 text-primary-comfy-yellow',
+    !hasMobileVertical(i, total) && 'hidden lg:block',
+    !hasLgVertical(i, total) && 'lg:hidden'
+  )
+}
+
 function cardClass(i: number, total: number) {
   const fullSpan = isFullSpan(i, total)
   const rtl = isRtlRow(i)
@@ -37,6 +51,19 @@ function cardClass(i: number, total: number) {
     fullSpan && 'lg:col-span-2',
     !fullSpan && rtl && i % 2 === 0 && 'lg:col-start-2',
     !fullSpan && rtl && i % 2 === 1 && 'lg:col-start-1'
+  )
+}
+function timelineHeadingClass(id: string) {
+  return cn(
+    'font-formula-narrow text-2xl font-semibold uppercase',
+    id === highlightedId ? 'text-primary-comfy-yellow' : 'text-timeline-neutral'
+  )
+}
+
+function timelineBadgeClass(id: string) {
+  return cn(
+    'mt-3 inline-block -skew-x-12 rounded-xl px-5 py-1.5 font-formula-narrow text-2xl font-semibold whitespace-nowrap text-primary-comfy-ink xl:text-3xl',
+    id === highlightedId ? 'bg-primary-comfy-yellow' : 'bg-timeline-neutral'
   )
 }
 </script>
@@ -49,7 +76,42 @@ function cardClass(i: number, total: number) {
       {{ heading }}
     </h2>
 
+    <ol
+      v-if="layout === 'timeline'"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+    >
+      <li
+        v-for="step in steps"
+        :key="step.id"
+        class="relative pb-10 pl-10 text-left before:absolute before:top-2 before:-bottom-2 before:left-2 before:w-px before:-translate-x-1/2 before:bg-primary-comfy-yellow/60 last:before:hidden md:pl-0 md:text-center md:before:hidden"
+      >
+        <span
+          class="absolute top-2 left-0 size-4 rounded-full bg-primary-comfy-yellow md:hidden"
+          aria-hidden="true"
+        ></span>
+        <h3 v-if="step.title" :class="timelineHeadingClass(step.id)">
+          {{ step.title }}
+        </h3>
+        <span :class="timelineBadgeClass(step.id)">
+          <span class="inline-block skew-x-12">{{ step.label }}</span>
+        </span>
+        <div class="relative mt-12 hidden h-4 md:block" aria-hidden="true">
+          <div
+            class="absolute top-1/2 h-px w-full bg-primary-comfy-yellow/60"
+          ></div>
+          <div
+            class="absolute left-1/2 size-4 -translate-x-1/2 rounded-full bg-primary-comfy-yellow"
+          ></div>
+        </div>
+        <p
+          class="mt-4 text-sm/relaxed text-primary-comfy-canvas/70 md:mt-6 md:px-6"
+        >
+          {{ step.description }}
+        </p>
+      </li>
+    </ol>
     <div
+      v-else
       class="mx-auto grid max-w-3xl grid-cols-1 gap-4 lg:grid-flow-dense lg:grid-cols-2"
     >
       <div
@@ -73,17 +135,8 @@ function cardClass(i: number, total: number) {
           class="absolute top-1/2 right-0 hidden size-4 translate-x-[calc(100%+2px)] -translate-y-1/2 scale-x-150 rotate-90 text-primary-comfy-yellow lg:block"
         />
         <NodeUnionIcon
-          v-if="
-            hasMobileVertical(index, steps.length) ||
-            hasLgVertical(index, steps.length)
-          "
-          :class="
-            cn(
-              'absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150 text-primary-comfy-yellow',
-              !hasMobileVertical(index, steps.length) && 'hidden lg:block',
-              !hasLgVertical(index, steps.length) && 'lg:hidden'
-            )
-          "
+          v-if="hasVerticalConnector(index, steps.length)"
+          :class="verticalConnectorClass(index, steps.length)"
         />
       </div>
     </div>

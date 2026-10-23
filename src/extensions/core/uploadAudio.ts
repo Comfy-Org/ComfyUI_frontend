@@ -11,23 +11,24 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@/types/widgetId'
-import { toError } from '@/utils/errorUtil'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -84,18 +85,24 @@ async function uploadFile(
       }
       return true
     } else {
-      useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+      useToast().warning(
+        t('g.uploadFailed', { reason: `${resp.status} - ${resp.statusText}` })
+      )
       return false
     }
   } catch (error) {
-    useToastStore().addAlert(toError(error).message)
+    useToast().warning(
+      t('g.uploadFailed', {
+        reason: getErrorMessage(error) ?? t('g.unknownError')
+      })
+    )
     return false
   }
 }
 
 // AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
 // present.
-app.registerExtension({
+export const audioWidgetExtension: ComfyExtension = {
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -196,9 +203,9 @@ app.registerExtension({
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }
-})
+}
 
-app.registerExtension({
+export const uploadAudioExtension: ComfyExtension = {
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(
     _nodeType: typeof LGraphNode,
@@ -249,7 +256,7 @@ app.registerExtension({
           if (!files.length) return files
 
           if (node.isUploading) {
-            useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+            useToast().warning(t('g.uploadAlreadyInProgress'))
             return []
           }
 
@@ -310,9 +317,9 @@ app.registerExtension({
       }
     }
   }
-})
+}
 
-app.registerExtension({
+export const recordAudioExtension: ComfyExtension = {
   name: 'Comfy.RecordAudio',
 
   getCustomWidgets() {
@@ -346,7 +353,7 @@ app.registerExtension({
             },
             level: 'error'
           })
-          useToastStore().addAlert(t('g.recordingFailedToStart'))
+          useToast().warning(t('g.recordingFailedToStart'))
 
           if (mediaRecorder) {
             try {
@@ -378,7 +385,7 @@ app.registerExtension({
           const audioSrc = audioUIWidget.element.src
 
           if (!audioSrc) {
-            useToastStore().addAlert(t('g.noAudioRecorded'))
+            useToast().warning(t('g.noAudioRecorded'))
             return ''
           }
 
@@ -407,7 +414,7 @@ app.registerExtension({
                 err.name === 'NotAllowedError'
               ) {
                 console.error('Error accessing microphone:', err)
-                useToastStore().addAlert(t('g.micPermissionDenied'))
+                useToast().warning(t('g.micPermissionDenied'))
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null
               } else {
@@ -508,4 +515,4 @@ app.registerExtension({
 
     await useAudioService().registerWavEncoder()
   }
-})
+}

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useTemplateRef } from 'vue'
 
-import { useResumePlayback } from '../../composables/useResumePlayback'
-import type { SavedAssetKind } from '../../lib/workshop/saved-assets'
+import { useResumePlayback } from '@/composables/useResumePlayback'
+import type { SavedAssetKind } from '@/lib/workshop/saved-assets'
 
 const {
   kind,

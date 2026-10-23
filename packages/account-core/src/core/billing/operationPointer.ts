@@ -10,8 +10,8 @@
  */
 import { z } from 'zod'
 
-import type { BillingScope } from './billingScope.js'
-import type { BillingOperationState } from './operationState.js'
+import type { BillingScope } from './billingScope'
+import type { BillingOperationState } from './operationState'
 
 export interface BillingOperationPointerStorage {
   getItem: (key: string) => string | null
@@ -31,7 +31,20 @@ const PointerSchema = z.object({
   /** This tab issued the operation and has not yet seen it succeed. */
   awaited: z.literal(true).optional(),
   /** The end this tab saw it reach, kept only by a store that retains settled pointers. */
-  settled: z.enum(['succeeded', 'reconciliation_needed']).optional()
+  settled: z.enum(['succeeded', 'reconciliation_needed']).optional(),
+  /** The hosted step this page redirected to; the page it returns to reports the return. */
+  redirect: z
+    .object({
+      destination: z.enum(['stripe', 'billing_web']),
+      step: z.enum([
+        'authentication',
+        'payment_method',
+        'invoice_payment',
+        'checkout'
+      ]),
+      method_kind: z.enum(['card', 'alipay', 'other']).optional()
+    })
+    .optional()
 })
 
 export type BillingOperationPointer = z.infer<typeof PointerSchema>

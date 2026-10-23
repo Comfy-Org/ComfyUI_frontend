@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchRunOptions } from './types'
 
-import ProductCard from '../../components/common/ProductCard.vue'
-import { getRoutes } from '../../config/routes'
-import { t } from '../../i18n/translations'
+import ProductCard from '@/components/common/ProductCard.vue'
+import { getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', runOptions } = defineProps<{
   runOptions: ModelLaunchRunOptions
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const routes = getRoutes(locale)
 
@@ -33,10 +34,10 @@ const cards = [
       <h2
         class="text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl/tight"
       >
-        {{ t(runOptions.headingKey, locale) }}
+        {{ t(runOptions.headingKey) }}
       </h2>
       <p class="mt-6 max-w-xl text-sm font-light text-primary-comfy-canvas/70">
-        {{ t(runOptions.subtitleKey, locale) }}
+        {{ t(runOptions.subtitleKey) }}
       </p>
     </div>
 
@@ -46,9 +47,9 @@ const cards = [
       <ProductCard
         v-for="card in cards"
         :key="card.product"
-        :title="t(`products.${card.product}.title`, locale)"
-        :description="t(`products.${card.product}.description`, locale)"
-        :cta="t(runOptions.ctaKey, locale)"
+        :title="t(`products.${card.product}.title`)"
+        :description="t(`products.${card.product}.description`)"
+        :cta="t(runOptions.ctaKey)"
         :href="card.href"
         :bg="card.bg"
       />

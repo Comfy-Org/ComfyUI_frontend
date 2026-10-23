@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { WorkshopCloudEnv } from '../src/config/workshop-cloud-env'
+import type { WorkshopCloudEnv } from '@/config/workshop-cloud-env'
 import type {
   ReportFailureCode,
   ReportSource,
@@ -8,7 +8,7 @@ import type {
 } from './router-model-report'
 
 const eventSchema = z.object({
-  at: z.string().datetime({ offset: true }),
+  at: z.iso.datetime({ offset: true }),
   phase: z.enum(['preflight', 'generation']),
   status: z.string(),
   requestId: z.string().nullable().optional(),
@@ -107,7 +107,7 @@ export function routerReportUpdate(
     }
   }
   if (!['passed', 'failed', 'cancelled'].includes(event.status)) return
-  const requestId = z.string().uuid().safeParse(event.requestId)
+  const requestId = z.uuid().safeParse(event.requestId)
   const common = {
     at: event.at,
     source,

@@ -19,10 +19,7 @@
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
-      <div
-        v-if="type === 'overwriteBlueprint'"
-        class="flex flex-col justify-start gap-1"
-      >
+      <div v-if="type === 'overwriteBlueprint'" class="flex flex-col gap-1">
         <div class="flex gap-4">
           <input
             id="doNotAskAgain"
@@ -42,8 +39,8 @@
         >
           <template #link>
             <Button
-              variant="textonly"
-              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
+              variant="muted-textonly"
+              class="p-0 text-sm underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}
@@ -119,7 +116,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { ConfirmationDialogType } from '@/services/dialogService'
+import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{

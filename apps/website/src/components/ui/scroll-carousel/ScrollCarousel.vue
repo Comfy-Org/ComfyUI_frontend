@@ -1,21 +1,30 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useScroll } from '@vueuse/core'
+import {
+  useElementHover,
+  useIntersectionObserver,
+  useScroll
+} from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 
-import { t } from '../../../i18n/translations'
-import type { Locale } from '../../../i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   locale = 'en',
   gapClass = 'gap-12 lg:gap-20',
+  autoplayMs,
   class: className
 } = defineProps<{
   locale?: Locale
   gapClass?: string
+  autoplayMs?: number
   class?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 const trackRef = ref<HTMLElement>()
 const { x } = useScroll(trackRef)
@@ -33,6 +42,31 @@ function scroll(direction: -1 | 1) {
   el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' })
 }
 
+function advance() {
+  const el = trackRef.value
+  if (!el) return
+  const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+  if (atEnd) el.scrollTo({ left: 0, behavior: 'smooth' })
+  else scroll(1)
+}
+
+const isVisible = ref(false)
+useIntersectionObserver(trackRef, ([entry]) => {
+  isVisible.value = entry?.isIntersecting ?? false
+})
+const isHovered = useElementHover(trackRef)
+
+useCarouselAutoplay({
+  delayMs: () => autoplayMs ?? 0,
+  active: () =>
+    Boolean(autoplayMs) &&
+    !prefersReducedMotion() &&
+    isVisible.value &&
+    !isHovered.value,
+  resetKey: x,
+  advance
+})
+
 const progressPercent = computed(() => `${progress.value * 100}%`)
 </script>
 
@@ -42,6 +76,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
   >
     <div
       ref="trackRef"
+      data-testid="scroll-carousel-track"
       :class="
         cn(
           'scrollbar-none flex snap-x snap-mandatory overflow-x-auto',
@@ -63,7 +98,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition-colors hover:border-white/40"
-        :aria-label="t('carousel.previous', locale)"
+        :aria-label="t('carousel.previous')"
         @click="scroll(-1)"
       >
         <img
@@ -76,7 +111,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <button
         type="button"
         class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow transition-opacity hover:opacity-90"
-        :aria-label="t('carousel.next', locale)"
+        :aria-label="t('carousel.next')"
         @click="scroll(1)"
       >
         <img src="/icons/arrow-right.svg" alt="" class="size-3" />

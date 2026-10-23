@@ -11,9 +11,11 @@ import type {
   WebSession,
   WebSessionUser
 } from '@comfyorg/account-core/webSession'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { RememberedLogin } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
+import { captureWebSessionEvent } from '@/scripts/posthog'
 import { workshopIdentity } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import type { WorkshopAccountSource } from './workshop-account-source'
@@ -64,7 +66,8 @@ export function bootWorkshopWebSession(
         globalThis.fetch(...args)
     },
     principal: { kind: 'account', rememberedLogin: rememberedWorkshopLogin },
-    origin: window.location.origin
+    origin: window.location.origin,
+    ...webSessionTelemetryHooks(captureWebSessionEvent)
   })
   identity.subscribe((state) => {
     if (state.phase === 'signed_in') {

@@ -4,15 +4,14 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
 import {
   formatCreditRange,
   takesWithin
-} from '../../../lib/workshop/cinematic-studio/estimate'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/estimate'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicCostLabel from './CinematicCostLabel.vue'
 import CinematicGateButton from './CinematicGateButton.vue'
 
@@ -39,6 +38,7 @@ const {
   showCredits?: boolean
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   generate: []
@@ -53,7 +53,7 @@ const creditGate = computed(
 function shortfallNote(shot: ShotEstimate, balance: number): string {
   const key =
     shot.takes === 1 ? 'cinematic.credits.shortOne' : 'cinematic.credits.short'
-  return tc(key, locale, {
+  return t(key, {
     takes: shot.takes,
     credits: formatCreditRange(shot.total, locale),
     balance: balance.toLocaleString(locale)
@@ -81,9 +81,9 @@ const GATE_NOTES: Partial<
 
 const note = computed(() => {
   if (shortfall.value) return shortfall.value.note
-  if (gate === 'unavailable') return tc('cinematic.output.unavailable', locale)
+  if (gate === 'unavailable') return t('cinematic.output.unavailable')
   const key = GATE_NOTES[gate]
-  return key ? t(key, locale, { workspace: workspaceName ?? '' }) : undefined
+  return key ? t(key, { workspace: workspaceName ?? '' }) : undefined
 })
 
 interface Note {
@@ -134,8 +134,8 @@ const reduceLabel = computed(() => {
   const takes = reduceTo.value
   if (takes === undefined) return undefined
   return takes === 1
-    ? tc('cinematic.credits.reduceOne', locale)
-    : tc('cinematic.credits.reduce', locale, { takes })
+    ? t('cinematic.credits.reduceOne')
+    : t('cinematic.credits.reduce', { takes })
 })
 const showCost = computed(
   () =>

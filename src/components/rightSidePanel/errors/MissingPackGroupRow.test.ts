@@ -1,6 +1,5 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -39,6 +38,7 @@ vi.mock<unknown>(
   })
 )
 
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
@@ -108,7 +108,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [i18n]
     }
   })
   return { user, onLocateNode, onOpenManagerInfo }
@@ -161,19 +161,6 @@ describe('MissingPackGroupRow', () => {
     it('renders node count', () => {
       renderRow()
       expect(screen.getByText('2')).toBeInTheDocument()
-    })
-
-    it('renders count of 5 for 5 nodeTypes', () => {
-      renderRow({
-        group: makeGroup({
-          nodeTypes: Array.from({ length: 5 }, (_, i) => ({
-            type: `Node${i}`,
-            nodeId: String(i),
-            isReplaceable: false
-          }))
-        })
-      })
-      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 

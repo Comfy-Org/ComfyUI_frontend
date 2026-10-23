@@ -12,6 +12,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -21,10 +22,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import {
-  createMockCanvasRenderingContext2D,
-  createMockLGraphNodeWithArrayBoundingRect
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
@@ -73,6 +72,16 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {

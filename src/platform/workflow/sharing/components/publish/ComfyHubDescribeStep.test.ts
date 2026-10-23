@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 
@@ -35,6 +36,13 @@ function renderStep(
       ...callbacks
     },
     global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: { g: { removeTag: 'Remove tag' } } }
+        })
+      ],
       mocks: {
         $t: (key: string) => key
       },
@@ -104,7 +112,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -119,7 +127,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -136,7 +144,7 @@ describe('ComfyHubDescribeStep', () => {
     const { container } = renderStep({}, { 'onUpdate:tags': onUpdateTags })
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const suggestionButtons = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
@@ -153,7 +161,7 @@ describe('ComfyHubDescribeStep', () => {
     await flushPromises()
 
     const suggestionValues = Array.from(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       container.querySelectorAll(
         '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
       )
@@ -168,7 +176,7 @@ describe('ComfyHubDescribeStep', () => {
     const { container } = renderStep()
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const defaultSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )
@@ -180,7 +188,7 @@ describe('ComfyHubDescribeStep', () => {
     )
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const allSuggestions = container.querySelectorAll(
       '[data-testid="tags-input"][data-disabled="true"] [data-testid="tag-item"]'
     )

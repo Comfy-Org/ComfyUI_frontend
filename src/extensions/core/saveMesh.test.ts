@@ -4,29 +4,16 @@ import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
 import type * as GraphTraversalModule from '@/utils/graphTraversalUtil'
 
-const {
-  registerExtensionMock,
-  waitForLoad3dMock,
-  onLoad3dReadyMock,
-  configureForSaveMeshMock
-} = vi.hoisted(() => ({
-  registerExtensionMock: vi.fn(),
-  waitForLoad3dMock: vi.fn(),
-  onLoad3dReadyMock: vi.fn(),
-  configureForSaveMeshMock: vi.fn()
-}))
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({
-      registerExtension: registerExtensionMock
-    })
-}))
+const { waitForLoad3dMock, onLoad3dReadyMock, configureForSaveMeshMock } =
+  vi.hoisted(() => ({
+    waitForLoad3dMock: vi.fn(),
+    onLoad3dReadyMock: vi.fn(),
+    configureForSaveMeshMock: vi.fn()
+  }))
 
 vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: () =>
@@ -86,9 +73,9 @@ interface LoadedSaveMeshExtension {
 async function loadSaveMeshExtensionFresh(): Promise<LoadedSaveMeshExtension> {
   vi.resetModules()
   const graphTraversal = await import('@/utils/graphTraversalUtil')
-  await import('@/extensions/core/saveMesh')
+  const { saveMeshExtension } = await import('@/extensions/core/saveMesh')
   return {
-    extension: registerExtensionMock.mock.calls[0][0] as SaveMeshExtension,
+    extension: fromAny<SaveMeshExtension, ComfyExtension>(saveMeshExtension),
     graphTraversal
   }
 }
@@ -121,14 +108,6 @@ describe('saveMesh', () => {
     onLoad3dReadyMock.mockImplementation((cb: (load3d: unknown) => void) => {
       cb(fakeLoad3d())
     })
-  })
-
-  it('registers a single Comfy.SaveGLB extension on import', async () => {
-    const { extension } = await loadSaveMeshExtensionFresh()
-
-    expect(registerExtensionMock).toHaveBeenCalledOnce()
-    expect(extension.name).toBe('Comfy.SaveGLB')
-    expect(typeof extension.nodeCreated).toBe('function')
   })
 
   it('skips nodes whose comfyClass is not SaveGLB', async () => {
@@ -355,4 +334,36 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
 
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
+})
+
+describe('SaveGLB thumbnail persistence', () => {
+  it.for(['onExecuted', 'onNodeOutputsUpdated'] as const)(
+    'leaves thumbnail capture to the Load3D viewer after %s',
+    async (entryPoint) => {
+      const captureThumbnail = vi.fn()
+      waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+        cb({ whenLoadIdle: () => Promise.resolve(), captureThumbnail })
+      })
+      const { extension, graphTraversal } = await loadSaveMeshExtensionFresh()
+      const { isAssetPreviewSupported } =
+        await import('@/platform/assets/utils/assetPreviewUtil')
+      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+      const node = makeNode()
+      const output = {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+
+      if (entryPoint === 'onExecuted') {
+        await extension.nodeCreated(node)
+        node.onExecuted!(output)
+      } else {
+        vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
+        extension.onNodeOutputsUpdated({ '7': output } as never)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(configureForSaveMeshMock).toHaveBeenCalled()
+      expect(captureThumbnail).not.toHaveBeenCalled()
+    }
+  )
 })

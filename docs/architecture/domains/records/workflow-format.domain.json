@@ -1,0 +1,102 @@
+{
+  "id": "workflow-format",
+  "capability": "Workflow document format",
+  "description": "The workflow document contract: zod schemas for workflow JSON and API-format prompts, load-time validation with link repair, the supported workflow-bearing file formats, subgraph flattening, and model-requirement extraction from workflow documents. Open workflows, the workflow store, and graph entity implementation remain external.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/validation/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/executionUtil.stability.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/executionUtil.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/executionUtil.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/fileUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/fileUtil.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/jsonUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/jsonUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/linkFixer.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/linkFixer.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/migration/**",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Workflow schemas accept valid workflow and API documents and reject malformed ones",
+      "checks": [
+        "src/platform/workflow/validation/schemas/workflowSchema.test.ts"
+      ]
+    },
+    {
+      "name": "Load-time validation reports schema errors and repairs broken links",
+      "checks": [
+        "src/platform/workflow/validation/composables/useWorkflowValidation.test.ts"
+      ]
+    },
+    {
+      "name": "Flattening and model-requirement extraction walk nested subgraphs",
+      "checks": [
+        "src/platform/workflow/core/utils/workflowFlattening.test.ts",
+        "src/platform/workflow/core/utils/modelRequirements.test.ts"
+      ]
+    },
+    {
+      "name": "Workflow documents load with link repair, legacy reroute migration, and non-finite JSON parsing",
+      "checks": [
+        "src/utils/linkFixer.test.ts",
+        "src/utils/migration/migrateReroute.test.ts",
+        "src/utils/jsonUtil.test.ts",
+        "src/utils/fileUtil.test.ts"
+      ]
+    },
+    {
+      "name": "graphToPrompt produces stable API-format prompts",
+      "checks": [
+        "src/utils/executionUtil.test.ts",
+        "src/utils/executionUtil.stability.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Serialized workflow JSON accepted by the existing schemas stays accepted so saved workflows, templates, and shared links keep loading.",
+    "workflowSchema typing against litegraph serialisation, LGraph, and widget types, and useWorkflowValidation calling the toast store and linkFixer, remain visible as coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

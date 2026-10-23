@@ -5,8 +5,9 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useErrorOverlayState } from './useErrorOverlayState'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
@@ -14,8 +15,8 @@ import type {
   SwapNodeGroup
 } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
-import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },

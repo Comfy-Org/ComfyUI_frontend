@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyEvent } from '../../data/events'
+import type { ComfyEvent } from '@/data/events'
 
 import PastEventsSection from './PastEventsSection.vue'
 
@@ -180,7 +180,7 @@ describe('PastEventsSection', () => {
       screen.getByRole('img', { name: 'Livestream art' }).getAttribute('src')
     ).toBe('https://example.com/livestream.jpg')
     // <video> has no queryable role in happy-dom, so reach it directly.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const clip = container.querySelector('video')
     expect(clip?.getAttribute('src')).toBe('https://example.com/meetup.mp4')
     expect(clip?.getAttribute('poster')).toBe(

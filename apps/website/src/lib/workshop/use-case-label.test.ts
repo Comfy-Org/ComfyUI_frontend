@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import { useCaseLabelKey } from './use-case-label'
 
 const expected = [
@@ -22,7 +22,7 @@ describe('useCaseLabelKey', () => {
 
     for (const [useCase, key] of expected) {
       expect(useCaseLabelKey[useCase]).toBe(key)
-      expect(t(useCaseLabelKey[useCase], 'en')).not.toBe('')
+      expect(t(useCaseLabelKey[useCase], {}, { locale: 'en' })).not.toBe('')
     }
   })
 })

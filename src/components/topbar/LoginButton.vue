@@ -1,47 +1,60 @@
 <template>
-  <Button
-    v-if="!isLoggedIn"
-    data-testid="login-button"
-    variant="textonly"
-    size="icon"
-    :class="cn('group rounded-full p-0 text-base-foreground', className)"
-    :aria-label="t('g.login')"
-    @click="handleSignIn()"
-    @mouseenter="showPopover"
-    @mouseleave="hidePopover"
-  >
-    <span
-      class="flex size-full items-center justify-center rounded-full bg-secondary-background transition-colors group-hover:bg-transparent"
-    >
-      <i class="icon-[lucide--user] size-4" />
-    </span>
-  </Button>
-  <Popover
-    ref="popoverRef"
-    class="p-2"
-    @mouseout="hidePopover"
-    @mouseover="cancelHidePopover"
-  >
-    <div data-testid="login-button-popover">
-      <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
-      <a
-        data-testid="login-button-popover-learn-more"
-        :href="apiNodesOverviewUrl"
-        target="_blank"
-        class="text-neutral-500 hover:text-primary"
-        >{{ t('auth.loginButton.tooltipLearnMore') }}</a
+  <Popover v-model:open="open">
+    <PopoverAnchor as-child>
+      <Button
+        v-if="!isLoggedIn"
+        ref="buttonRef"
+        data-testid="login-button"
+        variant="textonly"
+        size="icon"
+        :class="cn('group rounded-full p-0', className)"
+        :aria-label="t('g.login')"
+        @click="handleSignIn()"
+        @mouseenter="showPopover"
+        @mouseleave="hidePopover"
       >
-    </div>
+        <span
+          class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
+        >
+          <i class="icon-[lucide--user] size-4" />
+        </span>
+      </Button>
+    </PopoverAnchor>
+    <PopoverContent
+      class="w-auto rounded-lg border-border/50 p-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      :collision-padding="8"
+      @open-auto-focus.prevent
+      @close-auto-focus.prevent
+      @interact-outside="onInteractOutside"
+      @mouseout="hidePopover"
+      @mouseover="cancelHidePopover"
+    >
+      <div data-testid="login-button-popover">
+        <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
+        <a
+          data-testid="login-button-popover-learn-more"
+          :href="apiNodesOverviewUrl"
+          target="_blank"
+          class="text-muted-foreground hover:text-primary"
+          >{{ t('auth.loginButton.tooltipLearnMore') }}</a
+        >
+      </div>
+    </PopoverContent>
   </Popover>
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import { unrefElement, useTimeoutFn } from '@vueuse/core'
+import { PopoverAnchor } from 'reka-ui'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -59,46 +72,39 @@ const apiNodesOverviewUrl = buildDocsUrl(
     includeLocale: true
   }
 )
-const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
-let hideTimeout: ReturnType<typeof setTimeout> | null = null
-let showTimeout: ReturnType<typeof setTimeout> | null = null
-
-const showPopover = (event: Event) => {
-  // Clear any existing timeouts
-  if (hideTimeout) {
-    clearTimeout(hideTimeout)
-    hideTimeout = null
-  }
-  if (showTimeout) {
-    clearTimeout(showTimeout)
-    showTimeout = null
-  }
-
-  showTimeout = setTimeout(() => {
-    if (popoverRef.value) {
-      popoverRef.value.show(event, event.target as HTMLElement)
-    }
-  }, 200)
+const open = ref(false)
+const buttonRef = ref<InstanceType<typeof Button> | null>(null)
+function onInteractOutside(event: FocusOutsideEvent | PointerDownOutsideEvent) {
+  const target = event.detail.originalEvent.target
+  const anchor = unrefElement(buttonRef)
+  if (
+    target instanceof Node &&
+    anchor instanceof HTMLElement &&
+    anchor.contains(target)
+  )
+    event.preventDefault()
 }
-
-const cancelHidePopover = () => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout)
-    hideTimeout = null
-  }
+const { start: startShow, stop: stopShow } = useTimeoutFn(
+  () => {
+    open.value = true
+  },
+  200,
+  { immediate: false }
+)
+const { start: startHide, stop: cancelHidePopover } = useTimeoutFn(
+  () => {
+    open.value = false
+  },
+  150,
+  { immediate: false }
+)
+function showPopover() {
+  cancelHidePopover()
+  startShow()
 }
-
-const hidePopover = () => {
-  // Clear show timeout if mouse leaves before popover appears
-  if (showTimeout) {
-    clearTimeout(showTimeout)
-    showTimeout = null
-  }
-
-  hideTimeout = setTimeout(() => {
-    if (popoverRef.value) {
-      popoverRef.value.hide()
-    }
-  }, 150) // Minimal delay to allow moving to popover
+function hidePopover() {
+  stopShow()
+  startHide()
 }
+usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
 </script>

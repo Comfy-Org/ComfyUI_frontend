@@ -1,27 +1,21 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-red-500">
+  <div v-if="renderError" class="node-error p-4 text-destructive">
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
-    :class="
-      cn(
-        'lg-node-header w-full min-w-0 p-1 text-xs',
-        'text-node-component-slot-text',
-        headerShapeClass
-      )
-    "
+    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
       <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
+      <div class="relative mr-auto flex min-w-0 items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
             variant="textonly"
-            class="hover:bg-transparent"
+            class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
@@ -33,26 +27,28 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="text-node-component-header-icon"
             />
           </Button>
         </div>
-        <!-- Node Title -->
-        <div
-          v-tooltip.top="tooltipConfig"
-          class="flex min-w-0 flex-1 items-center gap-2"
-          data-testid="node-title"
-        >
-          <div class="flex-1 truncate">
-            <EditableText
-              :model-value="displayTitle"
-              :is-editing="isEditing"
-              :input-attrs="{ 'data-testid': 'node-title-input' }"
-              @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
-            />
-          </div>
-        </div>
+        <Tooltip :disabled="!tooltipText">
+          <TooltipTrigger as-child>
+            <div
+              class="flex min-w-0 flex-1 items-center gap-2"
+              data-testid="node-title"
+            >
+              <div class="flex-1 truncate">
+                <EditableText
+                  :model-value="displayTitle"
+                  :is-editing="isEditing"
+                  :input-attrs="{ 'data-testid': 'node-title-input' }"
+                  @edit="handleTitleEdit"
+                  @cancel="handleTitleCancel"
+                />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>{{ tooltipText }}</TooltipContent>
+        </Tooltip>
       </div>
 
       <CreditBadge
@@ -77,6 +73,9 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -114,17 +113,11 @@ onErrorCaptured((error) => {
 // Editing state
 const isEditing = ref(false)
 
-const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
-  nodeData?.type || ''
-)
+const { getNodeDescription } = useNodeTooltips(nodeData?.type || '')
 
-const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
-  const description = getNodeDescription.value
-  return createTooltipConfig(description)
-})
+const tooltipText = computed(() =>
+  isEditing.value ? '' : getNodeDescription.value
+)
 
 const resolveTitle = (info: NodeState | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')

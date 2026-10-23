@@ -1,7 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -47,8 +45,7 @@ describe('BypassButton', () => {
 
     render(BypassButton, {
       global: {
-        plugins: [i18n, PrimeVue],
-        directives: { tooltip: Tooltip },
+        plugins: [i18n],
         stubs: {
           'i-lucide:ban': true
         }
@@ -59,12 +56,6 @@ describe('BypassButton', () => {
   }
 
   it('should render bypass button', () => {
-    setCanvasSelection([getMockLGraphNode()])
-    renderComponent()
-    expect(screen.getByTestId('bypass-button')).toBeInTheDocument()
-  })
-
-  it('should have correct test id', () => {
     setCanvasSelection([getMockLGraphNode()])
     renderComponent()
     expect(screen.getByTestId('bypass-button')).toBeInTheDocument()

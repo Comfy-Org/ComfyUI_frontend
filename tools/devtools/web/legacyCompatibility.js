@@ -1,5 +1,4 @@
 //es
-// eslint-disable-next-line import-x/no-unresolved -- import is correct at time of test execution
 import { app } from '../../scripts/app.js'
 
 function legacyWidget(node, inputName, _inputData) {
@@ -44,6 +43,11 @@ app.registerExtension({
         break
       case 'DevToolsPreviewBridge':
         installPreviewBridgeSetter(node)
+        break
+      case 'DevToolsFancyTimer':
+        node.onSerialize = function (o) {
+          o.properties = this.properties
+        }
         break
     }
   }

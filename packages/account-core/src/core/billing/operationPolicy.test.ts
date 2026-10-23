@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { OPERATION_POLL_TIMING, nextPollDelayMs } from './operationPolicy.js'
-import type { PendingBillingOperation } from './operationState.js'
-import type { PaymentStep } from './paymentProjection.js'
-import { projectPaymentStep } from './paymentProjection.js'
+import { OPERATION_POLL_TIMING, nextPollDelayMs } from './operationPolicy'
+import type { PendingBillingOperation } from './operationState'
+import type { PaymentStep } from './paymentProjection'
+import { projectPaymentStep } from './paymentProjection'
 
 const BASE = {
   id: 'op-1',
@@ -69,12 +69,13 @@ describe('nextPollDelayMs', () => {
       parked: false
     },
     {
-      name: 'a failed challenge awaiting a retry',
+      name: 'a failed challenge the server has not settled',
       state: embedded({
         authenticationState: 'failed_retryable',
+        customerActionSeen: true,
         challenge: { ...CHALLENGE, status: 'failed' }
       }),
-      parked: true
+      parked: false
     },
     {
       name: 'a hosted operation blocked before its page exists',

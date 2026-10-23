@@ -37,8 +37,8 @@ example, construct a `Response` instead of casting an object to `Response`.
 Model malformed runtime input as `unknown` and pass it through the boundary
 parser. Do not use a double assertion to make invalid test data compile.
 
-A comment can document an external constraint, but it cannot prove a type or
-waive a failed check. External constraints may justify a specific assertion at
+A comment cannot prove a type or waive a failed check, so do not write one.
+State the external constraint in the PR description. External constraints may justify a specific assertion at
 an integration boundary, never a TypeScript suppression. If an upstream
 declaration is wrong, verify its runtime shape and do not spread assertions
 through consumers.

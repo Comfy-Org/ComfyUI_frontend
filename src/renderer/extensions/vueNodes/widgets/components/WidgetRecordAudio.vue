@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div class="mb-4">
       <Button
-        class="w-full border-0 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+        class="w-full border-0"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,11 +12,11 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node-component-surface px-3 text-text-secondary"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node px-3 text-muted-foreground"
     >
       <!-- Recording Status -->
       <div class="flex shrink-0 items-center gap-1">
-        <span class="text-xs">
+        <span>
           {{
             isRecording
               ? t('g.listening', 'Listening...')
@@ -35,7 +35,7 @@
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-text-secondary transition-all duration-100"
+          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-muted-foreground transition-all duration-100"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />
@@ -48,7 +48,7 @@
         class="flex size-8 shrink-0 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopRecording"
       >
-        <div class="size-2.5 rounded-sm bg-danger-100" />
+        <div class="size-2.5 rounded-sm bg-destructive" />
       </button>
 
       <button
@@ -57,7 +57,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4 text-text-secondary" />
+        <i class="icon-[lucide--play] size-4" />
       </button>
 
       <button
@@ -66,7 +66,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4 text-text-secondary" />
+        <i class="icon-[lucide--square] size-4" />
       </button>
     </div>
     <audio
@@ -83,19 +83,19 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@/types/nodeId'
 
-import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
-import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
-import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
+import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
+import { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
@@ -117,9 +117,7 @@ const recorder = useAudioRecorder({
     waveform.dispose()
   },
   onError: () => {
-    useToastStore().addAlert(
-      t('g.micPermissionDenied') || 'Microphone permission denied'
-    )
+    useToast().warning(t('g.micPermissionDenied'))
   }
 })
 

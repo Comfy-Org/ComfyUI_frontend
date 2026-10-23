@@ -13,27 +13,47 @@
  */
 import type {
   NodeId as WireNodeId,
+  PromotedHostWrite,
+  SubgraphDefinition,
+  WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import {
   findNodeInHierarchy,
-  findSubgraphNodePathById
+  findSubgraphByUuid,
+  findSubgraphNodePathById,
+  traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
+import {
+  SUBSCRIBE_ACK_MAX_TIMEOUTS,
+  SUBSCRIBE_ACK_TIMEOUT_MS
+} from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
+import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { reportLostEdit } from './reportLostEdit'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -57,7 +77,42 @@ export interface DocOpMinterDeps {
    * flight, or no document is subscribed).
    */
   docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
+  /**
+   * The bound document's view of a node's promoted widget layout, or null
+   * when the document holds no such node.
+   */
+  docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
+  /**
+   * False until the bound document has caught up, unless this tab already
+   * sent the root host's `add_node` into the same document. Every resubscribe
+   * (stale probe, reconnect, gap resync, ack-timeout retry) makes it false
+   * again until its catch-up lands, so a false answer holds the write (see
+   * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
+   */
+  mayWritePromotedHost(nodeId: NodeId): boolean
+  /** Whether the bound document holds a subgraph definition by this id. */
+  docHasSubgraphDefinition(definitionId: string): boolean
+  onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
+
+/**
+ * How long a promoted-host write waits for the bound document to catch up
+ * before it is refused: as long as the subscribe lifecycle keeps retrying.
+ */
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS =
+  SUBSCRIBE_ACK_MAX_TIMEOUTS * SUBSCRIBE_ACK_TIMEOUT_MS
+/** How often a held promoted-host write rechecks the catch-up gate. */
+export const PROMOTED_WRITE_RETRY_MS = 100
+
+type PromotedWriteRefusal =
+  | { reason: 'unpromoted_widget'; liveNames: readonly string[] }
+  | { reason: 'doc_not_synced' }
+  | { reason: 'workflow_changed' }
+  | {
+      reason: 'layout_drift'
+      liveNames: readonly string[]
+      doc: DocPromotedWidgets
+    }
 
 export interface DocOpMinter {
   detach(): void
@@ -68,26 +123,21 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   { type: T }
 >
 
+interface HeldPromotedWrite {
+  event: IntentOf<'set_widget'>
+  rootGraphId: string
+  heldSince: number
+}
+
+function heldWriteKey(event: IntentOf<'set_widget'>): string {
+  return JSON.stringify([event.graphId, String(event.nodeId), event.name])
+}
+
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
- *
- * `flags.ghost` is a placement-in-progress marker the placement click clears
- * without minting, so the document must not record it.
- */
+/** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -95,15 +145,47 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  const wireSerialized = { ...serialized }
+  Reflect.deleteProperty(wireSerialized, '__incarnation')
+  Reflect.deleteProperty(wireSerialized, 'widgets_values_form')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
-  } = serialized
+  } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  return named && !node.isVirtualNode
-    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
-    : snapshot
+  if (!named || node.isVirtualNode) return snapshot
+  const values = valueWidgetsOnly(node, named)
+  const form = nodeLocalWidgetForm(node, values)
+  return form
+    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    : { ...snapshot, widgets_values: values }
+}
+
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+function nodeLocalWidgetForm(
+  node: LGraphNode,
+  values: Record<string, unknown>
+): WidgetValuesForm | undefined {
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
+    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
+  )
+  if (layoutDependsOnValues) return undefined
+  const order = (node.widgets ?? [])
+    .map((widget) => widget.name)
+    .filter((name) => Object.hasOwn(values, name))
+  const isClosed =
+    order.length > 0 &&
+    order.length === Object.keys(values).length &&
+    order.every((name) => name.length > 0) &&
+    new Set(order).size === order.length
+  return isClosed ? { order } : undefined
 }
 
 function valueWidgetsOnly(
@@ -111,17 +193,160 @@ function valueWidgetsOnly(
   named: object
 ): Record<string, unknown> {
   const filtered: Record<string, unknown> = {}
+  const rootGraphId = node.graph?.rootGraph.id
+  const widgetValueStore = useWidgetValueStore()
   for (const [name, value] of Object.entries(named)) {
     const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (widget && widget.type !== 'button' && widget.serialize !== false) {
-      filtered[name] = value
-    }
+    const stored = rootGraphId
+      ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
+      : undefined
+    if (isValueWidget(widget, stored)) filtered[name] = value
   }
   return filtered
 }
 
+function isValueWidget(
+  widget: IBaseWidget | undefined,
+  stored?: WidgetState
+): boolean {
+  if (!widget && !stored) return false
+  // A destructuring default fires on absent AND present-but-undefined alike,
+  // which is what `IBaseWidget`'s own optional fields mean: the live widget
+  // did not state this, so the registration the intent was keyed by answers.
+  // One construct for both fields, so the two halves of the guard cannot
+  // drift apart again.
+  const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
+  return type !== 'button' && serialize !== false
+}
+
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+function reachableIntentGraph(
+  graph: LGraph,
+  graphId: string
+): LGraph | Subgraph | null {
+  if (graphId === graph.id) return graph
+  const registered = findSubgraphByUuid(graph, graphId)
+  if (registered) return registered
+  const path = findSubgraphNodePathById(graph, graphId)
+  return path ? traverseSubgraphPath(graph, path) : null
+}
+
+/**
+ * Whether the live widget, or the store metadata the intent was keyed by when
+ * the live widget is missing or omits a field, identifies a value the document
+ * carries. Unknown widgets fail closed.
+ */
+function isValueWidgetWrite(
+  owner: LGraphNode | null,
+  event: IntentOf<'set_widget'>
+): boolean {
+  const rootGraphId = owner?.graph?.rootGraph.id ?? event.graphId
+  const stored = useWidgetValueStore().getWidget(
+    widgetId(rootGraphId, event.nodeId, event.name)
+  )
+  const widget = owner?.widgets?.find(
+    (candidate) => candidate.name === event.name
+  )
+  return isValueWidget(widget, stored)
+}
+
+function promotedHostWrite(
+  node: LGraphNode,
+  event: IntentOf<'set_widget'>,
+  deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
+): PromotedHostWrite | PromotedWriteRefusal {
+  const hostInputs = node.inputs.flatMap((input) =>
+    input.widgetId ? [{ name: input.name, widgetId: input.widgetId }] : []
+  )
+  const valueIndex = hostInputs.findIndex((input) => input.name === event.name)
+  const liveNames = hostInputs.map((input) => input.name)
+  if (valueIndex === -1) return { reason: 'unpromoted_widget', liveNames }
+  if (!deps.mayWritePromotedHost(event.nodeId))
+    return { reason: 'doc_not_synced' }
+  const doc = deps.docPromotedWidgets(event.nodeId)
+  if (doc !== null && !documentAcceptsLiveIndex(doc, liveNames))
+    return { reason: 'layout_drift', liveNames, doc }
+  const widgetValueStore = useWidgetValueStore()
+  return {
+    value_index: valueIndex,
+    instance_path: [String(event.nodeId)],
+    host_widgets_values: hostInputs.map((input, index) => {
+      if (index === valueIndex) return event.value
+      const value = widgetValueStore.getWidget(input.widgetId)?.value
+      return isWidgetValue(value) ? value : undefined
+    })
+  }
+}
+
+/**
+ * Whether a live index is a safe index into the document's array.
+ *
+ * Two independent ways it is not, and the document answers both:
+ *
+ * - The array is sized for a different set of widgets. Checked against
+ *   `valueCount`, the same cardinality invariant `applyHostWidgets` enforces
+ *   on the way in.
+ * - The promoted name sequence is different. Definition order combined with
+ *   the instance's stored input mirror identifies the exact names behind the
+ *   positional array, catching same-cardinality demote/promote swaps as well
+ *   as `reorderSubgraphInputsByWidgetOrder` permutations.
+ *
+ * A document holding no array yet is sized by nothing, but it is NOT ordered
+ * by nothing: the first write seeds the whole array from `host_widgets_values`
+ * in live order, and a reload reads it back in the DEFINITION's order
+ * (`_applyPromotedWidgetValues`). A reorder permutes the live definition
+ * without minting, so the document's copy still holds the old order — seeding
+ * against it would land every value on a neighbour. Only a document that
+ * declares no definition at all leaves the live order unopposed.
+ *
+ * A refused write is dropped before enqueue so its `opaque_widgets` rejection
+ * cannot abort unrelated operations in the same batch.
+ */
+function documentAcceptsLiveIndex(
+  doc: DocPromotedWidgets | null,
+  liveNames: readonly string[]
+): boolean {
+  if (doc === null) return true
+  const namesMatch =
+    doc.promotedNames != null &&
+    doc.promotedNames.length === liveNames.length &&
+    doc.promotedNames.every((name, index) => name === liveNames[index])
+  if (doc.valueCount === 0) return doc.promotedNames === undefined || namesMatch
+  return doc.valueCount === liveNames.length && namesMatch
+}
+
+function routedWidgetOperation(
+  graph: LGraph,
+  rootGraphId: string,
+  event: IntentOf<'set_widget'>,
+  node: LGraphNode | null,
+  deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
+): GraphOperation | PromotedWriteRefusal | { unresolvedGraphId: string } {
+  const operation = {
+    op: 'set_widget',
+    node_id: event.nodeId,
+    widget: event.name,
+    value: event.value,
+    old: event.previous
+  } as const
+  const owningGraphId = node?.graph?.id ?? event.graphId
+  if (owningGraphId === rootGraphId) {
+    if (!node?.isSubgraphNode()) return operation
+    const promoted = promotedHostWrite(node, event, deps)
+    return 'reason' in promoted ? promoted : { ...operation, promoted }
+  }
+  const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
+  if (subgraphNodePath === null || subgraphNodePath.length === 0)
+    return { unresolvedGraphId: owningGraphId }
+  const [head, ...rest] = subgraphNodePath
+  return {
+    ...operation,
+    path: [head, ...rest, String(event.nodeId)],
+    inner_widget: event.name
+  }
 }
 
 /**
@@ -159,17 +384,6 @@ function withoutCancelledAdd(
 }
 
 /**
- * The graph that owns the written widget's node. The widget store keys every
- * widget by ROOT graph id (`BaseWidget.setNodeId`), so a live interior write
- * arrives naming the root; node ids are unique across a root graph and its
- * subgraphs, so the node itself names its owner.
- */
-function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
-  if (event.graphId !== graph.id) return event.graphId
-  return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
-}
-
-/**
  * The document input register a live link's target slot names, resolved by
  * NAME against the bound document's own input order: the live order drifts
  * from it (an autogrow slot disconnected and regrown lands at the tail of
@@ -178,9 +392,9 @@ function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
  * document has no such node yet. Undefined when the document has the node
  * but no slot by that name.
  */
-function docInputIndex(
+export function docInputIndex(
   docNames: readonly (string | undefined)[] | null,
-  input: INodeInputSlot | undefined,
+  input: Pick<INodeInputSlot, 'name'> | undefined,
   liveIndex: number
 ): number | undefined {
   if (docNames === null || input === undefined) return liveIndex
@@ -188,10 +402,38 @@ function docInputIndex(
   return index === -1 ? undefined : index
 }
 
+function growForMissingSlot(
+  target: LGraphNode | null | undefined,
+  input: INodeInputSlot | undefined
+): { name: string; type: string; widget?: string } | undefined {
+  if (!target || !input) return undefined
+  const widgetBacked = !!input.widget && !target.isSubgraphNode()
+  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
+    return undefined
+  return {
+    name: input.name,
+    type: String(input.type),
+    ...(input.widget ? { widget: input.widget.name } : {})
+  }
+}
+
+function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
+  const eventGraph = reachableIntentGraph(graph, event.graphId)
+  const host = eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
+  const input = host?.inputs.find((slot) => slot.name === event.name)
+  const stored = input?.widgetId
+    ? useWidgetValueStore().getWidget(input.widgetId)
+    : undefined
+  return stored !== undefined && !isEqual(stored.value, event.value)
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
+  const reportedRefusals = new Set<string>()
+  const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
+  let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let flushScheduled = false
   let detached = false
 
@@ -202,6 +444,79 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     queueMicrotask(flush)
   }
 
+  function mintAddNodeOperation(
+    graph: LGraph,
+    node: LGraphNode
+  ): GraphOperation | null {
+    if (node.graph !== graph) return null
+    const snapshot = wireNodeSnapshot(node)
+    if (!snapshot) {
+      const key = `snapshot:${nodeKey(graph.id, node.id)}`
+      if (reported.has(key)) return null
+      reported.add(key)
+      reportLostEdit('mint_divergence', [{ op: 'add_node' }], {
+        code: 'missing_node_snapshot',
+        errorType: 'agent_crdt_node_snapshot_missing',
+        graphId: graph.id,
+        nodeId: node.id
+      })
+      return null
+    }
+    return {
+      op: 'add_node',
+      node_id: node.id,
+      class_type: snapshot.type,
+      pos: [node.pos[0], node.pos[1]],
+      node: snapshot
+    }
+  }
+
+  function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
+    try {
+      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: subgraph.id }
+      })
+      return null
+    }
+  }
+
+  function mintMissingDefinitions(
+    hosts: readonly SubgraphNode[]
+  ): GraphOperation[] {
+    const operations: GraphOperation[] = []
+    const available = new Map<string, boolean>()
+    const define = (subgraph: Subgraph): boolean => {
+      const settled = available.get(subgraph.id)
+      if (settled !== undefined) return settled
+      available.set(subgraph.id, false)
+      const dependenciesAvailable = subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .map((node) => define(node.subgraph))
+        .every(Boolean)
+      if (deps.docHasSubgraphDefinition(subgraph.id)) {
+        available.set(subgraph.id, true)
+        return true
+      }
+      const definition = dependenciesAvailable
+        ? serialisedDefinition(subgraph)
+        : null
+      if (!definition) return false
+      operations.push({
+        op: 'define_subgraph',
+        subgraph_id: subgraph.id,
+        subgraph_definition: definition
+      })
+      available.set(subgraph.id, true)
+      return true
+    }
+    for (const host of hosts) define(host.subgraph)
+    return operations
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -209,30 +524,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
-    const operations: GraphOperation[] = []
-    for (const entry of batch) {
-      if (entry.kind === 'op') {
-        operations.push(entry.operation)
-        continue
-      }
-      const { graph, node } = entry
-      if (node.graph !== graph) continue
-      const snapshot = wireNodeSnapshot(node)
-      if (!snapshot) {
-        console.error(
-          '[agent-crdt] add_node mint dropped: no snapshot for node',
-          node.id
-        )
-        continue
-      }
-      operations.push({
-        op: 'add_node',
-        node_id: node.id,
-        class_type: snapshot.type,
-        pos: [node.pos[0], node.pos[1]],
-        node: snapshot
-      })
-    }
+    const hosts: SubgraphNode[] = []
+    const operations = batch.flatMap((entry) => {
+      if (entry.kind === 'op') return [entry.operation]
+      const operation = mintAddNodeOperation(entry.graph, entry.node)
+      if (!operation) return []
+      if (entry.node.isSubgraphNode()) hosts.push(entry.node)
+      return [operation]
+    })
+    operations.push(...mintMissingDefinitions(hosts))
     if (operations.length > 0) deps.enqueue(operations)
   }
 
@@ -240,10 +540,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     key: string,
     message: string,
     errorType: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
+    budget: Set<string> = reported
   ): void {
-    if (reported.has(key)) return
-    reported.add(key)
+    if (budget.has(key)) return
+    budget.add(key)
     reportError(new Error(message), { surface: 'agent', errorType, context })
   }
 
@@ -276,40 +577,188 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function mintSetWidget(event: IntentOf<'set_widget'>): void {
+  function routeSetWidget(
+    event: IntentOf<'set_widget'>,
+    retried: HeldPromotedWrite | null
+  ): void {
+    const held = retried ?? takeHeldWrite(event)
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
+    const eventGraph = reachableIntentGraph(graph, event.graphId)
+    const owner = eventGraph
+      ? findNodeInHierarchy(eventGraph, event.nodeId)
+      : null
+    if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    const operation = {
-      op: 'set_widget',
-      node_id: event.nodeId,
-      widget: event.name,
-      value: event.value,
-      old: event.previous
-    } as const
-    const owningGraphId = owningGraphIdOf(graph, event)
-    if (owningGraphId === rootGraphId) {
-      schedule({ kind: 'op', operation })
+    const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
+    if ('unresolvedGraphId' in routed) {
+      reportUnresolvedWidgetOwner(routed.unresolvedGraphId, event)
       return
     }
-    const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
-    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-      )
+    if ('reason' in routed) {
+      holdOrRefuseWidgetWrite(rootGraphId, event, routed, held)
       return
     }
-    const [head, ...rest] = subgraphNodePath
-    schedule({
-      kind: 'op',
-      operation: {
-        ...operation,
-        path: [head, ...rest, String(event.nodeId)],
-        inner_widget: event.name
-      }
+    schedule({ kind: 'op', operation: routed })
+  }
+
+  function reportUnresolvedWidgetOwner(
+    graphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    if (reportedRefusals.has(key)) return
+    reportedRefusals.add(key)
+    reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
+      code: 'unresolvable_widget_owner',
+      errorType: 'agent_crdt_widget_owner_unresolved',
+      graphId,
+      nodeId: event.nodeId
     })
+  }
+
+  function takeHeldWrite(
+    event: IntentOf<'set_widget'>
+  ): HeldPromotedWrite | null {
+    const key = heldWriteKey(event)
+    const held = heldPromotedWrites.get(key) ?? null
+    heldPromotedWrites.delete(key)
+    return held
+  }
+
+  function holdOrRefuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal,
+    held: HeldPromotedWrite | null
+  ): void {
+    const heldSince = held?.heldSince ?? performance.now()
+    const mayWait =
+      refusal.reason === 'doc_not_synced' &&
+      performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else refuseWidgetWrite(rootGraphId, event, refusal)
+  }
+
+  function refuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal
+  ): void {
+    reportRefusal(rootGraphId, event, refusal)
+    deps.onWidgetWriteRefused(event.nodeId, event.name)
+  }
+
+  function holdPromotedWrite(held: HeldPromotedWrite): void {
+    heldPromotedWrites.set(heldWriteKey(held.event), held)
+    if (heldRetryTimer !== null) return
+    heldRetryTimer = setTimeout(
+      retryHeldPromotedWrites,
+      PROMOTED_WRITE_RETRY_MS
+    )
+  }
+
+  function retryHeldPromotedWrites(): void {
+    heldRetryTimer = null
+    if (detached) return
+    const held = [...heldPromotedWrites.values()]
+    heldPromotedWrites.clear()
+    const bound = deps.isDocBound()
+    if (!deps.isEnabled() || (!bound && deps.boundRootGraphId() === null))
+      return
+    const graph = bound ? deps.getGraph() : null
+    for (const entry of held) {
+      if (graph) retryHeldWrite(graph, entry)
+      else waitOrGiveUp(entry)
+    }
+  }
+
+  function waitOrGiveUp(entry: HeldPromotedWrite): void {
+    if (!heldTooLong(entry)) holdPromotedWrite(entry)
+    else
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'doc_not_synced'
+      })
+  }
+
+  function heldTooLong(entry: HeldPromotedWrite): boolean {
+    return (
+      performance.now() - entry.heldSince >= PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    )
+  }
+
+  function retryHeldWrite(graph: LGraph, entry: HeldPromotedWrite): void {
+    if (canvasReplaced(graph, entry.event)) return
+    if ((deps.boundRootGraphId() ?? graph.id) !== entry.rootGraphId) {
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'workflow_changed'
+      })
+      return
+    }
+    routeSetWidget(entry.event, entry)
+  }
+
+  function reportRefusal(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal
+  ): void {
+    const host = String(event.nodeId)
+    switch (refusal.reason) {
+      case 'layout_drift': {
+        const { liveNames, doc } = refusal
+        reportOnce(
+          `promoted_drift:${rootGraphId}:${host}`,
+          `Subgraph host ${host} promotes [${liveNames.join(', ')}], which the document's ${doc.valueCount} stored values and declared inputs [${doc.declaredNames.join(', ')}] do not place; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_order_drift',
+          {
+            nodeId: event.nodeId,
+            liveNames,
+            docValueCount: doc.valueCount,
+            docDeclaredNames: doc.declaredNames,
+            docPromotedNames: doc.promotedNames
+          },
+          reportedRefusals
+        )
+        return
+      }
+      case 'unpromoted_widget':
+        reportOnce(
+          `promoted_unpromoted:${rootGraphId}:${host}:${event.name}`,
+          `Widget ${event.name} on subgraph host ${host} is not one of its promoted inputs [${refusal.liveNames.join(', ')}]; refusing to mint`,
+          'agent_crdt_promoted_widget_not_promoted',
+          {
+            nodeId: event.nodeId,
+            widget: event.name,
+            liveNames: refusal.liveNames
+          },
+          reportedRefusals
+        )
+        return
+      case 'workflow_changed':
+        reportOnce(
+          `promoted_workflow_changed:${rootGraphId}:${host}`,
+          `Subgraph host ${host} was edited while the bound document caught up, and the bound workflow changed before it did; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_workflow_changed',
+          { nodeId: event.nodeId, widget: event.name },
+          reportedRefusals
+        )
+        return
+      case 'doc_not_synced':
+        reportOnce(
+          `promoted_unsynced:${rootGraphId}:${host}`,
+          `Subgraph host ${host} was edited before the bound document caught up; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_doc_not_synced',
+          { nodeId: event.nodeId, widget: event.name },
+          reportedRefusals
+        )
+        return
+      default: {
+        const unhandled: never = refusal
+        return unhandled
+      }
+    }
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {
@@ -379,18 +828,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    if (target && input && liveAutogrowGroupOf(target, input.name)) {
+    const grow = growForMissingSlot(target, input)
+    if (grow) {
       schedule({
         kind: 'op',
-        operation: {
-          ...connect,
-          to_slot: null,
-          grow: {
-            name: input.name,
-            type: String(input.type),
-            ...(input.widget ? { widget: input.widget.name } : {})
-          }
-        }
+        operation: { ...connect, to_slot: null, grow }
       })
       return
     }
@@ -449,7 +891,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) return
+    if (!deps.isEnabled() || !deps.isDocBound()) {
+      if (event.type === 'set_widget')
+        heldPromotedWrites.delete(heldWriteKey(event))
+      return
+    }
     mintIntent(event)
   }
 
@@ -471,7 +917,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         mintClear(event)
         return
       case 'set_widget':
-        mintSetWidget(event)
+        routeSetWidget(event, null)
         return
       case 'set_node_field':
         mintSetNodeField(event)
@@ -496,6 +942,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      heldPromotedWrites.clear()
+      if (heldRetryTimer !== null) clearTimeout(heldRetryTimer)
+      heldRetryTimer = null
       detachIntents()
       unregisterDocBoundProbe()
     }

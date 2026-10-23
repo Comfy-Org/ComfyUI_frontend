@@ -3,16 +3,16 @@ import { nextTick } from 'vue'
 import Load3DAdvanced from '@/components/load3d/Load3DAdvanced.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
-import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
+import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const inputSpecLoad3DAdvanced: CustomInputSpec = {
   name: 'viewport_state',
@@ -20,7 +20,7 @@ const inputSpecLoad3DAdvanced: CustomInputSpec = {
   isPreview: false
 }
 
-useExtensionService().registerExtension({
+export const load3dAdvancedExtension: ComfyExtension = {
   name: 'Comfy.Load3DAdvanced',
 
   beforeRegisterNodeDef(_nodeType, nodeData) {
@@ -105,4 +105,4 @@ useExtensionService().registerExtension({
       }
     })
   }
-})
+}

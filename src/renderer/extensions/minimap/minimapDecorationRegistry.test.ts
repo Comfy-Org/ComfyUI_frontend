@@ -4,8 +4,11 @@ import {
   getMinimapDecorations,
   registerMinimapDecorationLayer
 } from '@/platform/canvas/minimapDecorationRegistry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const scopeA = {
   rootGraphId: toRootGraphId('workflow-a'),
@@ -17,6 +20,33 @@ const scopeB = {
 }
 
 describe('minimapDecorationRegistry', () => {
+  it('hands a contested id to the newest registrant', () => {
+    const outgoing = registerMinimapDecorationLayer('test.takeover')
+    outgoing.replace([{ target: { ...scopeA, nodeId: toNodeId('1') } }])
+
+    // A replacement producer sets up before the outgoing one has torn down.
+    const incoming = registerMinimapDecorationLayer('test.takeover')
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'minimap_decoration_layer_duplicate'
+      })
+    )
+    expect(getMinimapDecorations(scopeA)).toEqual([])
+
+    // The replaced producer is inert, and tearing it down must not take the
+    // replacement's layer with it.
+    outgoing.replace([{ target: { ...scopeA, nodeId: toNodeId('9') } }])
+    outgoing.dispose()
+    incoming.replace([{ target: { ...scopeA, nodeId: toNodeId('2') } }])
+    expect(
+      getMinimapDecorations(scopeA).map(({ target }) => target.nodeId)
+    ).toEqual(['2'])
+
+    incoming.dispose()
+    expect(getMinimapDecorations(scopeA)).toEqual([])
+  })
+
   it('atomically replaces graph-scoped rows and preserves entry time', () => {
     const layer = registerMinimapDecorationLayer('test.scope')
     layer.replace([

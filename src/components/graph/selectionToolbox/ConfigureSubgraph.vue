@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
     @click="handleClick"

@@ -17,7 +17,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
   () => ({

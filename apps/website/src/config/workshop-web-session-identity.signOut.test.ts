@@ -20,6 +20,7 @@ const identity = vi.hoisted(() => {
       boot: vi.fn(),
       signedIn: vi.fn(),
       signOut: vi.fn(),
+      refresh: vi.fn(),
       getEpoch: () => 0,
       dispose: vi.fn()
     }

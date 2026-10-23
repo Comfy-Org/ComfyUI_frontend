@@ -10,16 +10,29 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
-import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
-import { resolveWorkshopAccountSource } from '../../../config/workshop-account-source.ts'
+import { isVfxV3Path, vfxNavCloudHref } from '@/utils/vfxNavCampaign'
+import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
+import type { Locale } from '@/i18n/translations.ts'
+import { translationsFor } from '@/i18n/translations.ts'
+import { getRoutes } from '@/config/routes.ts'
+import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
+import { WORKSHOP_CREDITS_URL } from '@/config/workshop-env.ts'
+import type { WorkshopAccountSource } from '@/config/workshop-account-source.ts'
 import {
+  peekWorkshopAccountSource,
+  resolveWorkshopAccountSource
+} from '@/config/workshop-account-source.ts'
+import {
+  useWorkshopAppsEnabled,
   useWorkshopAuthFlag,
-  useWorkshopEnabled
-} from '../../../scripts/posthog.ts'
-import GitHubStarBadge from '../GitHubStarBadge.vue'
+  useWorkshopEnabled,
+  useWorkshopWorkflowsEnabled
+} from '@/scripts/posthog.ts'
+import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
+import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
+import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
+import WorkshopAccount from '@/components/workshop/WorkshopAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
@@ -27,13 +40,18 @@ import Button from '@/components/ui/button/Button.vue'
 
 const {
   locale = 'en',
+  pagePath = '',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  hubApps = []
 } = defineProps<{
   locale?: Locale
+  pagePath?: string
   githubStars?: string
   workshopInBuild?: boolean
+  hubApps?: readonly HubApp[]
 }>()
+const { t } = translationsFor(locale)
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
 const workshopEnabled = useWorkshopEnabled()
@@ -41,35 +59,123 @@ const mounted = useMounted()
 const showWorkshop = computed(
   () => mounted.value && workshopInBuild && workshopEnabled.value
 )
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const appsEnabled = useWorkshopAppsEnabled()
+const hubSections = computed<HubSections>(() => ({
+  workflows: showWorkshop.value && workflowsEnabled.value,
+  apps: showWorkshop.value && appsEnabled.value,
+  reshoot:
+    showWorkshop.value &&
+    appsEnabled.value &&
+    hubApps.some((app) => app.appId === 'reshoot' && isWorkshopModelShown(app))
+}))
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-// Each loader waits for the account source, so a visitor the web session
-// knows never mounts an island that would start Firebase.
-const HeaderAccount = defineAsyncComponent(async () => {
-  const [source, firebaseHeader] = await Promise.all([
-    resolveWorkshopAccountSource(),
-    import('../../workshop/HeaderAccount.vue')
-  ])
-  return source === 'session'
-    ? import('../../workshop/HeaderSessionAccount.vue')
-    : firebaseHeader
-})
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
     resolveWorkshopAccountSource(),
-    import('../../workshop/BuyCreditsDialog.vue')
+    import('@/components/workshop/BuyCreditsDialog.vue')
   ])
   return source === 'session' ? { render: () => null } : dialog
 })
 const buyingCredits = ref(false)
+const buyCreditsTrigger = ref<WorkshopBuyCreditsTrigger>('action')
 const buyCreditsDialogMounted = ref(false)
 let stopBuyCreditsRequests: (() => void) | undefined
 
+function claimCloudCreditsTab(): Window | null {
+  try {
+    return window.open(
+      locale === 'zh-CN' ? '/zh-CN/checkout-opening' : '/checkout-opening',
+      '_blank'
+    )
+  } catch {
+    return null
+  }
+}
+
+function releaseCloudCreditsTab(tab: Window | null): void {
+  try {
+    tab?.close()
+  } catch {
+    // A closed or browser-owned tab is already outside this page's control.
+  }
+}
+
+interface CloudCreditsOpener {
+  readonly open: () => void
+  readonly release: () => void
+}
+
+const openInGesture: CloudCreditsOpener = {
+  open: () =>
+    window.open(WORKSHOP_CREDITS_URL, '_blank', 'noopener,noreferrer'),
+  release: () => {}
+}
+
+// Outside the gesture a new tab would be blocked, so a refused placeholder
+// falls back to navigating this tab.
+const openInThisTab: CloudCreditsOpener = {
+  open: () => window.location.assign(WORKSHOP_CREDITS_URL),
+  release: () => {}
+}
+
+function openInClaimedTab(tab: Window): CloudCreditsOpener {
+  return {
+    open: () => {
+      try {
+        tab.opener = null
+        tab.location.assign(WORKSHOP_CREDITS_URL)
+      } catch {
+        releaseCloudCreditsTab(tab)
+      }
+    },
+    release: () => releaseCloudCreditsTab(tab)
+  }
+}
+
+function routeBuyCredits(
+  source: WorkshopAccountSource,
+  trigger: WorkshopBuyCreditsTrigger,
+  opener: CloudCreditsOpener
+): void {
+  if (!showAccount.value) {
+    opener.release()
+    return
+  }
+  if (source === 'firebase') {
+    opener.release()
+    buyCreditsTrigger.value = trigger
+    buyingCredits.value = true
+    return
+  }
+  // Session accounts buy in Cloud. Only an explicit action can open a tab:
+  // an automatic refusal arrives outside a user gesture, so the visible Add
+  // credits action stays the recovery instead of a popup the browser drops.
+  if (trigger === 'action') opener.open()
+}
+
+function handleBuyCreditsRequest(trigger: WorkshopBuyCreditsTrigger): void {
+  if (!showAccount.value) return
+  const settled = peekWorkshopAccountSource()
+  if (settled) {
+    routeBuyCredits(settled, trigger, openInGesture)
+    return
+  }
+  // Claim the tab inside the click's gesture; it is released if the source
+  // settles on the in-page dialog.
+  const tab = trigger === 'action' ? claimCloudCreditsTab() : null
+  const opener = tab ? openInClaimedTab(tab) : openInThisTab
+  void resolveWorkshopAccountSource().then((source) =>
+    routeBuyCredits(source, trigger, opener)
+  )
+}
+
 onMounted(() => {
-  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
-    if (showAccount.value) buyingCredits.value = true
-  })
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(
+    handleBuyCreditsRequest
+  )
 })
 onBeforeUnmount(() => stopBuyCreditsRequests?.())
 watch(
@@ -80,27 +186,33 @@ watch(
   { immediate: true }
 )
 
-const ctaButtons = [
-  {
-    full: t('nav.downloadLocal', locale),
-    short: t('nav.ctaDesktopCore', locale),
-    ariaLabel: t('nav.downloadLocal', locale),
-    href: routes.download,
-    primary: false
-  },
-  {
-    full: t('nav.launchCloud', locale),
-    short: t('nav.ctaCloudCore', locale),
-    ariaLabel: t('nav.launchCloud', locale),
-    href: externalLinks.cloudCta('nav_try_cloud'),
-    primary: true
-  }
-]
+const currentPath = useCurrentPath()
+const navPath = computed(() => currentPath.value || pagePath)
+const ctaButtons = computed(() =>
+  [
+    {
+      full: t('nav.downloadLocal'),
+      short: t('nav.ctaDesktopCore'),
+      ariaLabel: t('nav.downloadLocal'),
+      href: routes.download,
+      primary: false,
+      utmPolicy: undefined
+    },
+    {
+      full: t('nav.launchCloud'),
+      short: t('nav.ctaCloudCore'),
+      ariaLabel: t('nav.launchCloud'),
+      href: vfxNavCloudHref(navPath.value),
+      utmPolicy: isVfxV3Path(navPath.value) ? '' : undefined,
+      primary: true
+    }
+  ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
+)
 </script>
 
 <template>
   <nav
-    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 in-data-workshop-editor:hidden lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
     <LogoContextMenu :locale>
@@ -129,7 +241,7 @@ const ctaButtons = [
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
-      :workshop-in-build="showWorkshop"
+      :hub-sections
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -137,8 +249,8 @@ const ctaButtons = [
       class="flex shrink-0 items-center gap-2"
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <WorkshopAccount v-if="showAccount" :locale />
+      <HeaderMainMobile :locale :hub-sections />
     </div>
 
     <!-- Desktop CTA buttons -->
@@ -156,18 +268,20 @@ const ctaButtons = [
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        :data-vfx-nav-no-utm="cta.utmPolicy"
       >
         <span>
           <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <WorkshopAccount v-if="showAccount" :locale />
     </div>
   </nav>
   <BuyCreditsDialog
     v-if="buyCreditsDialogMounted"
     v-model:open="buyingCredits"
+    :trigger="buyCreditsTrigger"
     :locale
   />
 </template>

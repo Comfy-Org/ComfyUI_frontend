@@ -4,14 +4,14 @@ import { computed } from 'vue'
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
+} from '@/lib/workshop/cinematic-studio/catalog'
 import {
   ASPECT_RATIOS,
   MAX_TAKES,
   RESOLUTIONS
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 /** Menu options and string-valued models for the aspect, resolution and takes menus. */
 export function useFormatMenus(
@@ -27,13 +27,14 @@ export function useFormatMenus(
   aspects: () => readonly AspectRatio[] | undefined = () => undefined
 ) {
   const aspectOptions = computed(() => {
+    const { t } = translationsFor(locale())
     const supported = aspects()
     return ASPECT_RATIOS.filter(
       (ratio) => !supported || supported.includes(ratio.id)
     ).map((ratio) => ({
       id: ratio.id,
       label: ratio.id,
-      meta: tc(ratio.label, locale())
+      meta: t(ratio.label)
     }))
   })
   const resolutionOptions = RESOLUTIONS.map((option) => ({

@@ -4,25 +4,28 @@ import { ChevronRight } from '@lucide/vue'
 import { useMediaQuery, useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import type { ModelLaunchHero } from './types'
 
-import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import Badge from '../../components/ui/badge/Badge.vue'
-import { t } from '../../i18n/translations'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { translationsFor } from '@/i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
 const {
   headingTag = 'h1',
+  fitCtas = false,
   locale = 'en',
   hero
 } = defineProps<{
   headingTag?: 'h1' | 'h2'
+  fitCtas?: boolean
   hero: ModelLaunchHero
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 // SSR (and the first client tick, before onMounted) has no reliable viewport
 // to check, so it renders as if mobile: no <video> tag reaches the page at
@@ -48,6 +51,8 @@ const isOverlay = hero.layout === 'overlay'
 const isLogoMask = isOverlay && !hero.videoSrc && Boolean(hero.logoMaskImageSrc)
 const OVERLAY_CELL = 'col-start-1 row-start-1'
 const isContentFirst = hero.layout === 'content-first'
+const mediaOutlineClass =
+  hero.mediaOutline === 'gray' ? 'border-primary-warm-gray' : undefined
 </script>
 
 <template>
@@ -62,7 +67,7 @@ const isContentFirst = hero.layout === 'content-first'
 
     <ProductHeroBadge
       v-if="hero.eyebrowKey"
-      :text="t(hero.eyebrowKey, locale).toUpperCase()"
+      :text="t(hero.eyebrowKey).toUpperCase()"
       :show-logo="false"
       compact
       class="mb-6"
@@ -70,11 +75,18 @@ const isContentFirst = hero.layout === 'content-first'
 
     <component
       :is="headingTag"
-      class="max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+      :class="
+        cn(
+          'max-w-3xl text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+          hero.titleSize === 'compact'
+            ? 'lg:text-5xl/tight'
+            : 'lg:text-6xl/tight'
+        )
+      "
     >
-      {{ t(hero.titleKey, locale)
+      {{ t(hero.titleKey)
       }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-        t(hero.titleRestKey, locale)
+        t(hero.titleRestKey)
       }}</span>
     </component>
 
@@ -82,7 +94,7 @@ const isContentFirst = hero.layout === 'content-first'
       v-if="hero.descriptionKey"
       class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
     >
-      {{ t(hero.descriptionKey, locale) }}
+      {{ t(hero.descriptionKey) }}
     </p>
 
     <ModelLaunchHeroCtaButtons
@@ -102,7 +114,7 @@ const isContentFirst = hero.layout === 'content-first'
         data-testid="model-launch-hero-badge"
         variant="subtle"
       >
-        {{ t(badgeKey, locale) }}
+        {{ t(badgeKey) }}
       </Badge>
     </div>
   </section>
@@ -126,7 +138,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-if="showVideo"
           :locale
-          :aria-label="t(hero.titleKey, locale)"
+          :aria-label="t(hero.titleKey)"
           :src="hero.videoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -137,7 +149,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-else-if="showMobileVideo"
           :locale
-          :aria-label="t(hero.titleKey, locale)"
+          :aria-label="t(hero.titleKey)"
           :src="hero.mobileVideoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -174,16 +186,16 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="hero.eyebrowKey"
           class="mb-4 text-lg font-medium text-primary-warm-white uppercase lg:text-3xl"
         >
-          {{ t(hero.eyebrowKey, locale) }}
+          {{ t(hero.eyebrowKey) }}
         </p>
 
         <component
           :is="headingTag"
           class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-warm-white sm:text-6xl lg:text-8xl/none"
         >
-          {{ t(hero.titleKey, locale)
+          {{ t(hero.titleKey)
           }}<span v-if="hero.titleRestKey" class="text-primary-warm-white/80">{{
-            t(hero.titleRestKey, locale)
+            t(hero.titleRestKey)
           }}</span>
         </component>
 
@@ -191,12 +203,13 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="hero.descriptionKey"
           class="mt-6 max-w-2xl text-base/relaxed font-light text-primary-warm-white lg:text-lg/relaxed"
         >
-          {{ t(hero.descriptionKey, locale) }}
+          {{ t(hero.descriptionKey) }}
         </p>
 
         <ModelLaunchHeroCtaButtons
           :primary-cta="hero.primaryCta"
           primary-variant="outline-light"
+          :fit-content="fitCtas"
           :secondary-cta="hero.secondaryCta"
           :locale
         />
@@ -213,7 +226,7 @@ const isContentFirst = hero.layout === 'content-first'
         data-testid="model-launch-hero-badge"
         variant="subtle"
       >
-        {{ t(badgeKey, locale) }}
+        {{ t(badgeKey) }}
       </Badge>
     </div>
   </section>
@@ -223,27 +236,43 @@ const isContentFirst = hero.layout === 'content-first'
     class="mx-auto flex max-w-9xl flex-col px-6 py-12 lg:px-20 lg:py-16"
   >
     <div
-      v-if="hero.videoSrc"
+      v-if="hero.videoSrc || hero.placeholderImageSrc"
       data-testid="model-launch-hero-block"
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
+      <img
+        v-if="!hero.videoSrc && hero.placeholderImageSrc"
+        :src="hero.placeholderImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
+      />
       <VideoPlayer
-        v-if="showVideo"
+        v-else-if="showVideo"
         :locale
-        :aria-label="t(hero.titleKey, locale)"
+        :aria-label="t(hero.titleKey)"
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <VideoPlayer
         v-else-if="showMobileVideo"
         :locale
-        :aria-label="t(hero.titleKey, locale)"
+        :aria-label="t(hero.titleKey)"
         :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
+        :class="mediaOutlineClass"
       />
       <img
         v-else-if="hero.mobileFallbackImageSrc"
@@ -252,7 +281,12 @@ const isContentFirst = hero.layout === 'content-first'
         aria-hidden="true"
         width="1280"
         height="720"
-        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+        :class="
+          cn(
+            'aspect-video w-full rounded-4xl border border-white/10 object-cover',
+            mediaOutlineClass
+          )
+        "
       />
       <div
         v-if="hero.logoSrc"
@@ -260,7 +294,14 @@ const isContentFirst = hero.layout === 'content-first'
         class="pointer-events-none absolute top-6 right-6 flex size-12 items-center justify-center rounded-2xl bg-transparency-white-t4 backdrop-blur-sm lg:top-10 lg:right-10 lg:size-17.5 lg:rounded-3xl"
       >
         <span
-          class="inline-block size-6 bg-current text-primary-warm-white lg:size-8.75"
+          :class="
+            cn(
+              'inline-block bg-current text-primary-warm-white',
+              hero.logoSize === 'large'
+                ? 'size-9 lg:size-13'
+                : 'size-6 lg:size-8.75'
+            )
+          "
           :style="{
             maskImage: `url(${hero.logoSrc})`,
             maskSize: 'contain',
@@ -282,19 +323,37 @@ const isContentFirst = hero.layout === 'content-first'
     >
       <component
         :is="headingTag"
-        class="text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas lg:text-6xl/tight"
+        :class="
+          cn(
+            'text-4xl font-light tracking-tight whitespace-pre-line text-primary-comfy-canvas',
+            hero.titleSize === 'compact'
+              ? 'lg:text-5xl/tight'
+              : 'lg:text-6xl/tight'
+          )
+        "
       >
-        {{ t(hero.titleKey, locale)
+        {{ t(hero.titleKey)
         }}<span v-if="hero.titleRestKey" class="text-primary-comfy-canvas/80">{{
-          t(hero.titleRestKey, locale)
+          t(hero.titleRestKey)
         }}</span>
       </component>
 
       <p
-        v-if="hero.descriptionKey"
-        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed"
+        v-if="hero.mobileDescriptionKey"
+        class="mt-6 text-base/relaxed font-light text-primary-comfy-canvas md:hidden"
       >
-        {{ t(hero.descriptionKey, locale) }}
+        {{ t(hero.mobileDescriptionKey) }}
+      </p>
+      <p
+        v-if="hero.descriptionKey"
+        :class="
+          cn(
+            'mt-6 text-base/relaxed font-light text-primary-comfy-canvas lg:text-lg/relaxed',
+            hero.mobileDescriptionKey && 'hidden md:block'
+          )
+        "
+      >
+        {{ t(hero.descriptionKey) }}
       </p>
 
       <ModelLaunchHeroCtaButtons
@@ -306,15 +365,16 @@ const isContentFirst = hero.layout === 'content-first'
 
       <div
         v-if="hero.badgeKeys?.length"
-        class="mt-6 flex flex-wrap items-center justify-center gap-3"
+        class="mt-6 flex flex-wrap items-center justify-center gap-2 md:gap-3"
       >
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
           data-testid="model-launch-hero-badge"
           variant="subtle"
+          class="px-2 text-[11px] md:px-4 md:text-xs"
         >
-          {{ t(badgeKey, locale) }}
+          {{ t(badgeKey) }}
         </Badge>
       </div>
     </div>
@@ -332,7 +392,7 @@ const isContentFirst = hero.layout === 'content-first'
       "
     >
       <span class="text-sm text-primary-warm-gray lg:text-base">
-        {{ t(hero.promptBar.sampleKey, locale) }}
+        {{ t(hero.promptBar.sampleKey) }}
       </span>
       <span
         class="flex shrink-0 items-center gap-3 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
@@ -342,7 +402,7 @@ const isContentFirst = hero.layout === 'content-first'
         >
           <ChevronRight class="size-5" :stroke-width="2" />
         </span>
-        {{ t(hero.promptBar.cta.labelKey, locale) }}
+        {{ t(hero.promptBar.cta.labelKey) }}
       </span>
     </a>
   </section>

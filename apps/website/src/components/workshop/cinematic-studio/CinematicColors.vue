@@ -4,19 +4,18 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { MAX_COLORS } from '../../../lib/workshop/cinematic-studio/colors'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicColorPicker from './CinematicColorPicker.vue'
+import type { Locale } from '@/i18n/translations'
+import { MAX_COLORS } from '@/lib/workshop/cinematic-studio/colors'
+import { translationsFor } from '@/i18n/translations'
+import EditorColorPicker from '@/components/workshop/app-editor/EditorColorPicker.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const colors = defineModel<readonly string[]>({ required: true })
 const main = defineModel<number | undefined>('main')
 
 const active = ref(0)
-
-const t = (key: Parameters<typeof tc>[0]) => tc(key, locale)
 
 function setColor(index: number, value: string) {
   colors.value = colors.value.map((color, at) => (at === index ? value : color))
@@ -121,10 +120,14 @@ function clear() {
         <Plus class="size-4" aria-hidden="true" />
       </button>
     </div>
-    <CinematicColorPicker
+    <EditorColorPicker
       v-if="colors[active]"
       :model-value="colors[active]"
-      :locale
+      :labels="{
+        shade: t('cinematic.colors.shade'),
+        hue: t('cinematic.colors.hue'),
+        hex: t('cinematic.colors.hex')
+      }"
       @update:model-value="setColor(active, $event)"
     />
     <slot />

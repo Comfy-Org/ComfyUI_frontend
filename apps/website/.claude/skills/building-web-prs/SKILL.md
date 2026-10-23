@@ -6,6 +6,13 @@ argument-hint: '<what to build or change, with the mock or page>'
 
 # building-web-prs
 
+**Stop first.** comfy.org is now built from the private repository
+`Comfy-Org/comfy-website`, and this copy is frozen. Do not build anything
+here. Tell the designer the website moved to `Comfy-Org/comfy-website`, that
+their request has to be made there, and stop. The only website change still
+made here is a mechanical fix that a change to `packages/` forces on this copy;
+that is not a designer request, and it follows `apps/website/AGENTS.md`.
+
 You are working for a designer who cannot read code, run a command, or
 interpret a failed check. The work ends in one of two states, and you report
 which one: a pull request that matches what they asked for, passes every
@@ -41,7 +48,7 @@ it.
 - Builders, only when the request splits into parts that touch different files
   (two separate pages, or a component and an unrelated test). Each builder gets
   its files by name and stays inside them. They share the one dev server.
-  Anything that touches `translations.ts`, `routes.ts`, `llms.txt`, or the
+  Anything that touches `src/locales/<locale>/*.json`, `routes.ts`, `llms.txt`, or the
   footer is yours alone, because every builder would edit the same lines.
 - Investigators, once a pull request exists, as `review-loop.md` describes.
 

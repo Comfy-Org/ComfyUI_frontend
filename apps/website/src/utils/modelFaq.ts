@@ -1,6 +1,6 @@
-import type { Model } from '../config/models'
-import { t } from '../i18n/translations'
-import type { Locale, TranslationKey } from '../i18n/translations'
+import type { Model } from '@/config/models'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import type { JsonLdNode } from './jsonLd'
 import { getFaqPricingAnswer, getWhatIsDescription } from './modelSeoCopy'
 
@@ -42,55 +42,53 @@ export function buildModelFaqs(
   model: Model,
   locale: Locale = 'en'
 ): readonly ModelFaq[] {
+  const { t } = translationsFor(locale)
   const values = { name: model.displayName, count: model.workflowCount }
   const templates = t(
     model.workflowCount === 1
       ? 'models.faq.templates.singular'
       : 'models.faq.templates.plural',
-    locale,
     values
   )
   const howToUse = t(
     model.docsUrl
       ? 'models.faq.howToUse.withDocs'
       : 'models.faq.howToUse.withoutDocs',
-    locale,
     { ...values, templates, url: model.docsUrl ?? '' }
   )
 
   return [
     {
       id: 'what-is',
-      question: t('models.faq.whatIs.question', locale, values),
+      question: t('models.faq.whatIs.question', values),
       answer: getWhatIsDescription(
         model,
         t(
           dirDescriptionKeys[model.directory] ??
             'models.dirDescription.default',
-          locale
+          {}
         ),
         locale
       )
     },
     {
       id: 'how-to-use',
-      question: t('models.faq.howToUse.question', locale, values),
+      question: t('models.faq.howToUse.question', values),
       answer: howToUse
     },
     {
       id: 'workflow-count',
-      question: t('models.faq.workflowCount.question', locale, values),
+      question: t('models.faq.workflowCount.question', values),
       answer: t(
         model.workflowCount === 1
           ? 'models.faq.workflowCount.singular'
           : 'models.faq.workflowCount.plural',
-        locale,
         values
       )
     },
     {
       id: 'is-free',
-      question: t('models.faq.isFree.question', locale, values),
+      question: t('models.faq.isFree.question', values),
       answer: getFaqPricingAnswer(model, locale)
     }
   ]

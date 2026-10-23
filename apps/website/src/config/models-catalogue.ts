@@ -134,6 +134,7 @@ interface WorkshopPresentation {
   readonly thumbnail?: {
     readonly url: string
     readonly kind: 'image' | 'video' | 'audio'
+    readonly poster?: string
   }
   readonly useCases?: readonly UseCase[]
   readonly summary?: string
@@ -168,7 +169,7 @@ export type AppWorkshopModel = WorkshopPresentation & {
   readonly type: 'APP'
   readonly href: string
   /** Which app page runs it: see `WorkshopAppEntry.app`. */
-  readonly appId: 'studio' | 'reshoot'
+  readonly appId: 'studio' | 'reshoot' | 'openjutsu'
   readonly routerId?: never
   readonly workflowId?: never
 }

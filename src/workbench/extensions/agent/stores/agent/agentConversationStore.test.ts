@@ -1,11 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentMessages,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentChatEvent,
+  CanvasSyncEvidence
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
@@ -22,17 +33,27 @@ const delta = (id: string, text: string): AgentChatEvent =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
+const toolCall = (
+  id: string,
+  name: string,
+  status: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
+): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
     data: {
       tool_call_id: `call-${name}`,
       tool_name: name,
       status,
+      ...correlation,
       message_id: id,
       thread_id: 'th'
     }
   })
+const liveCanvasEvidence = (
+  workflowId: string,
+  opIds: readonly string[] = []
+): CanvasSyncEvidence => ({ workflowId, opIds, isLive: true })
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
@@ -322,7 +343,9 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       name: 'add_node',
       ok: true
@@ -338,25 +361,37 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
     // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
     expect(store.messages[0].streaming).toBe(false)
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'streaming'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'streaming' })
+      ])
+    )
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(
+      liveCanvasEvidence(workflowId.toUpperCase(), ['op-add'])
+    )
 
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'done'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'done' })
+      ])
+    )
   })
 
   // PM-1575 regression (finding #1/#9, high): the normal ordering on a
@@ -369,7 +404,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     let outcomeCount = 0
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => outcomeCount
     )
     store.startTurn(T1)
@@ -378,11 +413,43 @@ describe('useAgentConversationStore', () => {
     outcomeCount += 1
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
   })
+
+  it.for([
+    {
+      mismatch: 'workflow',
+      evidence: liveCanvasEvidence('different-workflow', ['op-add'])
+    },
+    {
+      mismatch: 'operation',
+      evidence: liveCanvasEvidence('workflow', ['different-op'])
+    }
+  ])(
+    'keeps a held tool call waiting when the $mismatch does not match',
+    ({ evidence }) => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.startTurn(T1)
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: 'workflow',
+          op_ids: ['op-add']
+        })
+      )
+
+      store.notifyCanvasCaughtUp(evidence)
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'tool')
+      ).toMatchObject({ state: 'streaming' })
+    }
+  )
 
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
@@ -391,23 +458,30 @@ describe('useAgentConversationStore', () => {
   // STALE_AFTER_MS fallback.
   it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
 
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     store.startTurn(T2)
+    store.ingest(activeTab(workflowId, 't2'))
     store.ingest(toolCall('t2', 'add_node', 'success'))
     store.ingest(done('t2'))
 
     store.notifyCanvasCaughtUp()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
-    expect(store.messages[1].parts[0]).toMatchObject({
+    expect(
+      store.messages[1].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
@@ -420,14 +494,24 @@ describe('useAgentConversationStore', () => {
   // a turn nobody is tracking anymore.
   it('flushes a held tool-call part immediately when its turn is aborted', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.abortActiveTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       state: 'done',
       ok: true
     })
@@ -449,7 +533,10 @@ describe('useAgentConversationStore', () => {
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go', 'u1'),
       historyRow(2, 'assistant', 'turn-a', 'partial', 't1'),
-      { ...historyRow(3, 'assistant', 'turn-a', '', 't2'), status: 'streaming' }
+      {
+        ...historyRow(3, 'assistant', 'turn-a', '', 't2'),
+        status: 'streaming'
+      }
     ])
     store.resumeBackgroundTurn()
 
@@ -689,7 +776,10 @@ describe('useAgentConversationStore', () => {
 
     store.hydrate([
       historyRow(1, 'user', 'turn-a', 'go', 'u1'),
-      { ...historyRow(2, 'assistant', 'turn-a', '', 't3'), status: 'streaming' }
+      {
+        ...historyRow(2, 'assistant', 'turn-a', '', 't3'),
+        status: 'streaming'
+      }
     ])
     expect(store.activeTurnId).toBe('t3')
     store.ingest(done('t3'))
@@ -709,17 +799,23 @@ describe('useAgentConversationStore', () => {
   // settling the moment it is clear nothing will ever resume it.
   it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.setThreadId('th')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.stashActiveTurn()
     store.ingest(done('t1'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.resumeBackgroundTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'done' })
   })
 
   // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
@@ -729,7 +825,7 @@ describe('useAgentConversationStore', () => {
   // with the disposed transport's own stale snapshot.
   it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -750,47 +846,17 @@ describe('useAgentConversationStore', () => {
   // remount) never reached a transport created before it.
   it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => false)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'none')
     store.startTurn(T1)
 
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-  })
-
-  // PM-1575 regression (finding #10, medium): the source watcher this
-  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
-  // .applied, ...)` -- treated ANY change to the counter as catch-up,
-  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
-  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
-  // and a restarted follower counts from 0 again, so that watcher's own
-  // guard, reproduced here against the real store, is what stops a mere
-  // reset from incorrectly releasing every held tool call.
-  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
-    const store = useAgentConversationStore()
-    const applied = ref(5)
-    store.setCanvasSyncGate(
-      () => true,
-      () => applied.value
-    )
-    store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    watch(
-      applied,
-      (value, previous) => {
-        if (value > previous) store.notifyCanvasCaughtUp()
-      },
-      { flush: 'sync' }
-    )
-
-    applied.value = 0
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    applied.value = 6
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
   })
 
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
@@ -849,6 +915,214 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  describe('ask_user', () => {
+    const pendingAskUser = {
+      message_id: 'assistant-message-1',
+      ask_id: 'turn-1:call-1',
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil' },
+        { id: 'ink', label: 'Ink' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true
+    }
+    const askUserTranscript = (): AgentMessages => [
+      historyRow(1, 'user', 'turn-1', 'Paint it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: pendingAskUser
+        }
+      ])[0]
+    ]
+    const askUserCards = (
+      store: ReturnType<typeof useAgentConversationStore>
+    ) =>
+      store.messages.flatMap((message) =>
+        message.parts.filter((part) => part.type === 'askUser')
+      )
+
+    it('restores a pending question as the live turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+
+      expect(store.activeTurnId).toBe('assistant-message-1')
+      expect(store.isStreaming).toBe(true)
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({ askId: 'turn-1:call-1' })
+      ])
+    })
+
+    it('keeps one card when a restored question is delivered again', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...pendingAskUser, thread_id: 'th' }
+        })
+      )
+
+      expect(askUserCards(store)).toHaveLength(1)
+    })
+
+    it('keeps the turn live after a restored question resolves', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+
+      store.ingest(
+        chat({
+          type: 'agent_ask_resolved',
+          data: {
+            message_id: 'assistant-message-1',
+            thread_id: 'th',
+            ask_id: 'turn-1:call-1',
+            status: 'answered',
+            selected: ['ink']
+          }
+        })
+      )
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { status: 'answered', selected: ['ink'] }
+        })
+      ])
+      expect(store.isStreaming).toBe(true)
+    })
+
+    it.for(['run_approval', 'something_new'])(
+      'does not put a %s ask back when it is replayed after it resolved',
+      (kind) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        const ask = {
+          ...pendingAskUser,
+          ask_id: 'turn-1:call-2',
+          kind,
+          thread_id: 'th'
+        }
+        store.hydrate(askUserTranscript())
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+        store.retireAsk('turn-1:call-2', { status: 'retired' }, 'th')
+
+        store.ingest(chat({ type: 'agent_ask', data: ask }))
+
+        expect(
+          store.messages.flatMap((message) => message.parts.map(askIdOf))
+        ).not.toContain('turn-1:call-2')
+      }
+    )
+
+    it('keeps the server answer through a later commit and refetch', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] })
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: ['ink'] },
+        'th'
+      )
+
+      store.commitAsk('turn-1:call-1', 'th', {
+        status: 'answered',
+        selected: []
+      })
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          resolution: { status: 'answered', selected: ['ink'] }
+        })
+      ])
+    })
+
+    it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      const deleteTranscript = (): AgentMessages => [
+        historyRow(1, 'user', 'turn-1', 'Tidy up', 'user-message-1'),
+        zAgentMessages.parse([
+          {
+            id: 'assistant-message-1',
+            thread_id: 'th',
+            seq: 2,
+            role: 'assistant',
+            status: 'streaming',
+            turn_id: 'turn-1',
+            pending_ask: {
+              ...pendingAskUser,
+              kind: 'delete_approval',
+              options: [
+                { id: 'delete', label: 'Delete' },
+                { id: 'keep', label: 'Keep' }
+              ],
+              allow_other: false,
+              context: { action: 'delete_nodes', nodes: [{ id: '12' }] }
+            }
+          }
+        ])[0]
+      ]
+      store.hydrate(deleteTranscript())
+      store.retireAsk(
+        'turn-1:call-1',
+        { status: 'answered', selected: ['keep'] },
+        'th'
+      )
+
+      store.hydrate(deleteTranscript())
+
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'deleteApproval')
+        )
+      ).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: { status: 'answered', selected: ['keep'] }
+        })
+      ])
+    })
+
+    it('rebuilds a retired question read-only from a transcript that still lists it', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.retireAsk('turn-1:call-1', {
+        status: 'answered',
+        selected: [],
+        otherText: 'watercolor'
+      })
+
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toEqual([
+        expect.objectContaining({
+          askId: 'turn-1:call-1',
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'watercolor'
+          }
+        })
+      ])
+      expect(store.activeTurnId).toBe('assistant-message-1')
+    })
+  })
+
   // PM-1658. The server reports an ask as pending until its answer is
   // committed AND broadcast, so a transcript fetched around an answer -- which
   // every panel mount does -- still names it. Rebuilding that card would put it
@@ -885,7 +1159,7 @@ describe('useAgentConversationStore', () => {
       ])[0]
     ]
     store.hydrate(parkedTranscript)
-    store.retireAsk('turn-1:call-1')
+    store.retireAsk('turn-1:call-1', { status: 'retired' })
 
     store.hydrate(parkedTranscript)
 
@@ -924,7 +1198,8 @@ describe('useAgentConversationStore', () => {
         store.hydrate(parkedApprovalTranscript('th-A'))
         expect(store.activeTurnId).toBe('assistant-message-1')
 
-        if (timing === 'watchdog') store.commitAsk('turn-1:call-1', 'th-A')
+        if (timing === 'watchdog')
+          store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
         // The user leaves A for B while the answer is still settling.
         store.stashActiveTurn()
@@ -932,7 +1207,7 @@ describe('useAgentConversationStore', () => {
         store.hydrate([])
 
         if (timing === 'watchdog') vi.advanceTimersByTime(60_000)
-        else store.commitAsk('turn-1:call-1', 'th-A')
+        else store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
 
         // Back to A: the stashed turn is handed back to the screen.
         store.setThreadId('th-A')
@@ -993,7 +1268,7 @@ describe('useAgentConversationStore', () => {
     store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
     expect(hasCard()).toBe(true)
 
-    store.retireAsk('turn-1:call-1')
+    store.retireAsk('turn-1:call-1', { status: 'retired' })
 
     expect(hasCard()).toBe(false)
     expect(store.entries.map((entry) => entry.role)).toEqual([
@@ -1709,6 +1984,196 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
+  it('finalizes locally streaming parts when an empty successful row settles the turn', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(delta('t1', 'partial'))
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toMatchObject([
+      { type: 'text', text: 'partial', state: 'done' },
+      { type: 'tool', name: 'add_node', state: 'done', ok: false }
+    ])
+  })
+
+  it('drops a provisional draft before preserving an empty successful row', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(
+      chat({
+        type: 'agent_message_draft',
+        data: { text: 'provisional', message_id: 't1', thread_id: 'th' }
+      })
+    )
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toEqual([])
+  })
+
+  it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
+    const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    store.setThreadId('th')
+    store.setCanvasSyncGate(() => 'awaiting')
+    store.startTurn(T1)
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
+    store.stashActiveTurn()
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'streaming',
+          ok: true
+        })
+      ])
+    )
+    store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        })
+      ])
+    )
+  })
+
+  it.for<{
+    name: string
+    persisted: AssistantMessage['parts'] | undefined
+    kept: string[]
+  }>([
+    {
+      name: 'a persisted reply',
+      persisted: [{ type: 'text', text: 'done', state: 'done' }],
+      kept: ['askUser', 'text']
+    },
+    { name: 'an empty terminal row', persisted: undefined, kept: ['askUser'] }
+  ])(
+    'keeps an answered question but drops pending questions, delete approvals and stand-ins when $name settles the turn',
+    ({ persisted, kept }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      const ask = {
+        message_id: 't1',
+        thread_id: 'th',
+        prompt: 'Which style?',
+        options: [{ id: 'oil', label: 'Oil' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-0', kind: 'ask_user' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask_resolved',
+          data: {
+            message_id: 't1',
+            thread_id: 'th',
+            ask_id: 'q-0',
+            status: 'answered',
+            selected: ['oil']
+          }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-1', kind: 'ask_user' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: { ...ask, ask_id: 'q-2', kind: 'something_new' }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_ask',
+          data: {
+            ...ask,
+            ask_id: 'q-3',
+            kind: 'delete_approval',
+            options: [
+              { id: 'delete', label: 'Delete' },
+              { id: 'keep', label: 'Keep' }
+            ],
+            context: {
+              action: 'delete_nodes',
+              nodes: [{ id: '12', type: 'KSampler' }]
+            }
+          }
+        })
+      )
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+        'askUser',
+        'askUser',
+        'askUnavailable',
+        'deleteApproval'
+      ])
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+      expect(store.messages[0].parts.map((part) => part.type)).toEqual(kept)
+    }
+  )
+
+  it.for([
+    {
+      name: 'persisted thinking replaces the streamed thinking',
+      persisted: [
+        { type: 'thinking', text: 'planning the whole turn', state: 'done' },
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning the whole turn', 'done']
+    },
+    {
+      name: 'a row without thinking keeps the streamed thinking',
+      persisted: [
+        { type: 'text', text: 'done', state: 'done' }
+      ] satisfies AssistantMessage['parts'],
+      expected: ['planning', 'done']
+    }
+  ])('settles a recovered turn so $name', ({ persisted, expected }) => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(thinking('t1', 'planning'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+
+    expect(
+      store.messages[0].parts.map((part) =>
+        part.type === 'thinking' || part.type === 'text' ? part.text : part.type
+      )
+    ).toEqual(expected)
+  })
+
   it('splits persisted text around a local tab link when there is no tool', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -2056,7 +2521,7 @@ describe('useAgentConversationStore', () => {
           errorType: 'failure_delivering_agent_approval_ask',
           tags: expect.objectContaining({
             reason: 'unknown-kind',
-            ask_kind: 'pick_a_model'
+            ask_kind: 'unknown'
           })
         })
       )

@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import SectionHeader from '../common/SectionHeader.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
 
 const {
   eyebrow,

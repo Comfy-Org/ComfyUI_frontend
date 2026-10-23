@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
 import CinematicTakeActions from './CinematicTakeActions.vue'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'
 

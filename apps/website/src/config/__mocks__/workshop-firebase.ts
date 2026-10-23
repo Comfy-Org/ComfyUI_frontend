@@ -5,8 +5,8 @@ import type { User } from 'firebase/auth'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
 
-import { testCredential } from '../__fixtures__/workshopSessionFakes'
-import type * as realModule from '../workshop-firebase'
+import { testCredential } from '@/config/__fixtures__/workshopSessionFakes'
+import type * as realModule from '@/config/workshop-firebase'
 
 const testIdentity = vi.mockObject<FirebaseIdentity>(
   {

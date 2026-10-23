@@ -5,14 +5,14 @@ import type { Ref } from 'vue'
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import type { CameraPose } from './cameraVocabulary'
 import { DEFAULT_POSE } from './cameraVocabulary'
 import { useIdleAutoplay } from './useIdleAutoplay'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

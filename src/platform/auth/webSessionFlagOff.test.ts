@@ -4,7 +4,10 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { MISSING_CUSTOMER_MESSAGE } from '@comfyorg/account-core/customerRecovery'
-import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilities,
+  ExchangeTokenResponse
+} from '@comfyorg/ingest-types'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -13,10 +16,12 @@ import {
   bootCloudIdentity,
   cloudSignIn
 } from '@/platform/auth/session/cloudIdentityBoot'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useTelemetry } from '@/platform/telemetry'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +30,7 @@ import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -104,7 +109,9 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 
@@ -150,6 +157,40 @@ function jsonResponse(body: unknown, status = 200): Response {
   })
 }
 
+const CAPABILITIES = {
+  resolved_for: { user_id: 'canonical-user-a', workspace_id: 'ws-personal' },
+  capabilities: {
+    can_subscribe_self_serve: true,
+    can_top_up: true,
+    can_cancel: false,
+    can_reactivate: false,
+    can_revert_scheduled_change: false,
+    can_change_seats: false,
+    can_invite_members: false,
+    can_manage_members: false,
+    can_downgrade_to_personal: false,
+    can_delete_workspace: false,
+    can_leave_workspace: false,
+    can_manage_billing: false,
+    can_manage_partner_node_access: false,
+    can_view_pending_invites: false,
+    can_view_team_usage: false,
+    can_edit_workspace: false,
+    can_manage_auto_top_up: false,
+    can_manage_subscription: false,
+    can_open_plans: false,
+    can_run_workflows: false,
+    can_upgrade: false
+  } satisfies BillingCapabilities,
+  rollout_defaults_applied: {
+    can_downgrade_to_personal: false,
+    can_subscribe_self_serve: false,
+    can_top_up: false
+  },
+  revision: 1,
+  expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString()
+}
+
 const BILLING_STATUS = {
   billing_rail: 'stripe',
   has_funds: true,
@@ -173,6 +214,7 @@ function installFetchRecorder(features: Record<string, unknown>) {
     return {
       token: `cloud-jwt-${mintCount}`,
       expires_at: new Date(Date.now() + ONE_HOUR_MS).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: ['owner:*']
@@ -214,6 +256,8 @@ function installFetchRecorder(features: Record<string, unknown>) {
         return jsonResponse({ prompt_id: 'prompt-1', number: 1 })
       case 'GET /api/billing/status':
         return billingStatusResponse()
+      case 'GET /api/billing/capabilities':
+        return jsonResponse(CAPABILITIES)
       default:
         return jsonResponse({ message: 'unexpected request' }, 404)
     }
@@ -246,15 +290,12 @@ function installFetchRecorder(features: Record<string, unknown>) {
   }
   vi.stubGlobal('WebSocket', RecordingWebSocket)
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const request = recordRequest(input, init)
-      all.push(request)
-      pending.push(request)
-      return respond(request)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const request = recordRequest(input, init)
+    all.push(request)
+    pending.push(request)
+    return respond(request)
+  })
 
   return {
     all,
@@ -445,6 +486,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
   beforeEach(() => {
     identity.reset()
+    installCloudApiAuth()
   })
 
   afterEach(() => {
@@ -610,6 +652,41 @@ describe.for([
       billingStatusRead('cloud-jwt-2')
     ])
   })
+
+  it('takes the capabilities the server resolved for its own id of the Firebase user', async () => {
+    const recorder = installFetchRecorder({
+      ...BILLING_SDK_RAILS,
+      ...features
+    })
+    await refreshRemoteConfig({ useAuth: false })
+    hooks = wireSessionCookieExtension()
+    await useAuthStore().login('user-a@example.com', 'password')
+    await vi.waitFor(() =>
+      expect(recorder.pending).toContainEqual(CUSTOMER_PROVISIONING)
+    )
+    recorder.take()
+
+    const rail = useBillingReadRail()
+    assert.exists(rail)
+    await expect(rail.readCapabilities({})).resolves.toMatchObject({
+      status: 'ok',
+      value: {
+        capabilities: { can_subscribe_self_serve: true },
+        resolved_for: { workspace_id: 'ws-personal' }
+      }
+    })
+    expect(recorder.take()).toEqual([
+      {
+        method: 'GET',
+        path: '/api/billing/capabilities',
+        headers: {
+          authorization: 'Bearer cloud-jwt-1',
+          'content-type': 'application/json'
+        },
+        credentials: null
+      }
+    ])
+  })
 })
 
 describe.for([
@@ -714,7 +791,7 @@ describe('an interactive sign-in with unified_web_session off', () => {
     remoteConfig.value = {}
   })
 
-  it('never consumes the marker and sends no session request', async () => {
+  it('never consumes the marker and sends no session request or session event', async () => {
     const recorder = installFetchRecorder({ unified_cloud_auth: false })
     await refreshRemoteConfig({ useAuth: false })
 
@@ -725,6 +802,7 @@ describe('an interactive sign-in with unified_web_session off', () => {
     expect(
       recorder.all.filter(({ path }) => path === '/api/auth/session')
     ).toEqual([])
+    expect(useTelemetry()?.trackWebSessionEvent).not.toHaveBeenCalled()
   })
 })
 
@@ -774,6 +852,26 @@ describe('Firebase-only account actions with unified_web_session off', () => {
 
       expect(currentUser.isEmailProvider.value).toBe(isEmailProvider)
       expect(currentUser.needsFirebaseSignIn.value).toBe(false)
+    }
+  )
+
+  it.for([{ unified_cloud_auth: false }, { unified_cloud_auth: true }])(
+    'sends no revoke-all for a Firebase login (unified_cloud_auth $unified_cloud_auth)',
+    async (features) => {
+      const recorder = installFetchRecorder(features)
+      await refreshRemoteConfig({ useAuth: false })
+      useAuthStore()
+      identity.resolve(EMAIL_USER)
+      await bootCloudIdentity()
+
+      expect(await useCloudWebSessionStore().revokeAllSessions()).toEqual({
+        status: 'error',
+        code: 'NO_SESSION',
+        retryable: false
+      })
+      expect(
+        recorder.all.filter(({ path }) => path.startsWith('/api/auth/'))
+      ).toEqual([])
     }
   )
 })

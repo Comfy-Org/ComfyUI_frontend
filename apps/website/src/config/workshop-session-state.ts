@@ -23,7 +23,7 @@ import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import { isPermanentSessionError } from '@comfyorg/account-core/session'
 import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
-import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
+import { identifyWorkshopUser, useWorkshopAuthFlag } from '@/scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopIdentity,

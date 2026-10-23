@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import type {
   AspectRatio,
   Resolution
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
+import { SEGMENT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
@@ -14,6 +15,7 @@ const { locale = 'en', aspects } = defineProps<{
   /** The frames the chosen model can make; every frame when absent. */
   aspects?: readonly AspectRatio[]
 }>()
+const { t } = translationsFor(locale)
 
 const aspect = defineModel<AspectRatio>('aspect', { required: true })
 const resolution = defineModel<Resolution>('resolution', { required: true })
@@ -33,22 +35,19 @@ const {
   () => locale,
   () => aspects
 )
-
-const segmentClass =
-  'h-full gap-2 rounded-none px-3 text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-primary-warm-white data-[state=open]:text-primary-warm-white'
 </script>
 
 <template>
   <div
     role="group"
-    :aria-label="tc('cinematic.composer.format', locale)"
+    :aria-label="t('cinematic.composer.format')"
     class="flex h-9 shrink-0 items-center overflow-hidden rounded-xl text-[13px] whitespace-nowrap ring-1 ring-transparency-white-t8 ring-inset"
   >
     <CinematicMenu
       v-model="aspectValue"
       :options="aspectOptions"
-      :heading="tc('cinematic.output.aspect', locale)"
-      :trigger-class="segmentClass"
+      :heading="t('cinematic.output.aspect')"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       <span class="grid size-4 place-items-center" aria-hidden="true">
@@ -63,8 +62,8 @@ const segmentClass =
     <CinematicMenu
       v-model="resolutionValue"
       :options="resolutionOptions"
-      :heading="tc('cinematic.output.resolution', locale)"
-      :trigger-class="segmentClass"
+      :heading="t('cinematic.output.resolution')"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       {{ resolution }}
@@ -73,8 +72,8 @@ const segmentClass =
     <CinematicMenu
       v-model="takesValue"
       :options="takeOptions"
-      :heading="tc('cinematic.output.takes', locale)"
-      :trigger-class="segmentClass"
+      :heading="t('cinematic.output.takes')"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       ×{{ takes }}

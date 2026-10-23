@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
 const { media, reducedMotion } = defineProps<{
   media: NonNullable<DirectoryRow['media']>
