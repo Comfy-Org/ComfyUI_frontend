@@ -1,0 +1,119 @@
+# Description: Publishes @comfyorg/comfy-multi-player (packages/comfy-multi-player)
+# to npm with provenance, imported from the standalone repository's release.yml.
+# The gate step names and commands are a contract shared with
+# ci-comfy-multi-player.yaml and pinned by
+# packages/comfy-multi-player/test/ci-release-contract.test.ts.
+name: 'Publish: comfy-multi-player'
+
+on:
+  push:
+    tags:
+      - 'comfy-multi-player-v*'
+  # Same run, started deliberately rather than by a tag push. Used by
+  # publish-comfy-multi-player-on-merge.yaml, whose GITHUB_TOKEN-created tag
+  # cannot raise `push`. DISPATCH THIS AT THE RELEASE TAG, NEVER AT A BRANCH:
+  #   gh workflow run publish-comfy-multi-player.yaml --ref comfy-multi-player-v1.2.3
+  # The gate below and scripts/release-retry.mjs both require the run's ref to
+  # be refs/tags/comfy-multi-player-v<package version>, and npm stamps that ref
+  # into the SLSA provenance this release verifies.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: publish-comfy-multi-player-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: verify / publish / release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/comfy-multi-player
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: https://registry.npmjs.org
+
+      - name: Pin release npm
+        # Older CLIs can silently ignore --include-attestations.
+        run: npm install --global npm@11.19.0 --ignore-scripts
+
+      - name: Require tag to match package version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          # Holds for a tag push and for a dispatch at the tag alike; rejects a
+          # dispatch aimed at a branch before any gate or publish work happens.
+          test "$RELEASE_REF" = "refs/tags/$RELEASE_TAG"
+          package_version="$(node --input-type=module -e "import packageJson from './package.json' with { type: 'json' }; console.log(packageJson.version)")"
+          test "$RELEASE_TAG" = "comfy-multi-player-v$package_version"
+
+      - name: Install
+        working-directory: .
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify conformance corpus
+        run: pnpm run verify:corpus
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Verify package contents
+        run: pnpm run verify:package
+
+      - name: Type-check gate
+        run: pnpm run typecheck
+
+      - name: Purity gate
+        run: pnpm run check:purity
+
+      - name: Statelessness gate
+        run: pnpm run check:stateless
+
+      - name: Profile-claim staleness gate
+        run: pnpm run check:profile-claims
+
+      - name: CodeRabbit config drift gate
+        run: pnpm run check:coderabbit
+
+      - name: Import-graph gate
+        run: pnpm run check:imports
+
+      - name: Citation-pin gate (FC-10)
+        run: pnpm run check:pins
+
+      - name: Tests
+        # check:stateless already runs this behavioral probe explicitly.
+        # pnpm forwards a literal `--`, after which vitest ignores --exclude.
+        run: pnpm test --exclude test/stateless.test.ts
+
+      - name: Clock ordering matrix
+        run: pnpm run test:clock-matrix
+
+      - name: Verify identity and recover release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-retry.mjs
+
+      - name: Retain exact release tarballs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: comfy-multi-player-release-tarballs-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cmp-release-*/*.tgz
+          if-no-files-found: ignore
+          retention-days: 7

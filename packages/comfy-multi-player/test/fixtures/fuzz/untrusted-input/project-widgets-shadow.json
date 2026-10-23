@@ -1,0 +1,20 @@
+{
+  "name": "node payload shadows the internal widgets map",
+  "issue": 13,
+  "op": {
+    "op": "add_node",
+    "op_id": "13000000000000000000000000000001",
+    "actor": "attacker",
+    "base_version": 0,
+    "stamp": [0, "attacker"],
+    "node_id": 13,
+    "class_type": "KSampler",
+    "pos": [0, 0],
+    "node": {
+      "id": 13,
+      "type": "KSampler",
+      "widgets": "not-a-y-map",
+      "widgets_values": []
+    }
+  }
+}

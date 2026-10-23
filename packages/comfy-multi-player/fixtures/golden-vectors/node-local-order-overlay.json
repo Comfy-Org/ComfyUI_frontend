@@ -1,0 +1,91 @@
+{
+  "format_version": 1,
+  "comment": "Portable H1 vector: an array widgets_values_form is the producer's realized order. A catalog-owned option-B child is accepted before or after the selector, and the winning selector recomputes only the dynamic overlay while preserving producer-local stable order.",
+  "catalog": {
+    "types": {
+      "DynamicLocalNode": {
+        "widget_order": ["stable_before", "mode", "mode.a", "stable_after"],
+        "dynamic_combos": {
+          "mode": {
+            "default": "a",
+            "options": {
+              "a": {
+                "widgets": ["mode.a"],
+                "defaults": { "mode.a": "A-default" }
+              },
+              "b": {
+                "widgets": ["mode.b"],
+                "defaults": { "mode.b": "B-default" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "base_workflow": {
+    "nodes": [
+      {
+        "id": 1,
+        "type": "DynamicLocalNode",
+        "widgets_values": [1, "a", "A-live", 2, 3],
+        "widgets_values_form": {
+          "order": ["stable_before", "mode", "mode.a", "stable_after", "producer_only"]
+        }
+      }
+    ],
+    "links": []
+  },
+  "ops": {
+    "child": {
+      "op": "set_widget",
+      "op_id": "10000000000000000000000000000001",
+      "actor": "agent:child",
+      "base_version": 30,
+      "stamp": [30, "agent:child"],
+      "node_id": 1,
+      "widget": "mode.b",
+      "value": "B-live"
+    },
+    "selector": {
+      "op": "set_widget",
+      "op_id": "20000000000000000000000000000002",
+      "actor": "agent:selector",
+      "base_version": 20,
+      "stamp": [20, "agent:selector"],
+      "node_id": 1,
+      "widget": "mode",
+      "value": "b"
+    }
+  },
+  "arrival_orders": [
+    ["child", "selector"],
+    ["selector", "child"]
+  ],
+  "workflow_final": {
+    "nodes": [
+      {
+        "id": 1,
+        "type": "DynamicLocalNode",
+        "widgets_values": [1, "b", "B-live", 2, 3],
+        "widgets_values_form": {
+          "order": ["stable_before", "mode", "mode.b", "stable_after", "producer_only"]
+        }
+      }
+    ],
+    "links": []
+  },
+  "unrelated_name_rejection": {
+    "op": {
+      "op": "set_widget",
+      "op_id": "30000000000000000000000000000003",
+      "actor": "agent:bad",
+      "base_version": 40,
+      "stamp": [40, "agent:bad"],
+      "node_id": 1,
+      "widget": "mode.unrelated",
+      "value": "must-reject"
+    },
+    "code": "unknown_widget"
+  }
+}

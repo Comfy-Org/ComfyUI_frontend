@@ -20,6 +20,7 @@
     "src/lib/litegraph/src/widgets/ChartWidget.ts:15-46|src/lib/litegraph/src/widgets/FileUploadWidget.ts:15-46|src/lib/litegraph/src/widgets/GalleriaWidget.ts:15-46|src/lib/litegraph/src/widgets/ImageCompareWidget.ts:15-46|src/lib/litegraph/src/widgets/MarkdownWidget.ts:15-46|src/lib/litegraph/src/widgets/MultiSelectWidget.ts:15-46|src/lib/litegraph/src/widgets/SelectButtonWidget.ts:15-46",
     "src/lib/litegraph/src/widgets/GradientSliderWidget.ts:35-45|src/lib/litegraph/src/widgets/KnobWidget.ts:162-176|src/lib/litegraph/src/widgets/SliderWidget.ts:55-66",
     "src/platform/billing/subscription/components/PricingTable.vue:52-66|src/platform/billing/components/PricingTableWorkspace.vue:52-66|src/platform/billing/components/UnifiedPricingTable.vue:101-115",
-    "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:135-150|src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:186-201|src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:269-284"
+    "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:135-150|src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:186-201|src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:269-284",
+    "packages/comfy-multi-player/src/applier.ts:2558-2562|packages/comfy-multi-player/src/applier.ts:2785-2789|packages/comfy-multi-player/src/applier.ts:2923-2927"
   ]
 }
