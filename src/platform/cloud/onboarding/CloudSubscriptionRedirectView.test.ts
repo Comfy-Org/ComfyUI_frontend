@@ -206,7 +206,8 @@ describe('CloudSubscriptionRedirectView', () => {
           id: 'team_700',
           credits: 147700,
           usd: 700,
-          discountedUsd: 630
+          discountedUsd: 630,
+          periodChargeUsd: { monthly: 690, yearly: 7560 }
         },
         billingCycle: 'yearly'
       }
