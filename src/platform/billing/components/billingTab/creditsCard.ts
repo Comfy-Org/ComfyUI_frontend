@@ -8,6 +8,7 @@ export interface CreditsCardFacts {
   billingStatus: BillingStatus | null
   planPoolCredits: number | null
   isCloud: boolean
+  canManageSubscription: boolean
   renewalDate: string | null
 }
 
@@ -16,7 +17,7 @@ export type CreditsCardState =
   | {
       kind: 'noPlan'
       availableCents: number
-      hint: 'subscribe' | 'resubscribe' | null
+      hint: 'subscribe' | 'resubscribe' | 'memberResubscribe' | null
     }
   | {
       kind: 'plan'
@@ -37,7 +38,12 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   const availableCents = balance.effectiveBalanceMicros ?? balance.amountMicros
 
   if (facts.planKind === 'noPlan' || facts.planKind === 'ended') {
-    const hint = facts.planKind === 'noPlan' ? 'subscribe' : 'resubscribe'
+    const hint =
+      facts.planKind === 'noPlan'
+        ? 'subscribe'
+        : facts.canManageSubscription
+          ? 'resubscribe'
+          : 'memberResubscribe'
     return { kind: 'noPlan', availableCents, hint: facts.isCloud ? hint : null }
   }
 
