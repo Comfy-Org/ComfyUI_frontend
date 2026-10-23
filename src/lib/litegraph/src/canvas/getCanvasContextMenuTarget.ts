@@ -6,14 +6,15 @@ import type {
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
-import {
-  findRerouteAtPoint,
-  queryRenderedLinkSegmentsAtPoint
-} from './hitTesting'
+import { findRerouteAtPoint } from './hitTesting'
 import {
   queryHiddenLinkBadgeAtPoint,
   queryHiddenLinkStackAtPoint
@@ -28,19 +29,25 @@ interface CanvasContextMenuTarget {
   group?: LGraphGroup
 }
 
-function queryVisibleLinkAtPoint(
+/**
+ * Only the centre marker opens a link's menu, so the rest of the curve does not
+ * take right-clicks from groups and the canvas underneath.
+ */
+function queryVisibleLinkCentreAtPoint(
   canvas: LGraphCanvas,
   x: number,
   y: number
 ): { segment: LinkSegment; link?: LLink } | undefined {
   const { graph } = canvas
-  if (!graph) return
+  if (!graph || canvas.linkMarkerShape === LinkMarkerShape.None) return
   const scope = graphScopeOf(graph)
   const presentationStore = useLinkPresentationStore()
   const isHidden = (link: LLink) =>
     presentationStore.getPresentation(scope, link.id)?.hidden === true
 
-  for (const segment of queryRenderedLinkSegmentsAtPoint(canvas, x, y)) {
+  for (const segment of canvas.renderedPaths) {
+    const [cx, cy] = segment._pos
+    if (!isInRectangle(x, y, cx - 4, cy - 4, 8, 8)) continue
     if (segment instanceof LLink) {
       if (!isHidden(segment)) return { segment, link: segment }
       continue
@@ -78,7 +85,7 @@ export function getCanvasContextMenuTarget(
   const badgeLink = queryHiddenLinkBadgeAtPoint(canvas, graph, x, y)
   if (badgeLink) return { link: badgeLink, group }
 
-  const hit = queryVisibleLinkAtPoint(canvas, x, y)
+  const hit = queryVisibleLinkCentreAtPoint(canvas, x, y)
   if (hit) return { linkSegment: hit.segment, link: hit.link, group }
 
   return { group }
