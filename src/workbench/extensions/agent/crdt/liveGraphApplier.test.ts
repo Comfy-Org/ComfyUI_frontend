@@ -2188,6 +2188,12 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
       getGraph: () => fixture.graph,
       boundRootGraphId: () => toRootGraphId(fixture.graph.id),
       docInputNames: () => [],
+      docWidgetValue: (nodeId, widgetName) => {
+        const widgets = nodesMap(fixture.doc)
+          .get(String(nodeId))
+          ?.get('widgets')
+        return widgets instanceof Y.Map ? widgets.get(widgetName) : undefined
+      },
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
       docHasSubgraphDefinition: () => true,
