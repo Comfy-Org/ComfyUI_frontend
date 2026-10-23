@@ -26,12 +26,9 @@ const {
   GroupNodeConfig,
   GroupNodeHandler,
   findUnconsumedWidgetIndex,
-  replaceLegacySeparators
+  replaceLegacySeparators,
+  groupNodeExtension
 } = await import('./groupNode')
-const groupNodeExtension = vi
-  .mocked(app.registerExtension)
-  .mock.calls.find(([extension]) => extension.name === 'Comfy.GroupNode')?.[0]
-if (!groupNodeExtension) throw new Error('Comfy.GroupNode was not registered')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -725,7 +722,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     vi.mocked(app.registerNodeDef).mockImplementation(async (id, def) => {
       await useLitegraphService().registerNodeDef(id, def)
     })
-    await groupNodeExtension!.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
+    await groupNodeExtension.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
     for (const [name, def] of Object.entries(REAL_NODE_DEFS)) {
       await useLitegraphService().registerNodeDef(name, def)
     }

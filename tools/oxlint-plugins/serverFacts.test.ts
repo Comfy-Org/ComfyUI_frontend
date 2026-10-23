@@ -674,8 +674,7 @@ ruleTester.run(
     valid: [
       {
         name: 'the capability read decoding the API response',
-        filename:
-          'src/platform/workspace/composables/useBillingCapabilities.ts',
+        filename: 'src/platform/billing/composables/useBillingCapabilities.ts',
         code: constructorImport
       },
       {
@@ -686,7 +685,7 @@ ruleTester.run(
       {
         name: 'a vitest manual mock',
         filename:
-          'src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts',
+          'src/platform/billing/composables/__mocks__/useBillingCapabilities.ts',
         code: constructorImport
       },
       {
@@ -719,7 +718,7 @@ const canManage = facts['receiveServerFact']('can_manage_members', true)
       },
       {
         name: 'an aliased import in a component',
-        filename: 'src/platform/workspace/components/UnifiedPricingTable.vue',
+        filename: 'src/platform/billing/components/UnifiedPricingTable.vue',
         code: `import { receiveServerFact as fact } from '@/platform/serverFacts/serverFact'`,
         errors: [{ messageId: 'stray' }]
       }

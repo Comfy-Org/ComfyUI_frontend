@@ -14,10 +14,10 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
-import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
+import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -30,7 +30,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
