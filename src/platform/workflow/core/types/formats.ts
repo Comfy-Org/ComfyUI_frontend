@@ -23,7 +23,14 @@ const AUDIO_WORKFLOW_FORMATS = {
  */
 const VIDEO_WORKFLOW_FORMATS = {
   extensions: ['.mp4', '.mov', '.m4v', '.webm', '.mkv'],
-  mimeTypes: ['video/mp4', 'video/quicktime', 'video/x-m4v', 'video/webm', 'video/x-matroska', 'video/matroska']
+  mimeTypes: [
+    'video/mp4',
+    'video/quicktime',
+    'video/x-m4v',
+    'video/webm',
+    'video/x-matroska',
+    'video/matroska'
+  ]
 }
 
 /**
