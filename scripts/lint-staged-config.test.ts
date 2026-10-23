@@ -38,12 +38,13 @@ describe('lint-staged config', () => {
 
     expect(lintStaged(['packages/comfy-multi-player/src/index.ts'])).toEqual([
       'pnpm --dir packages/comfy-multi-player lint',
-      'pnpm --dir packages/comfy-multi-player typecheck'
+      'pnpm --dir packages/comfy-multi-player typecheck',
+      'pnpm typecheck:app'
     ])
     expect(
       lintStaged(['packages/comfy-multi-player/test/purity.test.ts'])
     ).toEqual([])
-    expect(lintStaged(['src/main.ts'])).toContain('pnpm typecheck:app')
+    expect(lintStaged(['src/main.ts'])).not.toContain('pnpm typecheck:app')
   })
 
   it.for([

@@ -21,9 +21,6 @@ catalogs:
     '@astrojs/vue':
       specifier: ^7.0.2
       version: 7.0.2
-    '@comfyorg/comfy-multi-player':
-      specifier: 0.3.10
-      version: 0.3.10
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.5.0
       version: 0.5.0
@@ -507,8 +504,8 @@ importers:
         specifier: workspace:*
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
-        specifier: 'catalog:'
-        version: 0.3.10
+        specifier: workspace:*
+        version: link:packages/comfy-multi-player
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.5.0
