@@ -2588,7 +2588,16 @@ describe('useAgentSession (v1 composition root)', () => {
           selected: ['run']
         })
       )
-      const rest = fakeRest({ answerAsk })
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockResolvedValue({ thread_id: 'th-1', message_id: 'msg-2' })
+      const rest = fakeRest({ answerAsk, postMessage })
       const events = fakeEvents()
       const session = useAgentSession({ rest, events: events.source })
       session.start()
@@ -2597,6 +2606,11 @@ describe('useAgentSession (v1 composition root)', () => {
       events.emit(runApproval('msg-1'))
       return { session, answerAsk, ...events }
     }
+
+    const runCard = () =>
+      useAgentConversationStore()
+        .messages.flatMap((message) => message.parts)
+        .find((part) => part.type === 'runApproval')
 
     const cardOnScreen = () =>
       useAgentConversationStore().messages.some((message) =>
@@ -2645,12 +2659,20 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(done('msg-1'))
 
       await session.sendMessage('something else')
-      expect(cardOnScreen()).toBe(true)
+      expect(runCard()).not.toHaveProperty('dismissed')
       await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
         selected: ['run']
       })
+    })
+
+    it('is not dismissed by a plain send while its turn is still running', async () => {
+      const { session } = await parkedOnApproval()
+
+      await session.sendMessage('something else')
+
+      expect(runCard()).not.toHaveProperty('dismissed')
     })
 
     it('dismisses itself once answered, since no resolution frame can reach it', async () => {
