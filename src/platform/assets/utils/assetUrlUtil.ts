@@ -122,5 +122,7 @@ export function getApiMediaRoute(href: string): string | undefined {
   if (url?.origin !== apiBase.origin) return undefined
   if (!url.pathname.startsWith(`${basePath}/`)) return undefined
   const route = `${url.pathname.slice(basePath.length)}${url.search}`
-  return isMediaRoute(route) ? route : undefined
+  const isUnambiguous =
+    !url.pathname.includes('%') && !route.startsWith('/api/')
+  return isUnambiguous && isMediaRoute(route) ? route : undefined
 }

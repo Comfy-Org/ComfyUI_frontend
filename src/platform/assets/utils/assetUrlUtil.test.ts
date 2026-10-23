@@ -271,6 +271,14 @@ describe('getApiMediaRoute', () => {
       name: 'a view route outside the API base',
       href: `${origin}/evil/api/view?filename=a.png`
     },
+    {
+      name: 'an encoded slash in an asset id',
+      href: `${origin}/api/assets/..%2F..%2Fuserdata%2Fx/content`
+    },
+    {
+      name: 'a doubled API prefix',
+      href: `${origin}/api/api/view?filename=a.png`
+    },
     { name: 'a malformed URL', href: 'http://[' }
   ])('returns undefined for $name', ({ href }) => {
     expect(getApiMediaRoute(href)).toBeUndefined()
