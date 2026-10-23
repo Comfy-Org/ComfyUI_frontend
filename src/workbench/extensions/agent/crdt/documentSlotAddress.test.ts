@@ -19,6 +19,7 @@ import { z } from 'zod'
 
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -132,6 +133,13 @@ function setWidget(node: LGraphNode, name: string, value: number): void {
   const widget = node.widgets?.find((candidate) => candidate.name === name)
   assert.exists(widget)
   widget.value = value
+}
+
+function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
+  return {
+    ...rest,
+    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+  }
 }
 
 function afterFlush(): Promise<void> {
@@ -260,10 +268,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       seed(sources, sink)
     })
     assert.exists(sink)
-    const doc = mint(
-      shapeDoc(graph.serialize() as unknown as WorkflowJSON),
-      CATALOG
-    )
+    const doc = mint(shapeDoc(toWorkflowJson(graph.serialize())), CATALOG)
     onTestFinished(() => doc.destroy())
     const unsent: GraphOperation[] = []
     const outcomes: string[] = []
@@ -323,22 +328,26 @@ describe('a local link edit lands on the document slot that carries its input', 
 
   type Bench = ReturnType<typeof bind>
 
-  const reversedSinkInputs = (workflow: WorkflowJSON): WorkflowJSON => ({
-    ...workflow,
-    nodes: workflow.nodes.map((node) =>
-      node.type === 'TestSink'
-        ? { ...node, inputs: [...(node.inputs ?? [])].reverse() }
-        : node
-    )
-  })
-  const withoutSinkInputs = (workflow: WorkflowJSON): WorkflowJSON => ({
-    ...workflow,
-    nodes: workflow.nodes.map((node) =>
-      node.type === 'TestSink' ? { ...node, inputs: [] } : node
-    )
-  })
-  const noLinks = () => {}
-  const firstImageWired = (sources: LGraphNode[], sink: LGraphNode) => {
+  function reversedSinkInputs(workflow: WorkflowJSON): WorkflowJSON {
+    return {
+      ...workflow,
+      nodes: workflow.nodes.map((node) =>
+        node.type === 'TestSink'
+          ? { ...node, inputs: [...(node.inputs ?? [])].reverse() }
+          : node
+      )
+    }
+  }
+  function withoutSinkInputs(workflow: WorkflowJSON): WorkflowJSON {
+    return {
+      ...workflow,
+      nodes: workflow.nodes.map((node) =>
+        node.type === 'TestSink' ? { ...node, inputs: [] } : node
+      )
+    }
+  }
+  function noLinks() {}
+  function firstImageWired(sources: LGraphNode[], sink: LGraphNode) {
     sources[0].connect(0, sink, 0)
   }
 
@@ -504,7 +513,9 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: noLinks,
       act: async ({ sources, sink }) => {
-        sources.forEach((source, slot) => source.connect(0, sink, slot))
+        sources[0].connect(0, sink, 0)
+        sources[1].connect(0, sink, 1)
+        sources[2].connect(0, sink, 2)
         await afterFlush()
         sink.disconnectInput(2)
         await afterFlush()
@@ -723,12 +734,16 @@ describe('a document link lands on the live input it names', () => {
     let sources: LGraphNode[] = []
     let sink: LGraphNode | undefined
     withGraphIntentSource('load', () => {
-      sources = [0, 1, 2].map(() => addNode(seeded, 'TestSource'))
+      sources = [
+        addNode(seeded, 'TestSource'),
+        addNode(seeded, 'TestSource'),
+        addNode(seeded, 'TestSource')
+      ]
       sink = addNode(seeded, 'TestAutogrowSink')
       sources[0].connect(0, sink, 0)
     })
     assert.exists(sink)
-    const host = mint(seeded.serialize() as unknown as WorkflowJSON, CATALOG)
+    const host = mint(toWorkflowJson(seeded.serialize()), CATALOG)
     onTestFinished(() => host.destroy())
     const tab = follow(host)
     tab.sync('replace')

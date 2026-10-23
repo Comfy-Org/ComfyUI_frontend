@@ -21,9 +21,8 @@ export type DocumentInputSlot =
   | { kind: 'absent' }
 
 /**
- * The document index of a live input, by name. The live index stands in while
- * the document holds no such node; undefined when it holds the node but no
- * slot by that name.
+ * The document index of a live input, by name; the live index stands in while
+ * the document holds no such node.
  */
 export function documentInputIndex(
   documentNames: DocumentSlotNames | null,
@@ -73,9 +72,8 @@ function inputGrowth(
 }
 
 /**
- * The live input a document input slot names, by name first, growing the
- * node's autogrow group when the name is a member it has not grown yet. A
- * named slot never falls back to its index; -1 when unresolved.
+ * The live input a document slot names, growing a missing autogrow member; a
+ * named slot never falls back to its index, and -1 means unresolved.
  */
 export function resolveLiveInputSlot(
   node: LGraphNode,

@@ -178,11 +178,6 @@ interface UnechoedGrows {
 }
 
 interface PendingDynamicSlot {
-  /**
-   * The root graph the grow was minted against. A delayed operation may only
-   * ever reach that document: CRDT-WRITE-0035 lets a batch wait, never be
-   * re-addressed.
-   */
   rootGraphId: string
   nodeId: NodeId
   inputName: string
