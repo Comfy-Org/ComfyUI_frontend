@@ -1,0 +1,105 @@
+{
+  "id": "keybindings",
+  "capability": "Keybindings",
+  "description": "Key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, the keybinding settings panel and edit dialogs, and the bottom-panel shortcuts reference. Commands, settings persistence, dialogs, and the bottom panel itself remain external.",
+  "modules": [
+    {
+      "path": "src/platform/keybindings/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/keybindings/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/keybindings/composables/useEditKeybindingDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/keybindings/composables/useShortcutsTab.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/keybindings/composables/useShortcutsTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/keybindings/defaults.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keyCombo.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/keybinding.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/reserved.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/keybindings/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/modalUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [
+    "src/platform/keybindings/composables/useShortcutsTab.ts"
+  ],
+  "allowedDependencies": [],
+  "allowedConsumers": ["bottom-panel"],
+  "characterizationScenarios": [
+    {
+      "name": "Key combos parse keyboard events and respect reserved keys",
+      "checks": ["src/platform/keybindings/keyCombo.test.ts"]
+    },
+    {
+      "name": "Keybinding store merges defaults with user bindings and unsets",
+      "checks": [
+        "src/platform/keybindings/keybindingStore.test.ts",
+        "src/platform/keybindings/keybindingService.registerUserKeybindings.test.ts"
+      ]
+    },
+    {
+      "name": "Keydown dispatch runs commands, honors dialogs and canvas focus, and lets Escape overrides win",
+      "checks": [
+        "src/platform/keybindings/keybindingService.canvas.test.ts",
+        "src/platform/keybindings/keybindingService.dialog.test.ts",
+        "src/platform/keybindings/keybindingService.escape.test.ts",
+        "src/platform/keybindings/escapeOverride.test.ts"
+      ]
+    },
+    {
+      "name": "Presets switch, save, import, and export through the keybinding panel",
+      "checks": [
+        "src/platform/keybindings/presetService.test.ts",
+        "src/platform/keybindings/components/KeybindingPanel.test.ts",
+        "src/platform/keybindings/components/KeybindingList.test.ts"
+      ]
+    },
+    {
+      "name": "Shortcuts tab lists essential and view-control keybindings",
+      "checks": [
+        "src/platform/keybindings/components/shortcuts/EssentialsPanel.test.ts",
+        "src/platform/keybindings/components/shortcuts/ShortcutsList.test.ts",
+        "src/platform/keybindings/composables/useShortcutsTab.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import keybinding internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "Extension-registered keybindings and the Comfy.Keybinding.* settings keep their stored shape.",
+    "presetService opening presentation dialogs and reaching scripts/api directly, and keybindingService reading settings, command, and dialog stores, remain visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

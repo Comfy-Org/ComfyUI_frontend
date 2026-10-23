@@ -10,7 +10,8 @@
     </template>
     <template #tool-buttons>
       <Button
-        v-tooltip.bottom="$t('g.refresh')"
+        :tooltip="$t('g.refresh')"
+        tooltip-side="bottom"
         data-testid="workflows-refresh-button"
         variant="muted-textonly"
         size="icon"
@@ -40,6 +41,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />

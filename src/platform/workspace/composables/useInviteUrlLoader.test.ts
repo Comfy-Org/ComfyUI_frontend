@@ -2,13 +2,15 @@ import { fakeWebSessionUser } from '@comfyorg/account-core/testing'
 import type { User } from 'firebase/auth'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { WorkspaceApiError } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -40,30 +42,35 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn())
+const mockRouterReplace = vi.hoisted(() =>
+  vi.fn(({ query }: { query: Record<string, string> }) => {
+    mockRouteQuery.value = query
+  })
+)
+const mockRouterResolve = vi.hoisted(() =>
+  vi.fn(({ query }: { query: Record<string, string> }) => ({
+    href: `/cloud/login?${new URLSearchParams(query)}`
+  }))
+)
 
 vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
-    query: mockRouteQuery.value
+    get query() {
+      return mockRouteQuery.value
+    },
+    get fullPath() {
+      return `/?${new URLSearchParams(mockRouteQuery.value)}`
+    }
   }),
   useRouter: () => ({
-    replace: mockRouterReplace
+    replace: mockRouterReplace,
+    resolve: mockRouterResolve
   })
 }))
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'))
-
-const mockToastAdd = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -85,13 +92,19 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
         en: {
           workspace: {
             inviteAccepted: 'Invite Accepted',
-            addedToWorkspace: 'You have been added to {workspaceName}',
+            addedToNamedWorkspace: 'You have been added to {workspaceName}',
+            viewWorkspace: 'View workspace',
             inviteFailed: 'Failed to Accept Invite',
             inviteSsoUnavailable: 'Ask your admin to add you',
             inviteSsoUnavailableDetail:
               'SSO accounts cannot accept invite links',
             inviteDirectoryManaged: 'Admin manages membership',
-            inviteDirectoryManagedDetail: 'Ask your organization admin'
+            inviteDirectoryManagedDetail: 'Ask your organization admin',
+            switchFailed: 'Failed to switch workspace',
+            inviteNeedsSignIn: enMessages.workspace.inviteNeedsSignIn,
+            inviteNeedsSignInDetail:
+              enMessages.workspace.inviteNeedsSignInDetail,
+            inviteSignIn: enMessages.workspace.inviteSignIn
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -112,6 +125,7 @@ describe('useInviteUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'firebase-user' })
   })
 
   describe('loadInviteFromUrl', () => {
@@ -122,7 +136,7 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
@@ -163,17 +177,56 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'valid-token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: 'Invite Accepted',
-        detail: {
-          text: 'You have been added to Test Workspace',
-          workspaceId: 'ws-123',
-          workspaceName: 'Test Workspace'
-        },
-        group: 'invite-accepted',
-        closable: true
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'View workspace' }),
+          description: 'You have been added to Test Workspace',
+          kind: 'success',
+          title: 'Invite Accepted'
+        })
+      ])
+    })
+
+    it.for([
+      {
+        name: 'dismisses the toast once the switch succeeds',
+        switchWorkspace: () => Promise.resolve(),
+        toasts: []
+      },
+      {
+        name: 'keeps the toast and reports a failed switch',
+        switchWorkspace: () => Promise.reject(new Error('switch failed')),
+        toasts: [
+          expect.objectContaining({
+            kind: 'success',
+            title: 'Invite Accepted'
+          }),
+          expect.objectContaining({
+            duration: 5000,
+            kind: 'error',
+            title: 'Failed to switch workspace'
+          })
+        ]
+      }
+    ])('View workspace $name', async ({ switchWorkspace, toasts }) => {
+      mockRouteQuery.value = { invite: 'valid-token' }
+      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
+        workspaceId: 'ws-123',
+        workspaceName: 'Test Workspace'
       })
+      vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockImplementation(
+        switchWorkspace
+      )
+      await useInviteUrlLoader().loadInviteFromUrl()
+      const action = useToast().toasts.at(-1)?.action
+      assert(action)
+
+      await action.onClick()
+
+      expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+        'ws-123'
+      )
+      expect(useToast().toasts).toEqual(toasts)
     })
 
     it('shows the invalid-link dialog instead of a toast on 404', async () => {
@@ -186,9 +239,9 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).toHaveBeenCalled()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     })
 
@@ -206,20 +259,19 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useWorkspaceDialogs().showInviteWrongAccountDialog
       ).toHaveBeenCalledWith({ inviteToken: 'other-account-token' })
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
-    const DIRECTORY_TOAST = {
-      severity: 'info',
-      summary: 'Admin manages membership',
-      detail: 'Ask your organization admin',
-      closable: true
-    }
+    const DIRECTORY_TOAST = expect.objectContaining({
+      description: 'Ask your organization admin',
+      kind: 'info',
+      title: 'Admin manages membership'
+    })
 
     it.for([
       {
@@ -227,7 +279,7 @@ describe('useInviteUrlLoader', () => {
         sso: true,
         code: 'membership_managed_by_directory',
         wrongAccountDialogs: 0,
-        toasts: [[DIRECTORY_TOAST]]
+        toasts: [DIRECTORY_TOAST]
       },
       {
         name: 'a directory-managed refusal with sso_enabled off opens the wrong-account dialog',
@@ -254,9 +306,9 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteWrongAccountDialog)
+        useWorkspaceDialogs().showInviteWrongAccountDialog
       ).toHaveBeenCalledTimes(wrongAccountDialogs)
-      expect(mockToastAdd.mock.calls).toEqual(toasts)
+      expect(useToast().toasts).toEqual(toasts)
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
@@ -272,11 +324,14 @@ describe('useInviteUrlLoader', () => {
       await loadInviteFromUrl()
 
       expect(
-        vi.mocked(useDialogService().showInviteLinkInvalidDialog)
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Failed to Accept Invite'
+        })
+      ])
     })
 
     it('falls back to the toast when the dialog chunk fails to load', async () => {
@@ -285,7 +340,7 @@ describe('useInviteUrlLoader', () => {
         new WorkspaceApiError('Invite not found or expired', 404, 'NOT_FOUND')
       )
       vi.mocked(
-        useDialogService().showInviteLinkInvalidDialog
+        useWorkspaceDialogs().showInviteLinkInvalidDialog
       ).mockRejectedValue(
         new Error('failed to fetch dynamically imported module')
       )
@@ -293,10 +348,13 @@ describe('useInviteUrlLoader', () => {
       const { loadInviteFromUrl } = useInviteUrlLoader()
       await expect(loadInviteFromUrl()).resolves.toBeUndefined()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
-      vi.mocked(useDialogService().showInviteLinkInvalidDialog).mockReset()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Failed to Accept Invite'
+        })
+      ])
+      vi.mocked(useWorkspaceDialogs().showInviteLinkInvalidDialog).mockReset()
     })
 
     it('shows error toast when invite acceptance fails', async () => {
@@ -311,10 +369,8 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'invalid-token'
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid invite'
+      expect(useToast().error).toHaveBeenCalledWith('Failed to Accept Invite', {
+        description: 'Invalid invite'
       })
     })
 
@@ -376,10 +432,8 @@ describe('useInviteUrlLoader', () => {
       expect(useTeamWorkspaceStore().acceptInvite).toHaveBeenCalledWith(
         'any-token-format=='
       )
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to Accept Invite',
-        detail: 'Invalid token'
+      expect(useToast().error).toHaveBeenCalledWith('Failed to Accept Invite', {
+        description: 'Invalid token'
       })
     })
 
@@ -409,49 +463,94 @@ describe('useInviteUrlLoader', () => {
         sso: true,
         provider: 'saml.workos',
         firebase: false,
-        accepts: false
+        outcome: 'shows the SSO toast',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: true,
+        expectedSignInToast: false
       },
       {
         name: 'an OIDC SSO session',
         sso: true,
         provider: 'oidc.workos',
         firebase: false,
-        accepts: false
+        outcome: 'shows the SSO toast',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: true,
+        expectedSignInToast: false
       },
       {
         name: 'an SSO session beside its Firebase login',
         sso: true,
         provider: 'saml.workos',
         firebase: true,
-        accepts: true
+        outcome: 'accepts the invite',
+        expectedAcceptInviteCalls: 1,
+        expectedSsoToast: false,
+        expectedSignInToast: false
+      },
+      {
+        name: 'a Google session beside its Firebase login',
+        sso: true,
+        provider: 'google.com',
+        firebase: true,
+        outcome: 'accepts the invite',
+        expectedAcceptInviteCalls: 1,
+        expectedSsoToast: false,
+        expectedSignInToast: false
       },
       {
         name: 'a Google session',
         sso: true,
         provider: 'google.com',
         firebase: false,
-        accepts: true
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
       },
       {
         name: 'an SSO session with sso_enabled off',
         sso: false,
         provider: 'saml.workos',
         firebase: false,
-        accepts: true
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
+      },
+      {
+        name: 'an API-key login with no web session',
+        sso: true,
+        provider: null,
+        firebase: false,
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
       }
     ])(
-      'accepts the invite for $name only when it has a Firebase login to accept with',
-      async ({ sso, provider, firebase, accepts }) => {
+      '$name $outcome',
+      async ({
+        sso,
+        provider,
+        firebase,
+        expectedAcceptInviteCalls,
+        expectedSsoToast,
+        expectedSignInToast
+      }) => {
         vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
         const authStore = useAuthStore()
         authStore.currentUser = firebase
           ? fromPartial<User>({ uid: 'session-user' })
           : null
         Object.assign(authStore, {
-          sessionUser: fakeWebSessionUser({
-            id: 'session-user',
-            signInProvider: provider
-          })
+          sessionUser:
+            provider === null
+              ? null
+              : fakeWebSessionUser({
+                  id: 'session-user',
+                  signInProvider: provider
+                })
         })
         mockRouteQuery.value = { invite: 'valid-token' }
         vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
@@ -464,15 +563,73 @@ describe('useInviteUrlLoader', () => {
 
         expect(
           vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
-        ).toBe(accepts ? 1 : 0)
+        ).toBe(expectedAcceptInviteCalls)
         expect(
-          mockToastAdd.mock.calls.some(
-            ([toast]) => toast.summary === 'Ask your admin to add you'
+          useToast().toasts.some(
+            ({ title }) => title === 'Ask your admin to add you'
           )
-        ).toBe(!accepts)
+        ).toBe(expectedSsoToast)
+        expect(
+          useToast().toasts.some(
+            ({ title }) => title === enMessages.workspace.inviteNeedsSignIn
+          )
+        ).toBe(expectedSignInToast)
         expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
         expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
           'invite'
+        )
+      }
+    )
+
+    it.for<{
+      name: string
+      query: Record<string, string>
+      preserved: Record<string, string> | null
+    }>([
+      {
+        name: 'the URL',
+        query: { invite: 'valid-token' },
+        preserved: null
+      },
+      {
+        name: 'the preserved query',
+        query: {},
+        preserved: { invite: 'valid-token' }
+      }
+    ])(
+      'offers a tab with no Firebase login a sign-in that returns to the invite from $name',
+      async ({ query, preserved }) => {
+        vi.stubGlobal('location', { assign: vi.fn() })
+        useAuthStore().currentUser = null
+        mockRouteQuery.value = query
+        preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(
+          preserved
+        )
+
+        await useInviteUrlLoader().loadInviteFromUrl()
+
+        expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
+        expect(mockRouterResolve).toHaveBeenCalledWith({
+          name: 'cloud-login',
+          query: {
+            switchAccount: 'true',
+            previousFullPath: encodeURIComponent('/?invite=valid-token')
+          }
+        })
+        const [toast] = useToast().toasts
+        expect(toast).toMatchObject({
+          kind: 'info',
+          title: enMessages.workspace.inviteNeedsSignIn,
+          description: enMessages.workspace.inviteNeedsSignInDetail,
+          action: { label: enMessages.workspace.inviteSignIn }
+        })
+        expect(location.assign).not.toHaveBeenCalled()
+
+        assert(toast.action)
+        await toast.action.onClick()
+
+        expect(location.assign).toHaveBeenCalledWith(
+          '/cloud/login?switchAccount=true&previousFullPath=%252F%253Finvite%253Dvalid-token'
         )
       }
     )

@@ -3,22 +3,21 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -61,15 +60,18 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   }))
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn(async () => ({
-    fileSize: null,
-    gatedRepoUrl: null
-  })),
-  isModelDownloadable: vi.fn(() => true),
-  toBrowsableUrl: vi.fn((url: string) => url)
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    downloadModel: vi.fn(),
+    fetchModelMetadata: vi.fn(async () => ({
+      fileSize: null,
+      gatedRepoUrl: null
+    })),
+    isModelDownloadable: vi.fn(() => true),
+    toBrowsableUrl: vi.fn((url: string) => url)
+  })
+)
 
 describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
@@ -143,7 +145,13 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia]
+        plugins: [i18n, pinia],
+        stubs: {
+          AsyncSearchInput: {
+            template:
+              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+          }
+        }
       }
     })
     return { user }
@@ -156,7 +164,7 @@ describe('TabErrors.vue', () => {
     seed(pinia)
     render(RightSidePanel, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           EditableText: true,
           TabErrors: true,

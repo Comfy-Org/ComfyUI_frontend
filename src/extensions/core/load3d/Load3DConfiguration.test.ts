@@ -2,9 +2,10 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type {
   CameraConfig,
@@ -13,7 +14,7 @@ import type {
   ModelConfig,
   SceneConfig,
   StoredModelConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import type {
   IBaseWidget,
   INumericWidget
@@ -28,9 +29,11 @@ import type { Settings } from '@/platform/settings/types'
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: fromAny(class {})
 }))
+
+vi.mock(import('@/extensions/core/load3d/reportLoadModelOutcome'))
 
 vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: fromAny({
@@ -183,11 +186,11 @@ describe('Load3DConfiguration.loadModelConfig', () => {
   })
 })
 
-describe('Load3DConfiguration.silentOnNotFound propagation', () => {
+describe('Load3DConfiguration model load reporting', () => {
   let loadModelSpy: ReturnType<typeof vi.fn<Load3d['loadModel']>>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     return {
       loadModel: loadModelSpy,
       clearModel: vi.fn(),
@@ -222,50 +225,55 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     )
   })
 
-  it('configureForSaveMesh forwards silentOnNotFound: true to loadModel', async () => {
-    const config = new Load3DConfiguration(makeLoad3dMock())
-    config.configureForSaveMesh('output', 'model.glb', {
+  it.for([
+    {
+      name: 'configureForSaveMesh forwards silentOnNotFound',
+      configure: (config: Load3DConfiguration) =>
+        config.configureForSaveMesh('output', 'model.glb', {
+          silentOnNotFound: true
+        }),
       silentOnNotFound: true
-    })
-    await flush()
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
-      silentOnNotFound: true
-    })
-  })
-
-  it('configureForSaveMesh uses silentOnNotFound: false when option is omitted', async () => {
-    const config = new Load3DConfiguration(makeLoad3dMock())
-    config.configureForSaveMesh('output', 'model.glb')
-    await flush()
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+    },
+    {
+      name: 'configureForSaveMesh defaults silentOnNotFound to false',
+      configure: (config: Load3DConfiguration) =>
+        config.configureForSaveMesh('output', 'model.glb'),
       silentOnNotFound: false
-    })
-  })
-
-  it('configure forwards silentOnNotFound: true from settings to loadModel', async () => {
-    const config = new Load3DConfiguration(makeLoad3dMock())
-    config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
-      loadFolder: 'output',
+    },
+    {
+      name: 'configure forwards silentOnNotFound from settings',
+      configure: (config: Load3DConfiguration) =>
+        config.configure({
+          modelWidget: fromPartial<IBaseWidget>({ value: 'model.glb' }),
+          loadFolder: 'output',
+          silentOnNotFound: true
+        }),
       silentOnNotFound: true
-    })
-    await flush()
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
-      silentOnNotFound: true
-    })
-  })
-
-  it('configure uses silentOnNotFound: false when setting is omitted', async () => {
-    const config = new Load3DConfiguration(makeLoad3dMock())
-    config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
-      loadFolder: 'output'
-    })
-    await flush()
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+    },
+    {
+      name: 'configure defaults silentOnNotFound to false',
+      configure: (config: Load3DConfiguration) =>
+        config.configure({
+          modelWidget: fromPartial<IBaseWidget>({ value: 'model.glb' }),
+          loadFolder: 'output'
+        }),
       silentOnNotFound: false
-    })
-  })
+    }
+  ])(
+    '$name when reporting a failed load',
+    async ({ configure, silentOnNotFound }) => {
+      const load3d = makeLoad3dMock()
+      loadModelSpy.mockResolvedValue('not-found')
+      configure(new Load3DConfiguration(load3d))
+      await flush()
+
+      expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb')
+      expect(reportLoadModelOutcome).toHaveBeenCalledWith('not-found', {
+        silentOnNotFound
+      })
+      expect(load3d.emitModelReady).not.toHaveBeenCalled()
+    }
+  )
 
   it('emits modelReady AFTER setCameraState so thumbnail capture sees the restored view', async () => {
     const load3d = makeLoad3dMock()
@@ -314,11 +322,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 
   it('does not publish effects for a load superseded by clear', async () => {
-    let resolveLoad!: (accepted: boolean) => void
+    let resolveLoad!: (outcome: 'cancelled') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel).mockImplementation(
       () =>
-        new Promise<boolean>((resolve) => {
+        new Promise<'cancelled'>((resolve) => {
           resolveLoad = resolve
         })
     )
@@ -327,7 +335,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
 
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
-    resolveLoad(false)
+    resolveLoad('cancelled')
     await flush()
 
     expect(load3d.setUpDirection).not.toHaveBeenCalled()
@@ -336,19 +344,19 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 
   it('publishes effects only for the replacement after clear', async () => {
-    let resolveFirst!: (accepted: boolean) => void
-    let resolveSecond!: (accepted: boolean) => void
+    let resolveFirst!: (outcome: 'cancelled') => void
+    let resolveSecond!: (outcome: 'loaded') => void
     const load3d = makeLoad3dMock()
     vi.mocked(load3d.loadModel)
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'cancelled'>((resolve) => {
             resolveFirst = resolve
           })
       )
       .mockImplementationOnce(
         () =>
-          new Promise<boolean>((resolve) => {
+          new Promise<'loaded'>((resolve) => {
             resolveSecond = resolve
           })
       )
@@ -358,8 +366,8 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     config.configure({ modelWidget, loadFolder: 'output' })
     modelWidget.value = ''
     modelWidget.value = 'b.glb'
-    resolveFirst(false)
-    resolveSecond(true)
+    resolveFirst('cancelled')
+    resolveSecond('loaded')
     await flush()
 
     expect(load3d.setUpDirection).toHaveBeenCalledTimes(1)
@@ -531,7 +539,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
   function makeLoad3dMock(): Load3d {
     return fromPartial<Load3d>({
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
@@ -623,7 +631,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   function makeLoad3dMock(): Load3d {
     let cleanup: (() => void) | undefined
-    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
+    loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded')
     clearModelSpy = vi.fn()
     return fromPartial<Load3d>({
       loadModel: loadModelSpy,
@@ -700,9 +708,7 @@ describe('Load3DConfiguration "none" model handling', () => {
     widget.value = 'model.glb'
     await flush()
 
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
-      silentOnNotFound: false
-    })
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb')
   })
 
   it('stops reacting as soon as the viewer lifecycle is removed', async () => {
@@ -760,9 +766,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
     expect(applied).toBe(true)
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
-    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'agent.glb', {
-      silentOnNotFound: false
-    })
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'agent.glb')
     expect(modelWidget.value).toBe('agent.glb')
   })
 
@@ -782,8 +786,7 @@ describe('Load3DConfiguration "none" model handling', () => {
     expect(loadModelSpy).toHaveBeenCalledTimes(1)
     expect(loadModelSpy).toHaveBeenCalledWith(
       expect.any(String),
-      'restored.glb',
-      { silentOnNotFound: false }
+      'restored.glb'
     )
   })
 })
@@ -791,7 +794,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
+      loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue('loaded'),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),

@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
@@ -26,7 +26,6 @@ type CustomerEventsResponseQuery =
 export type AuditLog = components['schemas']['AuditLog']
 
 const customerApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -39,19 +38,11 @@ export const useCustomerEventsService = () => {
   const error = ref<string | null>(null)
   let latestRequestId = 0
 
-  watch(
-    () => getComfyApiBaseUrl(),
-    (url) => {
-      customerApiClient.defaults.baseURL = url
-    }
-  )
-
   const describeRequestError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string | null => {
-    // Don't treat cancellation as an error
     if (isAbortError(err)) return null
 
     if (!axios.isAxiosError(err)) {
@@ -105,6 +96,8 @@ export const useCustomerEventsService = () => {
         return t('credits.eventTypes.gpuUsage')
       case 'api_node_usage':
         return t('credits.eventTypes.apiNodeUsage')
+      case 'agent_usage':
+        return t('credits.eventTypes.agentUsage')
       default:
         return eventType
     }
@@ -151,6 +144,7 @@ export const useCustomerEventsService = () => {
       case 'api_usage_completed':
       case 'gpu_usage':
       case 'api_node_usage':
+      case 'agent_usage':
         return 'warning'
       default:
         return 'info'
@@ -160,18 +154,6 @@ export const useCustomerEventsService = () => {
   function hasAdditionalInfo(event: AuditLog) {
     const { amount, api_name, model, ...otherParams } = event.params || {}
     return Object.keys(otherParams).length > 0
-  }
-
-  function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
-
-    return Object.entries(params)
-      .map(([key, value]) => {
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
-      })
-      .join('<br>')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -227,6 +209,7 @@ export const useCustomerEventsService = () => {
     const { data, errorMessage } = await executeRequest<CustomerEventsResponse>(
       () =>
         customerApiClient.get('/customers/events', {
+          baseURL: getComfyApiBaseUrl(),
           params: { page, limit },
           headers: authHeaders
         }),
@@ -245,11 +228,9 @@ export const useCustomerEventsService = () => {
   }
 
   return {
-    // State
     isLoading,
     error,
 
-    // Methods
     getMyEvents,
     formatEventType,
     getEventSeverity,
@@ -257,7 +238,6 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue,
-    getTooltipContent
+    formatJsonValue
   }
 }

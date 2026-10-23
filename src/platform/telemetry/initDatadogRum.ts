@@ -13,7 +13,29 @@ const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
   ['testcloud.comfy.org', 'test-v2']
 ])
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
+type FrontendBucket = 'canary' | 'stable'
+const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']
 let initializationPromise: Promise<void> | undefined
+let resolvedBucket: FrontendBucket | undefined
+
+/**
+ * The canary/stable split, resolved once from the deploy's own
+ * `X-Frontend-Bucket` response header rather than inferred from a release or
+ * version string (D25) — other telemetry sinks that want the same fact
+ * should read this instead of re-fetching it. `undefined` means the split
+ * isn't known yet (probe still pending, failed, or off a tracked version),
+ * not 'stable' — collapsing that into a default would mistag reports and
+ * corrupt the canary/stable RUM comparison this header exists to support.
+ */
+export function getFrontendBucket(): FrontendBucket | undefined {
+  return resolvedBucket
+}
+
+function parseFrontendBucket(value: string | null): FrontendBucket {
+  return FRONTEND_BUCKETS.includes(value as FrontendBucket)
+    ? (value as FrontendBucket)
+    : 'stable'
+}
 
 async function setFrontendContext(): Promise<void> {
   const response = await fetch(window.location.origin, {
@@ -26,10 +48,10 @@ async function setFrontendContext(): Promise<void> {
   const frontendVersion = response.headers.get('X-Frontend-Version')
   if (frontendVersion !== __COMFYUI_FRONTEND_COMMIT__) return
 
-  datadogRum.setGlobalContextProperty(
-    'bucket',
-    response.headers.get('X-Frontend-Bucket') ?? 'stable'
+  resolvedBucket = parseFrontendBucket(
+    response.headers.get('X-Frontend-Bucket')
   )
+  datadogRum.setGlobalContextProperty('bucket', resolvedBucket)
   datadogRum.setGlobalContextProperty('version', frontendVersion)
 }
 

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -21,11 +21,12 @@ function renderComposer() {
       })
   })
   render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { store, target, editor: screen.getByRole('textbox') }
 }
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 describe('workflow reference clipboard', () => {
   beforeEach(() => vi.useRealTimers())
 
@@ -54,6 +55,7 @@ describe('workflow reference clipboard', () => {
         `${before}@[Workflow: Reference B]${after}`
       )
       if (operation === 'copy') await user.keyboard('{Backspace}')
+      await waitFor(() => expect(store.draft).toBe(''))
       await user.paste(clipboard)
       expect(store.draft).toBe(before + after)
       expect(store.workflowReferences).toEqual([reference])

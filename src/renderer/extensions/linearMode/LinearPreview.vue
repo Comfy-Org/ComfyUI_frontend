@@ -119,11 +119,11 @@ async function rerun(e: Event) {
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="mx-1 border-r border-border-subtle" />
+      <div class="mx-1 border-r border-border/50" />
     </template>
     <Button
       v-if="selectedOutput"
-      v-tooltip.top="t('g.download')"
+      :tooltip="t('g.download')"
       size="icon"
       :aria-label="t('g.download')"
       @click="() => downloadOutput(selectedOutput)"

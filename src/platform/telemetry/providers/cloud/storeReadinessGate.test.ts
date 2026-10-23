@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 const hoisted = vi.hoisted(() => {
@@ -78,7 +78,7 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import {
   markStoresPending,

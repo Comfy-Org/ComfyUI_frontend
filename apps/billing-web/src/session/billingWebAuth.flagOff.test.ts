@@ -69,6 +69,7 @@ const MINTED = {
   token: 'jwt-1',
   permissions: ['workspace:read'],
   expires_at: new Date(Date.now() + 90 * 60_000).toISOString(),
+  user_id: 'uid-1',
   workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
   role: 'owner'
 }
@@ -386,7 +387,7 @@ async function renderApp() {
 }
 
 describe('billing-web first render with unified_web_session undecided', () => {
-  it('routes and shows main’s "sign-in unavailable" notice without waiting for the flag', async () => {
+  it('routes to sign-in without waiting for the flag, holding sign-in back without a false "unavailable" notice', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     vi.mocked(fetch).mockImplementation(() => new Promise<Response>(() => {}))
     vi.resetModules()
@@ -394,7 +395,10 @@ describe('billing-web first render with unified_web_session undecided', () => {
     const router = await renderApp()
 
     expect(router.currentRoute.value.path).toBe('/sign-in')
-    expect(await screen.findByText(UNAVAILABLE)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Sign in with Google' })
+    ).toBeDisabled()
+    expect(screen.queryByText(UNAVAILABLE)).not.toBeInTheDocument()
     expect(h.initializeApp).not.toHaveBeenCalled()
   })
 
@@ -418,7 +422,7 @@ describe('billing-web first render with unified_web_session undecided', () => {
     vi.resetModules()
 
     const router = await renderApp()
-    expect(screen.getByText(UNAVAILABLE)).toBeInTheDocument()
+    expect(screen.queryByText(UNAVAILABLE)).not.toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(3999)
     expect(h.initializeApp).not.toHaveBeenCalled()
 

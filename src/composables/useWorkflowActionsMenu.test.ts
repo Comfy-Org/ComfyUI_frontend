@@ -54,6 +54,13 @@ vi.mock(
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -101,6 +108,7 @@ describe('useWorkflowActionsMenu', () => {
     vi.mocked(
       lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).mockResolvedValue(undefined)
+    mockDistributionState.isCloud = false
     mockMenuItemStore.hasSeenLinear = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
@@ -381,6 +389,16 @@ describe('useWorkflowActionsMenu', () => {
     )
   })
 
+  it('does not offer Deploy to Comfy API on Cloud', () => {
+    mockDistributionState.isCloud = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
   it('deploy command opens the Deploy to Comfy API dialog', async () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
@@ -388,7 +406,7 @@ describe('useWorkflowActionsMenu', () => {
     await deploy.command?.()
 
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).toHaveBeenCalledOnce()
   })
 
@@ -405,7 +423,7 @@ describe('useWorkflowActionsMenu', () => {
     await findItem(menuItems.value, 'deployToComfyApi.buttonLabel').command?.()
 
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).not.toHaveBeenCalled()
   })
 
@@ -453,13 +471,13 @@ describe('useWorkflowActionsMenu', () => {
       customWorkflow.value
     )
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).not.toHaveBeenCalled()
     expect(activation.finish).toBeTypeOf('function')
     activation.finish?.()
     await deploying
     expect(
-      vi.mocked(lazyDeployToComfyApiDialog.openDeployToComfyApiDialog)
+      lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).toHaveBeenCalledOnce()
   })
 })

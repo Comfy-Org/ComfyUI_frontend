@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import * as apiModule from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { usePartnerNodesInGraph } from './usePartnerNodesInGraph'
@@ -37,19 +37,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => {
-  const target = new EventTarget()
-  return {
-    api: target,
-    __dispatchGraphChanged: () => {
-      target.dispatchEvent(new CustomEvent('graphChanged'))
-    }
-  }
-})
-
-const { __dispatchGraphChanged } = apiModule as typeof apiModule & {
-  __dispatchGraphChanged: () => void
-}
+vi.mock(import('@/scripts/api'))
 
 function defineNodeDef(
   name: string,
@@ -156,7 +144,7 @@ describe('usePartnerNodesInGraph', () => {
     expect(hasPartnerNodes.value).toBe(false)
 
     nodes.push(node('Partner'))
-    __dispatchGraphChanged()
+    api.dispatchCustomEvent('graphChanged', null)
 
     expect(hasPartnerNodes.value).toBe(true)
   })

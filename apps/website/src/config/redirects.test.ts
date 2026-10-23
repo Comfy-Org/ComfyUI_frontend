@@ -16,6 +16,7 @@ import { modelsUrlKind } from './models-url-registry'
 import {
   astroRedirects,
   isInternalDestination,
+  linkStaleSources,
   siteRedirects,
   toVercelRedirects
 } from './redirects'
@@ -76,6 +77,21 @@ describe('vercel.json redirects', () => {
 })
 
 describe('the redirect list', () => {
+  it.for([
+    ['/vfx', '/solutions/vfx/'],
+    ['/zh-CN/vfx', '/zh-CN/solutions/vfx/']
+  ])(
+    'permanently redirects both slash forms of %s to %s',
+    ([source, destination]) => {
+      expect(toVercelRedirects(siteRedirects)).toEqual(
+        expect.arrayContaining([
+          { source, destination, permanent: true },
+          { source: `${source}/`, destination, permanent: true }
+        ])
+      )
+    }
+  )
+
   const sources = siteRedirects.map(({ source }) => source)
 
   it('names each source once', () => {
@@ -101,7 +117,12 @@ describe('the redirect list', () => {
       sources.filter(
         (source) =>
           !/^(\/[A-Za-z0-9._-]+)+$/.test(source) &&
-          !/^\/p\/supported-models\/:slug\([a-z0-9|-]+\)(\.md)?$/.test(source)
+          !/^\/p\/supported-models\/:slug\([a-z0-9|-]+\)(\.md)?$/.test(
+            source
+          ) &&
+          !/^(\/zh-CN)?\/cloud\/supported-nodes\/(:pack\.md|:path\+)$/.test(
+            source
+          )
       )
     ).toEqual([])
   })
@@ -126,7 +147,13 @@ describe('the redirect list', () => {
   })
 
   it('reaches every destination in one hop', () => {
-    const sourceSet = new Set<string>(sources)
+    // A row that leaves its slash form to a page never redirects that form,
+    // so landing on the page is the last hop.
+    const sourceSet = new Set<string>(
+      siteRedirects
+        .filter(({ slashFormIsPageBecause }) => !slashFormIsPageBecause)
+        .map(({ source }) => source)
+    )
     expect(
       siteRedirects.filter(
         ({ destination }) =>
@@ -150,6 +177,8 @@ describe('generated Vercel rules', () => {
       destination: '/hub/models/local/t5xxl-fp16/'
     },
     { source: '/p/supported-models', destination: '/hub/models/local/' },
+    { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+    { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -180,6 +209,13 @@ describe('generated Vercel rules', () => {
     }
   )
 
+  it.for(['/nvidia-vfx/', '/zh-CN/nvidia-vfx/'])(
+    'sends the old NVIDIA address to %s, a built page',
+    (destination) => {
+      expect(pageExistsAt(destination)).toBe(true)
+    }
+  )
+
   it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects
@@ -196,7 +232,19 @@ describe('generated Vercel rules', () => {
       '/minimax',
       '/minimax/',
       '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/zh-CN/minimax/',
+      '/gallery',
+      '/gallery/',
+      '/gallery.md',
+      '/zh-CN/gallery',
+      '/zh-CN/gallery/',
+      '/zh-CN/gallery.md',
+      '/launches',
+      '/launches/',
+      '/launches.md',
+      '/zh-CN/launches',
+      '/zh-CN/launches/',
+      '/zh-CN/launches.md'
     ])
   })
 
@@ -204,6 +252,22 @@ describe('generated Vercel rules', () => {
     expect(find('/login')?.permanent).toBe(false)
     expect(find('/login/')).toBeUndefined()
   })
+
+  it.for([
+    { source: '/about', destination: en.about },
+    { source: '/zh-CN/about', destination: zh.about }
+  ])(
+    'sends only $source to $destination permanently, never the page itself',
+    ({ source, destination }) => {
+      expect(find(source)).toEqual({
+        source,
+        destination,
+        permanent: true
+      })
+      expect(find(`${source}/`)).toBeUndefined()
+      expect(destination).toBe(`${source}/`)
+    }
+  )
 
   it.for([en.minimax, zh.minimax, en.enterprise, zh.enterprise, en.pricing])(
     'leaves the destination %s unredirected',
@@ -214,10 +278,107 @@ describe('generated Vercel rules', () => {
   )
 })
 
+describe('the retired gallery and launches pages', () => {
+  it.for([
+    ['/gallery/', '/customers/'],
+    ['/zh-CN/gallery/', '/zh-CN/customers/'],
+    ['/launches/', '/events/'],
+    ['/zh-CN/launches/', '/zh-CN/events/'],
+    ['/gallery.md', '/customers.md'],
+    ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
+    ['/launches.md', '/events.md'],
+    ['/zh-CN/launches.md', '/zh-CN/events.md']
+  ])('sends %s to %s with a 307', ([source, destination]) => {
+    expect(
+      toVercelRedirects(siteRedirects).find((row) => row.source === source)
+    ).toEqual({ source, destination, permanent: false })
+  })
+})
+
+describe('the retired supported-nodes pages', () => {
+  const vercelRedirects = toVercelRedirects(siteRedirects)
+  const find = (source: string) =>
+    vercelRedirects.find((redirect) => redirect.source === source)
+
+  const article =
+    'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
+
+  it.for([
+    '/cloud/supported-nodes',
+    '/cloud/supported-nodes/',
+    '/cloud/supported-nodes/:path+',
+    '/zh-CN/cloud/supported-nodes',
+    '/zh-CN/cloud/supported-nodes/',
+    '/zh-CN/cloud/supported-nodes/:path+'
+  ])('sends %s to the Custom nodes on Cloud article with a 308', (source) => {
+    expect(find(source)).toEqual({
+      source,
+      destination: article,
+      permanent: true
+    })
+  })
+
+  it.for([
+    ['/cloud/supported-nodes.md', '/cloud.md'],
+    ['/cloud/supported-nodes/llms.txt', '/cloud.md'],
+    ['/cloud/supported-nodes/:pack.md', '/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes.md', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/llms.txt', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/:pack.md', '/zh-CN/cloud.md']
+  ])(
+    'keeps Markdown readers on the Cloud twin: %s to %s',
+    ([source, destination]) => {
+      expect(find(source)).toEqual({ source, destination, permanent: true })
+    }
+  )
+
+  it('sends the pack Markdown twins to the Cloud twin before the catch-all', () => {
+    const order = vercelRedirects.map(({ source }) => source)
+    expect(order.indexOf('/cloud/supported-nodes/:pack.md')).toBeLessThan(
+      order.indexOf('/cloud/supported-nodes/:path+')
+    )
+    expect(order.indexOf('/zh-CN/cloud/supported-nodes/:pack.md')).toBeLessThan(
+      order.indexOf('/zh-CN/cloud/supported-nodes/:path+')
+    )
+  })
+
+  it('points the Markdown twins at pages that exist', () => {
+    expect(pageExistsAt('/cloud/')).toBe(true)
+    expect(pageExistsAt('/zh-CN/cloud/')).toBe(true)
+  })
+
+  it('ships no Astro stub under the retired address', () => {
+    expect(
+      Object.keys(astroRedirects).filter((source) =>
+        source.includes('/cloud/supported-nodes')
+      )
+    ).toEqual([])
+  })
+})
+
+describe('link-stale sources', () => {
+  it('leave out a bare source whose slash form is a page', () => {
+    expect(linkStaleSources).not.toContain('/about')
+    expect(linkStaleSources).not.toContain('/zh-CN/about')
+    expect(linkStaleSources).not.toContain('/login')
+  })
+
+  it('keep both slash forms of an ordinary redirect', () => {
+    expect(linkStaleSources).toEqual(
+      expect.arrayContaining(['/career', '/career/', '/press', '/press/'])
+    )
+  })
+})
+
 describe('Astro redirects', () => {
   it('cover every internal row whose slash form redirects, except retired addresses', () => {
     const isRetiredAddress = (source: string) =>
-      ['/models', '/p/supported-models'].some(
+      [
+        '/models',
+        '/p/supported-models',
+        '/cloud/supported-nodes',
+        '/zh-CN/cloud/supported-nodes'
+      ].some(
         (root) =>
           source === root ||
           source.startsWith(`${root}/`) ||
@@ -229,11 +390,11 @@ describe('Astro redirects', () => {
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
+            !/\.(md|txt)$/.test(source) &&
             !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    expect(Object.keys(astroRedirects)).toHaveLength(18)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -242,6 +403,7 @@ describe('Astro redirects', () => {
       status: 307,
       destination: '/zh-CN/minimax-h3/'
     })
+    expect(astroRedirects['/gallery.md']).toBeUndefined()
     expect(astroRedirects['/career']).toEqual({
       status: 308,
       destination: '/careers/'

@@ -43,7 +43,7 @@ describe('createWorkshopTopUpCheckout', () => {
     })
     expect(fetch).toHaveBeenCalledOnce()
     expect(
-      vi.mocked(workshopTopupCommand().createHostedTopupCheckout)
+      workshopTopupCommand().createHostedTopupCheckout
     ).not.toHaveBeenCalled()
   })
 
@@ -64,7 +64,7 @@ describe('createWorkshopTopUpCheckout', () => {
     })
     expect(fetch).not.toHaveBeenCalled()
     expect(
-      vi.mocked(workshopTopupCommand().createHostedTopupCheckout)
+      workshopTopupCommand().createHostedTopupCheckout
     ).toHaveBeenCalledWith({
       amountCents: 5_000,
       returnUrl: new URL(

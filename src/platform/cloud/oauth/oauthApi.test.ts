@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
+  redirectHost,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const validChallenge: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
   client_display_name: 'Cursor',
@@ -373,5 +375,21 @@ describe('submitOAuthConsentDecision', () => {
       decision: 'deny',
       workspace_id: 'personal-workspace'
     })
+  })
+})
+
+describe('redirectHost', () => {
+  it.for([
+    ['https://chatgpt.com/connector/oauth/abc123', 'chatgpt.com'],
+    ['http://127.0.0.1:50632/cb', undefined],
+    ['http://127.0.0.2/cb', undefined],
+    ['http://localhost:8080/cb', undefined],
+    ['http://[::1]:50632/cb', undefined],
+    ['http://[::1]/cb', undefined],
+    ['com.example.app://oauth/cb', undefined],
+    ['not a url', undefined],
+    [undefined, undefined]
+  ] as const)('maps %s to %s', ([uri, host]) => {
+    expect(redirectHost(uri)).toBe(host)
   })
 })

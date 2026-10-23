@@ -1,10 +1,10 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import type { Distribution } from '@/platform/distribution/types'
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   buildAgentHandoffDocument,
   handoffFileName
@@ -18,13 +18,16 @@ const UNTITLED_WORKFLOW_NAME = 'workflow'
 
 export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
   const workflowStore = useWorkflowStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const modelToNodeStore = useModelToNodeStore()
   const { copyToClipboard } = useCopyToClipboard()
 
-  function modelInputsByLoader(): ReadonlyMap<string, readonly string[]> {
+  function modelInputsByLoader(): ReadonlyMap<
+    string,
+    readonly (string | RegExp)[]
+  > {
     modelToNodeStore.registerDefaults()
-    const inputs = new Map<string, string[]>()
+    const inputs = new Map<string, (string | RegExp)[]>()
     for (const providers of Object.values(modelToNodeStore.modelToNodeMap)) {
       for (const { nodeDef, key } of providers ?? []) {
         if (!key) continue
@@ -84,11 +87,9 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
         errorType: 'error_copying_deploy_agent_brief',
         surface: 'platform'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('deployToComfyApi.briefFailed'),
-        life: 5000
+      toast.error(t('g.error'), {
+        description: t('deployToComfyApi.briefFailed'),
+        duration: 5000
       })
       return false
     }

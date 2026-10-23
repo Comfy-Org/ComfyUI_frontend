@@ -9,38 +9,39 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
 import {
   authCredentialOf,
   notifyAuthCredential
 } from '@/platform/auth/authCredential'
 import { scopeMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
+  AgentStatusWsMessage,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
+  AssetSeedCompletedWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -81,8 +82,7 @@ import type {
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   fetchHistory,
@@ -146,8 +146,6 @@ interface QueuePromptRequestBody {
   front?: boolean
   number?: number
 }
-
-const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -271,8 +269,10 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
+  'assets.seed.completed': AssetSeedCompletedWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -288,6 +288,28 @@ interface ApiMessage<T extends keyof ApiCalls> {
 }
 
 export class UnauthorizedError extends Error {}
+
+const CLIENT_ID_STORAGE_KEY = 'clientId'
+
+let reportedClientIdStorageFailure = false
+
+function withClientIdStorage<T>(
+  access: (storage: Storage) => T
+): T | undefined {
+  try {
+    return access(window.sessionStorage)
+  } catch (cause) {
+    if (!reportedClientIdStorageFailure) {
+      reportedClientIdStorageFailure = true
+      reportError(cause, {
+        errorType: 'failure_accessing_client_id_storage',
+        surface: 'platform',
+        level: 'warning'
+      })
+    }
+    return undefined
+  }
+}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -365,35 +387,17 @@ function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
   }
 }
 
-/**
- * Fire-and-forget: a telemetry chunk-load failure must never prevent the
- * token-less WebSocket connect fallback from proceeding.
- */
-async function trackWsTokenUnavailable(): Promise<void> {
-  try {
-    if (!(await shouldRemintCloudRequest())) return
-    const { useTelemetry } = await import('@/platform/telemetry')
-    useTelemetry()?.trackUnifiedAuthRetry({
-      transport: 'ws',
-      outcome: 'failed',
-      failure_reason: 'token_unavailable'
-    })
-  } catch (err) {
-    console.warn('Failed to report WebSocket token unavailability:', err)
-  }
-}
-
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ): void
 
   removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void
 }
@@ -441,6 +445,23 @@ export class PromptExecutionError extends Error {
   }
 }
 
+interface LaunchContext {
+  host: string
+  base: string
+  initialClientId: string | null
+}
+
+function readLaunchContext(): LaunchContext {
+  return {
+    host: location.host,
+    base: isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/'),
+    initialClientId:
+      withClientIdStorage((storage) =>
+        storage.getItem(CLIENT_ID_STORAGE_KEY)
+      ) ?? null
+  }
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -452,12 +473,7 @@ export class ComfyApi extends EventTarget {
     EventListenerOrEventListenerObject,
     EventListener
   >()
-  api_host: string
-  api_base: string
-  /**
-   * The client id from the initial session storage.
-   */
-  initialClientId: string | null
+  private launchContext?: LaunchContext
   /**
    * The current client id from websocket status updates.
    */
@@ -478,10 +494,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
 
-  /**
-   * Cache Firebase auth store composable function.
-   */
-  private authStoreComposable?: typeof useAuthStore
+  private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
   reportedUnknownMessageTypes = new Set<string>()
 
@@ -530,11 +543,44 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
-    this.initialClientId = sessionStorage.getItem('clientId')
+  }
+
+  /**
+   * Snapshots the page host, base path, and stored client id. Runs on first
+   * use; the bootstrap calls it before routing can change the location.
+   */
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
+    this.launchContext ??= readLaunchContext()
+    return this.launchContext
+  }
+
+  get api_host(): string {
+    return this.capturedLaunchContext.host
+  }
+
+  set api_host(host: string) {
+    this.launchContext = { ...this.capturedLaunchContext, host }
+  }
+
+  get api_base(): string {
+    return this.capturedLaunchContext.base
+  }
+
+  set api_base(base: string) {
+    this.launchContext = { ...this.capturedLaunchContext, base }
+  }
+
+  /** The client id from the initial session storage. */
+  get initialClientId(): string | null {
+    return this.capturedLaunchContext.initialClientId
+  }
+
+  set initialClientId(initialClientId: string | null) {
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
@@ -559,20 +605,12 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Gets the Firebase auth store instance using cached composable function.
-   * Caches the composable function on first call, then reuses it.
-   * Returns null for non-cloud distributions.
-   * @returns The Firebase auth store instance, or null if not in cloud
+   * Installs the credentials source for every request and socket connection.
+   * Called once by the composition root; requests made before that are
+   * anonymous.
    */
-  private async getAuthStore() {
-    if (isCloud) {
-      if (!this.authStoreComposable) {
-        const module = await import('@/stores/authStore')
-        this.authStoreComposable = module.useAuthStore
-      }
-
-      return this.authStoreComposable()
-    }
+  setAuthProvider(provider: ApiAuthProvider): void {
+    this.authProvider = provider
   }
 
   private async getWebSessionSend(): Promise<WebSessionSend | undefined> {
@@ -609,18 +647,7 @@ export class ComfyApi extends EventTarget {
     credential: AuthCredential
     unifiedRetryOn401: boolean
   }> {
-    // Get Firebase JWT token if user is logged in
-    const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
-      try {
-        const authStore = await this.getAuthStore()
-        return authStore ? await authStore.getAuthHeader() : null
-      } catch (error) {
-        console.warn('Failed to get auth header:', error)
-        return null
-      }
-    }
-
-    const authHeader = await getAuthHeaderIfAvailable()
+    const authHeader = await this.authProvider.getAuthHeader()
     onAuthHeader?.(authHeader !== null)
     if (!authHeader) {
       return { scheme: 'none', credential: 'none', unifiedRetryOn401: false }
@@ -632,30 +659,7 @@ export class ComfyApi extends EventTarget {
     return {
       scheme: 'cloud-auth-header',
       credential: authCredentialOf(authHeader),
-      unifiedRetryOn401: await shouldRemintCloudRequest()
-    }
-  }
-
-  /**
-   * Waits for Firebase auth to be initialized before proceeding.
-   * Includes 10-second timeout to prevent infinite hanging.
-   */
-  private async waitForAuthInitialization(): Promise<void> {
-    if (isCloud) {
-      const authStore = await this.getAuthStore()
-      if (!authStore) return
-
-      if (authStore.isInitialized) return
-
-      const { isInitialized } = storeToRefs(authStore)
-      try {
-        await Promise.race([
-          until(isInitialized).toBe(true),
-          promiseTimeout(10000)
-        ])
-      } catch {
-        console.warn('Firebase auth initialization timeout after 10 seconds')
-      }
+      unifiedRetryOn401: await this.authProvider.shouldRetryOn401()
     }
   }
 
@@ -672,7 +676,7 @@ export class ComfyApi extends EventTarget {
     let sendOnWebSession: WebSessionSend | undefined
 
     if (isCloud) {
-      await this.waitForAuthInitialization()
+      await this.authProvider.waitForInitialization()
       sendOnWebSession = await this.getWebSessionSend()
       if (sendOnWebSession) {
         onAuthHeader?.(true)
@@ -769,7 +773,7 @@ export class ComfyApi extends EventTarget {
     }
     const response = sendOnWebSession
       ? sendOnWebSession(this.unscopedApiURL(route), init)
-      : fetchWithUnifiedRemint(
+      : this.authProvider.fetch(
           this.apiURL(route),
           init,
           unifiedRetryOn401,
@@ -845,13 +849,12 @@ export class ComfyApi extends EventTarget {
 
   override addEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: AddEventListenerOptions | boolean
   ) {
-    // Type assertion: strictFunctionTypes.  So long as we emit events in a type-safe fashion, this is safe.
     super.addEventListener(
       type,
-      this.wrapListener(callback as EventListener),
+      this.wrapListener(callback as EventListenerOrEventListenerObject | null),
       options
     )
     this._registered.add(type)
@@ -859,12 +862,14 @@ export class ComfyApi extends EventTarget {
 
   override removeEventListener<TEvent extends keyof ApiEvents>(
     type: TEvent,
-    callback: ((event: ApiEvents[TEvent]) => void) | null,
+    callback: ((event: ApiEvents[TEvent]) => void) | EventListenerObject | null,
     options?: EventListenerOptions | boolean
   ): void {
     super.removeEventListener(
       type,
-      this.getWrappedListener(callback as EventListener),
+      this.getWrappedListener(
+        callback as EventListenerOrEventListenerObject | null
+      ),
       options
     )
   }
@@ -945,20 +950,17 @@ export class ComfyApi extends EventTarget {
     }
     if (sessionScope) return true
 
-    // Get auth token and set cloud params if available
-    // Uses workspace token (if enabled) or Firebase token
-    try {
-      const authStore = await this.getAuthStore()
-      const authToken = await authStore?.getAuthToken()
-      if (authToken) {
-        params.set('token', authToken)
-      }
-    } catch (error) {
-      void trackWsTokenUnavailable()
-      // Continue without auth token if there's an error
-      console.warn('Could not get auth token for WebSocket connection:', error)
+    const authToken = await this.authProvider.getAuthToken()
+    if (authToken) {
+      params.set('token', authToken)
     }
     return !requests || params.has('token')
+  }
+
+  /** The cloud socket's auth params; null when no one is signed in to open it. */
+  async socketAuthParams(): Promise<URLSearchParams | null> {
+    const params = new URLSearchParams()
+    return (await this.addSocketAuth(params)) ? params : null
   }
 
   /**
@@ -974,7 +976,6 @@ export class ComfyApi extends EventTarget {
     let opened = false
     const existingSession = window.name
 
-    // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
 
     if (existingSession) {
@@ -988,9 +989,6 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    // A newer connect attempt (an identity reset, or a later reconnect) began
-    // while this one awaited its token. Abandon this attempt so only the latest
-    // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
 
     const socket = new WebSocket(wsUrl)
@@ -998,7 +996,6 @@ export class ComfyApi extends EventTarget {
     this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
 
-    // Armed before `open` so a socket that never opens still settles.
     const settleTimer = setTimeout(() => {
       if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
         this.serverFeatureFlagsSettled.value = true
@@ -1008,7 +1005,6 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('open', () => {
       opened = true
 
-      // Send feature flags as the first message
       socket.send(
         JSON.stringify({
           type: 'feature_flags',
@@ -1022,9 +1018,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('error', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) is
-      // already being torn down; ignore its late errors so it cannot start an
-      // unnecessary permanent polling loop for the previous identity.
       if (this.socket !== socket) return
       socket.close()
       if (!isReconnect && !opened) {
@@ -1033,8 +1026,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('close', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) must
-      // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
@@ -1050,8 +1041,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('message', (event) => {
-      // Ignore late messages from a replaced socket so previous-account
-      // realtime data is not dispatched after an identity switch.
       if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
@@ -1108,7 +1097,6 @@ export class ComfyApi extends EventTarget {
               break
             }
             case 4: {
-              // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
               const metadataBytes = event.data.slice(8, 8 + metadataLength)
@@ -1121,7 +1109,6 @@ export class ComfyApi extends EventTarget {
                 type: imageMime4
               })
 
-              // Dispatch enhanced preview event with metadata
               this.dispatchCustomEvent('b_preview_with_metadata', {
                 blob: imageBlob4,
                 nodeId: metadata.node_id,
@@ -1131,7 +1118,6 @@ export class ComfyApi extends EventTarget {
                 jobId: metadata.prompt_id
               })
 
-              // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             }
@@ -1148,8 +1134,10 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isn't reused when duplicating tabs
-                sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                window.name = clientId
+                withClientIdStorage((storage) =>
+                  storage.setItem(CLIENT_ID_STORAGE_KEY, clientId)
+                )
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
@@ -1185,9 +1173,15 @@ export class ComfyApi extends EventTarget {
               this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
+            case 'agent_status':
+              this.serverFeatureFlags.value = {
+                ...this.serverFeatureFlags.value,
+                agent: msg.data
+              }
+              this.dispatchCustomEvent('agent_status', msg.data)
+              break
             default:
               if (this._registered.has(msg.type)) {
-                // Fallback for custom types - calls super direct.
                 super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
@@ -1217,12 +1211,11 @@ export class ComfyApi extends EventTarget {
    * events over a handshake that was authenticated as that account.
    */
   async resetSocket(): Promise<void> {
-    // Clear every handshake identity source: createSocket() reads the client id
-    // from window.name (mirrored in session storage), not this.clientId, so the
-    // next connect must not inherit the prior account's id.
     this.clientId = undefined
     window.name = ''
-    sessionStorage.removeItem('clientId')
+    withClientIdStorage((storage) => storage.removeItem(CLIENT_ID_STORAGE_KEY))
+    const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
+    this.serverFeatureFlags.value = features
     await this.replaceSocket()
   }
 
@@ -1237,8 +1230,9 @@ export class ComfyApi extends EventTarget {
 
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
-    // serverFeatureFlags deliberately keeps the previous map: clearing it would
-    // downgrade every serverSupportsFeature() caller until the next delivery.
+    // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
+    // only `agent`): clearing it would downgrade every serverSupportsFeature()
+    // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
@@ -1317,8 +1311,21 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
+  private nodeDefsPrefetch?: Promise<Response>
+
+  /** Start fetching `/object_info` so the next `getNodeDefs()` can reuse it. */
+  prefetchNodeDefs(): void {
+    this.nodeDefsPrefetch ??= this.fetchApi('/object_info', {
+      cache: 'no-store'
+    })
+    this.nodeDefsPrefetch.catch(() => undefined)
+  }
+
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
-    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
+    const prefetched = this.nodeDefsPrefetch
+    this.nodeDefsPrefetch = undefined
+    const resp = await (prefetched ??
+      this.fetchApi('/object_info', { cache: 'no-store' }))
     return await resp.json()
   }
 
@@ -1522,8 +1529,11 @@ export class ComfyApi extends EventTarget {
    * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
-  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
-    return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  async getJobDetail(
+    jobId: string,
+    signal?: AbortSignal
+  ): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId, signal)
   }
 
   /**
@@ -1706,10 +1716,15 @@ export class ComfyApi extends EventTarget {
   /**
    * Stores a setting for the current user
    */
-  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
+  async storeSetting(
+    id: keyof Settings,
+    value: Settings[keyof Settings],
+    options?: Pick<RequestInit, 'keepalive'>
+  ) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
-      body: JSON.stringify(value)
+      body: JSON.stringify(value),
+      ...options
     })
   }
 
@@ -1742,18 +1757,41 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
-    const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
-      {
-        method: 'POST',
-        body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
-        ...options
-      }
-    )
-    if (resp.status !== 200 && options.throwOnError !== false) {
-      throw new Error(
-        `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
+    const overwrite = options.overwrite ?? true
+    const fullInfo = options.full_info ?? false
+    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
+    const resp = await this.fetchApi(route, {
+      method: 'POST',
+      body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
+      ...options
+    })
+    if (resp.status !== 200) {
+      const message = `Error storing user data file '${file}': ${resp.status} ${resp.statusText}`
+      // The reported message and route are file-independent: the literal file
+      // name (and `route`, which embeds it) is unbounded cardinality and
+      // would fragment Sentry grouping into one bucket per file instead of
+      // one for this failure mode — exactly what buried PM-1906's alerts.
+      reportError(
+        new Error(
+          `Error storing user data file: ${resp.status} ${resp.statusText}`
+        ),
+        {
+          errorType: 'userdata_store_failure',
+          surface: 'platform',
+          tags: {
+            status: resp.status,
+            overwrite,
+            full_info: fullInfo
+          },
+          context: {
+            file,
+            route: `/userdata/{file}?overwrite=${overwrite}&full_info=${fullInfo}`
+          }
+        }
       )
+      if (options.throwOnError !== false) {
+        throw new Error(message)
+      }
     }
 
     return resp
@@ -1871,6 +1909,7 @@ export class ComfyApi extends EventTarget {
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
    */
   async freeMemory(options: { freeExecutionCache: boolean }) {
+    const toast = useToast()
     try {
       let mode = ''
       if (options.freeExecutionCache) {
@@ -1886,31 +1925,19 @@ export class ComfyApi extends EventTarget {
       })
 
       if (res.status === 200) {
-        if (options.freeExecutionCache) {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models and Execution Cache have been cleared.',
-            life: 3000
-          })
-        } else {
-          useToastStore().add({
-            severity: 'success',
-            summary: 'Models have been unloaded.',
-            life: 3000
-          })
-        }
+        toast.success(
+          t(
+            options.freeExecutionCache
+              ? 'toastMessages.modelsAndCacheCleared'
+              : 'toastMessages.modelsUnloaded'
+          ),
+          { duration: 3000 }
+        )
       } else {
-        useToastStore().add({
-          severity: 'error',
-          summary:
-            'Unloading of models failed. Installed ComfyUI may be an outdated version.'
-        })
+        toast.error(t('toastMessages.unloadModelsFailed'))
       }
     } catch {
-      useToastStore().add({
-        severity: 'error',
-        summary: 'An error occurred while trying to unload models.'
-      })
+      toast.error(t('toastMessages.unloadModelsError'))
     }
   }
 

@@ -28,11 +28,11 @@ function clearQueue(close: () => void) {
     <Popover side="top" :show-arrow="false" @focus-outside.prevent>
       <template #button>
         <Button
-          v-tooltip.top="t('linearMode.queue.clickToClear')"
+          :tooltip="t('linearMode.queue.clickToClear')"
           :aria-label="t('linearMode.queue.clickToClear')"
           variant="textonly"
           size="unset"
-          class="flex size-10 items-center justify-center rounded-sm bg-secondary-background"
+          class="flex size-10 rounded-sm bg-secondary"
         >
           <Loader
             :variant="
@@ -47,7 +47,7 @@ function clearQueue(close: () => void) {
         <Button
           :disabled="queueCount === 0"
           variant="textonly"
-          class="px-4 text-sm text-destructive-background"
+          class="px-4 text-sm text-destructive"
           @click="clearQueue(close)"
         >
           <i class="icon-[lucide--list-x]" />
@@ -59,7 +59,7 @@ function clearQueue(close: () => void) {
       v-if="queueCount > 1"
       aria-hidden="true"
       data-testid="linear-job-badge"
-      class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-background text-xs text-text-primary"
+      class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary text-xs text-foreground"
       v-text="queueCount"
     />
   </div>

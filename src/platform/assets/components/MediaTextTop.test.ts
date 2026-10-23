@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import MediaTextTop from './MediaTextTop.vue'
 
 function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {

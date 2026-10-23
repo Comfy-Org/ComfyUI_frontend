@@ -374,7 +374,7 @@ describe('HeaderMain account source', () => {
       await screen.findAllByRole('link', { name: /sign in/i })
     ).toHaveLength(2)
     const { signOutWorkshop } = await import('@/config/workshop-firebase')
-    expect(vi.mocked(signOutWorkshop)).toHaveBeenCalledOnce()
+    expect(signOutWorkshop).toHaveBeenCalledOnce()
   })
 
   describe('decision cap', () => {

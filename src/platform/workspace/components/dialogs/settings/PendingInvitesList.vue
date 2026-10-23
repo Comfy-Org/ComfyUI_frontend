@@ -5,7 +5,7 @@
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+          'grid w-full items-center border-b border-border/30 p-2 last:border-0',
           gridCols
         )
       "
@@ -16,17 +16,17 @@
         "
       >
         <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
         >
           <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
-        <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-base-foreground">
+        <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+          <span class="text-foreground">
             {{ getInviteDisplayName(invite.email) }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-muted-foreground">
             {{ invite.email }}
           </span>
         </div>
@@ -38,9 +38,7 @@
         :class="
           cn(
             'text-sm',
-            isExpired(invite)
-              ? 'text-warning-background'
-              : 'text-muted-foreground'
+            isExpired(invite) ? 'text-warning' : 'text-muted-foreground'
           )
         "
       >
@@ -86,7 +84,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
@@ -94,7 +92,7 @@ import {
 } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const toastStore = useToastStore()
+const toast = useToast()
 
 const { searchQuery = '', loaded = false } = defineProps<{
   invites: WorkspacePendingInvite[]
@@ -131,16 +129,11 @@ function isExpired(invite: WorkspacePendingInvite): boolean {
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
   if (await copyTextSilently(buildInviteLink(invite.token))) {
-    toastStore.add({
-      severity: 'success',
-      summary: t('workspacePanel.inviteLinks.copiedToast'),
-      life: 3000
+    toast.success(t('workspacePanel.inviteLinks.copiedToast'), {
+      duration: 3000
     })
   } else {
-    toastStore.add({
-      severity: 'error',
-      summary: t('workspacePanel.inviteLinks.copyFailedToast')
-    })
+    toast.error(t('workspacePanel.inviteLinks.copyFailedToast'))
   }
 }
 

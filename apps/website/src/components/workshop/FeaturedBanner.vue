@@ -48,10 +48,14 @@ const {
   autoplay?: boolean
 }>()
 const { t } = translationsFor(locale)
+const emit = defineEmits<{ open: [slide: FeaturedSlide, position: number] }>()
 
 const activeIndex = ref(0)
+const shownIndex = computed(() =>
+  Math.min(activeIndex.value, slides.length - 1)
+)
 const active = computed<FeaturedSlide | undefined>(
-  () => slides[Math.min(activeIndex.value, slides.length - 1)]
+  () => slides[shownIndex.value]
 )
 
 function goTo(index: number) {
@@ -134,6 +138,7 @@ const fill = computed(() =>
         aria-hidden="true"
         class="absolute inset-0"
         data-testid="featured-slide-link"
+        @click="emit('open', active, shownIndex)"
       ></a>
       <video
         v-if="active.media?.kind === 'video'"
@@ -197,7 +202,12 @@ const fill = computed(() =>
         </p>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
-          <Button as="a" :href="active.href" class="w-fit">
+          <Button
+            as="a"
+            :href="active.href"
+            class="w-fit"
+            @click="emit('open', active, shownIndex)"
+          >
             {{ active.cta ?? t('workshop.hub.tryNow') }}
           </Button>
           <Button

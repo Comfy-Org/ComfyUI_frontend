@@ -48,18 +48,18 @@ describe('InviteWrongAccountDialogContent', () => {
       })
     )
 
-    expect(vi.mocked(capturePreservedQuery)).toHaveBeenCalledWith(
+    expect(capturePreservedQuery).toHaveBeenCalledWith(
       'invite',
       { invite: 'tok-403' },
       ['invite']
     )
-    expect(vi.mocked(useAuthActions().logout)).toHaveBeenCalled()
+    expect(useAuthActions().logout).toHaveBeenCalled()
     expect(
       vi.mocked(capturePreservedQuery).mock.invocationCallOrder[0]
     ).toBeLessThan(
       vi.mocked(useAuthActions().logout).mock.invocationCallOrder[0]
     )
-    expect(vi.mocked(useAuthStore().logout)).not.toHaveBeenCalled()
+    expect(useAuthStore().logout).not.toHaveBeenCalled()
   })
 
   it('renders the generic body when no signed-in email is available', () => {
@@ -98,9 +98,9 @@ describe('InviteWrongAccountDialogContent', () => {
       })
     )
 
-    expect(vi.mocked(useAuthActions().logout)).not.toHaveBeenCalled()
-    expect(vi.mocked(capturePreservedQuery)).not.toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+    expect(capturePreservedQuery).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'invite-wrong-account'
     })
   })

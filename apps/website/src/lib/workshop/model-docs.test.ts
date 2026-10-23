@@ -6,7 +6,7 @@ import { modelDocsHref } from './model-docs'
 const DOCS = 'https://docs.comfy.org/development/comfy-router/models'
 
 // Router providers the docs page has no section for yet.
-const UNDOCUMENTED = new Set(['runware'])
+const UNDOCUMENTED = new Set(['pika', 'runware'])
 
 describe('modelDocsHref', () => {
   it('links a model through its Router id or its display name', () => {

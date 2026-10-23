@@ -114,11 +114,7 @@ const config: StorybookConfig = {
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },
           {
-            find: '@/composables/queue/useJobActions',
-            replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
-          },
-          {
-            find: '@/composables/billing/useBillingContext',
+            find: '@/platform/billing/composables/useBillingContext',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingContext.ts'
           },
@@ -133,7 +129,7 @@ const config: StorybookConfig = {
               process.cwd() + '/src/storybook/mocks/useWorkspaceUI.ts'
           },
           {
-            find: '@/platform/workspace/composables/useBillingCapabilities',
+            find: '@/platform/billing/composables/useBillingCapabilities',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingCapabilities.ts'
           },
@@ -173,6 +169,7 @@ const config: StorybookConfig = {
         ]
       },
       build: {
+        copyPublicDir: false,
         rolldownOptions: {
           treeshake: false,
           output: {

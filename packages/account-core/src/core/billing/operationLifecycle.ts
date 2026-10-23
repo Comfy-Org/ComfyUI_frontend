@@ -20,32 +20,32 @@
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
-} from '../../telemetry.js'
+} from '#/telemetry'
 import type {
   BillingFailure,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import type {
   BillingScope,
   BillingScopeContext,
   BillingScopeSource
-} from './billingScope.js'
-import { createBillingScopeTracker } from './billingScope.js'
+} from './billingScope'
+import { createBillingScopeTracker } from './billingScope'
 import type {
   BillingOperationPointer,
   BillingOperationPointerStorage,
   OperationPointerStore
-} from './operationPointer.js'
+} from './operationPointer'
 import {
   NO_POINTER_STORE,
   createOperationPointerStore
-} from './operationPointer.js'
+} from './operationPointer'
 import {
   hasExhaustedPollBudget,
   isWaitingOnCustomerWithoutAction,
   nextPollDelayMs
-} from './operationPolicy.js'
+} from './operationPolicy'
 import type {
   BillingDeclineReason,
   BillingOpStatus,
@@ -56,24 +56,24 @@ import type {
   BillingPresentationState,
   HostedBillingDestination,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 import {
   BillingOpStatusSchema,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl
-} from './operationState.js'
-import type { PaymentFrictionSignal } from './paymentFriction.js'
+} from './operationState'
+import type { PaymentFrictionSignal } from './paymentFriction'
 import type {
   CheckoutHostedStep,
   CheckoutRedirectNavigation
-} from './telemetry/checkoutRedirectEvent.js'
-import type { CheckoutMethodKind } from './telemetry/checkoutJourney.js'
-import { paymentFrictionBetween } from './paymentFriction.js'
-import { selectBillingPresentation } from './presentation.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
-import type { BillingStatusData, BillingStatusReader } from './status.js'
+} from './telemetry/checkoutRedirectEvent'
+import type { CheckoutMethodKind } from './telemetry/checkoutJourney'
+import { paymentFrictionBetween } from './paymentFriction'
+import { selectBillingPresentation } from './presentation'
+import { readValidatedBillingResponse } from './sharedRead'
+import type { BillingStatusData, BillingStatusReader } from './status'
 
 /** Settled, but a later read may still change what the operation reports. */
 function isStillSettling(state: BillingOperationState): boolean {

@@ -46,7 +46,7 @@ describe('CloudPricingSection', () => {
   it.for([
     {
       locale: 'en',
-      teamFeature: 'Invite members up to 50',
+      teamFeature: 'Invite up to 50 members',
       enterpriseCta: 'Learn More'
     },
     {

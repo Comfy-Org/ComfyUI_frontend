@@ -1311,14 +1311,14 @@ describe('ModelDetail', () => {
       await mountDetail({ model: { ...model, incompleteReason: reason } })
       expect(screen.getByText('Incomplete')).toBeTruthy()
       expect(screen.getByText(explanation)).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
       const button = screen.getByRole('button', {
         name: 'Run not yet supported'
       })
       expect(button.matches(':disabled')).toBe(true)
       await user().click(button)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
-      expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+      expect(useWorkshopSession().ensureFresh).not.toHaveBeenCalled()
       expect(screen.queryByRole('button', { name: 'Native JSON' })).toBeNull()
     }
   )
@@ -1346,7 +1346,7 @@ describe('ModelDetail', () => {
       token: 'fresh-workspace-jwt',
       body: { prompt: 'A red teapot', seed: 123456 }
     })
-    expect(vi.mocked(useWorkshopSession().ensureFresh)).toHaveBeenCalled()
+    expect(useWorkshopSession().ensureFresh).toHaveBeenCalled()
     expect(screen.getByTestId('router-request-id').textContent).toContain(
       'request-123'
     )
@@ -1477,12 +1477,9 @@ describe('ModelDetail', () => {
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
-    expect(vi.mocked(useWorkshopSession().remint)).toHaveBeenCalledWith(
-      undefined,
-      {
-        preserveCredentialOnTransientFailure: true
-      }
-    )
+    expect(useWorkshopSession().remint).toHaveBeenCalledWith(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
@@ -2169,14 +2166,22 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('sends a signed-out visitor to sign in and come back', async () => {
+  it('labels Run for a signed-out visitor and sends them to sign in and come back', async () => {
     history.replaceState(null, '', '/models/demo/?tab=api')
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
     await mountDetail({ model: runnable })
     await nextTick()
-    const button = screen.getByTestId('run-button')
+    const button = screen.getByRole('link', { name: 'Run' })
     expect(button.getAttribute('data-gate')).toBe('signedOut')
     expect(button.getAttribute('href')).toBe(
       '/login/?returnTo=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
+    )
+    await user().click(button)
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledExactlyOnceWith(
+        '/login/?returnTo=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
+      )
     )
   })
 
@@ -2228,7 +2233,7 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('button', { name: 'Replace local.png' })
       ).toBeTruthy()
-      expect(screen.getByRole('link', { name: 'Sign in to run' })).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Run' })).toBeTruthy()
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       unmount()
 
@@ -2260,7 +2265,7 @@ describe('ModelDetail', () => {
       if (disabled === 'auth') auth.enabled.value = false
       await mountDetail({ model: disabled === 'model' ? model : runnable })
       await nextTick()
-      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
       expect(
         screen.getByRole('button', {
           name: 'This model cannot be run from the browser yet.'
@@ -2277,7 +2282,7 @@ describe('ModelDetail', () => {
         .getByRole('button', { name: 'Checking your session…' })
         .hasAttribute('disabled')
     ).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
     auth.session.value = credential
     auth.settled.value = true
     await nextTick()

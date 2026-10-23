@@ -716,7 +716,7 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    await tab.dismissToasts()
+    await comfyPage.toast.closeToasts()
 
     // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
@@ -1056,8 +1056,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {

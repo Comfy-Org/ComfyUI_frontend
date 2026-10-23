@@ -123,9 +123,7 @@ describe('creator file failure diagnostics', () => {
     )
     assert.isDefined(example)
     const cause = new TypeError('Private download detail')
-    vi.mocked(fetch).mockImplementation(
-      vi.fn<typeof fetch>().mockRejectedValue(cause)
-    )
+    vi.mocked(fetch).mockRejectedValue(cause)
 
     const failure = await prepareWorkshopCreatorRequest(
       creator,
