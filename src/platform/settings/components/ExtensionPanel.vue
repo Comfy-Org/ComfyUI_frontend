@@ -16,7 +16,9 @@
         </li>
         <li v-for="pack in changedExtensionPacks" :key="pack">
           <span>
-            {{ extensionStore.isExtensionPackEnabled(pack) ? '[-]' : '[+]' }}
+            {{
+              extensionStore.wasExtensionPackEnabledAtBoot(pack) ? '[-]' : '[+]'
+            }}
           </span>
           {{ extensionPackName(pack) }}
         </li>
@@ -45,6 +47,7 @@
     <ExtensionPackTable
       :packs="extensionStore.extensionPackPaths"
       :enabled-by-path="enabledExtensionPacks"
+      :saving="extensionStore.isSavingExtensionPacks"
       @set-enabled="setExtensionPackEnabled"
     />
     <ExtensionListTable
@@ -70,6 +73,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Message from '@/components/ui/message/Message.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -99,14 +103,11 @@ const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
-// Projected from the setting rather than staged here: packs have exactly one
-// authoritative current state, and a second copy of it is what let a rolled
-// back save and a remount each display a different answer.
 const enabledExtensionPacks = computed(() =>
   Object.fromEntries(
     extensionStore.extensionPackPaths.map((path) => [
       path,
-      extensionStore.isExtensionPackCurrentlyEnabled(path)
+      extensionStore.isExtensionPackEnabled(path)
     ])
   )
 )
@@ -183,8 +184,8 @@ const changedExtensions = computed(() => {
 const changedExtensionPacks = computed(() => {
   return extensionStore.extensionPackPaths.filter(
     (path) =>
-      extensionStore.isExtensionPackCurrentlyEnabled(path) !==
-      extensionStore.isExtensionPackEnabled(path)
+      extensionStore.isExtensionPackEnabled(path) !==
+      extensionStore.wasExtensionPackEnabledAtBoot(path)
   )
 })
 
@@ -216,11 +217,14 @@ async function setExtensionPackEnabled(path: string, enabled: boolean) {
   const result = await extensionStore.setExtensionPackEnabled(path, enabled)
   if (result.ok) return
 
-  // The setting owner has already returned the key to the value the server
-  // holds, so the switch goes back to it on its own and nothing offers a
-  // reload. Reported so a save the user watched fail is not also silent.
+  useToast().warning(
+    t('toastMessages.errorSaveSetting', {
+      id: 'Comfy.Extension.DisabledPacks',
+      err: result.detail
+    })
+  )
   reportError(result.detail, {
-    errorType: 'extension_pack_save_failed',
+    errorType: 'failure_saving_extension_pack',
     surface: 'platform',
     level: 'warning',
     tags: { reason: result.reason },

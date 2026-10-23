@@ -5,7 +5,9 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import {
+  REVERTIBLE_SETTING_IDS,
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
@@ -575,18 +577,17 @@ describe('useSettingStore', () => {
     })
 
     describe('when the write does not land', () => {
-      const localeSetting: SettingParams = {
-        id: 'Comfy.Locale',
-        name: 'Comfy.Locale',
-        type: 'text',
-        defaultValue: 'default'
+      const PACKS = 'Comfy.Extension.DisabledPacks'
+      const packsSetting: SettingParams = {
+        id: PACKS,
+        name: PACKS,
+        type: 'hidden',
+        defaultValue: [] as string[]
       }
 
-      // `api.fetchApi` resolves for any status it got a response for, so
-      // without this an HTTP 500 is indistinguishable from a saved value.
       it.for([
         {
-          label: 'refuses the write',
+          label: 'answers with an error status',
           storeSetting: () =>
             Promise.resolve(
               new Response(null, { status: 500, statusText: 'Server Error' })
@@ -594,36 +595,34 @@ describe('useSettingStore', () => {
           expected: { ok: false, reason: 'refused', detail: '500 Server Error' }
         },
         {
-          label: 'is unreachable',
+          label: 'never answers at all',
           storeSetting: () => Promise.reject(new Error('offline')),
           expected: { ok: false, reason: 'unreachable', detail: 'offline' }
         }
       ])(
         'setOrRevert reports it and restores the stored value when the server $label',
         async ({ storeSetting, expected }) => {
-          store.addSetting(localeSetting)
-          await store.set('Comfy.Locale', 'saved')
+          store.addSetting(packsSetting)
+          await store.set(PACKS, ['/extensions/saved/'])
           vi.mocked(api.storeSetting).mockImplementation(storeSetting)
 
-          expect(await store.setOrRevert('Comfy.Locale', 'rejected')).toEqual(
-            expected
-          )
-          expect(store.get('Comfy.Locale')).toBe('saved')
+          expect(
+            await store.setOrRevert(PACKS, ['/extensions/rejected/'])
+          ).toEqual(expected)
+          expect(store.get(PACKS)).toEqual(['/extensions/saved/'])
         }
       )
 
-      // Restoring a value here would make the setting read as user-set on the
-      // strength of a write that never landed.
-      it('setOrRevert leaves a never-stored setting unset', async () => {
-        store.addSetting(localeSetting)
+      it('setOrRevert leaves a never-stored setting unset rather than user-set', async () => {
+        store.addSetting(packsSetting)
         vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
 
         expect(
-          await store.setOrRevert('Comfy.Locale', 'rejected')
+          await store.setOrRevert(PACKS, ['/extensions/rejected/'])
         ).toMatchObject({ ok: false })
 
-        expect(store.exists('Comfy.Locale')).toBe(false)
-        expect(store.get('Comfy.Locale')).toBe('default')
+        expect(store.exists(PACKS)).toBe(false)
+        expect(store.get(PACKS)).toEqual([])
       })
 
       it('setOrRevert does not restore over a value a later write stored', async () => {
@@ -631,26 +630,87 @@ describe('useSettingStore', () => {
         vi.mocked(api.storeSetting).mockImplementation(
           () => new Promise<Response>((resolve) => acknowledge.push(resolve))
         )
-        store.addSetting(localeSetting)
+        store.addSetting(packsSetting)
 
-        const first = store.setOrRevert('Comfy.Locale', 'first')
+        const first = store.setOrRevert(PACKS, ['/extensions/first/'])
         await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
-        const second = store.setOrRevert('Comfy.Locale', 'second')
+        const second = store.setOrRevert(PACKS, ['/extensions/second/'])
         await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
 
         acknowledge[1](new Response())
-        expect(await second).toEqual({ ok: true })
+        expect(await second).toEqual({ ok: true, outcome: 'saved' })
         acknowledge[0](new Response(null, { status: 500 }))
         expect(await first).toMatchObject({ ok: false })
 
-        expect(store.get('Comfy.Locale')).toBe('second')
+        expect(store.get(PACKS)).toEqual(['/extensions/second/'])
       })
 
-      // Some callers want the optimistic value even though the write failed —
-      // a dismissal that should stay dismissed for the session — and have
-      // always learned about an unreachable backend from a rejection.
-      it('set keeps the local value and still rejects when unreachable', async () => {
-        store.addSetting(localeSetting)
+      it.for([0, 1, 2, 3, 4, 5, 6])(
+        'setOrRevert does not restore over an acknowledged later write started %d hops in',
+        async (hops) => {
+          const acknowledge = new Map<string, (response: Response) => void>()
+          vi.mocked(api.storeSetting).mockImplementation(
+            (_id, value) =>
+              new Promise<Response>((resolve) => {
+                acknowledge.set(JSON.stringify(value), resolve)
+              })
+          )
+          store.addSetting(packsSetting)
+
+          const first = store.setOrRevert(PACKS, ['/extensions/first/'])
+          for (let hop = 0; hop < hops; hop++) await Promise.resolve()
+          const second = store.setOrRevert(PACKS, ['/extensions/second/'])
+
+          const secondPayload = JSON.stringify(['/extensions/second/'])
+          await vi.waitFor(() =>
+            expect(acknowledge.has(secondPayload)).toBe(true)
+          )
+          acknowledge.get(secondPayload)!(new Response())
+          expect(await second).toEqual({ ok: true, outcome: 'saved' })
+
+          acknowledge.get(JSON.stringify(['/extensions/first/']))?.(
+            new Response(null, { status: 500 })
+          )
+          expect(await first).not.toEqual({ ok: true, outcome: 'saved' })
+
+          expect(store.get(PACKS)).toEqual(['/extensions/second/'])
+        }
+      )
+
+      it('setOrRevert reports a superseded write rather than claiming it saved', async () => {
+        store.addSetting(packsSetting)
+        vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+
+        const [first, second] = await Promise.all([
+          store.setOrRevert(PACKS, ['/extensions/first/']),
+          store.setOrRevert(PACKS, ['/extensions/second/'])
+        ])
+
+        expect(first).toEqual({ ok: true, outcome: 'superseded' })
+        expect(second).toEqual({ ok: true, outcome: 'saved' })
+        expect(api.storeSetting).toHaveBeenCalledOnce()
+      })
+
+      it('sends an equal-but-distinct list rather than reporting it unchanged', async () => {
+        store.addSetting(packsSetting)
+        vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+        await store.setOrRevert(PACKS, ['/extensions/same/'])
+        vi.mocked(api.storeSetting).mockClear()
+
+        expect(await store.setOrRevert(PACKS, ['/extensions/same/'])).toEqual({
+          ok: true,
+          outcome: 'saved'
+        })
+        expect(api.storeSetting).toHaveBeenCalledOnce()
+      })
+
+      it('set keeps the optimistic value and still rejects when unreachable', async () => {
+        store.addSetting({
+          id: 'Comfy.Locale',
+          name: 'Comfy.Locale',
+          type: 'text',
+          defaultValue: 'default'
+        })
         vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
 
         await expect(store.set('Comfy.Locale', 'optimistic')).rejects.toThrow(
@@ -659,6 +719,16 @@ describe('useSettingStore', () => {
 
         expect(store.get('Comfy.Locale')).toBe('optimistic')
       })
+    })
+
+    it('only allows reverting settings whose write cascades nowhere', () => {
+      const hooked = CORE_SETTINGS.filter(
+        (setting) =>
+          (REVERTIBLE_SETTING_IDS as readonly string[]).includes(setting.id) &&
+          setting.onChange !== undefined
+      )
+
+      expect(hooked).toEqual([])
     })
 
     it('exposes the new value to onChange handlers', async () => {

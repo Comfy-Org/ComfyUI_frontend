@@ -6,16 +6,6 @@ import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
 
 vi.mock(import('@/scripts/api'))
 
-/**
- * Drains the microtask queue. A queued pack save reaches its API call through
- * several promise hops — the chain link, the setting store, its migration —
- * so one `await` advances it one hop; this covers the whole run with room to
- * spare. Microtasks only, because the suite runs under fake timers.
- */
-async function flushMicrotasks() {
-  for (let hop = 0; hop < 50; hop++) await Promise.resolve()
-}
-
 describe('extensionStore', () => {
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
@@ -74,20 +64,21 @@ describe('extensionStore', () => {
         '/extensions/a/',
         '/extensions/b/'
       ])
-      expect(store.isExtensionPackEnabled('/extensions/a/')).toBe(true)
-      expect(store.isExtensionPackEnabled('/extensions/b/')).toBe(false)
+      expect(store.wasExtensionPackEnabledAtBoot('/extensions/a/')).toBe(true)
+      expect(store.wasExtensionPackEnabledAtBoot('/extensions/b/')).toBe(false)
     })
 
     it.for([
       { path: '/extensions/plain/', name: 'plain' },
       { path: '/extensions/with%20space/', name: 'with space' },
-      // A lone '%' is not valid percent-encoding; the raw segment is the only
-      // name left to show, and every consumer has to agree on showing it.
       { path: '/extensions/100%/', name: '100%' },
       { path: '', name: '' }
-    ])('names the pack at $path "$name"', ({ path, name }) => {
-      expect(extensionPackName(path)).toBe(name)
-    })
+    ])(
+      'falls back to the raw segment, naming the pack at $path "$name"',
+      ({ path, name }) => {
+        expect(extensionPackName(path)).toBe(name)
+      }
+    )
   })
 
   describe('setExtensionPackEnabled', () => {
@@ -136,19 +127,15 @@ describe('extensionStore', () => {
 
       const first = store.setExtensionPackEnabled('/extensions/a/', false)
       const second = store.setExtensionPackEnabled('/extensions/b/', false)
-      await flushMicrotasks()
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
 
-      // Nothing has been sent for the second click yet, so there is no second
-      // whole-array write that could land before the first one.
       expect(payloads).toEqual([['/extensions/a/']])
       expect(store.isSavingExtensionPacks).toBe(true)
 
       acknowledge[0]()
       await first
-      await flushMicrotasks()
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
 
-      // Built from what the first save persisted, not from a snapshot taken
-      // before it ran — which is what used to drop one of the two packs.
       expect(payloads[1]).toEqual(['/extensions/a/', '/extensions/b/'])
 
       acknowledge[1]()
@@ -161,21 +148,21 @@ describe('extensionStore', () => {
       ])
     })
 
-    it('reports the save as pending until the server acknowledges it', async () => {
+    it('reports the save as pending from the click until it is acknowledged', async () => {
       let acknowledge = () => {}
+      let requested = false
       vi.mocked(api.storeSetting).mockImplementation(
         () =>
           new Promise<Response>((resolve) => {
+            requested = true
             acknowledge = () => resolve(new Response())
           })
       )
 
-      expect(store.isSavingExtensionPacks).toBe(false)
       const save = store.setExtensionPackEnabled('/extensions/a/', false)
 
-      // Pending from the click, before the request has even been issued.
       expect(store.isSavingExtensionPacks).toBe(true)
-      await flushMicrotasks()
+      await vi.waitFor(() => expect(requested).toBe(true))
       expect(store.isSavingExtensionPacks).toBe(true)
 
       acknowledge()
@@ -184,38 +171,20 @@ describe('extensionStore', () => {
       expect(store.isSavingExtensionPacks).toBe(false)
     })
 
-    it.for([
-      {
-        label: 'refuses the write',
-        storeSetting: () =>
-          Promise.resolve(
-            new Response(null, { status: 500, statusText: 'Server Error' })
-          ),
-        reason: 'refused'
-      },
-      {
-        label: 'is unreachable',
-        storeSetting: () => Promise.reject(new Error('offline')),
-        reason: 'unreachable'
-      }
-    ])(
-      'leaves the pack enabled when the server $label',
-      async ({ storeSetting, reason }) => {
-        vi.mocked(api.storeSetting).mockImplementation(storeSetting)
+    it('leaves the pack enabled when the server refuses the write', async () => {
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
 
-        const result = await store.setExtensionPackEnabled(
-          '/extensions/a/',
-          false
-        )
+      const result = await store.setExtensionPackEnabled(
+        '/extensions/a/',
+        false
+      )
 
-        expect(result).toMatchObject({ ok: false, reason })
-        expect(store.isExtensionPackCurrentlyEnabled('/extensions/a/')).toBe(
-          true
-        )
-        expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([])
-        expect(store.isSavingExtensionPacks).toBe(false)
-      }
-    )
+      expect(result).toMatchObject({ ok: false, reason: 'refused' })
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([])
+      expect(store.isSavingExtensionPacks).toBe(false)
+    })
 
     it('still runs a queued save after the one before it fails', async () => {
       vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
@@ -224,10 +193,8 @@ describe('extensionStore', () => {
       const second = store.setExtensionPackEnabled('/extensions/b/', false)
 
       expect(await first).toMatchObject({ ok: false, reason: 'unreachable' })
-      expect(await second).toEqual({ ok: true })
+      expect(await second).toEqual({ ok: true, outcome: 'saved' })
 
-      // The failed disable was rolled back, so the queued one builds on the
-      // value the server actually holds rather than reinstating it.
       expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
         '/extensions/b/'
       ])

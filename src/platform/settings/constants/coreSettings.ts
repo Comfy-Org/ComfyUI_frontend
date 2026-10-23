@@ -694,10 +694,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Disabled extension packs',
     type: 'hidden',
     defaultValue: [] as string[],
-    // Normalized once here instead of in each reader. The extension loader and
-    // the Extensions panel both consume the saved value, so a corrupt one — an
-    // object, say — let the loader's own filter keep boot working while the
-    // panel still spread it into a Set and threw on open.
     migrateDeprecatedValue: (value: unknown) =>
       Array.isArray(value)
         ? value.filter((path): path is string => typeof path === 'string')
