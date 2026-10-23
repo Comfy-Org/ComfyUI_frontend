@@ -34,6 +34,7 @@ import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/com
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -361,11 +362,12 @@ describe('ChangeTracker', () => {
     })
 
     it.for([
-      { textEditorOpen: false, captured: true },
-      { textEditorOpen: true, captured: false }
+      { editor: 'no', captured: true },
+      { editor: 'the dialog', captured: false },
+      { editor: 'the prompt panel', captured: false }
     ])(
-      'captures canvas changes on mouseup when the text editor is open: $textEditorOpen',
-      ({ textEditorOpen, captured }) => {
+      'captures canvas changes on mouseup with $editor text editor in use: $captured',
+      ({ editor, captured }) => {
         const events = new EventTarget()
         vi.spyOn(window, 'addEventListener').mockImplementation(
           (type, listener, options) =>
@@ -376,11 +378,13 @@ describe('ChangeTracker', () => {
         const changed = createState(2)
         const tracker = createTracker(initial)
         mockCanvasState(changed)
-        if (textEditorOpen)
+        if (editor === 'the dialog')
           useDialogStore().showDialog({
             key: TEXT_EDITOR_DIALOG_KEY,
             component: {}
           })
+        if (editor === 'the prompt panel')
+          usePromptPanelStore().isEditorFocused = true
 
         events.dispatchEvent(new MouseEvent('mouseup'))
 

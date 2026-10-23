@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count} caractère | {count} caractères",
     "expand": "Agrandir",
+    "focusView": "Agrandir en vue focus",
+    "noPrompt": "{node} n'a pas de prompt.",
+    "noPromptHint": "Sélectionnez un nœud avec une entrée texte pour modifier son prompt ici.",
+    "nodeSettings": "Paramètres du nœud",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

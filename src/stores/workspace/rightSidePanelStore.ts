@@ -82,6 +82,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
 
   return {
     isOpen,
+    isLegacyMenu,
     activeTab,
     isEditingSubgraph,
     focusedSection,

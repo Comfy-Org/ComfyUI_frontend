@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count} caractere | {count} caracteres",
     "expand": "Ampliar",
+    "focusView": "Ampliar para visualização de foco",
+    "noPrompt": "{node} não tem prompt.",
+    "noPromptHint": "Selecione um nó com entrada de texto para editar o prompt aqui.",
+    "nodeSettings": "Configurações do nó",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

@@ -4136,6 +4136,11 @@
   "textEditor": {
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
+    "focusView": "Expand to focus view",
+    "noPrompt": "{node} has no prompt.",
+    "noPromptHint": "Select a node with a text input to edit its prompt here.",
+    "nodeSettings": "Node settings",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "widgetFileUpload": {
