@@ -1896,7 +1896,6 @@
     "amount": "Miktar",
     "apply": "Uygula",
     "architecture": "Mimari",
-    "arrangeSpacing": "Düzenleme aralığı",
     "asset": "{count} varlık | {count} varlık",
     "audioFailedToLoad": "Ses yüklenemedi",
     "audioProgress": "Ses ilerlemesi",

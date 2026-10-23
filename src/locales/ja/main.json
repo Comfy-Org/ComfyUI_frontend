@@ -1896,7 +1896,6 @@
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
-    "arrangeSpacing": "配置間隔",
     "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "audioProgress": "オーディオの進捗",

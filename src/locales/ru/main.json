@@ -1896,7 +1896,6 @@
     "amount": "Количество",
     "apply": "Применить",
     "architecture": "Архитектура",
-    "arrangeSpacing": "Интервал между элементами",
     "asset": "{count} ресурсов | {count} ресурс | {count} ресурса",
     "audioFailedToLoad": "Не удалось загрузить аудио",
     "audioProgress": "Прогресс аудио",

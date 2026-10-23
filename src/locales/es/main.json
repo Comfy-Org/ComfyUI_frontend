@@ -1896,7 +1896,6 @@
     "amount": "Cantidad",
     "apply": "Aplicar",
     "architecture": "Arquitectura",
-    "arrangeSpacing": "Espaciado de organización",
     "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
     "audioProgress": "Progreso de audio",

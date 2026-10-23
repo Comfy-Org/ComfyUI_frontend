@@ -1896,7 +1896,6 @@
     "amount": "수량",
     "apply": "적용",
     "architecture": "아키텍처",
-    "arrangeSpacing": "정렬 간격",
     "asset": "{count}개 에셋 | {count}개 에셋",
     "audioFailedToLoad": "오디오를 불러오지 못했습니다",
     "audioProgress": "오디오 진행률",
