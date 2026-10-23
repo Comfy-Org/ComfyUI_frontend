@@ -6,6 +6,7 @@ import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
 
 export interface CoachStep {
@@ -74,6 +75,34 @@ function settingsRecordSeen(scopedKey: string): boolean {
 }
 
 const unpersistedScopes = new Set<string>()
+let scopesVersion = 0
+let settingsWrites: Promise<void> = Promise.resolve()
+
+const ONBOARDING_WRITE_FAILURE = {
+  surface: 'agent',
+  errorType: 'failure_persisting_agent_onboarding_completion',
+  level: 'warning'
+} as const
+
+async function writeOnboardedScopes(): Promise<void> {
+  const version = scopesVersion
+  try {
+    const response = await api.storeSetting(AGENT_ONBOARDED_SCOPES_SETTING_ID, [
+      ...onboardedScopes()
+    ])
+    if (!response.ok) {
+      reportError(
+        `Failed to store onboarded scopes (${response.status})`,
+        ONBOARDING_WRITE_FAILURE
+      )
+      return
+    }
+  } catch (error) {
+    reportError(error, ONBOARDING_WRITE_FAILURE)
+    return
+  }
+  if (version === scopesVersion) unpersistedScopes.clear()
+}
 
 function persistSeenToSettings(scopedKey: string, seen: boolean): void {
   if (
@@ -82,18 +111,12 @@ function persistSeenToSettings(scopedKey: string, seen: boolean): void {
   )
     return
   const otherScopes = onboardedScopes().filter((scope) => scope !== scopedKey)
-  const nextScopes = seen ? [...otherScopes, scopedKey] : otherScopes
-  useSettingStore()
-    .set(AGENT_ONBOARDED_SCOPES_SETTING_ID, nextScopes)
-    .then(() => unpersistedScopes.delete(scopedKey))
-    .catch((error: unknown) => {
-      unpersistedScopes.add(scopedKey)
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'failure_persisting_agent_onboarding_completion',
-        level: 'warning'
-      })
-    })
+  useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] = seen
+    ? [...otherScopes, scopedKey]
+    : otherScopes
+  unpersistedScopes.add(scopedKey)
+  scopesVersion += 1
+  settingsWrites = settingsWrites.then(writeOnboardedScopes)
 }
 
 function localStorageRecordsSeen(scopedKey: string): boolean {

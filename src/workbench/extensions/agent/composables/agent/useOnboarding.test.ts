@@ -71,6 +71,19 @@ describe('useOnboarding', () => {
     )
   })
 
+  it('persists a restart issued before the finish write settles', async () => {
+    const tour = useOnboarding(STEPS, KEY)
+    tour.finish()
+    tour.restart()
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
+    expect(onboardedScopes()).toEqual([])
+  })
+
   it('replays after clearing both the local and settings completion', async () => {
     useOnboarding(STEPS, KEY).finish()
     await nextTick()
