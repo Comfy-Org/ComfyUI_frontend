@@ -4,6 +4,7 @@ import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
 import {
@@ -95,6 +96,12 @@ describe('shouldLoadExtension', () => {
         disableAllCustomExtensions: true
       })
     ).toBe(false)
+  })
+
+  it('does not throw on a malformed backend entry', () => {
+    expect(() =>
+      shouldLoadExtension('http://[', { isCloudBuild: false })
+    ).not.toThrow()
   })
 })
 
@@ -275,6 +282,25 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('reads safe mode from the URL while retaining discovered pack paths', async () => {
+      const originalUrl = window.location.href
+      window.history.replaceState({}, '', '/?safe')
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/agent-cushions/main.js'
+      ])
+
+      try {
+        await loadExtensions()
+
+        expect(reportError).not.toHaveBeenCalled()
+        expect(useExtensionStore().extensionPackPaths).toEqual([
+          '/extensions/agent-cushions/'
+        ])
+      } finally {
+        window.history.replaceState({}, '', originalUrl)
+      }
+    })
+
     it('reports every failing custom import as one aggregate', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/pack-a/main.js',

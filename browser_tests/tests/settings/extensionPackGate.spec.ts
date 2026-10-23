@@ -10,7 +10,10 @@ test.use({
   }
 })
 
+let packRequested = false
+
 test.beforeEach(async ({ page }) => {
+  packRequested = false
   await page.route('**/api/settings', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill({
@@ -24,12 +27,13 @@ test.beforeEach(async ({ page }) => {
       json: ['/extensions/agent-cushions/main.js']
     })
   )
-  await page.route('**/extensions/agent-cushions/main.js*', (route) =>
-    route.fulfill({
+  await page.route('**/extensions/agent-cushions/main.js*', (route) => {
+    packRequested = true
+    return route.fulfill({
       contentType: 'text/javascript',
       body: "document.body.style.opacity = '0.2'"
     })
-  )
+  })
 })
 
 test.describe(
@@ -45,6 +49,7 @@ test.describe(
         await comfyPage.settings.getSetting('Comfy.Extension.DisabledPacks')
       ).toEqual(['/extensions/agent-cushions/'])
       await expect(page.locator('body')).toHaveCSS('opacity', '1')
+      expect(packRequested).toBe(false)
     })
   }
 )

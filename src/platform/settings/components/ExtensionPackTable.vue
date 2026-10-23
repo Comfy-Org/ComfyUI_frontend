@@ -47,6 +47,11 @@ const emit = defineEmits<{
 }>()
 
 function packName(path: string) {
-  return path.split('/').filter(Boolean).at(-1) ?? path
+  const name = path.split('/').filter(Boolean).at(-1) ?? path
+  try {
+    return decodeURIComponent(name)
+  } catch {
+    return name
+  }
 }
 </script>

@@ -16,7 +16,7 @@
         </li>
         <li v-for="pack in changedExtensionPacks" :key="pack">
           <span>
-            {{ editingEnabledExtensionPacks[pack] ? '[-]' : '[+]' }}
+            {{ extensionStore.isExtensionPackEnabled(pack) ? '[-]' : '[+]' }}
           </span>
           {{ extensionPackName(pack) }}
         </li>
@@ -150,18 +150,25 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
 }
 
 onMounted(() => {
+  const persistedDisabledPacks = new Set(
+    settingStore.get('Comfy.Extension.DisabledPacks')
+  )
   extensionStore.extensions.forEach((ext) => {
     editingEnabledExtensions.value[ext.name] =
       extensionStore.isExtensionEnabled(ext.name)
   })
   extensionStore.extensionPackPaths.forEach((path) => {
-    editingEnabledExtensionPacks.value[path] =
-      extensionStore.isExtensionPackEnabled(path)
+    editingEnabledExtensionPacks.value[path] = !persistedDisabledPacks.has(path)
   })
 })
 
 function extensionPackName(path: string) {
-  return path.split('/').filter(Boolean).at(-1) ?? path
+  const name = path.split('/').filter(Boolean).at(-1) ?? path
+  try {
+    return decodeURIComponent(name)
+  } catch {
+    return name
+  }
 }
 
 const changedExtensions = computed(() => {
@@ -205,6 +212,7 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 }
 
 async function setExtensionPackEnabled(path: string, enabled: boolean) {
+  const previous = editingEnabledExtensionPacks.value[path]
   editingEnabledExtensionPacks.value[path] = enabled
   const editingDisabledExtensionPackPaths = Object.entries(
     editingEnabledExtensionPacks.value
@@ -212,10 +220,15 @@ async function setExtensionPackEnabled(path: string, enabled: boolean) {
     .filter(([_, isEnabled]) => !isEnabled)
     .map(([packPath]) => packPath)
 
-  await settingStore.set('Comfy.Extension.DisabledPacks', [
-    ...extensionStore.inactiveDisabledExtensionPackPaths,
-    ...editingDisabledExtensionPackPaths
-  ])
+  try {
+    await settingStore.set('Comfy.Extension.DisabledPacks', [
+      ...extensionStore.inactiveDisabledExtensionPackPaths,
+      ...editingDisabledExtensionPackPaths
+    ])
+  } catch (error) {
+    editingEnabledExtensionPacks.value[path] = previous
+    throw error
+  }
 }
 
 const enableAllExtensions = async () => {

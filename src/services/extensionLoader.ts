@@ -18,8 +18,18 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
 ])
 
 function getExtensionPackPath(extension: string): string | undefined {
-  const pathname = new URL(extension, window.location.origin).pathname
-  return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+  try {
+    const pathname = new URL(extension, window.location.href).pathname
+    return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+  } catch {
+    return undefined
+  }
+}
+
+function normalizePackPaths(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((path): path is string => typeof path === 'string')
+    : []
 }
 
 export function shouldLoadExtension(
@@ -134,7 +144,9 @@ export async function loadExtensions() {
   extensionStore.loadDisabledExtensionNames(
     settingStore.get('Comfy.Extension.Disabled')
   )
-  const disabledPackPaths = settingStore.get('Comfy.Extension.DisabledPacks')
+  const disabledPackPaths = normalizePackPaths(
+    settingStore.get('Comfy.Extension.DisabledPacks')
+  )
   const disableAllCustomExtensions = new URLSearchParams(
     window.location.search
   ).has('safe')
