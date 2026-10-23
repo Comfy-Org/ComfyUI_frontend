@@ -1,8 +1,6 @@
 <template>
-  <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
-      {{ t('maskEditor.colorSelectSettings') }}
-    </h3>
+  <SettingsSection>
+    <template #title>{{ t('maskEditor.colorSelectSettings') }}</template>
 
     <SliderField
       :label="t('maskEditor.tolerance')"
@@ -11,6 +9,7 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.toleranceHelp')"
       @update:model-value="onToleranceChange"
     />
 
@@ -21,73 +20,83 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.selectionOpacityHelp')"
       @update:model-value="onSelectionOpacityChange"
     />
 
-    <div class="flex items-center justify-between gap-2">
-      <span class="text-left font-sans text-xs text-muted-foreground">
-        {{ t('maskEditor.livePreview') }}
-      </span>
-      <Switch
-        :model-value="store.colorSelectLivePreview"
-        :aria-label="t('maskEditor.livePreview')"
-        @update:model-value="onLivePreviewChange"
-      />
-    </div>
+    <SettingRow
+      :label="t('maskEditor.livePreview')"
+      :help-text="t('maskEditor.livePreviewHelp')"
+    >
+      <template #default="{ labelId }">
+        <Switch
+          class="[&>span]:bg-secondary"
+          :model-value="store.colorSelectLivePreview"
+          :aria-labelledby="labelId"
+          @update:model-value="onLivePreviewChange"
+        />
+      </template>
+    </SettingRow>
 
-    <div class="flex items-center justify-between gap-2">
-      <span class="text-left font-sans text-xs text-muted-foreground">
-        {{ t('maskEditor.applyToWholeImage') }}
-      </span>
-      <Switch
-        :model-value="store.applyWholeImage"
-        :aria-label="t('maskEditor.applyToWholeImage')"
-        @update:model-value="onWholeImageChange"
-      />
-    </div>
+    <SettingRow
+      :label="t('maskEditor.applyToWholeImage')"
+      :help-text="t('maskEditor.applyToWholeImageHelp')"
+    >
+      <template #default="{ labelId }">
+        <Switch
+          class="[&>span]:bg-secondary"
+          :model-value="store.applyWholeImage"
+          :aria-labelledby="labelId"
+          @update:model-value="onWholeImageChange"
+        />
+      </template>
+    </SettingRow>
 
-    <div class="flex items-center justify-between gap-2">
-      <span
-        id="color-comparison-method-label"
-        class="text-left font-sans text-xs text-muted-foreground"
-      >
-        {{ t('maskEditor.method') }}
-      </span>
-      <Menu
-        v-model:open="methodMenuOpen"
-        :modal="false"
-        :items="methodMenuItems"
-        align="end"
-      >
-        <template #trigger>
-          <Button
-            variant="secondary"
-            size="sm"
-            class="gap-1"
-            aria-labelledby="color-comparison-method-label color-comparison-method-value"
-          >
-            <span id="color-comparison-method-value">
-              {{ methodLabels[store.colorComparisonMethod] }}
-            </span>
-            <i
-              class="icon-[lucide--chevron-down] size-3.5"
-              aria-hidden="true"
-            />
-          </Button>
-        </template>
-      </Menu>
-    </div>
+    <SettingRow
+      :label="t('maskEditor.method')"
+      :help-text="t('maskEditor.methodHelp')"
+    >
+      <template #default="{ labelId }">
+        <Menu
+          v-model:open="methodMenuOpen"
+          :modal="false"
+          :items="methodMenuItems"
+          align="end"
+          :side-offset="5"
+          :collision-padding="10"
+        >
+          <template #trigger>
+            <button
+              type="button"
+              class="flex h-8 items-center gap-1 rounded-lg border-none bg-secondary px-2 text-sm transition-colors duration-100 hover:bg-accent"
+              :aria-labelledby="`${labelId} color-comparison-method-value`"
+            >
+              <span id="color-comparison-method-value">
+                {{ methodLabels[store.colorComparisonMethod] }}
+              </span>
+              <i
+                class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </button>
+          </template>
+        </Menu>
+      </template>
+    </SettingRow>
 
-    <div class="flex items-center justify-between gap-2">
-      <span class="text-left font-sans text-xs text-muted-foreground">
-        {{ t('maskEditor.stopAtMask') }}
-      </span>
-      <Switch
-        :model-value="store.maskBoundary"
-        :aria-label="t('maskEditor.stopAtMask')"
-        @update:model-value="onMaskBoundaryChange"
-      />
-    </div>
+    <SettingRow
+      :label="t('maskEditor.stopAtMask')"
+      :help-text="t('maskEditor.stopAtMaskHelp')"
+    >
+      <template #default="{ labelId }">
+        <Switch
+          class="[&>span]:bg-secondary"
+          :model-value="store.maskBoundary"
+          :aria-labelledby="labelId"
+          @update:model-value="onMaskBoundaryChange"
+        />
+      </template>
+    </SettingRow>
 
     <SliderField
       :label="t('maskEditor.maskTolerance')"
@@ -96,22 +105,24 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.maskToleranceHelp')"
       @update:model-value="onMaskToleranceChange"
     />
-  </div>
+  </SettingsSection>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
+import SettingRow from './controls/SettingRow.vue'
+import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()

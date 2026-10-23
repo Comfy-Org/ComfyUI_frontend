@@ -1,9 +1,7 @@
 <template>
-  <div class="flex flex-col gap-3 pb-3">
-    <div class="mt-2.5 flex items-center justify-between">
-      <h3 class="m-0 font-sans text-[15px] text-muted-foreground">
-        {{ t('maskEditor.brushSettings') }}
-      </h3>
+  <SettingsSection>
+    <template #title>{{ t('maskEditor.brushSettings') }}</template>
+    <template #actions>
       <Button
         variant="base"
         size="icon"
@@ -13,7 +11,7 @@
       >
         <i class="icon-[lucide--rotate-ccw] size-4" aria-hidden="true" />
       </Button>
-    </div>
+    </template>
 
     <div class="flex flex-col gap-2">
       <span
@@ -25,7 +23,7 @@
       <div
         role="radiogroup"
         aria-labelledby="brush-shape-label"
-        class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-accent"
+        class="flex h-12 w-full items-center gap-2 rounded-lg bg-secondary px-2"
       >
         <button
           type="button"
@@ -34,10 +32,10 @@
           :aria-label="t('maskEditor.brushShapeCircle')"
           :class="
             cn(
-              'ml-2 size-[35px] cursor-pointer appearance-none rounded-full border border-solid p-0 transition-colors',
+              'size-8 cursor-pointer appearance-none rounded-full border border-solid p-0 transition-colors',
               store.brushSettings.type === BrushShape.Arc
-                ? 'bg-background'
-                : 'bg-transparent hover:bg-background/60'
+                ? 'border-primary bg-background'
+                : 'border-border bg-transparent hover:bg-background/60'
             )
           "
           @click="setBrushShape(BrushShape.Arc)"
@@ -49,10 +47,10 @@
           :aria-label="t('maskEditor.brushShapeSquare')"
           :class="
             cn(
-              'size-[35px] cursor-pointer appearance-none border border-solid p-0 transition-colors',
+              'size-8 cursor-pointer appearance-none border border-solid p-0 transition-colors',
               store.brushSettings.type === BrushShape.Rect
-                ? 'bg-background'
-                : 'bg-transparent hover:bg-background/60'
+                ? 'border-primary bg-background'
+                : 'border-border bg-transparent hover:bg-background/60'
             )
           "
           @click="setBrushShape(BrushShape.Rect)"
@@ -114,6 +112,7 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.hardnessHelp')"
       @update:model-value="onBrushHardnessChange"
     />
     <SliderField
@@ -123,9 +122,10 @@
       :max="100"
       :step="1"
       suffix="px"
+      :help-text="t('maskEditor.stepSizeHelp')"
       @update:model-value="onBrushStepSizeChange"
     />
-  </div>
+  </SettingsSection>
 </template>
 
 <script setup lang="ts">
@@ -138,6 +138,7 @@ import { BrushShape } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()

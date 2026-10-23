@@ -1,8 +1,6 @@
 <template>
-  <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
-      {{ t('maskEditor.paintBucketSettings') }}
-    </h3>
+  <SettingsSection>
+    <template #title>{{ t('maskEditor.paintBucketSettings') }}</template>
 
     <SliderField
       :label="t('maskEditor.tolerance')"
@@ -11,6 +9,7 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.paintBucketToleranceHelp')"
       @update:model-value="onToleranceChange"
     />
 
@@ -21,9 +20,10 @@
       :max="100"
       :step="1"
       suffix="%"
+      :help-text="t('maskEditor.fillOpacityHelp')"
       @update:model-value="onFillOpacityChange"
     />
-  </div>
+  </SettingsSection>
 </template>
 
 <script setup lang="ts">
@@ -32,6 +32,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
+import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()

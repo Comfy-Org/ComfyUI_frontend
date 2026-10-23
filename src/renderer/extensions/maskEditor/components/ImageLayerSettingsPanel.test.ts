@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
-import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
+import { MaskBlendMode } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
@@ -35,14 +35,13 @@ const i18n = createI18n({
       maskEditor: {
         layers: 'Layers',
         maskOpacity: 'Mask Opacity',
-        maskBlendingOptions: 'Mask Blending Options',
+        maskBlending: 'Mask blending',
         black: 'Black',
         white: 'White',
         negative: 'Negative',
         maskLayer: 'Mask Layer',
         paintLayer: 'Paint Layer',
         baseImageLayer: 'Base Image Layer',
-        activateLayer: 'Activate Layer',
         baseLayerPreview: 'Base layer preview'
       }
     }
@@ -132,7 +131,7 @@ describe('ImageLayerSettingsPanel', () => {
       renderPanel()
 
       await user.click(
-        screen.getByRole('button', { name: 'Mask Blending Options White' })
+        screen.getByRole('button', { name: 'Mask blending White' })
       )
       await user.click(screen.getByRole('menuitemcheckbox', { name: label }))
 
@@ -201,8 +200,8 @@ describe('ImageLayerSettingsPanel', () => {
     })
   })
 
-  describe('activate layer buttons', () => {
-    it('should forward the layer to toolManager.setActiveLayer', async () => {
+  describe('layer rows', () => {
+    it('activates the mask layer from the row', async () => {
       const user = userEvent.setup()
       mockStore.activeLayer = 'rgb'
       renderPanel({
@@ -211,48 +210,32 @@ describe('ImageLayerSettingsPanel', () => {
         } as unknown as ToolManager
       })
 
-      await user.click(screen.getByRole('button', { name: 'Activate Layer' }))
+      await user.click(screen.getByTestId('mask-layer-row'))
 
       expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
     })
 
-    it('should not throw when toolManager is omitted', async () => {
+    it('activates the paint layer from the row', async () => {
       const user = userEvent.setup()
-      mockStore.activeLayer = 'rgb'
+      mockStore.activeLayer = 'mask'
+      renderPanel({
+        toolManager: {
+          setActiveLayer: mockSetActiveLayer
+        } as unknown as ToolManager
+      })
+
+      await user.click(screen.getByTestId('paint-layer-row'))
+
+      expect(mockSetActiveLayer).toHaveBeenCalledWith('rgb')
+    })
+
+    it('does not throw when toolManager is omitted', async () => {
+      const user = userEvent.setup()
       renderPanel()
 
       await expect(
-        user.click(screen.getByRole('button', { name: 'Activate Layer' }))
+        user.click(screen.getByTestId('mask-layer-row'))
       ).resolves.not.toThrow()
-    })
-
-    it('should disable the button of the active layer', () => {
-      mockStore.activeLayer = 'mask'
-      renderPanel()
-
-      expect(
-        screen.getByRole('button', { name: 'Activate Layer' })
-      ).toBeDisabled()
-    })
-  })
-
-  describe('paint layer activate visibility', () => {
-    it('should hide the paint activate button unless the eraser is selected', () => {
-      mockStore.currentTool = Tools.MaskPen
-      renderPanel()
-
-      expect(
-        screen.getAllByRole('button', { name: 'Activate Layer' })
-      ).toHaveLength(1)
-    })
-
-    it('should show the paint activate button when the eraser is selected', () => {
-      mockStore.currentTool = Tools.Eraser
-      renderPanel()
-
-      expect(
-        screen.getAllByRole('button', { name: 'Activate Layer' })
-      ).toHaveLength(2)
     })
   })
 

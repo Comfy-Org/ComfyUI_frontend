@@ -1,8 +1,6 @@
 <template>
-  <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
-      {{ t('maskEditor.layers') }}
-    </h3>
+  <SettingsSection>
+    <template #title>{{ t('maskEditor.layers') }}</template>
 
     <SliderField
       :label="t('maskEditor.maskOpacity')"
@@ -15,75 +13,67 @@
       @update:model-value="onMaskOpacityChange"
     />
 
-    <div class="flex items-center justify-between gap-2">
-      <span
-        id="mask-blend-mode-label"
-        class="text-left font-sans text-xs text-muted-foreground"
-      >
-        {{ t('maskEditor.maskBlendingOptions') }}
-      </span>
-      <Menu
-        v-model:open="blendMenuOpen"
-        :modal="false"
-        :items="blendModeMenuItems"
-        align="end"
-      >
-        <template #trigger>
-          <Button
-            variant="secondary"
-            size="sm"
-            class="gap-1"
-            aria-labelledby="mask-blend-mode-label mask-blend-mode-value"
-          >
-            <span id="mask-blend-mode-value">
-              {{ blendModeLabels[store.maskBlendMode] }}
-            </span>
-            <i
-              class="icon-[lucide--chevron-down] size-3.5"
-              aria-hidden="true"
-            />
-          </Button>
-        </template>
-      </Menu>
-    </div>
+    <SettingRow
+      :label="t('maskEditor.maskBlending')"
+      :help-text="t('maskEditor.maskBlendingHelp')"
+    >
+      <template #default="{ labelId }">
+        <Menu
+          v-model:open="blendMenuOpen"
+          :modal="false"
+          :items="blendModeMenuItems"
+          align="end"
+          :side-offset="5"
+          :collision-padding="10"
+        >
+          <template #trigger>
+            <button
+              type="button"
+              class="flex h-8 items-center gap-1 rounded-lg border-none bg-secondary px-2 text-sm transition-colors duration-100 hover:bg-accent"
+              :aria-labelledby="`${labelId} mask-blend-mode-value`"
+            >
+              <span id="mask-blend-mode-value">
+                {{ blendModeLabels[store.maskBlendMode] }}
+              </span>
+              <i
+                class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </button>
+          </template>
+        </Menu>
+      </template>
+    </SettingRow>
 
     <div class="flex flex-col gap-1.5">
       <span class="text-left font-sans text-xs text-muted-foreground">
         {{ t('maskEditor.maskLayer') }}
       </span>
       <div
+        data-testid="mask-layer-row"
         :class="
           cn(
-            'relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent',
-            store.activeLayer === 'mask' &&
-              'border-2 border-solid border-primary'
+            'relative flex h-12 min-h-6 w-full cursor-pointer items-center gap-2.5 rounded-lg bg-secondary',
+            store.activeLayer === 'mask' && 'ring-2 ring-primary ring-inset'
           )
         "
+        @click="setActiveLayer('mask')"
       >
         <input
           type="checkbox"
-          class="ml-4"
+          class="ml-3"
           :checked="maskLayerVisible"
           :aria-label="t('maskEditor.maskLayer')"
           @click.stop
           @change="onMaskLayerVisibilityChange"
         />
-        <div class="h-[30px] w-10">
+        <div class="h-7 w-9">
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
             <path
               d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19,1.9-2.24,2.24Z"
             />
           </svg>
         </div>
-        <button
-          type="button"
-          class="text-xs"
-          :class="store.activeLayer === 'mask' && 'opacity-50'"
-          :disabled="store.activeLayer === 'mask'"
-          @click="setActiveLayer('mask')"
-        >
-          {{ t('maskEditor.activateLayer') }}
-        </button>
       </div>
     </div>
 
@@ -92,23 +82,24 @@
         {{ t('maskEditor.paintLayer') }}
       </span>
       <div
+        data-testid="paint-layer-row"
         :class="
           cn(
-            'relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent',
-            store.activeLayer === 'rgb' &&
-              'border-2 border-solid border-primary'
+            'relative flex h-12 min-h-6 w-full cursor-pointer items-center gap-2.5 rounded-lg bg-secondary',
+            store.activeLayer === 'rgb' && 'ring-2 ring-primary ring-inset'
           )
         "
+        @click="setActiveLayer('rgb')"
       >
         <input
           type="checkbox"
-          class="ml-4"
+          class="ml-3"
           :checked="paintLayerVisible"
           :aria-label="t('maskEditor.paintLayer')"
           @click.stop
           @change="onPaintLayerVisibilityChange"
         />
-        <div class="h-[30px] w-10">
+        <div class="h-7 w-9">
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
             <path
               d="M 17 6.965 c 0 0.235 -0.095 0.47 -0.275 0.655 l -6.51 6.52 c -0.045 0.035 -0.09 0.075 -0.135 0.11 c -0.035 -0.695 -0.605 -1.24 -1.305 -1.245 c 0.035 -0.06 0.08 -0.12 0.135 -0.17 l 6.52 -6.52 c 0.36 -0.36 0.945 -0.36 1.3 0 c 0.175 0.175 0.275 0.415 0.275 0.65 Z"
@@ -118,16 +109,6 @@
             />
           </svg>
         </div>
-        <button
-          v-if="showLayerButtons"
-          type="button"
-          class="text-xs"
-          :class="store.activeLayer === 'rgb' && 'opacity-50'"
-          :disabled="store.activeLayer === 'rgb'"
-          @click="setActiveLayer('rgb')"
-        >
-          {{ t('maskEditor.activateLayer') }}
-        </button>
       </div>
     </div>
 
@@ -136,16 +117,16 @@
         {{ t('maskEditor.baseImageLayer') }}
       </span>
       <div
-        class="relative flex h-[50px] min-h-6 w-full items-center gap-2.5 rounded-[10px] bg-accent"
+        class="relative flex h-12 min-h-6 w-full items-center gap-2.5 rounded-lg bg-secondary"
       >
         <input
           type="checkbox"
-          class="ml-4"
+          class="ml-3"
           :checked="baseImageLayerVisible"
           :aria-label="t('maskEditor.baseImageLayer')"
           @change="onBaseImageLayerVisibilityChange"
         />
-        <div class="h-[30px] w-10">
+        <div class="h-7 w-9">
           <img
             class="size-full object-contain"
             :src="baseImageSrc"
@@ -154,23 +135,24 @@
         </div>
       </div>
     </div>
-  </div>
+  </SettingsSection>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { ImageLayer } from '@comfyorg/mask-editor/types'
-import { MaskBlendMode, Tools } from '@comfyorg/mask-editor/types'
+import { MaskBlendMode } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SettingRow from './controls/SettingRow.vue'
+import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'
 
 const { toolManager } = defineProps<{
@@ -187,8 +169,6 @@ const paintLayerVisible = ref(true)
 const baseImageLayerVisible = ref(true)
 
 const baseImageSrc = computed(() => store.image?.src ?? '')
-
-const showLayerButtons = computed(() => store.currentTool === Tools.Eraser)
 
 const maskOpacityPercent = computed(() => Math.round(store.maskOpacity * 100))
 
