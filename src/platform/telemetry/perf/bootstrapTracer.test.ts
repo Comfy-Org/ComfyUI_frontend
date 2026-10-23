@@ -142,6 +142,16 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).not.toHaveBeenCalled()
   })
 
+  it('exposes the startup outcome once it is known', () => {
+    const tracer = new BootstrapTracer()
+    const before = tracer.outcome
+
+    tracer.complete('failed')
+    tracer.complete()
+
+    expect([before, tracer.outcome]).toEqual(['pending', 'failed'])
+  })
+
   it('reports only once', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
