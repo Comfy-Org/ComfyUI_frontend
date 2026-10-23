@@ -51,11 +51,7 @@
       v-if="step === 'amount' || step === 'confirm'"
       class="m-0 px-8 pb-4 text-sm text-muted-foreground"
     >
-      {{
-        planCreditLine
-          ? $t(`credits.topUp.${planCreditLine}`)
-          : $t('credits.topUp.purchaseDisclosure')
-      }}
+      {{ planCreditCopy }}
     </p>
 
     <template v-if="step === 'confirm'">
@@ -490,13 +486,20 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { flags } = useFeatureFlags()
 const { balance, fetchBalance, fetchStatus, subscriptionStatus } =
   useBillingContext()
-const planCreditLine = computed(() =>
-  topUpPlanCreditLine({
+const planCreditCopy = computed(() => {
+  const line = topUpPlanCreditLine({
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     isCloud,
     subscriptionStatus: subscriptionStatus.value
   })
-)
+  if (line === 'planRequiredSubscribe') {
+    return t('credits.topUp.planRequiredSubscribe')
+  }
+  if (line === 'planRequiredResubscribe') {
+    return t('credits.topUp.planRequiredResubscribe')
+  }
+  return t('credits.topUp.purchaseDisclosure')
+})
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
