@@ -1211,6 +1211,26 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it('lets the set-graph hash publish when an API import replaces an owned root', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const owner = new ComfyWorkflow({
+        path: 'workflows/owner.json',
+        modified: 0,
+        size: 0
+      })
+      const ownedGraph = new LGraph()
+      owner.adoptGraph(ownedGraph)
+      useWorkflowStore().attachWorkflow(owner)
+      Reflect.set(app, 'rootGraphInternal', ownedGraph)
+
+      await app.loadApiJson({}, 'empty.json')
+
+      expect(app.rootGraph).not.toBe(ownedGraph)
+      expect(
+        useSubgraphNavigationStore().suppressRootGraphHash
+      ).not.toHaveBeenCalled()
+    })
   })
 
   describe('nodeOutputs', () => {
