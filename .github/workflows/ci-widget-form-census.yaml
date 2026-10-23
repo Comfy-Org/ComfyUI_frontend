@@ -36,7 +36,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: widget-form-census-${{ github.ref }}
+  group: widget-form-census-${{ github.ref }}-${{ inputs.renderer }}
   cancel-in-progress: true
 
 env:
@@ -220,9 +220,21 @@ jobs:
       - name: Merge shard rows
         uses: actions/download-artifact@v6
         with:
-          path: matrix-rows
+          path: matrix-shards
           pattern: widget-form-rows-shard-*
-          merge-multiple: true
+
+      - name: Verify and merge every shard
+        run: |
+          set -euo pipefail
+          mapfile -t shards < <(find matrix-shards -mindepth 1 -maxdepth 1 -type d -name 'widget-form-rows-shard-*' | sort)
+          if [ "${#shards[@]}" -ne 4 ]; then
+            echo "::error::expected 4 shard artifacts, found ${#shards[@]}"
+            exit 1
+          fi
+          mkdir matrix-rows
+          for shard in "${shards[@]}"; do
+            cp "$shard"/*.json matrix-rows/
+          done
 
       # A shard that died leaves its pre-created stub rows behind, so the
       # report's stub count is how a short population shows up - it never

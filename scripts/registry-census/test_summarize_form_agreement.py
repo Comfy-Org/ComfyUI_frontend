@@ -47,7 +47,7 @@ class TestVocabulary(unittest.TestCase):
         literals = set(re.findall(r"'([A-Za-z:]+)'", source))
         self.assertNotRegex(
             source,
-            r'push\(\s*`',
+            r'`(?:emit|decline)[^`]*`',
             'verdicts must be whole literals, not interpolated',
         )
 
@@ -80,7 +80,7 @@ class TestVocabulary(unittest.TestCase):
         """
         with open(RUNNER, encoding='utf-8') as fh:
             whole = fh.read()
-        start = whole.index('// ---- form/values agreement')
+        start = whole.index('function positionalShape(')
         return whole[start : whole.index('\nfunction signature(', start)]
 
     def test_groups_partition_known(self) -> None:
@@ -103,6 +103,18 @@ class TestReport(unittest.TestCase):
         text = '\n'.join(sfa.report(rows))
         self.assertIn('recorded a measurement error', text)
         self.assertIn('TypeError: boom', text)
+        self.assertNotIn('No disagreeing form in this population', text)
+
+    def test_empty_telemetry_reads_as_unmeasured(self) -> None:
+        rows = [
+            {
+                'pack': 'p',
+                'formNodes': [],
+                'formAgreement': {'harnessError': 'TypeError: boom'},
+            }
+        ]
+        text = '\n'.join(sfa.report(rows))
+        self.assertIn('UNMEASURED', text)
 
     def test_agreeing_population_says_so_explicitly(self) -> None:
         text = '\n'.join(
@@ -122,6 +134,29 @@ class TestReport(unittest.TestCase):
         self.assertIn('videohelpersuite', text)
         self.assertIn('VHS_VideoCombine', text)
         self.assertNotIn('No disagreeing form', text)
+
+    def test_disagreement_sort_does_not_compare_node_dicts(self) -> None:
+        rows = [
+            row(
+                'same-pack',
+                node('emitDisagree:keyOrder', 'SameClass', o=2),
+                node('emitDisagree:keyOrder', 'SameClass', o=1),
+            )
+        ]
+        text = '\n'.join(sfa.report(rows))
+        self.assertIn('DISAGREEING FORMS: 2 node(s)', text)
+
+    def test_pack_controlled_markdown_is_escaped(self) -> None:
+        rows = [
+            row(
+                'pack|name\n<h1>',
+                node('emitDisagree:keyOrder', 'Class|Name\n<script>'),
+            )
+        ]
+        text = '\n'.join(sfa.report(rows))
+        self.assertIn('pack\\|name &lt;h1&gt;', text)
+        self.assertIn('Class\\|Name &lt;script&gt;', text)
+        self.assertNotIn('\n<h1>', text)
 
     def test_stub_rows_are_excluded_from_the_denominator(self) -> None:
         rows = [

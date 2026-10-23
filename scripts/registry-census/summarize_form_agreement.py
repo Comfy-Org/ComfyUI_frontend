@@ -48,9 +48,11 @@ EMIT_SUBSTITUTED = (
     'emitAgree:dictValues',
     'emitAgree:noPositional',
 )
-EMIT_DISAGREE = ('emitDisagree:keyOrder', 'emitDisagree:orphanKeys')
+EMIT_DISAGREE = ('emitDisagree:keyOrder',)
 DECLINE = (
+    'declineDefinitionUnavailable',
     'declineLayoutDependent',
+    'declineVirtualNode',
     'declineUnclosed:noOrder',
     'declineUnclosed:dupeNames',
     'declineUnclosed:emptyName',
@@ -74,6 +76,19 @@ def bucket(verdict: str) -> str:
         if verdict in members:
             return label
     return 'unknown verdict'
+
+
+def markdown_cell(value: object) -> str:
+    return (
+        str(value)
+        .replace('\\', '\\\\')
+        .replace('|', '\\|')
+        .replace('\r', ' ')
+        .replace('\n', ' ')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+        .replace('`', '\\`')
+    )
 
 
 def read_rows(out_dir: str) -> tuple[list[dict], list[str]]:
@@ -150,6 +165,13 @@ def report(rows: list[dict]) -> list[str]:
                 disagree_detail.append((pack, node_class, verdict, node))
 
     total = sum(verdicts.values())
+    if not total:
+        lines.append('')
+        lines.append(
+            'UNMEASURED: no row carries a measured node. The measurement'
+            ' channel did not fire, so this run says nothing about agreement.'
+        )
+        return lines
     # `battery` nodes are the default workflow seen through the pack's hooks;
     # `driven` nodes are the pack's own registered classes, which is where a
     # custom serializer lives. Reporting one number over both would let a large
@@ -181,11 +203,11 @@ def report(rows: list[dict]) -> list[str]:
     lines.append('| --- | --- | --- | --- |')
     for verdict, count in verdicts.most_common():
         classes = sorted(c for c, v in by_class.items() if v.get(verdict))
-        shown = ', '.join(classes[:6])
+        shown = ', '.join(markdown_cell(c) for c in classes[:6])
         if len(classes) > 6:
             shown += f' (+{len(classes) - 6})'
         lines.append(
-            f'| `{verdict}` | {count} | {len(packs_by_verdict[verdict])}'
+            f'| `{markdown_cell(verdict)}` | {count} | {len(packs_by_verdict[verdict])}'
             f' | {shown} |'
         )
     lines.append('')
@@ -194,8 +216,12 @@ def report(rows: list[dict]) -> list[str]:
     lines.append('| --- | --- | --- |')
     for node_class in sorted(by_class, key=lambda c: -sum(by_class[c].values())):
         counts = by_class[node_class]
-        detail = ', '.join(f'`{v}`×{n}' for v, n in counts.most_common())
-        lines.append(f'| {node_class} | {sum(counts.values())} | {detail} |')
+        detail = ', '.join(
+            f'`{markdown_cell(v)}`×{n}' for v, n in counts.most_common()
+        )
+        lines.append(
+            f'| {markdown_cell(node_class)} | {sum(counts.values())} | {detail} |'
+        )
     lines.append('')
 
     if disagree_detail:
@@ -210,18 +236,27 @@ def report(rows: list[dict]) -> list[str]:
             ' positional |'
         )
         lines.append('| --- | --- | --- | --- | --- | --- | --- | --- |')
-        for pack, node_class, verdict, node in sorted(disagree_detail)[:200]:
+        for pack, node_class, verdict, node in sorted(
+            disagree_detail, key=lambda detail: detail[:3]
+        )[:200]:
             lines.append(
-                f'| `{pack}` | {node_class} | {node.get("src")} | `{verdict}`'
+                f'| `{markdown_cell(pack)}` | {markdown_cell(node_class)}'
+                f' | {markdown_cell(node.get("src"))}'
+                f' | `{markdown_cell(verdict)}`'
                 f' | {node.get("o")} | {node.get("k")} | {node.get("w")}'
                 f' | {node.get("a")} |'
             )
         if len(disagree_detail) > 200:
             lines.append(f'| … | +{len(disagree_detail) - 200} more | | | | | | |')
-    else:
+    elif not harness_errors and grouped.get('unknown verdict', 0) == 0:
         lines.append(
             'No disagreeing form in this population. Every node either emits a'
             ' form that agrees or declines to emit one.'
+        )
+    else:
+        lines.append(
+            'No disagreeing form was observed, but measurement errors or'
+            ' unknown verdicts prevent a clean conclusion.'
         )
     return lines
 

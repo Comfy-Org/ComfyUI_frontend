@@ -54,19 +54,22 @@ describe('matrix runner', () => {
   )
 })
 
-/**
- * The form/values channel decides whether a node gets a `widgets_values_form`
- * at all. A node carrying one consults no catalogue on any leg, so a wrong
- * form is authoritative and strictly worse than no form — which makes these
- * two cases the ones worth pinning: a hook that leaves the named projection
- * alone must still yield `emitAgree`, and a hook that substitutes the values
- * must yield no form at all rather than one describing the wrong collection.
- */
 describe('form/values agreement channel', () => {
-  // `onSerialize` is declared as taking no arguments, but every pack that
-  // overwrites values reads the serialised node out of its first parameter -
-  // which is the whole reason the form has to be written after the hook.
   type SerializeHook = (data: Record<string, unknown>) => void
+  type FormNode = { t: string; v: string; src: string }
+
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null
+  }
+
+  function isFormNode(value: unknown): value is FormNode {
+    return (
+      isRecord(value) &&
+      typeof value.t === 'string' &&
+      typeof value.v === 'string' &&
+      typeof value.src === 'string'
+    )
+  }
 
   const run = async (pack: string, onSerialize: SerializeHook) => {
     outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-form-'))
@@ -80,12 +83,8 @@ describe('form/values agreement channel', () => {
           app.registerExtension({
             name: `form-test-${pack}`,
             beforeRegisterNodeDef(nodeType) {
-              const ctor = nodeType as unknown as {
-                comfyClass?: string
-                prototype: { onSerialize?: SerializeHook }
-              }
-              if (ctor.comfyClass !== 'KSampler') return
-              ctor.prototype.onSerialize = onSerialize
+              if (Reflect.get(nodeType, 'comfyClass') !== 'KSampler') return
+              Reflect.set(nodeType.prototype, 'onSerialize', onSerialize)
             }
           })
         }
@@ -93,30 +92,56 @@ describe('form/values agreement channel', () => {
       ['entry'],
       pack
     )
-    const row = JSON.parse(
+    const row: unknown = JSON.parse(
       fs.readFileSync(path.join(outputDir, `${pack}.json`), 'utf8')
-    ) as { formNodes?: { t: string; v: string; src: string }[] }
-    return (row.formNodes ?? []).filter((n) => n.t === 'KSampler')
+    )
+    if (!isRecord(row) || !Array.isArray(row.formNodes)) return []
+    return row.formNodes.filter(isFormNode).filter((n) => n.t === 'KSampler')
   }
 
-  it('reads a hook that leaves the named projection alone as agreeing', async () => {
-    // rgthree's shape: values rewritten in place, order untouched.
-    const ksamplers = await run('form-inplace', (data) => {
-      if (Array.isArray(data.widgets_values))
-        data.widgets_values = data.widgets_values.map(() => 0)
-    })
+  it.for([
+    {
+      name: 'agree',
+      pack: 'form-inplace',
+      onSerialize(data: Record<string, unknown>) {
+        if (Array.isArray(data.widgets_values))
+          data.widgets_values = data.widgets_values.map(() => 0)
+      },
+      expected: 'emitAgree'
+    },
+    {
+      name: 'reversed named keys disagree',
+      pack: 'form-reversed',
+      onSerialize(data: Record<string, unknown>) {
+        const named = data.widgets_values_named
+        if (isRecord(named))
+          data.widgets_values_named = Object.fromEntries(
+            Object.entries(named).reverse()
+          )
+      },
+      expected: 'emitDisagree:keyOrder'
+    },
+    {
+      name: 'truncated positional values skew',
+      pack: 'form-truncated',
+      onSerialize(data: Record<string, unknown>) {
+        if (Array.isArray(data.widgets_values))
+          data.widgets_values = data.widgets_values.slice(0, -1)
+      },
+      expected: 'emitAgree:positionalSkew'
+    },
+    {
+      name: 'no named projection',
+      pack: 'form-dict',
+      onSerialize(data: Record<string, unknown>) {
+        data.widgets_values = { whatever: 1 }
+        delete data.widgets_values_named
+      },
+      expected: 'noNamed'
+    }
+  ])('$name', async ({ pack, onSerialize, expected }) => {
+    const ksamplers = await run(pack, onSerialize)
     expect(ksamplers).toHaveLength(1)
-    expect(ksamplers[0]).toMatchObject({ v: 'emitAgree', src: 'battery' })
-  })
-
-  it('records no form when the hook removes the named projection', async () => {
-    // The VideoHelperSuite shape: the serialised values become a dict the
-    // derived order does not describe, and the named projection goes with it.
-    const ksamplers = await run('form-dict', (data) => {
-      data.widgets_values = { whatever: 1 }
-      delete data.widgets_values_named
-    })
-    expect(ksamplers).toHaveLength(1)
-    expect(ksamplers[0]).toMatchObject({ v: 'noNamed', src: 'battery' })
+    expect(ksamplers[0]).toMatchObject({ v: expected, src: 'battery' })
   })
 })
