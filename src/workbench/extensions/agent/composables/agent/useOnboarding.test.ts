@@ -56,6 +56,21 @@ describe('useOnboarding', () => {
     expect(onboardedScopes()).toEqual([KEY])
   })
 
+  it('retries a completion whose settings write failed on the next mount', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
+    useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    await nextTick()
+
+    useOnboarding(STEPS, KEY)
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+  })
+
   it('replays after clearing both the local and settings completion', async () => {
     useOnboarding(STEPS, KEY).finish()
     await nextTick()

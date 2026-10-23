@@ -73,21 +73,27 @@ function settingsRecordSeen(scopedKey: string): boolean {
   return onboardedScopes().includes(scopedKey)
 }
 
+const unpersistedScopes = new Set<string>()
+
 function persistSeenToSettings(scopedKey: string, seen: boolean): void {
-  if (settingsRecordSeen(scopedKey) === seen) return
-  const scopes = onboardedScopes()
-  const nextScopes = seen
-    ? [...scopes, scopedKey]
-    : scopes.filter((scope) => scope !== scopedKey)
+  if (
+    settingsRecordSeen(scopedKey) === seen &&
+    !unpersistedScopes.has(scopedKey)
+  )
+    return
+  const otherScopes = onboardedScopes().filter((scope) => scope !== scopedKey)
+  const nextScopes = seen ? [...otherScopes, scopedKey] : otherScopes
   useSettingStore()
     .set(AGENT_ONBOARDED_SCOPES_SETTING_ID, nextScopes)
-    .catch((error: unknown) =>
+    .then(() => unpersistedScopes.delete(scopedKey))
+    .catch((error: unknown) => {
+      unpersistedScopes.add(scopedKey)
       reportError(error, {
         surface: 'agent',
         errorType: 'failure_persisting_agent_onboarding_completion',
         level: 'warning'
       })
-    )
+    })
 }
 
 function localStorageRecordsSeen(scopedKey: string): boolean {
