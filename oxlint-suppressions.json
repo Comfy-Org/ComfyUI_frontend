@@ -189,16 +189,6 @@
       "count": 1
     }
   },
-  "src/components/load3d/Load3dViewerContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/load3d/modelThumbnail.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -269,16 +259,6 @@
       "count": 1
     }
   },
-  "src/composables/useCameraAngle.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useCameraInfo.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/composables/useCoreCommands.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -311,6 +291,26 @@
   },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/components/Load3dViewerContent.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/components/modelThumbnail.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/composables/useCameraAngle.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "src/extensions/core/load3d/composables/useCameraInfo.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
