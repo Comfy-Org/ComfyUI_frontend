@@ -25,11 +25,11 @@ describe('PricingSection', () => {
     for (const gpu of ['RTX PRO 6000', 'H100 SXM', 'H200 SXM', 'B200']) {
       expect(screen.getAllByText(gpu)).toHaveLength(2)
     }
-    for (const price of ['$4.54/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
+    for (const price of ['$3.49/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
       expect(screen.getAllByText(price)).toHaveLength(2)
     }
     for (const credits of [
-      '957.94/hr',
+      '736.39/hr',
       '1314.53/hr',
       '1626.81/hr',
       '2369.53/hr'
@@ -46,6 +46,21 @@ describe('PricingSection', () => {
     expect(screen.queryAllByText('Container disk')).toHaveLength(0)
     expect(screen.queryAllByText('$0.15/GB/mo')).toHaveLength(0)
   })
+
+  it.for(['en', 'zh-CN'] as const)(
+    'states the billing basis, container disk and commercial use in %s',
+    (locale) => {
+      render(PricingSection, { props: { locale } })
+
+      for (const key of [
+        'platform.pricing.billedPerSecond',
+        'platform.pricing.containerDiskIncluded',
+        'platform.pricing.commercialUse'
+      ]) {
+        expect(screen.getAllByText(t(key, {}, { locale }))).toHaveLength(2)
+      }
+    }
+  )
 
   it('renders every rate-card value rather than a hardcoded copy', () => {
     render(PricingSection, { props: { locale: 'en' } })

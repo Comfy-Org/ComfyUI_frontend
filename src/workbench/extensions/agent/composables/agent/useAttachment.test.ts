@@ -847,6 +847,50 @@ describe('useAttachment', () => {
     })
   })
 
+  it('never previews an EXR from its own bytes before upload', async () => {
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({
+      upload: async () => ({ ref: 'plate.exr' }),
+      ...registry
+    })
+
+    const batch = addFiles([fileOfSize('plate.exr', 1024, '')])
+    expect(registry.chips[0].previewUrl).toBeUndefined()
+
+    await batch
+    expect(registry.chips[0]).toMatchObject({
+      ref: 'plate.exr',
+      mediaKind: 'image',
+      uploading: false
+    })
+    expect(registry.chips[0].previewUrl).toBeUndefined()
+    expect(registry.chips[0].mediaUrl).toBeUndefined()
+  })
+
+  it('settles the upload before the stored preview lookup, then shows the preview', async () => {
+    let resolvePreview: (url: string) => void = () => {}
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({
+      upload: async () => ({ ref: 'plate.exr' }),
+      resolveStoredPreview: () =>
+        new Promise<string>((resolve) => {
+          resolvePreview = resolve
+        }),
+      ...registry
+    })
+
+    await expect(addFiles([fileOfSize('plate.exr', 1024, '')])).resolves.toBe(
+      true
+    )
+    expect(registry.chips[0]).toMatchObject({ uploading: false })
+    expect(registry.chips[0].previewUrl).toBeUndefined()
+
+    resolvePreview('/api/assets/preview-1/content')
+    await vi.waitFor(() =>
+      expect(registry.chips[0].previewUrl).toBe('/api/assets/preview-1/content')
+    )
+  })
+
   it('reuses the prior upload when the same file is attached again', async () => {
     const upload = vi.fn(async (file: File) => ({
       ref: `uploaded_${file.name}`

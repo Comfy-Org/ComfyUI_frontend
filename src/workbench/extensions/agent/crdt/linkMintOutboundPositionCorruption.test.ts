@@ -194,6 +194,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       docPromotedWidgets: (nodeId) =>
         readDocPromotedWidgets(doc, String(nodeId)),
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
     onTestFinished(() => port.detach())

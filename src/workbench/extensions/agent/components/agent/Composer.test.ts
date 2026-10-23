@@ -19,6 +19,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { toNodeId } from '@/types/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1087,6 +1089,46 @@ describe('Composer', () => {
         expect(emitted().send).toBeUndefined()
       }
     )
+
+    it('emphasizes the active node on the canvas for pointer and keyboard browsing', async () => {
+      mount({ getMentionNodes: () => NODES })
+      const emphasized = () =>
+        NODES.filter(({ id }) => isNodeEmphasized(undefined, toNodeId(id)))
+      const menu = await openReferenceSection('Nodes')
+
+      expect(emphasized()).toEqual([])
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(emphasized()).toEqual([NODES[0]])
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(emphasized()).toEqual([NODES[1]])
+
+      await userEvent.hover(
+        within(menu).getByRole('menuitem', { name: 'Back' })
+      )
+      expect(emphasized()).toEqual([])
+
+      await userEvent.hover(
+        within(menu).getByRole('menuitem', { name: 'VAE Decode' })
+      )
+      expect(emphasized()).toEqual([NODES[2]])
+
+      await userEvent.keyboard('{Escape}')
+      expect(emphasized()).toEqual([])
+    })
+
+    it('stops emphasizing the node when the composer unmounts', async () => {
+      const { unmount } = mount({ getMentionNodes: () => NODES })
+      await openReferenceSection('Nodes')
+
+      await userEvent.keyboard('{ArrowDown}')
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(true)
+
+      unmount()
+
+      expect(isNodeEmphasized(undefined, toNodeId(NODES[0].id))).toBe(false)
+    })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
     it('hides nodes already in the basket', async () => {

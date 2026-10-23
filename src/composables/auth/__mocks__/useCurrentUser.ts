@@ -28,7 +28,7 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   handleSignIn: vi.fn(async () => {}),
   onUserResolved: vi.fn(createWatchHandle),
   onTokenRefreshed: vi.fn(createWatchHandle),
-  onUserLogout: vi.fn()
+  onUserLogout: vi.fn(createWatchHandle)
 }
 
 const currentUser = { ...defaults }

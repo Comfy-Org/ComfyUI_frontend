@@ -11,8 +11,8 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const inputSpecLoad3DAdvanced: CustomInputSpec = {
   name: 'viewport_state',
@@ -20,7 +20,7 @@ const inputSpecLoad3DAdvanced: CustomInputSpec = {
   isPreview: false
 }
 
-useExtensionService().registerExtension({
+export const load3dAdvancedExtension: ComfyExtension = {
   name: 'Comfy.Load3DAdvanced',
 
   beforeRegisterNodeDef(_nodeType, nodeData) {
@@ -105,4 +105,4 @@ useExtensionService().registerExtension({
       }
     })
   }
-})
+}
