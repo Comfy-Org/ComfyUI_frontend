@@ -62,6 +62,7 @@
           type="button"
           class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0 ring-inset focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           :aria-label="t('maskEditor.maskLayer')"
+          :aria-pressed="store.activeLayer === 'mask'"
           @click="setActiveLayer('mask')"
         >
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
@@ -98,6 +99,7 @@
           type="button"
           class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0 ring-inset focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           :aria-label="t('maskEditor.paintLayer')"
+          :aria-pressed="store.activeLayer === 'rgb'"
           @click="setActiveLayer('rgb')"
         >
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
@@ -195,9 +197,10 @@ const blendModeMenuItems = computed<MenuItem[]>(() =>
 
 function applyMaskCanvasOpacity() {
   const maskCanvas = store.maskCanvas
-  if (!maskCanvas || store.maskBlendMode === MaskBlendMode.Negative) return
+  if (!maskCanvas) return
+  const negative = store.maskBlendMode === MaskBlendMode.Negative
   maskCanvas.style.opacity = maskLayerVisible.value
-    ? String(store.maskOpacity)
+    ? String(negative ? 1 : store.maskOpacity)
     : '0'
 }
 

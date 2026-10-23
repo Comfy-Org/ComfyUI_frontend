@@ -166,6 +166,25 @@ describe('ImageLayerSettingsPanel', () => {
       expect(mockSetActiveLayer).not.toHaveBeenCalled()
     })
 
+    it('should toggle mask canvas visibility in Negative blend mode', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      mockStore.maskBlendMode = MaskBlendMode.Negative
+
+      renderPanel({
+        toolManager: {
+          setActiveLayer: mockSetActiveLayer
+        } as unknown as ToolManager
+      })
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('0')
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('1')
+    })
+
     it('should toggle paint canvas opacity between 0 and 1', async () => {
       const user = userEvent.setup()
       const canvas = makeCanvas()
@@ -205,6 +224,20 @@ describe('ImageLayerSettingsPanel', () => {
   })
 
   describe('layer rows', () => {
+    it('should mark the active layer button as pressed', () => {
+      mockStore.activeLayer = 'mask'
+      renderPanel()
+
+      expect(rowButton('mask-layer-row')).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+      expect(rowButton('paint-layer-row')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+    })
+
     it('activates the mask layer from the row button', async () => {
       const user = userEvent.setup()
       mockStore.activeLayer = 'rgb'
