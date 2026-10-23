@@ -286,6 +286,14 @@ describe('a local link edit lands on the document slot that carries its input', 
       const result = applyOps(doc, ops, CATALOG)
       outcomes.push(...result.outcomes.map(({ outcome }) => outcome))
     }
+    function refuse() {
+      minter?.forgetUnappliedGrows(
+        mintWireOps(unsent.splice(0), {
+          actor: 'human:user:tab',
+          baseVersion: ++stampCounter
+        })
+      )
+    }
     function foreignAppend(name: string) {
       assert.exists(sink)
       applyOps(doc, remoteGrow(sink, sources[0], name, 9001, 1), CATALOG)
@@ -298,6 +306,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       unsent,
       outcomes,
       echo,
+      refuse,
       foreignAppend
     }
   }
@@ -525,6 +534,51 @@ describe('a local link edit lands on the document slot that carries its input', 
         [`${IMAGES}.image_3`, 2]
       ],
       reported: ['agent_crdt_link_slot_not_in_doc']
+    },
+    {
+      name: '#21250: a replacing link after a foreign slot lands is reported, not grown a second time',
+      sink: 'TestAutogrowSink',
+      seed: firstImageWired,
+      act: async ({ sources, sink, echo, foreignAppend }) => {
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        echo()
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        foreignAppend(`${IMAGES}.image_4`)
+        sources[0].connect(0, sink, 2)
+        await afterFlush()
+      },
+      sent: [`connect grow ${IMAGES}.image_3`],
+      docSlots: [
+        [`${IMAGES}.image_1`, 0],
+        [`${IMAGES}.image_2`, 1],
+        [`${IMAGES}.image_4`, 0],
+        [`${IMAGES}.image_3`, 2]
+      ],
+      reported: ['agent_crdt_link_slot_not_in_doc']
+    },
+    {
+      name: 'a grow the host never applies frees its name for a fresh grow',
+      sink: 'TestAutogrowSink',
+      seed: firstImageWired,
+      act: async ({ sources, sink, echo, refuse }) => {
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        echo()
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        refuse()
+        sources[0].connect(0, sink, 2)
+        await afterFlush()
+      },
+      sent: [`connect grow ${IMAGES}.image_3`],
+      docSlots: [
+        [`${IMAGES}.image_1`, 0],
+        [`${IMAGES}.image_2`, 1],
+        [`${IMAGES}.image_3`, 0]
+      ],
+      reported: []
     },
     {
       name: '#21250: a grow cancelled with its unsent source leaves the slot to the next grow',

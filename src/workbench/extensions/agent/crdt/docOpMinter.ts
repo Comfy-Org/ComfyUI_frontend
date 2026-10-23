@@ -13,6 +13,7 @@
  */
 import type {
   NodeId as WireNodeId,
+  Op,
   PromotedHostWrite,
   SubgraphDefinition,
   WidgetValuesForm,
@@ -39,6 +40,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -116,6 +118,8 @@ type PromotedWriteRefusal =
     }
 
 export interface DocOpMinter {
+  /** Drops the predicted slots of grows the host settled without applying. */
+  forgetUnappliedGrows(ops: readonly Op[]): void
   detach(): void
 }
 
@@ -815,21 +819,26 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
   }
 
-  function expectedDocInputNames(
+  function inFlightGrows(
     key: string,
-    docNames: DocumentSlotNames | null
-  ): DocumentSlotNames | null {
+    docNames: DocumentSlotNames
+  ): UnechoedGrows | undefined {
     const grows = unechoedGrows.get(key)
-    if (docNames === null || grows === undefined) return docNames
+    if (!grows?.names.every((name) => docNames.includes(name))) return grows
+    unechoedGrows.delete(key)
+    return undefined
+  }
+
+  function expectedDocInputNames(
+    docNames: DocumentSlotNames,
+    grows: UnechoedGrows | undefined
+  ): DocumentSlotNames {
+    if (grows === undefined) return docNames
     const echoed = docNames.slice(grows.base)
     const onlyOurEchoes =
       docNames.length >= grows.base &&
-      echoed.length < grows.names.length &&
       echoed.every((name, index) => name === grows.names[index])
-    if (!onlyOurEchoes) {
-      unechoedGrows.delete(key)
-      return docNames
-    }
+    if (!onlyOurEchoes) return docNames
     return [...docNames, ...grows.names.slice(echoed.length)]
   }
 
@@ -841,19 +850,39 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
+  function forgetUnappliedGrows(ops: readonly Op[]): void {
+    const graphId = deps.boundRootGraphId() ?? deps.getGraph()?.id
+    if (graphId === undefined) return
+    for (const op of ops) {
+      if (op.op !== 'connect' || !op.grow) continue
+      const key = nodeKey(graphId, toNodeId(op.to_node))
+      const grows = unechoedGrows.get(key)
+      if (!grows) continue
+      const names = grows.names.filter((name) => name !== op.grow.name)
+      if (names.length === 0) unechoedGrows.delete(key)
+      else unechoedGrows.set(key, { base: grows.base, names })
+    }
+  }
+
   function addressLinkOperation(entry: PendingLinkOp): GraphOperation[] {
     const { target } = entry
     const key = nodeKey(target.graphId, target.nodeId)
     const docNames = deps.docInputNames(target.nodeId)
+    const grows = docNames ? inFlightGrows(key, docNames) : undefined
     const address = documentInputSlot(
-      expectedDocInputNames(key, docNames),
+      docNames && expectedDocInputNames(docNames, grows),
       target.node,
       target.input,
       target.liveSlot
     )
     if (address.kind === 'slot')
       return [{ ...entry.operation, to_slot: address.slot }]
-    if (address.kind === 'grow' && entry.kind === 'connect' && docNames) {
+    if (
+      address.kind === 'grow' &&
+      entry.kind === 'connect' &&
+      docNames &&
+      !grows?.names.includes(address.grow.name)
+    ) {
       recordUnechoedGrow(key, docNames.length, address.grow.name)
       return [{ ...entry.operation, to_slot: null, grow: address.grow }]
     }
@@ -978,6 +1007,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   })
 
   return {
+    forgetUnappliedGrows,
     detach() {
       detached = true
       pending = []
