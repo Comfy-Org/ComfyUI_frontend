@@ -10,12 +10,12 @@
       </TableHeader>
       <TableBody>
         <TableRow v-for="pack in packs" :key="pack">
-          <TableCell>{{ packName(pack) }}</TableCell>
+          <TableCell>{{ extensionPackName(pack) }}</TableCell>
           <TableCell class="text-right">
             <Switch
               :model-value="enabledByPath[pack]"
               :aria-label="
-                $t('g.extensionPackToggle', { name: packName(pack) })
+                $t('g.extensionPackToggle', { name: extensionPackName(pack) })
               "
               @update:model-value="
                 (enabled) => emit('setEnabled', pack, enabled)
@@ -36,6 +36,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import { extensionPackName } from '@/stores/extensionStore'
 
 const { packs, enabledByPath } = defineProps<{
   packs: string[]
@@ -45,13 +46,4 @@ const { packs, enabledByPath } = defineProps<{
 const emit = defineEmits<{
   setEnabled: [path: string, enabled: boolean]
 }>()
-
-function packName(path: string) {
-  const name = path.split('/').filter(Boolean).at(-1) ?? path
-  try {
-    return decodeURIComponent(name)
-  } catch {
-    return name
-  }
-}
 </script>

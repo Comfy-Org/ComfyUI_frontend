@@ -22,7 +22,11 @@
         </li>
       </ul>
       <div class="flex justify-end">
-        <Button variant="destructive" @click="applyChanges">
+        <Button
+          variant="destructive"
+          :disabled="extensionStore.isSavingExtensionPacks"
+          @click="applyChanges"
+        >
           {{ $t('g.reloadToApplyChanges') }}
         </Button>
       </div>
@@ -40,7 +44,7 @@
     </div>
     <ExtensionPackTable
       :packs="extensionStore.extensionPackPaths"
-      :enabled-by-path="editingEnabledExtensionPacks"
+      :enabled-by-path="enabledExtensionPacks"
       @set-enabled="setExtensionPackEnabled"
     />
     <ExtensionListTable
@@ -72,7 +76,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
 import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
 
@@ -93,7 +98,18 @@ const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
-const editingEnabledExtensionPacks = ref<Record<string, boolean>>({})
+
+// Projected from the setting rather than staged here: packs have exactly one
+// authoritative current state, and a second copy of it is what let a rolled
+// back save and a remount each display a different answer.
+const enabledExtensionPacks = computed(() =>
+  Object.fromEntries(
+    extensionStore.extensionPackPaths.map((path) => [
+      path,
+      extensionStore.isExtensionPackCurrentlyEnabled(path)
+    ])
+  )
+)
 
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
@@ -150,26 +166,11 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
 }
 
 onMounted(() => {
-  const persistedDisabledPacks = new Set(
-    settingStore.get('Comfy.Extension.DisabledPacks')
-  )
   extensionStore.extensions.forEach((ext) => {
     editingEnabledExtensions.value[ext.name] =
       extensionStore.isExtensionEnabled(ext.name)
   })
-  extensionStore.extensionPackPaths.forEach((path) => {
-    editingEnabledExtensionPacks.value[path] = !persistedDisabledPacks.has(path)
-  })
 })
-
-function extensionPackName(path: string) {
-  const name = path.split('/').filter(Boolean).at(-1) ?? path
-  try {
-    return decodeURIComponent(name)
-  } catch {
-    return name
-  }
-}
 
 const changedExtensions = computed(() => {
   return extensionStore.extensions.filter(
@@ -182,7 +183,7 @@ const changedExtensions = computed(() => {
 const changedExtensionPacks = computed(() => {
   return extensionStore.extensionPackPaths.filter(
     (path) =>
-      editingEnabledExtensionPacks.value[path] !==
+      extensionStore.isExtensionPackCurrentlyEnabled(path) !==
       extensionStore.isExtensionPackEnabled(path)
   )
 })
@@ -212,23 +213,19 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 }
 
 async function setExtensionPackEnabled(path: string, enabled: boolean) {
-  const previous = editingEnabledExtensionPacks.value[path]
-  editingEnabledExtensionPacks.value[path] = enabled
-  const editingDisabledExtensionPackPaths = Object.entries(
-    editingEnabledExtensionPacks.value
-  )
-    .filter(([_, isEnabled]) => !isEnabled)
-    .map(([packPath]) => packPath)
+  const result = await extensionStore.setExtensionPackEnabled(path, enabled)
+  if (result.ok) return
 
-  try {
-    await settingStore.set('Comfy.Extension.DisabledPacks', [
-      ...extensionStore.inactiveDisabledExtensionPackPaths,
-      ...editingDisabledExtensionPackPaths
-    ])
-  } catch (error) {
-    editingEnabledExtensionPacks.value[path] = previous
-    throw error
-  }
+  // The setting owner has already returned the key to the value the server
+  // holds, so the switch goes back to it on its own and nothing offers a
+  // reload. Reported so a save the user watched fail is not also silent.
+  reportError(result.detail, {
+    errorType: 'extension_pack_save_failed',
+    surface: 'platform',
+    level: 'warning',
+    tags: { reason: result.reason },
+    context: { path, enabled }
+  })
 }
 
 const enableAllExtensions = async () => {
