@@ -23,8 +23,15 @@
         {{ t('maskEditor.redo') }}
       </button>
 
-      <DropdownMenuRoot v-model:open="imageDropdownOpen" :modal="false">
-        <DropdownMenuTrigger as-child>
+      <Menu
+        v-model:open="imageDropdownOpen"
+        :modal="false"
+        :items="imageMenuItems"
+        align="start"
+        :side-offset="5"
+        :collision-padding="10"
+      >
+        <template #trigger>
           <button
             type="button"
             :aria-label="t('maskEditor.imageTransformations')"
@@ -36,18 +43,8 @@
               class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
             />
           </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuPortal to="body">
-          <DropdownMenuContent
-            align="start"
-            :side-offset="5"
-            :collision-padding="10"
-            class="z-2102 min-w-56 rounded-lg border border-border bg-background px-2 py-3 shadow-md"
-          >
-            <MenuItems :items="imageMenuItems" />
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
+        </template>
+      </Menu>
 
       <button
         type="button"
@@ -87,16 +84,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Button from '@/components/ui/button/Button.vue'
 import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
