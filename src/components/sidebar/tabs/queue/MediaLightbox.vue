@@ -37,8 +37,13 @@
 
       <!-- Content -->
       <div
-        class="group/lightbox relative flex max-h-full max-w-full items-center justify-center"
+        ref="contentRef"
+        class="relative flex max-h-full max-w-full flex-col items-center justify-center"
         data-testid="lightbox-content"
+        @mousemove="onContentMouseMove"
+        @touchstart="onContentTouchStart"
+        @focusin="onContentFocusIn"
+        @focusout="onContentFocusOut"
       >
         <template v-if="activeItem">
           <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
@@ -71,13 +76,16 @@
           data-testid="lightbox-pill"
           :class="
             cn(
-              'absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm transition-opacity',
-              pillFlash
+              'mt-2 flex max-w-[90vw] items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm transition-opacity',
+              captionPinned || captionVisible
                 ? 'pointer-events-auto opacity-100'
-                : 'pointer-events-none opacity-0',
-              'group-focus-within/lightbox:pointer-events-auto group-focus-within/lightbox:opacity-100 group-hover/lightbox:pointer-events-auto group-hover/lightbox:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 hover:pointer-events-auto hover:opacity-100 touch:pointer-events-auto touch:opacity-100'
+                : 'pointer-events-none opacity-0'
             )
           "
+          @mouseenter="onCaptionMouseEnter"
+          @mouseleave="onCaptionMouseLeave"
+          @focusin="onCaptionFocusIn"
+          @focusout="onCaptionFocusOut"
         >
           <span
             class="min-w-0 truncate text-xs text-white/90"
@@ -157,18 +165,82 @@ let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
-const pillFlash = ref(false)
-let pillFlashTimer: ReturnType<typeof setTimeout> | undefined
+const contentRef = ref<HTMLElement>()
 
-function flashPill() {
-  pillFlash.value = true
-  clearTimeout(pillFlashTimer)
-  pillFlashTimer = setTimeout(() => {
-    pillFlash.value = false
-  }, 2500)
+const captionVisible = ref(false)
+const captionPinned = ref(false)
+let captionHideTimer: ReturnType<typeof setTimeout> | undefined
+
+/* Reveals the caption while the pointer moves over the image or has focus, then auto-hides after 2s. */
+function showCaptionTransient() {
+  captionPinned.value = false
+  captionVisible.value = true
+  clearTimeout(captionHideTimer)
+  captionHideTimer = setTimeout(() => {
+    captionVisible.value = false
+  }, 2000)
 }
 
-onBeforeUnmount(() => clearTimeout(pillFlashTimer))
+function hideCaptionNow() {
+  clearTimeout(captionHideTimer)
+  captionVisible.value = false
+  captionPinned.value = false
+}
+
+function onContentMouseMove(event: MouseEvent) {
+  if (
+    event.target instanceof HTMLElement &&
+    event.target.closest('[data-testid="lightbox-pill"]')
+  )
+    return
+  showCaptionTransient()
+}
+
+function onContentTouchStart() {
+  showCaptionTransient()
+}
+
+function onContentFocusIn() {
+  showCaptionTransient()
+}
+
+function onContentFocusOut(event: FocusEvent) {
+  if (
+    event.relatedTarget instanceof Node &&
+    contentRef.value?.contains(event.relatedTarget)
+  )
+    return
+  hideCaptionNow()
+}
+
+function onCaptionMouseEnter() {
+  clearTimeout(captionHideTimer)
+  captionPinned.value = true
+  captionVisible.value = true
+}
+
+function onCaptionMouseLeave() {
+  captionPinned.value = false
+  captionVisible.value = false
+}
+
+function onCaptionFocusIn() {
+  clearTimeout(captionHideTimer)
+  captionPinned.value = true
+  captionVisible.value = true
+}
+
+function onCaptionFocusOut(event: FocusEvent) {
+  if (
+    event.relatedTarget instanceof Node &&
+    (event.currentTarget as HTMLElement | null)?.contains(event.relatedTarget)
+  )
+    return
+  captionPinned.value = false
+  captionVisible.value = false
+}
+
+onBeforeUnmount(() => clearTimeout(captionHideTimer))
 
 watch(
   () => props.activeIndex,
@@ -176,10 +248,10 @@ watch(
     galleryVisible.value = index !== -1
     if (index !== -1) {
       previouslyFocusedElement = document.activeElement as HTMLElement | null
-      flashPill()
+      showCaptionTransient()
       void nextTick(() => dialogRef.value?.focus())
     } else {
-      pillFlash.value = false
+      hideCaptionNow()
     }
   },
   { immediate: true }
