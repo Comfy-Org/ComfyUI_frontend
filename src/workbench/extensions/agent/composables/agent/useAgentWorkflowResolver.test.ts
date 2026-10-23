@@ -293,7 +293,7 @@ describe('Agent workflow resolution', () => {
   })
 
   it.for(['success', 'failure'])(
-    'ignores a superseded refresh outcome: %s',
+    'shares an in-flight routine refresh with a forced caller: %s',
     async (outcome) => {
       const { resolver, listCloudWorkflows } = setup([
         workflow('workflows/current.json', 'Current')
@@ -306,19 +306,19 @@ describe('Agent workflow resolution', () => {
           rejectFirst = reject
         })
       )
-      listCloudWorkflows.mockResolvedValueOnce(
-        listing([{ id: 'latest', name: 'Current' }])
-      )
       const first = resolver.refreshCloudWorkflowIds()
-      expect(await resolver.refreshCloudWorkflowIds({ force: true })).toBe(true)
+      const forced = resolver.refreshCloudWorkflowIds({ force: true })
       if (outcome === 'success')
-        resolveFirst(listing([{ id: 'stale', name: 'Current' }]))
-      else rejectFirst(new Error('Stale failure'))
-      expect(await first).toBe(false)
-      expect(resolver.availableWorkflowReferences.value).toEqual([
-        { id: 'latest', name: 'Current' }
-      ])
-      expect(reportError).not.toHaveBeenCalled()
+        resolveFirst(listing([{ id: 'current', name: 'Current' }]))
+      else rejectFirst(new Error('Listing failure'))
+      expect(await Promise.all([first, forced])).toEqual(
+        outcome === 'success' ? [true, true] : [false, false]
+      )
+      expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+      expect(resolver.availableWorkflowReferences.value).toEqual(
+        outcome === 'success' ? [{ id: 'current', name: 'Current' }] : []
+      )
+      expect(reportError).toHaveBeenCalledTimes(outcome === 'success' ? 0 : 1)
     }
   )
 
@@ -593,6 +593,28 @@ describe('Cloud index refresh caching', () => {
     resolveListing(listing([{ id: 'current', name: 'Current' }]))
 
     expect(await Promise.all([first, second])).toEqual([true, true])
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'current', name: 'Current' }
+    ])
+  })
+
+  it('shares an in-flight routine listing with a forced refresh', async () => {
+    const { resolver, listCloudWorkflows } = setup([
+      workflow('workflows/current.json', 'Current')
+    ])
+    let resolveListing: (listing: CloudWorkflowListing) => void = () => {}
+    listCloudWorkflows.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveListing = resolve
+      })
+    )
+
+    const routine = resolver.refreshCloudWorkflowIds()
+    const forced = resolver.refreshCloudWorkflowIds({ force: true })
+    resolveListing(listing([{ id: 'current', name: 'Current' }]))
+
+    expect(await Promise.all([routine, forced])).toEqual([true, true])
     expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'current', name: 'Current' }

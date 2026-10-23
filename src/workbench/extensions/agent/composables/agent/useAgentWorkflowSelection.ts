@@ -96,6 +96,14 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  let workflowReferencesRefreshPending = false
+
+  function flushPendingWorkflowReferencesRefresh(): void {
+    if (!workflowReferencesRefreshPending) return
+    workflowReferencesRefreshPending = false
+    onRequestWorkflowReferences()
+  }
+
   function onVisibleWorkflowChanged(): void {
     if (!panelStore.followsVisibleWorkflow) return
     if (
@@ -182,6 +190,7 @@ export function useAgentWorkflowSelection({
       return false
     } finally {
       workflowSelection.value = null
+      flushPendingWorkflowReferencesRefresh()
     }
   }
 
@@ -225,11 +234,15 @@ export function useAgentWorkflowSelection({
       return undefined
     } finally {
       workflowSelection.value = null
+      flushPendingWorkflowReferencesRefresh()
     }
   }
 
   function onRequestWorkflowReferences(): void {
-    if (workflowSelection.value) return
+    if (workflowSelection.value) {
+      workflowReferencesRefreshPending = true
+      return
+    }
     const hasUnindexedOpenWorkflow = workflowStore.openWorkflows.some(
       (workflow) => !workflow.isTemporary && cloudIdFor(workflow) === undefined
     )

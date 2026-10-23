@@ -44,10 +44,7 @@ export function useAgentWorkflowResolver({
   const listingComplete = ref(false)
   let refreshGeneration = 0
   let lastSuccessfulRefreshAt: number | null = null
-  let inFlightRefresh: {
-    request: Promise<boolean>
-    forced: boolean
-  } | null = null
+  let inFlightRefresh: Promise<boolean> | null = null
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
     for (const { name } of cloudIndex.value)
@@ -70,8 +67,7 @@ export function useAgentWorkflowResolver({
   async function refreshCloudWorkflowIds({
     force = false
   }: { force?: boolean } = {}): Promise<boolean> {
-    if (inFlightRefresh && (!force || inFlightRefresh.forced))
-      return inFlightRefresh.request
+    if (inFlightRefresh) return inFlightRefresh
     if (!force) {
       if (
         lastSuccessfulRefreshAt !== null &&
@@ -103,7 +99,7 @@ export function useAgentWorkflowResolver({
         if (generation === refreshGeneration) inFlightRefresh = null
       }
     })()
-    inFlightRefresh = { request, forced: force }
+    inFlightRefresh = request
     return request
   }
 
