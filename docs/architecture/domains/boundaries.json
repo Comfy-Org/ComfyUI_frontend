@@ -5592,32 +5592,47 @@
       },
       {
         "from": "missing-models/domain",
-        "allow": ["missing-models/domain", "unclassified"]
+        "allow": [
+          "error-reporting/domain",
+          "missing-models/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "missing-models/application",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "missing-models/domain",
           "missing-models/application",
           "missing-models/infrastructure",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "missing-models/infrastructure",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "missing-models/domain",
           "missing-models/application",
           "missing-models/infrastructure",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "missing-models/presentation",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "missing-models/domain",
           "missing-models/application",
           "missing-models/presentation",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },

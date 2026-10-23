@@ -77,7 +77,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["error-reporting"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
