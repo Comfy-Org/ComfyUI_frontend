@@ -1165,12 +1165,14 @@ describe('useSubscriptionDialog', () => {
                 monthly: {
                   action: 'subscribe',
                   list_price_cents: 70_000,
-                  price_cents: 66_500
+                  price_cents: 66_500,
+                  period_charge_cents: 66_500
                 },
                 yearly: {
                   action: 'subscribe',
                   list_price_cents: 70_000,
-                  price_cents: 63_000
+                  price_cents: 63_000,
+                  period_charge_cents: 756_000
                 }
               }
             ]

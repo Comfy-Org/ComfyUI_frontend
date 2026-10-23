@@ -539,6 +539,14 @@ export const zTeamCreditStopPrice = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  period_charge_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   price_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3843,11 +3851,12 @@ export const zBillingBalanceResponse = z.object({
  * Every field is required. On every save, disabled included,
  * threshold_credits and reload_credits must be positive whole credits
  * and a non-null monthly_budget_cents must be positive. When enabled is
- * true, monthly_budget_cents must also be non-null and at most
- * max_monthly_budget_cents, reload_credits must be at least
+ * true, a non-null monthly_budget_cents must be at most
+ * max_monthly_budget_cents; a null one means no owner limit and is
+ * stored as max_monthly_budget_cents. reload_credits must be at least
  * min_reload_credits and greater than threshold_credits, and one reload
  * must cost no more than the budget. A save with enabled false accepts a
- * null budget and skips the enabled-only rules.
+ * null budget, stores it as null, and skips the enabled-only rules.
  *
  */
 export const zAutoReloadSettingsRequest = z.object({
@@ -4072,13 +4081,20 @@ export const zAgentTurnAccepted = z.object({
 })
 
 /**
- * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, and doc_seq and doc_lineage_seq appear together and only with both of them. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, doc_seq and doc_lineage_seq appear together and only with both of them, and job_id and job_workflow_id appear together only on a terminal run frame when a job was submitted. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
  */
 export const zAgentToolCallData = z.object({
   doc_lineage_seq: z.int().gte(1).optional(),
   doc_seq: z.int().gte(1).optional(),
   duration_ms: z.int().optional(),
   error_code: z.string().optional(),
+  job_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[^\x00\n\r\t]+$/)
+    .optional(),
+  job_workflow_id: z.string().min(1).optional(),
   message_id: z.string(),
   op_ids: z
     .array(
@@ -6401,19 +6417,23 @@ export const zRestoreCccItemVersionPath = z.object({
  */
 export const zRestoreCccItemVersionResponse = zCccjson
 
-export const zUploadCccMediaBody = z.object({
-  change_id: z
-    .string()
-    .min(1)
-    .max(128)
-    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
-    .optional(),
-  expected_draft_rev: z.int().gte(1),
-  file: z.string(),
-  name: z.string().min(1).max(500),
-  originating_entity_uid: z.uuid(),
-  role: z.string().min(1).max(500)
-})
+export const zUploadCccMediaBody = z.intersection(
+  z.unknown(),
+  z.object({
+    change_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+      .optional(),
+    expected_draft_rev: z.int().gte(1),
+    file: z.string().optional(),
+    name: z.string().min(1).max(500),
+    originating_entity_uid: z.uuid(),
+    role: z.string().min(1).max(500),
+    upload_token: z.string().min(1).max(8192).optional()
+  })
+)
 
 export const zUploadCccMediaHeaders = z.object({
   'Idempotency-Key': z.string().min(1).max(200)
@@ -6439,18 +6459,22 @@ export const zDeleteCccMediaPath = z.object({
  */
 export const zDeleteCccMediaResponse = zCccjson
 
-export const zReplaceCccMediaFileBody = z.object({
-  change_id: z
-    .string()
-    .min(1)
-    .max(128)
-    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
-    .optional(),
-  expected_draft_rev: z.int().gte(1),
-  expected_revision_uid: z.uuid(),
-  file: z.string(),
-  name: z.string().min(1).max(500)
-})
+export const zReplaceCccMediaFileBody = z.intersection(
+  z.unknown(),
+  z.object({
+    change_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+      .optional(),
+    expected_draft_rev: z.int().gte(1),
+    expected_revision_uid: z.uuid(),
+    file: z.string().optional(),
+    name: z.string().min(1).max(500),
+    upload_token: z.string().min(1).max(8192).optional()
+  })
+)
 
 export const zReplaceCccMediaFileHeaders = z.object({
   'Idempotency-Key': z.string().min(1).max(200)
@@ -6464,6 +6488,13 @@ export const zReplaceCccMediaFilePath = z.object({
  * New immutable Draft file-version metadata under the same media UID
  */
 export const zReplaceCccMediaFileResponse = zCccjson
+
+export const zRequestCccUploadUrlBody = zCccjson
+
+/**
+ * Expiring private upload URL, token and required request headers
+ */
+export const zRequestCccUploadUrlResponse = zCccjson
 
 export const zPublishCccDraftBody = zCccjson
 
