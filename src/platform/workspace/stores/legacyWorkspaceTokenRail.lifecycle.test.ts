@@ -39,6 +39,7 @@ function tokenResponse(
   return Response.json({
     token: `token-${workspaceId}`,
     expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: workspaceId, name: workspace.name, type: 'team' },
     role: 'owner',
     permissions: ['owner:*'],
