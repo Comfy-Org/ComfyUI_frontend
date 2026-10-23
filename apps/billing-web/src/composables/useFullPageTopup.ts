@@ -4,6 +4,7 @@ import { computed, shallowReadonly, shallowRef, watch } from 'vue'
 import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
+  BillingOperationState,
   BillingResult,
   CapabilitiesSnapshot,
   InteractiveTopupPayment,
@@ -67,6 +68,9 @@ function capabilityStop(
 const CARD_METHOD_TYPE = 'card'
 const CARD_REQUIRED = 'CARD_REQUIRED'
 const HELD_FOR_ANOTHER_PAYMENT = 'HELD_FOR_ANOTHER_PAYMENT'
+const EARLIER_PAYMENT_UNRESOLVED = 'EARLIER_PAYMENT_UNRESOLVED'
+
+type RecoveredOperation = BillingResult<BillingOperationState | undefined>
 
 function eligibleCards(
   methods: readonly SavedPaymentMethod[]
@@ -156,16 +160,18 @@ export function useFullPageTopup() {
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
 
-  async function reconcileOnce(): Promise<void> {
+  async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
     const recovered = await lifecycle.recover({ includeSettled: true })
-    if (mine !== generation) return
+    if (mine !== generation) return undefined
     dispatch(reconciledEvent(recovered))
+    return recovered
   }
 
-  function reconcile(): Promise<void> {
-    latest = reconcileOnce()
-    return latest
+  function reconcile(): Promise<RecoveredOperation | undefined> {
+    const run = reconcileOnce()
+    latest = run.then(() => undefined)
+    return run
   }
 
   async function readSaved(): Promise<SavedArrival> {
@@ -337,8 +343,17 @@ export function useFullPageTopup() {
 
   async function settleHeldBeforeAnotherPayment() {
     dispatch({ type: 'payRejectedAsPending' })
-    await reconcile()
-    held = undefined
+    const recovered = await reconcile()
+    const operation = recovered?.status === 'ok' ? recovered.value : undefined
+    if (operation?.phase === 'succeeded' || operation?.phase === 'failed') {
+      held = undefined
+      return
+    }
+    if (operation?.phase === 'pending') return
+    dispatch({
+      type: 'payFailed',
+      outcome: { kind: 'processing_error', code: EARLIER_PAYMENT_UNRESOLVED }
+    })
   }
 
   async function follow(verdict: PayVerdict) {

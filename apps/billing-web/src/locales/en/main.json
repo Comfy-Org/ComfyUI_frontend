@@ -530,7 +530,8 @@
       "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
       "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
       "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again.",
-      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one."
+      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one.",
+      "EARLIER_PAYMENT_UNRESOLVED": "Your earlier payment hasn't been confirmed yet. To avoid paying twice, pay again with the same card, or reload in a moment."
     },
     "tier": {
       "unknown": "Plan",

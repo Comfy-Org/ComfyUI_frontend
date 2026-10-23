@@ -620,7 +620,7 @@ describe('FullPageTopupView paying once', () => {
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
 
-  it('checks the unresolved purchase instead of charging the old card when the customer picks another one', async () => {
+  it('keeps an unconfirmed purchase on its card and key when the customer picks another one', async () => {
     const fake = renderTopup({
       topupQuote: PAYS_ONCE,
       paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
@@ -642,19 +642,23 @@ describe('FullPageTopupView paying once', () => {
     await userEvent.click(payButton())
 
     await waitFor(() =>
-      expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        "Your earlier payment hasn't been confirmed yet."
+      )
     )
-    expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(1)
+    expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
+    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
 
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /3184/ }))
     await userEvent.click(payButton())
     await waitFor(() =>
       expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
     )
-    const [first, chosen] = fake.createInteractiveTopup.mock.calls.map(
+    const [first, resent] = fake.createInteractiveTopup.mock.calls.map(
       ([request]) => request
     )
-    expect(chosen.idempotencyKey).not.toBe(first.idempotencyKey)
-    expect(chosen.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
+    expect(resent).toStrictEqual(first)
   })
 
   it.for([1, 2])(
