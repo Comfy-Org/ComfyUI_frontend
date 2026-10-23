@@ -24,6 +24,7 @@ import {
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 const WORKFLOW_ID = 'c2003000-0000-4000-8000-000000000001'
+const SOCKET_SID = 'b7c1d2e3-f4a5-4b6c-8d7e-9f0a1b2c3d4e'
 const MESSAGE_ID = 'c2003000-0000-4000-8000-000000000002'
 const THREAD_ID = 'c2003000-0000-4000-8000-000000000003'
 
@@ -89,6 +90,7 @@ async function attachAgent(
     page,
     WORKFLOW_ID,
     host,
+    SOCKET_SID,
     'apply'
   )
   await hostSocket.install()
