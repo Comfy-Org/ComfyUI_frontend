@@ -218,7 +218,47 @@ describe('WidgetTextarea Value Binding', () => {
         within(actions).getByRole('button', { name: 'g.copyToClipboard' })
       )
 
-      expect(mockCopyToClipboard).toHaveBeenLastCalledWith('test value')
+      expect(mockCopyToClipboard).toHaveBeenLastCalledWith('test value', {
+        toastOnSuccess: false
+      })
+    })
+
+    it('marks the button as copied for two seconds instead of showing a toast', async () => {
+      vi.useFakeTimers()
+      try {
+        mockCopyToClipboard.mockResolvedValue(true)
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+        renderComponent(createTextareaWidget('test value'), 'test value')
+
+        await user.click(
+          screen.getByRole('button', { name: 'g.copyToClipboard' })
+        )
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(screen.getByRole('button', { name: 'g.copied' })).toBeVisible()
+
+        await vi.advanceTimersByTimeAsync(2000)
+
+        expect(
+          screen.getByRole('button', { name: 'g.copyToClipboard' })
+        ).toBeVisible()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps the copy label when copying fails', async () => {
+      mockCopyToClipboard.mockResolvedValue(false)
+      renderComponent(createTextareaWidget('test value'), 'test value')
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'g.copyToClipboard' })
+      )
+
+      expect(mockCopyToClipboard).toHaveBeenCalled()
+      expect(
+        screen.queryByRole('button', { name: 'g.copied' })
+      ).not.toBeInTheDocument()
     })
 
     it('reveals the rail actions only on hover or focus', () => {
