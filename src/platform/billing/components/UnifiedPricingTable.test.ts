@@ -656,12 +656,14 @@ describe('UnifiedPricingTable team plan CTA', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 32_000,
-            price_cents: 30_400
+            price_cents: 30_400,
+            period_charge_cents: 30_400
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 32_000,
-            price_cents: 28_800
+            price_cents: 28_800,
+            period_charge_cents: 345_600
           }
         },
         {
@@ -670,12 +672,14 @@ describe('UnifiedPricingTable team plan CTA', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 64_000,
-            price_cents: 60_800
+            price_cents: 60_800,
+            period_charge_cents: 60_800
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 64_000,
-            price_cents: 57_600
+            price_cents: 57_600,
+            period_charge_cents: 691_200
           }
         }
       ]
