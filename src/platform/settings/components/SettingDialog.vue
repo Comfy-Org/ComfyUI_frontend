@@ -1,20 +1,22 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
-    size="full"
+    size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
     header-padding="symmetric"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
-      <h2 class="text-base text-base-foreground">{{ $t('g.settings') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
@@ -117,7 +119,7 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -126,20 +128,17 @@ import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import type {
   ISettingGroup,
-  SettingPanelType,
+  SettingDialogProps,
   SettingParams
 } from '@/platform/settings/types'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } = defineProps<{
-  onClose: () => void
-  defaultPanel?: SettingPanelType
-  scrollToSettingId?: string
-}>()
+const { onClose, defaultPanel, scrollToSettingId } =
+  defineProps<SettingDialogProps>()
 
 provide(OnCloseKey, onClose)
 
@@ -318,11 +317,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     background-color: transparent;
   }
   30% {
-    background-color: color-mix(
-      in srgb,
-      var(--p-primary-color) 15%,
-      transparent
-    );
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 </style>

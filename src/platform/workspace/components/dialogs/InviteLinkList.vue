@@ -1,6 +1,6 @@
 <template>
   <ul
-    class="m-0 flex max-h-56 list-none flex-col overflow-y-auto rounded-lg border border-border-default p-0"
+    class="m-0 flex max-h-56 list-none flex-col overflow-y-auto rounded-lg border p-0"
   >
     <li
       v-for="(row, index) in rows"
@@ -8,16 +8,16 @@
       :class="
         cn(
           'flex h-12 shrink-0 items-center justify-between gap-2 px-3',
-          index > 0 && 'border-t border-border-default'
+          index > 0 && 'border-t border-border'
         )
       "
     >
-      <span class="min-w-0 truncate text-sm text-base-foreground">
+      <span class="min-w-0 truncate text-sm">
         {{ row.email }}
       </span>
       <Button
         v-if="row.url"
-        v-tooltip="{ value: copyLabel(row.id), showDelay: 300 }"
+        :tooltip="copyLabel(row.id)"
         variant="muted-textonly"
         size="icon-lg"
         class="shrink-0"

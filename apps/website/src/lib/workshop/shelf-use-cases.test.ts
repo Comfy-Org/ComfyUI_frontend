@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UseCase } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
 import type { Shelf } from './shelf-memory'
 import { sectionTitleKeyFor } from './section-title'
 import { openedUseCases, shelfOf } from './shelf-use-cases'

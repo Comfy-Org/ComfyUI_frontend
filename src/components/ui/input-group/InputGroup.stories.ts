@@ -5,11 +5,11 @@ import InputGroupAddon from './InputGroupAddon.vue'
 import InputGroupButton from './InputGroupButton.vue'
 import InputGroupInput from './InputGroupInput.vue'
 
-const meta = {
+const meta: Meta<typeof InputGroup> = {
   title: 'Components/InputGroup',
   component: InputGroup,
   tags: ['autodocs']
-} satisfies Meta<typeof InputGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -70,7 +70,7 @@ export const Invalid: Story = {
       <InputGroup class="w-80">
         <InputGroupInput model-value="not a url" aria-invalid="true" />
         <InputGroupAddon align="inline-end">
-          <i class="icon-[lucide--x] size-4 text-destructive-background" />
+          <i class="icon-[lucide--x] size-4 text-destructive" />
         </InputGroupAddon>
       </InputGroup>`
   })

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import Button from '../ui/button/Button.vue'
-import Dialog from '../ui/dialog/Dialog.vue'
-import DialogContent from '../ui/dialog/DialogContent.vue'
-import DialogDescription from '../ui/dialog/DialogDescription.vue'
-import DialogTitle from '../ui/dialog/DialogTitle.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

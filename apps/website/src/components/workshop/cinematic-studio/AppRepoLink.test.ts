@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { captureWorkshopEvent } from '../../../scripts/posthog'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import AppRepoLink from './AppRepoLink.vue'
 
-vi.mock(import('../../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 describe('AppRepoLink', () => {
   it('opens the app repository on GitHub in a new tab', () => {
@@ -21,11 +21,13 @@ describe('AppRepoLink', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  it('renders no link until the repository exists', () => {
+  it("opens Comfy's GitHub, named as such, until the app has its own repository", () => {
     render(AppRepoLink)
 
-    expect(screen.getByText(/GitHub/)).toBeInTheDocument()
-    expect(screen.queryByRole('link')).toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'Comfy on GitHub' })
+    ).toHaveAttribute('href', 'https://github.com/Comfy-Org')
+    expect(screen.queryByText(/coming soon/i)).toBeNull()
   })
 
   it('reports a click on the repository link with the app it belongs to', () => {

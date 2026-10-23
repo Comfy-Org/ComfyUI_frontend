@@ -1,5 +1,5 @@
-import { workshopModels } from '../config/workshop-browse-content'
-import { workflowModels } from '../config/workshop-workflow-content'
+import { workshopModels } from '@/config/workshop-browse-content'
+import { workflowModels } from '@/config/workshop-workflow-content'
 
 export interface DiscoveryProvider {
   readonly name: string

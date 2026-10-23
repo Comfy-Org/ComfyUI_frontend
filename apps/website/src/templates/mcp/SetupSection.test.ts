@@ -5,10 +5,10 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   captureMcpConnectionTabClick,
   captureMcpClientTabClick
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import SetupSection from './SetupSection.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
 

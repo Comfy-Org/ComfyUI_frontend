@@ -1,19 +1,19 @@
-<!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="flex min-h-8 flex-row items-center gap-2">
+  <div class="flex min-h-8 items-center gap-2">
     <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"
-        class="text-sm text-muted"
+        class="text-sm text-muted-foreground"
         :class="props.labelClass"
       >
         <slot name="name-prefix" />
         {{ props.item.name }}
-        <i
-          v-if="props.item.tooltip"
-          v-tooltip="props.item.tooltip"
-          class="pi pi-info-circle bg-transparent"
-        />
+        <Tooltip v-if="props.item.tooltip">
+          <TooltipTrigger as-child>
+            <i class="pi pi-info-circle" />
+          </TooltipTrigger>
+          <TooltipContent>{{ props.item.tooltip }}</TooltipContent>
+        </Tooltip>
         <slot name="name-suffix" />
       </span>
     </div>
@@ -43,8 +43,11 @@ import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import Input from '@/components/ui/input/Input.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { FormItem } from '@/platform/settings/types'
 
 const formValue = defineModel<unknown>('formValue')
@@ -105,7 +108,7 @@ function getFormComponent(item: FormItem): Component {
     case 'knob':
       return InputKnob
     case 'combo':
-      return SingleSelect
+      return AppSingleSelect
     case 'radio':
       return FormRadioGroup
     case 'image':

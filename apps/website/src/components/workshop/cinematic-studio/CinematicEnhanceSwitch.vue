@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 import CinematicTooltip from './CinematicTooltip.vue'
 
 const {

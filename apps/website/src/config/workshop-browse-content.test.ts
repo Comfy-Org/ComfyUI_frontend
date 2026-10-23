@@ -4,8 +4,14 @@ import {
   assertNoModelSlugAliasCollisions,
   authoredRouterModelSlugAliases,
   authoredWorkshopModels,
+  correctedUseCase,
+  editorialSummariesFor,
+  modelDisplayName,
+  modelSummaryFor,
+  publishableMedia,
   routerModelSlugAliases,
   routerWorkshopModelPaths,
+  unpublishedSummaryWarning,
   workshopModels
 } from './workshop-browse-content'
 import {
@@ -141,213 +147,150 @@ describe('model availability', () => {
   })
 })
 
-const KNOWN_DUPLICATE_SUMMARIES: ReadonlyArray<
-  readonly [string, readonly string[]]
-> = [
-  [
-    'Generates an image from text with up to 9 reference images.',
-    [
-      'bfl--flux-2-pro--generate-images',
-      'luma_2--uni-1-image-generation--generate-images'
-    ]
-  ],
-  [
-    'Generates a video from a mix of reference images, videos, and audio.',
-    [
-      'byteplus--seedance-2-fast-reference--generate-videos',
-      'byteplus--seedance-2-reference--generate-videos'
-    ]
-  ],
-  [
-    'Generates a short video clip with audio from text.',
-    [
-      'byteplus--seedance-2-fast-text-to-video--generate-videos',
-      'byteplus--seedance-2-text-to-video--generate-videos'
-    ]
-  ],
-  [
-    'Generates or edits an image at up to ~4K with up to 10 reference images.',
-    [
-      'byteplus--seedream-4--edit-images',
-      'byteplus--seedream-4--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits an image with higher quality than 4.0, minimum 3.68MP.',
-    [
-      'byteplus--seedream-4-5--edit-images',
-      'byteplus--seedream-4-5--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits an image with up to 14 reference images, PNG output.',
-    [
-      'byteplus--seedream-5-lite--edit-images',
-      'byteplus--seedream-5-lite--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits a 1K or 2K image with up to 10 references.',
-    [
-      'byteplus--seedream-5-pro--edit-images',
-      'byteplus--seedream-5-pro--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits video with audio through Gemini Omni 1.1 interactions. Length (3-10s) is set in the prompt; 360p to 4k.',
-    [
-      'gemini--omni-1.1-flash--animate-images',
-      'gemini--omni-1.1-flash--edit-videos',
-      'gemini--omni-1.1-flash--generate-videos'
-    ]
-  ],
-  [
-    'Generates or edits video with audio through Gemini Omni Flash interactions. Length (3-10s) is set in the prompt; 360p to 4k.',
-    [
-      'gemini--omni-flash-preview--animate-images',
-      'gemini--omni-flash-preview--edit-videos',
-      'gemini--omni-flash-preview--generate-videos'
-    ]
-  ],
-  [
-    'Generates a cinematic video clip from text.',
-    [
-      'kling--text-to-video--generate-videos',
-      'luma--ray-2-text-to-video--generate-videos'
-    ]
-  ],
-  [
-    'Generates or edits an image with top-tier text rendering, 1K/2K/4K output, reference images, and optional mask inpainting.',
-    [
-      'openai--gpt-image-2--generate-images',
-      'openai--gpt-image-2.5-flare--generate-images',
-      'openai--gpt-image-2.5-sunburst--generate-images'
-    ]
-  ],
-  [
-    'Edits one to three images.',
-    [
-      'qwen--qwen-image-3.0-image-edit--edit-images',
-      'qwen--qwen-image-3.0-pro-image-edit--edit-images'
-    ]
-  ],
-  [
-    'Generates an SVG illustration from a text prompt.',
-    [
-      'recraft--v3-text-to-vector--generate-images',
-      'recraft--v4-text-to-vector--generate-images'
-    ]
-  ],
-  [
-    'Generates raster images.',
-    [
-      'recraft--v4.1-pro-text-to-image--generate-images',
-      'recraft--v4.1-text-to-image--generate-images',
-      'recraft--v4.1-utility-pro-text-to-image--generate-images',
-      'recraft--v4.1-utility-text-to-image--generate-images'
-    ]
-  ],
-  [
-    'Generates SVG illustrations.',
-    [
-      'recraft--v4.1-pro-text-to-vector--generate-images',
-      'recraft--v4.1-text-to-vector--generate-images',
-      'recraft--v4.1-utility-pro-text-to-vector--generate-images',
-      'recraft--v4.1-utility-text-to-vector--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits an image quickly with up to 14 reference images (Gemini 2.5 Flash Image / Nano Banana).',
-    [
-      'vertexai--gemini-2.5-flash-image--edit-images',
-      'vertexai--gemini-2.5-flash-image--generate-images'
-    ]
-  ],
-  [
-    'Generates a high-quality image with selectable 1K/2K/4K resolution (Gemini 3 Pro Image).',
-    [
-      'vertexai--gemini-3-pro-image--edit-images',
-      'vertexai--gemini-3-pro-image--generate-images'
-    ]
-  ],
-  [
-    'Generates or edits images at up to 4K with up to 14 reference images and adjustable thinking (Nano Banana 2 / Gemini 3.1 Flash Image).',
-    [
-      'vertexai--gemini-nano-banana-2--edit-images',
-      'vertexai--gemini-nano-banana-2--generate-images'
-    ]
-  ],
-  [
-    'Generates a cinematic video clip with native audio from text.',
-    ['vertexai--veo-3--animate-images', 'vertexai--veo-3--generate-videos']
-  ],
-  [
-    'Edits an existing video from a prompt and optional reference images.',
-    [
-      'wan--happyhorse-video-edit--edit-videos',
-      'wan--video-edit-2.7--edit-videos'
-    ]
-  ],
-  [
-    'Generates a video clip from text with optional driving audio.',
-    [
-      'wan--text-to-video--generate-videos',
-      'wan--text-to-video-2.7--generate-videos'
-    ]
-  ],
-  [
-    'Upscales an image to 2K/4K/8K with sharp, detailed results.',
-    [
-      'wavespeed--seedvr2-image--edit-images',
-      'wavespeed--ultimate-image-upscaler--edit-images'
-    ]
-  ],
-  [
-    'Generates a short video clip from text or a start frame.',
-    [
-      'xai--grok-imagine-video--animate-images',
-      'xai--grok-imagine-video--generate-videos'
-    ]
-  ],
-  [
-    'Generates a 1–15 second video at up to 1080p from text or a start frame.',
-    [
-      'xai--grok-imagine-video-1.5--animate-images',
-      'xai--grok-imagine-video-1.5--generate-videos'
-    ]
-  ]
-]
-
 function normaliseSummary(summary: string): string {
   return summary.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 describe('model summaries', () => {
-  it('ships no duplicate summary beyond the known groups', () => {
+  it('gives every model page a summary', () => {
+    const missing = workshopModels
+      .filter(({ summary }) => !summary?.trim())
+      .map(({ slug }) => slug)
+
+    expect(missing).toEqual([])
+  })
+
+  it('ships no summary shared by two pages', () => {
     const slugsBySummary = new Map<string, string[]>()
     for (const { slug, summary } of workshopModels) {
       if (!summary) continue
       const key = normaliseSummary(summary)
       slugsBySummary.set(key, [...(slugsBySummary.get(key) ?? []), slug])
     }
-    const known = new Map(
-      KNOWN_DUPLICATE_SUMMARIES.map(([summary, slugs]) => [
-        normaliseSummary(summary),
-        slugs
-      ])
-    )
-    expect(known.size).toBe(KNOWN_DUPLICATE_SUMMARIES.length)
 
     const problems = [...slugsBySummary]
       .filter(([, slugs]) => slugs.length > 1)
-      .filter(([key, slugs]) =>
-        slugs.some((slug) => !known.get(key)?.includes(slug))
-      )
       .map(
         ([key, slugs]) =>
-          `Duplicate summary on ${slugs.join(', ')}: "${key}". Summaries come from the partner descriptions imported by scripts/generate-workshop-catalog.ts; get those made distinct upstream.`
+          `Duplicate summary on ${slugs.join(', ')}: "${key}". Write a distinct one per page in src/data/workshop-model-summaries.json.`
       )
 
     expect(problems).toEqual([])
+  })
+})
+
+describe('editorial summary overrides', () => {
+  it('trims each override for a model page', () => {
+    expect(
+      editorialSummariesFor({ 'a--b': '  Distinct copy. ' }, new Set(['a--b']))
+    ).toEqual(new Map([['a--b', 'Distinct copy.']]))
+  })
+
+  it.for([
+    {
+      case: 'a page that is not a model page',
+      slug: 'missing',
+      summary: 'Copy.'
+    },
+    { case: 'a blank override', slug: 'a--b', summary: '   ' }
+  ])('rejects $case', ({ slug, summary }) => {
+    expect(() =>
+      editorialSummariesFor({ [slug]: summary }, new Set(['a--b']))
+    ).toThrow(`Invalid model summary for page: ${slug}`)
+  })
+
+  it('warns only about overrides for pages this build does not publish', () => {
+    expect(unpublishedSummaryWarning(['a', 'b', 'c'], new Set(['b']))).toBe(
+      'Model summaries kept for pages this build does not publish: a, c'
+    )
+    expect(unpublishedSummaryWarning(['b'], new Set(['b']))).toBeUndefined()
+  })
+
+  it.for([
+    {
+      editorial: 'Editorial.',
+      description: 'Draws images.',
+      summary: 'Editorial.'
+    },
+    {
+      editorial: undefined,
+      description: 'Draws images (Model).',
+      summary: 'Draws images.'
+    },
+    { editorial: undefined, description: '', summary: undefined }
+  ])(
+    'summarises $description with editorial $editorial as $summary',
+    ({ editorial, description, summary }) => {
+      expect(
+        modelSummaryFor(editorial, description, {
+          name: 'Model',
+          provider: 'Provider'
+        })
+      ).toBe(summary)
+    }
+  )
+})
+
+describe('browse model fields', () => {
+  it('applies the entry override before the Router override and the authored use case', () => {
+    const overrides = new Map([
+      ['entry', 'edit-images' as const],
+      ['router', 'audio' as const]
+    ])
+    expect(
+      [
+        { entryId: 'entry', routerId: 'router' },
+        { entryId: 'other', routerId: 'router' },
+        { entryId: 'other', routerId: 'other' }
+      ].map((ids) => correctedUseCase(overrides, ids, 'generate-images'))
+    ).toEqual(['edit-images', 'audio', 'generate-images'])
+  })
+
+  it('withholds media from a page whose media shows the wrong model', () => {
+    const thumbnail = {
+      url: 'https://example.com/t.png',
+      kind: 'image' as const
+    }
+    const media = { thumbnail, samples: Array(8).fill(thumbnail) }
+    expect(publishableMedia(media, false)).toEqual({
+      exampleCount: 6,
+      thumbnail
+    })
+    expect(publishableMedia({}, false)).toEqual({
+      exampleCount: 0,
+      thumbnail: undefined
+    })
+    expect(publishableMedia(media, true)).toEqual({
+      exampleCount: 0,
+      thumbnail: undefined
+    })
+  })
+
+  it.for([
+    {
+      case: 'the authored name',
+      names: { authored: 'Authored', canonical: 'Canonical', shared: 2 },
+      expected: 'Authored'
+    },
+    {
+      case: 'the entry name when models share a Router use case',
+      names: { canonical: 'Canonical', shared: 2 },
+      expected: 'Entry'
+    },
+    {
+      case: 'the canonical name',
+      names: { canonical: 'Canonical', shared: 1 },
+      expected: 'Canonical'
+    },
+    { case: 'the entry name', names: {}, expected: 'Entry' }
+  ])('names a model with $case', ({ names, expected }) => {
+    expect(
+      modelDisplayName({
+        authored: names.authored,
+        canonical: names.canonical,
+        entry: 'Entry',
+        modelsSharingRouterUseCase: names.shared
+      })
+    ).toBe(expected)
   })
 })

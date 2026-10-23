@@ -1,4 +1,4 @@
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -10,16 +10,27 @@ import type {
   AgentConsentTrigger
 } from '@/platform/telemetry/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`
-const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`
+const CONSENT_VIDEO_SOURCES = [
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.webm`,
+    type: 'video/webm'
+  },
+  {
+    src: `${CONSENT_MEDIA_BASE}/agent-consent-v2-1280.mp4`,
+    type: 'video/mp4'
+  }
+]
 const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
@@ -35,9 +46,11 @@ export interface ConsentOfferHooks {
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
-  const dialogService = useDialogService()
+  const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
-  const toastStore = useToastStore()
+  const introductionStore = useAgentConsentIntroductionStore()
+  const agentPanelStore = useAgentPanelStore()
+  const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
@@ -92,12 +105,6 @@ export function useAgentConsent() {
       let shown = false
       let saveErrorShown = false
 
-      /**
-       * One outcome per card that was on screen, so this event and
-       * `agent_consent_shown` stay 1:1 and a shown card with no outcome is a
-       * defect rather than a dismissal. `accepted` and `rejected` keep exactly
-       * the meaning they already had.
-       */
       const reportOutcome = (decision: AgentConsentDecision): void => {
         useTelemetry()?.trackAgentConsentResolved({
           decision,
@@ -105,19 +112,27 @@ export function useAgentConsent() {
         })
       }
 
+      const stopScopeWatch = watch(
+        [identity, isLoggedIn],
+        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        { flush: 'sync' }
+      )
+
       const closeWith = (result: boolean): void => {
         if (settled) return
         settled = true
+        stopScopeWatch()
         dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
         resolve(result)
+      }
+
+      function markIntroductionResponded(): void {
+        if (shown) introductionStore.markResponded()
       }
 
       function handleSaveFailure(error: unknown): void {
         if (settled) return
         saving = false
-        // Not an outcome: the card stays open, retryable, with the error on it.
-        // The ending it eventually reaches carries this flag instead, which is
-        // what separates giving up after a failed save from walking away.
         saveErrorShown = true
         reportError(error, {
           surface: 'agent',
@@ -131,20 +146,28 @@ export function useAgentConsent() {
           },
           dialogComponentProps: {
             closable: true,
-            dismissableMask: true
+            dismissOnPointerDownOutside: true
           }
         })
       }
 
+      function finishAcceptance(saved: boolean): void {
+        if (settled) return
+        if (!persistOnAccept) reportOutcome('accepted_pending_sign_in')
+        else reportOutcome(saved ? 'accepted' : 'accept_not_persisted')
+        closeWith(saved)
+      }
+
       const accept = async (): Promise<void> => {
         if (saving || settled) return
+        markIntroductionResponded()
         saving = true
         dialogStore.updateDialog({
           key: CONSENT_DIALOG_KEY,
           contentProps: { accepting: true, error: '' },
           dialogComponentProps: {
             closable: false,
-            dismissableMask: false
+            dismissOnPointerDownOutside: false
           }
         })
 
@@ -152,20 +175,7 @@ export function useAgentConsent() {
           const saved = persistOnAccept
             ? await consentStore.accept(expectedIdentity)
             : true
-          // Only a persisted acceptance is `accepted`. Without
-          // `persistOnAccept` this card is the first half of the signed-out
-          // flow, which still has a sign-in and a real save to clear before
-          // consent exists, so that path still reports its own `accepted` once
-          // those land - `accepted_pending_sign_in` records that the card half
-          // is done without claiming consent that does not exist yet.
-          //
-          // A save that resolved false neither stored consent nor raised, so it
-          // shows no error and closes the card: the user believes they
-          // consented. That is the ending this event could not tell from a
-          // dismissal, and the whole reason the two are named separately.
-          if (!persistOnAccept) reportOutcome('accepted_pending_sign_in')
-          else reportOutcome(saved ? 'accepted' : 'accept_not_persisted')
-          closeWith(saved)
+          finishAcceptance(saved)
         } catch (error) {
           handleSaveFailure(error)
         }
@@ -176,12 +186,18 @@ export function useAgentConsent() {
         component: AgentConsentCard,
         props: {
           title: t('agent.consent.title'),
-          titleId: CONSENT_DIALOG_KEY,
-          paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
-          videoSrc: CONSENT_VIDEO_SRC,
-          videoSrcMp4: CONSENT_VIDEO_SRC_MP4,
+          paragraphs: [
+            t('agent.consent.body1'),
+            t(
+              persistOnAccept
+                ? 'agent.consent.body2'
+                : 'agent.consent.body2BeforeSignIn'
+            )
+          ],
+          videoSources: CONSENT_VIDEO_SOURCES,
           posterSrc: CONSENT_POSTER_SRC,
-          docsUrl: DOCS_URL,
+          docsUrl: AGENT_DOCS_URL,
+          requiresSignIn: !persistOnAccept,
           accepting: false,
           error: '',
           onVnodeMounted: () => {
@@ -192,33 +208,25 @@ export function useAgentConsent() {
           },
           onAccept: () => void accept(),
           onReject: () => {
+            if (settled) return
+            markIntroductionResponded()
             reportOutcome('rejected')
+            if (
+              agentPanelStore.onboarding.persistSkipAsRefusal &&
+              expectedIdentity &&
+              identity.value === expectedIdentity
+            )
+              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          dismissableMask: true,
-          closeOnEscape: true,
-          modal: true,
+          dismissOnPointerDownOutside: true,
           headless: true,
-          overlayClass: 'bg-black/55',
-          contentClass:
-            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true
-            // Escape, the overlay mask, or a programmatic close. Reached only
-            // when nothing else settled first, so it is exactly the ending that
-            // used to emit `agent_consent_shown` and then nothing at all.
-            //
-            // Before the card renders there is no impression to resolve, and
-            // reporting a dismissal against one would break this event's 1:1
-            // agreement with `agent_consent_shown` in the other direction - so
-            // that window is an ending of the request instead. It is narrow (the
-            // card is an async component, so it is the chunk's load time) and
-            // its production frequency is unknown rather than assumed to be
-            // zero.
+            stopScopeWatch()
             if (shown) reportOutcome('dismissed')
             else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
@@ -234,50 +242,50 @@ export function useAgentConsent() {
   ): Promise<string | null> {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
+    introductionStore.isContinuingSignIn = true
     try {
-      if (!(await dialogService.showSignInDialog())) return null
-    } catch (error) {
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_consent_sign_in_failure'
-      })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.signInError')
-      })
-      return null
-    }
-
-    try {
-      const decisionIdentity = await consentStore.ensureScope()
-      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
-        useTelemetry()?.trackAgentConsentResolved({
-          decision: 'accept_not_persisted',
-          save_error_shown: false
+      try {
+        if (!(await showSignInDialog())) return null
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_consent_sign_in_failure'
+        })
+        toast.error(t('g.error'), {
+          description: t('agent.consent.signInError')
         })
         return null
       }
-      // The second half of the signed-out flow, so this is the moment consent
-      // becomes stored rather than the card's own ending - the card already
-      // reported `accepted_pending_sign_in`. No save error can have been shown
-      // on it: its accept ran with `persistOnAccept` false and never wrote.
-      useTelemetry()?.trackAgentConsentResolved({
-        decision: 'accepted',
-        save_error_shown: false
-      })
-      return decisionIdentity
-    } catch (error) {
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_consent_setting_write_failure'
-      })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.saveError')
-      })
-      return null
+
+      try {
+        const decisionIdentity = await consentStore.ensureScope()
+        if (
+          !decisionIdentity ||
+          !(await consentStore.accept(decisionIdentity))
+        ) {
+          useTelemetry()?.trackAgentConsentResolved({
+            decision: 'accept_not_persisted',
+            save_error_shown: false
+          })
+          return null
+        }
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accepted',
+          save_error_shown: false
+        })
+        return decisionIdentity
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_consent_setting_write_failure'
+        })
+        toast.error(t('g.error'), {
+          description: t('agent.consent.saveError')
+        })
+        return null
+      }
+    } finally {
+      introductionStore.isContinuingSignIn = false
     }
   }
 
@@ -309,10 +317,8 @@ export function useAgentConsent() {
         surface: 'agent',
         errorType: 'agent_consent_setting_load_failure'
       })
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('agent.consent.loadError')
+      toast.error(t('g.error'), {
+        description: t('agent.consent.loadError')
       })
       return null
     }

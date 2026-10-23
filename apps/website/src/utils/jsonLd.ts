@@ -1,7 +1,7 @@
-import type { Locale } from '../config/locales'
-import { resolveLocale } from '../config/locales'
-import { externalLinks, getRoutes } from '../config/routes'
-import { translationsFor } from '../i18n/translations'
+import type { Locale } from '@/config/locales'
+import { resolveLocale } from '@/config/locales'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopBrowseModel } from '../../config/workshop'
+import type { WorkshopBrowseModel } from '@/config/workshop'
 import WorkshopCatalog from './WorkshopCatalog.vue'
 
 const models: WorkshopBrowseModel[] = [

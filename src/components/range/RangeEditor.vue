@@ -11,7 +11,7 @@
         preserveAspectRatio="none"
         :class="
           cn(
-            'block w-full rounded-sm bg-node-component-surface',
+            'block w-full rounded-sm bg-node',
             display === 'histogram' ? 'aspect-3/2' : 'h-8'
           )
         "
@@ -171,6 +171,7 @@
         hide-buttons
         class="w-16"
       />
+      <slot name="actions" />
     </div>
   </div>
 </template>
@@ -213,6 +214,10 @@ const {
 
 const modelValue = defineModel<RangeValue>({ required: true })
 
+const emit = defineEmits<{
+  editEnd: [mergeKey?: string]
+}>()
+
 const trackRef = useTemplateRef<HTMLDivElement>('trackRef')
 const gradientId = useId()
 
@@ -221,7 +226,8 @@ const { handleTrackPointerDown, startDrag } = useRangeEditor({
   modelValue,
   valueMin: toRef(() => valueMin),
   valueMax: toRef(() => valueMax),
-  showMidpoint: toRef(() => showMidpoint)
+  showMidpoint: toRef(() => showMidpoint),
+  onEditEnd: () => emit('editEnd')
 })
 
 function onTrackPointerDown(e: PointerEvent) {
@@ -264,6 +270,7 @@ const minValue = computed({
       ...modelValue.value,
       min: Math.min(clamp(min, valueMin, valueMax), modelValue.value.max)
     }
+    emit('editEnd', 'min')
   }
 })
 
@@ -274,6 +281,7 @@ const maxValue = computed({
       ...modelValue.value,
       max: Math.max(clamp(max, valueMin, valueMax), modelValue.value.min)
     }
+    emit('editEnd', 'max')
   }
 })
 
@@ -288,6 +296,7 @@ const midpointValue = computed({
         ? clamp(gammaToPosition(val), 0, 1)
         : clamp(val, 0, 1)
     modelValue.value = { ...modelValue.value, midpoint: position }
+    emit('editEnd', 'midpoint')
   }
 })
 

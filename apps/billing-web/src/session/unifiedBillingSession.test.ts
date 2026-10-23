@@ -99,11 +99,23 @@ function setup({
   remembered = null as User | null,
   workspace = workspaceRoute(TEAM),
   workspaceId = undefined as string | undefined,
-  creationOutages = 0
+  creationOutages = 0,
+  creationRefusal = undefined as object | undefined
 } = {}) {
   const endpoint = createFakeWebSessionEndpoint({ state })
   const outage = { remaining: creationOutages }
   const sent: SentRequest[] = []
+  function refuseCreation(): Response | undefined {
+    if (outage.remaining > 0) {
+      outage.remaining -= 1
+      return new Response(JSON.stringify({ code: 'unavailable' }), {
+        status: 503
+      })
+    }
+    return creationRefusal
+      ? new Response(JSON.stringify(creationRefusal), { status: 403 })
+      : undefined
+  }
   const fetchImpl = vi.fn<typeof fetch>(async (input, init = {}) => {
     const url = new URL(String(input))
     sent.push({
@@ -115,15 +127,9 @@ function setup({
       )
     })
     if (url.pathname === '/api/workspaces/current') return workspace()
-    if (
-      init.method === 'POST' &&
-      url.pathname === '/api/auth/session' &&
-      outage.remaining > 0
-    ) {
-      outage.remaining -= 1
-      return new Response(JSON.stringify({ code: 'unavailable' }), {
-        status: 503
-      })
+    if (init.method === 'POST' && url.pathname === '/api/auth/session') {
+      const refused = refuseCreation()
+      if (refused) return refused
     }
     if (url.pathname.startsWith('/api/billing/')) {
       return new Response(JSON.stringify({}))
@@ -278,7 +284,7 @@ describe('billing-web on the shared web session', () => {
 
       await expect(session.settledPhase()).resolves.toBe('error')
 
-      expect(session.signInPort.failureCode.value).toBe(failure)
+      expect(session.signInPort.failure.value?.code).toBe(failure)
       expect(session.billedScope.value).toBeUndefined()
       await expect(session.signInPort.loadIdentity()).resolves.toBeUndefined()
       expect(firebase.loadFirebase).not.toHaveBeenCalled()
@@ -395,6 +401,35 @@ describe('billing-web on the shared web session', () => {
       lookupB.resolve(answerB())
       await vi.waitFor(() => expect(outcome).toHaveBeenCalledWith(established))
       expect(session.scopeSource.getScope()?.workspaceId).toBe(scope)
+    }
+  )
+
+  it.for([
+    {
+      name: 'naming its organization',
+      body: { organization_id: 'org_acme' },
+      failure: { code: 'SSO_REQUIRED', organizationId: 'org_acme' }
+    },
+    {
+      name: 'without an organization',
+      body: {},
+      failure: { code: 'SSO_REQUIRED' }
+    }
+  ])(
+    'an account its SSO organization holds is refused as SSO_REQUIRED, $name',
+    async ({ body, failure }) => {
+      const { session } = setup({
+        state: { kind: 'dead', code: 'no_session' },
+        creationRefusal: { code: 'sso_required', message: 'use SSO', ...body }
+      })
+      await expect(session.settledPhase()).resolves.toBe('signed-out')
+      await session.signInPort.loadIdentity()
+
+      await expect(
+        session.signInPort.establish(firebaseUser('user-1'))
+      ).resolves.toEqual({ status: 'error', code: 'SSO_REQUIRED' })
+
+      expect(session.signInPort.failure.value).toEqual(failure)
     }
   )
 

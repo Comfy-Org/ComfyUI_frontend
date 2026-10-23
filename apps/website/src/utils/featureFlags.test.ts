@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { FeatureFlagsSnapshot } from '../data/feature-flags'
+import type { FeatureFlagsSnapshot } from '@/data/feature-flags'
 
 import {
   fetchFeatureFlagsForBuild,

@@ -1,4 +1,4 @@
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 import type { GeneratedField } from './models-catalogue'
 import type { WorkshopMediaBinding } from './workshop-contract'
 import { deriveWorkshopFields } from './workshop-fields'

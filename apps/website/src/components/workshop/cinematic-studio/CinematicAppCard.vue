@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { name, summary, badge, meta, image, href } = defineProps<{
+import type { WorkshopModel } from '@/config/models-catalogue'
+
+import WorkshopCardMedia from '@/components/workshop/WorkshopCardMedia.vue'
+
+const { name, summary, badge, meta, thumbnail, href } = defineProps<{
   name: string
   summary: string
   badge: string
   meta?: string
-  image?: string
+  thumbnail?: WorkshopModel['thumbnail']
   href?: string
 }>()
 </script>
@@ -30,20 +34,7 @@ const { name, summary, badge, meta, image, href } = defineProps<{
     <div
       class="relative aspect-4/3 overflow-hidden rounded-3xl bg-hub-surface-hover"
     >
-      <img
-        v-if="image"
-        :src="image"
-        alt=""
-        loading="lazy"
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-      />
-      <span
-        v-else
-        class="grid size-full place-items-center font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
-        aria-hidden="true"
-      >
-        {{ name.charAt(0) }}
-      </span>
+      <WorkshopCardMedia :model="{ name, thumbnail }" />
       <span
         :class="
           cn(

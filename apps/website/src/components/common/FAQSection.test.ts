@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { routerFaq } from '../../templates/platform/routerCopy'
+import { routerFaq } from '@/templates/platform/routerCopy'
 import FAQSection from './FAQSection.vue'
 
 describe('FAQSection', () => {

@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 import {
   authoredWorkshopModels,
   workshopModels
-} from '../src/config/workshop-browse-content'
-import { isWorkshopModelDisabled } from '../src/config/workshop-model-availability'
+} from '@/config/workshop-browse-content'
+import { isWorkshopModelDisabled } from '@/config/workshop-model-availability'
 import { selectRouterModels } from './router-model-selection'
 
 describe('Router model test selection', () => {

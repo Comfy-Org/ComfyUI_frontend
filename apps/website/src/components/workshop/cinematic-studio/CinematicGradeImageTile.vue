@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Pencil, Pipette } from '@lucide/vue'
 import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { sampleImageColors } from '../../../lib/workshop/cinematic-studio/colors'
+import type { Locale } from '@/i18n/translations'
+import { sampleImageColors } from '@/lib/workshop/cinematic-studio/colors'
 import CinematicCheckBadge from './CinematicCheckBadge.vue'
 
 const PALETTE_SIZE = 5

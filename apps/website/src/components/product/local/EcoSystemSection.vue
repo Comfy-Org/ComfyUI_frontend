@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks } from '../../../config/routes'
-import { translationsFor } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

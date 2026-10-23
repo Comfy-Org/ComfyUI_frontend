@@ -40,5 +40,5 @@ merged.test.onUnhandledError = (error: unknown) => {
 merged.test.projects = undefined
 merged.test.include = ['src/__ecs_matrix__/*.matrix.test.ts']
 merged.test.exclude = [...configDefaults.exclude]
-merged.test.setupFiles = ['./vitest.setup.ts']
+merged.test.setupFiles = ['./vitest.console.setup.ts', './vitest.setup.ts']
 export default merged

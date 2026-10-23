@@ -5,8 +5,8 @@ import { computed, ref, watch } from 'vue'
 import type {
   FrameSize,
   FrameSource
-} from '../config/workshop-model-restrictions'
-import { framesDisagreeOnRatio } from '../config/workshop-model-restrictions'
+} from '@/config/workshop-model-restrictions'
+import { framesDisagreeOnRatio } from '@/config/workshop-model-restrictions'
 
 /**
  * Whether the chosen frames will make the provider stretch the last one.

@@ -1,5 +1,5 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
+import type { UseCase } from '@/config/models-catalogue'
+import { OTHER_FORMAT_USE_CASES } from '@/config/workshop-sections'
 import type { Shelf } from './shelf-memory'
 
 /**

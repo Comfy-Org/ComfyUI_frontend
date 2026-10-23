@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { Locale } from '@/i18n/translations'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
-import { translationsFor } from '../../i18n/translations'
-import { groupRowsByMonth, monthLabel } from '../../utils/eventsDirectory'
+import { translationsFor } from '@/i18n/translations'
+import { groupRowsByMonth, monthLabel } from '@/utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 
 const { rows, locale = 'en' } = defineProps<{

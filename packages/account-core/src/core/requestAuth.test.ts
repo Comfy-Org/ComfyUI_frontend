@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { fakeWebSessionUser } from '../testing.js'
+import { fakeWebSessionUser } from '#/testing'
 import type {
   RequestAuthorization,
   RequestPrincipal,
   RequestTarget
-} from './requestAuth.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
+} from './requestAuth'
+import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth'
 
 const SESSION: RequestPrincipal = {
   kind: 'session',
@@ -240,7 +240,6 @@ describe('createRequestAuthorizer', () => {
     'authorizes an API key on $target $method with its header alone',
     async ({ target, method }) => {
       const getWorkspaceToken = vi.fn(async () => 'jwt')
-      const fetchSpy = vi.spyOn(globalThis, 'fetch')
       const authorizeWithSpies = createRequestAuthorizer({ getWorkspaceToken })
 
       const result = await authorizeWithSpies(API_KEY, {
@@ -251,8 +250,8 @@ describe('createRequestAuthorizer', () => {
 
       expect(result).toStrictEqual({ headers: { 'X-API-KEY': 'comfyui-key' } })
       expect(getWorkspaceToken).not.toHaveBeenCalled()
-      expect(fetchSpy).not.toHaveBeenCalled()
-      fetchSpy.mockRestore()
+      expect(fetch).not.toHaveBeenCalled()
+      vi.mocked(fetch).mockRestore()
     }
   )
 

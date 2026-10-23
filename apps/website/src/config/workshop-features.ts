@@ -14,7 +14,7 @@ import { z } from 'zod'
 
 import type { SessionClient } from '@comfyorg/account-core/session'
 
-import { createTimeoutSignal } from '../utils/abortSignal'
+import { createTimeoutSignal } from '@/utils/abortSignal'
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 

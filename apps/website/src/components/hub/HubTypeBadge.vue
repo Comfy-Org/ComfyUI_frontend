@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'

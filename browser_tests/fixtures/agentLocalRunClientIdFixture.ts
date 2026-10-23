@@ -1,49 +1,46 @@
 import type { Locator, Page } from '@playwright/test'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
 import { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
+import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
-  SOCKET_SID,
   SOURCE_NODE_ID,
   TARGET_ID
 } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 
-/**
- * A client id this tab must never put on the wire: one left in
- * `sessionStorage` by an earlier session of this tab, which a duplicated tab
- * also inherits verbatim. `api.initialClientId` exposes exactly this value and
- * `useWorkflowTabState.getClientId()` falls back to it, so reaching for it here
- * would read as a tidy reuse — while addressing a local agent run to a socket
- * that is dead or belongs to another tab.
- */
+/** A stale `sessionStorage` client id that must never reach the wire. */
 export const STALE_SESSION_CLIENT_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
 
+const turnPostBodySchema = zAgentPostMessageRequest
+  .extend({
+    client_message_id: z.string().optional(),
+    client_id: z.string().optional()
+  })
+  .passthrough()
+
 /** The turn POST body as the server receives it. */
-export type TurnPostBody = Record<string, unknown>
+export type TurnPostBody = z.infer<typeof turnPostBodySchema>
 
 export interface AgentLocalRunRig {
   harness: MultiAutogrowRealignHarness
   /** Every turn POST body the panel has sent, oldest first. */
   turnPosts: () => readonly TurnPostBody[]
+  /** `client_id` on the newest turn POST, or `undefined` when absent. */
+  lastTurnClientId: () => string | undefined
   /**
-   * `client_id` on the newest turn POST, or `undefined` when the key was
-   * absent — which is what `withoutUndefined` produces for a socket that has
-   * not identified itself.
-   */
-  lastTurnClientId: () => unknown
-  /**
-   * Starts a run the way the agent's `run` tool does on a local setup —
-   * server-side through comfy-cli, never through this browser — and leaves it
-   * pinned mid-execution so the live highlight is observable rather than
-   * already retired by a terminal frame.
-   *
-   * The job's HTTP surface always advances, because `/api/jobs` and
-   * `/api/view` do not know who submitted. The execution frames are addressed
-   * to the socket whose `client_id` the turn carried, as ComfyUI addresses
-   * them.
+   * Starts a server-submitted run and leaves it pinned mid-execution. Its
+   * execution frames reach this tab only when the turn carried this tab's
+   * `client_id`, as ComfyUI addresses them.
    */
   startRunForUser: (jobId: string) => Promise<void>
+  /**
+   * Resolves once the execution-frame coalescer and the following Vue render
+   * have run, so a frame this tab was an addressee of has reached the canvas.
+   */
+  settleExecutionFrames: () => Promise<void>
   /** Finishes that run with one image output on the output node. */
   finishRunForUser: (jobId: string) => Promise<void>
   /** {@link startRunForUser} then {@link finishRunForUser}. */
@@ -57,12 +54,7 @@ export interface AgentLocalRunRig {
 }
 
 interface AgentLocalRunOptions {
-  /**
-   * Whether the fake ComfyUI identifies its socket on the `status` frame.
-   * `false` models the window before the first `status` arrives:
-   * `api.clientId` is undefined while the in-memory `api.initialClientId`
-   * snapshot can still contain an id inherited from an earlier session.
-   */
+  /** Whether the fake ComfyUI identifies its socket on the `status` frame. */
   socketReportsId: boolean
 }
 
@@ -70,27 +62,28 @@ async function recordTurnPosts(
   page: Page,
   into: TurnPostBody[]
 ): Promise<void> {
-  // Registered after the harness's own handler so this one runs first
-  // (Playwright runs the most-recently-registered match first), then falls
-  // back to it — the harness still answers the POST, this only observes it.
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
-      into.push(route.request().postDataJSON() as TurnPostBody)
+      into.push(turnPostBodySchema.parse(route.request().postDataJSON()))
     }
     return route.fallback()
   })
 }
 
+function settleExecutionFrames(page: Page): Promise<void> {
+  return page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTimeout(resolve, 0))
+        )
+      })
+  )
+}
+
 const outputFilename = (jobId: string) => `${jobId}.png`
 
-/**
- * The agent harness, its execution surface, and the turn POST bodies the panel
- * sent — the three things PM-1875 needs read together. A local agent run is
- * submitted by comfy-cli, not by this browser, and ComfyUI delivers a prompt's
- * execution events only to the socket whose `client_id` submitted it, so
- * whether the canvas can follow the run is decided entirely by what this tab
- * put in that POST body.
- */
+/** The agent harness, its execution surface, and the turn POST bodies sent. */
 export const agentLocalRunTest = agentTest.extend<
   AgentLocalRunOptions & { rig: AgentLocalRunRig }
 >({
@@ -104,7 +97,7 @@ export const agentLocalRunTest = agentTest.extend<
     }
 
     const harness = new MultiAutogrowRealignHarness(page, {
-      socketSid: socketReportsId ? SOCKET_SID : ''
+      socketSid: socketReportsId ? COMFY_SOCKET_SID : ''
     })
     await harness.setUp({ settings: { 'Comfy.Queue.QPOV2': false } })
 
@@ -113,13 +106,13 @@ export const agentLocalRunTest = agentTest.extend<
 
     const execution = new AgentExecutionHelper(page, harness.hostSocket)
     await execution.install()
-    const lastTurnClientId = () => turnPosts.at(-1)?.['client_id']
-    execution.addressFramesWhen(() => lastTurnClientId() === SOCKET_SID)
+    const lastTurnClientId = () => turnPosts.at(-1)?.client_id
+    execution.addressFramesWhen(() => lastTurnClientId() === COMFY_SOCKET_SID)
 
     if (socketReportsId) {
       await page.waitForFunction(
         (expectedSid) => sessionStorage.getItem('clientId') === expectedSid,
-        SOCKET_SID
+        COMFY_SOCKET_SID
       )
     }
 
@@ -140,6 +133,7 @@ export const agentLocalRunTest = agentTest.extend<
       turnPosts: () => turnPosts,
       lastTurnClientId,
       startRunForUser,
+      settleExecutionFrames: () => settleExecutionFrames(page),
       finishRunForUser,
       runWorkflowForUser: async (jobId: string) => {
         await startRunForUser(jobId)

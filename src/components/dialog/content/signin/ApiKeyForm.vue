@@ -9,7 +9,7 @@
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="underline underline-offset-4 hover:text-base-foreground"
+          class="underline underline-offset-4 hover:text-foreground"
         >
           {{ t('g.learnMore') }}
         </a>
@@ -65,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -104,7 +103,7 @@ const emit = defineEmits<{
 }>()
 
 const { handleSubmit } = useForm({
-  validationSchema: toTypedSchema(apiKeySchema),
+  validationSchema: apiKeySchema,
   initialValues: { apiKey: '' }
 })
 

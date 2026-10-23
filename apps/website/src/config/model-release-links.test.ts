@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { modelReleaseSlides } from '../data/modelRelease'
+import { modelReleaseSlides } from '@/data/modelRelease'
 import { workshopModels } from './workshop-browse-content'
 import { modelReleaseLinks } from './model-release-links'
 

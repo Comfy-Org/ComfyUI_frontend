@@ -5,19 +5,9 @@ import {
   agentLocalRunTest as test
 } from '@e2e/fixtures/agentLocalRunClientIdFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
-import { SOCKET_SID } from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
+import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
 
 /**
- * PM-1875: on a local setup the agent's `run` tool shells out to comfy-cli, so
- * the prompt is submitted by a process that is not this browser. ComfyUI
- * unicasts `progress_state` / `executed` to the one socket whose `client_id`
- * submitted the prompt, and the canvas highlight has no other input —
- * `useNodeExecutionState` reads only `executionStore`'s progress map, which
- * only `progress_state` fills. So unless this tab lends its own socket id to
- * the turn, the user watches a run they can see in the queue leave no mark on
- * the graph: "the blue highlight when a node is running? Not visible when
- * agent runs workflow in local atm".
- *
  * Source: https://comfy-organization.slack.com/archives/C0BGH348Z0C/p1790791524330409
  * Ticket: https://linear.app/comfyorg/issue/PM-1875
  */
@@ -36,23 +26,16 @@ test.describe(
       },
       page
     }) => {
-      // The turn the fixture already sent is the one the run belongs to: the
-      // id has to be on the wire by then, because the agent learns it from the
-      // turn and nothing afterwards carries it.
       expect(turnPosts()).toHaveLength(1)
-      expect(turnPosts()[0]).toMatchObject({ client_id: SOCKET_SID })
+      expect(turnPosts()[0]).toMatchObject({ client_id: COMFY_SOCKET_SID })
 
       const jobId = 'agent-local-run-addressed'
       await startRunForUser(jobId)
 
-      // Mid-run the node the agent's run has reached is outlined, so the user
-      // can see where in the workflow it is.
       await expect(runningOutline).toBeVisible()
 
       await finishRunForUser(jobId)
 
-      // ...and when it finishes the output reaches the Save node on this
-      // canvas, the second symptom in the same report.
       await expect(outputImage).toBeVisible()
       await expect(outputImage).toHaveAttribute(
         'src',
@@ -68,21 +51,12 @@ test.describe(
       test.use({ socketReportsId: false })
 
       test('the turn omits client_id rather than borrowing a stale one', async ({
-        rig: { turnPosts, lastTurnClientId }
+        rig: { turnPosts }
       }) => {
         expect(turnPosts()).toHaveLength(1)
         const [body] = turnPosts()
 
-        // Absent, not null and not empty: `withoutUndefined` drops the key, so
-        // the server sees a turn shaped exactly as it was before PM-1875 and
-        // the run falls back to comfy-cli's own freshly minted id.
         expect(Object.keys(body)).not.toContain('client_id')
-        expect(lastTurnClientId()).toBeUndefined()
-
-        // And specifically not the stale id captured by `api.initialClientId`
-        // from this tab's sessionStorage at module construction. Addressing a
-        // run to it would aim this user's execution events at a dead socket,
-        // or at the tab this one was duplicated from.
         expect(JSON.stringify(body)).not.toContain(STALE_SESSION_CLIENT_ID)
       })
 
@@ -90,6 +64,7 @@ test.describe(
         rig: {
           harness,
           startRunForUser,
+          settleExecutionFrames,
           finishRunForUser,
           runningOutline,
           outputImage
@@ -99,21 +74,17 @@ test.describe(
         const jobId = 'agent-local-run-unaddressed'
         await expect(harness.sourceNode).toBeVisible()
         await startRunForUser(jobId)
+        await settleExecutionFrames()
 
-        // The server is stalled mid-run. If this tab received its addressed
-        // frames, the target root would carry the executing outline class.
         await expect(runningOutline).toHaveCount(0)
 
         await finishRunForUser(jobId)
+        await settleExecutionFrames()
 
-        // The run was real and the server finished it — the queue, which is
-        // HTTP and identity-blind, has the row.
         const queuePanel = new QueuePanel(page)
         await queuePanel.open()
         await expect(queuePanel.jobRow(jobId)).toBeVisible()
 
-        // This tab was never an addressee, so the completed run adds no output
-        // to the source node that is visibly present above.
         await expect(outputImage).toHaveCount(0)
       })
     })

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type {
   DirectionGroup,
   DirectionPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 
 const { groups, locale = 'en' } = defineProps<{
   groups: readonly DirectionGroup[]

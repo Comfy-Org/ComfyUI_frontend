@@ -1,11 +1,11 @@
-import type { WorkshopModelDetail } from '../../../config/models-catalogue'
-import type { RouterRenderParameters } from '../../../config/router-parameters'
+import type { WorkshopModelDetail } from '@/config/models-catalogue'
+import type { RouterRenderParameters } from '@/config/router-parameters'
 import {
   mapRouterParameters,
   routerParameterMappings
-} from '../../../config/router-parameters'
-import { workshopPageSchema } from '../../../config/workshop-page-state'
-import { defaultValues } from '../../../config/workshop-playground'
+} from '@/config/router-parameters'
+import { workshopPageSchema } from '@/config/workshop-page-state'
+import { defaultValues } from '@/config/workshop-playground'
 
 /**
  * The form a studio request sends: the model's own defaults with the shot on
