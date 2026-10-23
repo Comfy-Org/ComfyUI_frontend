@@ -36,7 +36,10 @@
       </Button>
 
       <!-- Content -->
-      <div class="flex max-h-full max-w-full items-center justify-center">
+      <div
+        class="group/lightbox relative flex max-h-full max-w-full items-center justify-center"
+        data-testid="lightbox-content"
+      >
         <template v-if="activeItem">
           <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
             <ComfyImage
@@ -62,6 +65,38 @@
             />
           </KeepAlive>
         </template>
+
+        <div
+          v-if="activeItem"
+          data-testid="lightbox-pill"
+          :class="
+            cn(
+              'absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm transition-opacity',
+              pillFlash
+                ? 'pointer-events-auto opacity-100'
+                : 'pointer-events-none opacity-0',
+              'group-focus-within/lightbox:pointer-events-auto group-focus-within/lightbox:opacity-100 group-hover/lightbox:pointer-events-auto group-hover/lightbox:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 hover:pointer-events-auto hover:opacity-100 touch:pointer-events-auto touch:opacity-100'
+            )
+          "
+        >
+          <span
+            class="min-w-0 truncate text-xs text-white/90"
+            data-testid="lightbox-filename"
+            :title="activeItem.filename"
+          >
+            {{ activeItem.filename }}
+          </span>
+          <Button
+            variant="secondary"
+            size="icon"
+            class="shrink-0 rounded-full"
+            :title="$t('g.download')"
+            :aria-label="$t('g.download')"
+            @click="downloadActiveItem"
+          >
+            <i class="icon-[lucide--download] size-4" />
+          </Button>
+        </div>
       </div>
 
       <!-- Next Button -->
@@ -75,35 +110,12 @@
       >
         <i class="icon-[lucide--chevron-right] size-6" />
       </Button>
-
-      <div
-        v-if="activeItem"
-        class="absolute bottom-4 left-1/2 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm"
-      >
-        <span
-          class="min-w-0 truncate text-xs text-white/90"
-          data-testid="lightbox-filename"
-          :title="activeItem.filename"
-        >
-          {{ activeItem.filename }}
-        </span>
-        <Button
-          variant="secondary"
-          size="icon"
-          class="shrink-0 rounded-full"
-          :title="$t('g.download')"
-          :aria-label="$t('g.download')"
-          @click="downloadActiveItem"
-        >
-          <i class="icon-[lucide--download] size-4" />
-        </Button>
-      </div>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -119,6 +131,7 @@ import {
   isTextResult,
   isVideoResult
 } from '@/utils/resultItem'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
@@ -144,13 +157,29 @@ let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
+const pillFlash = ref(false)
+let pillFlashTimer: ReturnType<typeof setTimeout> | undefined
+
+function flashPill() {
+  pillFlash.value = true
+  clearTimeout(pillFlashTimer)
+  pillFlashTimer = setTimeout(() => {
+    pillFlash.value = false
+  }, 2500)
+}
+
+onBeforeUnmount(() => clearTimeout(pillFlashTimer))
+
 watch(
   () => props.activeIndex,
   (index) => {
     galleryVisible.value = index !== -1
     if (index !== -1) {
       previouslyFocusedElement = document.activeElement as HTMLElement | null
+      flashPill()
       void nextTick(() => dialogRef.value?.focus())
+    } else {
+      pillFlash.value = false
     }
   },
   { immediate: true }
