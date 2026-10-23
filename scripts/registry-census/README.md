@@ -210,6 +210,54 @@ array-concatenation would otherwise smuggle in.
 | `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm            |
 | `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                  |
 
+## Widget form/values agreement — a measurement, not a gate
+
+The runner records one extra thing at the `serialize` op: for every node, which
+outcome the widget-form producer reaches. It rides on the serialisation
+`graph.serialize()` already produced, so it adds no second `onSerialize`
+dispatch — a second dispatch would change what every other channel in the row
+observes.
+
+The producer is `nodeLocalWidgetForm` in
+`src/workbench/extensions/agent/crdt/docOpMinter.ts`. It derives
+`widgets_values_form.order` from the live `node.widgets` and emits it only when
+that derivation is **closed** over the serialised named projection: no
+duplicate names, no empty names, and exactly the keys the projection carries.
+A node that carries a form consults no catalogue on any leg, so a wrong form is
+authoritative and strictly worse than no form. **That asymmetry is why this is
+a breakdown and not a pass rate**: declining is a correct outcome, and the only
+defect is a form that is emitted and disagrees.
+
+| verdict family                            | meaning                                                                                                                           |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `emitAgree*`                              | a form is emitted and agrees — the wanted outcome                                                                                 |
+| `declineLayoutDependent`                  | the node def carries a value-dependent layout input type, so the producer suppresses by design                                    |
+| `declineUnclosed:*`                       | the derivation is not closed (`dupeNames`, `emptyName`, `residueKeys`, `noOrder`, `orderOverrun`) — safe, and the size of the gap |
+| `emitDisagree:*`                          | a form would be emitted and would be **wrong**                                                                                    |
+| `absent` / `noNamed` / `noSerialisedNode` | the node declares no widget values, or an older shape the producer cannot consume — unmeasured, not clean                         |
+
+`emitAgree:positionalSkew` is telemetry rather than a defect: the positional
+array disagreeing with the live value-widget count is exactly the post-hook
+drift the named projection exists to survive, and an agent op sends the named
+object.
+
+Reported by `summarize_form_agreement.py`, which prints a count, the grouped
+shares, a per-verdict table with pack and node-class attribution, and every
+disagreeing node by name. `summarize_matrix.py` does **not** read these fields
+and there is no floor on them, so nothing here can turn the required gate red.
+A run whose rows carry no form telemetry reports `UNMEASURED` rather than zero
+violations: a channel that stopped firing must not read as agreement.
+
+```bash
+MATRIX_OUT=matrix-rows python3 scripts/registry-census/summarize_form_agreement.py
+```
+
+In CI it is [`ci-widget-form-census.yaml`](../../.github/workflows/ci-widget-form-census.yaml),
+`workflow_dispatch` only and deliberately not wired to `push`: it reuses this
+corpus, cache key, pins and runner so the population matches the matrix's, and
+anyone can re-run it to reproduce a published figure. Cite it with the pin age
+the run's `pin-status` job printed.
+
 ## Security posture
 
 **This is the repo's first CI job that executes third-party code by design.**

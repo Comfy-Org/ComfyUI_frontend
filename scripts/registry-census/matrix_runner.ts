@@ -11,6 +11,7 @@ import { vi } from 'vitest'
 
 import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
+  ISerialisedNode,
   LGraph,
   LGraphCanvas,
   LGraphNode,
@@ -172,6 +173,294 @@ async function installGlobals() {
   Object.assign(globalThis, globals)
   if (typeof window !== 'undefined') Object.assign(window, globals)
   return { lg, app: appMod.app }
+}
+
+/**
+ * The input types whose widget layout is a function of a widget VALUE, so the
+ * order a serialise observed does not predict the order a reload produces.
+ * Mirrors `VALUE_DEPENDENT_LAYOUT_INPUT_TYPES` in
+ * `src/workbench/extensions/agent/crdt/docOpMinter.ts`.
+ */
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+/** Mirrors `isValueWidget` in docOpMinter.ts, live-widget arm only. */
+const isValueWidget = (w: IBaseWidget | undefined) =>
+  !!w && w.type !== 'button' && w.serialize !== false
+
+interface FormRow {
+  /** Node class, so a verdict can be attributed to a node type. */
+  t: string
+  /** The verdict reached; the full vocabulary is `KNOWN` in the reporter. */
+  v: string
+  /** Derived `order` length. */
+  o: number
+  /** Value-widget keys in the post-hook named projection. */
+  k: number
+  /** Live `node.widgets` length. */
+  w: number
+  /** Serialised positional length, or `dict` / `absent`. */
+  a: number | string
+  /**
+   * `battery` for a default-workflow node the pack's hooks acted on, `driven`
+   * for one of the pack's OWN registered node types. The distinction matters:
+   * a custom serializer lives on a pack's own class, and the battery's nodes
+   * only ever see that pack through its extension hooks.
+   */
+  src: string
+}
+
+/** The node-def input specs the form producer consults, per node. */
+type DefInputs = (node: LGraphNode) => Record<string, { type?: unknown }> | null
+
+// ---- form/values agreement --------------------------------------------
+/**
+ * Form/values agreement over the post-hook serialisation. The helpers down to
+ * `measureFormAgreement` are this one measurement.
+ *
+ * The producer this measures is `docOpMinter.nodeLocalWidgetForm`: it derives
+ * `widgets_values_form.order` from the live `node.widgets` and emits it only
+ * when the derivation is *closed* over the serialised named projection,
+ * declining otherwise. A node that carries a form consults no catalogue on any
+ * leg, so a wrong form is authoritative and strictly worse than no form —
+ * which makes a decline a correct outcome and only a *disagreeing* form a
+ * defect. This records which outcome each node reaches; it is deliberately not
+ * a pass/fail bit, and `summarize_matrix.py` never gates on it.
+ *
+ * Measured against serialisations the battery already produced — the graph's
+ * at the `serialize` op and each driven node's own, in the loop that already
+ * calls `node.serialize()`. No extra `onSerialize` dispatch is introduced: a
+ * second dispatch would change what every other channel in this row observes.
+ *
+ * Reimplemented here rather than imported: pulling the agent extension's
+ * dependency graph into every per-pack spec would change what is loaded in
+ * every row. `test_summarize_form_agreement.py` pins the verdict vocabulary in
+ * both directions, so a verdict added here without a home in the reporter, or
+ * left in the reporter after being removed here, fails that test.
+ */
+
+/** Serialised positional length, or why there is no length to report. */
+function positionalShape(positional: unknown): number | string {
+  if (Array.isArray(positional)) return positional.length
+  return positional == null ? 'absent' : 'dict'
+}
+
+/**
+ * Element-wise, not a joined comparison: widget names legitimately contain
+ * spaces (`choose video to upload`), so any single separator can make two
+ * different orders compare equal.
+ */
+function sameOrder(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((name, i) => name === b[i])
+}
+
+/**
+ * `valueWidgetsOnly`: the named keys whose live widget is a value widget, plus
+ * a count of keys with no live widget at all. Those are residue the derivation
+ * cannot see, which makes a form that ignores them wrong rather than merely
+ * incomplete.
+ */
+function valueWidgetKeys(
+  live: IBaseWidget[],
+  named: object
+): { values: string[]; orphanKeys: number } {
+  const values: string[] = []
+  let orphanKeys = 0
+  for (const name of Object.keys(named)) {
+    const widget = live.find((w) => w.name === name)
+    if (!widget) orphanKeys++
+    else if (isValueWidget(widget)) values.push(name)
+  }
+  return { values, orphanKeys }
+}
+
+/** The one case the producer suppresses by design, not a failure to emit. */
+function layoutDependsOnValues(node: LGraphNode, defInputs: DefInputs) {
+  try {
+    return Object.values(defInputs(node) ?? {}).some((spec) =>
+      VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(String(spec.type))
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Why `nodeLocalWidgetForm`'s closedness test fails, or null when it holds.
+ *
+ * Every verdict is spelled out as a whole literal rather than interpolated:
+ * that is what lets the reporter's vocabulary test read the full set out of
+ * this file, in both directions.
+ */
+function unclosedReason(order: string[], values: string[]): string | null {
+  if (order.length === 0) return 'declineUnclosed:noOrder'
+  if (new Set(order).size !== order.length) return 'declineUnclosed:dupeNames'
+  if (order.some((name) => !name.length)) return 'declineUnclosed:emptyName'
+  if (order.length < values.length) return 'declineUnclosed:residueKeys'
+  if (order.length > values.length) return 'declineUnclosed:orderOverrun'
+  return null
+}
+
+/**
+ * The form agrees with the named projection, which is what an agent op sends.
+ * Whether it also agrees with the node's POSITIONAL widgets_values is a
+ * separate question, and the answer is the post-hook drift that made the form
+ * necessary: a hook that substituted the array leaves a form describing one
+ * collection beside values from another.
+ */
+function agreementVerdict(a: number | string, serialisable: number): string {
+  if (a === 'dict') return 'emitAgree:dictValues'
+  if (a === 'absent') return 'emitAgree:noPositional'
+  return a === serialisable ? 'emitAgree' : 'emitAgree:positionalSkew'
+}
+
+/**
+ * The verdict for a node with no named projection to describe, or null when
+ * there is one. The named projection is what the producer consumes; absent
+ * means the node serialises no widget values at all, or the hook removed it.
+ */
+function noProjectionVerdict(
+  sn: ISerialisedNode | undefined,
+  positional: unknown,
+  named: unknown
+): string | null {
+  if (!sn) return 'noSerialisedNode'
+  if (named == null || typeof named !== 'object')
+    return positional == null ? 'absent' : 'noNamed'
+  return null
+}
+
+/**
+ * The verdict once the derivation is closed, so a form WOULD be emitted. It is
+ * only correct if the key order of the post-hook named projection is the order
+ * the form declares: that is what proves the projection is still the one core
+ * built from `node.widgets` rather than one an `onSerialize` hook substituted.
+ */
+function emittedFormVerdict(
+  order: string[],
+  keyOrder: string[],
+  orphanKeys: number,
+  a: number | string,
+  serialisable: number
+): string {
+  if (!sameOrder(keyOrder, order)) return 'emitDisagree:keyOrder'
+  if (orphanKeys) return 'emitDisagree:orphanKeys'
+  return agreementVerdict(a, serialisable)
+}
+
+function classifyFormNode(
+  node: LGraphNode,
+  sn: ISerialisedNode | undefined,
+  defInputs: DefInputs,
+  src: string
+): FormRow {
+  const live = node.widgets ?? []
+  const positional: unknown = sn?.widgets_values
+  const named: unknown = sn?.widgets_values_named
+  const a = positionalShape(positional)
+  const at = (v: string, o = 0, k = 0): FormRow => ({
+    t: node.type,
+    v,
+    o,
+    k,
+    w: live.length,
+    a,
+    src
+  })
+
+  const noProjection = noProjectionVerdict(sn, positional, named)
+  if (noProjection) return at(noProjection)
+
+  const { values, orphanKeys } = valueWidgetKeys(live, named as object)
+  // nodeLocalWidgetForm: order is the live widget order, filtered to the keys
+  // that survived. Duplicates are preserved on purpose - they are what the
+  // closedness test exists to catch.
+  const order = live.map((w) => w.name).filter((name) => values.includes(name))
+  const o = order.length
+  const k = values.length
+
+  if (layoutDependsOnValues(node, defInputs))
+    return at('declineLayoutDependent', o, k)
+  const unclosed = unclosedReason(order, values)
+  if (unclosed) return at(unclosed, o, k)
+
+  const keyOrder = Object.keys(named as object).filter((name) =>
+    values.includes(name)
+  )
+  const serialisable = live.filter((w) => w.serialize !== false).length
+  return at(
+    emittedFormVerdict(order, keyOrder, orphanKeys, a, serialisable),
+    o,
+    k
+  )
+}
+
+function measureFormAgreement(
+  nodes: LGraphNode[],
+  byId: Map<string, ISerialisedNode>,
+  defInputs: DefInputs,
+  src: string
+): FormRow[] {
+  return nodes.map((node) =>
+    classifyFormNode(node, byId.get(String(node.id)), defInputs, src)
+  )
+}
+
+/**
+ * The node-def lookup the form producer uses. A pack that registers a
+ * value-dependent layout input type is the one case the producer suppresses by
+ * design, so reading this from the real store is what keeps a deliberate
+ * decline from being counted as a failure to emit. The lookup is lazy, so
+ * resolving it before the battery runs is safe.
+ */
+async function resolveDefInputs(): Promise<DefInputs> {
+  try {
+    const { useNodeDefStore } = await import('@/stores/nodeDefStore')
+    const defStore = useNodeDefStore()
+    return (node) =>
+      (
+        defStore.fromLGraphNode(node) as {
+          inputs?: Record<string, { type?: unknown }>
+        } | null
+      )?.inputs ?? null
+  } catch {
+    return () => {
+      throw new Error('nodeDefStore unavailable')
+    }
+  }
+}
+
+/** Writes the form verdicts onto the row. Never throws into its caller: this
+ * is telemetry riding on the `serialize` op, and it must not be able to fail
+ * the op that carries it. */
+function recordFormAgreement(
+  row: Record<string, unknown>,
+  nodes: LGraphNode[],
+  serialised: { nodes: ISerialisedNode[] },
+  defInputs: DefInputs,
+  driven: FormRow[]
+): void {
+  try {
+    // Keyed as strings on purpose: a live `node.id` is a string here while the
+    // serialised `id` is a number, so a Map keyed on the raw value matches
+    // nothing and every node reads as `noSerialisedNode`.
+    const byId = new Map<string, ISerialisedNode>()
+    for (const sn of serialised.nodes) byId.set(String(sn.id), sn)
+    const formNodes = [
+      ...measureFormAgreement(nodes, byId, defInputs, 'battery'),
+      ...driven
+    ]
+    row.formNodes = formNodes
+    const counts: Record<string, number> = {}
+    for (const r of formNodes) counts[r.v] = (counts[r.v] ?? 0) + 1
+    row.formAgreement = counts
+  } catch (e) {
+    row.formAgreement = { harnessError: errMsg(e) }
+    row.formNodes = driven
+  }
 }
 
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
@@ -337,6 +626,8 @@ export async function runPack(
     wvStore = undefined
   }
   row.storeMeasured = !!wvStore
+
+  const defInputs = await resolveDefInputs()
 
   // LGraphCanvas cannot be constructed under happy-dom ("This browser doesn't
   // support Canvas"), but BaseWidget.setValue only reads graph_mouse off it
@@ -612,6 +903,10 @@ export async function runPack(
 
   // ---- drive the pack's OWN frontend-registered node types --------------
   const driven: Record<string, string> = {}
+  // Form verdicts for the pack's own classes. These are where a custom
+  // serializer actually lives, and the battery's nodes never carry one, so
+  // without this arm the measurement only ever sees packs through their hooks.
+  const formDriven: FormRow[] = []
   for (const t of newTypes.slice(0, 8)) {
     DEPR = []
     try {
@@ -639,7 +934,15 @@ export async function runPack(
           parts.push(`conn=THREW ${errMsg(e).slice(0, 40)}`)
         }
       }
-      n.serialize()
+      const sn = n.serialize()
+      formDriven.push(
+        ...measureFormAgreement(
+          [n],
+          new Map([[String(n.id), sn]]),
+          defInputs,
+          'driven'
+        )
+      )
       graph.remove(n)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
@@ -651,7 +954,9 @@ export async function runPack(
   row.driveTypes = driven
 
   await op('serialize', () => {
-    row.serialized = S(graph.serialize())
+    const serialised = graph.serialize()
+    row.serialized = S(serialised)
+    recordFormAgreement(row, graph._nodes, serialised, defInputs, formDriven)
   })
   await op('reload', () => {
     const g2 = new LGraph()
