@@ -6632,6 +6632,7 @@
         "from": "workflow-management/domain",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
           "graph-model/domain",
           "workflow-management/domain",
           "graph-model/domain/outer-1",
@@ -6642,12 +6643,16 @@
         "from": "workflow-management/application",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
           "graph-model/domain/outer-1",
           "unclassified"
         ]
@@ -6656,12 +6661,16 @@
         "from": "workflow-management/infrastructure",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
           "graph-model/domain/outer-1",
           "unclassified"
         ]
@@ -6670,11 +6679,15 @@
         "from": "workflow-management/presentation",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
           "graph-model/domain",
           "graph-model/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "extension-runtime/presentation/outer-1",
           "graph-model/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
@@ -6684,6 +6697,11 @@
         "from": "workflow-management/integration",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -6693,6 +6711,8 @@
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
           "workflow-management/presentation/outer-1",
@@ -7626,11 +7646,15 @@
         "from": "workflow-management/presentation/outer-1",
         "allow": [
           "graph-model/domain/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
           "graph-model/domain",
           "graph-model/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "extension-runtime/presentation/outer-1",
           "graph-model/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
