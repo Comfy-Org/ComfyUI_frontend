@@ -16,7 +16,7 @@ import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type {
   ComfyNodeDef,
   ComfyOutputTypesSpec,
@@ -1120,7 +1120,7 @@ const id = 'Comfy.GroupNode'
  * synthesizing temporary group-node definitions during load.
  */
 let globalDefs: Partial<Record<string, ComfyNodeDef>> = {}
-const ext: ComfyExtension = {
+export const groupNodeExtension: ComfyExtension = {
   name: id,
   addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
     globalDefs = defs
@@ -1201,5 +1201,3 @@ const ext: ComfyExtension = {
     }
   }
 }
-
-app.registerExtension(ext)

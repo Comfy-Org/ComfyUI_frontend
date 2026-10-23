@@ -31,6 +31,16 @@ describe('formatWorkflowSyncErrorDetail', () => {
     ).toBe('Your node catalog is incompatible.')
   })
 
+  it('omits raw context that contradicts catalog-mismatch recovery', () => {
+    expect(
+      formatWorkflowSyncErrorDetail(
+        translate,
+        'the document was minted under a different widget catalog; retrying will not help',
+        'catalog_mismatch'
+      )
+    ).toBe('Your node catalog is incompatible.')
+  })
+
   it('uses the reload copy when this page is older than the document', () => {
     expect(
       formatWorkflowSyncErrorDetail(translate, undefined, 'stale_client_schema')

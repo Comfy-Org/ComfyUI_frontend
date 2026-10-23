@@ -1,0 +1,515 @@
+<template>
+  <div class="flex flex-col gap-6">
+    <div class="flex justify-center">
+      <ToggleGroup
+        v-model="currentBillingCycle"
+        type="single"
+        :allow-empty="false"
+        class="rounded-lg bg-secondary p-1.5"
+      >
+        <ToggleGroupItem
+          v-for="option in billingCycleOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 w-36 data-[state=on]:bg-foreground data-[state=on]:text-background"
+        >
+          <div class="flex items-center gap-2">
+            <span>{{ option.label }}</span>
+            <div
+              v-if="option.value === 'yearly'"
+              class="flex items-center rounded-full bg-primary px-1 py-0.5 text-2xs font-bold text-white"
+            >
+              -20%
+            </div>
+          </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+    <div class="flex flex-col gap-4 xl:flex-row">
+      <div
+        v-for="tier in tiers"
+        :key="tier.id"
+        :class="
+          cn(
+            'flex flex-1 flex-col rounded-2xl border bg-background shadow-sm',
+            tier.isPopular ? 'border-emerald-500' : ''
+          )
+        "
+      >
+        <div class="flex flex-col gap-4 p-6 pb-0">
+          <PricingTierHeading :name="tier.name" :is-popular="tier.isPopular" />
+          <div class="flex flex-col">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-baseline gap-2">
+                <span class="text-[28px] leading-normal font-semibold">
+                  <span
+                    v-show="currentBillingCycle === 'yearly'"
+                    class="text-2xl text-muted-foreground line-through"
+                  >
+                    ${{ getMonthlyPrice(tier) }}
+                  </span>
+                  ${{ getPrice(tier) }}
+                </span>
+                <span class="text-sm/normal">
+                  {{ t('subscription.usdPerMonthPerMember') }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-muted-foreground">
+                  {{
+                    currentBillingCycle === 'yearly'
+                      ? t('subscription.billedYearly', {
+                          total: `$${getAnnualTotal(tier)}`
+                        })
+                      : t('subscription.billedMonthly')
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            :class="
+              cn(
+                'flex h-10 items-center justify-between rounded-lg px-3',
+                maxMembersByTier[tier.key] > 1 ? 'bg-emerald-500/20' : ''
+              )
+            "
+          >
+            <template v-if="maxMembersByTier[tier.key] > 1">
+              <div class="flex items-center gap-2 text-emerald-400">
+                <i class="pi pi-users text-xs" aria-hidden="true" />
+                <span class="text-sm">
+                  {{ t('subscription.inviteUpTo') }}
+                </span>
+              </div>
+              <span class="text-sm font-bold">
+                {{
+                  t('subscription.memberCount', {
+                    count: maxMembersByTier[tier.key]
+                  })
+                }}
+              </span>
+            </template>
+          </div>
+
+          <div class="flex flex-1 flex-col gap-3 pb-0">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t(creditsPerMemberLabelKey) }}
+              </span>
+              <div class="flex items-center gap-1">
+                <i class="icon-[lucide--coins] size-4 text-credit" />
+                <span class="text-sm/normal font-bold">
+                  {{ n(getCreditsPerMember(tier)) }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t('subscription.maxMembersLabel') }}
+              </span>
+              <span class="text-sm/normal font-bold">
+                {{ maxMembersByTier[tier.key] }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t('subscription.maxDurationLabel') }}
+              </span>
+              <span class="text-sm/normal font-bold">
+                {{ tier.maxDuration }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t('subscription.gpuLabel') }}
+              </span>
+              <i class="pi pi-check text-xs text-success" />
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t('subscription.addCreditsLabel') }}
+              </span>
+              <i class="pi pi-check text-xs text-success" />
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-normal">
+                {{ t('subscription.customLoRAsLabel') }}
+              </span>
+              <i
+                v-if="tier.customLoRAs"
+                class="pi pi-check text-xs text-success"
+              />
+              <i v-else class="pi pi-times text-xs" />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <div class="flex items-start justify-between">
+                <div class="flex flex-col gap-2">
+                  <span class="text-sm/relaxed font-normal">
+                    {{ t('subscription.videoEstimateLabel') }}
+                  </span>
+                  <div
+                    class="group flex items-center gap-2 pt-2 text-muted-foreground"
+                  >
+                    <i
+                      class="pi pi-question-circle text-xs group-hover:text-foreground"
+                    />
+                    <Popover
+                      :show-arrow="false"
+                      align="start"
+                      :side-offset="4"
+                      :collision-padding="8"
+                      class="max-h-(--reka-popover-content-available-height) max-w-sm overflow-auto p-4 shadow-lg data-[state=open]:animate-none"
+                    >
+                      <template #button>
+                        <button
+                          class="cursor-pointer border-0 bg-transparent p-0 text-sm font-normal group-hover:text-foreground"
+                        >
+                          {{ t('subscription.videoEstimateHelp') }}
+                        </button>
+                      </template>
+                      <div class="flex flex-col gap-2">
+                        <p class="text-sm/normal text-foreground">
+                          {{ t('subscription.videoEstimateExplanation') }}
+                        </p>
+                        <a
+                          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
+                        >
+                          <span class="underline">{{
+                            t('subscription.videoEstimateTryTemplate')
+                          }}</span>
+                          <span class="no-underline">→</span>
+                        </a>
+                      </div>
+                    </Popover>
+                  </div>
+                </div>
+                <span class="text-sm/normal font-bold">
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-col p-6">
+          <Button
+            :variant="getButtonSeverity(tier)"
+            :disabled="isButtonDisabled(tier)"
+            :loading="loadingTier === tier.key"
+            :class="
+              cn(
+                'h-10 w-full',
+                getButtonTextClass(tier),
+                tier.key === 'creator'
+                  ? 'border-transparent bg-success hover:bg-success/80'
+                  : 'border-transparent bg-secondary hover:bg-accent focus:bg-muted'
+              )
+            "
+            :data-dd-action-name="planCtaActionName(tier.key)"
+            @click="() => handleSubscribe(tier.key)"
+          >
+            {{ getButtonLabel(tier) }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact and Enterprise Links -->
+    <div class="flex flex-col items-center gap-2">
+      <p class="m-0 text-sm text-muted-foreground">
+        {{ $t('subscription.haveQuestions') }}
+      </p>
+      <div class="flex items-center gap-1.5">
+        <Button
+          variant="muted-textonly"
+          class="h-6 p-1 text-sm hover:text-foreground"
+          @click="handleContactUs"
+        >
+          {{ $t('subscription.contactUs') }}
+          <i class="pi pi-comments" />
+        </Button>
+        <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
+        <Button
+          variant="muted-textonly"
+          class="h-6 p-1 text-sm hover:text-foreground"
+          @click="handleViewEnterprise"
+        >
+          {{ $t('subscription.viewEnterprise') }}
+          <i class="pi pi-external-link" />
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
+import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
+import { cn } from '@comfyorg/tailwind-utils'
+import Popover from '@/components/ui/Popover.vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import {
+  TIER_PRICING,
+  amountForBillingCycle,
+  hasActivePaidPlan,
+  toTierKey
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type {
+  RegistrySubscriptionTier,
+  TierKey,
+  TierPricing
+} from '@/platform/billing/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useCommandStore } from '@/stores/commandStore'
+
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+interface Props {
+  isLoading?: boolean
+  loadingTier?: CheckoutTierKey | null
+}
+
+const { isLoading, loadingTier = null } = defineProps<Props>()
+
+const emit = defineEmits<{
+  subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
+  resubscribe: []
+}>()
+
+interface BillingCycleOption {
+  label: string
+  value: BillingCycle
+}
+
+interface PricingTierConfig {
+  id: RegistrySubscriptionTier
+  key: CheckoutTierKey
+  name: string
+  pricing: TierPricing
+  maxDuration: string
+  customLoRAs: boolean
+  maxMembers: number
+  isPopular?: boolean
+}
+
+const { t, n } = useI18n()
+const commandStore = useCommandStore()
+
+const billingCycleOptions: BillingCycleOption[] = [
+  { label: t('subscription.yearly'), value: 'yearly' },
+  { label: t('subscription.monthly'), value: 'monthly' }
+]
+
+const tiers: PricingTierConfig[] = [
+  {
+    id: 'STANDARD',
+    key: 'standard',
+    name: t('subscription.tiers.standard.name'),
+    pricing: TIER_PRICING.standard,
+    maxDuration: t('subscription.maxDuration.standard'),
+    customLoRAs: false,
+    maxMembers: 1,
+    isPopular: false
+  },
+  {
+    id: 'CREATOR',
+    key: 'creator',
+    name: t('subscription.tiers.creator.name'),
+    pricing: TIER_PRICING.creator,
+    maxDuration: t('subscription.maxDuration.creator'),
+    customLoRAs: true,
+    maxMembers: 5,
+    isPopular: true
+  },
+  {
+    id: 'PRO',
+    key: 'pro',
+    name: t('subscription.tiers.pro.name'),
+    pricing: TIER_PRICING.pro,
+    maxDuration: t('subscription.maxDuration.pro'),
+    customLoRAs: true,
+    maxMembers: 20,
+    isPopular: false
+  }
+]
+const {
+  plans: apiPlans,
+  currentPlanSlug,
+  fetchPlans,
+  subscription,
+  getMaxSeats
+} = useBillingContext()
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const creditsPerMemberLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.yearlyCreditsPerMemberLabel'
+    : 'subscription.monthlyCreditsPerMemberLabel'
+)
+
+onMounted(() => {
+  void fetchPlans()
+})
+
+function getApiPlanForTier(
+  tierKey: CheckoutTierKey,
+  duration: BillingCycle
+): Plan | undefined {
+  const apiDuration = duration === 'yearly' ? 'ANNUAL' : 'MONTHLY'
+  const apiTier = tierKey.toUpperCase() as Plan['tier']
+  return apiPlans.value.find(
+    (p) => p.tier === apiTier && p.duration === apiDuration
+  )
+}
+
+function getPriceFromApi(tier: PricingTierConfig): number | null {
+  const plan = getApiPlanForTier(tier.key, currentBillingCycle.value)
+  if (!plan) return null
+  const price = plan.price_cents / 100
+  return currentBillingCycle.value === 'yearly' ? price / 12 : price
+}
+
+const currentTierKey = computed<TierKey | null>(() =>
+  subscription.value?.tier ? toTierKey(subscription.value.tier) : null
+)
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
+const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  // Use API current_plan_slug if available
+  if (currentPlanSlug.value) {
+    const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
+    return plan?.slug === currentPlanSlug.value
+  }
+
+  // Fallback to tier-based detection
+  if (!currentTierKey.value) return false
+
+  const selectedIsYearly = currentBillingCycle.value === 'yearly'
+
+  return (
+    currentTierKey.value === tierKey &&
+    isYearlySubscription.value === selectedIsYearly
+  )
+}
+
+const getButtonLabel = (tier: PricingTierConfig): string => {
+  const planName =
+    currentBillingCycle.value === 'yearly'
+      ? t('subscription.tierNameYearly', { name: tier.name })
+      : tier.name
+
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value
+      ? t('subscription.resubscribeTo', { plan: planName })
+      : t('subscription.currentPlan')
+  }
+
+  return hasActivePaidPlan(subscription.value?.tier)
+    ? t('subscription.changeTo', { plan: planName })
+    : t('subscription.subscribeTo', { plan: planName })
+}
+
+const getButtonSeverity = (
+  tier: PricingTierConfig
+): 'primary' | 'secondary' => {
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value ? 'primary' : 'secondary'
+  }
+  if (tier.key === 'creator') return 'primary'
+  return 'secondary'
+}
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean => {
+  if (isLoading) return true
+  if (isCurrentPlan(tier.key)) {
+    // Allow clicking current plan button when cancelled (for resubscribe)
+    return !isCancelled.value
+  }
+  return false
+}
+
+const getButtonTextClass = (tier: PricingTierConfig): string =>
+  tier.key === 'creator'
+    ? 'font-inter text-sm font-bold leading-normal text-background'
+    : 'font-inter text-sm font-bold leading-normal text-foreground'
+
+const getPrice = (tier: PricingTierConfig): number =>
+  getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+
+const getMonthlyPrice = (tier: PricingTierConfig): number => {
+  const plan = getApiPlanForTier(tier.key, 'monthly')
+  return plan ? plan.price_cents / 100 : tier.pricing.monthly
+}
+
+const getAnnualTotal = (tier: PricingTierConfig): number => {
+  const plan = getApiPlanForTier(tier.key, 'yearly')
+  return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
+}
+
+const maxMembersByTier = computed(
+  () =>
+    Object.fromEntries(tiers.map((t) => [t.key, getMaxSeats(t.key)])) as Record<
+      CheckoutTierKey,
+      number
+    >
+)
+
+const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  Math.round(
+    getCreditsPerMember(tier) *
+      (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
+
+function handleSubscribe(tierKey: CheckoutTierKey) {
+  if (isLoading) return
+
+  // Handle resubscribe for cancelled subscription on current plan
+  if (isCurrentPlan(tierKey)) {
+    if (isCancelled.value) {
+      emit('resubscribe')
+    }
+    return
+  }
+
+  emit('subscribe', {
+    tierKey,
+    billingCycle: currentBillingCycle.value
+  })
+}
+
+async function handleContactUs() {
+  await commandStore.execute('Comfy.ContactSupport')
+}
+
+function handleViewEnterprise() {
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
+}
+</script>

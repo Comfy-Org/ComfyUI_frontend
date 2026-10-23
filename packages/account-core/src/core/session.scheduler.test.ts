@@ -143,6 +143,7 @@ describe('opt-in refresh scheduler', () => {
             permissions: [],
             // Already inside the buffer: a zero delay would loop the mint.
             expires_at: new Date(Date.now() + 60_000).toISOString(),
+            user_id: 'uid-1',
             workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
             role: 'owner'
           }),
@@ -238,6 +239,7 @@ describe('opt-in refresh scheduler', () => {
           token,
           permissions: ['workspace:read'],
           expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+          user_id: 'uid-1',
           workspace: { id: wsId, name: 'Team', type: 'team' },
           role: 'member'
         }),
@@ -457,6 +459,7 @@ describe('opt-in refresh scheduler', () => {
             token: 'jwt-team',
             permissions: ['workspace:read'],
             expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+            user_id: 'uid-1',
             workspace: { id: 'ws-team', name: 'Team', type: 'team' },
             role: 'member'
           }),
@@ -497,6 +500,7 @@ describe('opt-in refresh scheduler', () => {
               expires_at: new Date(
                 Date.now() + NINETY_MINUTES_MS
               ).toISOString(),
+              user_id: 'uid-1',
               workspace: { id: 'ws-team', name: 'Team', type: 'team' },
               role: 'member'
             }),
@@ -1055,6 +1059,7 @@ describe('cross-tab refresh coordination', () => {
             token: 'jwt-team',
             permissions: ['workspace:read'],
             expires_at: new Date(Date.now() + NINETY_MINUTES_MS).toISOString(),
+            user_id: 'uid-1',
             workspace: { id: 'ws-team', name: 'Team', type: 'team' },
             role: 'member'
           }),

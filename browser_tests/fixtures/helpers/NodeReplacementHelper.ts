@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
+import type { NodeReplacementResponse } from '@/platform/workflowErrors/nodeReplacement/types'
 
 /**
  * Mock `/api/node_replacements` and enable the node replacement feature.

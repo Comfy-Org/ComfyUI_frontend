@@ -77,7 +77,7 @@ regenerated.
    | `platform/workspace/composables`             | 3,206     | 11    |
    | `platform/cloud/onboarding`                  | 3,039     | 32    |
    | `platform/telemetry/providers`               | 2,712     | 10    |
-   | `platform/cloud/subscription`                | 2,141     | 16    |
+   | `platform/billing/subscription`              | 2,141     | 16    |
    | `composables/video` + `components/videoEdit` | 2,296     | 12    |
    | `composables/boundingBoxes`                  | 1,037     | 2     |
    | `renderer/extensions/compositor`             | 788       | 8     |
@@ -211,7 +211,7 @@ directory from the vitest report.
 | `renderer/extensions/layerEditor`           | absent (8,904 raw)                                                             | ~99% (GPU compositor excluded) | Image layer editing                 | No browser-level proof at all; unit is strong |
 | `renderer/extensions/compositor`            | 7.0% (43) + 788 absent                                                         | ?                              | Image compositor overlay            | Gap                                           |
 | `platform/workspace`                        | 33.9% (2,262) + 11.7k absent                                                   | store ~59%                     | Team membership, credits, billing   | Cloud-only; unmeasured, likely under-tested   |
-| `platform/cloud/subscription`, checkout     | 43.3% (563) + 2.1k absent; `useSubscriptionCheckout.ts` 1,569 raw lines absent | high                           | Revenue                             | Cloud-only; unmeasured                        |
+| `platform/billing/subscription`, checkout   | 43.3% (563) + 2.1k absent; `useSubscriptionCheckout.ts` 1,569 raw lines absent | high                           | Revenue                             | Cloud-only; unmeasured                        |
 | `platform/cloud/onboarding`                 | absent (3,039 raw)                                                             | ~58%                           | First-run cloud flow                | Cloud-only; unmeasured                        |
 | `workbench/extensions/agent`                | absent (9,567 raw)                                                             | ~93%                           | Cloud agent panel                   | 2 `@cloud` specs, unmeasured                  |
 | `platform/auth`, `dialog/content/signin`    | 26.6% / 39.6%                                                                  | mixed                          | Sign-in                             | Cloud-only; unmeasured                        |
