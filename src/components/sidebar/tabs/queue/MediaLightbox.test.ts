@@ -192,7 +192,7 @@ describe('MediaLightbox', () => {
   })
 
   describe('caption reveal and auto-hide', () => {
-    const caption = () => screen.getByTestId('lightbox-pill')
+    const caption = () => screen.getByTestId('lightbox-caption')
 
     /* Fires the load event the browser sends once the new image has painted; jsdom never loads images on its own. */
     const finishImageLoad = () => {
