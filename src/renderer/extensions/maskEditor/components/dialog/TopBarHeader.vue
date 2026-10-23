@@ -34,16 +34,9 @@
         :collision-padding="10"
       >
         <template #trigger>
-          <button
-            type="button"
-            class="relative flex h-8 items-center justify-center gap-1 rounded-lg border-none bg-secondary px-2 text-center transition-colors duration-100 hover:bg-accent"
-            @pointerdown.stop
-          >
+          <MenuTriggerButton @pointerdown.stop>
             <span class="text-sm font-medium">{{ t('maskEditor.image') }}</span>
-            <i
-              class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
-            />
-          </button>
+          </MenuTriggerButton>
         </template>
       </Menu>
 

@@ -1,7 +1,10 @@
 <template>
   <Tooltip>
     <TooltipTrigger as-child>
-      <span tabindex="0" class="cursor-help">
+      <span
+        tabindex="0"
+        class="cursor-help rounded-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+      >
         <slot />
       </span>
     </TooltipTrigger>

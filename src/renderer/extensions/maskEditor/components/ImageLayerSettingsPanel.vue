@@ -27,10 +27,8 @@
           :collision-padding="10"
         >
           <template #trigger>
-            <MenuTriggerButton
-              :aria-labelledby="`${labelId} mask-blend-mode-value`"
-            >
-              <span id="mask-blend-mode-value">
+            <MenuTriggerButton :aria-labelledby="`${labelId} ${blendValueId}`">
+              <span :id="blendValueId">
                 {{ blendModeLabels[store.maskBlendMode] }}
               </span>
             </MenuTriggerButton>
@@ -62,7 +60,7 @@
         />
         <button
           type="button"
-          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0"
+          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0 ring-inset focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           :aria-label="t('maskEditor.maskLayer')"
           @click="setActiveLayer('mask')"
         >
@@ -98,7 +96,7 @@
         />
         <button
           type="button"
-          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0"
+          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0 ring-inset focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           :aria-label="t('maskEditor.paintLayer')"
           @click="setActiveLayer('rgb')"
         >
@@ -141,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Menu from '@/components/ui/menu/Menu.vue'
@@ -166,6 +164,7 @@ const { t } = useI18n()
 const store = useMaskEditorStore()
 const canvasManager = useCanvasManager()
 const blendMenuOpen = ref(false)
+const blendValueId = useId()
 
 const maskLayerVisible = ref(true)
 const paintLayerVisible = ref(true)
