@@ -132,7 +132,7 @@ describe('PrimitiveFloat widget type bridging', () => {
 })
 
 describe('Branch node', () => {
-  it('serializes branch_names aligned with the autogrow inputs that reach the prompt', async () => {
+  it('offers only executable routes while branch_names keeps every connected ordinal', async () => {
     const widgets = await customWidgetsExtension.getCustomWidgets?.(app)
     const graph = new LGraph()
     const branch = new LGraphNode('BranchNode')
@@ -144,6 +144,12 @@ describe('Branch node', () => {
       branch,
       'branch_names',
       ['COMFY_BRANCH_INPUT_NAMES', {}],
+      app
+    )
+    widgets?.COMFY_BRANCH_SELECTOR(
+      branch,
+      'branch',
+      ['COMFY_BRANCH_SELECTOR', {}],
       app
     )
 
@@ -159,8 +165,14 @@ describe('Branch node', () => {
     const { output } = await graphToPrompt(graph)
     const { inputs } = output[String(branch.id)]
 
+    const selector = branch.widgets?.find((w) => w.name === 'branch')
+    const options = selector?.options.values
+    expect(typeof options === 'function' && options()).toEqual([
+      'autogrow.branch1',
+      'autogrow.branch2'
+    ])
     expect(inputs.branch_names).toEqual({
-      __value__: ['autogrow.branch1', 'autogrow.branch2']
+      __value__: ['autogrow.branch0', 'autogrow.branch1', 'autogrow.branch2']
     })
     expect(
       Object.keys(inputs).filter((k) => k.startsWith('autogrow.'))

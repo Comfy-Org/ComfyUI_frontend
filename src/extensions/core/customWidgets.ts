@@ -1,10 +1,9 @@
 import { clamp } from 'es-toolkit'
 import { computed, shallowReactive } from 'vue'
-import type { ComputedRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
+import type { ExecutableLGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -143,48 +142,18 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
   }
   override set value(_: T) {}
 }
-function resolvesAtExecution(
-  resolver: SerializationNode | undefined,
-  slot: number
-) {
-  return (
-    !resolver || !('resolveInput' in resolver) || !!resolver.resolveInput(slot)
-  )
-}
-
 function connectedInputNames(
   node: LGraphNode,
-  resolver?: SerializationNode,
-  prefix: string = 'autogrow.'
+  resolver?: ExecutableLGraphNode
 ) {
   return node.inputs
-    .map((input, slot) => ({ input, slot }))
     .filter(
-      ({ input, slot }) =>
-        input.name.startsWith(prefix) &&
+      (input, slot) =>
+        input.name.startsWith('autogrow.') &&
         node.isInputConnected(slot) &&
-        resolvesAtExecution(resolver, slot)
+        (!resolver || !!resolver.resolveInput(slot))
     )
-    .map(({ input }) => input.label ?? input.localized_name ?? input.name)
-}
-
-const liveConnectedInputs = new WeakMap<LGraphNode, ComputedRef<string[]>>()
-
-function connectedInputsFor(node: LGraphNode) {
-  const cached = liveConnectedInputs.get(node)
-  if (cached) return cached
-  const connected = computed(() => {
-    const rootGraph = node.graph?.rootGraph
-    if (!rootGraph) return connectedInputNames(node)
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    if (!executionId) return connectedInputNames(node)
-    return connectedInputNames(
-      node,
-      buildExecutableNodeMap(rootGraph).get(executionId)
-    )
-  })
-  liveConnectedInputs.set(node, connected)
-  return connected
+    .map((input) => input.label ?? input.localized_name ?? input.name)
 }
 
 function onCustomIntCreated(this: LGraphNode) {
@@ -330,20 +299,25 @@ export const customWidgetsExtension: ComfyExtension = {
   getCustomWidgets() {
     return {
       COMFY_BRANCH_INPUT_NAMES: function (node, inputName) {
-        const connectedInputs = connectedInputsFor(node)
-        const widget = new StubWidget<string[]>(
-          node,
-          inputName,
-          () => connectedInputs.value
+        node.addCustomWidget(
+          new StubWidget<string[]>(node, inputName, () =>
+            connectedInputNames(node)
+          )
         )
-        widget.serializeValue = (resolver) =>
-          connectedInputNames(node, resolver)
-        node.addCustomWidget(widget)
       },
       COMFY_BRANCH_SELECTOR: function (node, inputName) {
-        const connectedInputs = connectedInputsFor(node)
-        const values = () => connectedInputs.value
-        const startValue = connectedInputs.value[0] ?? ''
+        const executableInputs = computed(() => {
+          const rootGraph = node.graph?.rootGraph
+          const id = rootGraph && getExecutionIdByNode(rootGraph, node)
+          return connectedInputNames(
+            node,
+            rootGraph && id
+              ? buildExecutableNodeMap(rootGraph).get(id)
+              : undefined
+          )
+        })
+        const values = () => executableInputs.value
+        const startValue = executableInputs.value[0] ?? ''
         node.addWidget('combo', inputName, startValue, () => {}, { values })
         node.onInputAdded = useChainCallback(node.onInputAdded, (input) => {
           if (input.widget?.name !== inputName) return
