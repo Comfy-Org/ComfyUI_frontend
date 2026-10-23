@@ -51,7 +51,7 @@
       v-if="step === 'amount' || step === 'confirm'"
       class="m-0 px-8 pb-4 text-sm text-muted-foreground"
     >
-      {{ $t('credits.topUp.purchaseDisclosure') }}
+      {{ planCreditCopy }}
     </p>
 
     <template v-if="step === 'confirm'">
@@ -450,6 +450,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
@@ -521,6 +522,7 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
+const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
