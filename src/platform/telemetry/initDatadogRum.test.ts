@@ -8,8 +8,9 @@ vi.mock(import('./manualRefreshTracker'), () => ({
 }))
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
-import { getFrontendBucket, initDatadogRum } from './initDatadogRum'
+import { initDatadogRum } from './initDatadogRum'
 import { trackUserManualRefresh } from './manualRefreshTracker'
+import { getDatadogRum, getFrontendBucket } from './rumContext'
 
 describe('initDatadogRum', () => {
   beforeEach(() => {
@@ -50,6 +51,13 @@ describe('initDatadogRum', () => {
       })
     }
   )
+
+  it('hands the SDK to startup telemetry even on an untracked hostname', async () => {
+    await initDatadogRum('localhost')
+
+    expect(datadogRum.init).not.toHaveBeenCalled()
+    expect(getDatadogRum()).toBe(datadogRum)
+  })
 
   it('tags canary traffic with its bucket and frontend version', async () => {
     let resolveProbe: (response: Response) => void

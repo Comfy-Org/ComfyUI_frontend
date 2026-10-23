@@ -14,8 +14,8 @@ const { addAction, addTiming, distribution, setViewLoadingTime } = vi.hoisted(
   })
 )
 
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: { addAction, addTiming, setViewLoadingTime }
+vi.mock<unknown>(import('@/platform/telemetry/rumContext'), () => ({
+  getDatadogRum: () => ({ addAction, addTiming, setViewLoadingTime })
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))

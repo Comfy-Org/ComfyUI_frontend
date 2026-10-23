@@ -19,8 +19,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry/initDatadogRum'), () => ({
-  getFrontendBucket: () => mockFrontendBucket.value
+vi.mock<unknown>(import('@/platform/telemetry/rumContext'), () => ({
+  getFrontendBucket: () => mockFrontendBucket.value,
+  getDatadogRum: () => ({
+    addError: (...args: unknown[]) => addError(...args),
+    getInitConfiguration: () => getInitConfiguration()
+  })
 }))
 
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
@@ -30,13 +34,6 @@ vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
 vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
   isEnabled: () => isEnabled()
-}))
-
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: {
-    addError: (...args: unknown[]) => addError(...args),
-    getInitConfiguration: () => getInitConfiguration()
-  }
 }))
 
 async function loadReportError() {
