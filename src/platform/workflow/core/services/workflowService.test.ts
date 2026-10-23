@@ -2091,17 +2091,30 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('reports the tab a user lands on after deleting the active workflow', async () => {
+    it.for([
+      {
+        name: 'reports the tab a user lands on after a direct deletion',
+        silent: false,
+        expectedPaths: ['workflows/second.json']
+      },
+      {
+        name: 'does not report a tab activation for an internal deletion',
+        silent: true,
+        expectedPaths: []
+      }
+    ])('$name', async ({ silent, expectedPaths }) => {
       const { byName, activated } = openThreeTabs()
       Object.defineProperty(byName('first'), 'delete', {
         value: vi.fn(async () => {})
       })
 
       await expect(
-        useWorkflowService().deleteWorkflow(byName('first'), true)
+        useWorkflowService().deleteWorkflow(byName('first'), silent)
       ).resolves.toBe(true)
 
-      expect(activated.mock.calls).toEqual([[byName('second')]])
+      expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+        expectedPaths
+      )
     })
 
     it('keeps a throwing listener from failing the tab switch', async () => {

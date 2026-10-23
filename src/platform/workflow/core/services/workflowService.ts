@@ -448,10 +448,6 @@ export const useWorkflowService = () => {
       workflowStore.isActive(workflow) &&
       !options.force
     ) {
-      // Deliberately reports nothing, including under `initiator: 'user'`:
-      // only a real tab CHANGE is an activation. Re-picking the tab you are
-      // already on (the checked item in the overflow menu, Next/Previous with
-      // one tab open) is a no-op here and must stay one downstream.
       return Promise.resolve(true)
     }
 
@@ -657,13 +653,9 @@ export const useWorkflowService = () => {
     }
 
     if (workflowStore.isOpen(workflow)) {
-      // Deleting the open active workflow lands the user on a replacement tab,
-      // which is a user-initiated activation like any other close. Read
-      // `isOpen` back instead of a boolean: a close that aborts leaves the
-      // workflow open, so the two answers are the same one.
       await closeWorkflows([workflow], {
         warnIfUnsaved: !confirmed,
-        initiator: 'user'
+        initiator: silent ? undefined : 'user'
       })
       if (workflowStore.isOpen(workflow)) return false
     }
@@ -897,7 +889,6 @@ export const useWorkflowService = () => {
     canvas._deserializeItems(items, options)
   }
 
-  /** Closes `workflows` in order, stopping at the first one that stays open. */
   const closeWorkflows = async (
     workflows: ComfyWorkflow[],
     {
