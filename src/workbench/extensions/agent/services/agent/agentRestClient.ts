@@ -178,9 +178,22 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
-type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+type PaginationStopReason =
+  | 'missing_cursor'
+  | 'repeated_cursor'
+  | 'request_failed'
 
 type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
+
+function paginationFailure<Item>(
+  failure: Extract<RequestResult<never>, { ok: false }>,
+  items: Item[],
+  retainItems: boolean
+): RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }> {
+  return retainItems && items.length > 0
+    ? { ok: true, value: { items, stopReason: 'request_failed' } }
+    : failure
+}
 
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
@@ -655,7 +668,8 @@ export function createAgentRestClient() {
     path: string,
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    retainItemsOnFailure = false
   ): Promise<
     RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }>
   > {
@@ -672,7 +686,8 @@ export function createAgentRestClient() {
         schema
       )
       if (signal?.aborted) return { ok: false, cause: signal.reason }
-      if (!result.ok) return result
+      if (!result.ok)
+        return paginationFailure(result, items, retainItemsOnFailure)
       const page = result.value
       items.push(...itemsOf(page))
       hasMore = page.pagination.has_more
@@ -739,7 +754,8 @@ export function createAgentRestClient() {
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads,
-      options.signal
+      options.signal,
+      true
     )
     if (options.signal?.aborted) return { status: 'aborted' }
     if (!result.ok) return { status: 'failed', cause: result.cause }

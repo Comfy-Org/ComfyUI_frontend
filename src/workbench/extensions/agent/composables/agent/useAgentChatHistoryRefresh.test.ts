@@ -28,7 +28,7 @@ function completedListing(id: string): ThreadListing {
 }
 
 function partialListing(
-  reason: 'missing_cursor' | 'repeated_cursor',
+  reason: 'missing_cursor' | 'repeated_cursor' | 'request_failed',
   ids: string[] = []
 ): ThreadListing {
   return { status: 'incomplete', reason, threads: ids.map(thread) }
@@ -76,7 +76,8 @@ const requestFailure: ThreadListing = {
 
 const partials = [
   partialListing('missing_cursor', ['first']),
-  partialListing('repeated_cursor', ['first'])
+  partialListing('repeated_cursor', ['first']),
+  partialListing('request_failed', ['first'])
 ] satisfies ThreadListing[]
 
 const lateResults = [

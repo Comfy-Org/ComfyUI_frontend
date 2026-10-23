@@ -473,13 +473,14 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('returns a failure without partial threads when a later page fails', async () => {
+  it('returns the threads already fetched when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
     await expect(makeClient().listThreads()).resolves.toEqual({
-      status: 'failed',
-      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+      status: 'incomplete',
+      reason: 'request_failed',
+      threads: [expect.objectContaining({ id: 'th-1' })]
     })
   })
   it.for([
