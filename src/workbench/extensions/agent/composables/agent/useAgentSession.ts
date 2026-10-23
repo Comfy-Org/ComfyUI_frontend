@@ -1,8 +1,5 @@
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
-import type {
-  AgentAnswerRequest,
-  AgentAskConflict
-} from '@comfyorg/ingest-types'
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
@@ -350,10 +347,7 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
-type CommittedAnswerSource = Pick<
-  AgentAskConflict,
-  'status' | 'selected' | 'other_text'
->
+type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
 
 function namesCommittedAnswer({
   selected,

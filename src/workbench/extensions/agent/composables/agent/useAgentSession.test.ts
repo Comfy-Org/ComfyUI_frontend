@@ -2353,6 +2353,56 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a 202 that names only free text (%s)',
+      async ([, otherText, superseded]) => {
+        const { session } = await parkedOnQuestion({
+          status: 'answered',
+          other_text: otherText
+        })
+
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a free-text-only frame (%s)',
+      async ([, otherText, superseded]) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              selected: [],
+              other_text: otherText
+            }
+          })
+        )
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
     it('does not report an answered frame with a null selection as another answer winning', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
