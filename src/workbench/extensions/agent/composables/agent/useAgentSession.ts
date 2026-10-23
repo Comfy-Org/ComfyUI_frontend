@@ -1279,10 +1279,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (
-        workflowTargetChanged(originContext, wfContext) ||
-        targetCannotBeNamed(originContext, wfContext, origin)
-      ) {
+      if (workflowTargetUnavailable(originContext, wfContext, origin)) {
         recordUnavailableTarget(text)
         return false
       }
@@ -1341,6 +1338,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): boolean {
     if (origin?.id === undefined) return false
     return current?.id !== origin.id
+  }
+
+  function workflowTargetUnavailable(
+    origin: WorkflowTurnContext | undefined,
+    current: WorkflowTurnContext | undefined,
+    turnOrigin: TurnOrigin
+  ): boolean {
+    return (
+      workflowTargetChanged(origin, current) ||
+      targetCannotBeNamed(origin, current, turnOrigin)
+    )
   }
 
   /**
