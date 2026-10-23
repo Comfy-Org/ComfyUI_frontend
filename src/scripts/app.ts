@@ -1184,6 +1184,16 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
+  private disownFailedLoadGraph(workflow: string | null | ComfyWorkflow): void {
+    if (
+      workflow instanceof ComfyWorkflow &&
+      workflow.graph === this.rootGraphInternal &&
+      !useWorkflowStore().isActive(workflow)
+    ) {
+      workflow.releaseGraph()
+    }
+  }
+
   /**
    * Shared failure reporting for a graph load that cannot proceed: shows the
    * load-error dialog, logs it, and notifies `onGraphLoadError` so any
@@ -1191,15 +1201,6 @@ export class ComfyApp implements IComfyApp {
    * closed out, exactly as if `rootGraph.configure` itself had thrown.
    * Callers still decide what to return/rethrow.
    */
-  private disownFailedLoadGraph(workflow: string | null | ComfyWorkflow): void {
-    if (
-      workflow instanceof ComfyWorkflow &&
-      workflow.graph === this.rootGraphInternal
-    ) {
-      workflow.releaseGraph()
-    }
-  }
-
   private async reportGraphLoadFailure(error: unknown): Promise<void> {
     useDialogService().showErrorDialog(error, {
       title: t('errorDialog.loadWorkflowTitle'),
