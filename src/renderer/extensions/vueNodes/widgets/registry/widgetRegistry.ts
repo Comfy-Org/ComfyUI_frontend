@@ -89,7 +89,7 @@ const WidgetCurve = defineAsyncComponent(
   () => import('@/components/curve/WidgetCurve.vue')
 )
 const WidgetPainter = defineAsyncComponent(
-  () => import('@/components/painter/WidgetPainter.vue')
+  () => import('@/renderer/extensions/painter/components/WidgetPainter.vue')
 )
 const WidgetCompositor = defineAsyncComponent(
   () =>
