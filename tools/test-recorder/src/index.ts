@@ -68,7 +68,7 @@ try {
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
         output: flags.output,
-        force: flags.force !== undefined,
+        force: flags.force === '' || flags.force === 'true',
         featureFlags: flags['feature-flags']
           ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
           : undefined

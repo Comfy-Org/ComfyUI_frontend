@@ -760,6 +760,7 @@ export async function runRecord(
   const testsDir = join(projectRoot, 'browser_tests', 'tests')
   mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
+  let allowOverwrite = false
   if (existsSync(outputPath)) {
     const overwrite = await confirm({
       message: `${slug}.spec.ts already exists. Overwrite it?`,
@@ -776,8 +777,24 @@ export async function runRecord(
       )
       process.exit(1)
     }
+    allowOverwrite = true
   }
-  writeFileSync(outputPath, transformResult.code)
+  try {
+    writeFileSync(
+      outputPath,
+      transformResult.code,
+      allowOverwrite ? undefined : { flag: 'wx' }
+    )
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
+      fail(
+        'Refusing to overwrite existing test',
+        `Choose a different name, or delete ${outputPath} first.`
+      )
+      process.exit(1)
+    }
+    throw error
+  }
   if (!formatFile(outputPath)) {
     info([
       `Could not format ${outputPath} — run pnpm format before committing.`

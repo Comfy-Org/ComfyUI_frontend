@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
 import { transform, formatTransformSummary } from '../transform/engine'
@@ -55,12 +55,22 @@ export async function runTransform(
     )
     process.exit(1)
   }
-  if (existsSync(outputPath) && !options.force) {
-    console.log(pc.red(`  Refusing to overwrite existing file: ${outputPath}`))
-    console.log(pc.dim('  Pass --force to overwrite.'))
-    process.exit(1)
+  try {
+    writeFileSync(
+      outputPath,
+      result.code,
+      options.force ? undefined : { flag: 'wx' }
+    )
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
+      console.log(
+        pc.red(`  Refusing to overwrite existing file: ${outputPath}`)
+      )
+      console.log(pc.dim('  Pass --force to overwrite.'))
+      process.exit(1)
+    }
+    throw error
   }
-  writeFileSync(outputPath, result.code)
 
   if (!formatFile(outputPath)) {
     console.log(
