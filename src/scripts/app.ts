@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -43,7 +43,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -95,7 +95,7 @@ import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -859,7 +859,9 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
-    await useWorkspaceStore().workflow.syncWorkflows()
+    await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
+      useWorkspaceStore().workflow.syncWorkflows()
+    )
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
@@ -1068,7 +1070,12 @@ export class ComfyApp implements IComfyApp {
       await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     })
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      const phase = bootstrapTracer.startPhase('bootstrap/vue-node-defs')
+      try {
+        this.updateVueAppNodeDefs(defs)
+      } finally {
+        phase.stop()
+      }
     }
   }
 

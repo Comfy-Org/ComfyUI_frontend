@@ -20,7 +20,6 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -215,27 +214,29 @@ function createPreview3DExtension(
   }
 }
 
-useExtensionService().registerExtension(
+export const previewGaussianSplatExtension: ComfyExtension =
   createPreview3DExtension(
     'PreviewGaussianSplat',
     'Comfy.PreviewGaussianSplat',
     'temp'
   )
-)
-useExtensionService().registerExtension(
+
+export const previewPointCloudExtension: ComfyExtension =
   createPreview3DExtension(
     'PreviewPointCloud',
     'Comfy.PreviewPointCloud',
     'temp'
   )
-)
-useExtensionService().registerExtension(
+
+export const saveGaussianSplatExtension: ComfyExtension =
   createPreview3DExtension(
     'SaveGaussianSplat',
     'Comfy.SaveGaussianSplat',
     'output'
   )
-)
-useExtensionService().registerExtension(
-  createPreview3DExtension('SavePointCloud', 'Comfy.SavePointCloud', 'output')
+
+export const savePointCloudExtension: ComfyExtension = createPreview3DExtension(
+  'SavePointCloud',
+  'Comfy.SavePointCloud',
+  'output'
 )

@@ -60,7 +60,6 @@ import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -160,7 +159,7 @@ function createFileInput(
   return input
 }
 
-useExtensionService().registerExtension({
+export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',
   settings: [
     {
@@ -505,7 +504,7 @@ useExtensionService().registerExtension({
       }
     })
   }
-})
+}
 
 function applyPreview3DOutput(
   node: LGraphNode,
@@ -560,7 +559,7 @@ function applyPreview3DOutput(
   })
 }
 
-useExtensionService().registerExtension({
+export const preview3DExtension: ComfyExtension = {
   name: 'Comfy.Preview3D',
 
   async beforeRegisterNodeDef(
@@ -718,7 +717,7 @@ useExtensionService().registerExtension({
       }
     })
   }
-})
+}
 
 function applyPreview3DAdvancedResult(
   node: LGraphNode,
@@ -923,17 +922,16 @@ function createPreview3DAdvancedExtension(
   }
 }
 
-useExtensionService().registerExtension(
+export const preview3DAdvancedExtension: ComfyExtension =
   createPreview3DAdvancedExtension(
     'Preview3DAdvanced',
     'Comfy.Preview3DAdvanced',
     'temp'
   )
-)
-useExtensionService().registerExtension(
+
+export const save3DAdvancedExtension: ComfyExtension =
   createPreview3DAdvancedExtension(
     'Save3DAdvanced',
     'Comfy.Save3DAdvanced',
     'output'
   )
-)

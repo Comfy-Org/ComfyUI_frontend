@@ -12,6 +12,7 @@ import type {
   ResultItem
 } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyExtension } from '@/types/comfy'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
@@ -19,7 +20,6 @@ type SaveMeshOutput = NodeOutputWith<{
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -57,7 +57,7 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
   })
 }
 
-useExtensionService().registerExtension({
+export const saveMeshExtension: ComfyExtension = {
   name: 'Comfy.SaveGLB',
 
   async beforeRegisterNodeDef(
@@ -181,4 +181,4 @@ useExtensionService().registerExtension({
       })
     }
   }
-})
+}

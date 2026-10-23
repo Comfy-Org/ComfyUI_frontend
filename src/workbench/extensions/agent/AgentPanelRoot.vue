@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -73,9 +73,9 @@ import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -139,6 +139,9 @@ import {
   toAgentPaywallCta,
   toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
+import type { CanvasConfirmation } from './services/agent/agentEventTransport'
+import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
+import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -1089,10 +1092,22 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
+function canvasConfirmationState(workflowId?: string): CanvasConfirmation {
+  const bound = boundWorkflowId.value ?? undefined
+  if (bound === undefined) return 'none'
+  if (
+    workflowId !== undefined &&
+    !areAgentWorkflowIdsEquivalent(bound, workflowId)
+  )
+    return 'unavailable'
+  if (!isBoundWorkflowActive.value) return 'unavailable'
+  const status = crdtStatus.value
+  if (!status.enabled) return 'none'
+  if (status.connected) return 'awaiting'
+  return status.terminal === null ? 'none' : 'unavailable'
+}
 conversationStore.setCanvasSyncGate(
-  (workflowId) =>
-    crdtStatus.value.connected &&
-    (workflowId === undefined || workflowId === crdtStatus.value.workflowId),
+  canvasConfirmationState,
   () => crdtStatus.value.outcomes.appliedLive
 )
 
@@ -1116,6 +1131,56 @@ function resumedTurnTabPath(): string | null {
   return context?.id === bound ? context.tabPath : null
 }
 
+const boundCanvasNodeCount = ref(0)
+function readBoundCanvasNodeCount(): void {
+  boundCanvasNodeCount.value = isBoundWorkflowActive.value
+    ? (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0)
+    : 0
+}
+watch([boundWorkflowId, isBoundWorkflowActive], readBoundCanvasNodeCount, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    if (isBoundWorkflowActive.value)
+      boundCanvasNodeCount.value = event.detail.nodes?.length ?? 0
+  }
+)
+
+const completedTurnClaimedCanvasContent = ref(false)
+function completedTurnCanClaimCanvasContent(): boolean {
+  const lastCanvasTool = conversationMessages.value
+    .at(-1)
+    ?.parts.findLast(
+      (part) =>
+        part.type === 'tool' &&
+        (part.name === 'clear_canvas'
+          ? part.ok === true
+          : part.ok !== false && toolCanClaimCanvasContent(part.name))
+    )
+  return (
+    lastCanvasTool?.type === 'tool' && lastCanvasTool.name !== 'clear_canvas'
+  )
+}
+const canvasEmptyAfterTurn = computed(
+  () =>
+    completedTurnClaimedCanvasContent.value &&
+    isBoundWorkflowActive.value &&
+    boundCanvasNodeCount.value === 0
+)
+
+function refreshBillingAfterTurn(): void {
+  if (billingType.value !== 'workspace') return
+  void refreshBillingStatus().catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
+    })
+  })
+}
+
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
@@ -1123,33 +1188,32 @@ let wasTurnActive = false
 watch(
   [status, conversationTurnId],
   ([value, turnId]) => {
-    const completedTurn = wasTurnActive && value === 'idle'
-    if (value === 'idle') {
-      // The immediate idle value on remount is a hydration snapshot, not a
-      // completed turn. A real idle transition is observed after this pass.
-      if (completedTurn) graphActivity.finishTurn()
-    } else graphActivity.startTurn(turnId)
-    wasTurnActive = value !== 'idle'
-    if (value === 'idle') {
-      // A server-side LLM-hop refusal does not reach the browser as a 402.
-      // Refresh the authoritative effective-funds verdict after every observed
-      // turn completion so both exhaustion and external top-ups converge.
-      if (completedTurn && billingType.value === 'workspace') {
-        void refreshBillingStatus().catch((error: unknown) => {
-          reportError(error, {
-            surface: 'agent',
-            errorType: 'error_refreshing_agent_billing_status'
-          })
-        })
-      }
-      const completedPath = tabActivity.editingTabPath
-      tabActivity.setEditing(null)
-      if (completedPath !== null) tabActivity.markModified(completedPath)
-    } else if (tabActivity.editingTabPath === null)
-      tabActivity.setEditing(resumedTurnTabPath())
+    const active = value !== 'idle'
+    const completedTurn = wasTurnActive && !active
+    if (completedTurn)
+      completedTurnClaimedCanvasContent.value =
+        completedTurnCanClaimCanvasContent()
+    else if (active) completedTurnClaimedCanvasContent.value = false
+    wasTurnActive = active
+    if (active) {
+      graphActivity.startTurn(turnId)
+      if (tabActivity.editingTabPath === null)
+        tabActivity.setEditing(resumedTurnTabPath())
+      return
+    }
+    if (completedTurn) {
+      graphActivity.finishTurn()
+      refreshBillingAfterTurn()
+    }
+    const completedPath = tabActivity.editingTabPath
+    tabActivity.setEditing(null)
+    if (completedPath !== null) tabActivity.markModified(completedPath)
   },
   { immediate: true, flush: 'sync' }
 )
+watch([threadId, boundWorkflowId], () => {
+  completedTurnClaimedCanvasContent.value = false
+})
 
 const executionErrorStore = useExecutionErrorStore()
 
@@ -1433,10 +1497,7 @@ onBeforeUnmount(() => {
     // turn resumed in the meantime reading it -- reset to the always-safe
     // default instead of leaving whatever this instance last set.
     resetCanvasSyncGate: () => {
-      conversationStore.setCanvasSyncGate(
-        () => false,
-        () => 0
-      )
+      conversationStore.setCanvasSyncGate(() => 'none')
     }
   })
 })
@@ -2089,7 +2150,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :session-id="threadId"
-      :custom-title="history.titleFor(threadId) ?? provisionalTitle"
+      :custom-title="
+        historyGroups.current.find((session) => session.id === threadId)
+          ?.title ?? provisionalTitle
+      "
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
@@ -2104,6 +2168,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
+      :canvas-empty-after-turn="canvasEmptyAfterTurn"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"

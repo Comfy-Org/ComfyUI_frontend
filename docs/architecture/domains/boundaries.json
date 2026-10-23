@@ -6,6 +6,10 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "keybindings/integration/public",
+        "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
@@ -186,6 +190,7 @@
           "src/workbench/extensions/agent/AgentPanelRoot.test.ts",
           "src/workbench/extensions/agent/AgentPanelRoot.vue",
           "src/workbench/extensions/agent/composables/agent/useAgentTargetNavigation.ts",
+          "src/workbench/extensions/agent/composables/useAgentDockMount.billingContext.test.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.test.ts",
           "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
           "src/workbench/extensions/agent/crdt/agentCrdtProjection.frameDelta.test.ts",
@@ -440,9 +445,9 @@
         "name": "authentication/application",
         "patterns": [
           "src/composables/auth/**",
-          "src/composables/billing/usePartnerNodesRunGate.cloud.test.ts",
-          "src/composables/billing/usePartnerNodesRunGate.test.ts",
-          "src/composables/billing/usePartnerNodesRunGate.ts",
+          "src/platform/billing/composables/usePartnerNodesRunGate.cloud.test.ts",
+          "src/platform/billing/composables/usePartnerNodesRunGate.test.ts",
+          "src/platform/billing/composables/usePartnerNodesRunGate.ts",
           "src/composables/node/usePartnerNodesInGraph.test.ts",
           "src/composables/node/usePartnerNodesInGraph.ts",
           "src/platform/auth/partnerNode/partnerNodeQueueToken.test.ts",
@@ -528,90 +533,105 @@
       {
         "name": "billing/domain",
         "patterns": [
-          "src/composables/billing/billingRail.test.ts",
-          "src/composables/billing/billingRail.ts",
-          "src/composables/billing/types.ts",
-          "src/platform/workspace/billing/customerActionParity.test.ts",
-          "src/platform/workspace/billing/customerAttention.test.ts",
-          "src/platform/workspace/billing/customerAttention.ts",
-          "src/platform/workspace/components/subscriptionPanelWorkspace.logic.ts",
-          "src/platform/workspace/utils/checkoutJourney.test.ts",
-          "src/platform/workspace/utils/checkoutJourney.ts"
+          "src/platform/billing/composables/billingRail.test.ts",
+          "src/platform/billing/composables/billingRail.ts",
+          "src/platform/billing/composables/types.ts",
+          "src/platform/billing/customerActionParity.test.ts",
+          "src/platform/billing/customerAttention.test.ts",
+          "src/platform/billing/customerAttention.ts",
+          "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
+          "src/platform/billing/subscription/constants/**",
+          "src/platform/billing/utils/checkoutJourney.test.ts",
+          "src/platform/billing/utils/checkoutJourney.ts"
         ]
       },
       {
         "name": "billing/application",
         "patterns": [
-          "src/composables/billing/__mocks__/**",
-          "src/composables/billing/topupBalanceRefresh.test.ts",
-          "src/composables/billing/topupBalanceRefresh.ts",
-          "src/composables/billing/useBillingContext.test.ts",
-          "src/composables/billing/useBillingContext.ts",
-          "src/composables/billing/useBillingDialogs.cancelSubscription.test.ts",
-          "src/composables/billing/useBillingDialogs.comingSoon.test.ts",
-          "src/composables/billing/useBillingDialogs.downgrade.test.ts",
-          "src/composables/billing/useBillingDialogs.subscriptionRequired.test.ts",
-          "src/composables/billing/useBillingDialogs.topUpCredits.test.ts",
-          "src/composables/billing/useBillingDialogs.ts",
-          "src/composables/billing/useBillingRouting.test.ts",
-          "src/composables/billing/useBillingRouting.ts",
-          "src/composables/billing/useLegacyBilling.test.ts",
-          "src/composables/billing/useLegacyBilling.ts",
-          "src/composables/billing/useNextInvoice.test.ts",
-          "src/composables/billing/useNextInvoice.ts",
-          "src/composables/billing/usePendingTopup.test.ts",
-          "src/composables/billing/usePendingTopup.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.handoff.test.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.test.ts",
-          "src/platform/workspace/billing/openHostedBillingTab.ts",
-          "src/platform/workspace/billing/refreshOnReturn.test.ts",
-          "src/platform/workspace/billing/refreshOnReturn.ts",
-          "src/platform/workspace/billing/sdk/billingSdkStore.test.ts",
-          "src/platform/workspace/billing/sdk/billingSdkStore.ts",
-          "src/platform/workspace/billing/sdk/billingSdkTelemetryOwnership.test.ts",
-          "src/platform/workspace/composables/__mocks__/useBillingCapabilities.ts",
-          "src/platform/workspace/composables/billingOperationTestUtils.ts",
-          "src/platform/workspace/composables/deriveBillingBanner.test.ts",
-          "src/platform/workspace/composables/readOnRail.test.ts",
-          "src/platform/workspace/composables/readOnRail.ts",
-          "src/platform/workspace/composables/useBillingBanner.test.ts",
-          "src/platform/workspace/composables/useBillingBanner.ts",
-          "src/platform/workspace/composables/useBillingCapabilities.test.ts",
-          "src/platform/workspace/composables/useBillingCapabilities.ts",
-          "src/platform/workspace/composables/useBillingReadRail.ts",
-          "src/platform/workspace/composables/useDowngradeToPersonal.test.ts",
-          "src/platform/workspace/composables/useDowngradeToPersonal.ts",
-          "src/platform/workspace/composables/usePlanEnded.ts",
-          "src/platform/workspace/composables/useResubscribe.test.ts",
-          "src/platform/workspace/composables/useResubscribe.ts",
-          "src/platform/workspace/composables/useScheduledPlanChange.ts",
-          "src/platform/workspace/composables/useSubscriptionCheckout.test.ts",
-          "src/platform/workspace/composables/useSubscriptionCheckout.ts",
-          "src/platform/workspace/composables/useSubscriptionOperationView.test.ts",
-          "src/platform/workspace/composables/useSubscriptionRail.ts",
-          "src/platform/workspace/composables/useTeamPlan.test.ts",
-          "src/platform/workspace/composables/useTeamPlan.ts",
-          "src/platform/workspace/composables/useTopupOperation.test.ts",
-          "src/platform/workspace/composables/useTopupOperation.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.sdk.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.subscriptionRail.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.test.ts",
-          "src/platform/workspace/composables/useWorkspaceBilling.ts",
-          "src/platform/workspace/composables/useWorkspacePlanPricing.ts",
-          "src/platform/workspace/stores/billingOperationStore.test.ts",
-          "src/platform/workspace/stores/billingOperationStore.ts"
+          "src/platform/billing/composables/__mocks__/**",
+          "src/platform/billing/composables/topupBalanceRefresh.test.ts",
+          "src/platform/billing/composables/topupBalanceRefresh.ts",
+          "src/platform/billing/composables/useBillingContext.test.ts",
+          "src/platform/billing/composables/useBillingContext.ts",
+          "src/platform/billing/composables/useBillingDialogs.cancelSubscription.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.comingSoon.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.ts",
+          "src/platform/billing/composables/useBillingRouting.test.ts",
+          "src/platform/billing/composables/useBillingRouting.ts",
+          "src/platform/billing/composables/useLegacyBilling.test.ts",
+          "src/platform/billing/composables/useLegacyBilling.ts",
+          "src/platform/billing/composables/useNextInvoice.test.ts",
+          "src/platform/billing/composables/useNextInvoice.ts",
+          "src/platform/billing/composables/usePendingTopup.test.ts",
+          "src/platform/billing/composables/usePendingTopup.ts",
+          "src/platform/billing/openHostedBillingTab.handoff.test.ts",
+          "src/platform/billing/openHostedBillingTab.test.ts",
+          "src/platform/billing/openHostedBillingTab.ts",
+          "src/platform/billing/refreshOnReturn.test.ts",
+          "src/platform/billing/refreshOnReturn.ts",
+          "src/platform/billing/sdk/billingSdkStore.test.ts",
+          "src/platform/billing/sdk/billingSdkStore.ts",
+          "src/platform/billing/sdk/billingSdkTelemetryOwnership.test.ts",
+          "src/platform/billing/composables/activateBillingScope.testUtils.ts",
+          "src/platform/billing/composables/deriveAutoTopUpBanner.test.ts",
+          "src/platform/billing/composables/deriveAutoTopUpBanner.ts",
+          "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts",
+          "src/platform/billing/composables/useAutoTopUpBannerKind.ts",
+          "src/platform/billing/composables/useAutoTopUpCardViewed.ts",
+          "src/platform/billing/composables/useBillingAutoTopUpCard.test.ts",
+          "src/platform/billing/composables/useBillingAutoTopUpCard.ts",
+          "src/platform/billing/composables/billingOperationTestUtils.ts",
+          "src/platform/billing/composables/deriveBillingBanner.test.ts",
+          "src/platform/billing/composables/readOnRail.test.ts",
+          "src/platform/billing/composables/readOnRail.ts",
+          "src/platform/billing/composables/useBillingBanner.test.ts",
+          "src/platform/billing/composables/useBillingBanner.ts",
+          "src/platform/billing/composables/useBillingCapabilities.test.ts",
+          "src/platform/billing/composables/useBillingCapabilities.ts",
+          "src/platform/billing/composables/useBillingReadRail.ts",
+          "src/platform/billing/composables/useDowngradeToPersonal.test.ts",
+          "src/platform/billing/composables/useDowngradeToPersonal.ts",
+          "src/platform/billing/composables/usePlanEnded.ts",
+          "src/platform/billing/composables/useResubscribe.test.ts",
+          "src/platform/billing/composables/useResubscribe.ts",
+          "src/platform/billing/composables/useScheduledPlanChange.ts",
+          "src/platform/billing/composables/useSubscriptionCheckout.test.ts",
+          "src/platform/billing/composables/useSubscriptionCheckout.ts",
+          "src/platform/billing/composables/useSubscriptionOperationView.test.ts",
+          "src/platform/billing/composables/useSubscriptionRail.ts",
+          "src/platform/billing/composables/useTeamPlan.test.ts",
+          "src/platform/billing/composables/useTeamPlan.ts",
+          "src/platform/billing/composables/useTopupOperation.test.ts",
+          "src/platform/billing/composables/useTopupOperation.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.test.ts",
+          "src/platform/billing/composables/useWorkspaceBilling.ts",
+          "src/platform/billing/composables/useWorkspacePlanPricing.ts",
+          "src/platform/billing/stores/billingOperationStore.test.ts",
+          "src/platform/billing/stores/billingOperationStore.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts"
         ]
       },
       {
         "name": "billing/infrastructure",
         "patterns": [
-          "src/config/billingWeb.test.ts",
-          "src/config/billingWeb.ts",
-          "src/platform/workspace/api/capabilityRevision.test.ts",
-          "src/platform/workspace/api/capabilityRevision.ts",
-          "src/platform/workspace/billing/hostedBillingRoutes.test.ts",
-          "src/platform/workspace/billing/hostedBillingRoutes.ts",
-          "src/platform/workspace/billing/subscribeInput.ts",
+          "src/platform/billing/billingWeb.test.ts",
+          "src/platform/billing/billingWeb.ts",
+          "src/platform/billing/api/capabilityRevision.test.ts",
+          "src/platform/billing/api/capabilityRevision.ts",
+          "src/platform/billing/hostedBillingRoutes.test.ts",
+          "src/platform/billing/hostedBillingRoutes.ts",
+          "src/platform/billing/subscribeInput.ts",
+          "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
+          "src/platform/billing/subscription/utils/paymentReturnUrl.test.ts",
+          "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
+          "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
           "src/services/customerEventsService.test.ts",
           "src/services/customerEventsService.ts"
         ]
@@ -619,66 +639,65 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
-          "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
-          "src/components/dialog/content/credit/**",
-          "src/components/topbar/TopbarSubscribeButton.test.ts",
-          "src/components/topbar/TopbarSubscribeButton.vue",
-          "src/components/ui/credit-slider/**",
-          "src/platform/workspace/components/InsufficientCreditsMemberDialog.vue",
-          "src/platform/workspace/components/PricingTableWorkspace.test.ts",
-          "src/platform/workspace/components/PricingTableWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionCheckoutSteps.stories.ts",
-          "src/platform/workspace/components/SubscriptionInactiveMemberDialog.test.ts",
-          "src/platform/workspace/components/SubscriptionInactiveMemberDialog.vue",
-          "src/platform/workspace/components/SubscriptionPanelContentWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionPausedDialog.test.ts",
-          "src/platform/workspace/components/SubscriptionPausedDialog.vue",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.test.ts",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionSuccessWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionSuccessWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.test.ts",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspace.vue",
-          "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
-          "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts",
-          "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue",
-          "src/platform/workspace/components/UnifiedPricingTable.stories.ts",
-          "src/platform/workspace/components/UnifiedPricingTable.test.ts",
-          "src/platform/workspace/components/UnifiedPricingTable.vue",
-          "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
-          "src/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
-          "src/platform/workspace/components/dialogs/InviteMemberUpsellDialogContent.vue",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.stories.ts",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.test.ts",
-          "src/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.stories.ts",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.test.ts",
-          "src/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue",
-          "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.test.ts",
-          "src/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue",
-          "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.test.ts",
-          "src/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue",
-          "src/platform/workspace/composables/useCheckoutCopy.ts",
-          "src/platform/workspace/composables/useWorkspaceTierLabel.test.ts",
-          "src/platform/workspace/composables/useWorkspaceTierLabel.ts"
+          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
+          "src/platform/billing/components/TopbarSubscribeButton.test.ts",
+          "src/platform/billing/components/TopbarSubscribeButton.vue",
+          "src/platform/billing/components/credit-slider/**",
+          "src/platform/billing/components/InsufficientCreditsMemberDialog.vue",
+          "src/platform/billing/components/PricingTableWorkspace.test.ts",
+          "src/platform/billing/components/PricingTableWorkspace.vue",
+          "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionAddPaymentPreviewWorkspace.vue",
+          "src/platform/billing/components/SubscriptionCheckoutSteps.stories.ts",
+          "src/platform/billing/components/SubscriptionInactiveMemberDialog.test.ts",
+          "src/platform/billing/components/SubscriptionInactiveMemberDialog.vue",
+          "src/platform/billing/components/SubscriptionPanelContentWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue",
+          "src/platform/billing/components/SubscriptionPausedDialog.test.ts",
+          "src/platform/billing/components/SubscriptionPausedDialog.vue",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.test.ts",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue",
+          "src/platform/billing/components/SubscriptionSuccessWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionSuccessWorkspace.vue",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.stories.ts",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.vue",
+          "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts",
+          "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue",
+          "src/platform/billing/components/UnifiedPricingTable.stories.ts",
+          "src/platform/billing/components/UnifiedPricingTable.test.ts",
+          "src/platform/billing/components/UnifiedPricingTable.vue",
+          "src/platform/billing/components/billingTab/**",
+          "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.test.ts",
+          "src/platform/billing/components/dialogs/DowngradeRemoveMembersDialogContent.vue",
+          "src/platform/billing/components/dialogs/InviteMemberUpsellDialogContent.vue",
+          "src/platform/billing/components/settings/CreditsPanel.test.ts",
+          "src/platform/billing/components/settings/CreditsPanel.vue",
+          "src/platform/billing/components/settings/UsageLogsTable.test.ts",
+          "src/platform/billing/components/settings/UsageLogsTable.vue",
+          "src/platform/billing/components/settings/BillingStatusBanner.stories.ts",
+          "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
+          "src/platform/billing/components/settings/BillingStatusBanner.vue",
+          "src/platform/billing/components/settings/MemberUpsellBanner.stories.ts",
+          "src/platform/billing/components/settings/MemberUpsellBanner.test.ts",
+          "src/platform/billing/components/settings/MemberUpsellBanner.vue",
+          "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts",
+          "src/platform/billing/components/settings/PlanCreditsPanelContent.vue",
+          "src/platform/billing/components/settings/WorkspaceInvoicesContent.test.ts",
+          "src/platform/billing/components/settings/WorkspaceInvoicesContent.vue",
+          "src/platform/billing/composables/useCheckoutCopy.ts",
+          "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
+          "src/platform/billing/composables/useWorkspaceTierLabel.ts",
+          "src/platform/billing/subscription/components/**"
         ]
       },
       {
         "name": "billing/integration",
         "patterns": ["src/utils/__tests__/mockBillingContext.ts"]
-      },
-      {
-        "name": "bottom-panel/application",
-        "patterns": [
-          "src/composables/bottomPanelTabs/useCommandSubcategories.ts"
-        ]
       },
       {
         "name": "bottom-panel/infrastructure",
@@ -843,12 +862,10 @@
       {
         "name": "cloud/domain",
         "patterns": [
-          "src/config/subscriptionPricesConfig.ts",
           "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
           "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
           "src/platform/cloud/onboarding/survey/surveySchema.ts",
           "src/platform/cloud/onboarding/utils/**",
-          "src/platform/cloud/subscription/constants/**",
           "src/utils/textCaseUtil.test.ts",
           "src/utils/textCaseUtil.ts"
         ]
@@ -861,9 +878,7 @@
           "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
           "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
           "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
-          "src/platform/cloud/onboarding/sso/ssoReentry.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts"
+          "src/platform/cloud/onboarding/sso/ssoReentry.ts"
         ]
       },
       {
@@ -871,12 +886,7 @@
         "patterns": [
           "src/platform/auth/cloudApiAuthProvider.ts",
           "src/platform/cloud/onboarding/auth.test.ts",
-          "src/platform/cloud/onboarding/auth.ts",
-          "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
-          "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
-          "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-          "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts"
+          "src/platform/cloud/onboarding/auth.ts"
         ]
       },
       {
@@ -884,7 +894,6 @@
         "patterns": [
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
-          "src/components/dialog/content/subscription/**",
           "src/components/topbar/CloudBadge.vue",
           "src/platform/cloud/notification/components/**",
           "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
@@ -894,8 +903,7 @@
           "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
           "src/platform/cloud/onboarding/composables/useProgressBarPainter.ts",
           "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
-          "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
-          "src/platform/cloud/subscription/components/**"
+          "src/platform/cloud/onboarding/composables/useVideoCarousel.ts"
         ]
       },
       {
@@ -1829,10 +1837,15 @@
       {
         "name": "keybindings/presentation",
         "patterns": [
-          "src/components/dialog/content/setting/KeybindingPanel.test.ts",
-          "src/components/dialog/content/setting/KeybindingPanel.vue",
-          "src/components/dialog/content/setting/keybinding/**",
-          "src/composables/useEditKeybindingDialog.ts"
+          "src/platform/keybindings/components/**",
+          "src/platform/keybindings/composables/useEditKeybindingDialog.ts"
+        ]
+      },
+      {
+        "name": "keybindings/integration",
+        "patterns": [
+          "src/platform/keybindings/composables/useShortcutsTab.test.ts",
+          "src/platform/keybindings/composables/useShortcutsTab.ts"
         ]
       },
       {
@@ -3442,21 +3455,6 @@
         ]
       },
       {
-        "name": "workflow-templates/application",
-        "patterns": [
-          "src/composables/useLazyPagination.test.ts",
-          "src/composables/useLazyPagination.ts",
-          "src/composables/useTemplateFiltering.test.ts",
-          "src/composables/useTemplateFiltering.ts",
-          "src/composables/useWorkflowTemplateSelectorDialog.test.ts",
-          "src/composables/useWorkflowTemplateSelectorDialog.ts",
-          "src/stores/templateInputDownloadStore.test.ts",
-          "src/stores/templateInputDownloadStore.ts",
-          "src/stores/templateRankingStore.test.ts",
-          "src/stores/templateRankingStore.ts"
-        ]
-      },
-      {
         "name": "workflow-templates/infrastructure",
         "patterns": [
           "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts"
@@ -3467,10 +3465,9 @@
         "patterns": [
           "src/components/actionbar/PartnerNodesEducationCard.test.ts",
           "src/components/actionbar/PartnerNodesEducationCard.vue",
-          "src/components/custom/**",
           "src/components/sidebar/SidebarTemplatesButton.test.ts",
           "src/components/sidebar/SidebarTemplatesButton.vue",
-          "src/components/templates/**"
+          "src/platform/workflow/templates/components/**"
         ]
       },
       {
@@ -3488,6 +3485,7 @@
       {
         "name": "workspace/application",
         "patterns": [
+          "src/platform/workspace/composables/__mocks__/**",
           "src/platform/workspace/composables/useMembersPanel.test.ts",
           "src/platform/workspace/composables/useMembersPanel.ts",
           "src/platform/workspace/composables/useWorkspaceDialogs.ts",
@@ -3533,7 +3531,8 @@
           "src/platform/workspace/components/InviteMembersForm.vue",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
           "src/platform/workspace/components/WorkspaceSwitcherPopover.test.ts",
-          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue"
+          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue",
+          "src/platform/workspace/components/dialogs/**"
         ]
       },
       {
@@ -3585,20 +3584,20 @@
         ]
       },
       {
+        "name": "billing/domain/outer-1",
+        "patterns": ["src/platform/billing/subscription/utils/**"]
+      },
+      {
         "name": "billing/application/outer-1",
         "patterns": ["src/storybook/**"]
       },
       {
         "name": "billing/infrastructure/outer-1",
         "patterns": [
-          "src/platform/workspace/billing/sdk/**",
-          "src/platform/workspace/utils/**",
+          "src/platform/billing/sdk/**",
+          "src/platform/billing/utils/**",
           "src/services/__mocks__/**"
         ]
-      },
-      {
-        "name": "billing/presentation/outer-1",
-        "patterns": ["src/components/dialog/content/setting/**"]
       },
       {
         "name": "bottom-panel/integration/outer-1",
@@ -3631,7 +3630,6 @@
         "name": "cloud/domain/outer-1",
         "patterns": [
           "src/platform/cloud/onboarding/sso/**",
-          "src/platform/cloud/subscription/utils/**",
           "src/platform/distribution/**"
         ]
       },
@@ -3660,6 +3658,10 @@
           "src/components/ui/toast/**",
           "src/components/widget/**"
         ]
+      },
+      {
+        "name": "dialog-host/presentation/outer-1",
+        "patterns": ["src/components/dialog/**"]
       },
       {
         "name": "error-handling/application/outer-1",
@@ -3906,16 +3908,12 @@
         "patterns": ["src/renderer/core/thumbnail/**"]
       },
       {
-        "name": "workspace/application/outer-1",
-        "patterns": ["src/platform/workspace/composables/__mocks__/**"]
-      },
-      {
-        "name": "workspace/presentation/outer-1",
-        "patterns": ["src/platform/workspace/components/dialogs/**"]
-      },
-      {
         "name": "assets/domain/outer-2",
         "patterns": ["src/platform/assets/**"]
+      },
+      {
+        "name": "billing/application/outer-2",
+        "patterns": ["src/platform/billing/subscription/**"]
       },
       {
         "name": "browser-interaction/domain/outer-2",
@@ -3928,10 +3926,6 @@
       {
         "name": "comfyui-api/domain/outer-2",
         "patterns": ["src/platform/remote/**"]
-      },
-      {
-        "name": "dialog-host/presentation/outer-2",
-        "patterns": ["src/components/dialog/**"]
       },
       {
         "name": "first-run-tour/presentation/outer-2",
@@ -3985,6 +3979,17 @@
           "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/integration/public",
+        "allow": [
+          "keybindings/integration/public",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -4338,7 +4343,7 @@
       },
       {
         "from": "billing/domain",
-        "allow": ["billing/domain", "unclassified"]
+        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
       },
       {
         "from": "billing/application",
@@ -4346,8 +4351,10 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4357,8 +4364,10 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4368,8 +4377,9 @@
           "billing/domain",
           "billing/application",
           "billing/presentation",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
-          "billing/presentation/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -4381,33 +4391,29 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
-          "billing/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "bottom-panel/application",
-        "allow": [
-          "bottom-panel/application",
-          "bottom-panel/infrastructure",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "bottom-panel/infrastructure",
         "allow": [
-          "bottom-panel/application",
           "bottom-panel/infrastructure",
+          "keybindings/domain",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "bottom-panel/presentation",
         "allow": [
-          "bottom-panel/application",
           "bottom-panel/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -4467,9 +4473,9 @@
           "bounding-boxes/application/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "graph-model/domain/outer-1",
           "vue-node-widgets/presentation/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4499,11 +4505,11 @@
           "bounding-boxes/application/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
           "vue-node-widgets/presentation/outer-1",
           "vue-node-widgets/integration/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4767,7 +4773,7 @@
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/integration",
-          "dialog-host/presentation/outer-2",
+          "dialog-host/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5362,6 +5368,17 @@
         "allow": [
           "keybindings/domain",
           "keybindings/presentation",
+          "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "keybindings/integration",
+        "allow": [
+          "keybindings/integration/public",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "keybindings/application/outer-1",
           "unclassified"
         ]
@@ -6079,8 +6096,8 @@
           "settings/domain",
           "settings/application",
           "settings/presentation",
+          "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6101,8 +6118,8 @@
           "settings/presentation",
           "settings/integration",
           "authentication/infrastructure/outer-1",
+          "dialog-host/presentation/outer-1",
           "settings/application/outer-1",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6652,20 +6669,9 @@
         "allow": ["workflow-templates/domain", "unclassified"]
       },
       {
-        "from": "workflow-templates/application",
-        "allow": [
-          "workflow-templates/domain",
-          "workflow-templates/application",
-          "workflow-templates/infrastructure",
-          "workflow-templates/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "workflow-templates/infrastructure",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -6675,7 +6681,6 @@
         "from": "workflow-templates/presentation",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/presentation",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -6699,7 +6704,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
-          "workspace/application/outer-1",
           "unclassified"
         ]
       },
@@ -6709,7 +6713,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/infrastructure",
-          "workspace/application/outer-1",
           "unclassified"
         ]
       },
@@ -6719,8 +6722,6 @@
           "workspace/domain",
           "workspace/application",
           "workspace/presentation",
-          "workspace/application/outer-1",
-          "workspace/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6732,8 +6733,6 @@
           "workspace/infrastructure",
           "workspace/presentation",
           "workspace/integration",
-          "workspace/application/outer-1",
-          "workspace/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -6857,13 +6856,19 @@
         ]
       },
       {
+        "from": "billing/domain/outer-1",
+        "allow": ["billing/domain", "billing/domain/outer-1", "unclassified"]
+      },
+      {
         "from": "billing/application/outer-1",
         "allow": [
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
@@ -6873,29 +6878,24 @@
           "billing/domain",
           "billing/application",
           "billing/infrastructure",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "billing/presentation/outer-1",
-        "allow": [
-          "billing/domain",
-          "billing/application",
-          "billing/presentation",
-          "billing/application/outer-1",
-          "billing/presentation/outer-1",
+          "billing/application/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "bottom-panel/integration/outer-1",
         "allow": [
-          "bottom-panel/application",
+          "keybindings/integration/public",
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
+          "keybindings/domain",
+          "keybindings/presentation",
+          "keybindings/integration",
           "bottom-panel/integration/outer-1",
+          "keybindings/application/outer-1",
           "unclassified"
         ]
       },
@@ -7011,6 +7011,15 @@
           "design-system/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "dialog-host/presentation/outer-1",
+        "allow": [
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -7537,7 +7546,6 @@
         "from": "workflow-templates/application/outer-1",
         "allow": [
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/application/outer-1",
           "unclassified"
@@ -7552,29 +7560,21 @@
         ]
       },
       {
-        "from": "workspace/application/outer-1",
-        "allow": [
-          "workspace/domain",
-          "workspace/application",
-          "workspace/infrastructure",
-          "workspace/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "workspace/presentation/outer-1",
-        "allow": [
-          "workspace/domain",
-          "workspace/application",
-          "workspace/presentation",
-          "workspace/application/outer-1",
-          "workspace/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "assets/domain/outer-2",
         "allow": ["assets/domain", "assets/domain/outer-2", "unclassified"]
+      },
+      {
+        "from": "billing/application/outer-2",
+        "allow": [
+          "billing/domain",
+          "billing/application",
+          "billing/infrastructure",
+          "billing/domain/outer-1",
+          "billing/application/outer-1",
+          "billing/infrastructure/outer-1",
+          "billing/application/outer-2",
+          "unclassified"
+        ]
       },
       {
         "from": "browser-interaction/domain/outer-2",
@@ -7599,15 +7599,6 @@
           "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "dialog-host/presentation/outer-2",
-        "allow": [
-          "dialog-host/domain",
-          "dialog-host/application",
-          "dialog-host/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -7702,6 +7693,7 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
+          "keybindings/integration/public",
           "node-definition/domain/public",
           "agent/domain",
           "agent/application",
@@ -7735,7 +7727,6 @@
           "billing/infrastructure",
           "billing/presentation",
           "billing/integration",
-          "bottom-panel/application",
           "bottom-panel/infrastructure",
           "bottom-panel/presentation",
           "bounding-boxes/domain",
@@ -7830,6 +7821,7 @@
           "job-queue/integration",
           "keybindings/domain",
           "keybindings/presentation",
+          "keybindings/integration",
           "light-authoring/application",
           "light-authoring/presentation",
           "light-authoring/integration",
@@ -7984,7 +7976,6 @@
           "workflow-sharing/infrastructure",
           "workflow-sharing/presentation",
           "workflow-templates/domain",
-          "workflow-templates/application",
           "workflow-templates/infrastructure",
           "workflow-templates/presentation",
           "workflow-thumbnails/infrastructure",
@@ -8001,9 +7992,9 @@
           "assets/presentation/outer-1",
           "assets/integration/outer-1",
           "authentication/infrastructure/outer-1",
+          "billing/domain/outer-1",
           "billing/application/outer-1",
           "billing/infrastructure/outer-1",
-          "billing/presentation/outer-1",
           "bottom-panel/integration/outer-1",
           "bounding-boxes/application/outer-1",
           "browser-export/infrastructure/outer-1",
@@ -8015,6 +8006,7 @@
           "cloud/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-handling/application/outer-1",
           "error-reporting/application/outer-1",
           "extension-manager/application/outer-1",
@@ -8071,13 +8063,11 @@
           "workflow-sharing/application/outer-1",
           "workflow-templates/application/outer-1",
           "workflow-thumbnails/application/outer-1",
-          "workspace/application/outer-1",
-          "workspace/presentation/outer-1",
           "assets/domain/outer-2",
+          "billing/application/outer-2",
           "browser-interaction/domain/outer-2",
           "cloud/presentation/outer-2",
           "comfyui-api/domain/outer-2",
-          "dialog-host/presentation/outer-2",
           "first-run-tour/presentation/outer-2",
           "graph-layout/domain/outer-2",
           "properties-panel/presentation/outer-2",

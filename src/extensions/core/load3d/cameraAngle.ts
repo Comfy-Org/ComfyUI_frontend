@@ -5,7 +5,7 @@ import type { CameraAngleViewMode } from '@comfyorg/viewport3d/cameraAngle/types
 import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const CameraAngle = defineAsyncComponent(
   () =>
@@ -16,7 +16,7 @@ const NODE_CLASS = 'CameraAngle'
 const MIN_WIDTH = 360
 const MIN_HEIGHT = 480
 
-useExtensionService().registerExtension({
+export const cameraAngleExtension: ComfyExtension = {
   name: 'Comfy.CameraAngle',
 
   getCustomWidgets() {
@@ -53,4 +53,4 @@ useExtensionService().registerExtension({
     const [width, height] = node.size
     node.setSize([Math.max(width, MIN_WIDTH), Math.max(height, MIN_HEIGHT)])
   }
-})
+}
