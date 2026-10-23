@@ -20,14 +20,15 @@ const coreLoad = vi.hoisted(() => ({
   processMouseMove: undefined as unknown
 }))
 
-vi.mock(import('@/extensions/core/index'), async () => {
-  const { LGraphCanvas, LGraphNode } =
-    await import('@/lib/litegraph/src/litegraph')
-  coreLoad.onConfigure = LGraphNode.prototype.onConfigure
-  coreLoad.processMouseDown = LGraphCanvas.prototype.processMouseDown
-  coreLoad.processMouseMove = LGraphCanvas.prototype.processMouseMove
-  return {}
-})
+vi.mock(import('@/extensions/core/index'), () => ({
+  registerCoreExtensions: async () => {
+    const { LGraphCanvas, LGraphNode } =
+      await import('@/lib/litegraph/src/litegraph')
+    coreLoad.onConfigure = LGraphNode.prototype.onConfigure
+    coreLoad.processMouseDown = LGraphCanvas.prototype.processMouseDown
+    coreLoad.processMouseMove = LGraphCanvas.prototype.processMouseMove
+  }
+}))
 
 const beforeLoad = {
   onConfigure: LGraphNode.prototype.onConfigure,
@@ -275,7 +276,7 @@ describe('extension loading', () => {
       expect(cause.message).toBe('Error loading extensions')
     })
 
-    it('installs the node and canvas prototype patches before core extensions load', async () => {
+    it('installs the node and canvas prototype patches before core extensions register', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([])
 
       await loadExtensions()
