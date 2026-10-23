@@ -34,63 +34,45 @@
           {{ workspaceName }}
         </span>
       </div>
-      <template v-else>
-        <Tooltip
-          v-model:open="isWorkspaceNameTooltipOpen"
-          :disabled="!workspaceName"
-        >
-          <TooltipTrigger as-child>
-            <button
-              ref="workspaceSwitcherTrigger"
-              type="button"
-              class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-accent"
-              :aria-expanded="isWorkspaceSwitcherOpen"
-              aria-haspopup="menu"
-              aria-controls="workspace-switcher-panel"
-              data-testid="workspace-switcher-trigger"
-              @click="toggleWorkspaceSwitcher"
-              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
-            >
-              <div class="flex w-0 flex-1 items-center gap-2">
-                <WorkspaceProfilePic
-                  class="size-6 shrink-0 text-xs"
-                  :workspace-name
-                  :subscription-tier="activeWorkspace?.subscriptionTier"
-                />
-                <span class="truncate text-sm text-foreground">
-                  {{ workspaceName }}
-                </span>
-              </div>
-              <i
-                class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+      <Popover
+        v-else
+        side="left"
+        align="start"
+        :side-offset="16"
+        :collision-padding="8"
+        prioritize-position
+        data-testid="workspace-switcher-panel"
+      >
+        <template #button>
+          <Button
+            variant="muted-textonly"
+            class="flex h-auto w-full justify-between px-4 py-2"
+            :tooltip="workspaceName ?? ''"
+            data-testid="workspace-switcher-trigger"
+          >
+            <div class="flex w-0 flex-1 items-center gap-2">
+              <WorkspaceProfilePic
+                class="size-6 shrink-0 text-xs"
+                :workspace-name
+                :subscription-tier="activeWorkspace?.subscriptionTier"
               />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{{ workspaceName }}</TooltipContent>
-        </Tooltip>
-
-        <div
-          v-if="isWorkspaceSwitcherOpen"
-          id="workspace-switcher-panel"
-          ref="workspaceSwitcherPanel"
-          role="menu"
-          class="absolute top-0 right-full z-10 mr-4 rounded-lg border bg-background shadow-md"
-          data-testid="workspace-switcher-panel"
-        >
+              <span class="truncate text-sm text-foreground">
+                {{ workspaceName }}
+              </span>
+            </div>
+            <i
+              class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+            />
+          </Button>
+        </template>
+        <template #default="{ close }">
           <WorkspaceSwitcherPopover
-            @select="isWorkspaceSwitcherOpen = false"
-            @create="handleCreateWorkspace"
+            @select="close"
+            @create="(close(), handleCreateWorkspace())"
           />
-        </div>
-      </template>
+        </template>
+      </Popover>
     </div>
-
-    <!-- Which developer-platform deployment this browser runs on (FE-2434).
-         The switcher renders nothing until its listing answers, and nothing
-         when the account is outside the rollout or its first listing fails. -->
-    <DeploymentSwitcher
-      v-if="!accountActionsOnly && isCloud && !isApiKeyLogin"
-    />
 
     <!-- Credits Section -->
 
@@ -112,6 +94,16 @@
       </Button>
       <Button
         v-if="canTopUp"
+        variant="secondary"
+        size="sm"
+        data-testid="add-credits-button"
+        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
+        @click="handleTopUp"
+      >
+        {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="paymentRecoveryAvailable"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
@@ -245,21 +237,17 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   canDesktopHostSwitchWorkspace,
@@ -267,17 +255,17 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -289,19 +277,8 @@ const {
 } = storeToRefs(workspaceStore)
 const { permissions, canReactivatePlan, canOpenPricingSurface } =
   useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const isWorkspaceSwitcherOpen = ref(false)
-const isWorkspaceNameTooltipOpen = ref(false)
-const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
-const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
-
-onClickOutside(
-  workspaceSwitcherPanel,
-  () => {
-    isWorkspaceSwitcherOpen.value = false
-  },
-  { ignore: [workspaceSwitcherTrigger] }
-)
+const { canTopUp, canSubscribeSelfServe, paymentRecoveryAvailable } =
+  useBillingCapabilities()
 
 const emit = defineEmits<{
   close: []
@@ -447,18 +424,8 @@ const handleLogout = async () => {
 }
 
 const handleCreateWorkspace = () => {
-  isWorkspaceSwitcherOpen.value = false
   showCreateWorkspaceDialog()
   emit('close')
-}
-
-const toggleWorkspaceSwitcher = () => {
-  isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
-}
-
-const closeWorkspaceSwitcherFromKeyboard = () => {
-  isWorkspaceSwitcherOpen.value = false
-  isWorkspaceNameTooltipOpen.value = false
 }
 
 onMounted(() => {

@@ -73,6 +73,7 @@ import type { DragAndScale } from './DragAndScale'
 
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { isDrawnEmphasized } from './nodeEmphasis'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 
@@ -1216,7 +1217,7 @@ export class LGraphNode
   private _getSelectedStrokeStyle(
     this: LGraphNode
   ): IDrawBoundingOptions | undefined {
-    if (this.selected) {
+    if (isDrawnEmphasized(this)) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
@@ -4134,7 +4135,7 @@ export class LGraphNode
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
-    const selected = this.selected
+    const selected = isDrawnEmphasized(this)
 
     if (this.onDrawTitleText) {
       this.onDrawTitleText(

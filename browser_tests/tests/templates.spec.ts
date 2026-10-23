@@ -8,6 +8,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -276,14 +277,12 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
       await expect(sortBySelect).toBeVisible()
 
-      // Screenshot the filter bar containing MultiSelect and SingleSelect
       const filterBar = comfyPage.templatesDialog.filterBar
       await expect(filterBar).toBeVisible()
-      await expect(filterBar).toHaveScreenshot(
+      await expectElementScreenshot(
+        filterBar,
         'template-filter-bar-select-components.png',
-        {
-          mask: [comfyPage.toast.visibleToasts]
-        }
+        { mask: [comfyPage.toast.visibleToasts] }
       )
     }
   )
@@ -349,7 +348,8 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(taggedCard.getByText('Image Edit')).toBeVisible()
 
       const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
-      await expect(templateGrid).toHaveScreenshot(
+      await expectElementScreenshot(
+        templateGrid,
         'template-cards-with-overlay-tags.png'
       )
     }

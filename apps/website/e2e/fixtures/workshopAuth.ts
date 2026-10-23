@@ -47,6 +47,7 @@ export async function mockWorkspaceMint(page: Page) {
       jsonRoute({
         token: 'mock-workspace-jwt',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
         role: 'owner',
         permissions: []

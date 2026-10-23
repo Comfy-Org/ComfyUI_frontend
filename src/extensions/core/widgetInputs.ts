@@ -33,6 +33,7 @@ import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
 const isPrimitiveNode = (
@@ -579,7 +580,7 @@ export function mergeIfValid(
   return { customConfig: customSpec?.[1] ?? {} }
 }
 
-app.registerExtension({
+export const widgetInputsExtension: ComfyExtension = {
   name: 'Comfy.WidgetInputs',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -675,4 +676,4 @@ app.registerExtension({
     )
     PrimitiveNode.category = 'utilities/primitive'
   }
-})
+}

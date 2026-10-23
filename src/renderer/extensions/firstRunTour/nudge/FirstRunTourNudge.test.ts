@@ -68,7 +68,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
   })

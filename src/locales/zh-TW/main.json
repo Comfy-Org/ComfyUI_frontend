@@ -4393,7 +4393,6 @@
     "viewControls": "檢視控制"
   },
   "sideToolbar": {
-    "activeJobStatus": "進行中作業：{status}",
     "assets": "資源",
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",
@@ -5550,22 +5549,6 @@
     "retry": "再試一次"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "點數",
-        "date": "日期",
-        "eventDetails": "事件詳情",
-        "eventType": "事件類型",
-        "user": "使用者"
-      },
-      "empty": "尚無活動。",
-      "fullActivity": "完整活動記錄",
-      "hoverCard": {
-        "lastActivity": "最近活動",
-        "partnerNodeUsed": "已使用合作夥伴節點",
-        "totalCreditsUsed": "已用總點數"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "您不會再被收費。在此之前，成員仍可完整存取。恢復您的方案以保留團隊的共用點數。",
@@ -5701,12 +5684,6 @@
         "removeMember": "移除成員",
         "resendInvite": "重新發送邀請",
         "setCreditLimit": "設定點數上限"
-      },
-      "activity": {
-        "daysAgo": "{count} 天前",
-        "hoursAgo": "{n} 小時前",
-        "justNow": "剛剛",
-        "minutesAgo": "{n} 分鐘前"
       },
       "columns": {
         "creditsUsed": "本月已使用點數",

@@ -354,7 +354,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent"],
+  "allowedConsumers": ["agent", "bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",
@@ -395,7 +395,7 @@
         "src/components/ui/popover/PopoverContent.test.ts",
         "src/components/ui/hover-card/HoverCard.test.ts",
         "src/components/ui/tooltip/Tooltip.test.ts",
-        "src/components/common/ImperativePopover.test.ts"
+        "src/components/ui/Popover.test.ts"
       ]
     },
     {
