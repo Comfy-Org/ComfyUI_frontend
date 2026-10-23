@@ -100,6 +100,24 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('reports failed lookups once per page, however often they fail', async () => {
+    const error = new WorkspaceApiError('Service unavailable', 503)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    await store.load()
+    await store.load()
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(5)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
   it.for([
     new WorkspaceApiError('Service unavailable', 503),
     new WorkspaceApiError('Gateway timeout', 504),
@@ -1528,7 +1546,7 @@ describe('useDeploymentPickStore', () => {
           ),
         hintAfter: 'cloud'
       },
-      ...(['deployment', 'cloud', 'unknown'] as const).map((hint) => ({
+      ...(['deployment', 'cloud'] as const).map((hint) => ({
         answer: `a transient failure, with the hint at ${hint}`,
         hintBefore: hint,
         respond: () =>
@@ -1536,7 +1554,25 @@ describe('useDeploymentPickStore', () => {
             new WorkspaceApiError('Service unavailable', 503)
           ),
         hintAfter: hint
-      }))
+      })),
+      {
+        answer: 'a transient failure, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        hintAfter: 'cloud'
+      },
+      {
+        answer: 'a failure that is not transient, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Bad request', 400)
+          ),
+        hintAfter: 'unknown'
+      }
     ])(
       'keeps the hint in step with the boot listing: $answer',
       async ({ hintBefore, respond, hintAfter }) => {
@@ -1551,6 +1587,61 @@ describe('useDeploymentPickStore', () => {
         expect(readDeploymentHint('ws-1')).toBe(hintAfter)
       }
     )
+
+    it.for<{ why: string; arrange: () => void; hintAfter: HintState }>([
+      {
+        why: 'this browser last booted on a deployment',
+        arrange: () => seedHint('deployment'),
+        hintAfter: 'deployment'
+      },
+      {
+        why: 'the page opened from a deployment link',
+        arrange: () =>
+          Object.defineProperty(window, 'location', {
+            value: {
+              reload,
+              origin: 'http://localhost',
+              search: '?deployment=dep-1'
+            },
+            writable: true,
+            configurable: true
+          }),
+        hintAfter: 'unknown'
+      }
+    ])(
+      'leaves the hint alone and still reports a transient failure when $why',
+      async ({ arrange, hintAfter }) => {
+        arrange()
+        const error = new WorkspaceApiError('Service unavailable', 503)
+        mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+
+        const boot = store.loadOnce()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+        await boot
+
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_deployment_listing'
+        })
+      }
+    )
+
+    it('replaces the Comfy Cloud hint a failure left once a listing answers', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('Service unavailable', 503)
+        )
+        .mockResolvedValueOnce(listing)
+      const store = useDeploymentPickStore()
+
+      await store.load()
+      expect(readDeploymentHint('ws-1')).toBe('cloud')
+      await store.load()
+
+      expect(readDeploymentHint('ws-1')).toBe('deployment')
+    })
 
     it('keeps the hint per workspace', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
