@@ -2220,24 +2220,19 @@ export class ComfyApp implements IComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       return await this.enqueueGraphLoad(async () => {
-        const outcome = await importA1111(
-          this.rootGraph,
-          parameters,
-          async () => {
-            try {
-              // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
-            } finally {
-              useMissingNodesErrorStore().setMissingNodeTypes([])
-            }
-            const graph = this.rootGraphForLoad(null)
-            this.activateRootGraph(graph)
-            return graph
+        let graph = this.rootGraph
+        const outcome = await importA1111(graph, parameters, async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
           }
-        )
+          graph = this.rootGraphForLoad(null)
+          this.activateRootGraph(graph)
+          return graph
+        })
         switch (outcome) {
           case 'core-nodes-unavailable':
             useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2267,8 +2262,8 @@ export class ComfyApp implements IComfyApp {
         )
         await useWorkflowService().afterLoadNewGraph(
           fileName,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          this.rootGraph
+          graph.serialize() as unknown as ComfyWorkflowJSON,
+          graph
         )
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
@@ -2418,7 +2413,8 @@ export class ComfyApp implements IComfyApp {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    this.activateRootGraph(this.rootGraphForLoad(null))
+    const graph = this.rootGraphForLoad(null)
+    this.activateRootGraph(graph)
     withGraphIntentSource('load', () => this.clean())
 
     const ids = Object.keys(apiData)
@@ -2514,7 +2510,7 @@ export class ComfyApp implements IComfyApp {
         }
         node.id = nodeId
         node.title = data._meta?.title ?? node.title
-        app.rootGraph.add(node)
+        graph.add(node)
         if (placeholderEntry && node.last_serialization) {
           node.last_serialization.id = node.id
           placeholderEntry.nodeId = String(node.id)
@@ -2525,7 +2521,7 @@ export class ComfyApp implements IComfyApp {
       const processNodeInputs = (id: string) => {
         const data = apiData[id]
         const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
-        const node = app.rootGraph.getNodeById(currentNodeId)
+        const node = graph.getNodeById(currentNodeId)
         if (!node) return
         const targetNode = node
         const inputs = restoreDynamicGroupInputs(node, data.inputs)
@@ -2535,7 +2531,7 @@ export class ComfyApp implements IComfyApp {
           if (value instanceof Array) {
             function connectInput() {
               const [fromId, fromSlot] = value
-              const fromNode = app.rootGraph.getNodeById(
+              const fromNode = graph.getNodeById(
                 importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
               )
               if (!fromNode?.outputs[fromSlot]) return false
@@ -2606,13 +2602,13 @@ export class ComfyApp implements IComfyApp {
         if (remainingInputs.length === pendingInputs.length) break
         pendingInputs = remainingInputs
       }
-      for (const node of app.rootGraph.nodes) {
+      for (const node of graph.nodes) {
         if (!node.last_serialization) continue
         node.last_serialization.inputs = node.inputs.map((input, i) =>
           inputAsSerialisable(input, node, i)
         )
       }
-      app.rootGraph.arrange()
+      graph.arrange()
     })
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
@@ -2623,8 +2619,8 @@ export class ComfyApp implements IComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-      this.rootGraph
+      graph.serialize() as unknown as ComfyWorkflowJSON,
+      graph
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
