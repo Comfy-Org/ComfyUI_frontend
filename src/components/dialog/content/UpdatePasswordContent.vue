@@ -20,7 +20,6 @@ import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vu
 import Button from '@/components/ui/button/Button.vue'
 import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const { requestSignIn, onSuccess } = defineProps<{
   requestSignIn: () => Promise<boolean>
@@ -31,7 +30,7 @@ const updatePassword = useUpdatePassword(requestSignIn)
 const loading = ref(false)
 
 const { handleSubmit } = useForm({
-  validationSchema: toTypedSchema(updatePasswordSchema),
+  validationSchema: updatePasswordSchema,
   initialValues: { password: '', confirmPassword: '' }
 })
 

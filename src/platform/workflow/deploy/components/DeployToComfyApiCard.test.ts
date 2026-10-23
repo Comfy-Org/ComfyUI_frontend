@@ -2,15 +2,27 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
+import { useTelemetry } from '@/platform/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
+
+type InstallationDeployState = ReturnType<
+  typeof useInstallationDeploy
+>['state']['value']
+
+const BUILDER_URL =
+  'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
+
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
@@ -28,6 +40,17 @@ vi.mock(
     }
   }
 )
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useInstallationDeploy'),
+  () => ({ useInstallationDeploy: vi.fn() })
+)
+
+function fakeInstallationDeploy(state: InstallationDeployState) {
+  const installation = { state: ref(state), deploy: vi.fn(async () => {}) }
+  vi.mocked(useInstallationDeploy).mockReturnValueOnce(installation)
+  return installation
+}
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -153,6 +176,57 @@ describe('DeployToComfyApiCard', () => {
       screen.queryByTestId('deploy-to-comfy-api-video-placeholder')
     ).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
+  it('uploads the installation from Deploy on Platform and keeps the dialog open', async () => {
+    const { deploy } = fakeInstallationDeploy({ status: 'idle' })
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
+
+    expect(deploy).toHaveBeenCalledOnce()
+    expect(onDone).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'deploy_to_comfy_api_platform_clicked',
+      element_group: 'deploy_to_comfy_api'
+    })
+  })
+
+  it.for([
+    { gesture: 'click', keys: '[MouseLeft]' },
+    { gesture: 'middle-click', keys: '[MouseMiddle]' }
+  ])(
+    'links to the build wizard once the bundle is ready, and reports done on $gesture',
+    async ({ keys }) => {
+      fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
+      const { onDone, user } = renderCard({ deploysInstallation: true })
+      const link = screen.getByRole('link', { name: 'Open the build wizard' })
+
+      expect(link).toHaveAttribute('href', BUILDER_URL)
+      await user.pointer({ keys, target: link })
+
+      expect(onDone).toHaveBeenCalledOnce()
+      expect(
+        useTelemetry()?.trackUiButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({
+        button_id: 'deploy_to_comfy_api_builder_opened',
+        element_group: 'deploy_to_comfy_api'
+      })
+    }
+  )
+
+  it('keeps the dialog open when the build wizard link is right-clicked', async () => {
+    fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('link', { name: 'Open the build wizard' })
+    })
+
+    expect(onDone).not.toHaveBeenCalled()
   })
 
   it('shows the placeholder when there is no video', () => {

@@ -17,6 +17,7 @@ on:
       - 'apps/website/**'
       - 'packages/design-system/**'
       - 'packages/tailwind-utils/**'
+  workflow_dispatch:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
@@ -30,7 +31,10 @@ concurrency:
 
 jobs:
   deploy-preview:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.fork == false &&
+      vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -143,7 +147,10 @@ jobs:
           path: temp/vercel-preview
 
   deploy-production:
-    if: github.event_name == 'push'
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main' &&
+      vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     environment:
       name: website-production

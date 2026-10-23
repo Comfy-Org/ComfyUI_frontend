@@ -1,0 +1,71 @@
+<template>
+  <div class="z-8888 flex h-full flex-col justify-between bg-background">
+    <div class="flex flex-col">
+      <div
+        v-for="tool in allTools"
+        :key="tool"
+        data-testid="tool-button"
+        :data-tool="tool"
+        :class="
+          cn(
+            'maskEditor_toolPanelContainer hover:bg-accent',
+            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+          )
+        "
+        @click="onToolSelect(tool)"
+      >
+        <div class="flex items-center justify-center">
+          <MaskEditorToolIcon :tool="tool" />
+        </div>
+        <div class="maskEditor_toolPanelIndicator"></div>
+      </div>
+    </div>
+
+    <div
+      class="mb-2 flex cursor-pointer flex-col items-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-accent"
+      :title="t('maskEditor.clickToResetZoom')"
+      @click="onResetZoom"
+    >
+      <span data-testid="zoom-percentage" class="text-sm">{{ zoomText }}</span>
+      <span data-testid="zoom-dimensions" class="text-xs">{{
+        dimensionsText
+      }}</span>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import MaskEditorToolIcon from '@/renderer/extensions/maskEditor/components/MaskEditorToolIcon.vue'
+import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
+import type { Tools } from '@comfyorg/mask-editor/types'
+import { allTools } from '@comfyorg/mask-editor/types'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+
+const { toolManager } = defineProps<{
+  toolManager: ReturnType<typeof useToolManager>
+}>()
+
+const { t } = useI18n()
+const store = useMaskEditorStore()
+
+const onToolSelect = (tool: Tools) => {
+  toolManager.switchTool(tool)
+}
+
+const currentTool = computed(() => store.currentTool)
+
+const zoomText = computed(() => `${Math.round(store.displayZoomRatio * 100)}%`)
+const dimensionsText = computed(() => {
+  const img = store.image
+  return img ? `${img.width}x${img.height}` : ' '
+})
+
+const onResetZoom = () => {
+  store.resetZoom()
+}
+</script>

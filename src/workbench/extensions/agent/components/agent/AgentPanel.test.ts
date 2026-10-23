@@ -545,6 +545,29 @@ describe('AgentPanel', () => {
     )
   })
 
+  it('prioritizes an empty-canvas correction over target availability', () => {
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        canvasEmptyAfterTurn: true,
+        targetUnavailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.canvasIsEmptyAfterTurn')
+    )
+    expect(screen.getByRole('note')).not.toHaveTextContent(
+      i18n.global.t('agent.targetWorkflowUnavailable')
+    )
+  })
+
   it('groups chat options with the title and separates history navigation', () => {
     const title = 'A comfortably short title'
     render(AgentPanel, {

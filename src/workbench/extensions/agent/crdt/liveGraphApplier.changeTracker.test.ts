@@ -419,8 +419,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
       getGraph: () => graph,
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })
@@ -670,8 +672,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
       getGraph: () => graph,
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })

@@ -327,7 +327,6 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
 
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.clearMocks()
-    await comfyPage.canvasOps.resetView()
   })
 
   test('updates an existing loader without creating another node', async ({

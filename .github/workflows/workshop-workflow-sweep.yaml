@@ -26,7 +26,7 @@ concurrency:
 jobs:
   sweep:
     name: Published workflow pages
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main' && vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     environment: workshop-prod
     timeout-minutes: 180
