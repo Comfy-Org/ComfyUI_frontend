@@ -13,7 +13,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 const ROOT_GRAPH_ID = toRootGraphId('root-uuid')
@@ -158,7 +158,9 @@ describe('a human link into a widget input the agent-built document lacks', () =
         enqueue: (ops) => minted.push(...ops),
         getGraph: () => rootGraph,
         boundRootGraphId: () => ROOT_GRAPH_ID,
-        docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs')
+        docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+        docWidgetValue: (id, widgetName) =>
+          readDocWidgetValue(doc, String(id), widgetName)
       })
       onTestFinished(() => port.detach())
 
@@ -220,7 +222,9 @@ describe('a human link into a widget input the agent-built document lacks', () =
       enqueue: (ops) => minted.push(...ops),
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,
-      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs')
+      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+      docWidgetValue: (id, widgetName) =>
+        readDocWidgetValue(doc, String(id), widgetName)
     })
     onTestFinished(() => port.detach())
     const docCapIndex = readDocSlotNames(
