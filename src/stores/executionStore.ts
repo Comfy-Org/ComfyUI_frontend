@@ -6,6 +6,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
@@ -508,10 +509,43 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) return
+    if (!belongsToActiveWorkflow(jobId)) {
+      reportAmbiguousExecutionStartRejection(jobId)
+      return
+    }
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+  }
+
+  /**
+   * PM-2219: reports say the toolbar Stop button stays disabled while an
+   * agent-started run is visibly active, but only via the agent — not via
+   * the Run button. `belongsToActiveWorkflow` admits a job with no known
+   * owning workflow only when no other job already holds `activeJobId`.
+   * The owner is unknown exactly when this client never called `storeJob`
+   * for the job — e.g. it was queued by another client, or by a tool that
+   * posts to the queue directly instead of going through this frontend's
+   * own queuePrompt. When that path rejects a job, this reports whether the
+   * job genuinely had no known owner (the candidate root cause) so real
+   * occurrences can confirm or rule it out.
+   */
+  function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
+    if (jobIdToWorkflowInstanceId.get(jobId)) return // Known background job.
+    reportError(
+      new Error('execution_start rejected for a job with no known owner'),
+      {
+        surface: 'graph',
+        errorType: 'execution_start_unowned_job_rejected',
+        level: 'warning',
+        context: {
+          jobId,
+          activeJobId: activeJobId.value,
+          hasOwnWorkflowRecord: !!queuedJobs.value[jobId]?.workflow,
+          activeWorkflowInstanceId: workflowStore.activeWorkflow?.instanceId
+        }
+      }
+    )
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
