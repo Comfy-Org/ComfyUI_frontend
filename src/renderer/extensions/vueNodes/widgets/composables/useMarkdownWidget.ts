@@ -97,17 +97,17 @@ function addMarkdownWidget(
     if (editor && !editor.isDestroyed) editor.destroy()
   })
 
-  void import('./markdownEditor').then(
-    ({ createMarkdownEditor }) => {
+  void import('./markdownEditor')
+    .then(({ createMarkdownEditor }) => {
       if (signal.aborted) return
       editor = createMarkdownEditor(inputEl, markdown)
-    },
-    (error: unknown) =>
+    })
+    .catch((error: unknown) =>
       reportError(error, {
         errorType: 'error_loading_markdown_editor',
         surface: 'platform'
       })
-  )
+    )
 
   return widget
 }
