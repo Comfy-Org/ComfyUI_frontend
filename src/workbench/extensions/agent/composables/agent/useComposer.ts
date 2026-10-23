@@ -21,15 +21,11 @@ export function useComposer(options: UseComposerOptions) {
     storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
-  const hasContent = computed(
-    () =>
-      draft.value.trim().length > 0 ||
-      prompt.value.references.length > 0 ||
-      attachments.value.length > 0
-  )
   const canSend = computed(
     () =>
-      hasContent.value &&
+      (draft.value.trim().length > 0 ||
+        prompt.value.references.length > 0 ||
+        attachments.value.length > 0) &&
       !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
@@ -102,7 +98,6 @@ export function useComposer(options: UseComposerOptions) {
     removeReference: store.removeReference,
     workflowReferences,
     canSend,
-    hasContent,
     submit,
     insert,
     setText: store.setText,

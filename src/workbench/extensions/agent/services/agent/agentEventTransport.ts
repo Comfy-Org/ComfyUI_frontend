@@ -484,7 +484,7 @@ export function createAgentEventTransport(
   }
 
   function markAsks(mark: AskMark): void {
-    const { parts } = markAskParts(message.parts, mark)
+    const parts = markAskParts(message.parts, mark)
     if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))

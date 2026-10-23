@@ -432,43 +432,33 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    function markActiveAsks(mark: AskMark): string[] {
+    function markActiveAsks(mark: AskMark): void {
       const slot = activeSlot.value
-      if (!slot) return []
-      const { parts, askIds } = markAskParts(
-        messages.value[slot.index].parts,
-        mark
-      )
-      if (askIds.length === 0) return askIds
+      if (!slot || mark.askIds.length === 0) return
       messages.value = messages.value.map((message, index) =>
-        index === slot.index ? { ...message, parts } : message
+        index === slot.index
+          ? { ...message, parts: markAskParts(message.parts, mark) }
+          : message
       )
       slot.transport.markAsks(mark)
-      return askIds
     }
 
     function dismissActiveAsks(): string[] {
       const answering = answeringAskIds.value
-      return markActiveAsks({
-        dismissed: true,
-        matches: (part) => isDismissibleAskPart(part, answering)
-      })
+      const askIds =
+        activeMessage.value?.parts.flatMap((part) =>
+          isDismissibleAskPart(part, answering) ? [part.askId] : []
+        ) ?? []
+      markActiveAsks({ askIds, dismissed: true })
+      return askIds
     }
 
     function restoreActiveAsks(askIds: readonly string[]): void {
+      const retired = retiredAsksFor()
       markActiveAsks({
-        dismissed: false,
-        matches: (part) =>
-          part.dismissed === true && askIds.includes(part.askId)
+        askIds: askIds.filter((askId) => !retired.has(askId)),
+        dismissed: false
       })
-    }
-
-    function isActiveAskPending(askIds: readonly string[]): boolean {
-      return (
-        activeMessage.value?.parts.some(
-          (part) => isPendingAskPart(part) && askIds.includes(part.askId)
-        ) ?? false
-      )
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1315,7 +1305,7 @@ export const useAgentConversationStore = defineStore(
       retireAsk,
       dismissActiveAsks,
       restoreActiveAsks,
-      isActiveAskPending,
+      activeTurnOwnsAsk,
       startTurn,
       ingest,
       setCanvasSyncGate,

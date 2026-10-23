@@ -2863,12 +2863,6 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     }
 
-    function runCards() {
-      return useAgentConversationStore().messages.flatMap((message) =>
-        message.parts.filter((part) => part.type === 'runApproval')
-      )
-    }
-
     function lastNotice(session: ReturnType<typeof useAgentSession>) {
       const last = session.entries.value.at(-1)
       const parts = last && 'parts' in last ? last.parts : []
@@ -2893,9 +2887,8 @@ describe('useAgentSession (v1 composition root)', () => {
         false
       )
 
-      expect(runCards()).toEqual([
-        expect.not.objectContaining({ dismissed: true })
-      ])
+      expect(runCard()).toBeDefined()
+      expect(runCard()).not.toMatchObject({ dismissed: true })
       expect(session.sendDismissesAsk.value).toBe(false)
       expect(lastNotice(session)).toBe('Answer the card or press Stop first.')
       await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
@@ -2953,7 +2946,7 @@ describe('useAgentSession (v1 composition root)', () => {
         false
       )
 
-      expect(runCards()).toEqual([expect.objectContaining({ dismissed: true })])
+      expect(runCard()).toMatchObject({ dismissed: true })
       expect(lastNotice(session)).toBe(
         'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
       )
@@ -2965,6 +2958,11 @@ describe('useAgentSession (v1 composition root)', () => {
       {
         name: 'it is out of credits',
         refusal: () => admissionError('no_funds', 'Out of credits')
+      },
+      {
+        name: 'its credits are unavailable',
+        refusal: () =>
+          admissionError('funds_unavailable', 'Credits are unavailable', 30)
       },
       {
         name: 'it rejects an attachment',
@@ -2992,9 +2990,7 @@ describe('useAgentSession (v1 composition root)', () => {
           false
         )
 
-        expect(runCards()).toEqual([
-          expect.objectContaining({ dismissed: false })
-        ])
+        expect(runCard()).toMatchObject({ dismissed: false })
         expect(session.sendDismissesAsk.value).toBe(true)
       }
     )
@@ -3018,31 +3014,27 @@ describe('useAgentSession (v1 composition root)', () => {
         false
       )
 
-      expect(runCards()).toEqual([expect.objectContaining({ dismissed: true })])
+      expect(runCard()).toMatchObject({ dismissed: true })
     })
 
-    it('ignores a refusal that lands after the user left the chat', async () => {
-      const { source, emit, status } = fakeEvents()
-      let refuse = () => {}
-      const postMessage = vi
-        .fn<
-          (
-            threadId: string,
-            req: PostMessageInput
-          ) => Promise<AgentTurnAccepted>
-        >()
+    function heldSend() {
+      let refuse = (_error: Error) => {}
+      const held = new Promise<AgentTurnAccepted>((_resolve, reject) => {
+        refuse = reject
+      })
+      const postMessage = refusedSend()
+      postMessage.mockReset()
+      postMessage
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-        .mockImplementationOnce(
-          () =>
-            new Promise((_resolve, reject) => {
-              refuse = () => reject(turnInProgress())
-            })
-        )
+        .mockReturnValueOnce(held)
+      return { postMessage, refuse: (error: Error) => refuse(error) }
+    }
+
+    it('does not reopen a card that was answered while the send was refused', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
       const session = useAgentSession({
-        rest: fakeRest({
-          postMessage,
-          getMessages: waitingTurn('turn-1:call-1')
-        }),
+        rest: fakeRest({ postMessage }),
         events: source
       })
       session.start()
@@ -3052,12 +3044,37 @@ describe('useAgentSession (v1 composition root)', () => {
 
       const sent = sendOverCard(session, 'actually, do this instead')
       await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
-      session.newChat()
-      refuse()
-      expect(await sent).toBe(false)
-      await session.loadThread('th-1')
-      emit(runApproval('msg-1', 'turn-1:call-2'))
+      emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
+      refuse(
+        new AgentApiError('a.pdf is not a file type the agent accepts', 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['a.pdf'],
+          rejected_count: 1
+        })
+      )
 
+      expect(await sent).toBe(false)
+      expect(runCard()).toMatchObject({ dismissed: true })
+    })
+
+    it('keeps Send over cards on when a card is back open but the send fails for another reason', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      const sent = sendOverCard(session, 'actually, do this instead')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+      useAgentConversationStore().restoreActiveAsks(['turn-1:call-1'])
+      refuse(admissionError('no_funds', 'Out of credits'))
+
+      expect(await sent).toBe(false)
       expect(session.sendDismissesAsk.value).toBe(true)
     })
 
@@ -3079,7 +3096,7 @@ describe('useAgentSession (v1 composition root)', () => {
         false
       )
 
-      expect(runCards()).toEqual([])
+      expect(runCard()).toBeUndefined()
       expect(lastNotice(session)).toBe(
         'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
       )

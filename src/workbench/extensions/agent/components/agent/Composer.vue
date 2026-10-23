@@ -136,8 +136,7 @@ const composer = useComposer({
 const turnRunning = computed(() => streaming || submitting)
 const running = computed(
   () =>
-    submitting ||
-    (streaming && !(sendDismissesAsk && composer.hasContent.value))
+    submitting || (streaming && !(sendDismissesAsk && composer.canSend.value))
 )
 
 const editorRef =

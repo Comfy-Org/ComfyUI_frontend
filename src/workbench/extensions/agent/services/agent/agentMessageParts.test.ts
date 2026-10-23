@@ -363,20 +363,18 @@ describe('markAskParts', () => {
     }
     const inFlight: MessagePart = { ...question, askId: 'f' }
 
-    expect(
-      markAskParts([question, deletion, answered, inFlight], {
-        dismissed: true,
-        matches: (part) => isDismissibleAskPart(part, new Set(['f']))
-      })
-    ).toEqual({
-      parts: [
-        { ...question, dismissed: true },
-        { ...deletion, dismissed: true },
-        answered,
-        inFlight
-      ],
-      askIds: ['q', 'd']
-    })
+    const parts = [question, deletion, answered, inFlight]
+    const askIds = parts.flatMap((part) =>
+      isDismissibleAskPart(part, new Set(['f'])) ? [part.askId] : []
+    )
+
+    expect(askIds).toEqual(['q', 'd'])
+    expect(markAskParts(parts, { askIds, dismissed: true })).toEqual([
+      { ...question, dismissed: true },
+      { ...deletion, dismissed: true },
+      answered,
+      inFlight
+    ])
   })
 
   it('reopens only the matching dismissed cards, and leaves the parts alone when none match', () => {
@@ -385,18 +383,11 @@ describe('markAskParts', () => {
     const other: MessagePart = { ...question, askId: 'o', dismissed: true }
     const parts = [{ ...question, dismissed: true }, other]
 
-    expect(
-      markAskParts(parts, {
-        dismissed: false,
-        matches: (part) => part.askId === 'q'
-      })
-    ).toEqual({
-      parts: [{ ...question, dismissed: false }, other],
-      askIds: ['q']
-    })
-    expect(
-      markAskParts(parts, { dismissed: false, matches: () => false }).parts
-    ).toBe(parts)
+    expect(markAskParts(parts, { askIds: ['q'], dismissed: false })).toEqual([
+      { ...question, dismissed: false },
+      other
+    ])
+    expect(markAskParts(parts, { askIds: [], dismissed: false })).toBe(parts)
   })
 })
 

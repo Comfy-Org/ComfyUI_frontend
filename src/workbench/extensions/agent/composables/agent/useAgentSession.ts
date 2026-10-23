@@ -1209,7 +1209,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
       return
-    if (conversationStore.isActiveAskPending(dismissedAskIds)) {
+    if (
+      parseTurnInProgress(error) !== undefined &&
+      dismissedAskIds.some(conversationStore.activeTurnOwnsAsk)
+    ) {
       askSendRefused.value = true
       conversationStore.recordFailedSend(
         nextLocalErrorId(),

@@ -431,7 +431,7 @@ describe('Composer', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows a disabled Send, not Stop, while a card waits on an uploading attachment', async () => {
+  it('keeps Stop while a card waits on an uploading attachment', async () => {
     useAgentComposerStore().addAttachment({
       id: 'attachment-1',
       name: 'cat.png',
@@ -439,10 +439,8 @@ describe('Composer', () => {
       uploading: true
     })
     const { emitted } = mount({ streaming: true, sendDismissesAsk: true })
-    const send = screen.getByRole('button', { name: 'Send' })
-    expect(send).toBeDisabled()
-    await userEvent.click(send)
-    expect(emitted().stop).toBeUndefined()
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(emitted().stop).toEqual([['button']])
     expect(emitted().send).toBeUndefined()
   })
 
