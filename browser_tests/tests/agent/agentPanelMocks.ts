@@ -551,6 +551,7 @@ async function mockAgentBoot(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: '2100-01-01T00:00:00.000Z',
+        user_id: 'uid-1',
         workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
         role: 'owner',
         permissions: ['owner:*']
