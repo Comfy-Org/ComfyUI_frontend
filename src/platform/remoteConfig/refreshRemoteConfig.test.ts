@@ -386,7 +386,11 @@ describe('refreshRemoteConfig', () => {
         expect(signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(1)
         expect(signal?.aborted).toBe(true)
-        await refresh
+        await expect(refresh).resolves.toEqual({
+          kind: 'failed',
+          transient: false,
+          status: null
+        })
         expect(remoteConfigState.value).toBe('error')
       } finally {
         vi.useRealTimers()
@@ -407,7 +411,10 @@ describe('refreshRemoteConfig', () => {
 
   describe('outcome', () => {
     it.for([
-      { status: 503, transient: true },
+      { status: 502, transient: true },
+      { status: 504, transient: true },
+      { status: 503, transient: false },
+      { status: 500, transient: false },
       { status: 429, transient: false },
       { status: 404, transient: false },
       { status: 401, transient: false }

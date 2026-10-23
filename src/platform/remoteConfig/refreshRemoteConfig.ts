@@ -39,7 +39,7 @@ const SUPERSEDED: RemoteConfigRefreshOutcome = { kind: 'superseded' }
 const MAX_TIMEOUT_MS = 2 ** 31 - 1
 
 function isTransientStatus(status: number): boolean {
-  return status >= 500 || status === 408
+  return status === 502 || status === 504
 }
 
 let refreshGeneration = 0
@@ -224,7 +224,11 @@ export async function refreshRemoteConfig(
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) abort()
 
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+  let timedOut = false
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
 
   try {
     const { response, authenticated } = await fetchRemoteConfig(
@@ -263,7 +267,7 @@ export async function refreshRemoteConfig(
     if (generation !== refreshGeneration) return SUPERSEDED
     if (signal?.aborted) return SUPERSEDED
     commitRemoteConfigException(error, useAuth)
-    return { kind: 'failed', transient: true, status: null }
+    return { kind: 'failed', transient: !timedOut, status: null }
   } finally {
     if (authenticatedLoadingGeneration === generation) {
       authenticatedRemoteConfigState.value = previousAuthenticatedState

@@ -598,36 +598,26 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
     })
 
-    it('retries a timed-out read after a short delay within the remaining budget, then loads', async () => {
+    it('does not retry a read that timed out', async () => {
       remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig
-        .mockImplementationOnce(
-          () =>
-            new Promise((resolve) =>
-              setTimeout(() => resolve(TRANSIENT), 12_000)
+      mockRefreshRemoteConfig.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () => resolve({ kind: 'failed', transient: false, status: null }),
+              12_000
             )
-        )
-        .mockImplementationOnce(async () => {
-          remoteConfigState.value = 'authenticated'
-          return LOADED
-        })
+          )
+      )
 
       mountComponent()
-      await vi.advanceTimersByTimeAsync(12_000)
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
-
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(14_000)
       await flushPromises()
 
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
-      const { timeoutMs } = mockRefreshRemoteConfig.mock.calls[1][0]
-      expect(timeoutMs).toBeGreaterThanOrEqual(7_000)
-      expect(timeoutMs).toBeLessThanOrEqual(7_500)
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
       expect(
-        screen.queryByText("Couldn't load your workspace")
-      ).not.toBeInTheDocument()
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
