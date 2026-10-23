@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -333,6 +333,10 @@ describe('the invariant channel', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)
+    // Module-level state, so the restore cannot sit after the assertions: a
+    // failure there would leave a stale reporter installed and hide itself
+    // behind the secondary failures it causes in later tests.
+    onTestFinished(() => setAssertReporter(null))
     const node = nodeWith('Shrinking', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'extra', 'b', () => {})
@@ -353,7 +357,6 @@ describe('the invariant channel', () => {
       'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
     )
     expect(message).not.toContain('Shrinking')
-    setAssertReporter(null)
   })
 })
 
@@ -366,13 +369,12 @@ describe('invariant 5 — the undeclared-form production signal', () => {
       n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
       n.addWidget('number', 'mode.steps', 4, () => {})
     }
+    const values = { mode: 'a', 'mode.steps': 4 }
+    const first = nodeWith('Dynamic', build)
+    const repeat = nodeWith('Dynamic', build)
 
-    for (const node of [nodeWith('Dynamic', build), nodeWith('Dynamic', build)])
-      provenWidgetValuesForm(
-        node,
-        { mode: 'a', 'mode.steps': 4 },
-        serializedOf(node)
-      )
+    provenWidgetValuesForm(first, values, serializedOf(first))
+    provenWidgetValuesForm(repeat, values, serializedOf(repeat))
 
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
@@ -408,17 +410,18 @@ describe('invariant 5 — the undeclared-form production signal', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
-    const dynamic = () =>
-      nodeWith('Dynamic', (n) => {
-        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-      })
+    const dynamic = (n: LGraphNode) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
+    }
+    const first = nodeWith('Dynamic', dynamic)
+    const repeat = nodeWith('Dynamic', dynamic)
     const duplicated = detachedNodeWith('Duplicated', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'prompt', 'b', () => {})
     })
 
-    for (const node of [dynamic(), dynamic()])
-      provenWidgetValuesForm(node, { mode: 'a' }, serializedOf(node))
+    provenWidgetValuesForm(first, { mode: 'a' }, serializedOf(first))
+    provenWidgetValuesForm(repeat, { mode: 'a' }, serializedOf(repeat))
     provenWidgetValuesForm(
       duplicated,
       { prompt: 'b' },
