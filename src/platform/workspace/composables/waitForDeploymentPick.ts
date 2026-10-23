@@ -15,30 +15,20 @@ function bootHint(): DeploymentHint {
   return readDeploymentHint(useTeamWorkspaceStore().workspaceId)
 }
 
-/**
- * Whether this page may boot on a deployment: what the boot listing said
- * once it answered. Before that, false only when this browser's hint for
- * the active workspace says Comfy Cloud, confirmed, and no deployment link
- * opened the page; a hint that says a deployment, an unconfirmed Comfy
- * Cloud hint, or no hint at all, may be one.
- */
+/** Whether this page may boot on a deployment: the boot listing's answer, else false only for a confirmed Comfy Cloud hint. */
 export function couldBootOnDeployment(): boolean {
   const { bootDeployment } = useDeploymentPickStore()
   if (bootDeployment !== undefined) return bootDeployment !== null
   return bootHint() !== 'cloud'
 }
 
-/** How long the boot waits for the listing: 45 s when a hint or link names a deployment, none when the hint is an unconfirmed Comfy Cloud, 5 s with no hint. */
 function listingWaitMs(hint: DeploymentHint): number {
   if (hint === 'deployment') return DEPLOYMENT_LISTING_BACKSTOP_MS
   if (hint === 'unconfirmed') return 0
   return DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
 }
 
-/**
- * Waits for the boot listing to say where this page runs, for `listingWaitMs`.
- * `onLateDeployment` runs when a listing that answers after that wait names a deployment, unless a hint or link named one.
- */
+/** Waits for the boot listing to say where this page runs; `onLateDeployment` runs if a late listing names a deployment. */
 export async function waitForDeploymentPick(
   onLateDeployment: () => void = () => {}
 ): Promise<boolean> {

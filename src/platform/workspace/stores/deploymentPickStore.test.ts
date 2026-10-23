@@ -119,6 +119,33 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('saves the one report for the active workspace when a left workspace fails', async () => {
+    const staleError = new WorkspaceApiError('Service unavailable', 503)
+    let reject: (err: unknown) => void = () => {}
+    mockWorkspaceApi.listDeployments.mockReturnValueOnce(
+      new Promise<WorkspaceDeploymentList>((_, r) => {
+        reject = r
+      })
+    )
+    const store = useDeploymentPickStore()
+    const stale = store.load()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    reject(staleError)
+    await stale
+
+    expect(reportError).not.toHaveBeenCalled()
+
+    const error = new WorkspaceApiError('Bad gateway', 502)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    await store.load()
+    await store.load()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
   it.for([
     new WorkspaceApiError('Service unavailable', 503),
     new WorkspaceApiError('Gateway timeout', 504),

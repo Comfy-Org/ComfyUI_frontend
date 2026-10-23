@@ -170,7 +170,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   let latestRequest = 0
   let lastApplied = 0
-  /** Set once this page has reported a failed listing: one report per page. */
   let reportedLoadFailure = false
 
   function load(): Promise<void> {
@@ -218,13 +217,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     rememberBootTarget(workspaceId)
   }
 
-  /**
-   * A listing that failed with no definite answer, in a browser with no
-   * hint and no deployment link: nothing says it runs on a deployment, so
-   * its next boot runs on Comfy Cloud at once rather than wait on a listing
-   * that keeps failing, unconfirmed, so a listing that answers late with a
-   * deployment still says so. A listing that answers records what it says.
-   */
   function noteLoadFailure(workspaceId: string, err: unknown) {
     if (
       isTransient(err) &&
@@ -233,7 +225,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     ) {
       setUnconfirmedCloudHint(workspaceId)
     }
-    if (reportedLoadFailure) return
+    if (reportedLoadFailure || workspaceStore.workspaceId !== workspaceId)
+      return
     reportedLoadFailure = true
     reportError(err, {
       surface: 'workspace',
@@ -554,13 +547,6 @@ function isTransient(err: unknown): boolean {
   )
 }
 
-/**
- * A 403 means the account is outside the rollout, and a 404 that this
- * ingest has no deployment routes (or no such workspace): either way the
- * browser runs on Comfy Cloud, as it would without this feature, so neither
- * is reported. Any other failure goes to `onFailure` and hides the switcher
- * unless a listing is already shown.
- */
 function loadFailure(
   err: unknown,
   onFailure: (err: unknown) => void
