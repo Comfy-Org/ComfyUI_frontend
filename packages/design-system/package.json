@@ -49,7 +49,6 @@
   "scripts": {
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
-    "lint": "vitest run src/css/icons.test.ts",
     "test": "vitest run",
     "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
     "build": "tsc -b tsconfig.declarations.json",
