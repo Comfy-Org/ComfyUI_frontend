@@ -326,12 +326,7 @@ function measureFormAgreement(
 async function resolveDefInputs(): Promise<DefInputs> {
   const { useNodeDefStore } = await import('@/stores/nodeDefStore')
   const defStore = useNodeDefStore()
-  return (node) =>
-    (
-      defStore.fromLGraphNode(node) as {
-        inputs?: Record<string, { type?: unknown }>
-      } | null
-    )?.inputs ?? null
+  return (node) => defStore.fromLGraphNode(node)?.inputs ?? null
 }
 
 function recordFormAgreement(
