@@ -1,0 +1,86 @@
+<template>
+  <div class="flex items-center justify-between pt-3 pb-6">
+    <div class="flex gap-2">
+      <Button
+        v-if="showUsageActivity"
+        variant="muted-textonly"
+        @click="handleFullUsageActivity"
+      >
+        <i class="pi pi-external-link text-xs text-muted-foreground" />
+        {{ $t('subscription.fullUsageActivity') }}
+      </Button>
+      <Button
+        v-if="showPlansLink"
+        variant="muted-textonly"
+        @click="$emit('viewPlans')"
+      >
+        <i class="pi pi-external-link text-xs text-muted-foreground" />
+        {{ $t('subscription.plansAndPricing') }}
+      </Button>
+      <Button variant="muted-textonly" @click="handleOpenPartnerNodesInfo">
+        <i class="pi pi-question-circle text-xs text-muted-foreground" />
+        {{ $t('subscription.partnerNodesPricingTable') }}
+      </Button>
+      <Button
+        variant="muted-textonly"
+        :loading="isLoadingSupport"
+        @click="handleMessageSupport"
+      >
+        <i class="pi pi-comment text-xs text-muted-foreground" />
+        {{ $t('subscription.messageSupport') }}
+      </Button>
+    </div>
+
+    <Button
+      v-if="!isCloud && showInvoiceHistory"
+      variant="muted-textonly"
+      @click="handleInvoiceHistory"
+    >
+      {{ $t('subscription.invoiceHistory') }}
+      <i class="pi pi-external-link text-xs text-muted-foreground" />
+    </Button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
+
+const {
+  showInvoiceHistory = true,
+  showUsageActivity = true,
+  showPlansLink = false
+} = defineProps<{
+  showInvoiceHistory?: boolean
+  showUsageActivity?: boolean
+  showPlansLink?: boolean
+}>()
+
+defineEmits<{ viewPlans: [] }>()
+
+const { buildDocsUrl, docsPaths } = useExternalLink()
+
+const { manageSubscription } = useBillingContext()
+
+const { isLoadingSupport, handleMessageSupport } = useSubscriptionActions()
+
+async function handleInvoiceHistory() {
+  if (!showInvoiceHistory) return
+  await manageSubscription()
+}
+
+function handleFullUsageActivity() {
+  window.open(platformLink('/profile/usage'), '_blank', 'noopener')
+}
+
+function handleOpenPartnerNodesInfo() {
+  window.open(
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    '_blank'
+  )
+}
+</script>

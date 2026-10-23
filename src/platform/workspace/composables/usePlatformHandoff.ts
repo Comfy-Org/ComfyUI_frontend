@@ -3,7 +3,7 @@ import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import { createJourneyId } from '@/platform/workspace/utils/checkoutJourney'
+import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 /** A platform link that carries one journey id and reports the click with it. */

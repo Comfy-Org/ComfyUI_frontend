@@ -1,7 +1,7 @@
 {
   "id": "cloud",
   "capability": "Cloud distribution",
-  "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, subscription plans and checkout, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, subscription, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
+  "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
   "modules": [
     {
       "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
@@ -12,16 +12,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/dialog/content/subscription/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/topbar/CloudBadge.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/config/subscriptionPricesConfig.ts",
-      "role": "domain"
     },
     {
       "path": "src/extensions/core/cloudBadges.ts",
@@ -168,46 +160,6 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/cloud/subscription/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/subscription/constants/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/checkoutAttributionLoader.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/paymentReturnUrl.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/distribution/**",
       "role": "domain"
     },
@@ -251,19 +203,6 @@
         "src/platform/cloud/oauth/oauthApi.test.ts",
         "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
         "src/platform/cloud/oauth/OAuthConsentView.test.ts"
-      ]
-    },
-    {
-      "name": "Subscription plans, checkout, and cancellation follow tier policy",
-      "checks": [
-        "src/platform/cloud/subscription/constants/tierPricing.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionTierRank.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionCheckoutTracker.test.ts",
-        "src/platform/cloud/subscription/utils/subscriptionCheckoutUtil.test.ts",
-        "src/platform/cloud/subscription/utils/retentionOffer.test.ts",
-        "src/platform/cloud/subscription/composables/useSubscription.test.ts",
-        "src/platform/cloud/subscription/launchCancellationFlow.test.ts",
-        "src/components/dialog/content/subscription/CancelSubscriptionDialogContent.test.ts"
       ]
     },
     {
