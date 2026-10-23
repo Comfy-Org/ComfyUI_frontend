@@ -159,7 +159,8 @@ const modelBoxes = (c: Captured) => c.modelValue.value
 
 function setup(
   initial: BoundingBox[] = [],
-  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'> = { name: 'bboxes' }
+  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'> = { name: 'bboxes' },
+  maxBoxes?: number
 ) {
   let captured: Captured | undefined
   const Harness = defineComponent({
@@ -171,7 +172,8 @@ function setup(
         canvasEl,
         inlineEditorEl,
         modelValue,
-        widget
+        widget,
+        maxBoxes
       })
       captured = { canvasEl, modelValue, ...api }
       return () => h('div')
@@ -823,6 +825,91 @@ describe('useBoundingBoxes hover cursor', () => {
     c.onCanvasPointerMove(pe(15, 15))
     await flush()
     expect(c.canvasCursor.value).toBe('pointer')
+  })
+})
+
+describe('useBoundingBoxes max boxes', () => {
+  const drawInEmptyArea = async (c: Captured) => {
+    c.onPointerDown(pe(70, 70))
+    c.onCanvasPointerMove(pe(95, 95))
+    c.onDocPointerUp(pe(95, 95))
+    await flush()
+  }
+
+  it.for([
+    { existing: 1, maxBoxes: 2, expected: 2 },
+    { existing: 1, maxBoxes: 1, expected: 1 },
+    { existing: 2, maxBoxes: 1, expected: 1 }
+  ])(
+    'leaves $expected boxes after drawing with $existing of $maxBoxes',
+    async ({ existing, maxBoxes, expected }) => {
+      const c = setup(
+        Array.from({ length: existing }, () => box()),
+        { name: 'bboxes' },
+        maxBoxes
+      )
+      await drawInEmptyArea(c)
+      expect(modelBoxes(c)).toHaveLength(expected)
+    }
+  )
+
+  it('still moves an existing box at the limit', async () => {
+    const c = setup([box()], { name: 'bboxes' }, 1)
+    c.onPointerDown(pe(30, 30))
+    c.onCanvasPointerMove(pe(40, 40))
+    c.onDocPointerUp(pe(40, 40))
+    await flush()
+    expect(modelBoxes(c)).toHaveLength(1)
+    expect(modelBoxes(c)[0].x).toBeGreaterThan(51)
+  })
+
+  it.for([
+    { maxBoxes: 1, x: 80, cursor: 'not-allowed' },
+    { maxBoxes: 1, x: 30, cursor: 'crosshair' },
+    { maxBoxes: 2, x: 80, cursor: 'crosshair' }
+  ])(
+    'shows a $cursor cursor at x=$x with a limit of $maxBoxes',
+    async ({ maxBoxes, x, cursor }) => {
+      const c = setup([box()], { name: 'bboxes' }, maxBoxes)
+      c.onCanvasPointerMove(pe(x, x))
+      await flush()
+      expect(c.canvasCursor.value).toBe(cursor)
+    }
+  )
+
+  const numbered = (count: number) =>
+    Array.from({ length: count }, (_, i) => box({ x: 16 * (i + 1) }))
+
+  it('keeps the first boxes of an over-limit value it loads', () => {
+    const c = setup(numbered(3), { name: 'bboxes' }, 2)
+    expect(modelBoxes(c).map((b) => b.x)).toEqual([16, 32])
+  })
+
+  it('keeps the first boxes of an over-limit value written to the model', async () => {
+    const c = setup([], { name: 'bboxes' }, 2)
+    c.modelValue.value = numbered(3)
+    await flush()
+    expect(c.regions.value).toHaveLength(2)
+    expect(modelBoxes(c).map((b) => b.x)).toEqual([16, 32])
+  })
+
+  it('keeps the first incoming boxes up to the limit', async () => {
+    const c = setup([], { name: 'bboxes' }, 2)
+    incomingBoxes.value = numbered(3)
+    await flush()
+    expect(modelBoxes(c).map((b) => b.x)).toEqual([16, 32])
+  })
+
+  it('remembers the full incoming value so the same upstream is not re-applied', async () => {
+    const c = setup([], { name: 'bboxes' }, 2)
+    const incoming = numbered(3)
+    incomingBoxes.value = incoming
+    await flush()
+    expect(lastIncomingOf(appState.node!)).toEqual(incoming)
+    c.deleteRegion(0)
+    incomingBoxes.value = [...incoming]
+    await flush()
+    expect(modelBoxes(c)).toHaveLength(1)
   })
 })
 

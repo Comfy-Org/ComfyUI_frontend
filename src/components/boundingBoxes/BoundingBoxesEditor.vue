@@ -10,19 +10,43 @@
         :to="`#${BOUNDING_BOXES_HEADER_ACTIONS_ID}`"
         :disabled="!fullscreen"
       >
-        <div :class="cn('flex items-center gap-1', layout.toolbar)">
+        <div
+          :class="
+            cn('flex items-center gap-1 @max-[20rem]:gap-0.5', layout.toolbar)
+          "
+        >
           <Button
             variant="textonly"
             size="unset"
             :aria-pressed="grid"
+            :aria-label="$t('boundingBoxes.grid')"
             :class="
-              cn('shrink-0 gap-1.5 rounded-md px-2 py-1', grid && 'bg-muted')
+              cn(
+                'shrink-0 gap-1.5 rounded-md px-2 py-1',
+                narrowButtonClass,
+                grid && 'bg-muted'
+              )
             "
             @click="grid = !grid"
           >
             <i class="icon-[lucide--grid-3x3]" />
-            <span>{{ $t('boundingBoxes.grid') }}</span>
+            <span :class="narrowHiddenClass">{{
+              $t('boundingBoxes.grid')
+            }}</span>
           </Button>
+          <span
+            v-if="maxBoxes !== undefined"
+            class="shrink-0 px-1 font-mono text-sm text-muted-foreground @max-[20rem]:px-0"
+            data-testid="bounding-boxes-count"
+            :aria-label="
+              $t('boundingBoxes.boxCount', {
+                count: regions.length,
+                max: maxBoxes
+              })
+            "
+          >
+            {{ regions.length }}/{{ maxBoxes }}
+          </span>
           <WidgetHistoryButtons
             class="ml-auto"
             :can-undo
@@ -33,11 +57,14 @@
           <Button
             variant="textonly"
             size="unset"
-            :class="actionBtnClass"
+            :aria-label="$t('boundingBoxes.clearAll')"
+            :class="cn(actionBtnClass, narrowButtonClass)"
             @click="clearAll"
           >
             <i class="icon-[lucide--trash-2]" />
-            <span>{{ $t('boundingBoxes.clearAll') }}</span>
+            <span :class="narrowHiddenClass">{{
+              $t('boundingBoxes.clearAll')
+            }}</span>
           </Button>
           <slot name="toolbar-end" />
         </div>
@@ -129,14 +156,15 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 
 const layouts = {
   inline: {
     root: 'widget-expands size-full flex-col gap-1',
-    stage: 'flex-col',
+    stage: '@container flex-col',
     toolbar:
-      'h-9 rounded-t-sm border border-b-0 border-node-border bg-input px-2',
+      'min-h-9 flex-wrap rounded-t-sm border border-b-0 border-node-border bg-input px-2',
     canvas: 'w-full rounded-b-sm border border-t-0 border-node-border'
   },
   fullscreen: {
@@ -147,6 +175,9 @@ const layouts = {
   }
 }
 
+const narrowButtonClass = '@max-[20rem]:px-1.5'
+const narrowHiddenClass = '@max-[20rem]:hidden'
+
 const actionBtnClass =
   'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-foreground outline-none transition-colors hover:bg-muted'
 
@@ -156,11 +187,12 @@ const {
   fullscreen = false
 } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widget: SimplifiedWidget<WidgetValue, IWidgetBoundingBoxesOptions>
   fullscreen?: boolean
 }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 const layout = fullscreen ? layouts.fullscreen : layouts.inline
+const maxBoxes = widget.options?.max_boxes
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
 const inlineEditorEl = useTemplateRef<HTMLTextAreaElement>('inlineEditorEl')
@@ -198,6 +230,7 @@ const {
   inlineEditorEl,
   modelValue,
   widget,
-  alwaysShowActive: fullscreen
+  alwaysShowActive: fullscreen,
+  maxBoxes
 })
 </script>
