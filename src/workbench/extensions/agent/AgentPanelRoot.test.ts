@@ -52,10 +52,10 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -238,7 +238,7 @@ vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
   () => ({
     useAccountPreconditionDialog: () => ({ open: openAccountPrecondition })
   })
@@ -271,8 +271,10 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 vi.mock(import('./crdt/devPanelLog'), { spy: true })
-vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+vi.mock(import('@/platform/billing/composables/useBillingContext'), {
+  spy: true
+})
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'), {
   spy: true
 })
 
@@ -297,6 +299,7 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
+import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
 const docOpMinterDeps = vi.hoisted(() => ({
@@ -6358,9 +6361,8 @@ describe('AgentPanelRoot lifecycle', () => {
     // PM-1575: the gate is reset to the always-safe default even though a
     // step three places ahead of it threw.
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'detach failed' }),
       expect.objectContaining({
@@ -6399,9 +6401,8 @@ describe('AgentPanelRoot lifecycle', () => {
     panel.unmount()
 
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
@@ -8407,6 +8408,185 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
   })
 
+  it('binds the session to the workflow its transcript restored', async () => {
+    const restored = addTab('workflows/restored.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-restored' })
+    })
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-restored',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-restored', name: 'restored' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
+    )
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('leaves the restored workflow unbound while its canvas holds edits the shared document may lack', async () => {
+    const restored = addTab('workflows/unsynced.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-unsynced' })
+    })
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-unsynced',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-unsynced', name: 'unsynced' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+    recordUnsyncedHumanOps('previous-panel', ['wf-unsynced'])
+
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
+      )
+      await screen.findAllByText('Earlier request')
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().activeId).toBe('th-1')
+      )
+      expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    } finally {
+      recordUnsyncedHumanOps('previous-panel', [])
+    }
+  })
+
+  it('binds the session to the workflow a history thread restored, not only a reload', async () => {
+    makeTab('wf-42')
+    const old = addTab('workflows/old.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-old' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-old', old.path)
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-history',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-old',
+        content: { text: 'Historical prompt' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-old', name: 'old' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-history',
+            title: 'Earlier chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+    await screen.findAllByText('Historical prompt')
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(old.path)
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.isDocBound()).toBe(true)
+    )
+    expect(workflowStore.activeWorkflow?.path).toBe(old.path)
+    expect(useToast().toasts).toHaveLength(0)
+  })
+
+  it('leaves the session unbound when its transcript restores nothing', async () => {
+    useAgentConversationStore().setThreadId('th-1')
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/messages')) return json(200, history)
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      return json(200, agentThreadList())
+    })
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await screen.findAllByText('Earlier request')
+    await nextTick()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {
@@ -9483,6 +9663,152 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
   })
+
+  it('marks a mismatched or switched-away canvas unavailable', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+
+    await renderAndSend('add a node')
+
+    const [gate] = setCanvasSyncGate.mock.calls.at(-1) ?? []
+    expect(gate?.('wf-other')).toBe('unavailable')
+
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(gate?.('wf-42')).toBe('unavailable')
+  })
+
+  it('clears an empty-canvas correction when the thread changes', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('inspect this canvas')
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-print-workflow',
+      tool_name: 'print_workflow',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).toBeVisible()
+
+    useAgentConversationStore().setThreadId('th-next')
+    await nextTick()
+
+    expect(
+      screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).not.toBeInTheDocument()
+  })
+
+  type ToolOutcomes = [string, 'success' | 'error'][]
+
+  function reportTools(tools: ToolOutcomes): void {
+    tools.forEach(([toolName, status], index) => {
+      dispatchApiEvent('agent_tool_call', {
+        tool_call_id: `call-${index}-${toolName}`,
+        tool_name: toolName,
+        status,
+        duration_ms: 90,
+        thread_id: 'th-1',
+        message_id: 'm-1'
+      })
+    })
+  }
+
+  it.for([
+    { name: 'a single clear', tools: [['clear_canvas', 'success']] },
+    {
+      name: 'an inspect then clear',
+      tools: [
+        ['print_workflow', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    },
+    {
+      name: 'an add then clear',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
+    'does not contradict an empty canvas after $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('empty the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.worked')
+        })
+      ).toBeVisible()
+      expect(
+        screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      name: 'content was added after a clear',
+      tools: [
+        ['clear_canvas', 'success'],
+        ['add_node', 'success']
+      ]
+    },
+    {
+      name: 'a clear after an add failed',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'error']
+      ]
+    },
+    {
+      name: 'nodes were added and one was deleted',
+      tools: [
+        ['add_node', 'success'],
+        ['add_node', 'success'],
+        ['delete_node', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: ToolOutcomes }[])(
+    'flags an empty canvas when $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('build on the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).toBeVisible()
+    }
+  )
 
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
     makeTab('wf-42')
