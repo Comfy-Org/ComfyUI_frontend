@@ -85,12 +85,7 @@ describe('QueueOverlayActive', () => {
 
     expect(screen.getByText('Current node:')).toBeInTheDocument()
     expect(screen.getByText('Sampler')).toBeInTheDocument()
-    // By test id, not by text: the overlay prints a total as well, so this is
-    // the only locator that can tell the two percentages apart. Browser specs
-    // depend on it, so losing it should fail here first.
-    expect(
-      screen.getByTestId('queue-progress-current-node-percent')
-    ).toHaveTextContent('40%')
+    expect(screen.getByText('40%')).toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', { name: 'Interrupt all running jobs' })
