@@ -145,6 +145,7 @@ export function widgetFormSuppressionTally(): WidgetFormSuppressionTally[] {
 /** Drops the accumulated tally. For tests and for a fresh corpus pass. */
 export function resetWidgetFormSuppressionTally(): void {
   tally.clear()
+  reported.clear()
 }
 
 function record(nodeType: string, reason: WidgetFormSuppression): void {
@@ -433,7 +434,8 @@ export function provenWidgetValuesForm(
 
   const nodeType = node.type
   record(nodeType, verdict.reason)
-  const first = firstReport(nodeType, verdict.reason)
+  const first =
+    !UNREPORTED.has(verdict.reason) && firstReport(nodeType, verdict.reason)
 
   const invariantMessage = INVARIANT_MESSAGES[verdict.reason]
   if (first && invariantMessage) {
@@ -447,7 +449,7 @@ export function provenWidgetValuesForm(
   // Invariant 4. One report per class and reason: the question is "which
   // classes still declare no form, and why", and a corpus pass that mints
   // thousands of nodes must answer it without thousands of reports.
-  if (first && !UNREPORTED.has(verdict.reason)) {
+  if (first) {
     reportError(new Error(UNDECLARED_FORM_MESSAGE), {
       errorType: 'agent_widget_form_undeclared',
       surface: 'agent',

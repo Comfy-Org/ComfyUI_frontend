@@ -62,6 +62,16 @@ function serializedOf(node: LGraphNode): ISerialisedNode {
   return node.serialize()
 }
 
+function recordNoValueClasses(count: number): void {
+  Array.from({ length: count }, (_, index) =>
+    nodeWith(`OnlyButton${index}`, (node) => {
+      node.addWidget('button', 'refresh', 'refresh', () => {})
+    })
+  ).forEach((node) => {
+    provenWidgetValuesForm(node, {}, serializedOf(node))
+  })
+}
+
 beforeEach(() => {
   resetWidgetFormSuppressionTally()
   useNodeDefStore().updateNodeDefs([])
@@ -418,6 +428,27 @@ describe('invariant 4 — the undeclared-form production signal', () => {
 
     expect(provenWidgetValuesForm(node, {}, serializedOf(node))).toBeUndefined()
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not spend the report budget on classes with nothing to declare', () => {
+    recordNoValueClasses(100)
+    const node = detachedNodeWith('DuplicatedAfterButtons', (n) => {
+      n.addWidget('text', 'prompt', 'a', () => {})
+      n.addWidget('text', 'prompt', 'b', () => {})
+    })
+
+    provenWidgetValuesForm(node, { prompt: 'b' }, serializedOf(node))
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: {
+          node_type: 'DuplicatedAfterButtons',
+          reason: 'duplicate_widget_name'
+        }
+      })
+    )
   })
 
   it('keeps a per-class tally a bulk pass can read without telemetry', () => {
