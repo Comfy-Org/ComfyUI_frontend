@@ -61,6 +61,7 @@ interface Scenario {
   canManageSubscription?: boolean
   canManageBilling?: boolean
   canSubscribeSelfServe?: boolean
+  canOpenPlans?: boolean
   canRevertScheduledChange?: boolean
   canReactivate?: boolean
   resubscribe?: () => Promise<void>
@@ -115,6 +116,9 @@ function arrange(scenario: Scenario = {}) {
     fromPartial({
       canSubscribeSelfServe: computed(
         () => scenario.canSubscribeSelfServe ?? true
+      ),
+      canOpenPlans: computed(() =>
+        receiveServerFact('can_open_plans', scenario.canOpenPlans ?? true)
       ),
       canRevertScheduledChange: computed(
         () => scenario.canRevertScheduledChange ?? false
@@ -284,7 +288,7 @@ describe('BillingTab', () => {
   })
 
   it('hides the plan action when the server does not grant it', () => {
-    arrange({ canSubscribeSelfServe: false })
+    arrange({ canOpenPlans: false })
 
     expect(
       screen.queryByRole('button', { name: 'Manage' })
@@ -295,7 +299,7 @@ describe('BillingTab', () => {
     arrange({
       canManageSubscription: false,
       canManageBilling: false,
-      canSubscribeSelfServe: false
+      canOpenPlans: false
     })
 
     expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(

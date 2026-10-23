@@ -130,6 +130,12 @@ function useBillingCapabilitiesInternal() {
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false
   )
+  const canOpenPlans = computed(() =>
+    receiveServerFact(
+      'can_open_plans',
+      capabilities.value?.can_open_plans ?? false
+    )
+  )
   const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
   const canReactivate = computed(
     () => capabilities.value?.can_reactivate ?? false
@@ -541,6 +547,7 @@ function useBillingCapabilitiesInternal() {
     topUpDenial,
     canManageBilling,
     canSubscribeSelfServe,
+    canOpenPlans,
     canCancel,
     canReactivate,
     canRevertScheduledChange,
