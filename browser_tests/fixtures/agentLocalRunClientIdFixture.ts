@@ -139,9 +139,7 @@ export const agentLocalRunTest = agentTest.extend<
         await startRunForUser(jobId)
         await finishRunForUser(jobId)
       },
-      runningOutline: harness.targetNode.locator(
-        ':scope.outline-node-stroke-executing'
-      ),
+      runningOutline: harness.targetNode.locator(':scope.outline-primary'),
       outputImage: harness.outputImage(SOURCE_NODE_ID),
       outputFilename
     })
