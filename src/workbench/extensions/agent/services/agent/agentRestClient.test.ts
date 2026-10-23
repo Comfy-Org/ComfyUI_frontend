@@ -442,6 +442,25 @@ describe('listThreads pagination', () => {
     }
   )
 
+  it('lists a repeated page once when every cursor answers with page 1', async () => {
+    const page1 = () =>
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'a'
+      })
+    respond(page1())
+    respond(page1())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'incomplete',
+      reason: 'repeated_cursor',
+      threads: [
+        expect.objectContaining({ id: 'th-1' }),
+        expect.objectContaining({ id: 'th-2' })
+      ]
+    })
+  })
+
   it('passes the caller abort signal to every page request', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(threadPage(['th-2'], { has_more: false }))

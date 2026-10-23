@@ -185,9 +185,11 @@ type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
   /**
-   * Pagination stopped before the last page. The threads already fetched are a
-   * prefix of the real list, so they are carried here rather than dropped:
-   * a truncated listing is partial data, not a failed request.
+   * Pagination stopped before the last page. The threads it did reach are
+   * carried here rather than dropped, because a truncated listing is partial
+   * data, not a failed request. They are a subset of the real list, not
+   * necessarily a prefix of it: a server that repeats a page serves the same
+   * threads more than once, so they are deduplicated on the way out.
    */
   | {
       status: 'incomplete'
@@ -508,6 +510,20 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+/**
+ * Keeps the first thread seen per id. A server that serves the same page for
+ * every cursor -- the paging bug this guards against -- would otherwise have
+ * its threads listed once per repeat, which renders as duplicate chat rows.
+ */
+function uniqueById(threads: AgentThreadSummary[]): AgentThreadSummary[] {
+  const seen = new Set<string>()
+  return threads.filter(({ id }) => {
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 function getNextPageCursor(
   cursor: PaginationInfo['next_cursor'],
   seenCursors: ReadonlySet<string>
@@ -729,7 +745,7 @@ export function createAgentRestClient() {
     if (!result.ok) return { status: 'failed', cause: result.cause }
     const { items, stopReason } = result.value
     return stopReason
-      ? { status: 'incomplete', reason: stopReason, threads: items }
+      ? { status: 'incomplete', reason: stopReason, threads: uniqueById(items) }
       : { status: 'complete', threads: items }
   }
 

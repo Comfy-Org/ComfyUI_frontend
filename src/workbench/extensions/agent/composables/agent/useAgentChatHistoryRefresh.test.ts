@@ -108,11 +108,69 @@ describe('useAgentChatHistoryRefresh', () => {
 
       await refreshHistory()
 
-      expect(history.sessions.map(({ id }) => id)).toEqual(['first', 'kept'])
+      // `kept` was put in the store by someone else, so it is not retained:
+      // see the identity case below.
+      expect(history.sessions.map(({ id }) => id)).toEqual(['first'])
       expect(onPartial).toHaveBeenCalledExactlyOnceWith(partial)
       expect(onFailure).not.toHaveBeenCalled()
     }
   )
+
+  it('keeps the chats an earlier refresh applied when a later one is truncated', async () => {
+    const { history, listThreads, onFailure, onPartial, refreshHistory } =
+      setup()
+    listThreads.mockResolvedValueOnce(completedListing('earlier'))
+    await refreshHistory()
+    listThreads.mockResolvedValueOnce(
+      partialListing('repeated_cursor', ['first'])
+    )
+
+    await refreshHistory()
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['first', 'earlier'])
+    expect(onPartial).toHaveBeenCalledOnce()
+    expect(onFailure).not.toHaveBeenCalled()
+  })
+
+  it("does not retain a previous account's sessions left in the store", async () => {
+    const { history, listThreads, onFailure, onPartial, refreshHistory } =
+      setup()
+    // What an account switch leaves behind: the store still holds the previous
+    // identity's chats, and this instance has applied nothing.
+    history.replaceAll([
+      {
+        id: 'other-account',
+        title: 'Theirs',
+        titleSource: 'server',
+        updatedAt: 1
+      }
+    ])
+    listThreads.mockResolvedValueOnce(
+      partialListing('missing_cursor', ['mine'])
+    )
+
+    await refreshHistory()
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['mine'])
+    expect(onPartial).toHaveBeenCalledOnce()
+    expect(onFailure).not.toHaveBeenCalled()
+  })
+
+  it('drops a chat deleted locally rather than retaining it through a truncated refresh', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce({
+      status: 'complete',
+      threads: [thread('stays'), thread('deleted')]
+    })
+    await refreshHistory()
+    history.remove('deleted')
+    listThreads.mockResolvedValueOnce(partialListing('repeated_cursor', []))
+
+    await refreshHistory()
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['stays'])
+    expect(onFailure).not.toHaveBeenCalled()
+  })
 
   it('shows a partial first page on a panel with no history yet', async () => {
     const { history, listThreads, onFailure, onPartial, refreshHistory } =

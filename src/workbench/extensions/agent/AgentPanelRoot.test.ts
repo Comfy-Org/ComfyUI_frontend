@@ -5713,6 +5713,44 @@ describe('AgentPanelRoot history', () => {
     ])
   })
 
+  it('warns once when every refresh ends truncated', async () => {
+    const incompleteWarning = i18n.global.t('agent.historyIncomplete')
+    const warnings = () =>
+      useToast().toasts.filter(({ title }) => title === incompleteWarning)
+    const truncationReports = () =>
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([error]) =>
+            error instanceof Error &&
+            error.message === 'Agent thread list ended before its last page'
+        )
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList(
+          [
+            agentThread({
+              id: 'th-partial',
+              title: 'Partial chat',
+              last_message_at: '2026-07-07T11:00:00Z'
+            })
+          ],
+          { has_more: true }
+        )
+      )
+    )
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(warnings()).toHaveLength(1))
+
+    // Opening the history refreshes again, and the server is still truncating.
+    await openHistory()
+
+    expect(warnings()).toHaveLength(1)
+    expect(truncationReports()).toHaveLength(1)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+  })
+
   const staleRefreshOutcomes = [
     {
       outcome: 'a list',

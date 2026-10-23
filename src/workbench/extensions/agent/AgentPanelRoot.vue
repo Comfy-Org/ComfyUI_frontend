@@ -1549,6 +1549,13 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
+/**
+ * Reasons already reported for a truncated chat list. A server paging bug is
+ * persistent, and every mount, history open and chat selection refreshes, so
+ * without this each one would stack another identical toast and error report.
+ */
+const reportedPartialReasons = new Set<string>()
+
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
@@ -1574,6 +1581,8 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
   // rather than the blocking error overlay: a user with more than one page of
   // chats was losing the whole history to a server paging bug (OBL-287).
   onPartial: (partial) => {
+    if (reportedPartialReasons.has(partial.reason)) return
+    reportedPartialReasons.add(partial.reason)
     reportError(new Error('Agent thread list ended before its last page'), {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',

@@ -21,21 +21,25 @@ test.describe(
   'Agent chat history with truncated paging',
   { tag: ['@cloud', '@ui'] },
   () => {
+    // Every page, cursor or not, answers with page 1 and the same next cursor.
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(firstAgentThreadPage))
+      )
+    })
+
     test('shows the chats it did fetch instead of a blocking error', async ({
       page,
       agentFlagEnabled
     }) => {
-      // Every page, cursor or not, answers with page 1 and the same next cursor.
-      await page.route('**/api/agent/threads?*', (route) =>
-        route.fulfill(jsonRoute(firstAgentThreadPage))
-      )
-
       await bootAgentApp(page, agentFlagEnabled)
       const panel = await new AgentPanel(page).open(30_000)
       await panel
         .getByRole('button', { name: enMessages.agent.showChatHistory })
         .click()
 
+      // Exactly one row per chat: the repeated page served the same threads
+      // more than once, and strict mode would fail here on a duplicate.
       await expect(
         panel.getByRole('button', {
           name: firstAgentThreadPage.threads[0].title,
