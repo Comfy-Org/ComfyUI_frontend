@@ -30,7 +30,8 @@ test.describe(
 
     test('shows the chats it did fetch instead of a blocking error', async ({
       page,
-      agentFlagEnabled
+      agentFlagEnabled,
+      toast
     }) => {
       await bootAgentApp(page, agentFlagEnabled)
       const panel = await new AgentPanel(page).open(30_000)
@@ -39,9 +40,9 @@ test.describe(
         .click()
 
       await expect(
-        page.getByRole('alert').filter({
-          hasText: enMessages.agent.historyIncomplete
-        })
+        toast
+          .withText(enMessages.agent.historyIncomplete)
+          .and(toast.toastWarnings)
       ).toBeVisible()
       // Exactly one row per chat: the repeated page served the same threads
       // more than once, and strict mode would fail here on a duplicate.
