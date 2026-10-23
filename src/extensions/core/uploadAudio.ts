@@ -28,6 +28,7 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -101,7 +102,7 @@ async function uploadFile(
 
 // AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
 // present.
-app.registerExtension({
+export const audioWidgetExtension: ComfyExtension = {
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -202,9 +203,9 @@ app.registerExtension({
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }
-})
+}
 
-app.registerExtension({
+export const uploadAudioExtension: ComfyExtension = {
   name: 'Comfy.UploadAudio',
   async beforeRegisterNodeDef(
     _nodeType: typeof LGraphNode,
@@ -316,9 +317,9 @@ app.registerExtension({
       }
     }
   }
-})
+}
 
-app.registerExtension({
+export const recordAudioExtension: ComfyExtension = {
   name: 'Comfy.RecordAudio',
 
   getCustomWidgets() {
@@ -514,4 +515,4 @@ app.registerExtension({
 
     await useAudioService().registerWavEncoder()
   }
-})
+}

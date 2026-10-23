@@ -53,6 +53,12 @@ const storageExampleAmount = formatStorageExampleAmount(
   getStorageRate('network_standard')
 )
 
+const gpuNotes = [
+  t('platform.pricing.billedPerSecond'),
+  t('platform.pricing.containerDiskIncluded'),
+  t('platform.pricing.commercialUse')
+]
+
 const rootTag = bare ? 'div' : 'section'
 const rootId = bare ? undefined : 'pricing'
 const rootClass = bare
@@ -119,7 +125,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </li>
         </ul>
         <p class="mt-6 text-xs text-primary-warm-gray">
-          {{ t('platform.pricing.billedPerSecond') }}
+          <span v-for="note in gpuNotes" :key="note" class="block">
+            {{ note }}
+          </span>
         </p>
       </article>
 
@@ -217,7 +225,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </table>
           </div>
           <p class="mt-auto px-2 pt-6 text-xs text-primary-warm-gray">
-            {{ t('platform.pricing.billedPerSecond') }}
+            <span v-for="note in gpuNotes" :key="note" class="block">
+              {{ note }}
+            </span>
           </p>
         </article>
 

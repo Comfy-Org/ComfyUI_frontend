@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 import { useDeleteWorkspaceGate as createDeleteWorkspaceGate } from './useDeleteWorkspaceGate'
 
@@ -18,13 +18,16 @@ const subscription = vi.hoisted(() => ({
   value: { endDate: null, isCancelled: false } as TestSubscription
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => subscription.value)
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      subscription: computed(() => subscription.value)
+    })
   })
-}))
+)
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 const apps: App<Element>[] = []
 

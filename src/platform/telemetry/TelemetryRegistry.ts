@@ -28,6 +28,7 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -437,6 +438,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
     this.dispatch((provider) => provider.trackAgentPanelClosed?.(metadata))
+  }
+
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentPanelRenderStalled?.(metadata)
+    )
   }
 
   trackAgentEntryButtonClicked(

@@ -83,11 +83,12 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     error: i18nError,
     execute: loadI18n
   } = useAsyncState(
-    async () => {
-      const { mergeCustomNodesI18n } = await import('@/i18n')
-      const i18nData = await fetchCustomNodesI18n()
-      if (i18nData) mergeCustomNodesI18n(i18nData)
-    },
+    () =>
+      bootstrapTracer.settle('bootstrap/i18n', async () => {
+        const { mergeCustomNodesI18n } = await import('@/i18n')
+        const i18nData = await fetchCustomNodesI18n()
+        if (i18nData) mergeCustomNodesI18n(i18nData)
+      }),
     undefined,
     { immediate: false }
   )
@@ -130,6 +131,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       until(needsLogin).toBe(false)
     )
 
+    api.prefetchNodeDefs()
     const storeLoads = loadAuthenticatedStores()
     void Promise.allSettled(storeLoads).then(() => {
       bootstrapTracer.milestone('stores-ready')
