@@ -1,5 +1,6 @@
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
+import { once } from 'es-toolkit'
 
 import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'
 
@@ -14,7 +15,6 @@ import type { FrontendBucket } from './rumContext'
 
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']
-let initializationPromise: Promise<void> | undefined
 
 function parseFrontendBucket(value: string | null): FrontendBucket {
   return FRONTEND_BUCKETS.includes(value as FrontendBucket)
@@ -61,15 +61,11 @@ async function initializeDatadogRum(env: string): Promise<void> {
   trackUserManualRefresh()
 }
 
-export function initDatadogRum(
-  hostname = window.location.hostname
-): Promise<void> {
-  installDatadogRum(datadogRum)
-  const env = resolveDeployEnv(hostname)
-  if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
-
-  initializationPromise ??= initializeDatadogRum(env).finally(() => {
-    initializationPromise = undefined
-  })
-  return initializationPromise
-}
+export const initDatadogRum = once(
+  (hostname = window.location.hostname): Promise<void> => {
+    installDatadogRum(datadogRum)
+    const env = resolveDeployEnv(hostname)
+    if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
+    return initializeDatadogRum(env)
+  }
+)
