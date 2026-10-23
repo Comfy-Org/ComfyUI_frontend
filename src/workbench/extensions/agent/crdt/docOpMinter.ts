@@ -1131,12 +1131,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
+  function forgetPendingNodeState(nodeId: string): void {
+    for (const [key, state] of pendingDynamicSlots)
+      if (state.nodeId === nodeId) pendingDynamicSlots.delete(key)
+    for (const [key, pending] of pendingWidgetValues)
+      if (pending.nodeId === nodeId) pendingWidgetValues.delete(key)
+  }
+
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
-    for (const [key, state] of pendingDynamicSlots)
-      if (state.nodeId === event.node.id) pendingDynamicSlots.delete(key)
-    for (const [key, pending] of pendingWidgetValues)
-      if (pending.nodeId === event.node.id) pendingWidgetValues.delete(key)
+    forgetPendingNodeState(event.node.id)
     const key = nodeKey(event.graph.id, event.node.id)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
@@ -1388,6 +1392,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     for (const id of before.nodes.keys()) {
       if (after.nodes.has(id)) continue
       if (!isMintableRootScope(graph, 'node_delete', id)) continue
+      forgetPendingNodeState(id)
       const removedLinks = [...before.links.values()]
         .filter((link) => link.origin_id === id || link.target_id === id)
         .map((link) => link.id)

@@ -1550,44 +1550,60 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
-    it('drops pending dynamic-combo state when its node is removed', async () => {
-      const { source, resize, doc, catalog, match } =
-        registeredDynamicComboScenario()
-      expect(
-        applyMinted(
-          doc,
-          [
-            {
-              op: 'set_widget',
-              node_id: resize.id,
-              widget: 'resize_type',
-              value: 'match size'
-            }
-          ],
-          catalog
-        )
-      ).toEqual(['applied'])
-      docInputNames = (nodeId) =>
-        readDocSlotNames(doc, String(nodeId), 'inputs')
-      docWidgetValue = (nodeId, widgetName) =>
-        readDocWidgetValue(doc, String(nodeId), widgetName)
+    it.for([
+      {
+        removal: 'a live removal',
+        remove: async (node: LGraphNode) => graph.remove(node)
+      },
+      {
+        removal: 'an undo/redo restore',
+        remove: async (node: LGraphNode) => {
+          const previous = await workflowJson(graph)
+          withGraphIntentSource('load', () => graph.remove(node))
+          emitGraphRestored({ previous, next: await workflowJson(graph) })
+        }
+      }
+    ])(
+      'drops pending dynamic-combo state when $removal removes its node',
+      async ({ remove }) => {
+        const { source, resize, doc, catalog, match } =
+          registeredDynamicComboScenario()
+        expect(
+          applyMinted(
+            doc,
+            [
+              {
+                op: 'set_widget',
+                node_id: resize.id,
+                widget: 'resize_type',
+                value: 'match size'
+              }
+            ],
+            catalog
+          )
+        ).toEqual(['applied'])
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        docWidgetValue = (nodeId, widgetName) =>
+          readDocWidgetValue(doc, String(nodeId), widgetName)
 
-      source.connect(0, resize, match)
-      await afterFlush()
-      minted.length = 0
-      resize.disconnectInput(match)
-      graph.remove(resize)
-      await afterFlush()
-      expect(minted).toEqual([
-        expect.objectContaining({ op: 'delete_node', node_id: resize.id })
-      ])
-      minted.length = 0
+        source.connect(0, resize, match)
+        await afterFlush()
+        minted.length = 0
+        resize.disconnectInput(match)
+        await remove(resize)
+        await afterFlush()
+        expect(minted).toEqual([
+          expect.objectContaining({ op: 'delete_node', node_id: resize.id })
+        ])
+        minted.length = 0
 
-      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
-      expect(minted).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
-    })
+        expect(minted).toEqual([])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
