@@ -3712,6 +3712,18 @@
       "paused": {
         "body": "This workspace's subscription is paused. Update payment to resume."
       },
+      "planCheckout": {
+        "dismiss": "Dismiss",
+        "paymentReceived": {
+          "body": "Your plan is activating. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "verifyPayment": {
+          "action": "Verify your payment",
+          "body": "Your bank requires additional verification to complete this payment.",
+          "title": "Verify your payment"
+        }
+      },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
@@ -3790,13 +3802,10 @@
         "update": "Update limit"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
-      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "resubscribe": "Resubscribe",
-      "upsellBannerEnterpriseEnded": "Contact sales to reactivate your Enterprise plan.",
       "endedTeamTitle": "Your Team plan has ended",
       "endedEnterpriseTitle": "Your Enterprise plan has ended",
       "endedPlanTitle": "Your plan has ended",
-      "upsellBannerPlanEnded": "Contact sales to reactivate your plan.",
       "contactSales": "Contact sales",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",

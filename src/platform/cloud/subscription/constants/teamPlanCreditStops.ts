@@ -16,6 +16,9 @@ export interface CreditStop {
    * tiers are stored here.
    */
   discountPercentYearly: number
+  /** What the server bills for one period of each cycle, in USD. Absent only
+   *  for the hardcoded OSS / pre-deploy fallback. */
+  periodChargeUsd?: { monthly: number; yearly: number }
 }
 
 /** A selected slider stop, as emitted by the pricing table's team column. */
@@ -29,6 +32,8 @@ export interface TeamPlanSelection {
   credits: number
   /** Cycle-adjusted discounted monthly price in USD — what the user actually pays. */
   discountedUsd: number
+  /** What the server bills for one period of each cycle, in USD. */
+  periodChargeUsd?: { monthly: number; yearly: number }
 }
 
 /**
