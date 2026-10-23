@@ -430,9 +430,8 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
@@ -483,23 +482,8 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
-const { balance, fetchBalance, fetchStatus, subscriptionStatus } =
-  useBillingContext()
-const planCreditCopy = computed(() => {
-  const line = topUpPlanCreditLine({
-    unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
-    isCloud,
-    subscriptionStatus: subscriptionStatus.value
-  })
-  if (line === 'planRequiredSubscribe') {
-    return t('credits.topUp.planRequiredSubscribe')
-  }
-  if (line === 'planRequiredResubscribe') {
-    return t('credits.topUp.planRequiredResubscribe')
-  }
-  return t('credits.topUp.purchaseDisclosure')
-})
+const { balance, fetchBalance, fetchStatus } = useBillingContext()
+const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
