@@ -124,8 +124,10 @@ describe('a human-added node across a tab switch', () => {
       getGraph: () => graph,
       boundRootGraphId: () => null,
       docInputNames: followerApi.docInputNames,
+      docWidgetValue: followerApi.docWidgetValue,
       docPromotedWidgets: followerApi.docPromotedWidgets,
       mayWritePromotedHost: followerApi.mayWritePromotedHost,
+      docHasSubgraphDefinition: followerApi.docHasSubgraphDefinition,
       onWidgetWriteRefused: followerApi.notifyWidgetWriteRefused
     })
     const cleanup = () => {

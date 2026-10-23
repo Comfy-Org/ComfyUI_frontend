@@ -17,7 +17,7 @@ import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -25,30 +25,20 @@ import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
 vi.mock(import('@/scripts/app'))
 
-function getRegisteredExtension(name: string) {
-  const extension = vi
-    .mocked(app.registerExtension)
-    .mock.calls.find(([extension]) => extension.name === name)?.[0]
-  if (!extension) throw new Error(`${name} was not registered`)
-  return extension
-}
-
 const {
   PrimitiveNode,
   convertToInput,
   getWidgetConfig,
   mergeIfValid,
-  setWidgetConfig
+  setWidgetConfig,
+  widgetInputsExtension
 } = await import('./widgetInputs')
 
 beforeEach(() => {
   app.canvas.graph = null
 })
 
-const widgetInputsExtension = getRegisteredExtension('Comfy.WidgetInputs')
-
-await import('./rerouteNode')
-const rerouteNodeExtension = getRegisteredExtension('Comfy.RerouteNode')
+const { rerouteNodeExtension } = await import('./rerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.

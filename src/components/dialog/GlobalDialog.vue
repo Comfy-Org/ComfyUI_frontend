@@ -6,14 +6,9 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay v-reka-z-index />
+        <DialogOverlay />
         <DialogContent
-          v-reka-z-index
-          v-bind="
-            item.dialogComponentProps.headless
-              ? {}
-              : { 'aria-labelledby': item.key }
-          "
+          v-bind="isNamedByHeader(item) ? { 'aria-labelledby': item.key } : {}"
           :size="
             item.dialogComponentProps.headless
               ? 'fit'
@@ -115,7 +110,6 @@ import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -123,6 +117,13 @@ const dialogStore = useDialogStore()
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
+}
+
+function isNamedByHeader(item: DialogInstance) {
+  return (
+    !item.dialogComponentProps.headless &&
+    (!!item.headerComponent || !!item.title)
+  )
 }
 
 function hasCloseButton({ dialogComponentProps }: DialogInstance) {

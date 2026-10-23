@@ -41,12 +41,16 @@ import { usePaletteSwatchRow } from '@/composables/palette/usePaletteSwatchRow'
 
 const { max = 5 } = defineProps<{ max?: number }>()
 const modelValue = defineModel<string[]>({ required: true })
+const emit = defineEmits<{
+  editEnd: [mergeKey?: string]
+}>()
 const { t } = useI18n()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 
 const { updateAt, remove, addColor, onPointerDown } = usePaletteSwatchRow({
   modelValue,
-  container
+  container,
+  onEditEnd: (mergeKey) => emit('editEnd', mergeKey)
 })
 </script>

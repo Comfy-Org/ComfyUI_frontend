@@ -55,7 +55,10 @@ import type {
   AssistantMessage
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import {
+  isAttachmentKind,
+  normalizeAgentTranscript
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
@@ -76,7 +79,7 @@ interface SessionNotice {
 
 type SentAttachment = Pick<
   ComposerAttachment,
-  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl' | 'mediaKind'
 >
 
 interface SentTag {
@@ -344,12 +347,23 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
+type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+
+function namesCommittedAnswer({
+  selected,
+  other_text
+}: CommittedAnswerSource): boolean {
+  return Array.isArray(selected) || Boolean(other_text)
+}
+
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
-  committed: Extract<AskUserResolution, { status: 'answered' }>
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
 ): boolean {
   return (
-    xor(submitted.selected, committed.selected).length > 0 ||
+    (selectionKnown &&
+      xor(submitted.selected, committed.selected).length > 0) ||
     (submitted.other_text || undefined) !== committed.otherText
   )
 }
@@ -1119,11 +1133,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
         name,
         previewUrl,
         mediaUrl,
-        ref
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
@@ -1253,7 +1268,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1284,7 +1300,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
         ack,
         text,
@@ -1312,6 +1328,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function observeAcceptedTurn(
+    generation: number,
+    onAccepted?: () => void
+  ): boolean {
+    onAccepted?.()
+    return generation === loadGeneration
+  }
+
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
@@ -1326,7 +1350,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1348,7 +1373,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        onAccepted
       )
       if (!sent) stopPendingAck = null
       return sent
@@ -1518,8 +1544,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer)
       const committed = toAskResolution(receipt)
-      if (receipt.selected !== undefined)
-        reportSupersededAnswer(askId, committed)
+      reportSupersededAnswer(askId, receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1535,11 +1560,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (error instanceof AgentApiError && error.status === 409) {
-      const committed = toAskResolution(
-        zAgentAskConflict.safeParse(error.body).data ?? {}
-      )
-      reportSupersededAnswer(askId, committed)
-      conversationStore.retireAsk(askId, committed, threadId)
+      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
+      reportSupersededAnswer(askId, conflict)
+      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
       return
     }
     const failure = classifyAnswerFailure(error)
@@ -1570,11 +1593,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportSupersededAnswer(
     askId: string,
-    committed: AskUserResolution
+    source: CommittedAnswerSource
   ): void {
+    if (!namesCommittedAnswer(source)) return
+    const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
+    if (
+      submitted === undefined ||
+      !isSupersededAnswer(submitted, committed, Array.isArray(source.selected))
+    )
       return
     reportError(
       new Error(
@@ -1787,7 +1815,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, resolution)
+      reportSupersededAnswer(event.data.ask_id, event.data)
       conversationStore.retireAsk(
         event.data.ask_id,
         resolution,

@@ -63,7 +63,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle, liftedContentStyle]"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -101,11 +101,11 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
-  SelectPortal,
   SelectRoot,
   SelectTrigger,
   SelectValue,
-  SelectViewport
+  SelectViewport,
+  SelectPortal
 } from 'reka-ui'
 import { ref } from 'vue'
 
@@ -118,7 +118,6 @@ import {
 } from '@comfyorg/design-system/select.variants'
 import type { SingleSelectProps } from '@/components/ui/single-select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -152,7 +151,6 @@ const selectedItem = defineModel<string | number | undefined>({
 })
 
 const isOpen = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

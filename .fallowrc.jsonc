@@ -9,7 +9,9 @@
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
       "@comfyorg/layer-editor",
-      "@comfyorg/object-info-parser"
+      "@comfyorg/mask-editor",
+      "@comfyorg/object-info-parser",
+      "@comfyorg/viewport3d"
     ]
   },
 

@@ -101,8 +101,12 @@ function connectAgentHeldWorkflow() {
     getGraph: () => graph,
     boundRootGraphId: () => toRootGraphId(graph.id),
     docInputNames: (nodeId) => follower.docInputNames(nodeId),
+    docWidgetValue: (nodeId, widgetName) =>
+      follower.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId) => follower.docPromotedWidgets(nodeId),
     mayWritePromotedHost: (nodeId) => follower.mayWritePromotedHost(nodeId),
+    docHasSubgraphDefinition: (definitionId) =>
+      follower.docHasSubgraphDefinition(definitionId),
     onWidgetWriteRefused: (nodeId, widgetName) =>
       follower.notifyWidgetWriteRefused(nodeId, widgetName)
   })

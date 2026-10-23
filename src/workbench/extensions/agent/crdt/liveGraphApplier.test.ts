@@ -1,10 +1,16 @@
-import { applyOps, linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { isPlainObject } from 'es-toolkit'
 import {
   assert,
   beforeEach,
@@ -35,7 +41,10 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
-import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import type {
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -73,6 +82,28 @@ class TestPlainWidgets extends LGraphNode {
     this.addWidget('number', 'known', 10, () => {})
     this.addWidget('number', 'addedAfterCatalog', 20, () => {})
     this.serialize_widgets = true
+  }
+}
+
+/** Restores its name-keyed widget record in `onConfigure`, as VHS `useKVState` does. */
+class TestRecordRestore extends LGraphNode {
+  videopreview: unknown
+
+  constructor() {
+    super('Test Record Restore')
+    this.addWidget('number', 'known', 10, () => {})
+    this.addWidget('number', 'addedAfterCatalog', 20, () => {})
+    this.serialize_widgets = true
+  }
+
+  override onConfigure(info: ISerialisedNode): void {
+    const record: unknown = info.widgets_values
+    if (!isPlainObject(record)) return
+    for (const widget of this.widgets ?? []) {
+      if (Object.hasOwn(record, widget.name))
+        widget.value = record[widget.name] as WidgetValue
+    }
+    this.videopreview = record.videopreview
   }
 }
 
@@ -235,6 +266,7 @@ const CATALOG: WidgetCatalog = {
     TestDefinedSource: { widget_order: [] },
     TestOverflowWidgets: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
+    TestRecordRestore: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
     // The catalog names `mode.a` but not `mode.b`, so the host stores the last
     // value under the positional alias `_extra_2`.
@@ -273,6 +305,13 @@ function sinkNode(id: number, pos: [number, number] = [400, 0]) {
   }
 }
 
+function storeRecord(target: Y.Doc, record: Record<string, unknown>) {
+  const node = nodesMap(target).get('1')
+  assert(node instanceof Y.Map)
+  node.delete('widgets')
+  node.set(OPAQUE_WIDGETS_KEY, record)
+}
+
 function setup(
   workflow: WorkflowJSON,
   deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}
@@ -295,6 +334,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType('TestPlainWidgets', TestPlainWidgets)
+  LiteGraph.registerNodeType('TestRecordRestore', TestRecordRestore)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
@@ -1130,6 +1170,114 @@ describe('LiveGraphApplier', () => {
     expect(graph.state.lastLinkId).toBeGreaterThanOrEqual(7)
   })
 
+  it("restores an edited or reopened widget record through the node's own configure", () => {
+    const workflow: WorkflowJSON = {
+      nodes: [
+        {
+          id: 1,
+          type: 'TestRecordRestore',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [10]
+        }
+      ],
+      links: []
+    }
+    const { graph, applier, doc, applyCollected, applyEdit } = setup(workflow)
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert(node instanceof TestRecordRestore)
+
+    applyEdit(() =>
+      storeRecord(doc, {
+        addedAfterCatalog: 21,
+        known: 11,
+        videopreview: 'a.mp4'
+      })
+    )
+    expect(node.widgets?.map((widget) => widget.value)).toEqual([11, 21])
+    expect(node.videopreview).toBe('a.mp4')
+
+    const reopened = followedDoc(workflow, CATALOG)
+    reopened.doc.transact(() =>
+      storeRecord(reopened.doc, {
+        addedAfterCatalog: 22,
+        known: 12,
+        videopreview: 'b.mp4'
+      })
+    )
+    applier.applyChanges(
+      reopened.doc,
+      reopened.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+    expect(graph.getNodeById(toNodeId(1))).toBe(node)
+    expect(node.widgets?.map((widget) => widget.value)).toEqual([12, 22])
+    expect(node.videopreview).toBe('b.mp4')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('restores the named widget map, not an opaque record beside it', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+    const docNode = nodesMap(doc).get('1')
+    assert(docNode instanceof Y.Map)
+    docNode.set(OPAQUE_WIDGETS_KEY, { known: 91 })
+
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    expect(node?.widgets?.[0]?.value).toBe(11)
+
+    applyEdit(() => {
+      const widgets = docNode.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('known', 12)
+    })
+    expect(node?.widgets?.[0]?.value).toBe(12)
+  })
+
+  it("saves an unregistered node's current record-form widget values", () => {
+    const workflow: WorkflowJSON = {
+      nodes: [{ id: 1, type: 'NotInstalled', pos: [0, 0], size: [210, 100] }],
+      links: []
+    }
+    const { graph, applier, doc, applyCollected, applyEdit } = setup(workflow)
+    const created = { video: 'clip.mp4', frame_load_cap: 8 }
+    doc.transact(() => storeRecord(doc, created))
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+    expect(placeholder?.serialize().widgets_values).toEqual(created)
+
+    const edited = { video: 'edit.mp4', frame_load_cap: 16 }
+    applyEdit(() => storeRecord(doc, edited))
+    expect(placeholder?.serialize().widgets_values).toEqual(edited)
+
+    const reopenedRecord = { video: 'reopen.mp4', frame_load_cap: 24 }
+    const reopened = followedDoc(workflow, CATALOG)
+    reopened.doc.transact(() => storeRecord(reopened.doc, reopenedRecord))
+    applier.applyChanges(
+      reopened.doc,
+      reopened.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(placeholder?.serialize().widgets_values).toEqual(reopenedRecord)
+  })
+
   it.for([
     { label: 'undersized', size: [10, 10] },
     { label: 'absent', size: undefined }
@@ -1871,6 +2019,32 @@ describe('LiveGraphApplier', () => {
     expect(positionOf(1)).toEqual([0, 0])
     expect(positionOf(2)).toEqual([290, 0])
     expect(positionOf(3)).toEqual([690, 0])
+  })
+
+  it('moves a created batch off the nodes it lands on only for a live agent turn', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+    const addOnTopOfNode1 = (id: number, context: RemoteApplyContext) => {
+      doc.transact(() =>
+        nodesMap(doc).set(
+          String(id),
+          new Y.Map<unknown>(Object.entries(sinkNode(id, [50, 20])))
+        )
+      )
+      applier.applyChanges(doc, collector.take(), context)
+    }
+    const positionOf = (id: number) => [
+      ...(graph.getNodeById(toNodeId(id))?.pos ?? [])
+    ]
+
+    addOnTopOfNode1(2, CONTEXT)
+    addOnTopOfNode1(3, { ...CONTEXT, liveAgentTurn: true })
+
+    expect(positionOf(2)).toEqual([50, 20])
+    expect(positionOf(3)).toEqual([330, 0])
   })
 
   it('scopes every write to the remote actor', () => {
