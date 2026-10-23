@@ -518,6 +518,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
 
     const group = graph.groups.find(({ title }) => title === 'Inserted group')
     assert(group, 'the inserted group reached the canvas')
-    expect([...group.pos]).not.toEqual([0, 10])
+    expect([...group.pos]).toEqual([680, 20])
   })
 })
