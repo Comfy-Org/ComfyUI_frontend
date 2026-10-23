@@ -2050,7 +2050,18 @@ describe('useWorkflowService', () => {
       expect(activated.mock.calls).toEqual([[byName('second')]])
     })
 
-    it('reports the default workflow left active by closing the last tab', async () => {
+    it.for([
+      {
+        name: 'reports the default workflow left active after a user close',
+        options: { warnIfUnsaved: false, initiator: 'user' as const },
+        expectedPaths: ['Unsaved Workflow.json']
+      },
+      {
+        name: 'does not report the default workflow for a non-user close',
+        options: { warnIfUnsaved: false },
+        expectedPaths: []
+      }
+    ])('$name', async ({ options, expectedPaths }) => {
       const workflowStore = useWorkflowStore()
       const only = createWorkflow(null, {
         loadable: true,
@@ -2072,13 +2083,12 @@ describe('useWorkflowService', () => {
       const activated = vi.fn()
       workflowStore.onUserActivation(activated)
 
-      await useWorkflowService().closeWorkflows([only], {
-        warnIfUnsaved: false,
-        initiator: 'user'
-      })
+      await useWorkflowService().closeWorkflows([only], options)
 
       expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
-      expect(activated.mock.calls).toEqual([[fallback]])
+      expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+        expectedPaths
+      )
     })
 
     it('reports the tab a user lands on after deleting the active workflow', async () => {
@@ -2113,36 +2123,6 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
       expect(settled).toHaveBeenCalledWith(clicked)
-    })
-
-    it('does not report the default workflow when nothing asked as a user', async () => {
-      const workflowStore = useWorkflowStore()
-      const only = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/only.json'
-      })
-      Object.defineProperty(only, 'unload', { value: vi.fn() })
-      workflowStore.attachWorkflow(only, 0)
-      workflowStore.activeWorkflow = only as LoadedComfyWorkflow
-      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(null)
-      const fallback = createWorkflow(null, {
-        loadable: true,
-        path: 'Unsaved Workflow.json'
-      })
-      vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
-        if (data === defaultGraph)
-          useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
-        return true
-      })
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
-
-      await useWorkflowService().closeWorkflows([only], {
-        warnIfUnsaved: false
-      })
-
-      expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
-      expect(activated).not.toHaveBeenCalled()
     })
   })
 
