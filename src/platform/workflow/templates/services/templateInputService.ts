@@ -9,7 +9,7 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 
-import { zTemplateInput } from '../schemas/templateSchema'
+import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'
@@ -19,9 +19,12 @@ const INPUT_WIDGETS: Readonly<Record<string, string>> = {
   LoadVideo: 'file',
   LoadAudio: 'audio'
 }
-const zWidgetValue: z.ZodType<TWidgetValue> = z.custom(isWidgetValue)
-const zValues = z.union([z.array(zWidgetValue), z.record(zWidgetValue)])
-const zNamedValues = z.record(zWidgetValue)
+const zWidgetValue = z.custom<TWidgetValue>(isWidgetValue)
+const zValues = z.union([
+  z.array(zWidgetValue),
+  z.record(z.string(), zWidgetValue)
+])
+const zNamedValues = z.record(z.string(), zWidgetValue)
 
 type PreparationResult = {
   workflow: ComfyWorkflowJSON

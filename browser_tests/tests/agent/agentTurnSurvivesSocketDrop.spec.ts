@@ -16,8 +16,8 @@ import {
 // "Message failed to send: a turn is already in progress for this thread" —
 // with no refresh and no tab close anywhere in the journey.
 //
-// The agent chat stream rides the shared ComfyUI websocket, so any transient
-// close dispatches `reconnecting`. The server never sees the socket go away:
+// The agent chat stream rides the agent socket (`/api/agent/events`), so any
+// transient close reports it down. The server never sees the socket go away:
 // its assistant row stays `streaming`, it keeps broadcasting the same
 // message_id down the new socket, and it answers posts with 409 until the turn
 // really ends. These specs close one socket and hold the client to keeping the
@@ -141,11 +141,11 @@ test.describe(
     // free; this shows it does resolve once a turn ends.
     test('summarises a turn that ends normally', async ({
       turnLock,
-      getWebSocket
+      getAgentSocket
     }) => {
       await expect(turnLock.workSummary).toHaveCount(0)
 
-      turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
+      turnLock.push(await getAgentSocket(), TURN_DONE_EVENT)
 
       await expect(turnLock.workSummary).toBeVisible()
       await expect(turnLock.sendButton).toBeVisible()
@@ -158,9 +158,9 @@ test.describe(
     // product's player, so it does not clear the whole audio path.
     test('keeps the turn running while audio decoding runs alongside it', async ({
       turnLock,
-      getWebSocket
+      getAgentSocket
     }) => {
-      const ws = await getWebSocket()
+      const ws = await getAgentSocket()
       await turnLock.decodeAudioLikeAPreview()
 
       await expect(turnLock.stopButton).toBeVisible()

@@ -13,7 +13,7 @@ import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -50,7 +50,7 @@ function mount() {
   vi.spyOn(skills, 'startFlagGate').mockResolvedValue()
   render(Composer, {
     props: { hasWorkflowTarget: true },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return useAgentComposerStore()
 }

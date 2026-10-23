@@ -4,7 +4,7 @@
     class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >
     <i
-      class="pi pi-circle-fill mr-1.5 p-0 text-[0.6rem]"
+      class="pi pi-circle-fill mr-1.5 text-[0.6rem]"
       :style="{ opacity: 0.8 }"
     />
     {{ $t(`manager.status.${statusLabel}`) }}

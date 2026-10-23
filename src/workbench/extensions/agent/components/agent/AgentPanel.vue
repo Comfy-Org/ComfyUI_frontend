@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
+import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,36 +10,39 @@ import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import type {
+  AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
   AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
 
-import type { ActiveTab } from '../../types/activeTab'
+import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
-import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
-import { deriveSessionTitle } from '../../utils/sessionTitle'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
+import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
@@ -65,6 +70,7 @@ const {
   selectTab = async () => false,
   workflowDetached = false,
   targetUnavailable = false,
+  canvasEmptyAfterTurn = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
@@ -75,6 +81,7 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
+  freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
   attributeStarterPromptExperiment = false
 } = defineProps<{
@@ -101,6 +108,7 @@ const {
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   targetUnavailable?: boolean
+  canvasEmptyAfterTurn?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   /**
@@ -116,6 +124,7 @@ const {
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: AgentStarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
 }>()
@@ -128,6 +137,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -146,15 +156,17 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
+  freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
+  if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
@@ -264,7 +276,23 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const runNoticeReady = ref(false)
+const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
+  useTimeoutFn(
+    () => {
+      runNoticeReady.value = true
+    },
+    500,
+    {
+      immediate: false
+    }
+  )
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
+
+function onComposerFocus(): void {
+  if (runNoticeTimerPending.value || runNoticeReady.value) return
+  startRunNoticeTimer()
+}
 
 function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
@@ -346,7 +374,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container flex h-full flex-col overflow-hidden bg-background text-foreground"
   >
     <PanelHeader
       :is-maximized
@@ -354,6 +382,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="onClose"
+    />
+
+    <FreeUseNotice
+      v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      placement="top-banner"
+      @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
@@ -380,7 +414,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -407,7 +441,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             type="button"
             variant="muted-textonly"
             size="sm"
-            :disabled="sessionId === null"
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
@@ -483,8 +516,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
@@ -495,7 +532,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
+            :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
+          />
+          <FreeUseNotice
+            v-if="freeUsePlacement === 'near-composer'"
+            placement="near-composer"
+            @notice="emit('freeUseNotice', $event)"
           />
           <Composer
             ref="composerRef"
@@ -511,10 +554,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
+            @focusin="onComposerFocus"
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
@@ -537,6 +582,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
+              />
+            </template>
+            <template #aboveInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'above-input'"
+                placement="above-input"
+                @notice="emit('freeUseNotice', $event)"
+              />
+            </template>
+            <template #insideInput>
+              <FreeUseNotice
+                v-if="freeUsePlacement === 'inside-input'"
+                placement="inside-input"
+                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

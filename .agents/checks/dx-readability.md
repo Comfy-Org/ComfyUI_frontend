@@ -13,9 +13,9 @@ Check for:
 2. **Cognitive complexity** - deeply nested conditions, long functions doing multiple things, complex boolean expressions
 3. **Dead code** - unreachable branches, unused variables, commented-out code, vestigial parameters
 4. **Confusing patterns** - clever tricks over simple code, implicit behavior, action-at-a-distance, surprising side effects
-5. **Missing context** - complex business logic without explaining why, non-obvious algorithms without comments
+5. **Comments instead of clarity** - any added comment other than curt JSDoc on an exported API. Never suggest adding a comment. Name the rename, extracted function, type, or test that makes the code clear, and send the rationale to the commit message or PR description
 6. **Inconsistent abstractions** - mixing raw and wrapped APIs, different error handling styles in same module
-7. **Implicit knowledge** - code that only works because of undocumented assumptions or conventions
+7. **Implicit knowledge** - code that only works because of assumptions that no type, name, assertion, or test encodes
 
 Rules:
 

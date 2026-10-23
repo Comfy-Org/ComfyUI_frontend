@@ -192,19 +192,19 @@ describe('SignUpForm', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(5)
     expect(
       screen.getByText(enMessages.validation.password.minLength)
-    ).toHaveClass('text-destructive-background')
+    ).toHaveClass('text-destructive')
     expect(
       screen.getByText(enMessages.validation.password.uppercase)
-    ).toHaveClass('text-destructive-background')
+    ).toHaveClass('text-destructive')
     expect(
       screen.getByText(enMessages.validation.password.lowercase)
-    ).not.toHaveClass('text-destructive-background')
+    ).not.toHaveClass('text-destructive')
     expect(screen.getByText(enMessages.validation.password.number)).toHaveClass(
-      'text-destructive-background'
+      'text-destructive'
     )
     expect(
       screen.getByText(enMessages.validation.password.special)
-    ).toHaveClass('text-destructive-background')
+    ).toHaveClass('text-destructive')
   })
 
   it('shows the primary password schema error after blur', async () => {

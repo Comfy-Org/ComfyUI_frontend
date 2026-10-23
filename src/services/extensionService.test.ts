@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { WatchHandle } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { useExtensionService } from './extensionService'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -145,6 +150,61 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
+  })
+
+  type HookApp = ReturnType<typeof useApp>
+
+  it.for([
+    {
+      entrypoint: 'loadGraphData',
+      call: (app: HookApp) => app.loadGraphData()
+    },
+    {
+      entrypoint: 'loadApiJson',
+      call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
+    },
+    {
+      entrypoint: 'handleFile',
+      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
+    }
+  ])(
+    'rejects $entrypoint started after an await in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          await Promise.resolve()
+          nested = call(app)
+          await nested.catch(() => {})
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).rejects.toThrow(
+        'A graph-load lifecycle hook cannot start a nested graph load'
+      )
+    }
+  )
+
+  it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    let retained: HookApp | undefined
+    register({
+      name: 'retaining-extension',
+      afterLoadGraph: (app: HookApp) => {
+        retained = app
+      }
+    })
+    await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
+    const file = new File([], 'later.png')
+
+    await retained?.handleFile(file)
+
+    expect(handleFile).toHaveBeenCalledWith(file)
   })
 
   it('silently ignores a non-function property of the same name', async () => {
@@ -345,5 +405,59 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
+  })
+})
+
+describe('registerExtension auth hooks', () => {
+  function createAuthEvents() {
+    const listeners = {
+      resolved: new Set<(user: { id: string }) => void>(),
+      refreshed: new Set<() => void>(),
+      logout: new Set<() => void>()
+    }
+    function subscribe<T>(set: Set<T>, callback: T): WatchHandle {
+      set.add(callback)
+      const stop = () => void set.delete(callback)
+      return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
+    }
+    const currentUser = useCurrentUser()
+    vi.mocked(currentUser.onUserResolved).mockImplementation((callback) =>
+      subscribe(listeners.resolved, callback)
+    )
+    vi.mocked(currentUser.onTokenRefreshed).mockImplementation((callback) =>
+      subscribe(listeners.refreshed, callback)
+    )
+    vi.mocked(currentUser.onUserLogout).mockImplementation((callback) =>
+      subscribe(listeners.logout, callback)
+    )
+    return {
+      emit() {
+        listeners.resolved.forEach((callback) => callback({ id: 'user-1' }))
+        listeners.refreshed.forEach((callback) => callback())
+        listeners.logout.forEach((callback) => callback())
+      }
+    }
+  }
+
+  it('keeps exactly one of each auth hook after dispose, re-registration and a stale dispose', () => {
+    const authEvents = createAuthEvents()
+    const extension = {
+      name: 'auth-hooks',
+      onAuthUserResolved: vi.fn(),
+      onAuthTokenRefreshed: vi.fn(),
+      onAuthUserLogout: vi.fn()
+    }
+    const service = useExtensionService()
+
+    const dispose = service.registerExtension(extension)
+    dispose()
+    service.registerExtension(extension)
+    dispose()
+    authEvents.emit()
+
+    expect(extension.onAuthUserResolved).toHaveBeenCalledOnce()
+    expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
+    expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
+    expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
   })
 })

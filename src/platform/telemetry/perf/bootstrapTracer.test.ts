@@ -123,6 +123,36 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).toHaveBeenCalledOnce()
   })
 
+  it('reports the wall-clock time no phase covers, counting overlaps once', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const tracer = new BootstrapTracer()
+
+    await vi.advanceTimersByTimeAsync(10)
+    tracer.recordSinceTimeOrigin('startup/entry-modules')
+    const settings = tracer.startPhase('bootstrap/settings')
+    await vi.advanceTimersByTimeAsync(50)
+    const workflows = tracer.startPhase('bootstrap/workflows')
+    await vi.advanceTimersByTimeAsync(50)
+    settings.stop()
+    await vi.advanceTimersByTimeAsync(50)
+    workflows.stop()
+    await vi.advanceTimersByTimeAsync(40)
+    tracer.complete()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      untraced_ms: 40,
+      phases: {
+        'startup/entry-modules': 10,
+        'bootstrap/settings': 100,
+        'bootstrap/workflows': 100
+      }
+    })
+  })
+
   it('reports a failed startup, closing phases still open', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
@@ -235,6 +265,76 @@ describe('bootstrapTracer', () => {
         .mocked(telemetry.trackBootstrapComplete)
         .mock.calls.map(([metadata]) => metadata.outcome)
     ).toEqual(['timed_out', 'completed'])
+  })
+
+  it('suspends cancellation reporting and lets a replacement complete', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    tracer.suspendWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(addAction).not.toHaveBeenCalled()
+
+    tracer.resumeWatchdog()
+    tracer.complete()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      expect.objectContaining({ outcome: 'completed' })
+    )
+  })
+
+  it('reports a stalled replacement after cancellation', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    tracer.suspendWatchdog()
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      expect.objectContaining({ outcome: 'timed_out' })
+    )
+  })
+
+  it('reports only one timeout across suspended replacement editors', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.suspendWatchdog()
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.suspendWatchdog()
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.complete()
+
+    expect(
+      addAction.mock.calls.map(([, metadata]) => metadata.outcome)
+    ).toEqual(['timed_out', 'completed'])
+  })
+
+  it('does not report another timeout when explicitly rearmed', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(30_000)
+    tracer.complete('failed')
+
+    expect(
+      addAction.mock.calls.map(([, metadata]) => metadata.outcome)
+    ).toEqual(['timed_out', 'failed'])
+  })
+
+  it('keeps the original watchdog deadline when already active', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog()
+    await vi.advanceTimersByTimeAsync(20_000)
+    tracer.resumeWatchdog()
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.BOOTSTRAP_COMPLETE,
+      expect.objectContaining({ outcome: 'timed_out' })
+    )
   })
 
   it('does not report a watchdog row once startup has completed', async () => {

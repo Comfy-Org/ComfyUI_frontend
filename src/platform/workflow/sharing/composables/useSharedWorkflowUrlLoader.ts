@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
@@ -105,8 +105,7 @@ export function useSharedWorkflowUrlLoader() {
           }
         },
         dialogComponentProps: {
-          onClose: () => resolve({ action: 'cancel' }),
-          contentClass: 'sm:max-w-176 rounded-2xl overflow-hidden'
+          onClose: () => resolve({ action: 'cancel' })
         }
       })
     })
