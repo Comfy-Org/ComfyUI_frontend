@@ -31,7 +31,7 @@ const JOB_CANCEL_ROUTE_PATTERN =
  * Playwright runs the most-recently-registered matching handler first — and
  * the same reason the base helper installs after the harness.
  */
-export class AgentExecutionStoryHelper extends AgentExecutionHelper {
+class AgentExecutionStoryHelper extends AgentExecutionHelper {
   private readonly jobCancels: string[] = []
   private readonly storyPage: Page
   private readonly storyAssets: AssetsHelper
@@ -70,7 +70,7 @@ export class AgentExecutionStoryHelper extends AgentExecutionHelper {
   }
 }
 
-export interface AgentExecutionStoryRig {
+interface AgentExecutionStoryRig {
   harness: MultiAutogrowRealignHarness
   execution: AgentExecutionStoryHelper
 }
