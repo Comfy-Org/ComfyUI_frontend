@@ -2753,6 +2753,10 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         }
       }
     }
+    const snapshot = wireNodeSnapshot(node)!
+    expect(snapshot).toMatchObject({
+      widgets_values: { mode: 'a', 'mode.steps': 4 }
+    })
     const doc = mint({ nodes: [], links: [] }, catalog)
     const operations: GraphOperation[] = [
       {
@@ -2760,7 +2764,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         node_id: node.id,
         class_type: 'Dynamic',
         pos: [0, 0],
-        node: wireNodeSnapshot(node)!
+        node: snapshot
       },
       { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
       { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
@@ -2778,6 +2782,45 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       'applied'
     ])
     expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
+  })
+
+  it('refuses an uncatalogued dynamic combo before accepting partial widget state', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+    const snapshot = wireNodeSnapshot(node)!
+    const catalog: WidgetCatalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: 'Dynamic',
+            pos: [0, 0],
+            node: snapshot
+          }
+        ],
+        { actor: 'human:user:tab', baseVersion: 1 }
+      ),
+      catalog
+    )
+
+    expect(outcomes).toEqual([
+      expect.objectContaining({
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
+      })
+    ])
+    expect(project(doc, catalog).nodes).toEqual([])
     doc.destroy()
   })
 })
