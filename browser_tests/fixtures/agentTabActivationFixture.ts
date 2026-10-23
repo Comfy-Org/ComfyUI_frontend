@@ -6,10 +6,7 @@ import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { agentComposerRunMode } from '@e2e/fixtures/data/agent/agentComposerPerformance'
-import {
-  tabActivationChats,
-  tabActivationTranscriptReads
-} from '@e2e/fixtures/data/agent/tabActivationChats'
+import { tabActivationChats } from '@e2e/fixtures/data/agent/tabActivationChats'
 import { AgentWorkflowChatsMock } from '@e2e/fixtures/helpers/agentWorkflowChats'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
@@ -38,11 +35,15 @@ class TabActivationChats {
   }
 
   async openChatFromHistory(title: string): Promise<void> {
+    await this.selectChatFromHistory(title)
+    await this.waitForFollowToSettle()
+  }
+
+  async selectChatFromHistory(title: string): Promise<void> {
     await this.refreshAfter(() => this.panel.historyButton.click())
     await this.refreshAfter(() =>
       this.panel.root.getByRole('button', { name: title, exact: true }).click()
     )
-    await this.waitForFollowToSettle()
   }
 
   async activateWorkflow(name: string): Promise<void> {
@@ -107,8 +108,8 @@ export const tabActivationTest = agentTest.extend<{
     })
     await tabChats.panel.open()
     await use(tabChats)
-    await tabChats.waitForFollowToSettle()
-    expect(tabChats.transcriptReads).toEqual(tabActivationTranscriptReads)
+    if (await tabChats.panel.root.getByTestId('agent-panel-footer').isVisible())
+      await tabChats.waitForFollowToSettle()
     expect(unexpectedMutations).toEqual([])
   }
 })

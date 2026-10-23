@@ -14,16 +14,16 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const SAVED_AT = '2026-09-22T10:00:00Z'
 
-interface SavedCloudWorkflow {
+interface CloudWorkflow {
   id: string
   name: string
-  content: ComfyWorkflowJSON
+  content?: ComfyWorkflowJSON
 }
 
 export class AgentWorkflowChatsMock {
   constructor(
     private readonly chats: {
-      workflows: SavedCloudWorkflow[]
+      workflows: CloudWorkflow[]
       threads: AgentThreadSummary[]
       transcripts: Record<string, AgentMessage[]>
     }
@@ -31,12 +31,17 @@ export class AgentWorkflowChatsMock {
 
   async route(page: Page): Promise<void> {
     const { workflows, threads, transcripts } = this.chats
-    const savedFiles: UserDataFullInfo[] = workflows.map(
-      ({ name, content }) => ({
-        path: `${name}.json`,
-        modified: Date.parse(SAVED_AT),
-        size: JSON.stringify(content).length
-      })
+    const savedFiles: UserDataFullInfo[] = workflows.flatMap(
+      ({ name, content }) =>
+        content === undefined
+          ? []
+          : [
+              {
+                path: `${name}.json`,
+                modified: Date.parse(SAVED_AT),
+                size: JSON.stringify(content).length
+              }
+            ]
     )
     const cloudWorkflows: WorkflowListResponse = {
       data: workflows.map(({ id, name }) => ({
@@ -83,7 +88,8 @@ export class AgentWorkflowChatsMock {
         url.searchParams.get('dir') === 'workflows',
       (route) => route.fulfill(jsonRoute(savedFiles))
     )
-    for (const { name, content } of workflows)
+    for (const { name, content } of workflows) {
+      if (content === undefined) continue
       await page.route(
         (url) =>
           decodeURIComponent(url.pathname).endsWith(
@@ -94,5 +100,6 @@ export class AgentWorkflowChatsMock {
             ? route.fulfill(jsonRoute(content))
             : route.fallback()
       )
+    }
   }
 }
