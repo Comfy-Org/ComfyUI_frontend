@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@/platform/telemetry/types'
@@ -14,8 +16,9 @@ const { addAction, addTiming, distribution, setViewLoadingTime } = vi.hoisted(
   })
 )
 
-vi.mock<unknown>(import('@/platform/telemetry/rumContext'), () => ({
-  getDatadogRum: () => ({ addAction, addTiming, setViewLoadingTime })
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
+  getDatadogRum: () =>
+    fromPartial<DatadogRum>({ addAction, addTiming, setViewLoadingTime })
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))

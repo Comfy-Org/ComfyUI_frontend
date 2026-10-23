@@ -13,13 +13,7 @@ const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
 let installedRum: DatadogRum | undefined
 let resolvedBucket: FrontendBucket | undefined
 
-/**
- * Maps a hostname to the deploy environment name Datadog/backend engineers
- * already use to distinguish prod from testcloud/staging — shared here so a
- * caller identifying "which backend is this" (e.g. a bug-report payload)
- * reads the same classification RUM does, instead of a second hostname list
- * that can drift from this one.
- */
+/** The Datadog deploy environment for a hostname, or `undefined` when untracked. */
 export function resolveDeployEnv(
   hostname = window.location.hostname
 ): DeployEnv | undefined {
@@ -43,15 +37,7 @@ export function setFrontendBucket(bucket: FrontendBucket): void {
   resolvedBucket = bucket
 }
 
-/**
- * The canary/stable split, resolved once from the deploy's own
- * `X-Frontend-Bucket` response header rather than inferred from a release or
- * version string (D25) — other telemetry sinks that want the same fact
- * should read this instead of re-fetching it. `undefined` means the split
- * isn't known yet (probe still pending, failed, or off a tracked version),
- * not 'stable' — collapsing that into a default would mistag reports and
- * corrupt the canary/stable RUM comparison this header exists to support.
- */
+/** The canary/stable bucket from `X-Frontend-Bucket`; `undefined` until known. */
 export function getFrontendBucket(): FrontendBucket | undefined {
   return resolvedBucket
 }

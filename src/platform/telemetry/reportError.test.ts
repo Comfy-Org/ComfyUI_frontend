@@ -1,3 +1,5 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
@@ -19,12 +21,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/rumContext'), () => ({
+vi.mock(import('@/platform/telemetry/rumContext'), () => ({
   getFrontendBucket: () => mockFrontendBucket.value,
-  getDatadogRum: () => ({
-    addError: (...args: unknown[]) => addError(...args),
-    getInitConfiguration: () => getInitConfiguration()
-  })
+  getDatadogRum: () =>
+    fromPartial<DatadogRum>({
+      addError: (...args: unknown[]) => addError(...args),
+      getInitConfiguration: () => getInitConfiguration()
+    })
 }))
 
 vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
