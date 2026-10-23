@@ -28,6 +28,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -864,6 +865,21 @@ function onWorkflowAdopted(
   }
 }
 
+async function onWorkflowRestoredAndBound(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const { ready, committedWorkflowId } = await onWorkflowRestored(
+    workflowId,
+    isCurrent
+  )
+  if (committedWorkflowId === null || !isCurrent()) return ready
+  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
+  if (boundWorkflowId.value !== committedWorkflowId)
+    bindWorkflow(committedWorkflowId)
+  return ready
+}
+
 function warnWorkflowUnavailable(): void {
   toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
@@ -947,7 +963,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: onWorkflowRestoredAndBound,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()

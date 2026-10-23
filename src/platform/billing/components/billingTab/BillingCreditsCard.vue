@@ -163,7 +163,8 @@ const { t, d, locale } = useI18n()
 
 const HINT_KEYS = {
   subscribe: 'workspacePanel.billingTab.credits.subscribe',
-  resubscribe: 'workspacePanel.billingTab.credits.resubscribe'
+  resubscribe: 'workspacePanel.billingTab.credits.resubscribe',
+  memberResubscribe: 'workspacePanel.billingTab.credits.memberResubscribe'
 } as const
 
 const WHOLE = { maximumFractionDigits: 0 }

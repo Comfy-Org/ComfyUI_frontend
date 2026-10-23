@@ -31,13 +31,15 @@ const activeFacts: CreditsCardFacts = {
   billingStatus: 'paid',
   planPoolCredits: 1000,
   isCloud: true,
+  canManageSubscription: true,
   renewalDate: null
 }
 
 const CARD_NOTES = [
   'Your runs used 211 more credits than you had.',
-  'Subscribe to use credits on Cloud.',
-  'Resubscribe to use credits on Cloud.',
+  'Subscribe to run workflows on Cloud.',
+  'Resubscribe to run workflows on Cloud.',
+  'Your workspace owner needs to resubscribe to run workflows on Cloud.',
   "Couldn't load your balance."
 ]
 
@@ -129,7 +131,7 @@ describe('BillingCreditsCard', () => {
       topUp: null,
       inUse: false,
       addCredits: true,
-      notes: ['Subscribe to use credits on Cloud.']
+      notes: ['Subscribe to run workflows on Cloud.']
     },
     {
       case: 'an ended plan on Cloud',
@@ -142,7 +144,23 @@ describe('BillingCreditsCard', () => {
       topUp: null,
       inUse: false,
       addCredits: true,
-      notes: ['Resubscribe to use credits on Cloud.']
+      notes: ['Resubscribe to run workflows on Cloud.']
+    },
+    {
+      case: 'an ended plan for a member on Cloud',
+      facts: {
+        planKind: 'ended',
+        canManageSubscription: false,
+        balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
+      },
+      available: '422',
+      plan: null,
+      topUp: null,
+      inUse: false,
+      addCredits: true,
+      notes: [
+        'Your workspace owner needs to resubscribe to run workflows on Cloud.'
+      ]
     },
     {
       case: 'no plan off Cloud',
