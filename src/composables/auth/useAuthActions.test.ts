@@ -6,7 +6,7 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -664,6 +664,41 @@ describe('useAuthActions.reportError', () => {
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
+
+  describe('inside Comfy Desktop, which takes over the sign-in popup', () => {
+    beforeEach(() => {
+      window.__comfyDesktop2 = {}
+    })
+
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('points a blocked popup at the system browser instead of the pop-up blocker', () => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'info',
+          title: 'auth.desktopHost.continueInBrowser'
+        })
+      ])
+    })
+
+    it.for(
+      popupPermissionCodes.filter((code) => code !== 'auth/popup-blocked')
+    )('still warns for %s, which the user caused', (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(useToast().warning).toHaveBeenCalledWith('g.warning', {
+        description: `auth.errors.${code}`
+      })
+    })
+  })
 
   it('reports an account collision as an error, not a popup warning', () => {
     const { reportError, accessError } = useAuthActions()
