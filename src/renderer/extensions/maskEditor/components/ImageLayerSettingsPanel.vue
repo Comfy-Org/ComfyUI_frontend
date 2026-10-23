@@ -27,19 +27,13 @@
           :collision-padding="10"
         >
           <template #trigger>
-            <button
-              type="button"
-              class="flex h-8 items-center gap-1 rounded-lg border-none bg-secondary px-2 text-sm transition-colors duration-100 hover:bg-accent"
+            <MenuTriggerButton
               :aria-labelledby="`${labelId} mask-blend-mode-value`"
             >
               <span id="mask-blend-mode-value">
                 {{ blendModeLabels[store.maskBlendMode] }}
               </span>
-              <i
-                class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
-                aria-hidden="true"
-              />
-            </button>
+            </MenuTriggerButton>
           </template>
         </Menu>
       </template>
@@ -53,11 +47,10 @@
         data-testid="mask-layer-row"
         :class="
           cn(
-            'relative flex h-12 min-h-6 w-full cursor-pointer items-center gap-2.5 rounded-lg bg-secondary',
+            'relative flex h-12 min-h-6 w-full items-center gap-2.5 rounded-lg bg-secondary ring-inset',
             store.activeLayer === 'mask' && 'ring-2 ring-primary ring-inset'
           )
         "
-        @click="setActiveLayer('mask')"
       >
         <input
           type="checkbox"
@@ -67,13 +60,18 @@
           @click.stop
           @change="onMaskLayerVisibilityChange"
         />
-        <div class="h-7 w-9">
+        <button
+          type="button"
+          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0"
+          :aria-label="t('maskEditor.maskLayer')"
+          @click="setActiveLayer('mask')"
+        >
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
             <path
               d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19,1.9-2.24,2.24Z"
             />
           </svg>
-        </div>
+        </button>
       </div>
     </div>
 
@@ -85,11 +83,10 @@
         data-testid="paint-layer-row"
         :class="
           cn(
-            'relative flex h-12 min-h-6 w-full cursor-pointer items-center gap-2.5 rounded-lg bg-secondary',
+            'relative flex h-12 min-h-6 w-full items-center gap-2.5 rounded-lg bg-secondary ring-inset',
             store.activeLayer === 'rgb' && 'ring-2 ring-primary ring-inset'
           )
         "
-        @click="setActiveLayer('rgb')"
       >
         <input
           type="checkbox"
@@ -99,7 +96,12 @@
           @click.stop
           @change="onPaintLayerVisibilityChange"
         />
-        <div class="h-7 w-9">
+        <button
+          type="button"
+          class="flex h-7 w-9 cursor-pointer items-center border-none bg-transparent p-0"
+          :aria-label="t('maskEditor.paintLayer')"
+          @click="setActiveLayer('rgb')"
+        >
           <svg viewBox="0 0 20 20" class="size-full fill-foreground">
             <path
               d="M 17 6.965 c 0 0.235 -0.095 0.47 -0.275 0.655 l -6.51 6.52 c -0.045 0.035 -0.09 0.075 -0.135 0.11 c -0.035 -0.695 -0.605 -1.24 -1.305 -1.245 c 0.035 -0.06 0.08 -0.12 0.135 -0.17 l 6.52 -6.52 c 0.36 -0.36 0.945 -0.36 1.3 0 c 0.175 0.175 0.275 0.415 0.275 0.65 Z"
@@ -108,7 +110,7 @@
               d="M 9.82 14.515 c 0 2.23 -3.23 1.59 -4.82 0 c 1.65 -0.235 2.375 -1.29 3.53 -1.29 c 0.715 0 1.29 0.58 1.29 1.29 Z"
             />
           </svg>
-        </div>
+        </button>
       </div>
     </div>
 
@@ -151,6 +153,7 @@ import { MaskBlendMode } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import MenuTriggerButton from './controls/MenuTriggerButton.vue'
 import SettingRow from './controls/SettingRow.vue'
 import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'

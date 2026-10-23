@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -9,6 +9,10 @@ import { MaskBlendMode } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
+
+function rowButton(testId: string) {
+  return within(screen.getByTestId(testId)).getByRole('button')
+}
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
@@ -201,7 +205,7 @@ describe('ImageLayerSettingsPanel', () => {
   })
 
   describe('layer rows', () => {
-    it('activates the mask layer from the row', async () => {
+    it('activates the mask layer from the row button', async () => {
       const user = userEvent.setup()
       mockStore.activeLayer = 'rgb'
       renderPanel({
@@ -210,12 +214,27 @@ describe('ImageLayerSettingsPanel', () => {
         } as unknown as ToolManager
       })
 
-      await user.click(screen.getByTestId('mask-layer-row'))
+      await user.click(rowButton('mask-layer-row'))
 
       expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
     })
 
-    it('activates the paint layer from the row', async () => {
+    it('activates the mask layer with Enter', async () => {
+      const user = userEvent.setup()
+      mockStore.activeLayer = 'rgb'
+      renderPanel({
+        toolManager: {
+          setActiveLayer: mockSetActiveLayer
+        } as unknown as ToolManager
+      })
+
+      rowButton('mask-layer-row').focus()
+      await user.keyboard('{Enter}')
+
+      expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
+    })
+
+    it('activates the paint layer with Space', async () => {
       const user = userEvent.setup()
       mockStore.activeLayer = 'mask'
       renderPanel({
@@ -224,7 +243,22 @@ describe('ImageLayerSettingsPanel', () => {
         } as unknown as ToolManager
       })
 
-      await user.click(screen.getByTestId('paint-layer-row'))
+      rowButton('paint-layer-row').focus()
+      await user.keyboard('[Space]')
+
+      expect(mockSetActiveLayer).toHaveBeenCalledWith('rgb')
+    })
+
+    it('activates the paint layer from the row button', async () => {
+      const user = userEvent.setup()
+      mockStore.activeLayer = 'mask'
+      renderPanel({
+        toolManager: {
+          setActiveLayer: mockSetActiveLayer
+        } as unknown as ToolManager
+      })
+
+      await user.click(rowButton('paint-layer-row'))
 
       expect(mockSetActiveLayer).toHaveBeenCalledWith('rgb')
     })
@@ -234,7 +268,7 @@ describe('ImageLayerSettingsPanel', () => {
       renderPanel()
 
       await expect(
-        user.click(screen.getByTestId('mask-layer-row'))
+        user.click(rowButton('mask-layer-row'))
       ).resolves.not.toThrow()
     })
   })

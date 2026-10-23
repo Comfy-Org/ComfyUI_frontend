@@ -114,9 +114,7 @@ describe('TopBarHeader', () => {
       const user = userEvent.setup()
       renderHeader()
 
-      await user.click(
-        screen.getByRole('button', { name: 'Image Transformations' })
-      )
+      await user.click(screen.getByRole('button', { name: 'Image' }))
       await user.click(screen.getByRole('menuitem', { name: label }))
 
       expect(mockCanvasTransform[method]).toHaveBeenCalledTimes(1)
@@ -134,9 +132,7 @@ describe('TopBarHeader', () => {
         const user = userEvent.setup()
         renderHeader()
 
-        await user.click(
-          screen.getByRole('button', { name: 'Image Transformations' })
-        )
+        await user.click(screen.getByRole('button', { name: 'Image' }))
         await user.click(screen.getByRole('menuitem', { name: label }))
 
         expect(console.error).toHaveBeenCalledWith(
@@ -147,12 +143,12 @@ describe('TopBarHeader', () => {
       }
     )
 
-    it('should name the trigger as image transformations', () => {
+    it('names the trigger from its visible text', () => {
       renderHeader()
 
-      expect(
-        screen.getByRole('button', { name: 'Image Transformations' })
-      ).toHaveAttribute('aria-label', 'Image Transformations')
+      expect(screen.getByRole('button', { name: 'Image' })).not.toHaveAttribute(
+        'aria-label'
+      )
     })
   })
 

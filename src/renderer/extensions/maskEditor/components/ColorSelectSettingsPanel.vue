@@ -66,19 +66,13 @@
           :collision-padding="10"
         >
           <template #trigger>
-            <button
-              type="button"
-              class="flex h-8 items-center gap-1 rounded-lg border-none bg-secondary px-2 text-sm transition-colors duration-100 hover:bg-accent"
+            <MenuTriggerButton
               :aria-labelledby="`${labelId} color-comparison-method-value`"
             >
               <span id="color-comparison-method-value">
                 {{ methodLabels[store.colorComparisonMethod] }}
               </span>
-              <i
-                class="icon-[lucide--chevron-down] size-3 text-muted-foreground"
-                aria-hidden="true"
-              />
-            </button>
+            </MenuTriggerButton>
           </template>
         </Menu>
       </template>
@@ -121,6 +115,7 @@ import Switch from '@/components/ui/switch/Switch.vue'
 import { ColorComparisonMethod } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
+import MenuTriggerButton from './controls/MenuTriggerButton.vue'
 import SettingRow from './controls/SettingRow.vue'
 import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'

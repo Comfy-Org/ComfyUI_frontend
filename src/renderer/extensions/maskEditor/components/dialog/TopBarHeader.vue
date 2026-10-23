@@ -5,23 +5,25 @@
         {{ t('maskEditor.title') }}
       </h3>
 
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary px-2.5 text-sm transition-colors duration-100 hover:bg-accent"
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1.5 px-2.5 text-sm"
         @click="onUndo"
       >
         <i class="icon-[lucide--undo-2] size-4" />
         {{ t('maskEditor.undo') }}
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary px-2.5 text-sm transition-colors duration-100 hover:bg-accent"
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1.5 px-2.5 text-sm"
         @click="onRedo"
       >
         <i class="icon-[lucide--redo-2] size-4" />
         {{ t('maskEditor.redo') }}
-      </button>
+      </Button>
 
       <Menu
         v-model:open="imageDropdownOpen"
@@ -34,7 +36,6 @@
         <template #trigger>
           <button
             type="button"
-            :aria-label="t('maskEditor.imageTransformations')"
             class="relative flex h-8 items-center justify-center gap-1 rounded-lg border-none bg-secondary px-2 text-center transition-colors duration-100 hover:bg-accent"
             @pointerdown.stop
           >
@@ -46,35 +47,37 @@
         </template>
       </Menu>
 
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary px-2.5 text-sm transition-colors duration-100 hover:bg-accent"
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1.5 px-2.5 text-sm"
         @click="onInvert"
       >
         <i class="icon-[lucide--flip-vertical-2] size-4" />
         {{ t('maskEditor.invertMask') }}
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-secondary px-2.5 text-sm transition-colors duration-100 hover:bg-accent"
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1.5 px-2.5 text-sm"
         @click="onClear"
       >
         <i class="icon-[lucide--trash-2] size-4" />
         {{ t('maskEditor.clear') }}
-      </button>
+      </Button>
     </div>
 
     <div class="flex gap-2">
-      <button
-        type="button"
-        class="flex h-8 items-center gap-1.5 rounded-lg border-none bg-primary px-3 text-sm font-medium text-foreground transition-colors duration-100 hover:bg-primary/90 disabled:opacity-50"
+      <Button
+        variant="primary"
+        class="gap-1.5 px-3"
         :disabled="!saveEnabled"
         @click="handleSave"
       >
         <i class="icon-[lucide--check] size-4" />
         {{ saveButtonText }}
-      </button>
+      </Button>
       <Button variant="secondary" class="gap-1.5 px-3" @click="handleCancel">
         <i class="icon-[lucide--x] size-4" />
         {{ t('g.cancel') }}
@@ -87,6 +90,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MenuTriggerButton from '@/renderer/extensions/maskEditor/components/controls/MenuTriggerButton.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import Button from '@/components/ui/button/Button.vue'
