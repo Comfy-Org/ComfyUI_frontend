@@ -32,7 +32,6 @@ const CONTEXT = { actor: 'agent:test:turn-1', opIds: ['op-1'] }
 const HUMAN_ACTOR = 'human:user-1:tab-1'
 const NODE_ID = 149
 const DIAGNOSTIC_BUDGET = 1024
-const OMISSION_MARKER_ALLOWANCE = 8
 
 function sinkNode(slot: Record<string, unknown>) {
   return {
@@ -219,15 +218,32 @@ describe('LiveGraphApplier malformed node report', () => {
 
     const context = onlyReportContext()
     expect(diagnosticStringChars(context)).toBeLessThanOrEqual(
-      DIAGNOSTIC_BUDGET + OMISSION_MARKER_ALLOWANCE
+      DIAGNOSTIC_BUDGET
     )
     expect(context).toMatchObject({ nodeId: '149', classType: 'TestSink' })
-    expect(context.valueShapes).toMatch(/\+\d+$/)
+    expect(context.valueShapes).toBe('')
     expect(context.producer).toMatchObject({
       origin: 'operation',
       actorKind: 'human',
       opId: expect.stringMatching(/\+\d+$/)
     })
+  })
+
+  it('does not add omission markers after short strings exhaust the budget', () => {
+    const applier = new LiveGraphApplier({ getGraph: () => new LGraph() })
+    const reportOnce = Reflect.get(applier, 'reportOnce')
+    assert(typeof reportOnce === 'function')
+
+    Reflect.apply(reportOnce, applier, [
+      'many-short-strings',
+      'many short strings',
+      'agent_graph_many_short_strings',
+      { values: Array.from({ length: 600 }, () => 'aa') }
+    ])
+
+    expect(diagnosticStringChars(onlyReportContext())).toBeLessThanOrEqual(
+      DIAGNOSTIC_BUDGET
+    )
   })
 
   it('names the stamping operation, and the actor kind without its user segments', () => {

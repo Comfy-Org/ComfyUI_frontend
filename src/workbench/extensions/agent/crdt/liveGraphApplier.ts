@@ -326,7 +326,10 @@ function boundedContext(
       continue
     }
     const kept = value.slice(0, Math.max(0, remaining - OMISSION_MARKER_CHARS))
-    truncated.set(diagnosticPath(path), `${kept}+${value.length - kept.length}`)
+    truncated.set(
+      diagnosticPath(path),
+      kept === '' ? '' : `${kept}+${value.length - kept.length}`
+    )
     remaining = 0
   }
   if (truncated.size === 0) return context
