@@ -17,7 +17,7 @@ interface SlotDefaultsExtension extends ComfyExtension {
   setDefaults(maxNum?: number | null): void
 }
 
-app.registerExtension({
+export const slotDefaultsExtension: ComfyExtension = {
   name: 'Comfy.SlotDefaults',
   suggestionsNumber: null,
   init(this: SlotDefaultsExtension) {
@@ -103,4 +103,4 @@ app.registerExtension({
       ].slice(0, max)
     }
   }
-})
+}

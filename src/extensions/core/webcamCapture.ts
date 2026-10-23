@@ -5,10 +5,11 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { uploadTempFile } from '@/services/uploadTempFile'
 
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 const webcamReady = new WeakMap<LGraphNode, Promise<HTMLVideoElement>>()
 
-app.registerExtension({
+export const webcamCaptureExtension: ComfyExtension = {
   name: 'Comfy.WebcamCapture',
   getCustomWidgets() {
     return {
@@ -159,4 +160,4 @@ app.registerExtension({
       btn.label = t('g.capture')
     })
   }
-})
+}

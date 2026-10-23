@@ -1,14 +1,16 @@
 import _ from 'es-toolkit/compat'
+import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { app, ComfyApp } from '@/scripts/app'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
+import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import type { ComfyExtension } from '@/types/comfy'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -31,6 +33,13 @@ function openMaskEditorFromClipspace(): void {
   openMaskEditor(node)
 }
 
+const warnOpenMaskEditorDeprecated = once(() =>
+  console.warn(
+    '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+      'Plugins should migrate to using the command system or direct node context menu integration.'
+  )
+)
+
 // Check if the dialog is already opened
 function isOpened(): boolean {
   return useDialogStore().isDialogOpen('global-mask-editor')
@@ -45,7 +54,7 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   store.setBrushSize(newBrushSize)
 }
 
-app.registerExtension({
+export const maskEditorExtension: ComfyExtension = {
   name: 'Comfy.MaskEditor',
   settings: [
     {
@@ -162,12 +171,9 @@ app.registerExtension({
     }
   },
   init() {
-    // Set up ComfyApp static methods for plugin compatibility (deprecated)
-    ComfyApp.open_maskeditor = openMaskEditorFromClipspace
-
-    console.warn(
-      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
-        'Plugins should migrate to using the command system or direct node context menu integration.'
-    )
+    ComfyApp.open_maskeditor = () => {
+      warnOpenMaskEditorDeprecated()
+      openMaskEditorFromClipspace()
+    }
   }
-})
+}

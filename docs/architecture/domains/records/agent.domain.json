@@ -148,6 +148,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/workbench/extensions/agent/composables/useAgentDockMount.billingContext.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/workbench/extensions/agent/composables/useAgentDockMount.test.ts",
       "role": "integration"
     },
@@ -806,6 +810,7 @@
         "src/workbench/extensions/agent/stores/agent/agentConsentStore.test.ts",
         "src/workbench/extensions/agent/composables/agent/useAgentConsent.test.ts",
         "src/workbench/extensions/agent/composables/useAgentDockMount.test.ts",
+        "src/workbench/extensions/agent/composables/useAgentDockMount.billingContext.test.ts",
         "src/components/graph/agentPanelMount.test.ts"
       ]
     },
