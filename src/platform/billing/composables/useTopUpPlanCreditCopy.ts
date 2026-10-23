@@ -2,25 +2,28 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 
+const LINE_KEYS = {
+  planRequiredSubscribe: 'credits.topUp.planRequiredSubscribe',
+  planRequiredResubscribe: 'credits.topUp.planRequiredResubscribe'
+} as const
+
+/** The plan-required Add credits line, or null when it does not apply. */
 export function useTopUpPlanCreditCopy() {
   const { t } = useI18n()
-  const { isInitialized, subscriptionStatus } = useBillingContext()
+  const { isInitialized, subscriptionState } = useBillingContext()
+  const { canTopUp } = useBillingCapabilities()
 
   return computed(() => {
     const line = topUpPlanCreditLine({
       isCloud,
       isBillingInitialized: isInitialized.value,
-      subscriptionStatus: subscriptionStatus.value
+      canTopUp: canTopUp.value,
+      subscriptionState: subscriptionState.value
     })
-    if (line === 'planRequiredSubscribe') {
-      return t('credits.topUp.planRequiredSubscribe')
-    }
-    if (line === 'planRequiredResubscribe') {
-      return t('credits.topUp.planRequiredResubscribe')
-    }
-    return t('credits.topUp.purchaseDisclosure')
+    return line === null ? null : t(LINE_KEYS[line])
   })
 }

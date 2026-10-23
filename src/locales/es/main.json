@@ -1259,7 +1259,6 @@
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
       "payAmount": "Pagar {amount}",
-      "purchaseDisclosure": "Comprar créditos no inicia una suscripción ni desbloquea flujos de trabajo de Cloud. Se requiere un plan para ejecutar flujos de trabajo en Cloud. Los nodos asociados de ComfyUI local y Desktop pueden usar créditos sin un plan.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
