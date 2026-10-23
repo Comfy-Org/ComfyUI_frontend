@@ -159,7 +159,7 @@ import SettingsSection from './controls/SettingsSection.vue'
 import SliderField from './controls/SliderField.vue'
 
 const { toolManager } = defineProps<{
-  toolManager?: ReturnType<typeof useToolManager>
+  toolManager?: Pick<ReturnType<typeof useToolManager>, 'setActiveLayer'>
 }>()
 
 const { t } = useI18n()

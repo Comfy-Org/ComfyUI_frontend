@@ -8,7 +8,7 @@ import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import { MaskBlendMode } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
-type ToolManager = ReturnType<typeof useToolManager>
+type ToolManager = Pick<ReturnType<typeof useToolManager>, 'setActiveLayer'>
 
 function rowButton(testId: string) {
   return within(screen.getByTestId(testId)).getByRole('button')
@@ -153,9 +153,7 @@ describe('ImageLayerSettingsPanel', () => {
       mockStore.activeLayer = 'rgb'
 
       renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
+        toolManager: { setActiveLayer: mockSetActiveLayer }
       })
 
       await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
@@ -173,9 +171,7 @@ describe('ImageLayerSettingsPanel', () => {
       mockStore.maskBlendMode = MaskBlendMode.Negative
 
       renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
+        toolManager: { setActiveLayer: mockSetActiveLayer }
       })
 
       await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
@@ -263,9 +259,7 @@ describe('ImageLayerSettingsPanel', () => {
       const user = userEvent.setup()
       mockStore.activeLayer = 'rgb'
       renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
+        toolManager: { setActiveLayer: mockSetActiveLayer }
       })
 
       rowButton('mask-layer-row').focus()
