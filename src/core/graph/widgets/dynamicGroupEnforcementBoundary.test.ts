@@ -214,12 +214,7 @@ describe('every layer bounds allocation independently', () => {
     const rows = node.widgets?.find((widget) => widget.name === 'rows')
     if (!rows) throw new Error('Missing mixed DynamicGroup controller')
 
-    expect(dynamicGroupRowAllocationBound(rows)).toBe(
-      Math.min(
-        MAX_DYNAMIC_GROUP_ROWS,
-        Math.floor(MAX_DYNAMIC_GROUP_ROW_RESOURCES / 19)
-      )
-    )
+    expect(dynamicGroupRowAllocationBound(rows)).toBe(215)
     expect(dynamicGroupRowAllocationBound(rows)).toBeLessThanOrEqual(
       Math.floor(MAX_OVERFLOW_WIDGETS / 6)
     )
