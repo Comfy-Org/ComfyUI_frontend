@@ -49,6 +49,7 @@
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
         :add-credits-variant="addCreditsVariant"
+        :plan-credit-note="planCreditNote"
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
@@ -110,6 +111,7 @@ import {
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
@@ -138,6 +140,7 @@ const addCreditsVariant = computed(() =>
     topupCheckout.banner.value
   )
 )
+const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()

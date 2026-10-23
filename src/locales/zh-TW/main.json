@@ -1259,7 +1259,6 @@
       "openCheckout": "開啟結帳頁面",
       "openPaymentPage": "開啟付款頁面",
       "payAmount": "支付 {amount}",
-      "purchaseDisclosure": "購買點數不會啟動訂閱，也不會解鎖雲端工作流程。必須訂閱方案才能在雲端執行工作流程。本機 ComfyUI 和桌面版中的合作夥伴節點無需方案即可使用點數。",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
       "purchaseSuccess": "點數儲值成功！",

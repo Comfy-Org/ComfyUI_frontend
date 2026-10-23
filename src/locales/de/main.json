@@ -1259,7 +1259,6 @@
       "openCheckout": "Checkout öffnen",
       "openPaymentPage": "Zahlungsseite öffnen",
       "payAmount": "{amount} bezahlen",
-      "purchaseDisclosure": "Der Kauf von Credits startet kein Abonnement und schaltet keine Cloud-Workflows frei. Zum Ausführen von Workflows in der Cloud ist ein Plan erforderlich. Partner-Nodes in lokalem ComfyUI und Desktop können Credits ohne Plan verwenden.",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",
       "purchaseSuccess": "Credits wurden erfolgreich hinzugefügt!",

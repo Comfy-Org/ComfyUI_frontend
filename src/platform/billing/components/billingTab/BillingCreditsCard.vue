@@ -60,10 +60,11 @@
             }}
           </p>
           <p
-            v-if="state.kind === 'noPlan' && state.hint"
+            v-if="planCreditNote"
             class="m-0 text-sm text-muted-foreground"
+            data-testid="billing-credits-plan-note"
           >
-            {{ $t(HINT_KEYS[state.hint]) }}
+            {{ planCreditNote }}
           </p>
         </div>
         <Button
@@ -152,10 +153,12 @@ import type { CreditsCardState } from '@/platform/billing/components/billingTab/
 const {
   state,
   canTopUp,
+  planCreditNote,
   addCreditsVariant = 'secondary'
 } = defineProps<{
   state: CreditsCardState
   canTopUp: boolean
+  planCreditNote: string | null
   addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
@@ -165,12 +168,6 @@ const emit = defineEmits<{
 }>()
 
 const { t, d, locale } = useI18n()
-
-const HINT_KEYS = {
-  subscribe: 'workspacePanel.billingTab.credits.subscribe',
-  resubscribe: 'workspacePanel.billingTab.credits.resubscribe',
-  memberResubscribe: 'workspacePanel.billingTab.credits.memberResubscribe'
-} as const
 
 const WHOLE = { maximumFractionDigits: 0 }
 

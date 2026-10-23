@@ -1259,7 +1259,6 @@
       "openCheckout": "فتح صفحة إتمام الدفع",
       "openPaymentPage": "فتح صفحة الدفع",
       "payAmount": "ادفع {amount}",
-      "purchaseDisclosure": "لا يؤدي شراء الأرصدة إلى بدء اشتراك أو فتح سير عمل Cloud. يلزم وجود خطة لتشغيل سير العمل على Cloud. يمكن للعقد الشريكة في ComfyUI المحلي وDesktop استخدام الأرصدة دون خطة.",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",
       "purchaseSuccess": "تمت إضافة الرصيد بنجاح!",

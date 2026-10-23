@@ -1259,7 +1259,6 @@
       "openCheckout": "Ouvrir la page de paiement",
       "openPaymentPage": "Ouvrir la page de paiement",
       "payAmount": "Payer {amount}",
-      "purchaseDisclosure": "L'achat de crédits ne démarre pas d'abonnement et ne déverrouille pas les workflows Cloud. Un forfait est nécessaire pour exécuter des workflows sur Cloud. Les nœuds partenaires dans ComfyUI local et Desktop peuvent utiliser des crédits sans forfait.",
       "purchaseError": "Échec de l'achat",
       "purchaseErrorDetail": "Échec de l'achat de crédits : {error}",
       "purchaseSuccess": "Crédits ajoutés avec succès !",
