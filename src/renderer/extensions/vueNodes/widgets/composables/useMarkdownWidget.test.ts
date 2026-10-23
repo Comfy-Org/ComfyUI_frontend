@@ -54,7 +54,7 @@ describe('useMarkdownWidget', () => {
     expect(callback).toHaveBeenCalledTimes(2)
   })
 
-  it('renders Markdown links and tables', () => {
+  it('renders Markdown links and tables', async () => {
     const node = createMockDOMWidgetNode()
     const widget = createMarkdownWidget(
       node,
@@ -62,8 +62,25 @@ describe('useMarkdownWidget', () => {
     )
     onTestFinished(() => widget.onRemove?.())
 
-    expect(widget.element.querySelector('a')?.textContent).toBe('Comfy')
+    await expect
+      .poll(() => widget.element.querySelector('a')?.textContent)
+      .toBe('Comfy')
     expect(widget.element.querySelector('table')?.textContent).toContain('Name')
+  })
+
+  it('renders text edited before the editor finishes loading', async () => {
+    const node = createMockDOMWidgetNode()
+    const widget = createMarkdownWidget(node, 'default')
+    onTestFinished(() => widget.onRemove?.())
+
+    const textarea = widget.element.querySelector('textarea')!
+    textarea.value = '# Loaded later'
+    textarea.dispatchEvent(new Event('change'))
+
+    await expect
+      .poll(() => widget.element.querySelector('h1')?.textContent)
+      .toBe('Loaded later')
+    expect(widget.element.textContent).not.toContain('default')
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {
