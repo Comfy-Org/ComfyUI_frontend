@@ -13,7 +13,10 @@ import {
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
 
-import { zCurrentWorkspaceResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zCurrentWorkspaceResponse,
+  zWorkspaceWithRole
+} from '@comfyorg/ingest-types/zod'
 
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -93,6 +96,21 @@ function sessionErrorMessageKey(
 }
 
 // Workspace auth has no Firebase fallback, so surface permanent failures.
+function readTabWorkspaceId(): string | null {
+  try {
+    const stored = sessionStorage.getItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
+    )
+    if (!stored) return null
+    const parsed = zWorkspaceWithRole
+      .pick({ id: true })
+      .safeParse(JSON.parse(stored))
+    return parsed.success ? parsed.data.id : null
+  } catch {
+    return null
+  }
+}
+
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   if (
     err.code === 'SSO_REQUIRED' &&
@@ -117,6 +135,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Read fresh after an await: the reactive flag can flip mid-mint, and a
   // captured read is narrowed to the value at the function's opening guard.
   const unifiedRailEnabled = () => flags.unifiedCloudAuthEnabled
+  // Read before the unified snapshot subscriber below can persist a boot-time
+  // personal mint over the workspace this tab was on.
+  const bootTabWorkspaceId = readTabWorkspaceId()
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
@@ -724,6 +745,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   return {
     // State
+    bootTabWorkspaceId,
     currentWorkspace,
     deniedWorkspaceId,
     workspaceToken,

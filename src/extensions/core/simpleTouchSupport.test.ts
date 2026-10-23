@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { app as comfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
+
+import { simpleTouchSupportExtension } from './simpleTouchSupport'
+import { installTouchPointerGuards } from './touchPointerGuards'
 
 type Viewport = Pick<
   DragAndScale,
@@ -19,6 +21,7 @@ const { canvasEl, container } = vi.hoisted(() => {
 })
 
 const processMouseDown = vi.fn()
+const processMouseMove = vi.fn()
 
 vi.mock(import('@/scripts/app'), () => {
   const ds: Viewport = {
@@ -29,7 +32,6 @@ vi.mock(import('@/scripts/app'), () => {
   }
   return {
     app: fromPartial<typeof comfyApp>({
-      registerExtension: (ext: ComfyExtension) => ext.setup?.(fromPartial({})),
       canvasEl,
       canvas: fromPartial({
         ds,
@@ -41,8 +43,17 @@ vi.mock(import('@/scripts/app'), () => {
 })
 
 LGraphCanvas.prototype.processMouseDown = processMouseDown
+LGraphCanvas.prototype.processMouseMove = processMouseMove
 
-await import('./simpleTouchSupport')
+function canvasPointerHandlers() {
+  const { processMouseDown, processMouseMove } = LGraphCanvas.prototype
+  return { processMouseDown, processMouseMove }
+}
+
+await simpleTouchSupportExtension.setup?.(fromPartial({}))
+const handlersAtImport = canvasPointerHandlers()
+installTouchPointerGuards()
+const handlersAfterInstall = canvasPointerHandlers()
 
 let nextTouchId = 0
 
@@ -127,4 +138,28 @@ describe('Comfy.SimpleTouchSupport', () => {
       expect(processMouseDown).not.toHaveBeenCalled()
     }
   )
+})
+
+describe('touch pointer guards', () => {
+  it('leaves the canvas pointer handlers untouched at import', () => {
+    expect(handlersAtImport.processMouseDown).toBe(processMouseDown)
+    expect(handlersAtImport.processMouseMove).toBe(processMouseMove)
+  })
+
+  it('wraps the canvas pointer handlers when installed', () => {
+    expect(handlersAfterInstall.processMouseDown).not.toBe(processMouseDown)
+    expect(handlersAfterInstall.processMouseMove).not.toBe(processMouseMove)
+  })
+
+  it('wraps the canvas pointer handlers only once when installed again', () => {
+    installTouchPointerGuards()
+
+    const handlers = canvasPointerHandlers()
+    expect(handlers.processMouseDown).toBe(
+      handlersAfterInstall.processMouseDown
+    )
+    expect(handlers.processMouseMove).toBe(
+      handlersAfterInstall.processMouseMove
+    )
+  })
 })

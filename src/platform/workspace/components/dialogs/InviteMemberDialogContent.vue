@@ -1,5 +1,5 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="onClose">
+  <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <template v-if="step === 'invited'">
         <i class="pi pi-check-circle size-4 text-success" />
@@ -84,15 +84,15 @@
         </Button>
       </div>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'

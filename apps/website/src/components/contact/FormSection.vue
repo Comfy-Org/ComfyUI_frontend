@@ -95,6 +95,7 @@ useHeroAnimation({
     <div ref="formRef" class="mt-12 lg:mt-0 lg:w-1/2">
       <HubspotFormEmbed
         :form-id="contactFormIds[locale] ?? englishFormId"
+        track-vfx-leads
         :locale
       />
     </div>

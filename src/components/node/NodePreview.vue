@@ -217,7 +217,7 @@ const truncateDefaultValue = (
   min-width: 300px;
   width: min-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;

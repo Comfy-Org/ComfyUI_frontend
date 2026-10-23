@@ -5,6 +5,7 @@ import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
@@ -48,6 +49,10 @@ type DeferredFileResult =
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  resolveStoredPreview?: (
+    file: File,
+    ref: string
+  ) => Promise<string | undefined>
   validate?: (file: File) => boolean | Promise<boolean>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
@@ -92,7 +97,7 @@ async function fileContentHash(file: File): Promise<string> {
 }
 
 function attachmentMediaKind(file: File): MediaKind {
-  if (hasImageType(file)) return 'image'
+  if (hasImageType(file) || isHdrImageFilename(file.name)) return 'image'
   if (hasVideoType(file)) return 'video'
   if (hasAudioType(file)) return 'audio'
   return getMediaTypeFromFilename(file.name)
@@ -102,6 +107,7 @@ function localPreview(
   file: File,
   kind: MediaKind
 ): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  if (isHdrImageFilename(file.name)) return {}
   const playable = kind === 'video' || kind === 'audio'
   const url =
     kind === 'image' || playable ? URL.createObjectURL(file) : undefined
@@ -318,6 +324,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
+      void showStoredPreview(id, file, result.ref)
       return 'uploaded'
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
@@ -329,6 +336,18 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (next) next()
       else activeUploads -= 1
     }
+  }
+
+  async function showStoredPreview(
+    id: string,
+    file: File,
+    ref: string
+  ): Promise<void> {
+    if (!options.resolveStoredPreview) return
+    const previewUrl = await options
+      .resolveStoredPreview(file, ref)
+      .catch(() => undefined)
+    if (previewUrl) options.update(id, { previewUrl })
   }
 
   function cancelUpload(id: string): void {

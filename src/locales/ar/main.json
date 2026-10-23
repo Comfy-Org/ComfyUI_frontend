@@ -4393,7 +4393,6 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
-    "activeJobStatus": "المهمة النشطة: {status}",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
@@ -5550,22 +5549,6 @@
     "retry": "حاول مرة أخرى"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "الرصيد المستخدم",
-        "date": "التاريخ",
-        "eventDetails": "تفاصيل الحدث",
-        "eventType": "نوع الحدث",
-        "user": "المستخدم"
-      },
-      "empty": "لا يوجد نشاط بعد.",
-      "fullActivity": "كل الأنشطة",
-      "hoverCard": {
-        "lastActivity": "آخر نشاط",
-        "partnerNodeUsed": "تم استخدام عقدة الشريك",
-        "totalCreditsUsed": "إجمالي الرصيد المستخدم"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "لن يتم تحصيل رسوم منك مرة أخرى. يحتفظ الأعضاء بإمكانية الوصول الكاملة حتى ذلك الحين. استأنف خطتك للاحتفاظ بأرصدة فريقك المشتركة.",
@@ -5701,12 +5684,6 @@
         "removeMember": "إزالة العضو",
         "resendInvite": "إعادة إرسال الدعوة",
         "setCreditLimit": "تعيين حد الرصيد"
-      },
-      "activity": {
-        "daysAgo": "منذ {count} يوم | منذ {count} أيام",
-        "hoursAgo": "منذ {n} ساعة",
-        "justNow": "الآن",
-        "minutesAgo": "منذ {n} دقيقة"
       },
       "columns": {
         "creditsUsed": "الأرصدة المستخدمة هذا الشهر",

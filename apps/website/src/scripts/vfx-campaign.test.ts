@@ -14,8 +14,11 @@ afterEach(() => {
   window.history.replaceState(null, '', '/')
 })
 
-function mount(markup: string) {
-  window.history.replaceState(null, '', '/solutions/vfx/?utm_source=linkedin')
+function mount(
+  markup: string,
+  pagePath = '/solutions/vfx/?utm_source=linkedin'
+) {
+  window.history.replaceState(null, '', pagePath)
   const root = document.createElement('div')
   root.innerHTML = markup
   document.body.append(root)
@@ -24,6 +27,64 @@ function mount(markup: string) {
 }
 
 describe('VFX campaign journey', () => {
+  it('plays a synchronized comparison as a pair and pauses outside videos', async () => {
+    const root = mount(
+      '<video aria-label="Hero"></video><div data-playback-group><video aria-label="Original"></video><video aria-label="Result"></video></div>'
+    )
+    const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
+    const original = within(root).getByLabelText<HTMLVideoElement>('Original')
+    const result = within(root).getByLabelText<HTMLVideoElement>('Result')
+    await hero.play()
+    await original.play()
+    await result.play()
+    expect(original.paused).toBe(false)
+    expect(result.paused).toBe(false)
+    expect(hero.paused).toBe(true)
+    await hero.play()
+    expect(original.paused).toBe(true)
+    expect(result.paused).toBe(true)
+  })
+
+  it('plays canvas examples and their comparison together until an outside video starts', async () => {
+    const root = mount(
+      '<video aria-label="Hero"></video><section data-playback-group><div data-playback-background><video aria-label="Preview" data-src="sample.mp4"></video></div><div data-playback-group><video aria-label="Original"></video><video aria-label="Result"></video></div></section>'
+    )
+    const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
+    const preview = within(root).getByLabelText<HTMLVideoElement>('Preview')
+    const original = within(root).getByLabelText<HTMLVideoElement>('Original')
+    const result = within(root).getByLabelText<HTMLVideoElement>('Result')
+    const otherCanvas = document.createElement('section')
+    const otherPreview = document.createElement('video')
+    otherCanvas.dataset.playbackBackground = ''
+    otherCanvas.append(otherPreview)
+    root.append(otherCanvas)
+    await original.play()
+    await result.play()
+    await preview.play()
+    await otherPreview.play()
+    expect([
+      preview.paused,
+      original.paused,
+      result.paused,
+      otherPreview.paused
+    ]).toEqual([false, false, false, false])
+    const heroComparison = document.createElement('div')
+    heroComparison.dataset.playbackGroup = ''
+    const heroOriginal = document.createElement('video')
+    heroComparison.append(heroOriginal)
+    root.append(heroComparison)
+    await heroOriginal.play()
+    expect([preview.paused, otherPreview.paused]).toEqual([false, false])
+    expect([original.paused, result.paused]).toEqual([true, true])
+    await hero.play()
+    expect([
+      preview.paused,
+      original.paused,
+      result.paused,
+      otherPreview.paused
+    ]).toEqual([true, true, true, true])
+  })
+
   it('pauses other videos, including later mounts, until cleanup', async () => {
     const root = mount('<video aria-label="Hero"></video>')
     const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
@@ -42,6 +103,7 @@ describe('VFX campaign journey', () => {
 
   it.for([
     { attribute: 'data-campaign-hero', placement: 'hero' },
+    { attribute: 'data-vfx-hero', placement: 'hero' },
     { attribute: 'id="workflows"', placement: 'workflows' },
     { attribute: 'id="studio"', placement: 'studio' },
     { attribute: '', placement: 'page' }
@@ -99,4 +161,43 @@ describe('VFX campaign journey', () => {
     link.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(captureVfxLinkClick).not.toHaveBeenCalled()
   })
+})
+
+it('keeps only the marked V3 nav cloud link free of UTMs across decoration and updates', async () => {
+  const root = mount(
+    '<nav><a data-vfx-nav-no-utm href="https://cloud.comfy.org/?share=keep&utm_source=old">Try Comfy Cloud</a></nav><a href="/contact/?interest=vfx">Contact</a>',
+    '/solutions/vfx/v3/?utm_source=linkedin'
+  )
+  const nav = within(root).getByRole('link', { name: 'Try Comfy Cloud' })
+  expect(nav).toHaveAttribute('href', 'https://cloud.comfy.org/?share=keep')
+  expect(within(root).getByRole('link', { name: 'Contact' })).toHaveAttribute(
+    'href',
+    '/contact/?interest=vfx&utm_source=linkedin'
+  )
+  nav.setAttribute(
+    'href',
+    'https://cloud.comfy.org/?share=keep&utm_campaign=readded'
+  )
+  await vi.waitFor(() =>
+    expect(nav).toHaveAttribute('href', 'https://cloud.comfy.org/?share=keep')
+  )
+})
+it('does not apply the nav exception to VFX v2', () => {
+  const root = mount(
+    '<nav><a data-vfx-nav-no-utm href="https://cloud.comfy.org/">Try Comfy Cloud</a></nav>'
+  )
+  expect(
+    within(root).getByRole('link', { name: 'Try Comfy Cloud' })
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?utm_source=linkedin')
+})
+
+it('keeps attribution on a non-nav V3 link even if it has the nav marker', () => {
+  const root = mount(
+    '<a data-vfx-nav-no-utm href="https://cloud.comfy.org/?share=keep">Workflow</a>',
+    '/solutions/vfx/v3/?utm_source=linkedin'
+  )
+  expect(within(root).getByRole('link', { name: 'Workflow' })).toHaveAttribute(
+    'href',
+    'https://cloud.comfy.org/?share=keep&utm_source=linkedin'
+  )
 })

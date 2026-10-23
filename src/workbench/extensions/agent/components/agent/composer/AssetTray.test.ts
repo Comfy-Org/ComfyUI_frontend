@@ -162,9 +162,12 @@ describe('asset tray previews', () => {
       await vi.advanceTimersByTimeAsync(250)
       expect(screen.getAllByRole('dialog')).toHaveLength(1)
       expect(screen.getByRole('dialog', { name: 'dog.png' })).toBeVisible()
-      expect(player.currentTime).toBe(0)
       expect(pause).toHaveBeenCalled()
       expect(player).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: `Preview ${name}` }))
+      const reopenedPlayer = screen.getByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 })

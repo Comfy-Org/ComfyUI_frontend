@@ -136,10 +136,10 @@ import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import type {
   SubscriptionTier,
   WorkspaceRole,

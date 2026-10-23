@@ -239,6 +239,8 @@ export interface PostMessageInput {
   clientMessageId?: string
 }
 
+const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
+
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
  * JSON body rather than sent as an explicit null-ish key. `false` and `0` are
@@ -675,7 +677,13 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      // Not `client_message_id`'s sibling: this is THIS TAB's ComfyUI socket
+      // id, which local agent runs are submitted under so their execution
+      // events reach this canvas (PM-1875). Read ambiently rather than taken
+      // from `req` because it belongs to the socket, not to the message.
+      client_id: api.clientId,
+      client_version: CLIENT_VERSION
     })
     return request(
       'post_thread_message',

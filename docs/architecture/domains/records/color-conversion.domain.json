@@ -14,7 +14,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Color conversion preserves its existing behavior",

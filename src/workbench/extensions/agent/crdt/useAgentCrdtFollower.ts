@@ -42,9 +42,12 @@ import { DocFrameClient } from './docFrameClient'
 import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
+import {
+  readDocPromotedWidgets,
+  readSubgraphDefinitionIds
+} from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
@@ -56,6 +59,7 @@ export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 interface ProjectionFrameId {
   opIds?: readonly string[]
   seq: number
+  isLive?: boolean
 }
 
 const NOTHING_APPLIED: FrameOutcome = {
@@ -154,9 +158,8 @@ function notifyAgentMaterialization(
     const nodeId = parseNodeId(id)
     if (nodeId) pendingLiveNodeIds.delete(nodeId)
   }
-  const isLiveAgentUpdate =
-    !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate) {
+  const liveAgentUpdate = isLiveAgentUpdate(update)
+  if (liveAgentUpdate) {
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
@@ -169,7 +172,7 @@ function notifyAgentMaterialization(
   ])
   emitPendingMaterializations(
     update.workflowId,
-    isLiveAgentUpdate ? update.actor : undefined,
+    liveAgentUpdate ? update.actor : undefined,
     available,
     pendingLiveNodeIds,
     events
@@ -194,6 +197,11 @@ function opsResultDropReason(
 }
 
 interface AgentCrdtFollowerEvents {
+  onAppliedUpdate?: (event: {
+    workflowId: string
+    opIds: readonly string[]
+    isLive: boolean
+  }) => void
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -214,6 +222,19 @@ interface AgentCrdtFollowerEvents {
    * single message for every permanent reason.
    */
   onSyncError?: (message?: string, code?: string) => void
+}
+
+function notifyAppliedUpdate(
+  update: ClassifiedDocUpdate,
+  outcome: FrameOutcome,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (!outcome.applied || outcome.failureCount > 0) return
+  events.onAppliedUpdate?.({
+    workflowId: update.workflowId,
+    opIds: update.opIds ?? [],
+    isLive: !update.catchUp
+  })
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -237,31 +258,6 @@ type AgentCrdtApplierDeps = Omit<
   LiveGraphApplierDeps,
   'getGraph' | 'holdsLocalWrite'
 >
-
-function reportRejectedHumanOps(
-  workflowId: string | null,
-  ops: readonly Op[],
-  result: OpsResultView
-): void {
-  const settled = new Set([...result.applied, ...result.skipped])
-  const rejected = ops.filter((op) => !settled.has(op.op_id))
-  const { failed } = result
-  reportError(
-    new Error(
-      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
-    ),
-    {
-      surface: 'agent',
-      errorType: 'agent_crdt_human_ops_rejected',
-      context: {
-        workflowId,
-        opId: failed?.op_id ?? rejected[0]?.op_id,
-        code: failed?.code,
-        rejectedOps: rejected.map((op) => op.op)
-      }
-    }
-  )
-}
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
@@ -355,6 +351,8 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    docHasSubgraphDefinition: (definitionId: string) =>
+      follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () => follower.value?.subscriptionSent() ?? false
@@ -489,8 +487,6 @@ function startAgentCrdtFollower(
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
     const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
     if (workflowId === null) return
 
     const applied = new Set(outcome.result.applied)
@@ -510,8 +506,10 @@ function startAgentCrdtFollower(
   }
 
   const settleHumanOps = (outcome: BatchOutcome) => {
-    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
-    recordDevEvent('human_ops_settled', outcome)
+    if (outcome.state === 'acknowledged') {
+      trackAcknowledgedDeletes(outcome)
+      recordDevEvent('human_ops_settled', outcome)
+    }
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
@@ -532,7 +530,9 @@ function startAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
-    tab: tabId,
+    get tab() {
+      return tabId
+    },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
@@ -555,7 +555,11 @@ function startAgentCrdtFollower(
   }
   const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
     const frames = pendingProjectionFrames.get(update.workflowId)
-    const frame = { opIds: update.opIds, seq: update.seq }
+    const frame = {
+      opIds: update.opIds,
+      seq: update.seq,
+      isLive: !update.catchUp
+    }
     if (frames) frames.push(frame)
     else pendingProjectionFrames.set(update.workflowId, [frame])
   }
@@ -568,6 +572,29 @@ function startAgentCrdtFollower(
     pendingProjectionFrames.delete(workflowId)
     for (const frame of frames ?? [])
       reportAgentProjection(frame, stage, outcome)
+  }
+  const notifyPendingFramesApplied = (
+    workflowId: string,
+    frames: readonly ProjectionFrameId[]
+  ): void => {
+    for (const frame of frames) {
+      events.onAppliedUpdate?.({
+        workflowId,
+        opIds: frame.opIds ?? [],
+        isLive: frame.isLive ?? true
+      })
+    }
+  }
+  const flushPendingFrames = (
+    workflowId: string,
+    outcome: FrameOutcome
+  ): void => {
+    if (projectionAppliedCleanly(outcome))
+      notifyPendingFramesApplied(
+        workflowId,
+        pendingProjectionFrames.get(workflowId) ?? []
+      )
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
   const reportFrameProjection = (
     update: ClassifiedDocUpdate,
@@ -586,17 +613,28 @@ function startAgentCrdtFollower(
       if (isAgentFrame(update.actor)) retainPendingFrame(update)
       return
     }
-    if (stage === 'applied')
-      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    if (stage === 'applied') flushPendingFrames(update.workflowId, outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
   }
+  const settleCollectedProjection = (
+    workflowId: string,
+    outcome: Extract<FrameOutcome, { applied: true }>,
+    pendingFrames: readonly ProjectionFrameId[]
+  ): void => {
+    if (outcome.failureCount > 0) {
+      markProjectionStale(workflowId)
+      return
+    }
+    notifyPendingFramesApplied(workflowId, pendingFrames)
+    if (!projection.hasPendingFailure(workflowId))
+      clearProjectionStaleness(workflowId)
+  }
   const applyCollected = (workflowId: string): void => {
+    const pendingFrames = pendingProjectionFrames.get(workflowId) ?? []
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
     const settlesCatchUp = catchUpAwaitingProjectionFor === workflowId
-    if (outcome.failureCount > 0) markProjectionStale(workflowId)
-    else if (!projection.hasPendingFailure(workflowId))
-      clearProjectionStaleness(workflowId)
+    settleCollectedProjection(workflowId, outcome, pendingFrames)
     if (settlesCatchUp) clearSyncStaleness()
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
@@ -752,6 +790,7 @@ function startAgentCrdtFollower(
     retryFailedProjection(update.workflowId)
     const outcome = applyFrame(update)
     settleCatchUpProjection(update, outcome)
+    notifyAppliedUpdate(update, outcome, events)
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
@@ -1085,7 +1124,6 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
-      () => rejectedOpNotifier.cancel(),
       () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => {
@@ -1135,6 +1173,8 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    docHasSubgraphDefinition: (definitionId: string) =>
+      readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>

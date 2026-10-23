@@ -6,7 +6,7 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
@@ -26,10 +26,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
-const bridgeState = vi.hoisted(() => {
+const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
   let maxLiveSubscriptions = 0
   const countLiveSubscriptions = () =>
@@ -81,7 +82,7 @@ const bridgeState = vi.hoisted(() => {
       maxLiveSubscriptions = 0
     }
   }
-})
+})()
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
@@ -133,15 +134,7 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  LayoutFollowerBridge: class {
-    constructor() {
-      const bridge = new bridgeState.FakeBridge()
-      bridgeState.current = bridge
-      return bridge
-    }
-  }
-}))
+vi.mock(import('./layoutFollowerBridge'), { spy: true })
 
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
@@ -281,6 +274,11 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
+    vi.mocked(LayoutFollowerBridge).mockImplementation(function () {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return fromPartial<LayoutFollowerBridge>(bridge)
+    })
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -390,6 +388,7 @@ describe('useAgentCrdtFollower', () => {
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
     expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
 
@@ -407,6 +406,7 @@ describe('useAgentCrdtFollower', () => {
     window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
     vi.resetModules()
     const diagnostics = await import('./crdtDebugGate')
+    onTestFinished(diagnostics.startCrdtDebugGate())
     expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
     expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
 
@@ -1601,6 +1601,37 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reports exact workflow/op evidence after live and catch-up frames apply', () => {
+    const onAppliedUpdate = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onAppliedUpdate
+    })
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 7,
+      opIds: ['op-1', 'op-2']
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 8,
+      opIds: ['op-catch-up'],
+      catchUp: true
+    })
+
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
+      workflowId: 'wf-1',
+      opIds: ['op-1', 'op-2'],
+      isLive: true
+    })
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
+      workflowId: 'wf-1',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
+    unmount()
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
@@ -2041,6 +2072,51 @@ describe('useAgentCrdtFollower', () => {
           apply_failure_count: 2
         }
       ])
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'reports deferred op evidence once a later live frame applies it cleanly',
+        failureCount: 0,
+        expected: [
+          { workflowId: 'wf-1', opIds: ['op-b'], isLive: true },
+          { workflowId: 'wf-1', opIds: ['op-a'], isLive: true }
+        ]
+      },
+      {
+        name: 'withholds deferred op evidence when the later live frame fails to apply',
+        failureCount: 1,
+        expected: []
+      }
+    ])('$name', ({ failureCount, expected }) => {
+      const graph = shallowRef<LGraph | null>(null)
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onAppliedUpdate
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, failureCount)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(onAppliedUpdate.mock.calls.flat()).toEqual(expected)
       unmount()
     })
 
@@ -2584,10 +2660,11 @@ describe('useAgentCrdtFollower', () => {
       removed_count: 0,
       apply_failure_count: 0
     })
-    expect(telemetryState.reportError).toHaveBeenCalledWith(
+    expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'agent_crdt_human_ops_rejected',
+        errorType: 'error_applying_agent_graph_edit',
+        fingerprint: ['error_applying_agent_graph_edit'],
         context: expect.objectContaining({
           opId: ops[1].op_id,
           code: 'unknown_node'

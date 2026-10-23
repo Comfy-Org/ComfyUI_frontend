@@ -219,7 +219,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -293,7 +293,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
@@ -355,7 +355,7 @@ jobs:
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
         with:
-          name: snapshot-updates-${{ matrix.browser }}
+          name: snapshot-updates-${{ matrix.browser }}-${{ job.check_run_id }}
           path: snapshot-updates/
           retention-days: 7
           if-no-files-found: ignore
