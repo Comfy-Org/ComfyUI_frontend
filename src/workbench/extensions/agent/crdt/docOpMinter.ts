@@ -411,21 +411,14 @@ function routedWidgetOperation(
   }
 }
 
-/**
- * Drops a same-tick pending `add_node` together with every link command that
- * touched it: the doc never sees the node, so a `connect` naming it would
- * dangle, and a `disconnect` of such a link would target a link the doc
- * never had.
- */
 function withoutCancelledAdd(
   pending: PendingOp[],
   nodeId: NodeId
 ): PendingOp[] {
   const cancelledLinkIds = new Set<WireNodeId>()
   for (const entry of pending) {
-    const operation = entry.kind === 'add_node' ? undefined : entry.operation
-    if (operation?.op !== 'connect') continue
-    const { from_node, to_node, link_id } = operation
+    if (entry.kind !== 'connect') continue
+    const { from_node, to_node, link_id } = entry.operation
     if (from_node === nodeId || to_node === nodeId)
       cancelledLinkIds.add(link_id)
   }
@@ -441,21 +434,13 @@ function withoutCancelledAdd(
           !cancelledLinkIds.has(entry.operation.link_id)
         )
       case 'op':
-        return (
-          entry.operation.op !== 'connect' ||
-          !cancelledLinkIds.has(entry.operation.link_id)
-        )
+        return true
     }
   })
 }
 
-function isQueuedGrow(entry: PendingOp, linkId: WireNodeId): boolean {
-  return (
-    entry.kind === 'op' &&
-    entry.operation.op === 'connect' &&
-    entry.operation.link_id === linkId &&
-    'grow' in entry.operation
-  )
+function isQueuedConnect(entry: PendingOp, linkId: WireNodeId): boolean {
+  return entry.kind === 'connect' && entry.operation.link_id === linkId
 }
 
 function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
@@ -585,6 +570,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return false
     const key = pendingSlotKey(state)
     pendingDynamicSlots.delete(key)
+    forgetGrow(nodeKey(state.rootGraphId, state.nodeId), state.inputName)
     reportOnce(
       `dynamic_slot_timeout:${key}`,
       `Dynamic-combo input ${state.inputName} of node ${String(state.nodeId)} never reached the bound document; dropping its deferred link operations`,
@@ -1004,7 +990,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     for (const [key, state] of pendingDynamicSlots)
       if (
         !state.sent &&
-        !pending.some((entry) => isQueuedGrow(entry, state.growLinkId))
+        !pending.some((entry) => isQueuedConnect(entry, state.growLinkId))
       )
         pendingDynamicSlots.delete(key)
   }
@@ -1081,15 +1067,17 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     rootGraphId: RootGraphId,
     ops: readonly Op[]
   ): void {
-    for (const op of ops) {
-      if (op.op !== 'connect' || !op.grow) continue
-      const key = nodeKey(rootGraphId, op.to_node)
-      const grows = unechoedGrows.get(key)
-      if (!grows) continue
-      const names = grows.names.filter((name) => name !== op.grow.name)
-      if (names.length === 0) unechoedGrows.delete(key)
-      else unechoedGrows.set(key, { base: grows.base, names })
-    }
+    for (const op of ops)
+      if (op.op === 'connect' && op.grow)
+        forgetGrow(nodeKey(rootGraphId, op.to_node), op.grow.name)
+  }
+
+  function forgetGrow(key: string, grownName: string): void {
+    const grows = unechoedGrows.get(key)
+    if (!grows) return
+    const names = grows.names.filter((name) => name !== grownName)
+    if (names.length === 0) unechoedGrows.delete(key)
+    else unechoedGrows.set(key, { base: grows.base, names })
   }
 
   function addressLinkOperation(entry: PendingLinkOp): GraphOperation[] {
@@ -1168,10 +1156,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return true
     }
     if (state) return deferToDynamicSlot(state, entry)
-    schedule({
-      kind: 'op',
-      operation: { ...operation, to_slot: null, grow: address.grow }
-    })
+    schedule(entry)
     pendingDynamicSlots.set(
       dynamicSlotKey(rootGraphId, target.nodeId, target.input.name),
       {
@@ -1197,7 +1182,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const linkId = entry.operation.link_id
     if (state.sent || state.growLinkId !== linkId)
       return deferToDynamicSlot(state, entry)
-    pending = pending.filter((queued) => !isQueuedGrow(queued, linkId))
+    pending = pending.filter((queued) => !isQueuedConnect(queued, linkId))
     pendingDynamicSlots.delete(pendingSlotKey(state))
     return true
   }
