@@ -320,10 +320,6 @@ describe('postMessage wire body', () => {
     ).not.toContain('client_message_id')
   })
 
-  // ComfyUI delivers a prompt's execution events only to the socket that
-  // submitted it, so a local run the agent starts on our behalf has to be
-  // submitted as THIS tab or the canvas shows no node highlights, no progress
-  // and no outputs for it (PM-1875). Nothing else carries the id to the server.
   it("sends this tab's socket id so agent runs reach this canvas", async () => {
     vi.mocked(api).clientId = 'tab-socket-id'
     respond(jsonResponse(202, turnAccepted))
