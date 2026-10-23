@@ -1,13 +1,13 @@
 {
   "schemaVersion": 3,
-  "componentCount": 592,
+  "componentCount": 589,
   "documentedComponentCount": 91,
-  "missingStoryCount": 501,
+  "missingStoryCount": 498,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 314,
+    "page-local": 311,
     "reusable-candidate": 24,
     "template-local": 127
   },
@@ -98,7 +98,22 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/campaign/VfxHeroPrototype.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/campaign/VfxProofHero.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/campaign/VfxSampleScene.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/campaign/VfxSampleStudio.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -119,36 +134,6 @@
     },
     {
       "source": "src/components/careers/WhyJoinSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/HeroSection.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/NodeList.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/PackBanner.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/PackCard.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/PackDetail.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/cloud-nodes/PackGridSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -2536,17 +2521,14 @@
     "src/components/blocks/BuildConfiguratorChipGroup.vue",
     "src/components/blocks/PlayOverlay.vue",
     "src/components/booking-confirmation/ResourceList.vue",
+    "src/components/campaign/VfxHeroPrototype.vue",
     "src/components/campaign/VfxProofHero.vue",
+    "src/components/campaign/VfxSampleScene.vue",
+    "src/components/campaign/VfxSampleStudio.vue",
     "src/components/careers/HeroSection.vue",
     "src/components/careers/RolesSection.vue",
     "src/components/careers/TeamPhotosSection.vue",
     "src/components/careers/WhyJoinSection.vue",
-    "src/components/cloud-nodes/HeroSection.vue",
-    "src/components/cloud-nodes/NodeList.vue",
-    "src/components/cloud-nodes/PackBanner.vue",
-    "src/components/cloud-nodes/PackCard.vue",
-    "src/components/cloud-nodes/PackDetail.vue",
-    "src/components/cloud-nodes/PackGridSection.vue",
     "src/components/common/ContentSection.vue",
     "src/components/common/DirectorySearchField.vue",
     "src/components/common/DirectorySelect.vue",
