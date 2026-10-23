@@ -70,12 +70,7 @@
         :id
         ref="textAreaRef"
         v-model="modelValue"
-        :class="
-          cn(
-            'min-h-0 flex-1 resize-none rounded-none border-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground focus-visible:ring-0',
-            'overflow-hidden hover:overflow-auto focus:overflow-auto'
-          )
-        "
+        class="min-h-0 flex-1 resize-none overflow-y-auto rounded-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground focus-visible:ring-0"
         :placeholder
         :readonly="isReadOnly"
         data-capture-wheel="true"
