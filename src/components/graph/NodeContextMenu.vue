@@ -15,14 +15,12 @@
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <span class="flex-1">{{ item.label }}</span>
-        <Badge
+        <span
           v-if="item.badge"
-          variant="pill"
-          severity="default"
-          class="ml-3 px-1.5 uppercase"
+          class="ml-3 inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-2xs font-medium whitespace-nowrap text-foreground uppercase"
         >
           {{ item.badge }}
-        </Badge>
+        </span>
         <span
           v-if="item.shortcut"
           class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
@@ -42,7 +40,6 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Badge from '@/components/ui/badge/Badge.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
 import type {
