@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { TooltipContentEmits, TooltipContentProps } from 'reka-ui'
 import {
-  TooltipArrow,
   TooltipContent,
   injectTooltipRootContext,
   useForwardPropsEmits,
@@ -17,6 +16,7 @@ defineOptions({ inheritAttrs: false })
 const {
   class: className,
   sideOffset = 4,
+  alignOffset = 0,
   collisionPadding = 8,
   ...restProps
 } = defineProps<TooltipContentProps & { class?: HTMLAttributes['class'] }>()
@@ -44,7 +44,7 @@ watch(textElement, syncRepeatsTriggerName, { flush: 'post' })
 onUpdated(syncRepeatsTriggerName)
 
 const forwarded = useForwardPropsEmits(
-  computed(() => ({ sideOffset, collisionPadding, ...restProps })),
+  computed(() => ({ sideOffset, alignOffset, collisionPadding, ...restProps })),
   emits
 )
 </script>
@@ -68,11 +68,6 @@ const forwarded = useForwardPropsEmits(
         @escape-key-down="rootContext.onClose()"
       >
         <div ref="text" data-testid="tooltip-text"><slot /></div>
-        <TooltipArrow
-          :width="10"
-          :height="5"
-          class="-mt-px fill-background stroke-border"
-        />
       </TooltipContent>
     </div>
   </TooltipPortal>
