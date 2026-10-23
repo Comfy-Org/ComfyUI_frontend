@@ -1,3 +1,4 @@
+import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
@@ -78,12 +79,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 66500
+        price_cents: 66500,
+        period_charge_cents: 66500
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 63000
+        price_cents: 63000,
+        period_charge_cents: 756000
       }
     },
     {
@@ -92,12 +95,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 250000,
-        price_cents: 225000
+        price_cents: 225000,
+        period_charge_cents: 225000
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 250000,
-        price_cents: 200000
+        price_cents: 200000,
+        period_charge_cents: 2400000
       }
     }
   ]
@@ -822,12 +827,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 70000,
-            price_cents: 66550
+            price_cents: 66550,
+            period_charge_cents: 66550
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 70000,
-            price_cents: 63000
+            price_cents: 63000,
+            period_charge_cents: 756000
           }
         }
       ]
@@ -1207,6 +1214,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps a past-due team plan visible to a member, with the real credit balance', () => {
+    mockCanManageSubscription.value = false
+    mockIsActiveSubscription.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
+
+    renderComponent()
+
+    expect(
+      screen.queryByText('This workspace is not on a subscription')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'false'
+    )
   })
 
   it('keeps Billing & invoices available to unsubscribed team owners', async () => {

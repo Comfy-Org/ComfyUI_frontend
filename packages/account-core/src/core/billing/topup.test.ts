@@ -104,6 +104,7 @@ const CAPABILITIES = {
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
@@ -253,6 +254,7 @@ function harness(
     capabilities,
     credits,
     session,
+    transport,
     calls,
     answer,
     routes,
@@ -618,6 +620,25 @@ describe('createHostedTopupCheckout', () => {
       denial: 'tier_not_self_serve'
     })
     expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('sends no POST once the caller aborts during the pre-purchase reads', async () => {
+    const { command, transport, routes } = harness()
+    const scope = new AbortController()
+    const answerRead = vi.mocked(transport).getMockImplementation()
+    vi.mocked(transport).mockImplementation(async (request) => {
+      if (request.route === '/billing/balance') scope.abort()
+      return answerRead ? answerRead(request) : NO_RESPONSE
+    })
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 1000,
+        returnUrl: RETURN_URL,
+        signal: scope.signal
+      })
+    ).resolves.toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    expect(routes()).not.toContain(`POST ${TOPUP_CHECKOUT_ROUTE}`)
   })
 
   it('rejects an amount or return URL outside the generated contract without sending anything', async () => {

@@ -9,11 +9,7 @@
         <DialogOverlay v-reka-z-index />
         <DialogContent
           v-reka-z-index
-          v-bind="
-            item.dialogComponentProps.headless
-              ? {}
-              : { 'aria-labelledby': item.key }
-          "
+          v-bind="isNamedByHeader(item) ? { 'aria-labelledby': item.key } : {}"
           :size="
             item.dialogComponentProps.headless
               ? 'fit'
@@ -115,6 +111,13 @@ const dialogStore = useDialogStore()
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
+}
+
+function isNamedByHeader(item: DialogInstance) {
+  return (
+    !item.dialogComponentProps.headless &&
+    (!!item.headerComponent || !!item.title)
+  )
 }
 
 function hasCloseButton({ dialogComponentProps }: DialogInstance) {

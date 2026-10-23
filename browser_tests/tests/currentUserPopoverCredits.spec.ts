@@ -37,6 +37,7 @@ const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
 const mockTokenResponse: WorkspaceTokenResponse = {
   token: 'mock-workspace-token',
   expires_at: FUTURE_DATE,
+  user_id: 'uid-1',
   workspace: {
     id: 'ws-personal',
     name: PERSONAL_WORKSPACE_NAME,

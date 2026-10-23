@@ -21,6 +21,8 @@ const funded: BillingBannerInputs = {
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
   hasScheduledChange: false,
+  topUpDeniedPastDue: false,
+  runDeniedPastDue: false,
   unifiedBillingSettingsEnabled: false,
   isActive: true
 }
@@ -173,7 +175,8 @@ describe('deriveBillingBanner', () => {
       derive({
         unifiedBillingSettingsEnabled: true,
         isActive: false,
-        hasFunds: false
+        hasFunds: false,
+        topUpDeniedPastDue: true
       })
     ).toBeNull()
   })
@@ -259,6 +262,58 @@ describe('deriveBillingBanner', () => {
         canAccessSubscriptionFeatures: false
       })
     ).toBeNull()
+  })
+
+  it.for([
+    {
+      name: 'member whose run is denied for a past-due payment and has no credits',
+      inputs: {
+        canAccessSubscriptionFeatures: false,
+        hasFunds: false,
+        runDeniedPastDue: true
+      },
+      expected: 'outOfCredits' as const
+    },
+    {
+      name: 'past-due owner with no credits',
+      inputs: {
+        canAccessSubscriptionFeatures: false,
+        hasFunds: false,
+        topUpDeniedPastDue: true
+      },
+      expected: 'outOfCredits' as const
+    },
+    {
+      name: 'past-due workspace that still has credits',
+      inputs: {
+        canAccessSubscriptionFeatures: false,
+        hasFunds: true,
+        topUpDeniedPastDue: true
+      },
+      expected: null
+    },
+    {
+      name: 'past-due out of credits with billing control off',
+      inputs: {
+        canAccessSubscriptionFeatures: false,
+        hasFunds: false,
+        topUpDeniedPastDue: true,
+        billingControlEnabled: false
+      },
+      expected: null
+    },
+    {
+      name: 'dismissed past-due out of credits',
+      inputs: {
+        canAccessSubscriptionFeatures: false,
+        hasFunds: false,
+        topUpDeniedPastDue: true,
+        outOfCreditsDismissed: true
+      },
+      expected: null
+    }
+  ])('derives $name as $expected', ({ inputs, expected }) => {
+    expect(derive(inputs)).toBe(expected)
   })
 
   it('shows the plan change banner when the server reports a scheduled change', () => {

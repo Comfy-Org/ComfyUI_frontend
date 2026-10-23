@@ -8,7 +8,9 @@ import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/co
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
+import { isTopUpDeniedPastDue } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
@@ -38,6 +40,8 @@ export interface BillingBannerInputs {
   outOfCreditsDismissed: boolean
   planChangeDismissed: boolean
   hasScheduledChange: boolean
+  topUpDeniedPastDue: boolean
+  runDeniedPastDue: boolean
   unifiedBillingSettingsEnabled: boolean
   isActive: boolean
 }
@@ -98,6 +102,14 @@ function deriveLifecycleNotice(
   return showsPlanChange ? 'planChange' : null
 }
 
+function showsPastDueOutOfCredits(inputs: BillingBannerInputs): boolean {
+  return (
+    (inputs.topUpDeniedPastDue || inputs.runDeniedPastDue) &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  )
+}
+
 function cloudCreditBannersOpen(inputs: BillingBannerInputs): boolean {
   if (!inputs.unifiedBillingSettingsEnabled) return true
   return inputs.isActive
@@ -107,10 +119,12 @@ function deriveNoticeBanner(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
-  if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
+  const creditsOpen = cloudCreditBannersOpen(inputs)
+  if (creditsOpen && showsPastDueOutOfCredits(inputs)) return 'outOfCredits'
+  if (!inputs.canAccessSubscriptionFeatures) return null
   if (
-    cloudCreditBannersOpen(inputs) &&
+    creditsOpen &&
     inputs.hasFunds === false &&
     !inputs.outOfCreditsDismissed
   ) {
@@ -184,6 +198,7 @@ function useBillingBannerInternal() {
   } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
+  const { topUpDenial, runDeniedPaymentPastDue } = useBillingCapabilities()
 
   const { isPlanEnded, isPlanTerminal } = usePlanEnded()
   const planEndedDismissed = ref(false)
@@ -203,6 +218,8 @@ function useBillingBannerInternal() {
     planEndedDismissed: planEndedDismissed.value,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
     planChangeDismissed: planChangeDismissed.value,
+    topUpDeniedPastDue: isTopUpDeniedPastDue(topUpDenial.value),
+    runDeniedPastDue: runDeniedPaymentPastDue.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     isActive: subscription.value?.isActive === true,
     ...readSubscriptionInputs(subscription.value)
