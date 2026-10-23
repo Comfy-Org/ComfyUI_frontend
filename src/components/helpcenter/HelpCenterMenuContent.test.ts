@@ -1,8 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
+import { ConfigProvider } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -165,6 +166,39 @@ describe('HelpCenterMenuContent system status item', () => {
 })
 
 describe('HelpCenterMenuContent onboarding replay', () => {
+  it('keeps the submenu in its configured overlay owner', async () => {
+    useSettingStore().settingValues['Comfy.DevMode'] = true
+    const user = userEvent.setup()
+    render(
+      {
+        components: { ConfigProvider, HelpCenterMenuContent },
+        setup: () => ({ owner: ref<HTMLElement>() }),
+        template: `
+        <section ref="owner" aria-label="Help owner" />
+        <ConfigProvider v-if="owner" :teleport-to="owner">
+          <HelpCenterMenuContent />
+        </ConfigProvider>
+      `
+      },
+      {
+        global: {
+          plugins: [
+            createI18n({
+              legacy: false,
+              locale: 'en',
+              messages: { en: { ...enMessages, commands: enCommands } }
+            })
+          ]
+        }
+      }
+    )
+
+    await user.hover(await screen.findByRole('menuitem', { name: 'More...' }))
+    expect(screen.getByRole('region', { name: 'Help owner' })).toContainElement(
+      await screen.findByRole('menuitem', { name: 'Replay Onboarding' })
+    )
+  })
+
   it('is hidden outside developer mode', async () => {
     distribution.isDesktop = true
     useSettingStore().settingValues['Comfy.DevMode'] = false

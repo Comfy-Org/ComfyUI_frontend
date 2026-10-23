@@ -7,7 +7,7 @@
       side="bottom"
       :side-offset="4"
       :collision-padding="10"
-      class="z-1001 w-64 rounded-lg border bg-background px-4 py-1 shadow-md will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="w-64 rounded-lg px-4 py-1 will-change-[transform,opacity]"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent
@@ -104,12 +104,12 @@ import {
   ListboxFilter,
   ListboxItem,
   ListboxRoot,
-  PopoverContent,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
 
 import type { FilterChip } from '@/components/searchbox/v2/filterChip'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
