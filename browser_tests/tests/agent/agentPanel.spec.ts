@@ -230,6 +230,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect
       .poll(() =>
         navigatedVideo.evaluate(
+          (video: HTMLVideoElement) =>
+            video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+        )
+      )
+      .toBe(true)
+    await expect
+      .poll(() =>
+        navigatedVideo.evaluate(
           (video: HTMLVideoElement) => video.paused && video.currentTime === 0
         )
       )

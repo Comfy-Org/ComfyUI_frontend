@@ -152,6 +152,10 @@ function stopPreview(event: Event): void {
   const video = event.target
   if (video instanceof HTMLVideoElement) video.pause()
 }
+
+function clearPreviewing(asset: ReplyAsset): void {
+  if (previewing.value === asset.url) previewing.value = null
+}
 </script>
 
 <template>
@@ -202,7 +206,7 @@ function stopPreview(event: Event): void {
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
           @playing="previewing = asset.url"
-          @pause="previewing = null"
+          @pause="clearPreviewing(asset)"
         />
         <img
           v-else-if="modelThumbnails[asset.url]"
