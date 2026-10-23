@@ -481,6 +481,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isBusy = ref<boolean>(false)
   const workflowRenamed = createEventHook<ComfyWorkflow>()
   const userActivation = createEventHook<ComfyWorkflow>()
+  const reportActivationError = (error: unknown) =>
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'user_activation_listener_failure',
+      level: 'warning'
+    })
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
@@ -732,7 +738,23 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createNewTemporary,
     renameWorkflow,
     onWorkflowRenamed: workflowRenamed.on,
-    onUserActivation: userActivation.on,
+    // Every subscriber is wrapped at registration, which is the only point that
+    // can isolate them from each other. `trigger` runs listeners inside
+    // `Promise.all(fns.map(...))`, so one that throws synchronously both
+    // escapes into whoever reported the activation -- `openWorkflow`'s try,
+    // where it would end a navigation that succeeded, or `closeWorkflows`'
+    // finally, where it would replace the real close error -- and starves every
+    // listener `.map` had not reached yet. Neither is acceptable for a hook
+    // whole features subscribe to: a buggy subscriber must not fail a tab
+    // switch, nor silence its peers.
+    onUserActivation: (listener: (workflow: ComfyWorkflow) => unknown) =>
+      userActivation.on(async (workflow) => {
+        try {
+          await listener(workflow)
+        } catch (error) {
+          reportActivationError(error)
+        }
+      }),
     reportUserActivation: (workflow: ComfyWorkflow) =>
       void userActivation.trigger(workflow),
     deleteWorkflow,

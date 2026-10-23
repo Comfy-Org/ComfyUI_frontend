@@ -99,7 +99,9 @@ vi.mock<unknown>(
   () => ({
     useWorkflowThumbnail: () => ({
       storeThumbnail: storeThumbnailMock,
-      getThumbnail: vi.fn()
+      getThumbnail: vi.fn(),
+      clearThumbnail: vi.fn(),
+      moveWorkflowThumbnail: vi.fn()
     })
   })
 )
@@ -2077,6 +2079,40 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
       expect(activated.mock.calls).toEqual([[fallback]])
+    })
+
+    it('reports the tab a user lands on after deleting the active workflow', async () => {
+      const { byName, activated } = openThreeTabs()
+      Object.defineProperty(byName('first'), 'delete', {
+        value: vi.fn(async () => {})
+      })
+
+      await expect(
+        useWorkflowService().deleteWorkflow(byName('first'), true)
+      ).resolves.toBe(true)
+
+      expect(activated.mock.calls).toEqual([[byName('second')]])
+    })
+
+    it('keeps a throwing listener from failing the tab switch', async () => {
+      const workflowStore = useWorkflowStore()
+      const clicked = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/clicked.json'
+      })
+      activateOnLoad()
+      workflowStore.onUserActivation(() => {
+        throw new Error('subscriber blew up')
+      })
+      const settled = vi.fn()
+      workflowStore.onUserActivation(settled)
+
+      await expect(
+        useWorkflowService().openWorkflow(clicked, { initiator: 'user' })
+      ).resolves.toBe(true)
+
+      expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
+      expect(settled).toHaveBeenCalledWith(clicked)
     })
 
     it('does not report the default workflow when nothing asked as a user', async () => {
