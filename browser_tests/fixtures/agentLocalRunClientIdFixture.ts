@@ -14,6 +14,14 @@ import {
 /** A stale `sessionStorage` client id that must never reach the wire. */
 export const STALE_SESSION_CLIENT_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
 
+/**
+ * The frozen step the stalled run reports for the node it has reached. Declared
+ * here and passed explicitly rather than left to `stallJob`'s own defaults, so a
+ * spec asserting the rendered percentage can derive it from the frame it is
+ * reading back instead of hard-coding a figure that lives somewhere else.
+ */
+export const STALLED_NODE_PROGRESS = { value: 5, max: 20 }
+
 const turnPostBodySchema = zAgentPostMessageRequest
   .extend({
     client_message_id: z.string().optional(),
@@ -120,7 +128,10 @@ export const agentLocalRunTest = agentTest.extend<
 
     const startRunForUser = async (jobId: string) => {
       await execution.enqueueServerRun(jobId)
-      await execution.stallJob(jobId, { nodeId: TARGET_ID })
+      await execution.stallJob(jobId, {
+        nodeId: TARGET_ID,
+        ...STALLED_NODE_PROGRESS
+      })
     }
     const finishRunForUser = (jobId: string) =>
       execution.completeJob(jobId, {

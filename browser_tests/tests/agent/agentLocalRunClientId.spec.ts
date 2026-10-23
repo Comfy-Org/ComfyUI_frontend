@@ -2,10 +2,23 @@ import { expect } from '@playwright/test'
 
 import {
   STALE_SESSION_CLIENT_ID,
+  STALLED_NODE_PROGRESS,
   agentLocalRunTest as test
 } from '@e2e/fixtures/agentLocalRunClientIdFixture'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
+
+/**
+ * What the overlay prints for the step the stalled run is frozen at. Derived
+ * from the frame the fixture sends, so tuning that frame moves the expectation
+ * with it instead of failing with a figure that points nowhere. The run below
+ * guards that the step is a strict partial one, because deriving the figure is
+ * what keeps the two in step and is also what would let a step of 0 turn the
+ * assertion into "render whatever was sent".
+ */
+const stalledNodePercent = `${Math.round(
+  (STALLED_NODE_PROGRESS.value / STALLED_NODE_PROGRESS.max) * 100
+)}%`
 
 /**
  * Source: https://comfy-organization.slack.com/archives/C0BGH348Z0C/p1790791524330409
@@ -34,6 +47,30 @@ test.describe(
 
       await expect(runningOutline).toBeVisible()
 
+      // The outline only says *which* node is running. The report was also
+      // about a number — progress "stuck at 0%" — so pin the figure the queue
+      // overlay prints for that node. It is a second view over the same
+      // `executionStore` progress state the outline reads, not a second
+      // delivery path, so what this adds is the value and not extra coverage of
+      // the routing. Scoped to the current-node element because the overlay
+      // also prints a whole-run total, and visible rather than merely attached
+      // because the overlay's wrapper is `v-show`n.
+      //
+      // The stall has to be a strict partial step for that to mean anything: at
+      // 0 the expectation derives to the very symptom reported, and at `max` to
+      // a finished node. Asserted rather than assumed, because the figure below
+      // is computed from these two numbers.
+      expect(STALLED_NODE_PROGRESS.value).toBeGreaterThan(0)
+      expect(STALLED_NODE_PROGRESS.value).toBeLessThan(
+        STALLED_NODE_PROGRESS.max
+      )
+
+      const queuePanel = new QueuePanel(page)
+      await expect(queuePanel.progressCurrentNodePercent).toBeVisible()
+      await expect(queuePanel.progressCurrentNodePercent).toHaveText(
+        stalledNodePercent
+      )
+
       await finishRunForUser(jobId)
 
       await expect(outputImage).toBeVisible()
@@ -42,7 +79,6 @@ test.describe(
         new RegExp(outputFilename(jobId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       )
 
-      const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await expect(queuePanel.jobRow(jobId)).toBeVisible()
     })
