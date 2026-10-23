@@ -31,7 +31,6 @@
     "test:visual": "playwright test --project visual",
     "test:visual:update": "playwright test --project visual --update-snapshots",
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
-    "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
     "refresh:workshop-router-snapshot": "tsx ./scripts/refresh-workshop-router-snapshot.ts",
     "feature-flags:refresh-snapshot": "tsx ./scripts/refresh-feature-flags-snapshot.ts",
     "rate-card:generate-types": "openapi-ts -f openapi-ts.rate-card.config.ts && pnpm exec oxfmt --ignore-path .gitignore --write src/types/rate-card/index.ts src/types/rate-card/types.gen.ts src/types/rate-card/zod.gen.ts",

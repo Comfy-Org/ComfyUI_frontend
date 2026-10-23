@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { workspaceApi as realWorkspaceApi } from '../workspaceApi'
+import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 export class WorkspaceApiError extends Error {
   constructor(
@@ -108,6 +108,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_manage_subscription: false,
+          can_open_plans: false,
           can_run_workflows: false,
           can_upgrade: false,
           can_reactivate: false,

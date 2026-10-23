@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit'
 
-import type { Transform } from '../node'
+import type { Transform } from '#/node'
 import { drawPlacedInto, placedBounds } from './bake'
 import type { Bitmap } from './place'
 

@@ -830,6 +830,23 @@ describe('DynamicGroup widgets', () => {
     }
   )
 
+  it.for([false, true])(
+    'restores saved rows above max with named restoration = %s',
+    (named) => {
+      LiteGraph.namedValuesRestore = named
+      const wider = setup(0, 5)
+      wider.widget('loras').value = 4
+      wider.widget('loras.3.lora_name').value = 'C'
+      const saved = wider.node.serialize()
+      const { node, widget } = setup()
+
+      node.configure(saved)
+
+      expect(widget('loras').value).toBe(4)
+      expect(widget('loras.3.lora_name').value).toBe('C')
+    }
+  )
+
   it('rejects an unsupported saved row count stored as a numeric string', () => {
     LiteGraph.namedValuesRestore = false
     const { node } = setup()

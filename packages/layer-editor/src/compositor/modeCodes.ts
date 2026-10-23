@@ -1,4 +1,4 @@
-import type { BlendFn, ColorSpace, CompositeMode, EffectiveMode } from '../mode'
+import type { BlendFn, ColorSpace, CompositeMode, EffectiveMode } from '#/mode'
 
 export const BLEND_CODE: Record<BlendFn, number> = {
   normal: 0,

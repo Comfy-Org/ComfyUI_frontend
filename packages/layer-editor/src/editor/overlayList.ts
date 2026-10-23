@@ -1,5 +1,5 @@
-import type { Vec2 } from '../node'
-import type { CanvasItem, Overlay } from '../tool'
+import type { Vec2 } from '#/node'
+import type { CanvasItem, Overlay } from '#/tool'
 
 export class OverlayList implements Overlay {
   items: CanvasItem[] = []

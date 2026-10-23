@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 
-import type { Direction } from '../interfaces'
+import type { Direction } from '@/lib/litegraph/src/interfaces'
 
 export interface NewNodePosition {
   node: LGraphNode

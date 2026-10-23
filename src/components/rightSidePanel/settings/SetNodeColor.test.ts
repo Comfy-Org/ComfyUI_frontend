@@ -26,6 +26,8 @@ describe('SetNodeColor', () => {
     await user.tab()
 
     expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'No Color'
+    )
   })
 })

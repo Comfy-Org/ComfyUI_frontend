@@ -1,6 +1,6 @@
-import type { ContentStore } from '../content'
-import type { RasterData, SceneNode, Vec2 } from '../node'
-import { toLocalFrame } from '../tools/transformMath'
+import type { ContentStore } from '#/content'
+import type { RasterData, SceneNode, Vec2 } from '#/node'
+import { toLocalFrame } from '#/tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25
 

@@ -1,0 +1,274 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import '@/scripts/changeTracker'
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+  collectAllNodes: vi.fn(),
+  getExecutionIdByNode: vi.fn()
+}))
+
+vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
+  getCnrIdFromNode: vi.fn(() => undefined)
+}))
+
+vi.mock(import('@/i18n'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: false
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+
+import {
+  collectAllNodes,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
+import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
+
+function mockNode(
+  id: number,
+  type: string,
+  overrides: Record<string, unknown> = {}
+): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id,
+    type,
+    last_serialization: { type },
+    ...overrides
+  })
+}
+
+function mockGraph(): LGraph {
+  return fromAny<LGraph, unknown>({})
+}
+
+function getMissingNodesError(
+  store: ReturnType<typeof useMissingNodesErrorStore>
+) {
+  const error = store.missingNodesError
+  if (!error) throw new Error('Expected missingNodesError to be defined')
+  return error
+}
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => true)
+})
+
+describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
+  it('returns empty when all nodes are registered', () => {
+    const reg = LiteGraph.registered_node_types as Record<string, unknown>
+    reg['KSampler'] = {}
+
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'KSampler')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('clears an absorbed missing-node prompt when a rescan finds none', () => {
+    const missingNodesStore = useMissingNodesErrorStore()
+    missingNodesStore.surfaceMissingNodes([
+      {
+        type: 'MissingNode',
+        nodeId: '1',
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+    vi.mocked(collectAllNodes).mockReturnValue([])
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    expect(missingNodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.lastPromptError).toBeNull()
+  })
+
+  it('detects unregistered nodes as missing', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'OldNode'),
+      mockNode(2, 'AnotherOldNode')
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    expect(error.nodeTypes).toHaveLength(2)
+  })
+
+  it('skips registered nodes and lists only unregistered', () => {
+    const reg = LiteGraph.registered_node_types as Record<string, unknown>
+    reg['RegisteredNode'] = {}
+
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'RegisteredNode'),
+      mockNode(2, 'UnregisteredNode')
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    expect(error.nodeTypes).toHaveLength(1)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.type).toBe('UnregisteredNode')
+  })
+
+  it('uses executionId when available for nodeId', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(
+      createNodeExecutionId([toNodeId('exec-42')])
+    )
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.nodeId).toBe('exec-42')
+  })
+
+  it('falls back to node.id when executionId is null', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(99, 'Missing')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.nodeId).toBe('99')
+  })
+
+  it('populates cnrId from getCnrIdFromNode', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+    vi.mocked(getCnrIdFromNode).mockReturnValue('comfy-nodes/my-pack')
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.cnrId).toBe(
+      'comfy-nodes/my-pack'
+    )
+  })
+
+  it('marks node as replaceable when replacement exists', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'OldNode')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    const replacementStore = useNodeReplacementStore()
+    replacementStore.replacements = {
+      OldNode: [
+        {
+          old_node_id: 'OldNode',
+          new_node_id: 'NewNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        }
+      ]
+    }
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.isReplaceable).toBe(true)
+    expect(
+      typeof missing !== 'string' && missing.replacement?.new_node_id
+    ).toBe('NewNode')
+  })
+
+  it('marks node as not replaceable when no replacement', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'OldNode')])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.isReplaceable).toBe(false)
+  })
+
+  it('skips muted nodes (mode NEVER = 2)', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'MutedNode', { mode: 2 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('skips bypassed nodes (mode BYPASS = 4)', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'BypassedNode', { mode: 4 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    expect(store.missingNodesError).toBeNull()
+  })
+
+  it('detects active nodes (mode ALWAYS = 0) as missing', () => {
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'ActiveMissingNode', { mode: 0 })
+    ])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    expect(error.nodeTypes).toHaveLength(1)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.type).toBe(
+      'ActiveMissingNode'
+    )
+  })
+
+  it('uses last_serialization.type over node.type', () => {
+    const node = mockNode(1, 'LiveType')
+    node.last_serialization = fromPartial<LGraphNode['last_serialization']>({
+      type: 'OriginalType'
+    })
+    vi.mocked(collectAllNodes).mockReturnValue([node])
+    vi.mocked(getExecutionIdByNode).mockReturnValue(null)
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    const store = useMissingNodesErrorStore()
+    const error = getMissingNodesError(store)
+    const missing = error.nodeTypes[0]
+    expect(typeof missing !== 'string' && missing.type).toBe('OriginalType')
+  })
+})

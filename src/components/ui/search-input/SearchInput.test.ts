@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import SearchInput from './SearchInput.vue'
 
@@ -16,24 +15,25 @@ vi.mock(import('@vueuse/core'), () => ({
   })
 }))
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        clear: 'Clear',
-        searchPlaceholder: 'Search...'
-      }
-    }
-  }
-})
-
 describe('SearchInput', () => {
+  it('renders caller labels without an i18n plugin', () => {
+    render(SearchInput, {
+      props: {
+        modelValue: 'abc',
+        accessibleLabel: 'Rechercher',
+        clearLabel: 'Effacer',
+        placeholder: 'Rechercher...'
+      }
+    })
+    expect(
+      screen.getByRole('combobox', { name: 'Rechercher' })
+    ).toHaveAttribute('placeholder', 'Rechercher...')
+    expect(screen.getByRole('button', { name: 'Effacer' })).toBeVisible()
+  })
+
   function renderComponent(props = {}) {
     const result = render(SearchInput, {
       global: {
-        plugins: [i18n],
         stubs: {
           ComboboxRoot: {
             template: '<div><slot /></div>'
@@ -50,6 +50,9 @@ describe('SearchInput', () => {
         }
       },
       props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        placeholder: 'Search...',
         modelValue: '',
         ...props
       }
@@ -146,11 +149,6 @@ describe('SearchInput', () => {
       expect(
         screen.getByPlaceholderText('Custom search...')
       ).toBeInTheDocument()
-    })
-
-    it('should use i18n placeholder when not provided', () => {
-      renderComponent()
-      expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument()
     })
   })
 

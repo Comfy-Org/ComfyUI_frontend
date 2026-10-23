@@ -1,0 +1,64 @@
+<template>
+  <Button
+    :tooltip="buttonTooltip"
+    tooltip-side="bottom"
+    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4"
+    variant="subscribe"
+    size="unset"
+    data-testid="subscribe-to-run-button"
+    :data-dd-action-name="BILLING_ACTION_NAME.subscribeToRun"
+    @click="handleSubscribeToRun"
+  >
+    <i class="pi pi-lock" />
+    {{ buttonLabel }}
+  </Button>
+</template>
+
+<script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { registerSubscribeToRunPrompt } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
+
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
+import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+
+const { t } = useI18n()
+
+// Mounting suppresses TopbarSubscribeButton; see useSubscribeCtaPresence
+registerSubscribeToRunPrompt()
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMdOrLarger = breakpoints.greaterOrEqual('md')
+
+const { permissions } = useWorkspaceUI()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
+const { trackRunButton } = useRunButtonTelemetry()
+
+const canResubscribe = computed(() => permissions.value.canManageSubscription)
+
+const buttonLabel = computed(() => {
+  if (!canResubscribe.value) return t('subscription.inactive.runLabel')
+  return isMdOrLarger.value
+    ? t('subscription.subscribeToRunFull')
+    : t('subscription.subscribeToRun')
+})
+
+const buttonTooltip = computed(() =>
+  canResubscribe.value
+    ? t('subscription.subscribeToRunFull')
+    : t('subscription.inactive.memberRunTooltip')
+)
+
+function handleSubscribeToRun() {
+  if (isCloud) {
+    trackRunButton({ subscribe_to_run: true })
+  }
+
+  showSubscriptionDialog({ reason: 'subscribe_to_run' })
+}
+</script>

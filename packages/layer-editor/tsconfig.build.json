@@ -20,7 +20,8 @@
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/build.tsbuildinfo",
-    "types": []
+    "types": [],
+    "customConditions": ["@comfyorg/layer-editor"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]

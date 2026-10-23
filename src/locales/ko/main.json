@@ -4393,7 +4393,6 @@
     "viewControls": "보기 컨트롤"
   },
   "sideToolbar": {
-    "activeJobStatus": "진행 중인 작업: {status}",
     "assets": "에셋",
     "backToAssets": "모든 에셋으로 돌아가기",
     "browseTemplates": "예제 템플릿 탐색",
@@ -5550,22 +5549,6 @@
     "retry": "다시 시도"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "크레딧",
-        "date": "날짜",
-        "eventDetails": "이벤트 세부정보",
-        "eventType": "이벤트 유형",
-        "user": "사용자"
-      },
-      "empty": "아직 활동이 없습니다.",
-      "fullActivity": "전체 활동",
-      "hoverCard": {
-        "lastActivity": "최근 활동",
-        "partnerNodeUsed": "파트너 노드 사용",
-        "totalCreditsUsed": "총 사용 크레딧"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "더 이상 요금이 청구되지 않습니다. 그때까지 멤버는 모든 기능을 계속 이용할 수 있습니다. 팀의 공유 크레딧을 유지하려면 요금제를 재개하세요.",
@@ -5701,12 +5684,6 @@
         "removeMember": "멤버 제거",
         "resendInvite": "초대 다시 보내기",
         "setCreditLimit": "크레딧 한도 설정"
-      },
-      "activity": {
-        "daysAgo": "{count}일 전",
-        "hoursAgo": "{n}시간 전",
-        "justNow": "방금 전",
-        "minutesAgo": "{n}분 전"
       },
       "columns": {
         "creditsUsed": "이번 달 사용한 크레딧",

@@ -1,5 +1,5 @@
-import type { Transform } from '../node'
-import type { Overlay } from '../tool'
+import type { Transform } from '#/node'
+import type { Overlay } from '#/tool'
 import { handlePos } from './transformMath'
 import type { HandleId } from './transformMath'
 

@@ -4393,7 +4393,6 @@
     "viewControls": "视图控制"
   },
   "sideToolbar": {
-    "activeJobStatus": "当前任务：{status}",
     "assets": "资产",
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
@@ -5550,22 +5549,6 @@
     "retry": "重试"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "积分",
-        "date": "日期",
-        "eventDetails": "事件详情",
-        "eventType": "事件类型",
-        "user": "用户"
-      },
-      "empty": "暂无活动。",
-      "fullActivity": "全部活动",
-      "hoverCard": {
-        "lastActivity": "最近活动",
-        "partnerNodeUsed": "已使用合作节点",
-        "totalCreditsUsed": "已用总积分"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "您不会再被收费。成员在此之前仍可享有完整访问权限。恢复您的套餐以保留团队共享积分。",
@@ -5701,12 +5684,6 @@
         "removeMember": "移除成员",
         "resendInvite": "重新发送邀请",
         "setCreditLimit": "设置积分上限"
-      },
-      "activity": {
-        "daysAgo": "{count} 天前",
-        "hoursAgo": "{n} 小时前",
-        "justNow": "刚刚",
-        "minutesAgo": "{n} 分钟前"
       },
       "columns": {
         "creditsUsed": "本月已使用的积分",

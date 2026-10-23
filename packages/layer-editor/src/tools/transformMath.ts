@@ -1,4 +1,4 @@
-import type { Transform, Vec2 } from '../node'
+import type { Transform, Vec2 } from '#/node'
 
 export type HandleId =
   | 'nw'

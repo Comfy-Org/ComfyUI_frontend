@@ -1,4 +1,4 @@
-import type { Rect, Transform } from '../node'
+import type { Rect, Transform } from '#/node'
 import type { Bitmap } from './place'
 
 export function placedBounds(t: Transform): Rect {
