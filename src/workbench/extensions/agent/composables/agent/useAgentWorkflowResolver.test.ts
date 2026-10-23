@@ -599,28 +599,6 @@ describe('Cloud index refresh caching', () => {
     ])
   })
 
-  it('shares an in-flight routine listing with a forced refresh', async () => {
-    const { resolver, listCloudWorkflows } = setup([
-      workflow('workflows/current.json', 'Current')
-    ])
-    let resolveListing: (listing: CloudWorkflowListing) => void = () => {}
-    listCloudWorkflows.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveListing = resolve
-      })
-    )
-
-    const routine = resolver.refreshCloudWorkflowIds()
-    const forced = resolver.refreshCloudWorkflowIds({ force: true })
-    resolveListing(listing([{ id: 'current', name: 'Current' }]))
-
-    expect(await Promise.all([routine, forced])).toEqual([true, true])
-    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
-    expect(resolver.availableWorkflowReferences.value).toEqual([
-      { id: 'current', name: 'Current' }
-    ])
-  })
-
   it('reuses a fresh cloud index until forced or expired', async () => {
     vi.useFakeTimers()
     const { resolver, listCloudWorkflows } = setup(

@@ -148,6 +148,11 @@ export function useAgentWorkflowSelection({
         if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
         if (!isCurrent()) return
         workflowId = cloudIdFor(tab)
+        if (workflowId === undefined) {
+          if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
+          if (!isCurrent()) return
+          workflowId = cloudIdFor(tab)
+        }
       }
       if (workflowId === undefined) warnWorkflowUnavailable()
       return workflowId
