@@ -1,0 +1,35 @@
+{
+  "id": "netflix",
+  "name": "Netflix",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/netflix-tile.png",
+      "CLEAR_BACKGROUND_COLOR": "#141414",
+      "LINK_COLOR": "#e50914",
+      "CONNECTING_LINK_COLOR": "#f5f5f1"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#141414",
+      "foreground": "#f5f5f1",
+      "card": "#20191a",
+      "primary": "#e50914",
+      "secondary": "#291b1d",
+      "muted": "#443035",
+      "muted-foreground": "#b8acaf",
+      "accent": "#342023",
+      "destructive": "#ff5963",
+      "border": "#533139",
+      "input": "#100d0e",
+      "ring": "#ff3541",
+      "node": "#1b1516",
+      "node-foreground": "#e8dfe0",
+      "node-header": "#35191e",
+      "node-border": "#66333c",
+      "warning": "#e7b04b",
+      "popover": "#20191a",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}

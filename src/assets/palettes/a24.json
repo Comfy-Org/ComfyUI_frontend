@@ -1,0 +1,35 @@
+{
+  "id": "a24",
+  "name": "A24",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/a24-tile.png",
+      "CLEAR_BACKGROUND_COLOR": "#191815",
+      "LINK_COLOR": "#b7aa87",
+      "CONNECTING_LINK_COLOR": "#f3efdf"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#191815",
+      "foreground": "#f3efdf",
+      "card": "#24221d",
+      "primary": "#787257",
+      "secondary": "#2d2a23",
+      "muted": "#423e33",
+      "muted-foreground": "#bcb5a2",
+      "accent": "#353127",
+      "destructive": "#e37d6d",
+      "border": "#595241",
+      "input": "#13120f",
+      "ring": "#e6dbb7",
+      "node": "#201e19",
+      "node-foreground": "#e9e0c8",
+      "node-header": "#353126",
+      "node-border": "#6b624b",
+      "warning": "#d8b56b",
+      "popover": "#24221d",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}

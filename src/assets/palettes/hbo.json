@@ -1,0 +1,35 @@
+{
+  "id": "hbo",
+  "name": "HBO",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/hbo-tile.png",
+      "CLEAR_BACKGROUND_COLOR": "#101114",
+      "LINK_COLOR": "#9ca8bc",
+      "CONNECTING_LINK_COLOR": "#f4f5f7"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#101114",
+      "foreground": "#f4f5f7",
+      "card": "#1b1d22",
+      "primary": "#68758e",
+      "secondary": "#24272e",
+      "muted": "#393e49",
+      "muted-foreground": "#b2b8c4",
+      "accent": "#2c3039",
+      "destructive": "#ed687a",
+      "border": "#4a5261",
+      "input": "#0b0c0f",
+      "ring": "#d0d6e2",
+      "node": "#17191e",
+      "node-foreground": "#e0e4ed",
+      "node-header": "#2b303b",
+      "node-border": "#596477",
+      "warning": "#dfb968",
+      "popover": "#1b1d22",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "warner-bros",
+  "name": "Warner Bros",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/warner-bros-tile.png",
+      "CLEAR_BACKGROUND_COLOR": "#09152a",
+      "LINK_COLOR": "#d4ad60",
+      "CONNECTING_LINK_COLOR": "#f3f5fa"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#09152a",
+      "foreground": "#f3f5fa",
+      "card": "#12223b",
+      "primary": "#005bba",
+      "secondary": "#192d49",
+      "muted": "#2c4260",
+      "muted-foreground": "#b0bfd3",
+      "accent": "#213653",
+      "destructive": "#ef6571",
+      "border": "#3d5574",
+      "input": "#071020",
+      "ring": "#e5bd6a",
+      "node": "#101c30",
+      "node-foreground": "#f2e3bd",
+      "node-header": "#1c3454",
+      "node-border": "#526c8e",
+      "warning": "#e5bd6a",
+      "popover": "#12223b",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}

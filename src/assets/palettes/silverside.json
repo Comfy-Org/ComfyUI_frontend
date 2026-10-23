@@ -1,0 +1,35 @@
+{
+  "id": "silverside",
+  "name": "Silverside.ai",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/silverside-tile.png",
+      "CLEAR_BACKGROUND_COLOR": "#080e24",
+      "LINK_COLOR": "#5786ff",
+      "CONNECTING_LINK_COLOR": "#eef3ff"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#080e24",
+      "foreground": "#eef3ff",
+      "card": "#111c39",
+      "primary": "#0048f3",
+      "secondary": "#18264a",
+      "muted": "#2b3b65",
+      "muted-foreground": "#a9b9dd",
+      "accent": "#20315a",
+      "destructive": "#ff719a",
+      "border": "#3b5180",
+      "input": "#060b1b",
+      "ring": "#79aeff",
+      "node": "#0e1730",
+      "node-foreground": "#dce8ff",
+      "node-header": "#1c305b",
+      "node-border": "#4665a0",
+      "warning": "#e5c96b",
+      "popover": "#111c39",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}
