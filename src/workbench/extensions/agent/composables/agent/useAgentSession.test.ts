@@ -3080,7 +3080,13 @@ describe('useAgentSession (v1 composition root)', () => {
       const sent = sendOverCard(session, 'actually, do this instead')
       await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
       session.newChat()
-      refuse(turnInProgress())
+      refuse(
+        new AgentApiError('a.pdf is not a file type the agent accepts', 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['a.pdf'],
+          rejected_count: 1
+        })
+      )
 
       expect(await sent).toBe(false)
       expect(session.entries.value).toEqual([])

@@ -2276,6 +2276,19 @@ describe('useAgentConversationStore', () => {
       store.ingest(runApproval('t1', 'turn-1:call-1'))
       store.ingest(runApproval('t1', 'turn-1:call-2', { kind: 'ask_user' }))
       store.ingest(runApproval('t1', 'turn-1:call-3', { kind: 'ask_user' }))
+      store.ingest(
+        runApproval('t1', 'turn-1:call-4', {
+          kind: 'delete_approval',
+          options: [
+            { id: 'delete', label: 'Delete' },
+            { id: 'keep', label: 'Keep' }
+          ],
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler', title: 'Hero sampler' }]
+          }
+        })
+      )
       const askIds = store.dismissActiveAsks()
       const answered: AskUserResolution = {
         status: 'answered',
@@ -2283,6 +2296,7 @@ describe('useAgentConversationStore', () => {
       }
       store.retireAsk('turn-1:call-1', answered)
       store.retireAsk('turn-1:call-2', answered)
+      store.retireAsk('turn-1:call-4', answered)
 
       store.restoreActiveAsks(askIds)
 
@@ -2296,7 +2310,25 @@ describe('useAgentConversationStore', () => {
         resolution: answered
       })
       expect(card('turn-1:call-3')).toMatchObject({ dismissed: false })
+      expect(card('turn-1:call-4')).toMatchObject({
+        dismissed: false,
+        resolution: answered
+      })
       expect(store.activeAskOpen).toBe(true)
+    })
+
+    it('does not offer or dismiss a card that is already answered', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1', { kind: 'ask_user' }))
+      store.retireAsk('turn-1:call-1', {
+        status: 'answered',
+        selected: ['run']
+      })
+
+      expect(store.activeAskOpen).toBe(false)
+      expect(store.dismissActiveAsks()).toEqual([])
     })
 
     it('leaves a card whose answer is in flight alone', () => {
