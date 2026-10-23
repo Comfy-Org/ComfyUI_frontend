@@ -29,10 +29,6 @@ interface CanvasContextMenuTarget {
   group?: LGraphGroup
 }
 
-/**
- * Only the centre marker opens a link's menu, so the rest of the curve does not
- * take right-clicks from groups and the canvas underneath.
- */
 function queryVisibleLinkCentreAtPoint(
   canvas: LGraphCanvas,
   x: number,
