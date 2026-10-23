@@ -211,15 +211,153 @@ export function valueWidgetsOnly(
   return filtered
 }
 
+/** The post-hook payload and the live widget list, read once. */
+interface FormProof {
+  /** Every live widget's name, serialised or not. */
+  readonly liveNames: readonly string[]
+  /** The names core serialises: `serialize === false` is skipped. */
+  readonly serialisedNames: readonly string[]
+  /** The post-hook named keys, which the hook may have replaced. */
+  readonly namedKeys: readonly string[]
+  /** The post-hook positional array, or undefined if there is none. */
+  readonly positional: readonly unknown[] | undefined
+  /** The enumerable keys of the object the wire ships. */
+  readonly valueNames: readonly string[]
+  /** The order the form would declare. */
+  readonly order: readonly string[]
+}
+
+function formProof(
+  node: LGraphNode,
+  values: Record<string, unknown>,
+  serialized: SerializedWidgetValues
+): FormProof {
+  const live = node.widgets ?? []
+  const named = serialized.widgets_values_named
+  const positional = serialized.widgets_values
+  return {
+    liveNames: live.map((widget) => widget.name),
+    serialisedNames: live
+      .filter((widget) => widget.serialize !== false)
+      .map((widget) => widget.name),
+    namedKeys: named ? Object.keys(named) : [],
+    positional: Array.isArray(positional) ? positional : undefined,
+    valueNames: Object.keys(values),
+    order: live
+      .map((widget) => widget.name)
+      .filter((name) => Object.hasOwn(values, name))
+  }
+}
+
+/** Returns a suppression when this leg of the proof fails, else nothing. */
+type FormProbe = (proof: FormProof) => WidgetFormVerdict | undefined
+
+/**
+ * Invariant 4 — the hook may replace either widget-values field after core
+ * wrote it. Compare key SETS, not sequences: `widgets_values_named` is an
+ * object, and an integer-like widget name is enumeration-reordered inside it,
+ * which is the reason the form exists in the first place. A pack that
+ * reorders keys and changes nothing else has not broken anything.
+ */
+const hookKeptTheSerialisedWidgets: FormProbe = ({
+  namedKeys,
+  serialisedNames
+}) =>
+  sameNames(namedKeys, serialisedNames)
+    ? undefined
+    : suppressed('hook_changed_serialized_widgets', {
+        serialised: namedKeys,
+        live: serialisedNames
+      })
+
+/**
+ * Invariant 2 — the array case. The wire ships the named object, so the arity
+ * claim is made against the positional array the hook left behind: one slot
+ * per serialised widget, or the order was proven against values no other
+ * reader of this workflow will see. Buttons count here: core serialises one
+ * positionally and the wire drops it as a non-value, so a check written
+ * against the value count would refuse every node that has one.
+ */
+const positionalArityFits: FormProbe = ({ positional, serialisedNames }) =>
+  !positional || positional.length === serialisedNames.length
+    ? undefined
+    : suppressed('positional_arity_disagrees', {
+        positional: positional.length,
+        serialised: serialisedNames.length
+      })
+
+/**
+ * A document value with no live widget at all is the stored-state family, not
+ * a broken invariant: the node shed the widget, or was never registered.
+ * Checked before invariant 1 so the two are not conflated — "there is no
+ * widget" and "there is one core refuses to serialise" have different causes
+ * and different fixes.
+ */
+const everyValueHasALiveWidget: FormProbe = ({ valueNames, liveNames }) => {
+  const unbacked = valueNames.filter((name) => !liveNames.includes(name))
+  return unbacked.length
+    ? suppressed('value_has_no_live_widget', { names: unbacked })
+    : undefined
+}
+
+/**
+ * Invariant 1 — an order entry must name a live widget core serialises.
+ * Reachable only if a value for a `serialize: false` widget gets into
+ * `values`, which `isValueWidget` currently refuses: this is the guard on
+ * that filter.
+ */
+const orderNamesSerialisedWidgets: FormProbe = ({ order, serialisedNames }) => {
+  const unserialized = order.filter((name) => !serialisedNames.includes(name))
+  return unserialized.length
+    ? suppressed('order_names_unserialized_widget', { names: unserialized })
+    : undefined
+}
+
+/**
+ * Invariant 3 — the object case, as a set difference in BOTH directions.
+ * Order without a value orders nothing; a value outside the order is residue
+ * the host would store and never project. Stated against the enumerable keys,
+ * because those are what travel: the wire ships `values` as JSON, so an own
+ * property `Object.hasOwn` can see and `Object.keys` cannot is an order entry
+ * whose value never arrives.
+ */
+const declaredKeysAgree: FormProbe = ({ valueNames, order }) => {
+  const undeclared = valueNames.filter((name) => !order.includes(name))
+  const unvalued = order.filter((name) => !valueNames.includes(name))
+  return undeclared.length || unvalued.length
+    ? suppressed('declared_keys_disagree', { undeclared, unvalued })
+    : undefined
+}
+
+/** Shapes a name-keyed order cannot address, whatever the values say. */
+const orderIsAddressable: FormProbe = ({ order }) => {
+  if (!order.length) return suppressed('no_value_widgets')
+  if (order.some((name) => !name.length))
+    return suppressed('unnamed_value_widget')
+  if (new Set(order).size !== order.length)
+    return suppressed('duplicate_widget_name', { order })
+  return undefined
+}
+
+/**
+ * Ordered most-specific-cause first, so the reason names the thing that
+ * actually happened rather than its downstream shadow: the hook changing the
+ * serialised widget set shows up as a key disagreement too, and attributing
+ * it to the key disagreement would send a reader looking in the wrong place.
+ */
+const FORM_PROBES: readonly FormProbe[] = [
+  hookKeptTheSerialisedWidgets,
+  positionalArityFits,
+  everyValueHasALiveWidget,
+  orderNamesSerialisedWidgets,
+  declaredKeysAgree,
+  orderIsAddressable
+]
+
 /**
  * Classifies a node's form without declaring, asserting or reporting
  * anything. Pure apart from the node-definition read, so a bulk pass can call
  * it per node and keep the reason.
- *
- * Checks run most-specific-cause first, so the reason names the thing that
- * actually happened rather than its downstream shadow: the hook changing the
- * serialised widget set shows up as a key disagreement too, and attributing
- * it to the key disagreement would send a reader looking in the wrong place.
  */
 export function classifyWidgetValuesForm(
   node: LGraphNode,
@@ -235,74 +373,12 @@ export function classifyWidgetValuesForm(
   // widget list — fabricated or empty — cannot order them.
   if (node.last_serialization) return suppressed('shell_last_serialization')
 
-  const live = node.widgets ?? []
-  const liveNames = live.map((widget) => widget.name)
-  const serialisedNames = live
-    .filter((widget) => widget.serialize !== false)
-    .map((widget) => widget.name)
-  const valueNames = Object.keys(values)
-  const order = live
-    .map((widget) => widget.name)
-    .filter((name) => Object.hasOwn(values, name))
-
-  // 4 — the hook may replace either field after core wrote it. Compare key
-  // sets, not sequences: `widgets_values_named` is an object, and an
-  // integer-like widget name is enumeration-reordered inside it, which is the
-  // reason the form exists in the first place.
-  const named = serialized.widgets_values_named
-  if (!sameNames(named ? Object.keys(named) : [], serialisedNames))
-    return suppressed('hook_changed_serialized_widgets', {
-      serialised: named ? Object.keys(named) : [],
-      live: serialisedNames
-    })
-
-  // 2 — the array case. The wire ships the named object, so the arity claim
-  // is made against the positional array the hook left behind: one slot per
-  // serialised widget, or the order was proven against values no other reader
-  // of this workflow will see.
-  const positional = serialized.widgets_values
-  if (Array.isArray(positional) && positional.length !== serialisedNames.length)
-    return suppressed('positional_arity_disagrees', {
-      positional: positional.length,
-      serialised: serialisedNames.length
-    })
-
-  // A document value with no live widget at all is the stored-state family,
-  // not a broken invariant: the node shed the widget, or was never
-  // registered. Checked before invariant 1 so the two are not conflated —
-  // "there is no widget" and "there is one core refuses to serialise" have
-  // different causes and different fixes.
-  const unbacked = valueNames.filter((name) => !liveNames.includes(name))
-  if (unbacked.length)
-    return suppressed('value_has_no_live_widget', { names: unbacked })
-
-  // 1 — an order entry must name a live widget core serialises. Reachable
-  // only if a value for a `serialize: false` widget gets into `values`, which
-  // `isValueWidget` currently refuses: this is the guard on that filter.
-  const unserialized = order.filter((name) => !serialisedNames.includes(name))
-  if (unserialized.length)
-    return suppressed('order_names_unserialized_widget', {
-      names: unserialized
-    })
-
-  // 3 — the object case, as a set difference in BOTH directions. Order
-  // without a value orders nothing; a value outside the order is residue the
-  // host would store and never project. Stated against the enumerable keys,
-  // because those are what travel: the wire ships `values` as JSON, so an own
-  // property `Object.hasOwn` can see and `Object.keys` cannot is an order
-  // entry whose value never arrives.
-  const undeclared = valueNames.filter((name) => !order.includes(name))
-  const unvalued = order.filter((name) => !valueNames.includes(name))
-  if (undeclared.length || unvalued.length)
-    return suppressed('declared_keys_disagree', { undeclared, unvalued })
-
-  if (!order.length) return suppressed('no_value_widgets')
-  if (order.some((name) => !name.length))
-    return suppressed('unnamed_value_widget')
-  if (new Set(order).size !== order.length)
-    return suppressed('duplicate_widget_name', { order })
-
-  return { declared: true, form: { order } }
+  const proof = formProof(node, values, serialized)
+  for (const probe of FORM_PROBES) {
+    const failed = probe(proof)
+    if (failed) return failed
+  }
+  return { declared: true, form: { order: [...proof.order] } }
 }
 
 /**
