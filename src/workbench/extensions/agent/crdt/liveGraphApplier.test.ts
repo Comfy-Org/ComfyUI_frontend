@@ -2284,4 +2284,13 @@ describe('LiveGraphApplier change bracket', () => {
     detached.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
     expect(events).toHaveLength(4)
   })
+
+  it('invalidates the graph when no canvas is available', () => {
+    const { graph, doc, collector, applier } = setup(seed)
+    const setDirtyCanvas = vi.spyOn(graph, 'setDirtyCanvas')
+
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
 })

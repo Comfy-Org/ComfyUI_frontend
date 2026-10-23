@@ -735,7 +735,7 @@ export class LiveGraphApplier {
     if (!graph) return { createdNodeIds: [], failureCount: 0 }
     this.failureCounts.push(0)
     try {
-      return this.write(context, () => {
+      return this.write(graph, context, () => {
         if (mode === 'replace') this.removeAbsent(graph, doc, context)
         const created: NodeId[] = []
         const touchedNodes = new Set<string>()
@@ -804,15 +804,17 @@ export class LiveGraphApplier {
     }
   }
 
-  private write<T>(context: RemoteApplyContext, fn: () => T): T {
+  private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      this.deps.getCanvas?.()?.emitBeforeChange()
+      const canvas = this.deps.getCanvas?.()
+      canvas?.emitBeforeChange()
       try {
         return withGraphIntentSource('agent-remote', fn)
       } finally {
-        this.deps.getCanvas?.()?.setDirty(true, true)
-        this.deps.getCanvas?.()?.emitAfterChange()
+        if (canvas) canvas.setDirty(true, true)
+        else graph.setDirtyCanvas(true, true)
+        canvas?.emitAfterChange()
       }
     })
   }

@@ -404,7 +404,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
         0.7,
         'tail'
       ])
-      const { applier, tracker, beforeFrame } = await trackedCanvas(graph, open)
+      const { canvas, applier, tracker, beforeFrame } = await trackedCanvas(
+        graph,
+        open
+      )
       const { flags, ...serialized } = node.serialize()
       const { doc, collector } = followedDoc(
         { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
@@ -447,8 +450,11 @@ describe('LiveGraphApplier with the real change tracker', () => {
           ({ outcome }) => outcome
         )
       ).toEqual(['applied', 'applied'])
+      canvas.dirty_canvas = false
+      canvas.dirty_bgcanvas = false
       applier.applyChanges(doc, collector.take(), CONTEXT)
 
+      expect([canvas.dirty_canvas, canvas.dirty_bgcanvas]).toEqual([true, true])
       expect(node.serialize().widgets_values).toEqual([
         'head',
         0,
