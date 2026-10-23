@@ -65,7 +65,7 @@ function renderToolbox(toolbarSeen: boolean, menuSeen: boolean) {
     template: `
       <div
         ref="host"
-        class="relative min-h-96 w-[40rem] bg-background"
+        class="relative min-h-[50rem] w-[40rem] bg-background"
       >
         <SelectionToolbox />
         <NodeContextMenu />
@@ -74,12 +74,31 @@ function renderToolbox(toolbarSeen: boolean, menuSeen: boolean) {
   }
 }
 
+async function waitForToolboxPosition(button: HTMLElement) {
+  await new Promise<void>((resolve, reject) => {
+    const started = performance.now()
+    const check = () => {
+      if (button.getBoundingClientRect().top > 8) {
+        resolve()
+        return
+      }
+      if (performance.now() - started > 2000) {
+        reject(new Error('toolbox never landed'))
+        return
+      }
+      requestAnimationFrame(check)
+    }
+    check()
+  })
+}
+
 async function openMoreMenu(canvasElement: HTMLElement) {
   const doc = canvasElement.ownerDocument
   const button = doc.querySelector('[data-testid="more-options-button"]')
   if (!(button instanceof HTMLElement)) {
     throw new Error('more-options-button is missing')
   }
+  await waitForToolboxPosition(button)
   const rect = button.getBoundingClientRect()
   button.dispatchEvent(
     new MouseEvent('click', {
