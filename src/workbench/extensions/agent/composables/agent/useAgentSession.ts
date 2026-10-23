@@ -347,14 +347,15 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
-function isSupersededAnswer(
+function diffAnswers(
   submitted: AgentAnswerRequest,
   committed: Extract<AskUserResolution, { status: 'answered' }>
-): boolean {
-  return (
-    xor(submitted.selected, committed.selected).length > 0 ||
-    (submitted.other_text || undefined) !== committed.otherText
-  )
+) {
+  return {
+    selection_changed: xor(submitted.selected, committed.selected).length > 0,
+    other_text_changed:
+      (submitted.other_text || undefined) !== committed.otherText
+  }
 }
 
 let sessionGeneration = 0
@@ -1591,14 +1592,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
-      return
-    reportError(
-      new Error(
-        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
-      ),
-      { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
-    )
+    if (submitted === undefined) return
+    const changes = diffAnswers(submitted, committed)
+    if (!changes.selection_changed && !changes.other_text_changed) return
+    reportError(new Error('agent ask resolved with a different answer'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded',
+      tags: {
+        ...changes,
+        committed_selected_count: committed.selected.length,
+        submitted_selected_count: submitted.selected.length
+      }
+    })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
