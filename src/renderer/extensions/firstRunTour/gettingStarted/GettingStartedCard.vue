@@ -73,7 +73,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Loader from '@/components/loader/Loader.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
+import DefaultThumbnail from '@/platform/workflow/templates/components/thumbnails/DefaultThumbnail.vue'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 const {

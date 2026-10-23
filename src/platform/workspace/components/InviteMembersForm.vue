@@ -75,7 +75,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import Button from '@comfyorg/design-system/button/Button'
 import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'

@@ -57,20 +57,22 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
-const PERMANENTLY_REFUSED_SUBSCRIBE = {
-  type: 'doc_subscribed',
-  data: {
-    v: DOC_PROTOCOL_VERSION,
-    workflow_id: WORKFLOW_ID,
-    ok: false,
-    code: 'schema_version_mismatch'
-  }
-} satisfies DocSubscribedFrame & {
-  data: { ok: false; code: PermanentDocSubscribeRefusalCode }
-}
-
-export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
-  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
+export function refuseDocSubscribePermanently(
+  ws: WebSocketRoute,
+  code: PermanentDocSubscribeRefusalCode = 'schema_version_mismatch',
+  message?: string
+): void {
+  const frame = {
+    type: 'doc_subscribed',
+    data: {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code,
+      message
+    }
+  } satisfies DocSubscribedFrame
+  ws.send(JSON.stringify(frame))
 }
 
 const FUNDED_BILLING_STATUS = {

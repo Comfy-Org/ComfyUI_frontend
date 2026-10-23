@@ -119,10 +119,10 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import type {
   SubscriptionTier,
   WorkspaceRole,

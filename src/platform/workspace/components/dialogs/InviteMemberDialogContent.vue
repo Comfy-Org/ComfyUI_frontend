@@ -92,7 +92,7 @@ import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import Button from '@comfyorg/design-system/button/Button'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'

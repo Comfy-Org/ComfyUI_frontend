@@ -24,7 +24,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 
 const { t } = useI18n()

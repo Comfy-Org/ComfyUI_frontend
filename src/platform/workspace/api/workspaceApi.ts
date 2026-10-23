@@ -66,7 +66,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
-import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
 import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,

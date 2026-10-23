@@ -33,6 +33,7 @@
     "./lib/input-group/inputGroup.variants": "./src/components/input-group/inputGroup.variants.ts",
     "./lib/menu/menuAnchor": "./src/components/menu/menuAnchor.ts",
     "./lib/menu/menuStyles": "./src/components/menu/menuStyles.ts",
+    "./lib/menu/usePointMenu": "./src/components/menu/usePointMenu.ts",
     "./lib/menu/types": "./src/components/menu/types.ts",
     "./lib/message/message.variants": "./src/components/message/message.variants.ts",
     "./lib/multi-select/types": "./src/components/multi-select/types.ts",
@@ -104,6 +105,11 @@
         "types": "./dist/menu/menuStyles.d.ts",
         "import": "./dist/menu/menuStyles.js",
         "default": "./dist/menu/menuStyles.js"
+      },
+      "./lib/menu/usePointMenu": {
+        "types": "./dist/menu/usePointMenu.d.ts",
+        "import": "./dist/menu/usePointMenu.js",
+        "default": "./dist/menu/usePointMenu.js"
       },
       "./lib/menu/types": {
         "types": "./dist/menu/types.d.ts",

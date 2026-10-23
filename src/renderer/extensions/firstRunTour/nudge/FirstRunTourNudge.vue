@@ -92,7 +92,7 @@ import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { cursorEdgeClass } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'

@@ -2981,6 +2981,8 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "purchaseDisclosure": "Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.",
+      "planRequiredResubscribe": "Credits don't include a Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Credits don't include a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3619,8 +3621,9 @@
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
-        "resubscribe": "Resubscribe to use credits on Cloud.",
-        "subscribe": "Subscribe to use credits on Cloud.",
+        "memberResubscribe": "Your workspace owner needs to resubscribe to run workflows on Cloud.",
+        "resubscribe": "Resubscribe to run workflows on Cloud.",
+        "subscribe": "Subscribe to run workflows on Cloud.",
         "title": "Credits",
         "topUp": "Top-up",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
@@ -3696,7 +3699,7 @@
       },
       "autoTopUpOff": {
         "title": "Auto top-up turned off",
-        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
+        "body": "Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",
@@ -5834,6 +5837,7 @@
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
@@ -6009,6 +6013,8 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",
+    "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
+    "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6057,7 +6063,7 @@
     "targetNavigationUnavailable": "This workflow target is no longer available.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
-    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
     "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
