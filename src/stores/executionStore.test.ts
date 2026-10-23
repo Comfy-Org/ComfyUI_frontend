@@ -15,7 +15,7 @@ import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
