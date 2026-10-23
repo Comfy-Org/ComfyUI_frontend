@@ -6,7 +6,7 @@
       target="_blank"
       rel="noopener"
       variant="inverted"
-      size="lg"
+      size="md"
       class="shrink-0"
       @click="track"
     >
@@ -20,9 +20,9 @@
   >
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
           <i
             class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
@@ -38,7 +38,7 @@
         <Button
           v-if="banner.dismissible"
           variant="textonly"
-          size="lg"
+          size="md"
           @click="dismiss"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.dismiss') }}
@@ -46,7 +46,7 @@
         <Button
           v-if="banner.action === 'addCredits'"
           variant="secondary"
-          size="lg"
+          size="md"
           @click="handleAddCredits"
         >
           {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
@@ -54,7 +54,7 @@
         <Button
           v-else-if="banner.action === 'updatePayment'"
           variant="inverted"
-          size="lg"
+          size="md"
           :loading="isUpdatingPayment"
           @click="updatePayment"
         >

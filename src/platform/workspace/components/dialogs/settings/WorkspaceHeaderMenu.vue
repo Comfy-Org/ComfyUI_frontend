@@ -1,7 +1,7 @@
 <template>
   <Teleport v-if="isWorkspaceMenuInHeader" defer to="#settings-header-controls">
     <div class="order-last ml-auto">
-      <WorkspaceMenuButton />
+      <WorkspaceMenuButton variant="textonly" />
     </div>
   </Teleport>
 </template>

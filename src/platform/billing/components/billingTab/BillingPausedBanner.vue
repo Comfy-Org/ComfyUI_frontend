@@ -2,10 +2,10 @@
   <div
     v-if="isPaused"
     role="status"
-    class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
+    class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 sm:flex-row sm:items-center sm:gap-2"
     data-testid="billing-paused-banner"
   >
-    <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
       <div class="flex items-center gap-2">
         <i
           :class="
@@ -26,7 +26,7 @@
     <Button
       v-if="paused.action === 'updatePayment'"
       variant="inverted"
-      size="lg"
+      size="md"
       class="shrink-0"
       :loading="isUpdatingPayment"
       @click="updatePayment"
