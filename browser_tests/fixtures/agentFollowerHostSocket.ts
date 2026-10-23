@@ -29,7 +29,12 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
-const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+/**
+ * The id the fake ComfyUI reports on its first `status` frame, and therefore
+ * the value `api.clientId` takes. Exported so a spec can assert that the id a
+ * run was submitted under is this tab's.
+ */
+export const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
  * ComfyUI execution frames the fake host can emit alongside doc and agent
@@ -155,6 +160,8 @@ export class AgentFollowerHostSocket {
     this.resolveSubscribed = resolve
   })
 
+  private fixedSid: string | undefined
+
   constructor(
     private readonly page: Page,
     private readonly workflowId: string,
@@ -163,14 +170,26 @@ export class AgentFollowerHostSocket {
     private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
+  /**
+   * Pins the id the fake ComfyUI reports on its `status` frame, instead of the
+   * reconnection-derived default. Pass `''` to model a socket that never
+   * identifies itself, so `api.clientId` stays unset — the state the client is
+   * in before the first `status` frame and after `api.resetSocket()` clears it.
+   */
+  reportSocketSid(sid: string): this {
+    this.fixedSid = sid
+    return this
+  }
+
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
       this.comfyConnections += 1
       const sid =
-        this.comfyConnections === 1
+        this.fixedSid ??
+        (this.comfyConnections === 1
           ? COMFY_SOCKET_SID
-          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`
+          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`)
       socket.send(
         JSON.stringify({
           type: 'status',

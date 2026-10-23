@@ -106,13 +106,26 @@ export class MultiAutogrowRealignHarness {
       .locator('img[src*="/api/view"]')
   }
 
-  constructor(private readonly page: Page) {
+  /**
+   * @param options.socketSid The id the fake ComfyUI reports on its `status`
+   * frame. Left unset, the host socket reports its own reconnection-derived
+   * default, i.e. a socket that has identified itself. Pass `''` to model one
+   * that never does — `api.clientId` then stays `undefined`, as it is before
+   * the first `status` frame and after `api.resetSocket()` clears it on an
+   * identity change.
+   */
+  constructor(
+    private readonly page: Page,
+    options: { socketSid?: string } = {}
+  ) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
       WORKFLOW_ID,
       this.host,
       'apply'
     )
+    if (options.socketSid !== undefined)
+      this.hostSocket.reportSocketSid(options.socketSid)
     this.topbar = new Topbar(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.agentPanel = new AgentPanel(page)
