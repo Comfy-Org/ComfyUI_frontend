@@ -434,31 +434,29 @@ export const useAgentConversationStore = defineStore(
 
     function markActiveAsks(mark: AskMark): void {
       const slot = activeSlot.value
-      if (!slot || mark.askIds.length === 0) return
+      if (!slot) return
+      const current = messages.value[slot.index].parts
+      const parts = markAskParts(current, mark)
+      if (parts === current) return
       messages.value = messages.value.map((message, index) =>
-        index === slot.index
-          ? { ...message, parts: markAskParts(message.parts, mark) }
-          : message
+        index === slot.index ? { ...message, parts } : message
       )
       slot.transport.markAsks(mark)
     }
 
     function dismissActiveAsks(): string[] {
-      const answering = answeringAskIds.value
-      const askIds =
-        activeMessage.value?.parts.flatMap((part) =>
-          isDismissibleAskPart(part, answering) ? [part.askId] : []
-        ) ?? []
+      const askIds = dismissibleAskIds.value
       markActiveAsks({ askIds, dismissed: true })
       return askIds
     }
 
     function restoreActiveAsks(askIds: readonly string[]): void {
+      markActiveAsks({ askIds, dismissed: false })
       const retired = retiredAsksFor()
-      markActiveAsks({
-        askIds: askIds.filter((askId) => !retired.has(askId)),
-        dismissed: false
-      })
+      for (const askId of askIds) {
+        const resolution = retired.get(askId)
+        if (resolution) retireAsk(askId, resolution)
+      }
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1265,12 +1263,13 @@ export const useAgentConversationStore = defineStore(
 
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
-    const activeAskOpen = computed(
+    const dismissibleAskIds = computed(
       () =>
-        activeMessage.value?.parts.some((part) =>
-          isDismissibleAskPart(part, answeringAskIds.value)
-        ) ?? false
+        activeMessage.value?.parts.flatMap((part) =>
+          isDismissibleAskPart(part, answeringAskIds.value) ? [part.askId] : []
+        ) ?? []
     )
+    const activeAskOpen = computed(() => dismissibleAskIds.value.length > 0)
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'

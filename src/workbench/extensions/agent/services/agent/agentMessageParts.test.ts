@@ -2,7 +2,6 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
-  isDismissibleAskPart,
   markAskParts,
   retireAskParts,
   toAskOrNoticePart,
@@ -339,7 +338,7 @@ describe('toAskOrNoticePart', () => {
 })
 
 describe('markAskParts', () => {
-  it('dismisses open question and delete cards, not answered or in-flight ones', () => {
+  it('dismisses the named cards and leaves the others alone', () => {
     const question = toAskPart(askUser({ ask_id: 'q' }))
     const deletion = toAskPart(
       askUser({
@@ -363,13 +362,12 @@ describe('markAskParts', () => {
     }
     const inFlight: MessagePart = { ...question, askId: 'f' }
 
-    const parts = [question, deletion, answered, inFlight]
-    const askIds = parts.flatMap((part) =>
-      isDismissibleAskPart(part, new Set(['f'])) ? [part.askId] : []
-    )
-
-    expect(askIds).toEqual(['q', 'd'])
-    expect(markAskParts(parts, { askIds, dismissed: true })).toEqual([
+    expect(
+      markAskParts([question, deletion, answered, inFlight], {
+        askIds: ['q', 'd'],
+        dismissed: true
+      })
+    ).toEqual([
       { ...question, dismissed: true },
       { ...deletion, dismissed: true },
       answered,
@@ -388,6 +386,7 @@ describe('markAskParts', () => {
       other
     ])
     expect(markAskParts(parts, { askIds: [], dismissed: false })).toBe(parts)
+    expect(markAskParts(parts, { askIds: ['o'], dismissed: true })).toBe(parts)
   })
 })
 

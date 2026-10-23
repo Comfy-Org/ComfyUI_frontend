@@ -2960,6 +2960,10 @@ describe('useAgentSession (v1 composition root)', () => {
         refusal: () => admissionError('no_funds', 'Out of credits')
       },
       {
+        name: 'it answers with a conflict that is not a turn in progress',
+        refusal: () => new AgentApiError('conflict', 409, { error: 'conflict' })
+      },
+      {
         name: 'its credits are unavailable',
         refusal: () =>
           admissionError('funds_unavailable', 'Credits are unavailable', 30)
@@ -3022,15 +3026,19 @@ describe('useAgentSession (v1 composition root)', () => {
       const held = new Promise<AgentTurnAccepted>((_resolve, reject) => {
         refuse = reject
       })
-      const postMessage = refusedSend()
-      postMessage.mockReset()
-      postMessage
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
         .mockReturnValueOnce(held)
       return { postMessage, refuse: (error: Error) => refuse(error) }
     }
 
-    it('does not reopen a card that was answered while the send was refused', async () => {
+    it('drops a run card another tab answered while the send was in flight', async () => {
       const { source, emit, status } = fakeEvents()
       const { postMessage, refuse } = heldSend()
       const session = useAgentSession({
@@ -3054,7 +3062,28 @@ describe('useAgentSession (v1 composition root)', () => {
       )
 
       expect(await sent).toBe(false)
-      expect(runCard()).toMatchObject({ dismissed: true })
+      expect(runCard()).toBeUndefined()
+    })
+
+    it('records nothing in a new chat when the send over a card is refused after leaving', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      const sent = sendOverCard(session, 'actually, do this instead')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+      session.newChat()
+      refuse(turnInProgress())
+
+      expect(await sent).toBe(false)
+      expect(session.entries.value).toEqual([])
     })
 
     it('keeps Send over cards on when a card is back open but the send fails for another reason', async () => {
@@ -3072,7 +3101,7 @@ describe('useAgentSession (v1 composition root)', () => {
       const sent = sendOverCard(session, 'actually, do this instead')
       await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
       useAgentConversationStore().restoreActiveAsks(['turn-1:call-1'])
-      refuse(admissionError('no_funds', 'Out of credits'))
+      refuse(new AgentApiError('conflict', 409, { error: 'conflict' }))
 
       expect(await sent).toBe(false)
       expect(session.sendDismissesAsk.value).toBe(true)

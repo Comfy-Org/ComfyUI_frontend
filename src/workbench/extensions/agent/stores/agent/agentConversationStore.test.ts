@@ -15,7 +15,10 @@ import type {
   AgentChatEvent,
   CanvasSyncEvidence
 } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
-import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import { useAgentConversationStore } from './agentConversationStore'
@@ -2264,6 +2267,36 @@ describe('useAgentConversationStore', () => {
       expect(store.messages[0].parts).toContainEqual(
         expect.objectContaining({ type: 'runApproval', dismissed: true })
       )
+    })
+
+    it('reopens the cards a refused send dismissed, keeping answers another tab gave', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      store.ingest(runApproval('t1', 'turn-1:call-2', { kind: 'ask_user' }))
+      store.ingest(runApproval('t1', 'turn-1:call-3', { kind: 'ask_user' }))
+      const askIds = store.dismissActiveAsks()
+      const answered: AskUserResolution = {
+        status: 'answered',
+        selected: ['run']
+      }
+      store.retireAsk('turn-1:call-1', answered)
+      store.retireAsk('turn-1:call-2', answered)
+
+      store.restoreActiveAsks(askIds)
+
+      const card = (askId: string) =>
+        store.messages[0].parts.find(
+          (part) => 'askId' in part && part.askId === askId
+        )
+      expect(card('turn-1:call-1')).toBeUndefined()
+      expect(card('turn-1:call-2')).toMatchObject({
+        dismissed: false,
+        resolution: answered
+      })
+      expect(card('turn-1:call-3')).toMatchObject({ dismissed: false })
+      expect(store.activeAskOpen).toBe(true)
     })
 
     it('leaves a card whose answer is in flight alone', () => {

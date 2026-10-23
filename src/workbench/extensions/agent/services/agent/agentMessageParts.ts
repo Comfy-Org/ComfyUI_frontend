@@ -208,7 +208,9 @@ export function markAskParts(
   { askIds, dismissed }: AskMark
 ): MessagePart[] {
   const marks = (part: MessagePart): part is AskPart =>
-    isAskPart(part) && askIds.includes(part.askId)
+    isAskPart(part) &&
+    askIds.includes(part.askId) &&
+    (part.dismissed ?? false) !== dismissed
   if (!parts.some(marks)) return parts
   return parts.map((part) => (marks(part) ? { ...part, dismissed } : part))
 }
