@@ -38,6 +38,8 @@ export interface BillingBannerInputs {
   outOfCreditsDismissed: boolean
   planChangeDismissed: boolean
   hasScheduledChange: boolean
+  unifiedBillingSettingsEnabled: boolean
+  isActive: boolean
 }
 
 // An Enterprise cancel_at is an agreed end date — an operator pilot term or
@@ -96,13 +98,22 @@ function deriveLifecycleNotice(
   return showsPlanChange ? 'planChange' : null
 }
 
+function cloudCreditBannersOpen(inputs: BillingBannerInputs): boolean {
+  if (!inputs.unifiedBillingSettingsEnabled) return true
+  return inputs.isActive
+}
+
 function deriveNoticeBanner(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+  if (
+    cloudCreditBannersOpen(inputs) &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  ) {
     return 'outOfCredits'
   }
   return deriveLifecycleNotice(inputs, audience)
@@ -192,6 +203,8 @@ function useBillingBannerInternal() {
     planEndedDismissed: planEndedDismissed.value,
     outOfCreditsDismissed: outOfCreditsDismissed.value,
     planChangeDismissed: planChangeDismissed.value,
+    unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
+    isActive: subscription.value?.isActive === true,
     ...readSubscriptionInputs(subscription.value)
   }))
 
