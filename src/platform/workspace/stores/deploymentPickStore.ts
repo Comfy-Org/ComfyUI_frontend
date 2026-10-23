@@ -15,7 +15,8 @@ import {
 import {
   hasDeploymentLink,
   readDeploymentHint,
-  setDeploymentHint
+  setDeploymentHint,
+  setUnconfirmedCloudHint
 } from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
@@ -221,7 +222,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * A listing that failed with no definite answer, in a browser with no
    * hint and no deployment link: nothing says it runs on a deployment, so
    * its next boot runs on Comfy Cloud at once rather than wait on a listing
-   * that keeps failing. A listing that answers later records what it says.
+   * that keeps failing, unconfirmed, so a listing that answers late with a
+   * deployment still says so. A listing that answers records what it says.
    */
   function noteLoadFailure(workspaceId: string, err: unknown) {
     if (
@@ -229,7 +231,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       readDeploymentHint(workspaceId) === 'unknown' &&
       !hasDeploymentLink()
     ) {
-      setDeploymentHint(workspaceId, null)
+      setUnconfirmedCloudHint(workspaceId)
     }
     if (reportedLoadFailure) return
     reportedLoadFailure = true

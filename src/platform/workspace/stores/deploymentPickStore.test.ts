@@ -10,7 +10,8 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import {
   readDeploymentHint,
-  setDeploymentHint
+  setDeploymentHint,
+  setUnconfirmedCloudHint
 } from '@/platform/workspace/deploymentHint'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -1487,6 +1488,7 @@ describe('useDeploymentPickStore', () => {
     function seedHint(hint: HintState) {
       if (hint === 'deployment') setDeploymentHint('ws-1', 'dep-1')
       else if (hint === 'cloud') setDeploymentHint('ws-1', null)
+      else if (hint === 'unconfirmed') setUnconfirmedCloudHint('ws-1')
     }
 
     beforeEach(() => {
@@ -1546,7 +1548,16 @@ describe('useDeploymentPickStore', () => {
           ),
         hintAfter: 'cloud'
       },
-      ...(['deployment', 'cloud'] as const).map((hint) => ({
+      {
+        answer: 'a 403, after a failure left Comfy Cloud unconfirmed',
+        hintBefore: 'unconfirmed',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        hintAfter: 'cloud'
+      },
+      ...(['deployment', 'cloud', 'unconfirmed'] as const).map((hint) => ({
         answer: `a transient failure, with the hint at ${hint}`,
         hintBefore: hint,
         respond: () =>
@@ -1562,7 +1573,7 @@ describe('useDeploymentPickStore', () => {
           mockWorkspaceApi.listDeployments.mockRejectedValue(
             new WorkspaceApiError('Service unavailable', 503)
           ),
-        hintAfter: 'cloud'
+        hintAfter: 'unconfirmed'
       },
       {
         answer: 'a failure that is not transient, with no hint',
@@ -1628,20 +1639,30 @@ describe('useDeploymentPickStore', () => {
       }
     )
 
-    it('replaces the Comfy Cloud hint a failure left once a listing answers', async () => {
-      mockWorkspaceApi.listDeployments
-        .mockRejectedValueOnce(
-          new WorkspaceApiError('Service unavailable', 503)
-        )
-        .mockResolvedValueOnce(listing)
-      const store = useDeploymentPickStore()
+    it.for([
+      { answer: 'a deployment', listed: listing, hintAfter: 'deployment' },
+      {
+        answer: 'Comfy Cloud',
+        listed: { ...listing, picked_deployment_id: null, pick_source: null },
+        hintAfter: 'cloud'
+      }
+    ])(
+      'replaces the unconfirmed Comfy Cloud hint a failure left once a listing answers with $answer',
+      async ({ listed, hintAfter }) => {
+        mockWorkspaceApi.listDeployments
+          .mockRejectedValueOnce(
+            new WorkspaceApiError('Service unavailable', 503)
+          )
+          .mockResolvedValueOnce(listed)
+        const store = useDeploymentPickStore()
 
-      await store.load()
-      expect(readDeploymentHint('ws-1')).toBe('cloud')
-      await store.load()
+        await store.load()
+        expect(readDeploymentHint('ws-1')).toBe('unconfirmed')
+        await store.load()
 
-      expect(readDeploymentHint('ws-1')).toBe('deployment')
-    })
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+      }
+    )
 
     it('keeps the hint per workspace', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
