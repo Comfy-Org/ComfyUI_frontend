@@ -38,6 +38,11 @@ test.describe(
         .getByRole('button', { name: enMessages.agent.showChatHistory })
         .click()
 
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: enMessages.agent.historyIncomplete
+        })
+      ).toBeVisible()
       // Exactly one row per chat: the repeated page served the same threads
       // more than once, and strict mode would fail here on a duplicate.
       await expect(
@@ -45,11 +50,6 @@ test.describe(
           name: firstAgentThreadPage.threads[0].title,
           exact: true
         })
-      ).toBeVisible()
-      await expect(
-        page
-          .getByTestId(TestIds.toast.panel)
-          .getByText(enMessages.agent.historyIncomplete)
       ).toBeVisible()
       await expect(page.getByTestId(TestIds.dialogs.errorOverlay)).toBeHidden()
     })
