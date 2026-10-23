@@ -2305,6 +2305,67 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
+    it.for([
+      [
+        'a null selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          selected: null,
+          other_text: 'someone else'
+        }
+      ],
+      [
+        'no selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'someone else'
+        }
+      ]
+    ] as const)(
+      'reports a 409 whose free text alone shows another answer won (%s)',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(card()).toMatchObject({
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'someone else'
+          }
+        })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+        expect(session.notices.value).toEqual([
+          {
+            level: 'error',
+            text: enMessages.agent.runApproval.answerSuperseded
+          }
+        ])
+      }
+    )
+
+    it('does not report an answered frame with a null selection as another answer winning', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null))
+
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
+    })
+
     it('puts the card back in service when the server rejects the selection', async () => {
       const { session, answerAsk } = await parkedOnQuestion()
       answerAsk.mockRejectedValueOnce(
