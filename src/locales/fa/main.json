@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "{count} کاراکتر | {count} کاراکتر",
     "expand": "بزرگ کردن",
+    "focusView": "بزرگ کردن به نمای تمرکز",
+    "noPrompt": "{node} پرامپت ندارد.",
+    "noPromptHint": "یک نود با ورودی متنی انتخاب کنید تا پرامپت آن را اینجا ویرایش کنید.",
+    "nodeSettings": "تنظیمات نود",
+    "prompt": "پرامپت",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

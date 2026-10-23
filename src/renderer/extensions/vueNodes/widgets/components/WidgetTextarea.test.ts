@@ -6,11 +6,19 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -412,6 +420,11 @@ describe('WidgetTextarea expand to editor', () => {
   function renderWithDialogHost(
     widgetOverrides: Partial<SimplifiedWidget<string>> = {}
   ) {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('CLIP Text Encode')
+    graph.add(node)
+    node.addWidget('textarea', 'text', 'a portrait', () => {})
+    useCanvasStore().currentGraph = graph
     const onUpdateModelValue = vi.fn()
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const view = render(WidgetTextarea, {
@@ -421,13 +434,14 @@ describe('WidgetTextarea expand to editor', () => {
           name: 'text',
           ...widgetOverrides
         }),
+        nodeId: node.id,
         nodeTitle: 'CLIP Text Encode',
         modelValue: 'a portrait',
         'onUpdate:modelValue': onUpdateModelValue
       },
       global: { plugins: [i18n], mocks: { $t: (msg: string) => msg } }
     })
-    return { onUpdateModelValue, view }
+    return { node, onUpdateModelValue, view }
   }
 
   async function openEditor() {
@@ -476,6 +490,42 @@ describe('WidgetTextarea expand to editor', () => {
     await openEditor()
 
     expect(expose).toHaveBeenCalledWith('control')
+  })
+
+  describe('with the panel arm served', () => {
+    beforeEach(() => {
+      remoteConfig.value = { 'prompt-editor-surface': 'panel' }
+      authenticatedRemoteConfigState.value = 'authenticated'
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      authenticatedRemoteConfigState.value = 'unloaded'
+    })
+
+    it('opens the prompt panel on its node instead of the dialog', async () => {
+      const { node } = renderWithDialogHost()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'textEditor.expand' })
+      )
+
+      expect(usePromptPanelStore().target?.node).toBe(node)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(telemetry.trackPromptEditorExposure).toHaveBeenCalledWith({
+        '$feature/prompt-editor-surface': 'panel'
+      })
+    })
+
+    it('falls back to the dialog in app mode without reporting exposure', async () => {
+      useCanvasStore().linearMode = true
+      renderWithDialogHost()
+
+      await openEditor()
+
+      expect(usePromptPanelStore().isActive).toBe(false)
+      expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+    })
   })
 
   it.for([

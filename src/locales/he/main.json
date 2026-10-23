@@ -5475,6 +5475,11 @@
   "textEditor": {
     "characterCount": "תו {count} | {count} תווים",
     "expand": "הגדלה",
+    "focusView": "הגדלה לתצוגת מיקוד",
+    "noPrompt": "ל-{node} אין הנחיה.",
+    "noPromptHint": "בחרו צומת עם קלט טקסט כדי לערוך כאן את ההנחיה שלו.",
+    "nodeSettings": "הגדרות צומת",
+    "prompt": "הנחיה",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

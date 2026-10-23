@@ -94,11 +94,17 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -109,10 +115,12 @@ const actionButtonClass =
 
 const {
   widget,
+  nodeId,
   nodeTitle,
   placeholder = ''
 } = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeId?: NodeId
   nodeTitle?: string
   placeholder?: string
 }>()
@@ -164,10 +172,34 @@ async function handleCopy() {
   })
 }
 
+const canvasStore = useCanvasStore()
 const promptEditorExperiment = usePromptEditorExperimentStore()
+const promptPanelStore = usePromptPanelStore()
+const { isBuilderMode } = useAppMode()
+const isPromptPanelArm = computed(
+  () =>
+    promptEditorExperiment.assignment === 'panel' &&
+    !canvasStore.linearMode &&
+    !isBuilderMode.value
+)
 let closeTextEditor: (() => void) | undefined
 
+function openPromptPanel(node: LGraphNode | undefined): boolean {
+  const target = node?.widgets?.find(({ name }) => name === widget.name)
+  if (!node || !target) return false
+  canvasStore.canvas?.selectItems([node])
+  return promptPanelStore.open({ node, widget: target })
+}
+
 function openTextEditor() {
+  const node =
+    nodeId === undefined
+      ? undefined
+      : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
+  if (isPromptPanelArm.value && openPromptPanel(node)) {
+    promptEditorExperiment.expose('panel')
+    return
+  }
   promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
