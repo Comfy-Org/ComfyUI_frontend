@@ -305,7 +305,7 @@ describe('useProcessingTopupPayment', () => {
       expect(screen.getByRole('status')).toHaveTextContent('withheld')
     )
     expect(reportError).toHaveBeenCalledWith(cause, {
-      errorType: 'topup_checkout_read_failed',
+      errorType: 'failure_reading_topup_checkout',
       surface: 'billing'
     })
   })
@@ -322,7 +322,7 @@ describe('useProcessingTopupPayment', () => {
 
     await waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(cause, {
-        errorType: 'topup_checkout_read_failed',
+        errorType: 'failure_reading_topup_checkout',
         surface: 'billing'
       })
     )
@@ -364,11 +364,45 @@ describe('useProcessingTopupPayment', () => {
 
     await waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(cause, {
-        errorType: 'topup_checkout_read_failed',
+        errorType: 'failure_reading_topup_checkout',
         surface: 'billing'
       })
     )
     expect(screen.getByRole('status')).toHaveTextContent('2500')
+  })
+
+  it('drops the notice without reporting when billing owner access is refused', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    renderPayment(ref(true))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+
+    vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(
+      new WorkspaceApiError('Workspace billing owner required', 403)
+    )
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('none')
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a failing checkout read once across returns', async () => {
+    enableProcessingRead()
+    const list = vi
+      .spyOn(workspaceApi, 'listTopupCheckouts')
+      .mockRejectedValue(new WorkspaceApiError('bad gateway', 502))
+    renderPayment(ref(true))
+    await waitFor(() => expect(reportError).toHaveBeenCalledTimes(1))
+
+    leaveAndReturn()
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(2))
+    await new Promise((settle) => setTimeout(settle))
+
+    expect(reportError).toHaveBeenCalledTimes(1)
   })
 
   it('does not read again after the surface is gone', async () => {

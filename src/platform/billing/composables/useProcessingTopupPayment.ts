@@ -5,6 +5,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { processingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -47,11 +48,8 @@ async function readProcessingTopupPayment(): Promise<
   }
 }
 
-function reportCheckoutReadFailure(cause: unknown) {
-  reportError(cause, {
-    errorType: 'topup_checkout_read_failed',
-    surface: 'billing'
-  })
+function isBillingOwnerRequired(cause: unknown) {
+  return cause instanceof WorkspaceApiError && cause.status === 403
 }
 
 export function useProcessingTopupPayment(
@@ -61,6 +59,16 @@ export function useProcessingTopupPayment(
   const payment = shallowRef<ProcessingTopupPayment | null>(null)
   let generation = 0
   let disposed = false
+  let failureReported = false
+
+  function reportCheckoutReadFailure(cause: unknown) {
+    if (failureReported) return
+    failureReported = true
+    reportError(cause, {
+      errorType: 'failure_reading_topup_checkout',
+      surface: 'billing'
+    })
+  }
 
   function reading() {
     return !disposed && toValue(shown) && flags.unifiedBillingSettingsEnabled
@@ -76,6 +84,10 @@ export function useProcessingTopupPayment(
     const outcome = await readProcessingTopupPayment()
     if (current !== generation || !reading()) return
     if (!outcome.ok) {
+      if (isBillingOwnerRequired(outcome.cause)) {
+        payment.value = null
+        return
+      }
       reportCheckoutReadFailure(outcome.cause)
       return
     }

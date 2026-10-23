@@ -2506,7 +2506,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(mockReportError).toHaveBeenCalledWith(
           expect.any(WorkspaceApiError),
           {
-            errorType: 'topup_checkout_read_failed',
+            errorType: 'failure_reading_topup_checkout',
             surface: 'billing'
           }
         )
