@@ -7,6 +7,7 @@ import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
@@ -75,6 +76,7 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(

@@ -1,9 +1,14 @@
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
 import type { CoachStep } from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
+  hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
   useOnboarding
@@ -17,8 +22,49 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
   placement: 'left-center'
 }))
 
+function onboardedScopes(): string[] | undefined {
+  return useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
+}
+
 describe('useOnboarding', () => {
-  beforeEach(() => window.localStorage.clear())
+  beforeEach(() => {
+    window.localStorage.clear()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+  })
+
+  it('stays finished on an origin whose localStorage never saw the tour', async () => {
+    useOnboarding(STEPS, KEY).finish()
+    await nextTick()
+
+    window.localStorage.clear()
+
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(false)
+    expect(hasSeenCoach(KEY)).toBe(true)
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        [KEY]
+      )
+    )
+  })
+
+  it('copies a completion recorded only in localStorage into settings', () => {
+    localStorage.setItem(KEY, 'true')
+
+    useOnboarding(STEPS, KEY)
+
+    expect(onboardedScopes()).toEqual([KEY])
+  })
+
+  it('replays after clearing both the local and settings completion', async () => {
+    useOnboarding(STEPS, KEY).finish()
+    await nextTick()
+
+    resetCoach(KEY)
+
+    expect(onboardedScopes()).toEqual([])
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
+  })
 
   it('honours a replay requested while no tour is mounted', async () => {
     // The take-the-tour button stays clickable while the coach is deferred by
