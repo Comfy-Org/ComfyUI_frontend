@@ -37,12 +37,19 @@
             variant="textonly"
             size="icon-sm"
             :class="actionButtonClass"
-            :title="$t('g.copyToClipboard')"
-            :aria-label="$t('g.copyToClipboard')"
+            :title="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
+            :aria-label="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
             @click="handleCopy"
             @pointerdown.capture.stop
           >
-            <i class="icon-[lucide--copy] size-3" />
+            <i
+              :class="
+                cn(
+                  'size-3',
+                  isCopied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+                )
+              "
+            />
           </Button>
           <Button
             v-if="!widget.linkedUpstream"
@@ -82,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { refAutoReset } from '@vueuse/core'
 import { computed, onBeforeUnmount, ref, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -125,6 +133,7 @@ function trackFocus() {
 
 const hideLayoutField = useHideLayoutField()
 const { copyToClipboard } = useCopyToClipboard()
+const isCopied = refAutoReset(false, 2000)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
@@ -153,8 +162,10 @@ function handleContextMenu(e: MouseEvent) {
   e.preventDefault()
 }
 
-function handleCopy() {
-  copyToClipboard(modelValue.value)
+async function handleCopy() {
+  isCopied.value = await copyToClipboard(modelValue.value, {
+    toastOnSuccess: false
+  })
 }
 
 const canvasStore = useCanvasStore()
