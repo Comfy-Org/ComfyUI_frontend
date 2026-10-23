@@ -12,6 +12,7 @@ import {
   classifyWidgetValuesForm,
   provenWidgetValuesForm,
   resetWidgetFormSuppressionTally,
+  valueWidgetsOnly,
   widgetFormSuppressionTally,
   widgetValuesFormVerdict
 } from './widgetValuesForm'
@@ -113,11 +114,8 @@ describe('the proven widget form', () => {
   })
 })
 
-describe('invariant 4 — the form survived the extension serialize hook', () => {
-  it('declares nothing when the hook adds a value core refused to serialise', () => {
-    // The VideoHelperSuite shape: the pack keys its own dict from the
-    // UNFILTERED widget list, so its keys and a derived order differ by
-    // exactly the widget carrying `serialize = false`.
+describe('invariant 3 — the wire values still fit the live widgets', () => {
+  it('ignores a hook value the Agent wire filters out', () => {
     const node = nodeWith('VHS_Probe', (n) => {
       n.addWidget('text', 'filename', 'clip', () => {})
       const hidden = n.addWidget('text', 'vhslatentpreview', 'x', () => {})
@@ -130,13 +128,13 @@ describe('invariant 4 — the form survived the extension serialize hook', () =>
       }
     })
 
-    expect(widgetValuesFormVerdict(node)).toMatchObject({
-      declared: false,
-      reason: 'hook_changed_serialized_widgets'
+    expect(widgetValuesFormVerdict(node)).toEqual({
+      declared: true,
+      form: { order: ['filename'] }
     })
   })
 
-  it('declares nothing when the hook drops a widget mid-serialization', () => {
+  it('uses the post-hook widget list when the hook drops a widget', () => {
     const node = nodeWith('Shrinking', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'extra', 'b', () => {})
@@ -145,9 +143,9 @@ describe('invariant 4 — the form survived the extension serialize hook', () =>
       }
     })
 
-    expect(widgetValuesFormVerdict(node)).toMatchObject({
-      declared: false,
-      reason: 'hook_changed_serialized_widgets'
+    expect(widgetValuesFormVerdict(node)).toEqual({
+      declared: true,
+      form: { order: ['prompt'] }
     })
   })
 
@@ -171,8 +169,8 @@ describe('invariant 4 — the form survived the extension serialize hook', () =>
   })
 })
 
-describe('invariant 2 — the post-hook positional array still fits the widgets', () => {
-  it('declares nothing when the hook rewrites widgets_values to a shorter array', () => {
+describe('positional compatibility data', () => {
+  it('ignores positional values because the Agent wire sends named values', () => {
     const node = nodeWith('Rewriting', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'extra', 'b', () => {})
@@ -181,16 +179,13 @@ describe('invariant 2 — the post-hook positional array still fits the widgets'
       }
     })
 
-    expect(widgetValuesFormVerdict(node)).toMatchObject({
-      declared: false,
-      reason: 'positional_arity_disagrees',
-      detail: { positional: 1, serialised: 2 }
+    expect(widgetValuesFormVerdict(node)).toEqual({
+      declared: true,
+      form: { order: ['prompt', 'extra'] }
     })
   })
 
   it('counts button widgets, which core serialises and the wire drops', () => {
-    // A button is serialised positionally but is not a document value, so a
-    // check written against the value count would refuse every node with one.
     const node = nodeWith('Buttoned', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('button', 'refresh', 'refresh', () => {})
@@ -203,12 +198,36 @@ describe('invariant 2 — the post-hook positional array still fits the widgets'
   })
 })
 
-describe('invariants 1 and 3 — guards on the value filter', () => {
-  // Neither is reachable through `valueWidgetsOnly` today: it drops a
-  // `serialize: false` widget and derives the order from the same object it
-  // filtered. Both are asserted against hand-built values, so the guard goes
-  // red if a later change to that filter stops holding them.
+describe('the Agent wire value filter', () => {
+  it('preserves an own __proto__ value', () => {
+    const node = nodeWith('PrototypeNamed', (n) => {
+      n.addWidget('text', '__proto__', 'safe', () => {})
+    })
+    const named = Object.create(null) as Record<string, unknown>
+    Object.defineProperty(named, '__proto__', {
+      value: 'safe',
+      enumerable: true
+    })
 
+    const values = valueWidgetsOnly(node, named)
+
+    expect(Object.hasOwn(values, '__proto__')).toBe(true)
+    expect(values.__proto__).toBe('safe')
+  })
+
+  it('keeps a value widget when a same-named button appears first', () => {
+    const node = detachedNodeWith('ButtonTwin', (n) => {
+      n.addWidget('button', 'shared', 'refresh', () => {})
+      n.addWidget('text', 'shared', 'value', () => {})
+    })
+
+    expect(valueWidgetsOnly(node, { shared: 'value' })).toEqual({
+      shared: 'value'
+    })
+  })
+})
+
+describe('guards on the value filter', () => {
   it('refuses an order entry naming a widget core would not serialise', () => {
     const node = nodeWith('Hiding', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
@@ -224,8 +243,8 @@ describe('invariants 1 and 3 — guards on the value filter', () => {
       )
     ).toMatchObject({
       declared: false,
-      reason: 'order_names_unserialized_widget',
-      detail: { names: ['hidden'] }
+      reason: 'declared_keys_disagree',
+      detail: { undeclared: ['hidden'] }
     })
   })
 
@@ -314,18 +333,15 @@ describe('the invariant channel', () => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'extra', 'b', () => {})
       n.onSerialize = (data: ISerialisedNode) => {
-        data.widgets_values = ['only one']
+        data.widgets_values_named = { prompt: 'a' }
       }
     })
     const serialized = serializedOf(node)
+    const values = valueWidgetsOnly(node, serialized.widgets_values_named!)
 
-    // The DEV throw is swallowed on purpose: a third-party pack must not be
-    // able to stop the Agent minting in a developer's browser.
-    expect(
-      provenWidgetValuesForm(node, { prompt: 'a', extra: 'b' }, serialized)
-    ).toBeUndefined()
+    expect(provenWidgetValuesForm(node, values, serialized)).toBeUndefined()
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('Agent widget form invariant 2')
+      expect.stringContaining('Agent widget form invariant 3')
     )
   })
 
@@ -333,23 +349,21 @@ describe('the invariant channel', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)
-    // Module-level state, so the restore cannot sit after the assertions: a
-    // failure there would leave a stale reporter installed and hide itself
-    // behind the secondary failures it causes in later tests.
     onTestFinished(() => setAssertReporter(null))
     const node = nodeWith('Shrinking', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'extra', 'b', () => {})
-      n.onSerialize = () => {
-        n.widgets?.pop()
+      n.onSerialize = (data: ISerialisedNode) => {
+        data.widgets_values_named = { prompt: 'a' }
       }
     })
     const serialized = serializedOf(node)
+    const values = valueWidgetsOnly(node, serialized.widgets_values_named!)
 
-    provenWidgetValuesForm(node, { prompt: 'a' }, serialized)
+    provenWidgetValuesForm(node, values, serialized)
 
     expect(reporter).toHaveBeenCalledWith(
-      expect.stringContaining('Agent widget form invariant 4'),
+      expect.stringContaining('Agent widget form invariant 3'),
       expect.objectContaining({ nodeType: 'Shrinking' })
     )
     const [message] = reporter.mock.calls[0] as [string]
@@ -360,7 +374,7 @@ describe('the invariant channel', () => {
   })
 })
 
-describe('invariant 5 — the undeclared-form production signal', () => {
+describe('invariant 4 — the undeclared-form production signal', () => {
   it('reports the class and the reason, once per pair', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
@@ -410,7 +424,7 @@ describe('invariant 5 — the undeclared-form production signal', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
-    const dynamic = (n: LGraphNode) => {
+    function dynamic(n: LGraphNode) {
       n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
     }
     const first = nodeWith('Dynamic', dynamic)
@@ -434,7 +448,7 @@ describe('invariant 5 — the undeclared-form production signal', () => {
     ])
   })
 
-  it('classifies for a bulk pass without reporting or tallying', () => {
+  it('classifies and tallies for a bulk pass without reporting', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
@@ -444,6 +458,8 @@ describe('invariant 5 — the undeclared-form production signal', () => {
 
     expect(widgetValuesFormVerdict(node)).toMatchObject({ declared: false })
     expect(reportError).not.toHaveBeenCalled()
-    expect(widgetFormSuppressionTally()).toEqual([])
+    expect(widgetFormSuppressionTally()).toEqual([
+      { nodeType: 'Dynamic', reason: 'value_dependent_layout', count: 1 }
+    ])
   })
 })

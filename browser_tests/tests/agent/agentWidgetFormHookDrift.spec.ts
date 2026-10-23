@@ -34,7 +34,7 @@ test.describe(
       humanOpsHost: 'apply'
     })
 
-    test('declares no widget form for a node whose values a pack rewrites after serialization', async ({
+    test('ignores serializer-private positional state outside the Agent wire', async ({
       agentConversation,
       page
     }) => {
@@ -60,12 +60,6 @@ test.describe(
         })
 
       await test.step('install a pack that appends its own entry after the hook', async () => {
-        // The shape third-party packs actually use: an `onSerialize` that
-        // appends private state to the positional array. It runs AFTER core
-        // wrote `widgets_values` from the live widget list, and
-        // `runExtensionSerializeHook` copies it back because the field is
-        // canonical — so the order core derived no longer describes the
-        // values any other reader of this workflow will see.
         await page.evaluate((type) => {
           const proto = window.LiteGraph!.registered_node_types[type].prototype
           proto.onSerialize = function (data) {
@@ -74,7 +68,7 @@ test.describe(
         }, NODE_TYPE)
       })
 
-      await test.step('the drifted node reaches the host with no form, and is refused', async () => {
+      await test.step('the node reaches the host with its named value and form', async () => {
         const nodeId = await agentConversation.addNodeOfType(
           NODE_TYPE,
           [700, 400]
@@ -82,19 +76,19 @@ test.describe(
         expect(nodeId).not.toBe(control)
 
         const outcomes = await agentConversation.waitForHumanOps(2)
-        // Fail closed: with no form this class is uncatalogued, so the host
-        // refuses the write instead of storing an order nobody proved.
         expect(outcomes[1]).toMatchObject({
-          outcome: 'rejected',
-          reason: { code: 'uncatalogued_widget_write' }
+          outcome: 'applied'
         })
-        expect(agentConversation.hostNode(nodeId)).toBeUndefined()
+        expect(agentConversation.hostNode(nodeId)).toMatchObject({
+          widgets_values: { text: 'initial value' },
+          widgets_values_form: { order: ['text'] }
+        })
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).toBeHidden()
+        ).toBeVisible()
       })
 
-      await test.step('the undrifted node is untouched by the refusal', () => {
+      await test.step('the undrifted node remains intact', () => {
         expect(agentConversation.hostNode(control)).toMatchObject({
           widgets_values_form: { order: ['text'] }
         })

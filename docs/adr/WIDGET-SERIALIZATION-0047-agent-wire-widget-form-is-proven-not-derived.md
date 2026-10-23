@@ -60,14 +60,16 @@ and not sufficient — the base post-hook is not always the last writer.
 ## Decision
 
 1. **The form is a proof, not a derivation.** The wire declares a form only
-   where it can prove the final serialized values are the ones core produced
-   from the live widget list. Where it cannot, it declares nothing. "Declare
-   nothing" is the behaviour in every environment; see decision 4.
+   where it can prove the declared order describes every named value the Agent
+   wire carries. Positional compatibility data and extension-private values
+   that the wire filters out are outside that claim. Where the order cannot be
+   proven, the wire declares nothing. "Declare nothing" is the behaviour in
+   every environment; see decision 4.
 2. **Every check reads the post-hook payload.** The classifier takes the
    serialized node returned by `node.serialize()` — hook already run — and
    compares it against the live widget list, rather than inspecting state
    core holds before the hook.
-3. **Five invariants, stated once and asserted at that one site.** They are
+3. **Four invariants, stated once and asserted at that one site.** They are
    the contract; the list below is the normative text and the assertion
    messages name the broken entry.
 4. **Suppression is the gate; `assert` is the channel.** `assert` from
@@ -78,41 +80,34 @@ and not sufficient — the base post-hook is not always the last writer.
    stop the Agent from minting in a developer's browser, only to be unable to
    make us publish a form describing the wrong values. The console line and
    the production reporter still fire.
-5. **Invariant 5 is a signal, not a failure.** "Object-shaped values with no
+5. **Invariant 4 is a signal, not a failure.** "Object-shaped values with no
    declared form" is the expected state for much of the ecosystem today. It
    reports rather than asserts, and it is the only way to learn _which_
    classes still declare nothing, which is what decides whether the form path
    generalises.
 
-### The five invariants
+### The four invariants
 
-Let _live_ be `node.widgets`, _serialised_ those of _live_ with
-`serialize !== false` (what `serialiseWidgetValues` emits), _values_ the
-name-keyed object the wire ships, and _order_ the declared sequence.
+Let _live_ be `node.widgets`, _value widgets_ be those whose values survive the
+Agent wire filter, _values_ the name-keyed object the wire ships, and _order_
+the declared sequence.
 
-| #   | Invariant                                                                                                                                   | Reason slug                       |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| 1   | Every `order` entry names a live widget with `serialize !== false`.                                                                         | `order_names_unserialized_widget` |
-| 2   | Array case — the post-hook positional `widgets_values` has one entry per _serialised_ widget.                                               | `positional_arity_disagrees`      |
-| 3   | Object case — `order` and `Object.keys(values)` agree as a set difference in **both** directions.                                           | `declared_keys_disagree`          |
-| 4   | The form survived the hook: the post-hook `widgets_values_named` key set equals the key set core produces from the live serialised widgets. | `hook_changed_serialized_widgets` |
-| 5   | Object-shaped values with no declared form are reported, once per class and reason.                                                         | `agent_widget_form_undeclared`    |
+| #   | Invariant                                                                                                           | Reason slug                       |
+| --- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1   | Every `order` entry names a live value widget.                                                                      | `order_names_unserialized_widget` |
+| 2   | `order` and `Object.keys(values)` agree as a set difference in **both** directions.                                 | `declared_keys_disagree`          |
+| 3   | The filtered post-hook named-value key set equals the live value-widget key set.                                    | `hook_changed_serialized_widgets` |
+| 4   | Object-shaped values with no declared form are reported, once per class and reason, with 100 distinct keys maximum. | `agent_widget_form_undeclared`    |
 
-Three of these need their exact form recorded, because the obvious version of
+Two of these need their exact form recorded, because the obvious version of
 each is wrong:
 
-- **Invariant 2 is stated against the positional array, not against the
-  order.** The wire ships the object, so `order.length === widgets_values.length`
-  is unreachable there as written. The reachable and load-bearing claim is that
-  the array the hook left behind still has one slot per serialised widget: if a
-  pack rewrote it to a different arity, the order was proven against values no
-  other reader of that workflow will see.
-- **Invariant 3 is bidirectional.** `order` ⊆ `keys(values)` alone misses
+- **Invariant 2 is bidirectional.** `order` ⊆ `keys(values)` alone misses
   residue — a stored value outside the order, which the host would keep and
   never project. The VideoHelperSuite shape is the in-ecosystem instance: it
   keys its dict from the _unfiltered_ widget list, so its keys and a derived
   order differ by exactly the one widget carrying `serialize = false`.
-- **Invariant 4 compares key sets, not key sequences.** Key order inside
+- **Invariant 3 compares key sets, not key sequences.** Key order inside
   `widgets_values_named` is not meaningful — an integer-like widget name is
   enumeration-reordered by the object itself, which is the reason the form
   exists. A pack that reorders keys and changes nothing else has not broken
@@ -127,7 +122,7 @@ with the selection; a closed form would freeze it. A missing-node shell
 cannot see, so its live widget list — empty or fabricated — cannot order it. A
 value with no live widget at all, an unnamed widget, and two value widgets
 sharing a name are all shapes a correct producer cannot describe. These report
-under invariant 5 with their own reason and never assert.
+under invariant 4 with their own reason and never assert.
 
 A node whose only widgets are buttons is the one suppression that is **not**
 reported: it has no named value for a form to order, so counting it as a
@@ -136,19 +131,19 @@ declaration gap would bury the signal under every such class in the ecosystem.
 ## Consequences
 
 - One behaviour change relative to the previous derivation: a node whose
-  post-hook positional array or named key set was rewritten by an extension no
-  longer gets a form. It previously could, because the closure test looked only
-  at the derived order and the filtered values, neither of which sees the
-  rewrite.
-- Invariant 5 turns "what fraction of the ecosystem declares a form" from an
+  filtered post-hook named-value key set was rewritten by an extension no
+  longer gets a form. Positional or private state the Agent wire does not send
+  does not suppress the form.
+- Invariant 4 turns "what fraction of the ecosystem declares a form" from an
   unanswerable question into a queryable one: `error_type`
   `agent_widget_form_undeclared`, tagged `node_type` and `reason`,
   fingerprinted on all three, one report per class and reason per page session.
 - A bulk pass does not go through telemetry at all.
-  `widgetValuesFormVerdict(node)` classifies a node with no side effects and
-  `widgetFormSuppressionTally()` returns the per-class counts, so a corpus run
-  over the Custom Nodes Ecosystem Matrix yields a class-by-class breakdown
-  without perturbing the production signal it is measuring.
+  `widgetValuesFormVerdict(node)` runs the node's serialization hook, classifies
+  and tallies the result, and `widgetFormSuppressionTally()` returns up to 100
+  distinct per-class counts. The hook can mutate extension state, so the corpus
+  runner must use disposable nodes. A thrown hook is classified separately as
+  `serialization_failed`.
 - The frontend follower has no read-back handling for the form, so the round
   trip remains the host's. That is unchanged by this ADR and is why the form
   stays on the Agent wire rather than in ordinary saves.

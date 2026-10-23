@@ -1,5 +1,5 @@
 /**
- * Whether the Agent wire may declare a node's widget form, and the five
+ * Whether the Agent wire may declare a node's widget form, and the four
  * invariants that decide it.
  *
  * `widgets_values_form` tells the host which order its name-keyed registers
@@ -32,30 +32,27 @@ import type { WidgetState } from '@/types/widgetState'
 import { widgetId } from '@/types/widgetId'
 
 /** The post-hook halves of a serialized node this module reads. */
-type SerializedWidgetValues = Pick<
-  ISerialisedNode,
-  'widgets_values' | 'widgets_values_named'
->
+type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>
 
 /**
  * Why no form was declared. The first four are invariant violations: the
  * values and the order disagree, so declaring either would publish a state no
  * other reader sees. The rest are shapes a correct producer legitimately
- * cannot describe, and they are the population invariant 5 counts.
+ * cannot describe, and they are the population invariant 4 counts.
  */
 type WidgetFormSuppression =
   /** Invariant 1 — an entry names no live widget core would serialise. */
   | 'order_names_unserialized_widget'
-  /** Invariant 2 — the post-hook positional array has a different arity. */
-  | 'positional_arity_disagrees'
-  /** Invariant 3 — declared order and value keys differ in either direction. */
+  /** Invariant 2 — declared order and value keys differ in either direction. */
   | 'declared_keys_disagree'
-  /** Invariant 4 — the hook changed which widgets core serialises. */
+  /** Invariant 3 — the hook changed the values carried by the Agent wire. */
   | 'hook_changed_serialized_widgets'
   /** The catalogue owns this order: it is a function of the values. */
   | 'value_dependent_layout'
   /** A missing-node shell round-trips a stored payload, not live widgets. */
   | 'shell_last_serialization'
+  /** A custom serialization hook threw before producing a payload. */
+  | 'serialization_failed'
   /** A value the document carries has no live widget to order. */
   | 'value_has_no_live_widget'
   /** Nothing to declare. */
@@ -68,19 +65,21 @@ type WidgetFormSuppression =
 /**
  * Nothing to declare is not a declaration gap: a node whose only widgets are
  * buttons has no named value for a form to order, so counting it would bury
- * invariant 5's signal under every such class in the ecosystem.
+ * invariant 4's signal under every such class in the ecosystem.
  */
 const UNREPORTED: ReadonlySet<WidgetFormSuppression> = new Set([
   'no_value_widgets'
 ])
 
+type SuppressedWidgetFormVerdict = {
+  readonly declared: false
+  readonly reason: WidgetFormSuppression
+  readonly detail?: Record<string, unknown>
+}
+
 export type WidgetFormVerdict =
   | { readonly declared: true; readonly form: WidgetValuesForm }
-  | {
-      readonly declared: false
-      readonly reason: WidgetFormSuppression
-      readonly detail?: Record<string, unknown>
-    }
+  | SuppressedWidgetFormVerdict
 
 const ADR =
   'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
@@ -96,19 +95,16 @@ const INVARIANT_MESSAGES: Partial<Record<WidgetFormSuppression, string>> = {
   order_names_unserialized_widget:
     'Agent widget form invariant 1: a declared order entry names no live widget with serialize !== false, so the form orders a widget core never serialises — ' +
     `see ${ADR}`,
-  positional_arity_disagrees:
-    'Agent widget form invariant 2: the post-hook positional widgets_values array no longer has one entry per serialised widget, so an extension replaced the values the order was proven against — ' +
-    `see ${ADR}`,
   declared_keys_disagree:
-    'Agent widget form invariant 3: the declared order and the object-shaped widgets_values keys differ in one direction or the other, so the form either orders an absent value or drops a stored one — ' +
+    'Agent widget form invariant 2: the declared order and the object-shaped widgets_values keys differ in one direction or the other, so the form either orders an absent value or drops a stored one — ' +
     `see ${ADR}`,
   hook_changed_serialized_widgets:
-    'Agent widget form invariant 4: the extension serialize hook changed which widgets are serialised, so the form core would have written no longer describes the final values — ' +
+    'Agent widget form invariant 3: the extension serialize hook changed which live value widgets reach the Agent wire, so the form no longer describes the values sent — ' +
     `see ${ADR}`
 }
 
 const UNDECLARED_FORM_MESSAGE =
-  'Agent widget form invariant 5: object-shaped widget values with no declared form'
+  'Agent widget form invariant 4: object-shaped widget values with no declared form'
 
 const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
   'COMFY_AUTOGROW_V3',
@@ -127,12 +123,15 @@ const tally = new Map<
   string,
   { nodeType: string; reason: WidgetFormSuppression; count: number }
 >()
+const reported = new Set<string>()
+const MAX_SUPPRESSION_KEYS = 100
 
 const tallyKey = (nodeType: string, reason: WidgetFormSuppression): string =>
   JSON.stringify([nodeType, reason])
 
 /**
- * Every suppression this page session saw, by class and reason.
+ * Up to the first 100 distinct suppressions this page session saw, by class
+ * and reason.
  *
  * This is the bulk instrument. A corpus run reads it once at the end instead
  * of scraping telemetry, and `nodeType` makes the answer a class-by-class
@@ -148,21 +147,28 @@ export function resetWidgetFormSuppressionTally(): void {
   tally.clear()
 }
 
-function record(nodeType: string, reason: WidgetFormSuppression): boolean {
+function record(nodeType: string, reason: WidgetFormSuppression): void {
   const key = tallyKey(nodeType, reason)
   const seen = tally.get(key)
   if (seen) {
     seen.count += 1
-    return false
+    return
   }
+  if (tally.size >= MAX_SUPPRESSION_KEYS) return
   tally.set(key, { nodeType, reason, count: 1 })
+}
+
+function firstReport(nodeType: string, reason: WidgetFormSuppression): boolean {
+  const key = tallyKey(nodeType, reason)
+  if (reported.has(key) || reported.size >= MAX_SUPPRESSION_KEYS) return false
+  reported.add(key)
   return true
 }
 
 function suppressed(
   reason: WidgetFormSuppression,
   detail?: Record<string, unknown>
-): WidgetFormVerdict {
+): SuppressedWidgetFormVerdict {
   return detail
     ? { declared: false, reason, detail }
     : { declared: false, reason }
@@ -198,15 +204,23 @@ export function valueWidgetsOnly(
   node: LGraphNode,
   named: object
 ): Record<string, unknown> {
-  const filtered: Record<string, unknown> = {}
+  const filtered: Record<string, unknown> = Object.create(null)
   const rootGraphId = node.graph?.rootGraph.id
   const widgetValueStore = useWidgetValueStore()
   for (const [name, value] of Object.entries(named)) {
-    const widget = node.widgets?.find((candidate) => candidate.name === name)
     const stored = rootGraphId
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
-    if (isValueWidget(widget, stored)) filtered[name] = value
+    const carriesValue = node.widgets?.some(
+      (candidate) => candidate.name === name && isValueWidget(candidate, stored)
+    )
+    if (carriesValue)
+      Object.defineProperty(filtered, name, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      })
   }
   return filtered
 }
@@ -215,12 +229,8 @@ export function valueWidgetsOnly(
 interface FormProof {
   /** Every live widget's name, serialised or not. */
   readonly liveNames: readonly string[]
-  /** The names core serialises: `serialize === false` is skipped. */
-  readonly serialisedNames: readonly string[]
-  /** The post-hook named keys, which the hook may have replaced. */
-  readonly namedKeys: readonly string[]
-  /** The post-hook positional array, or undefined if there is none. */
-  readonly positional: readonly unknown[] | undefined
+  /** The names of live widgets whose values the Agent wire carries. */
+  readonly valueWidgetNames: readonly string[]
   /** The enumerable keys of the object the wire ships. */
   readonly valueNames: readonly string[]
   /** The order the form would declare. */
@@ -230,22 +240,26 @@ interface FormProof {
 function formProof(
   node: LGraphNode,
   values: Record<string, unknown>,
-  serialized: SerializedWidgetValues
+  _serialized: SerializedWidgetValues
 ): FormProof {
   const live = node.widgets ?? []
-  const named = serialized.widgets_values_named
-  const positional = serialized.widgets_values
+  const rootGraphId = node.graph?.rootGraph.id
+  const widgetValueStore = useWidgetValueStore()
+  const valueWidgetNames = live
+    .filter((widget) => {
+      const stored = rootGraphId
+        ? widgetValueStore.getWidget(
+            widgetId(rootGraphId, node.id, widget.name)
+          )
+        : undefined
+      return isValueWidget(widget, stored)
+    })
+    .map((widget) => widget.name)
   return {
     liveNames: live.map((widget) => widget.name),
-    serialisedNames: live
-      .filter((widget) => widget.serialize !== false)
-      .map((widget) => widget.name),
-    namedKeys: named ? Object.keys(named) : [],
-    positional: Array.isArray(positional) ? positional : undefined,
+    valueWidgetNames,
     valueNames: Object.keys(values),
-    order: live
-      .map((widget) => widget.name)
-      .filter((name) => Object.hasOwn(values, name))
+    order: valueWidgetNames.filter((name) => Object.hasOwn(values, name))
   }
 }
 
@@ -253,37 +267,19 @@ function formProof(
 type FormProbe = (proof: FormProof) => WidgetFormVerdict | undefined
 
 /**
- * Invariant 4 — the hook may replace either widget-values field after core
- * wrote it. Compare key SETS, not sequences: `widgets_values_named` is an
- * object, and an integer-like widget name is enumeration-reordered inside it,
- * which is the reason the form exists in the first place. A pack that
- * reorders keys and changes nothing else has not broken anything.
+ * Invariant 3 — compare the key set that survives the Agent wire's value
+ * filter with the live value widgets. Positional values and extension-private
+ * entries are not sent, so neither can invalidate this proof.
  */
 const hookKeptTheSerialisedWidgets: FormProbe = ({
-  namedKeys,
-  serialisedNames
+  valueNames,
+  valueWidgetNames
 }) =>
-  sameNames(namedKeys, serialisedNames)
+  sameNames(valueNames, valueWidgetNames)
     ? undefined
     : suppressed('hook_changed_serialized_widgets', {
-        serialised: namedKeys,
-        live: serialisedNames
-      })
-
-/**
- * Invariant 2 — the array case. The wire ships the named object, so the arity
- * claim is made against the positional array the hook left behind: one slot
- * per serialised widget, or the order was proven against values no other
- * reader of this workflow will see. Buttons count here: core serialises one
- * positionally and the wire drops it as a non-value, so a check written
- * against the value count would refuse every node that has one.
- */
-const positionalArityFits: FormProbe = ({ positional, serialisedNames }) =>
-  !positional || positional.length === serialisedNames.length
-    ? undefined
-    : suppressed('positional_arity_disagrees', {
-        positional: positional.length,
-        serialised: serialisedNames.length
+        wire: valueNames,
+        live: valueWidgetNames
       })
 
 /**
@@ -306,15 +302,18 @@ const everyValueHasALiveWidget: FormProbe = ({ valueNames, liveNames }) => {
  * `values`, which `isValueWidget` currently refuses: this is the guard on
  * that filter.
  */
-const orderNamesSerialisedWidgets: FormProbe = ({ order, serialisedNames }) => {
-  const unserialized = order.filter((name) => !serialisedNames.includes(name))
+const orderNamesSerialisedWidgets: FormProbe = ({
+  order,
+  valueWidgetNames
+}) => {
+  const unserialized = order.filter((name) => !valueWidgetNames.includes(name))
   return unserialized.length
     ? suppressed('order_names_unserialized_widget', { names: unserialized })
     : undefined
 }
 
 /**
- * Invariant 3 — the object case, as a set difference in BOTH directions.
+ * Invariant 2 — the object case, as a set difference in BOTH directions.
  * Order without a value orders nothing; a value outside the order is residue
  * the host would store and never project. Stated against the enumerable keys,
  * because those are what travel: the wire ships `values` as JSON, so an own
@@ -346,11 +345,10 @@ const orderIsAddressable: FormProbe = ({ order }) => {
  * it to the key disagreement would send a reader looking in the wrong place.
  */
 const FORM_PROBES: readonly FormProbe[] = [
-  hookKeptTheSerialisedWidgets,
-  positionalArityFits,
   everyValueHasALiveWidget,
   orderNamesSerialisedWidgets,
   declaredKeysAgree,
+  hookKeptTheSerialisedWidgets,
   orderIsAddressable
 ]
 
@@ -383,23 +381,36 @@ export function classifyWidgetValuesForm(
 
 /**
  * Classifies a node end to end, for a bulk pass that holds a node and not a
- * serialization. Side-effect free: it neither asserts, reports, nor tallies,
- * so a corpus run cannot perturb the production signal it is measuring.
+ * serialization. It runs the node's serialization hook and tallies the
+ * result, but does not assert or report.
  */
 export function widgetValuesFormVerdict(node: LGraphNode): WidgetFormVerdict {
+  if (node.last_serialization) {
+    const verdict = suppressed('shell_last_serialization')
+    record(node.type, verdict.reason)
+    return verdict
+  }
   let serialized: ISerialisedNode
   try {
     serialized = node.serialize()
   } catch {
-    return suppressed('shell_last_serialization')
+    const verdict = suppressed('serialization_failed')
+    record(node.type, verdict.reason)
+    return verdict
   }
   const named = serialized.widgets_values_named
-  if (!named) return suppressed('no_value_widgets')
-  return classifyWidgetValuesForm(
+  if (!named) {
+    const verdict = suppressed('no_value_widgets')
+    record(node.type, verdict.reason)
+    return verdict
+  }
+  const verdict = classifyWidgetValuesForm(
     node,
     valueWidgetsOnly(node, named),
     serialized
   )
+  if (!verdict.declared) record(node.type, verdict.reason)
+  return verdict
 }
 
 /**
@@ -421,10 +432,11 @@ export function provenWidgetValuesForm(
   if (verdict.declared) return verdict.form
 
   const nodeType = node.type
-  const first = record(nodeType, verdict.reason)
+  record(nodeType, verdict.reason)
+  const first = firstReport(nodeType, verdict.reason)
 
   const invariantMessage = INVARIANT_MESSAGES[verdict.reason]
-  if (invariantMessage) {
+  if (first && invariantMessage) {
     try {
       assert(false, invariantMessage, { nodeType, ...verdict.detail })
     } catch {
@@ -432,7 +444,7 @@ export function provenWidgetValuesForm(
     }
   }
 
-  // Invariant 5. One report per class and reason: the question is "which
+  // Invariant 4. One report per class and reason: the question is "which
   // classes still declare no form, and why", and a corpus pass that mints
   // thousands of nodes must answer it without thousands of reports.
   if (first && !UNREPORTED.has(verdict.reason)) {
