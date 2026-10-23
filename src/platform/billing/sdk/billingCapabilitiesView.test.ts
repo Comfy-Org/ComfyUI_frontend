@@ -72,4 +72,16 @@ describe('projectBillingCapabilities', () => {
       ).toBe(served)
     }
   )
+
+  it.for([true, false])(
+    'passes has_parked_billing_operation %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({
+          ...SNAPSHOT,
+          hasParkedBillingOperation: served
+        }).has_parked_billing_operation
+      ).toBe(served)
+    }
+  )
 })
