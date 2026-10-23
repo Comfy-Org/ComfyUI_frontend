@@ -234,6 +234,8 @@
     "createdByAgent": "Created by agent",
     "agentCreated": "Agent-created",
     "agentExtensionAdded": "Your agent added {name}",
+    "agentExtensionsAdded": "Your agent added {count} extensions",
+    "agentExtensionDisableFailed": "Couldn't disable the extension. Try again.",
     "manage": "Manage",
     "disable": "Disable",
     "command": "Command",

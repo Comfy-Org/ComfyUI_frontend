@@ -4,6 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useSettingsDialog } from './useSettingsDialog'
 import { useSettingsUrlLoader } from './useSettingsUrlLoader'
+import {
+  agentExtensionFilterRequest,
+  consumeAgentExtensionFilterRequest
+} from '@/platform/settings/agentExtensionService'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -62,6 +66,21 @@ describe('useSettingsUrlLoader', () => {
     expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
+  })
+
+  it('requests the agent filter and strips it with the extension deep link', async () => {
+    useRoute().query.settings = 'extension'
+    useRoute().query.filter = 'agent'
+
+    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    await loadSettingsFromUrl()
+
+    expect(agentExtensionFilterRequest.value).toBe('agentCreated')
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'extension'
+    )
+    consumeAgentExtensionFilterRequest('agentCreated')
   })
 
   it('strips but does not open for an unrecognized panel value', async () => {

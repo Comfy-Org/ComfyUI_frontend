@@ -7,6 +7,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { requestAgentExtensionFilter } from '@/platform/settings/agentExtensionService'
 import type { SettingPanelType } from '@/platform/settings/types'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
@@ -31,9 +32,6 @@ export function useSettingsUrlLoader() {
   const router = useRouter()
   const settingsDialog = useSettingsDialog()
 
-  /** Reads `?settings=`, strips it, and opens the mapped Settings panel.
-   * Resolves once the strip has landed, so the loader that runs next reads a
-   * query this one has already cleaned rather than restoring the param. */
   async function loadSettingsFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
@@ -41,11 +39,12 @@ export function useSettingsUrlLoader() {
     const param = query.settings
     if (param === undefined) return
 
-    // Strip any present settings param (even unrecognized or malformed values)
-    // and write the clean URL in a single replace, so a clean URL is
-    // guaranteed even if the replace rejects or no panel matches.
     const cleanQuery = { ...query }
     delete cleanQuery.settings
+    if (param === 'extension' && query.filter === 'agent') {
+      requestAgentExtensionFilter('agentCreated')
+      delete cleanQuery.filter
+    }
     const stripped = router.replace({ query: cleanQuery }).catch((error) => {
       console.warn('[useSettingsUrlLoader] Failed to clean URL params:', error)
     })

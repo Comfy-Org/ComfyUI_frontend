@@ -326,6 +326,29 @@ describe('extension loading', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('finishes loading when recording seen agent extensions fails', async () => {
+      const settingStore = useSettingStore()
+      settingStore.$patch({
+        settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+      })
+      vi.spyOn(settingStore, 'set').mockRejectedValue(
+        new Error('settings unavailable')
+      )
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([])
+      useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+      await expect(loadExtensions()).resolves.toBeUndefined()
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'settings unavailable' }),
+          {
+            errorType: 'failure_recording_seen_agent_extensions',
+            surface: 'platform'
+          }
+        )
+      )
+    })
+
     it('skips core extensions', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/core/foo.js',
@@ -422,5 +445,21 @@ describe('agent extension discovery', () => {
     await notifyNewAgentExtensions()
 
     expect(useToast().toasts).toEqual([])
+  })
+
+  it('summarizes multiple unseen agent extensions in one notification', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+    })
+    vi.spyOn(settingStore, 'set').mockResolvedValue()
+    useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+    useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ title: 'Your agent added 2 extensions' })
+    ])
   })
 })

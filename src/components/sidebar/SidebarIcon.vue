@@ -12,7 +12,7 @@
     size="unset"
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
-    @contextmenu.prevent="emit('contextmenu', $event)"
+    @contextmenu="emit('contextmenu', $event)"
   >
     <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">

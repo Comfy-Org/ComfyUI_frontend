@@ -98,11 +98,14 @@ import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vu
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import {
+  disableAgentExtensions,
+  showAgentExtensionSettings
+} from '@/platform/settings/agentExtensionService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -166,53 +169,39 @@ const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const isHidden = computed(() => canvasStore.isPickingNodes)
 const agentTab = ref<SidebarTabExtension>()
 const { menuProps: agentTabMenuProps, show: showAgentTabMenu } = usePointMenu()
+const extensionStore = useExtensionStore()
 
-const isAgentTab = (tab: SidebarTabExtension) =>
-  tab.source?.provenance?.createdBy === 'comfy-agent' ||
-  tab.source?.extensionName.startsWith('agent.') === true
-
-function manageAgentExtensions() {
-  const url = new URL(window.location.href)
-  url.searchParams.set('filter', 'agent')
-  window.history.replaceState(window.history.state, '', url)
-  useSettingsDialog().show('extension')
+function getAgentTabExtension(tab: SidebarTabExtension) {
+  const extensionName = tab.source?.extensionName
+  if (!extensionName) return
+  const extension = extensionStore.extensions.find(
+    ({ name }) => name === extensionName
+  )
+  return extension && extensionStore.isAgentCreatedExtension(extension)
+    ? extension
+    : undefined
 }
+
+const isAgentTab = (tab: SidebarTabExtension) => !!getAgentTabExtension(tab)
 
 async function disableAgentTabExtension() {
   const extensionName = agentTab.value?.source?.extensionName
   if (!extensionName) return
-  const extensionStore = useExtensionStore()
   const extension = extensionStore.extensions.find(
     (item) => item.name === extensionName
   )
-  const packPath = extension
-    ? extensionStore.getAgentExtensionPackPath(extension)
-    : undefined
-  if (packPath) {
-    await settingStore.set('Comfy.Extension.DisabledPacks', [
-      ...new Set([
-        ...settingStore.get('Comfy.Extension.DisabledPacks'),
-        packPath
-      ])
-    ])
-  } else {
-    await settingStore.set('Comfy.Extension.Disabled', [
-      ...new Set([
-        ...settingStore.get('Comfy.Extension.Disabled'),
-        extensionName
-      ])
-    ])
-  }
-  window.location.reload()
+  if (!extension || !extensionStore.isAgentCreatedExtension(extension)) return
+  await disableAgentExtensions([extension])
 }
 
 const agentTabMenuItems = computed<MenuItem[]>(() => [
-  { label: t('g.manage'), command: manageAgentExtensions },
+  { label: t('g.manage'), command: showAgentExtensionSettings },
   { label: t('g.disable'), command: disableAgentTabExtension }
 ])
 
 function openAgentTabMenu(tab: SidebarTabExtension, event: MouseEvent) {
   if (!isAgentTab(tab)) return
+  event.preventDefault()
   agentTab.value = tab
   showAgentTabMenu(event)
 }

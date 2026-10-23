@@ -52,7 +52,7 @@ function announcement(item: Toast) {
 }
 
 function toastActions(item: Toast) {
-  return item.actions ?? (item.action ? [item.action] : [])
+  return [...(item.action ? [item.action] : []), ...(item.actions ?? [])]
 }
 
 let escapeToastId: ToastId | undefined
@@ -131,8 +131,8 @@ const icons = {
         class="col-span-2 col-start-2 row-start-3 mt-3 flex justify-end gap-2 empty:hidden"
       >
         <Button
-          v-for="action in toastActions(item)"
-          :key="action.label"
+          v-for="(action, index) in toastActions(item)"
+          :key="`${action.label}-${index}`"
           size="md"
           variant="secondary"
           @click="action.onClick()"

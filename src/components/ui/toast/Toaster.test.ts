@@ -123,6 +123,25 @@ describe('Toaster', () => {
     expect(disable).toHaveBeenCalledOnce()
   })
 
+  it('keeps the legacy action beside multiple actions with repeated labels', async () => {
+    const user = userEvent.setup()
+    const first = vi.fn()
+    const second = vi.fn()
+    renderToaster()
+
+    useToast().info('Extension added', {
+      action: { label: 'Open', onClick: first },
+      actions: [{ label: 'Open', onClick: second }]
+    })
+    await nextTick()
+    const actions = screen.getAllByRole('button', { name: 'Open' })
+    await user.click(actions[0])
+    await user.click(actions[1])
+
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).toHaveBeenCalledOnce()
+  })
+
   it('uses caller labels for notification regions and close buttons', async () => {
     const { rerender } = render(Toaster, {
       props: {

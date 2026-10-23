@@ -1,6 +1,5 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import { t } from '@/i18n'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -13,7 +12,10 @@ import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ComfyExtension } from '@/types/comfy'
+import {
+  disableAgentExtensions,
+  showAgentExtensionSettings
+} from '@/platform/settings/agentExtensionService'
 import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
@@ -137,28 +139,6 @@ export function reportExtensionLoadFailures(
   })
 }
 
-async function disableAgentExtension(extension: ComfyExtension) {
-  const extensionStore = useExtensionStore()
-  const settingStore = useSettingStore()
-  const packPath = extensionStore.getAgentExtensionPackPath(extension)
-  if (packPath) {
-    await settingStore.set('Comfy.Extension.DisabledPacks', [
-      ...new Set([
-        ...settingStore.get('Comfy.Extension.DisabledPacks'),
-        packPath
-      ])
-    ])
-  } else {
-    await settingStore.set('Comfy.Extension.Disabled', [
-      ...new Set([
-        ...settingStore.get('Comfy.Extension.Disabled'),
-        extension.name
-      ])
-    ])
-  }
-  window.location.reload()
-}
-
 export async function notifyNewAgentExtensions() {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -169,26 +149,23 @@ export async function notifyNewAgentExtensions() {
   )
   if (unseen.length === 0) return
 
-  for (const extension of unseen) {
-    useToast().info(t('g.agentExtensionAdded', { name: extension.name }), {
-      description: extension.provenance?.summary,
-      actions: [
-        {
-          label: t('g.manage'),
-          onClick: () => {
-            const url = new URL(window.location.href)
-            url.searchParams.set('filter', 'agent')
-            window.history.replaceState(window.history.state, '', url)
-            useSettingsDialog().show('extension')
-          }
-        },
-        {
-          label: t('g.disable'),
-          onClick: () => disableAgentExtension(extension)
+  const [first] = unseen
+  const title =
+    unseen.length === 1
+      ? t('g.agentExtensionAdded', { name: first.name })
+      : t('g.agentExtensionsAdded', { count: unseen.length })
+  useToast().info(title, {
+    description: unseen.length === 1 ? first.provenance?.summary : undefined,
+    actions: [
+      { label: t('g.manage'), onClick: showAgentExtensionSettings },
+      {
+        label: t('g.disable'),
+        onClick: () => {
+          void disableAgentExtensions(unseen)
         }
-      ]
-    })
-  }
+      }
+    ]
+  })
 
   await settingStore.set('Comfy.Extension.SeenAgentExtensions', [
     ...new Set([
@@ -254,5 +231,10 @@ export async function loadExtensions() {
       )
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
-  await notifyNewAgentExtensions()
+  void notifyNewAgentExtensions().catch((cause) => {
+    reportError(cause, {
+      errorType: 'failure_recording_seen_agent_extensions',
+      surface: 'platform'
+    })
+  })
 }

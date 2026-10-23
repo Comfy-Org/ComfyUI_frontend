@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { requestAgentExtensionFilter } from '@/platform/settings/agentExtensionService'
 
 import ExtensionPanel from './ExtensionPanel.vue'
 
@@ -201,7 +202,9 @@ describe('ExtensionPanel', () => {
       }
     })
     extensionStore.loadExtensionPackPaths(['/extensions/cushions/'], [])
-    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    const setSettings = vi
+      .spyOn(useSettingStore(), 'setMany')
+      .mockResolvedValue()
 
     renderPanel()
     expect(screen.getByText('Created by agent')).toBeVisible()
@@ -221,11 +224,26 @@ describe('ExtensionPanel', () => {
         name: 'Disable all agent-created'
       })
     )
-    expect(setSetting).toHaveBeenCalledWith('Comfy.Extension.Disabled', [
-      'agent.cushions.toolbar'
-    ])
-    expect(setSetting).toHaveBeenCalledWith('Comfy.Extension.DisabledPacks', [
-      '/extensions/cushions/'
-    ])
+    expect(setSettings).toHaveBeenCalledExactlyOnceWith({
+      'Comfy.Extension.Disabled': [],
+      'Comfy.Extension.DisabledPacks': ['/extensions/cushions/']
+    })
+    expect(
+      screen.getByRole('switch', { name: 'agent.cushions.toolbar' })
+    ).toBeChecked()
+  })
+
+  it('applies an agent filter request while the panel is already open', async () => {
+    registerExtensions('Manual.Toolbar', 'agent.cushions.toolbar')
+    renderPanel()
+
+    requestAgentExtensionFilter('agentCreated')
+
+    expect(
+      await screen.findByRole('switch', { name: 'agent.cushions.toolbar' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('switch', { name: 'Manual.Toolbar' })
+    ).not.toBeInTheDocument()
   })
 })

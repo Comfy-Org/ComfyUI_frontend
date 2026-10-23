@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -73,10 +73,15 @@ import ExtensionListTable from '@/platform/settings/components/ExtensionListTabl
 import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
+import {
+  agentExtensionFilterRequest,
+  consumeAgentExtensionFilterRequest,
+  getAgentExtensionDisableSettings
+} from '@/platform/settings/agentExtensionService'
+import type { ExtensionFilterType } from '@/platform/settings/agentExtensionService'
 
 const { t } = useI18n()
 
-type FilterTypeKey = 'all' | 'core' | 'custom' | 'agentCreated'
 const filterTypes = computed(
   () =>
     [
@@ -84,19 +89,24 @@ const filterTypes = computed(
       { label: t('g.core'), value: 'core' },
       { label: t('g.custom'), value: 'custom' },
       { label: t('g.agentCreated'), value: 'agentCreated' }
-    ] satisfies { label: string; value: FilterTypeKey }[]
+    ] satisfies { label: string; value: ExtensionFilterType }[]
 )
-const filterType = ref<FilterTypeKey>(
-  new URLSearchParams(window.location.search).get('filter') === 'agent'
-    ? 'agentCreated'
-    : 'all'
-)
+const filterType = ref<ExtensionFilterType>('all')
 const selectedExtensionNames = ref(new Set<string>())
 const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
+watch(
+  agentExtensionFilterRequest,
+  (requestedFilter) => {
+    if (!requestedFilter) return
+    filterType.value = requestedFilter
+    consumeAgentExtensionFilterRequest(requestedFilter)
+  },
+  { immediate: true }
+)
 const persistedDisabledPackPaths = new Set(
   settingStore.get('Comfy.Extension.DisabledPacks')
 )
@@ -271,19 +281,26 @@ const disableThirdPartyExtensions = async () => {
 }
 
 const disableAgentExtensions = async () => {
-  extensionStore.agentExtensions.forEach((ext) => {
-    editingEnabledExtensions.value[ext.name] = false
-    const packPath = extensionStore.getAgentExtensionPackPath(ext)
-    if (packPath) editingEnabledExtensionPacks.value[packPath] = false
-  })
-  await updateExtensionStatus()
-  const disabledPackPaths = Object.entries(editingEnabledExtensionPacks.value)
-    .filter(([_, enabled]) => !enabled)
-    .map(([packPath]) => packPath)
-  await settingStore.set('Comfy.Extension.DisabledPacks', [
-    ...extensionStore.inactiveDisabledExtensionPackPaths,
-    ...disabledPackPaths
-  ])
+  const settings = getAgentExtensionDisableSettings(
+    extensionStore.agentExtensions
+  )
+  await settingStore.setMany(settings)
+  editingEnabledExtensions.value = Object.fromEntries(
+    Object.entries(editingEnabledExtensions.value).map(([name, enabled]) => [
+      name,
+      settings['Comfy.Extension.Disabled'].includes(name) ? false : enabled
+    ])
+  )
+  editingEnabledExtensionPacks.value = Object.fromEntries(
+    Object.entries(editingEnabledExtensionPacks.value).map(
+      ([path, enabled]) => [
+        path,
+        settings['Comfy.Extension.DisabledPacks'].includes(path)
+          ? false
+          : enabled
+      ]
+    )
+  )
 }
 
 const applyChanges = () => {

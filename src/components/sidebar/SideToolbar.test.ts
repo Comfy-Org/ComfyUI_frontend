@@ -8,6 +8,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useUserStore } from '@/stores/userStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -162,6 +163,10 @@ describe('SideToolbar', () => {
   })
 
   it('badges sourced agent tabs and exposes management actions', async () => {
+    useExtensionStore().registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: { createdBy: 'comfy-agent' }
+    })
     useSidebarTabStore().sidebarTabs = [
       {
         ...assetsTab,
@@ -179,5 +184,17 @@ describe('SideToolbar', () => {
       await screen.findByRole('menuitem', { name: /manage/i })
     ).toBeVisible()
     expect(screen.getByRole('menuitem', { name: /disable/i })).toBeVisible()
+  })
+
+  it('preserves the native context menu for tabs without an agent extension', () => {
+    renderToolbar()
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true
+    })
+
+    screen.getByRole('button', { name: 'Assets' }).dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(false)
   })
 })
