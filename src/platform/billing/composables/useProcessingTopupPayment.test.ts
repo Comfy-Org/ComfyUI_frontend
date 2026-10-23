@@ -350,6 +350,27 @@ describe('useProcessingTopupPayment', () => {
     expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(reads + 1)
   })
 
+  it('keeps the processing notice when a return read fails', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+    const cause = new WorkspaceApiError('bad gateway', 502)
+    vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(cause)
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        errorType: 'topup_checkout_read_failed',
+        surface: 'billing'
+      })
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('2500')
+  })
+
   it('does not read again after the surface is gone', async () => {
     enableProcessingRead()
     serveCheckout('payment_processing')

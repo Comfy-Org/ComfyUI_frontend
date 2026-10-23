@@ -77,7 +77,6 @@ export function useProcessingTopupPayment(
     if (current !== generation || !reading()) return
     if (!outcome.ok) {
       reportCheckoutReadFailure(outcome.cause)
-      payment.value = null
       return
     }
 
