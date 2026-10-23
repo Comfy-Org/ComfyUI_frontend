@@ -627,6 +627,37 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
+  test('Shift+Home and Shift+End select the search query', async ({
+    comfyPage
+  }) => {
+    const query = 'Test Pack'
+    await openManagerDialog(comfyPage)
+    const dialog = comfyPage.page.getByRole('dialog')
+    const searchInput = dialog.getByRole('combobox', { name: 'Search' })
+    await searchInput.fill(query)
+    await expect(dialog.getByText('Test Pack A')).toBeVisible()
+
+    const selection = () =>
+      searchInput.evaluate((input: HTMLInputElement) => [
+        input.selectionStart,
+        input.selectionEnd
+      ])
+
+    await test.step('Shift+Home selects back to the start', async () => {
+      await searchInput.press('ArrowLeft')
+      await expect.poll(selection).toEqual([query.length - 1, query.length - 1])
+      await searchInput.press('Shift+Home')
+      await expect.poll(selection).toEqual([0, query.length - 1])
+    })
+
+    await test.step('Shift+End selects forward to the end', async () => {
+      await searchInput.press('ArrowLeft')
+      await searchInput.press('ArrowRight')
+      await searchInput.press('Shift+End')
+      await expect.poll(selection).toEqual([1, query.length])
+    })
+  })
+
   test.describe('Grid sizing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       const algoliaResponse: AlgoliaSearchResponse = {

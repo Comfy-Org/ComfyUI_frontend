@@ -20,12 +20,17 @@ describe('toCatalogTierKey', () => {
 })
 
 describe('mapApiTeamCreditStops', () => {
-  it('derives usd, credits, discount and carries the backend id', () => {
+  it('derives usd, credits, discount and carries the backend id and charges', () => {
     const mapped = mapApiTeamCreditStops([
       {
         id: 'team_700',
         credits: 147_700,
-        yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+        monthly: { period_charge_cents: 66_500 },
+        yearly: {
+          list_price_cents: 70_000,
+          price_cents: 63_000,
+          period_charge_cents: 756_001
+        }
       }
     ])
 
@@ -34,7 +39,8 @@ describe('mapApiTeamCreditStops', () => {
         id: 'team_700',
         usd: 700,
         credits: 147_700,
-        discountPercentYearly: 10
+        discountPercentYearly: 10,
+        periodChargeUsd: { monthly: 665, yearly: 7560.01 }
       }
     ])
   })
@@ -44,7 +50,8 @@ describe('mapApiTeamCreditStops', () => {
       {
         id: 'team_free',
         credits: 0,
-        yearly: { list_price_cents: 0, price_cents: 0 }
+        monthly: { period_charge_cents: 0 },
+        yearly: { list_price_cents: 0, price_cents: 0, period_charge_cents: 0 }
       }
     ])
 
