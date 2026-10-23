@@ -4,6 +4,10 @@
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
     />
+    <BillingPlanCheckoutBanner
+      :banner="planCheckout.banner.value"
+      @dismiss="planCheckout.dismiss"
+    />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -80,9 +84,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
-import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
+import BillingPlanCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanCheckoutBanner.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
   deriveBillingTabLoad,
@@ -91,10 +96,12 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlanCheckoutBanner } from '@/platform/workspace/composables/usePlanCheckoutBanner'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
+const planCheckout = usePlanCheckoutBanner()
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
@@ -122,7 +129,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 
