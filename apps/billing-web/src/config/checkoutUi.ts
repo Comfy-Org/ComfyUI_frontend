@@ -50,11 +50,6 @@ function parseBoolean(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined
 }
 
-/**
- * Mirrors the host's `getDevOverride`: JSON, so a bare `full_page` is
- * rejected and `"full_page"` honoured. An unrecognised value falls through
- * to the server so a typo cannot silently pin a developer to the fallback.
- */
 function readDevOverride<T>(
   key: string,
   parse: (value: unknown) => T | undefined
