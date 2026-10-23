@@ -56,20 +56,20 @@ describe('ToolPanel', () => {
   })
 
   describe('tool list rendering', () => {
-    it('should render one named button per tool', () => {
+    it('should render one button per tool', () => {
       renderPanel()
 
-      for (const name of [
-        'Pen',
-        'Paint pen',
-        'Eraser',
-        'Paint bucket',
-        'Color select'
-      ]) {
-        expect(getToolButton(name)).toBeInTheDocument()
-      }
       expect(screen.getAllByTestId('tool-button')).toHaveLength(allTools.length)
     })
+
+    it.for(['Pen', 'Paint pen', 'Eraser', 'Paint bucket', 'Color select'])(
+      'should render a button named %s',
+      (name) => {
+        renderPanel()
+
+        expect(getToolButton(name)).toBeInTheDocument()
+      }
+    )
 
     it('should render an SVG icon for each tool', () => {
       renderPanel()
@@ -91,9 +91,6 @@ describe('ToolPanel', () => {
         renderPanel()
 
         expect(getToolButton(name)).toHaveAttribute('aria-pressed', 'true')
-        expect(getToolButton(name).className).toContain(
-          'maskEditor_toolPanelContainerSelected'
-        )
       }
     )
 

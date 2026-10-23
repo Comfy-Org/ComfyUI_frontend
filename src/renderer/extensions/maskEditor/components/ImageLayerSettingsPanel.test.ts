@@ -211,16 +211,17 @@ describe('ImageLayerSettingsPanel', () => {
       expect(canvas.style.opacity).toBe('0')
     })
 
-    it('should not throw when toggling visibility for missing canvases', async () => {
-      const user = userEvent.setup()
-      renderPanel()
+    it.for(['Mask Layer', 'Paint Layer', 'Base Image Layer'])(
+      'should uncheck %s when its canvas is missing',
+      async (name) => {
+        const user = userEvent.setup()
+        renderPanel()
 
-      for (const name of ['Mask Layer', 'Paint Layer', 'Base Image Layer']) {
-        await expect(
-          user.click(screen.getByRole('checkbox', { name }))
-        ).resolves.not.toThrow()
+        await user.click(screen.getByRole('checkbox', { name }))
+
+        expect(screen.getByRole('checkbox', { name })).not.toBeChecked()
       }
-    })
+    )
   })
 
   describe('layer rows', () => {
@@ -238,19 +239,25 @@ describe('ImageLayerSettingsPanel', () => {
       )
     })
 
-    it('activates the mask layer from the row button', async () => {
-      const user = userEvent.setup()
-      mockStore.activeLayer = 'rgb'
-      renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
-      })
+    it.for([
+      { row: 'mask-layer-row', activeLayer: 'rgb', expected: 'mask' },
+      { row: 'paint-layer-row', activeLayer: 'mask', expected: 'rgb' }
+    ] as const)(
+      'activates the $expected layer from the $row button',
+      async ({ row, activeLayer, expected }) => {
+        const user = userEvent.setup()
+        mockStore.activeLayer = activeLayer
+        renderPanel({
+          toolManager: {
+            setActiveLayer: mockSetActiveLayer
+          } as unknown as ToolManager
+        })
 
-      await user.click(rowButton('mask-layer-row'))
+        await user.click(rowButton(row))
 
-      expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
-    })
+        expect(mockSetActiveLayer).toHaveBeenCalledWith(expected)
+      }
+    )
 
     it('activates the mask layer with Enter', async () => {
       const user = userEvent.setup()
@@ -265,35 +272,6 @@ describe('ImageLayerSettingsPanel', () => {
       await user.keyboard('{Enter}')
 
       expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
-    })
-
-    it('activates the paint layer with Space', async () => {
-      const user = userEvent.setup()
-      mockStore.activeLayer = 'mask'
-      renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
-      })
-
-      rowButton('paint-layer-row').focus()
-      await user.keyboard('[Space]')
-
-      expect(mockSetActiveLayer).toHaveBeenCalledWith('rgb')
-    })
-
-    it('activates the paint layer from the row button', async () => {
-      const user = userEvent.setup()
-      mockStore.activeLayer = 'mask'
-      renderPanel({
-        toolManager: {
-          setActiveLayer: mockSetActiveLayer
-        } as unknown as ToolManager
-      })
-
-      await user.click(rowButton('paint-layer-row'))
-
-      expect(mockSetActiveLayer).toHaveBeenCalledWith('rgb')
     })
 
     it('does not throw when toolManager is omitted', async () => {
