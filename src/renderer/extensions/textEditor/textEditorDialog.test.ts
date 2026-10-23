@@ -10,6 +10,14 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 
 const captureCanvasState = vi.fn()
+const telemetry = vi.hoisted(() => ({
+  trackPromptEditorOpened: vi.fn(),
+  trackPromptEditorClosed: vi.fn()
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => telemetry
+}))
 
 function renderDialogHost() {
   return render(GlobalDialog, { global: { plugins: [i18n] } })
@@ -178,6 +186,36 @@ describe('showTextEditor', () => {
 
     await waitFor(() => expect(editor).toHaveValue('a landscape'))
   })
+
+  it.for([
+    { trigger: undefined, reported: 'expand_button' },
+    { trigger: 'focus_view' as const, reported: 'focus_view' }
+  ])(
+    'reports opening from $reported and closing with the edit count',
+    async ({ trigger, reported }) => {
+      const user = userEvent.setup()
+      renderDialogHost()
+      openEditor({ trigger })
+
+      expect(telemetry.trackPromptEditorOpened).toHaveBeenLastCalledWith({
+        surface: 'dialog',
+        trigger: reported
+      })
+
+      await user.type(await screen.findByRole('textbox'), 'abc')
+      await user.keyboard('{Escape}')
+
+      await waitFor(() =>
+        expect(telemetry.trackPromptEditorClosed).toHaveBeenLastCalledWith({
+          surface: 'dialog',
+          trigger: reported,
+          duration_ms: expect.any(Number),
+          input_count: 3,
+          node_switch_count: 0
+        })
+      )
+    }
+  )
 
   it('closes the dialog it opened, and not one opened after it', async () => {
     renderDialogHost()

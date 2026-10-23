@@ -91,6 +91,9 @@ import type {
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   WidgetFavoriteToggledMetadata,
+  PromptEditorClosedMetadata,
+  PromptEditorExposureMetadata,
+  PromptEditorOpenedMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
@@ -581,6 +584,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
+  }
+
+  trackPromptEditorExposure(metadata: PromptEditorExposureMetadata): void {
+    this.dispatch((provider) => provider.trackPromptEditorExposure?.(metadata))
+  }
+
+  trackPromptEditorOpened(metadata: PromptEditorOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackPromptEditorOpened?.(metadata))
+  }
+
+  trackPromptEditorClosed(metadata: PromptEditorClosedMetadata): void {
+    this.dispatch((provider) => provider.trackPromptEditorClosed?.(metadata))
   }
 
   trackNamedValuesShadowDiffMismatch(

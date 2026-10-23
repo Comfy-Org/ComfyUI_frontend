@@ -94,6 +94,7 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -166,9 +167,11 @@ async function handleCopy() {
 }
 
 const canvasStore = useCanvasStore()
+const promptEditorExperiment = usePromptEditorExperimentStore()
 let closeTextEditor: (() => void) | undefined
 
 function openTextEditor() {
+  promptEditorExperiment.expose('control')
   const node =
     nodeId === undefined
       ? undefined

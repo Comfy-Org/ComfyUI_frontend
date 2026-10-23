@@ -7,11 +7,15 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -23,6 +27,15 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
+const telemetry = vi.hoisted(() => ({
+  trackPromptEditorExposure: vi.fn(),
+  trackPromptEditorOpened: vi.fn(),
+  trackPromptEditorClosed: vi.fn()
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => telemetry
+}))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
@@ -489,6 +502,28 @@ describe('WidgetTextarea expand to editor', () => {
         within(actions).queryByRole('button', { name: 'textEditor.expand' })
       )
     ).toBe(shown)
+  })
+
+  describe('with the dialog arm served', () => {
+    beforeEach(() => {
+      remoteConfig.value = { 'prompt-editor-surface': 'control' }
+      authenticatedRemoteConfigState.value = 'authenticated'
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      authenticatedRemoteConfigState.value = 'unloaded'
+    })
+
+    it('reports exposure when Expand opens the dialog', async () => {
+      renderWithDialogHost()
+
+      await openEditor()
+
+      expect(telemetry.trackPromptEditorExposure).toHaveBeenCalledWith({
+        '$feature/prompt-editor-surface': 'control'
+      })
+    })
   })
 
   it.for([

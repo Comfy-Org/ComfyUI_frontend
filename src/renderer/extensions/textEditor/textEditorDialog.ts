@@ -1,7 +1,10 @@
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import type { PromptEditorOpenedMetadata } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
 import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/TextEditorDialogHeader.vue'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -10,6 +13,7 @@ interface TextEditorOptions {
   widgetLabel: string
   nodeTitle?: string
   readOnly: () => boolean
+  trigger?: PromptEditorOpenedMetadata['trigger']
   onEdit: (text: string) => void
 }
 
@@ -24,13 +28,21 @@ export function showTextEditor({
   widgetLabel,
   nodeTitle,
   readOnly,
+  trigger = 'expand_button',
   onEdit
 }: TextEditorOptions): () => void {
   const dialogStore = useDialogStore()
   dialogStore.closeDialog({ key: TEXT_EDITOR_DIALOG_KEY })
 
   let isOpen = true
-  let isEdited = false
+  let inputCount = 0
+  const openedAt = performance.now()
+  const openedMetadata: PromptEditorOpenedMetadata = {
+    surface: 'dialog',
+    trigger,
+    ...usePromptEditorExperimentStore().experimentProperties
+  }
+  useTelemetry()?.trackPromptEditorOpened(openedMetadata)
 
   dialogStore.showDialog({
     key: TEXT_EDITOR_DIALOG_KEY,
@@ -46,7 +58,7 @@ export function showTextEditor({
       label: widgetLabel,
       readOnly,
       onEdit: (value: string) => {
-        isEdited = true
+        inputCount++
         onEdit(value)
       }
     },
@@ -56,8 +68,14 @@ export function showTextEditor({
       maximizable: true,
       onRemoved: () => {
         isOpen = false
-        if (isEdited)
+        if (inputCount > 0)
           useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+        useTelemetry()?.trackPromptEditorClosed({
+          ...openedMetadata,
+          duration_ms: Math.round(performance.now() - openedAt),
+          input_count: inputCount,
+          node_switch_count: 0
+        })
       }
     }
   })

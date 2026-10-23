@@ -1456,6 +1456,41 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures prompt editor experiment events with the arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const opened = {
+        surface: 'panel' as const,
+        trigger: 'expand_button' as const,
+        '$feature/prompt-editor-surface': 'panel' as const
+      }
+      const closed = {
+        ...opened,
+        duration_ms: 1200,
+        input_count: 4,
+        node_switch_count: 2
+      }
+
+      provider.trackPromptEditorExposure({
+        '$feature/prompt-editor-surface': 'panel'
+      })
+      provider.trackPromptEditorOpened(opened)
+      provider.trackPromptEditorClosed(closed)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_EXPOSURE,
+        { '$feature/prompt-editor-surface': 'panel' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_OPENED,
+        opened
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_CLOSED,
+        closed
+      )
+    })
+
     it('captures begin_checkout with intent metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
