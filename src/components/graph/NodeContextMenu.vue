@@ -16,6 +16,12 @@
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <span class="flex-1">{{ item.label }}</span>
         <span
+          v-if="item.badge"
+          class="ml-3 inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-2xs font-medium whitespace-nowrap text-foreground uppercase"
+        >
+          {{ item.badge }}
+        </span>
+        <span
           v-if="item.shortcut"
           class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
         >
@@ -137,6 +143,7 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
     icon: option.icon,
     disabled: option.disabled,
     shortcut: option.shortcut,
+    badge: option.badgeLabel,
     command: option.action
   }
 }

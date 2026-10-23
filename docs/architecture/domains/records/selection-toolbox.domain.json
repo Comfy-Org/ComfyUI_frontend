@@ -249,7 +249,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["agent"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

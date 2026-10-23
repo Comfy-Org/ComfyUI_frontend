@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { referenceNodesInAgent } from '@/components/graph/referenceNodesInAgent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { useAskAgentNewBadges } from './useAskAgentNewBadges'
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './menuOption'
 import type { MenuOption } from './menuOption'
@@ -33,6 +34,7 @@ export function useSelectionMenuOptions() {
   const { frameNodes } = useFrameNodes()
   const { selectedNodes } = useSelectionState()
   const agentPanelStore = useAgentPanelStore()
+  const { showMenuBadge, markMenuSeen } = useAskAgentNewBadges()
 
   const getReferenceInAgentOption = (): MenuOption | null => {
     if (!agentPanelStore.enabled || selectedNodes.value.length === 0)
@@ -40,8 +42,11 @@ export function useSelectionMenuOptions() {
     return {
       label: t('agent.referenceInAgent'),
       icon: 'icon-[lucide--astroid]',
-      action: () =>
+      badgeLabel: showMenuBadge.value ? t('agent.new') : undefined,
+      action: () => {
+        markMenuSeen()
         referenceNodesInAgent(selectedNodes.value.map((node) => node.id))
+      }
     }
   }
 

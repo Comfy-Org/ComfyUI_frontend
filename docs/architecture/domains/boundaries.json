@@ -5932,11 +5932,14 @@
       },
       {
         "from": "selection-toolbox/domain",
-        "allow": ["selection-toolbox/domain", "unclassified"]
+        "allow": ["agent/domain", "selection-toolbox/domain", "unclassified"]
       },
       {
         "from": "selection-toolbox/presentation",
         "allow": [
+          "agent/domain",
+          "agent/application",
+          "agent/presentation",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "unclassified"
@@ -5945,9 +5948,15 @@
       {
         "from": "selection-toolbox/integration",
         "allow": [
+          "agent/domain",
+          "agent/application",
+          "agent/infrastructure",
+          "agent/presentation",
+          "agent/integration",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "agent/integration/outer-1",
           "selection-toolbox/integration/outer-1",
           "unclassified"
         ]
@@ -7239,9 +7248,15 @@
       {
         "from": "selection-toolbox/integration/outer-1",
         "allow": [
+          "agent/domain",
+          "agent/application",
+          "agent/infrastructure",
+          "agent/presentation",
+          "agent/integration",
           "selection-toolbox/domain",
           "selection-toolbox/presentation",
           "selection-toolbox/integration",
+          "agent/integration/outer-1",
           "selection-toolbox/integration/outer-1",
           "unclassified"
         ]
