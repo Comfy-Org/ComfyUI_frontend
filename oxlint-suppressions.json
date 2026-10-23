@@ -139,11 +139,6 @@
       "count": 1
     }
   },
-  "packages/account-core/src/vueBoundary.test.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 1
-    }
-  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
