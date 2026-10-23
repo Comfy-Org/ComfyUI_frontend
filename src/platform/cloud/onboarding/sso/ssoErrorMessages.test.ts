@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SsoErrorCode } from '@comfyorg/account-core/sso'
 import { readSsoError } from '@comfyorg/account-core/sso'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -23,8 +22,6 @@ import { SSO_ERROR_MESSAGE_KEY } from '@/platform/cloud/onboarding/sso/ssoErrorM
  * no other locale carries `auth.sso.errors` yet, and whoever lands the first
  * translation should parameterise this over locales.
  */
-const CODES = Object.keys(SSO_ERROR_MESSAGE_KEY) as SsoErrorCode[]
-
 const { t } = createI18n({
   legacy: false,
   locale: 'en',
@@ -36,7 +33,10 @@ const render = (key: string) => t(key as Parameters<typeof t>[0])
 describe('SSO error copy', () => {
   it('renders the message a person reads for every code', () => {
     const rendered = Object.fromEntries(
-      CODES.map((code) => [code, render(SSO_ERROR_MESSAGE_KEY[code])])
+      Object.entries(SSO_ERROR_MESSAGE_KEY).map(([code, key]) => [
+        code,
+        render(key)
+      ])
     )
 
     expect(rendered).toMatchInlineSnapshot(`
@@ -64,7 +64,8 @@ describe('SSO error copy', () => {
   })
 
   it('answers a code this build predates with copy, not a blank screen', () => {
-    const code = readSsoError('SSO_SOMETHING_INGEST_ADDED_LATER')!
+    const code = readSsoError('SSO_SOMETHING_INGEST_ADDED_LATER')
+    assert.exists(code)
 
     expect(render(SSO_ERROR_MESSAGE_KEY[code])).toBe(
       "We couldn't sign you in with single sign-on. Try again."

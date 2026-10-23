@@ -63,20 +63,31 @@ describe(rememberSignedInSession, () => {
     })
   })
 
-  it('survives a storage that refuses to write', () => {
+  it('leaves an earlier hint readable when the write is refused', () => {
+    localStorage.setItem(HINT_KEY, JSON.stringify({ email: 'old@acme.com' }))
     refuse(localStorage, 'setItem')
 
     expect(() =>
       rememberSignedInSession(user({ signInProvider: 'saml.workos' }))
     ).not.toThrow()
+    expect(readSsoHint()).toEqual({ email: 'old@acme.com' })
   })
 
-  it('survives a storage that refuses to clear', () => {
+  /**
+   * A refused clear leaves the stale hint in place. That is the existing
+   * behaviour rather than something this guard introduces, and the assertion is
+   * here so a later change to it is a deliberate one: the alternative — a
+   * swallowed failure that silently drops the hint — reads identically to a
+   * caller that only checks for a thrown error.
+   */
+  it('leaves an earlier hint readable when the clear is refused', () => {
+    localStorage.setItem(HINT_KEY, JSON.stringify({ email: 'old@acme.com' }))
     refuse(localStorage, 'removeItem')
 
     expect(() =>
       rememberSignedInSession(user({ signInProvider: 'google.com' }))
     ).not.toThrow()
+    expect(readSsoHint()).toEqual({ email: 'old@acme.com' })
   })
 })
 
@@ -113,10 +124,12 @@ describe(forgetSsoHint, () => {
     expect(localStorage.getItem(HINT_KEY)).toBeNull()
   })
 
-  it('survives a storage that refuses', () => {
+  it('leaves the stored hint readable when the removal is refused', () => {
+    localStorage.setItem(HINT_KEY, JSON.stringify({ email: 'ada@acme.com' }))
     refuse(localStorage, 'removeItem')
 
     expect(() => forgetSsoHint()).not.toThrow()
+    expect(readSsoHint()).toEqual({ email: 'ada@acme.com' })
   })
 })
 
