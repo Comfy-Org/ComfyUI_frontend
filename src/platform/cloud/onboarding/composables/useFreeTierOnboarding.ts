@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import { getTierCredits } from '@/platform/billing/subscription/constants/tierPricing'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 export function useFreeTierOnboarding() {

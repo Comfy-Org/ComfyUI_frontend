@@ -170,6 +170,7 @@ import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
+import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -514,6 +515,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useNodeEmphasis()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
@@ -598,7 +600,9 @@ onMounted(async () => {
 
     await Promise.all([
       until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-      useNewUserService().initializeIfNewUser()
+      bootstrapTracer.settle('bootstrap/new-user', () =>
+        useNewUserService().initializeIfNewUser()
+      )
     ])
     if (i18nError.value) {
       console.warn(
@@ -612,7 +616,10 @@ onMounted(async () => {
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
     const deploymentConfirmed =
-      !isCloud || (await waitForDeploymentPick(showDeploymentLookupToast))
+      !isCloud ||
+      (await bootstrapTracer.settle('bootstrap/deployment-pick', () =>
+        waitForDeploymentPick(showDeploymentLookupToast)
+      ))
     if (disposed) return
     if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
@@ -636,10 +643,12 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
+      startupOutcome = await workflowPersistence.initializeWorkflow()
+      await workflowPersistence.restoreWorkflowTabsState()
+      urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    })
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
