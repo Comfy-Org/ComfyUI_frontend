@@ -1,6 +1,8 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { inputAsSerialisable } from '@/lib/litegraph/src/node/slotUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { chainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
@@ -300,6 +302,33 @@ describe('widgets view', () => {
       expect(refreshed).toBeInstanceOf(BooleanWidget)
       expect(node.widgets).toEqual([before, refreshed, after])
       expect(input._widget).toBe(refreshed)
+
+      // The direct reference is only half the binding. Every name-based
+      // consumer resolves through the `widget` locator, so a refresh that also
+      // renames the source has to carry the locator across or it silently
+      // unbinds them all while the widget itself keeps working.
+      const inputIndex = node.inputs.indexOf(input)
+      expect(node.getWidgetFromSlot(input)).toBe(refreshed)
+      expect(node.getSlotFromWidget(refreshed)).toBe(input)
+      expect(inputAsSerialisable(input, node, inputIndex).widget).toEqual({
+        name: 'renamed'
+      })
+
+      // A promoted host value is adopted by name on unpack, so a stale locator
+      // drops the user's edit instead of copying it onto the interior widget.
+      const host = new LGraphNode('host')
+      graph.add(host)
+      const promoted = host.addWidget('toggle', 'promoted', true, null)
+      assert.exists(promoted.widgetId)
+      const hostInput = host.addInput('promoted', 'boolean', {
+        widget: { name: 'promoted' }
+      })
+      hostInput.widgetId = promoted.widgetId
+      useWidgetValueStore().setValue(promoted.widgetId, true)
+      refreshed.value = false
+      adoptPromotedWidgetValue(hostInput, node, inputIndex)
+      expect(refreshed.value).toBe(true)
+
       expect(previousSourceCleanup).not.toHaveBeenCalled()
       expect(currentSourceCleanup).not.toHaveBeenCalled()
       expect(localCleanup).not.toHaveBeenCalled()

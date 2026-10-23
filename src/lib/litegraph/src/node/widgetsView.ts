@@ -146,15 +146,37 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
+/**
+ * Repoints an input at a widget that replaced the one it was bound to.
+ *
+ * Both halves of the binding have to move. `_widget` is the direct reference,
+ * but `widget` is the locator every name-based consumer resolves through —
+ * {@link LGraphNode.getWidgetFromSlot}, {@link LGraphNode.getSlotFromWidget},
+ * `inputAsSerialisable`, and promoted-value adoption on unpack. Leaving the
+ * locator on the outgoing name silently unbinds all of them whenever a refresh
+ * also renames the source.
+ */
+function rebindInputToReplacement(
+  input: INodeInputSlot,
+  replacement: IBaseWidget
+): void {
+  input._widget = replacement
+  if (!input.widget) return
+  input.widget.name = replacement.name
+  if ('type' in input.widget) input.widget.type = replacement.type
+}
+
 export function transferReplacedWidgetState(
   node: LGraphNode,
   outgoing: IBaseWidget,
   replacement: IBaseWidget
 ): void {
   transferConcreteWidgetOnRemove(outgoing, replacement)
+  const outgoingName = outgoing.name
   if (outgoing instanceof BaseWidget) outgoing.releaseRegisteredState()
   for (const input of node.inputs) {
-    if (input._widget === outgoing) input._widget = replacement
+    if (!inputBindsWidget(input, outgoing, outgoingName)) continue
+    rebindInputToReplacement(input, replacement)
   }
 }
 
