@@ -66,6 +66,21 @@ function onlyReportContext(): Record<string, unknown> {
   return options.context
 }
 
+function diagnosticStringChars(value: unknown): number {
+  if (typeof value === 'string') return value.length
+  if (Array.isArray(value)) {
+    return value.reduce(
+      (total, entry) => total + diagnosticStringChars(entry),
+      0
+    )
+  }
+  if (value === null || typeof value !== 'object') return 0
+  return Object.values(value).reduce(
+    (total, entry) => total + diagnosticStringChars(entry),
+    0
+  )
+}
+
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSink', TestSink)
 })
@@ -181,7 +196,7 @@ describe('LiveGraphApplier malformed node report', () => {
   })
 
   it('bounds an oversized diagnostic context instead of forwarding it whole', () => {
-    const { applyCollected } = setup({
+    const { doc, applyCollected } = setup({
       nodes: [
         {
           ...sinkNode({ name: 'image' }),
@@ -192,18 +207,27 @@ describe('LiveGraphApplier malformed node report', () => {
       ],
       links: []
     })
+    doc
+      .getMap('__stamps')
+      .set(JSON.stringify(['node', String(NODE_ID)]), [
+        1,
+        HUMAN_ACTOR,
+        'op'.repeat(800)
+      ])
 
     applyCollected()
 
     const context = onlyReportContext()
-    const stringChars = Object.values(context)
-      .filter((value): value is string => typeof value === 'string')
-      .reduce((total, value) => total + value.length, 0)
-    expect(stringChars).toBeLessThanOrEqual(
+    expect(diagnosticStringChars(context)).toBeLessThanOrEqual(
       DIAGNOSTIC_BUDGET + OMISSION_MARKER_ALLOWANCE
     )
     expect(context).toMatchObject({ nodeId: '149', classType: 'TestSink' })
     expect(context.valueShapes).toMatch(/\+\d+$/)
+    expect(context.producer).toMatchObject({
+      origin: 'operation',
+      actorKind: 'human',
+      opId: expect.stringMatching(/\+\d+$/)
+    })
   })
 
   it('names the stamping operation, and the actor kind without its user segments', () => {
