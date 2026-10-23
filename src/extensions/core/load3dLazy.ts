@@ -111,6 +111,18 @@ function containsThreeJsNode(graph: GraphNodeTypes): boolean {
   )
 }
 
+async function replayNodeCreated(extension: ComfyExtension, node: LGraphNode) {
+  try {
+    await extension.nodeCreated?.(node, app)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'error_replaying_3d_node_created',
+      surface: 'graph',
+      context: { extension: extension.name }
+    })
+  }
+}
+
 export const load3dLazyExtension: ComfyExtension = {
   name: 'Comfy.Load3DLazy',
   settings: load3dSettings,
@@ -131,7 +143,7 @@ export const load3dLazyExtension: ComfyExtension = {
     const newExtensions = await loadLoad3dExtensions()
     await Promise.all(
       (newExtensions ?? []).map((extension) =>
-        extension.nodeCreated?.(node, app)
+        replayNodeCreated(extension, node)
       )
     )
   }

@@ -3,9 +3,8 @@ import { nextTick } from 'vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
-import Load3DConfiguration, {
-  findNumericWidget
-} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { findNumericWidget } from '@/extensions/core/load3d/findNumericWidget'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'

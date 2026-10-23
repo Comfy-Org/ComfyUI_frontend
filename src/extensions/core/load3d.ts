@@ -20,9 +20,8 @@ import type {
   Model3DInfo
 } from '@comfyorg/viewport3d/load3d/interfaces'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import Load3DConfiguration, {
-  findNumericWidget
-} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { findNumericWidget } from '@/extensions/core/load3d/findNumericWidget'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'

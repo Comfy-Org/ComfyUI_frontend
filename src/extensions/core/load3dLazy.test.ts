@@ -292,6 +292,28 @@ describe('load3dLazy', () => {
     )
   })
 
+  it('reports a replayed nodeCreated hook that throws and still replays the others', async () => {
+    const { app, reportError, createNode } = await loadLazyExtensionFresh()
+    const cause = new Error('hook failed')
+    vi.mocked(
+      lazyModules.load3d.load3dExtension.nodeCreated
+    ).mockImplementation(() => {
+      throw cause
+    })
+    const node = makeNode('Load3D')
+
+    await createNode(node)
+
+    expect(
+      lazyModules.lightInfo.lightInfoExtension.nodeCreated
+    ).toHaveBeenCalledWith(node, app)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(cause, {
+      errorType: 'error_replaying_3d_node_created',
+      surface: 'graph',
+      context: { extension: 'Comfy.Load3D' }
+    })
+  })
+
   it('does not replay nodeCreated for 3D nodes created after the load completes', async () => {
     const { configureGraph, createNode } = await loadLazyExtensionFresh()
     await configureGraph(makeWorkflow(['Load3D']))

@@ -78,10 +78,6 @@ vi.mock(import('@/composables/useLoad3d'), () => {
 })
 
 vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
-  findNumericWidget: fromAny(
-    (widgets: FakeWidget[] | undefined, name: string) =>
-      widgets?.find((w) => w.name === name && w.type === 'number')
-  ),
   default: fromAny(
     class {
       configure = configureMock

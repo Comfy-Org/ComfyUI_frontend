@@ -6,6 +6,7 @@ import { isViewMode } from '@/extensions/core/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -111,10 +112,17 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
 }
 
 async function clearModel(node: LGraphNode) {
-  const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-  if (modelWidget) modelWidget.value = LOAD3D_NONE_MODEL
-  const { markLoad3dSceneDirty } = await import('@/composables/useLoad3d')
-  markLoad3dSceneDirty(node)
+  try {
+    const { markLoad3dSceneDirty } = await import('@/composables/useLoad3d')
+    const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+    if (modelWidget) modelWidget.value = LOAD3D_NONE_MODEL
+    markLoad3dSceneDirty(node)
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_loading_3d_extensions',
+      surface: 'graph'
+    })
+  }
 }
 
 function createFileInput(accept: string, multiple: boolean): HTMLInputElement {
