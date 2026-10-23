@@ -215,11 +215,6 @@ describe('WidgetItem', () => {
       expect(stub.type).toBe('combo')
     })
 
-    // A third-party widget object pushed onto `node.widgets` without a `type` is
-    // wrapped as a LegacyWidget that keeps `type: undefined`, so the panel must
-    // treat it as "not a button" rather than throwing while it renders.
-    // Regression: Sentry CLOUD-FRONTEND-PROD-22D on release 1.55.16, raised by
-    // adding a custom node from the node search modal with the panel open.
     it('renders a widget with no type instead of throwing', () => {
       const widget = createMockWidget({ type: undefined, callback: vi.fn() })
 
