@@ -5473,6 +5473,7 @@
     "logoProviderSeparator": " 与 "
   },
   "textEditor": {
+    "characterCount": "{count} 个字符",
     "expand": "放大",
     "title": "{widget} · {node}"
   },

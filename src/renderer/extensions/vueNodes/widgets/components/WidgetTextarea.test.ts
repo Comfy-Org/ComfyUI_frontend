@@ -63,6 +63,7 @@ function renderComponent(
         : {})
     },
     global: {
+      plugins: [i18n],
       mocks: {
         $t: (msg: string) => msg
       }
@@ -206,39 +207,53 @@ describe('WidgetTextarea Value Binding', () => {
     })
   })
   describe('Copy Button Behavior', () => {
-    it('hides copy button when not read-only', async () => {
-      const widget = createTextareaWidget('test')
-      renderComponent(widget, 'test')
-
-      expect(
-        screen.queryByRole('button', { name: 'g.copyToClipboard' })
-      ).not.toBeInTheDocument()
-    })
-
-    it('copy button sits in an action group that is transparent by default when read-only', () => {
-      const widget = createTextareaWidget('test', { read_only: true })
-      renderComponent(widget, 'test')
+    it.for([
+      { state: 'editable', options: {} },
+      { state: 'read-only', options: { read_only: true } }
+    ])('copies the text from the rail when $state', async ({ options }) => {
+      renderComponent(createTextareaWidget('test value', options), 'test value')
 
       const actions = screen.getByRole('group', { name: 'g.actions' })
-      expect(
+      await userEvent.click(
         within(actions).getByRole('button', { name: 'g.copyToClipboard' })
-      ).toBeInTheDocument()
-      expect(actions.classList.contains('opacity-0')).toBe(true)
+      )
+
+      expect(mockCopyToClipboard).toHaveBeenLastCalledWith('test value')
     })
 
-    it('copy button is revealed on group hover when read-only, and copies on click', async () => {
-      const widget = createTextareaWidget('test value', { read_only: true })
-      renderComponent(widget, 'test value')
+    it('reveals the rail actions only on hover or focus', () => {
+      renderComponent(createTextareaWidget('test'), 'test')
 
       const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(actions.classList.contains('opacity-0')).toBe(true)
       expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
-      const button = within(actions).getByRole('button', {
-        name: 'g.copyToClipboard'
-      })
+      expect(actions.classList.contains('focus-within:opacity-100')).toBe(true)
+    })
+  })
 
-      await userEvent.click(button)
+  describe('Character count', () => {
+    it.for([
+      { value: '', count: '0 chars' },
+      { value: 'a', count: '1 char' },
+      { value: 'a'.repeat(6644), count: '6,644 chars' }
+    ])('shows "$count" in the rail', ({ value, count }) => {
+      renderComponent(createTextareaWidget(value), value)
 
-      expect(mockCopyToClipboard).toHaveBeenCalledWith('test value')
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(within(actions).getByText(count)).toBeInTheDocument()
+    })
+
+    it('counts the text as it is typed', async () => {
+      const { rerender } = renderComponent(
+        createTextareaWidget('abc'),
+        'abc',
+        undefined,
+        (value) => rerender({ modelValue: value })
+      )
+
+      await userEvent.type(screen.getByRole('textbox'), 'de')
+
+      expect(screen.getByText('5 chars')).toBeInTheDocument()
     })
   })
 
@@ -385,7 +400,7 @@ describe('WidgetTextarea expand to editor', () => {
         modelValue: 'a portrait',
         'onUpdate:modelValue': onUpdateModelValue
       },
-      global: { mocks: { $t: (msg: string) => msg } }
+      global: { plugins: [i18n], mocks: { $t: (msg: string) => msg } }
     })
     return { onUpdateModelValue, view }
   }

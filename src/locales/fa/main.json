@@ -5473,6 +5473,7 @@
     "logoProviderSeparator": " و "
   },
   "textEditor": {
+    "characterCount": "{count} کاراکتر | {count} کاراکتر",
     "expand": "بزرگ کردن",
     "title": "{widget} · {node}"
   },

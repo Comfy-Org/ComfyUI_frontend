@@ -5473,6 +5473,7 @@
     "logoProviderSeparator": " y "
   },
   "textEditor": {
+    "characterCount": "{count} carácter | {count} caracteres",
     "expand": "Ampliar",
     "title": "{widget} · {node}"
   },
