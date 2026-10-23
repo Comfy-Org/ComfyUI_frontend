@@ -698,7 +698,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
             id: 'stop-640',
             usd: 640,
             credits: 135_040,
-            discountedUsd: 576
+            discountedUsd: 576,
+            periodChargeUsd: { monthly: 608, yearly: 6912 }
           },
           billingCycle: 'yearly',
           isChange: false
