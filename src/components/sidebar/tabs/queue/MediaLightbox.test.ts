@@ -22,6 +22,7 @@ const i18n = createI18n({
         previous: 'Previous',
         next: 'Next',
         download: 'Download',
+        moreOptions: 'More Options',
         videoFailedToLoad: 'Video failed to load',
         textFailedToLoad: 'Text failed to load'
       }
@@ -189,6 +190,26 @@ describe('MediaLightbox', () => {
       '/api/assets/1/content',
       'image1.jpg'
     )
+  })
+
+  describe('more options menu', () => {
+    it('hides the more options button without a context-menu listener', async () => {
+      renderGallery()
+      await nextTick()
+
+      expect(screen.queryByLabelText('More Options')).not.toBeInTheDocument()
+    })
+
+    it('emits context-menu when the more options button is clicked', async () => {
+      const onContextMenu = vi.fn()
+      const { user } = renderGallery({ onContextMenu })
+      await nextTick()
+
+      await user.click(screen.getByLabelText('More Options'))
+
+      expect(onContextMenu).toHaveBeenCalledTimes(1)
+      expect(onContextMenu.mock.calls[0][0]).toBeInstanceOf(MouseEvent)
+    })
   })
 
   describe('caption reveal and auto-hide', () => {

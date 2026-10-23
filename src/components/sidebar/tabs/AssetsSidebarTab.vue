@@ -151,6 +151,7 @@
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
+    @context-menu="handleLightboxContextMenu"
   />
   <Menu
     :id="contextMenuId"
@@ -499,6 +500,11 @@ function handleAssetSelectionToggle(asset: AssetItem) {
   const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
   emit('assetSelected', asset)
   toggleAssetSelection(asset, index, visibleAssets.value)
+}
+
+function handleLightboxContextMenu(event: MouseEvent) {
+  const asset = previewableVisibleAssets.value[galleryActiveIndex.value]
+  if (asset) handleAssetContextMenu(event, asset)
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
