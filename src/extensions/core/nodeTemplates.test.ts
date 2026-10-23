@@ -36,8 +36,7 @@ async function importNodeTemplates(getUserData: () => Promise<Response>) {
   const { app } = await import('@/scripts/app')
   const { reportError } = await import('@/platform/telemetry/reportError')
   vi.mocked(api.getUserData).mockImplementation(getUserData)
-  await import('./nodeTemplates')
-  const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
+  const { nodeTemplatesExtension: extension } = await import('./nodeTemplates')
   return { api, app, reportError, extension }
 }
 

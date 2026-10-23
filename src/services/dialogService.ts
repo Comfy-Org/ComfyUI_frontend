@@ -10,7 +10,7 @@ import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.v
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
+import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
 import type { PromptError } from '@/platform/remote/comfyui/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { PromptExecutionError } from '@/scripts/api'

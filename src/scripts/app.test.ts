@@ -63,9 +63,9 @@ import {
   createTestDragAndScale,
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
@@ -84,16 +84,16 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
-import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
-import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
@@ -197,10 +197,13 @@ vi.mock(import('@/services/extensionService'), () => ({
   )
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
-  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
-  runMissingModelPipeline: vi.fn()
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelPipeline'),
+  () => ({
+    refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+    runMissingModelPipeline: vi.fn()
+  })
+)
 
 function createMockNode(
   options: Partial<Record<keyof LGraphNode, unknown>> = {}
@@ -587,28 +590,35 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('releases the owned graph when a forced reload into it fails', async () => {
-      app.canvasElRef.value = document.createElement('canvas')
-      const workflow = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/owned.json',
-          modified: 0,
-          size: 0
+    it.for([
+      { outcome: 'keeps', workflowState: 'active', isActive: true },
+      { outcome: 'releases', workflowState: 'inactive', isActive: false }
+    ])(
+      '$outcome the owned graph when a forced reload into an $workflowState workflow fails',
+      async ({ isActive }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/owned.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const graph = new LGraph()
+        workflow.adoptGraph(graph)
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        vi.mocked(useWorkflowStore().isActive).mockReturnValue(isActive)
+        vi.spyOn(graph, 'configure').mockImplementation(() => {
+          throw new Error('bad workflow json')
         })
-      )
-      const graph = new LGraph()
-      workflow.adoptGraph(graph)
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
-      vi.spyOn(graph, 'configure').mockImplementation(() => {
-        throw new Error('bad workflow json')
-      })
 
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
-      ).resolves.toBe(false)
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        ).resolves.toBe(false)
 
-      expect(workflow.graph).toBeNull()
-    })
+        expect(workflow.graph).toBe(isActive ? graph : null)
+      }
+    )
 
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
       // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
@@ -1200,6 +1210,26 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('lets the set-graph hash publish when an API import replaces an owned root', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const owner = new ComfyWorkflow({
+        path: 'workflows/owner.json',
+        modified: 0,
+        size: 0
+      })
+      const ownedGraph = new LGraph()
+      owner.adoptGraph(ownedGraph)
+      useWorkflowStore().attachWorkflow(owner)
+      Reflect.set(app, 'rootGraphInternal', ownedGraph)
+
+      await app.loadApiJson({}, 'empty.json')
+
+      expect(app.rootGraph).not.toBe(ownedGraph)
+      expect(
+        useSubgraphNavigationStore().suppressRootGraphHash
+      ).not.toHaveBeenCalled()
     })
   })
 

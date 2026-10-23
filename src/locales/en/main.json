@@ -2981,6 +2981,8 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "purchaseDisclosure": "Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.",
+      "planRequiredResubscribe": "Credits don't include a Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Credits don't include a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3619,8 +3621,9 @@
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
-        "resubscribe": "Resubscribe to use credits on Cloud.",
-        "subscribe": "Subscribe to use credits on Cloud.",
+        "memberResubscribe": "Your workspace owner needs to resubscribe to run workflows on Cloud.",
+        "resubscribe": "Resubscribe to run workflows on Cloud.",
+        "subscribe": "Subscribe to run workflows on Cloud.",
         "title": "Credits",
         "topUp": "Top-up",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
@@ -3696,7 +3699,7 @@
       },
       "autoTopUpOff": {
         "title": "Auto top-up turned off",
-        "body": "Your card was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
+        "body": "Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",

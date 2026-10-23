@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -43,7 +43,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -100,8 +100,8 @@ import {
   unregisterDomWidgets
 } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
@@ -124,8 +124,8 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -146,21 +146,21 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
-} from '@/platform/missingModel/missingModelPipeline'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
   MissingModelPipelineResult
-} from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -884,7 +884,6 @@ export class ComfyApp implements IComfyApp {
       previous?.stop()
       if (previous) unregisterDomWidgets(previous)
       this.rootGraphInternal = graph
-      useSubgraphNavigationStore().suppressRootGraphHash(graph)
       registerDomWidgets(graph)
     }
     this.canvas.setGraph(graph)
@@ -1184,6 +1183,16 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
+  private disownFailedLoadGraph(workflow: string | null | ComfyWorkflow): void {
+    if (
+      workflow instanceof ComfyWorkflow &&
+      workflow.graph === this.rootGraphInternal &&
+      !useWorkflowStore().isActive(workflow)
+    ) {
+      workflow.releaseGraph()
+    }
+  }
+
   /**
    * Shared failure reporting for a graph load that cannot proceed: shows the
    * load-error dialog, logs it, and notifies `onGraphLoadError` so any
@@ -1191,15 +1200,6 @@ export class ComfyApp implements IComfyApp {
    * closed out, exactly as if `rootGraph.configure` itself had thrown.
    * Callers still decide what to return/rethrow.
    */
-  private disownFailedLoadGraph(workflow: string | null | ComfyWorkflow): void {
-    if (
-      workflow instanceof ComfyWorkflow &&
-      workflow.graph === this.rootGraphInternal
-    ) {
-      workflow.releaseGraph()
-    }
-  }
-
   private async reportGraphLoadFailure(error: unknown): Promise<void> {
     useDialogService().showErrorDialog(error, {
       title: t('errorDialog.loadWorkflowTitle'),
@@ -1278,6 +1278,7 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (clean) {
+        useSubgraphNavigationStore().suppressRootGraphHash(graph)
         this.activateRootGraph(graph)
         withGraphIntentSource('load', () => this.clean())
       }
@@ -2216,24 +2217,19 @@ export class ComfyApp implements IComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       return await this.enqueueGraphLoad(async () => {
-        const outcome = await importA1111(
-          this.rootGraph,
-          parameters,
-          async () => {
-            try {
-              // false: final destination; no later load republishes the hash.
-              useWorkflowService().beforeLoadNewGraph(false)
-              await useExtensionService().invokeExtensionsAsync(
-                'beforeLoadGraph'
-              )
-            } finally {
-              useMissingNodesErrorStore().setMissingNodeTypes([])
-            }
-            const graph = this.rootGraphForLoad(null)
-            this.activateRootGraph(graph)
-            return graph
+        let graph = this.rootGraph
+        const outcome = await importA1111(graph, parameters, async () => {
+          try {
+            // false: final destination; no later load republishes the hash.
+            useWorkflowService().beforeLoadNewGraph(false)
+            await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+          } finally {
+            useMissingNodesErrorStore().setMissingNodeTypes([])
           }
-        )
+          graph = this.rootGraphForLoad(null)
+          this.activateRootGraph(graph)
+          return graph
+        })
         switch (outcome) {
           case 'core-nodes-unavailable':
             useToast().warning(t('toastMessages.a1111CoreNodesUnavailable'))
@@ -2263,8 +2259,8 @@ export class ComfyApp implements IComfyApp {
         )
         await useWorkflowService().afterLoadNewGraph(
           fileName,
-          this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          this.rootGraph
+          graph.serialize() as unknown as ComfyWorkflowJSON,
+          graph
         )
         await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
         return
@@ -2414,7 +2410,8 @@ export class ComfyApp implements IComfyApp {
     // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    this.activateRootGraph(this.rootGraphForLoad(null))
+    const graph = this.rootGraphForLoad(null)
+    this.activateRootGraph(graph)
     withGraphIntentSource('load', () => this.clean())
 
     const ids = Object.keys(apiData)
@@ -2510,7 +2507,7 @@ export class ComfyApp implements IComfyApp {
         }
         node.id = nodeId
         node.title = data._meta?.title ?? node.title
-        app.rootGraph.add(node)
+        graph.add(node)
         if (placeholderEntry && node.last_serialization) {
           node.last_serialization.id = node.id
           placeholderEntry.nodeId = String(node.id)
@@ -2521,7 +2518,7 @@ export class ComfyApp implements IComfyApp {
       const processNodeInputs = (id: string) => {
         const data = apiData[id]
         const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
-        const node = app.rootGraph.getNodeById(currentNodeId)
+        const node = graph.getNodeById(currentNodeId)
         if (!node) return
         const targetNode = node
         const inputs = restoreDynamicGroupInputs(node, data.inputs)
@@ -2531,7 +2528,7 @@ export class ComfyApp implements IComfyApp {
           if (value instanceof Array) {
             function connectInput() {
               const [fromId, fromSlot] = value
-              const fromNode = app.rootGraph.getNodeById(
+              const fromNode = graph.getNodeById(
                 importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
               )
               if (!fromNode?.outputs[fromSlot]) return false
@@ -2602,13 +2599,13 @@ export class ComfyApp implements IComfyApp {
         if (remainingInputs.length === pendingInputs.length) break
         pendingInputs = remainingInputs
       }
-      for (const node of app.rootGraph.nodes) {
+      for (const node of graph.nodes) {
         if (!node.last_serialization) continue
         node.last_serialization.inputs = node.inputs.map((input, i) =>
           inputAsSerialisable(input, node, i)
         )
       }
-      app.rootGraph.arrange()
+      graph.arrange()
     })
 
     // Intentionally no beforeConfigureGraph: API JSON builds nodes directly
@@ -2619,8 +2616,8 @@ export class ComfyApp implements IComfyApp {
     )
     await useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-      this.rootGraph
+      graph.serialize() as unknown as ComfyWorkflowJSON,
+      graph
     )
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
     if (missingNodeTypes.length) {
