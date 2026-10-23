@@ -9,12 +9,13 @@ import { isCloud } from '@/platform/distribution/types'
 export function useTopUpPlanCreditCopy() {
   const { t } = useI18n()
   const { flags } = useFeatureFlags()
-  const { subscriptionStatus } = useBillingContext()
+  const { isInitialized, subscriptionStatus } = useBillingContext()
 
   return computed(() => {
     const line = topUpPlanCreditLine({
       unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
       isCloud,
+      isBillingInitialized: isInitialized.value,
       subscriptionStatus: subscriptionStatus.value
     })
     if (line === 'planRequiredSubscribe') {

@@ -4,9 +4,11 @@ import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspa
 export function topUpPlanCreditLine(facts: {
   unifiedBillingSettingsEnabled: boolean
   isCloud: boolean
+  isBillingInitialized: boolean
   subscriptionStatus: BillingSubscriptionStatus | null
 }): 'planRequiredSubscribe' | 'planRequiredResubscribe' | null {
   if (!facts.unifiedBillingSettingsEnabled || !facts.isCloud) return null
+  if (!facts.isBillingInitialized) return null
   if (facts.subscriptionStatus === null) return 'planRequiredSubscribe'
   if (facts.subscriptionStatus === 'ended') return 'planRequiredResubscribe'
   return null
