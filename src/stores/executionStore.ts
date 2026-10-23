@@ -4,7 +4,7 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   WorkflowExecutionContext,
@@ -932,6 +932,26 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
+  /** Stops following queued jobs that ended without a terminal frame. */
+  function forgetFinishedJobs(jobIds: Iterable<JobId>) {
+    for (const jobId of jobIds) {
+      if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      forgetJob(jobId)
+    }
+  }
+
+  function forgetJob(jobId: JobId) {
+    const progress = { ...nodeProgressStatesByJob.value }
+    delete progress[jobId]
+    nodeProgressStatesByJob.value = progress
+    useJobPreviewStore().clearPreview(jobId)
+    jobIdToWorkflow.delete(jobId)
+    if (jobId in queuedJobs.value)
+      void jobReset.trigger(queuedJobs.value[jobId])
+    delete queuedJobs.value[jobId]
+    cancelPendingProgressUpdates(jobId)
+  }
+
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
@@ -943,17 +963,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function resetExecutionState(jobIdParam?: JobId | null) {
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      if (jobId in queuedJobs.value)
-        void jobReset.trigger(queuedJobs.value[jobId])
-      delete queuedJobs.value[jobId]
-    }
-    cancelPendingProgressUpdates(jobId)
+    if (jobId) forgetJob(jobId)
+    else cancelPendingProgressUpdates()
     if (!activeJobId.value || jobId === activeJobId.value) {
       executionIdToLocatorCache.clear()
       nodeProgressStates.value = {}
@@ -1175,6 +1186,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     clearActiveJobIfStale,
+    forgetFinishedJobs,
     bindExecutionEvents,
     unbindExecutionEvents,
     onJobReset: jobReset.on,

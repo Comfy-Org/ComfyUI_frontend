@@ -451,7 +451,22 @@ export const zTopupQuoteResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
-  expires_at: z.iso.datetime()
+  expires_at: z.iso.datetime(),
+  payment_method_configuration_id: z.string().optional()
+})
+
+/**
+ * Requested credit purchase from this operation's validated stored interactive top-up intent. Visible only to callers authorized for payment details. Not the amount charged or proof of payment. Omitted for historical, non-interactive, invalid or non-top-up operations.
+ *
+ */
+export const zTopUpPurchaseAmount = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.enum(['usd'])
 })
 
 /**
@@ -2116,6 +2131,20 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
+ * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
+ */
+export const zInteractiveTopupRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
+  checkout_attempt_id: z.string().optional(),
+  confirmation_token: z.string().min(1).max(255).optional(),
+  idempotency_key: z.string().min(1).max(255),
+  make_default: z.boolean().optional().default(false),
+  return_url: z.string().min(1).max(2048).optional(),
+  save_payment_method: z.boolean().optional().default(false),
+  saved_payment_method_id: z.string().min(1).max(255).optional()
+})
+
+/**
  * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
@@ -2607,6 +2636,7 @@ export const zExchangeTokenResponse = z.object({
   permissions: z.array(z.string()),
   role: z.enum(['owner', 'member']),
   token: z.string(),
+  user_id: z.string(),
   workspace: zWorkspaceSummary
 })
 
@@ -2806,7 +2836,7 @@ export const zCreateTopupResponse = z.object({
 })
 
 /**
- * Request body for purchasing a one-time credit top-up.
+ * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
  */
 export const zCreateTopupRequest = z.object({
   amount_cents: z.coerce
@@ -3015,9 +3045,48 @@ export const zCccPublicItemsPage = zContentCatalogProjection.and(
 )
 
 /**
- * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
+ * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
  */
-export const zCccjson = z.record(z.string(), z.unknown())
+export const zCccjson = z.object({
+  catalog_rev: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .readonly()
+    .optional(),
+  creator_uid: z.string().readonly().optional(),
+  digest: z.string().readonly().optional(),
+  draft_generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .readonly()
+    .optional(),
+  edit_sequence: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .readonly()
+    .optional(),
+  is_deleted: z.boolean().readonly().optional(),
+  owner_uid: z.string().readonly().optional(),
+  revision_uid: z.uuid().readonly().optional(),
+  saved_at: z.iso.datetime().readonly().optional(),
+  saved_by_uid: z.string().readonly().optional(),
+  uid: z.uuid().readonly().optional()
+})
 
 export const zCccCreatorSummary = z.object({
   avatar_url: z.string(),
@@ -3136,6 +3205,7 @@ export const zBillingStatusResponse = z.object({
   cancel_at: z.iso.datetime().optional(),
   has_funds: z.boolean(),
   is_active: z.boolean(),
+  latest_subscription_op_id: z.string().optional(),
   max_seats: z.int(),
   occupied_seats: z.int(),
   payment_intent_client_secret: z.string().optional(),
@@ -3272,6 +3342,16 @@ export const zBillingOpStatusResponse = z.object({
     .optional(),
   cancelable: z.boolean().optional(),
   charge_breakdown: zBillingOpChargeBreakdown.optional(),
+  checkout_state: z
+    .enum([
+      'unfinished',
+      'verify_payment',
+      'processing',
+      'payment_received',
+      'failed',
+      'none'
+    ])
+    .optional(),
   completed_at: z.iso.datetime().optional(),
   credits_added: z.coerce
     .bigint()
@@ -3316,7 +3396,8 @@ export const zBillingOpStatusResponse = z.object({
     .optional(),
   retryable: z.boolean().optional(),
   started_at: z.iso.datetime(),
-  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed']),
+  topup_purchase_amount: zTopUpPurchaseAmount.optional()
 })
 
 export const zBillingOpCancelResponse = z.object({
@@ -3534,6 +3615,17 @@ export const zBillingCapabilityDenials = z.object({
   can_manage_subscription: z
     .enum(['not_a_member', 'not_workspace_owner'])
     .optional(),
+  can_open_plans: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'creator_only_provisioning',
+      'tier_not_self_serve',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
   can_reactivate: z
     .enum([
       'not_a_member',
@@ -3674,6 +3766,7 @@ export const zBillingCapabilities = z.object({
   can_manage_members: z.boolean(),
   can_manage_partner_node_access: z.boolean(),
   can_manage_subscription: z.boolean(),
+  can_open_plans: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_run_workflows: z.boolean(),
@@ -3728,6 +3821,7 @@ export const zBillingCapabilitiesResponse = z.object({
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),
   expires_at: z.iso.datetime(),
+  has_parked_billing_operation: z.boolean().optional(),
   payment_recovery_available: z.boolean().optional(),
   plan_kind: z.enum(['none', 'self_serve', 'sales_managed']).optional(),
   recovery_route: z.enum(['none', 'resubscribe', 'contact_sales']).optional(),
@@ -4076,6 +4170,14 @@ export const zAgentThreadCreateRequest = z.object({
 })
 
 /**
+ * One model round's thinking as persisted on an assistant message's content.thinking (services/agent/internal/loop.persistedThinking): the round's reasoning text, then its narration, scrubbed exactly as the live agent_thinking frames were. Display data only.
+ */
+export const zAgentThinkingEntry = z.object({
+  text: z.string(),
+  tool_call_id: z.string().optional()
+})
+
+/**
  * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
  */
 export const zAgentSkillPublishRequest = z.object({
@@ -4386,6 +4488,7 @@ export const zAgentMessage = z.object({
           })
         )
         .optional(),
+      thinking: z.array(zAgentThinkingEntry).optional(),
       tool_calls: z.array(zToolCallSummary).optional()
     })
     .optional(),
@@ -4967,7 +5070,7 @@ export const zRemoveAssetTagsPath = z.object({
 export const zRemoveAssetTagsResponse = zTagsModificationResponse
 
 export const zAddAssetTagsBody = z.object({
-  tags: z.array(z.string()).min(1)
+  tags: z.array(z.string()).min(1).max(64)
 })
 
 export const zAddAssetTagsPath = z.object({
@@ -4982,7 +5085,7 @@ export const zAddAssetTagsResponse = zTagsModificationResponse
 export const zCreateAssetDownloadBody = z.object({
   preview_id: z.uuid().optional(),
   source_url: z.url(),
-  tags: z.array(z.string()).optional(),
+  tags: z.array(z.string()).max(64).optional(),
   user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -5022,7 +5125,7 @@ export const zCreateAssetFromHashBody = z.object({
   hash: z.string().regex(/^blake3:[a-f0-9]{64}$/),
   mime_type: z.string().optional(),
   name: z.string().optional(),
-  tags: z.array(z.string()).min(1),
+  tags: z.array(z.string()).min(1).max(64),
   user_metadata: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -5360,6 +5463,13 @@ export const zGetTopupCheckoutPath = z.object({
  * Current checkout facts; Cache-Control no-store.
  */
 export const zGetTopupCheckoutResponse = zHostedTopupCheckout
+
+export const zCreateInteractiveTopupBody = zInteractiveTopupRequest
+
+/**
+ * Top-up initiated successfully
+ */
+export const zCreateInteractiveTopupResponse = zCreateTopupResponse
 
 export const zCreateTopupQuoteBody = zCreateTopupQuoteRequest
 

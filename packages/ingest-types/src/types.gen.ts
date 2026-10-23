@@ -760,6 +760,28 @@ export type TopupQuoteResponse = {
    *
    */
   expires_at: string
+  /**
+   * Environment-configured Stripe payment method configuration for
+   * one-time credit top-up checkout. Omitted when not configured.
+   * This metadata does not establish interactive payment eligibility,
+   * ownership of a saved method, or guarantee payment success. The
+   * interactive endpoint independently accepts only cards without
+   * future usage and revalidates payment authority.
+   * Clients must constrain the interactive payment form to that
+   * card-only, no-future-use contract; this configuration alone does
+   * not guarantee its enabled methods are compatible.
+   *
+   */
+  payment_method_configuration_id?: string
+}
+
+/**
+ * Requested credit purchase from this operation's validated stored interactive top-up intent. Visible only to callers authorized for payment details. Not the amount charged or proof of payment. Omitted for historical, non-interactive, invalid or non-top-up operations.
+ *
+ */
+export type TopUpPurchaseAmount = {
+  amount_cents: number
+  currency: 'usd'
 }
 
 /**
@@ -3470,6 +3492,56 @@ export type JobAssetsResponse = {
 }
 
 /**
+ * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
+ */
+export type InteractiveTopupRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts. Actual payment and credit grant are asynchronous.
+   */
+  amount_cents: number
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before the backend
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * New-card confirmation authority. Valid only on the dedicated interactive route; mutually exclusive with saved_payment_method_id. At most 255 UTF-8 bytes. No implicit saving.
+   */
+  confirmation_token?: string
+  /**
+   * Required globally unique opaque key for this exact purchase (for example, a UUID), at most 255 UTF-8 bytes. Replays bind amount, actor, customer, selected authority and return URL; changing them returns IDEMPOTENCY_MISMATCH. Never mint a new key while payment is unresolved.
+   *
+   */
+  idempotency_key: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; paying does not change invoice defaults.
+   */
+  make_default?: boolean
+  /**
+   * Required with confirmation_token; at most 2048 bytes before and after URL normalization. Must use an existing allowed HTTPS destination (HTTP only for configured localhost or 127.0.0.1). Bound to the request. Callers must supply credential-free routing URLs: the validator rejects userinfo, fragments, known authentication query keys and recognizable Stripe authority patterns, but cannot identify every opaque secret.
+   *
+   */
+  return_url?: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; pay once does not save a new card.
+   */
+  save_payment_method?: boolean
+  /**
+   * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
+   */
+  saved_payment_method_id?: string
+}
+
+/**
  * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export type InputUploadUrlRequest = {
@@ -4215,6 +4287,14 @@ export type ExchangeTokenResponse = {
    * Cloud JWT token
    */
   token: string
+  /**
+   * Canonical Comfy user ID the token was minted for: the token's `sub`,
+   * and the same ID `GET /api/billing/capabilities` returns in
+   * `resolved_for.user_id`. Clients scope per-user reads with it. It is
+   * not the Firebase UID, which can differ.
+   *
+   */
+  user_id: string
   workspace: WorkspaceSummary
 }
 
@@ -4558,7 +4638,7 @@ export type CreateTopupResponse = {
 }
 
 /**
- * Request body for purchasing a one-time credit top-up.
+ * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
  */
 export type CreateTopupRequest = {
   /**
@@ -4859,9 +4939,47 @@ export type CccPublicItemsPage = ContentCatalogProjection & {
 }
 
 /**
- * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
+ * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
  */
 export type Cccjson = {
+  /**
+   * Catalog revision of this edit; may be older than the working Draft.
+   */
+  readonly catalog_rev?: number
+  /**
+   * Immutable account that created the resource.
+   */
+  readonly creator_uid?: string
+  /**
+   * SHA-256 of the canonical authored document.
+   */
+  readonly digest?: string
+  readonly draft_generation?: number
+  readonly edit_sequence?: number
+  /**
+   * Tombstone flag. false may be sent back; true is refused (use restore).
+   */
+  readonly is_deleted?: boolean
+  /**
+   * Fixed organization owner; never transferred by a save.
+   */
+  readonly owner_uid?: string
+  /**
+   * This immutable edit; send it back as expected_revision_uid.
+   */
+  readonly revision_uid?: string
+  /**
+   * RFC3339 UTC save time of this exact edit.
+   */
+  readonly saved_at?: string
+  /**
+   * Account that saved this edit.
+   */
+  readonly saved_by_uid?: string
+  /**
+   * Server-assigned logical resource UID.
+   */
+  readonly uid?: string
   [key: string]: unknown
 }
 
@@ -4980,6 +5098,10 @@ export type BillingStatusResponse = {
    * Whether the workspace has an active subscription
    */
   is_active: boolean
+  /**
+   * Owner-only ID of the workspace's newest initial subscription or plan transition, in any status, ordered by creation time then ID. A newer attempt supersedes an older one regardless of completion time. Poll /api/billing/ops/{id} for its checkout state. Independent of pending top-up discovery. Omitted for non-owners, no matching attempt, disabled billing, unavailable reads and older servers; omission is unknown and must not be interpreted as successful checkout or acknowledgment.
+   */
+  latest_subscription_op_id?: string
   /**
    * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
    */
@@ -5132,6 +5254,16 @@ export type BillingOpStatusResponse = {
   cancelable?: boolean
   charge_breakdown?: BillingOpChargeBreakdown
   /**
+   * Owner-only subscription-checkout banner fact for initial subscriptions and plan transitions. unfinished means awaiting a payment method for a known target plan; verify_payment has a usable payment action; processing means the bank is processing the payment; payment_received means payment succeeded while the operation remains pending; failed is a terminal payment refusal, excluding abandoned/superseded checkouts. none is a known non-banner state, including resolved or reconciliation operations. Omitted for members, other operation types, uncertain provider reads and older servers. Omission is unknown, never an implied none.
+   */
+  checkout_state?:
+    | 'unfinished'
+    | 'verify_payment'
+    | 'processing'
+    | 'payment_received'
+    | 'failed'
+    | 'none'
+  /**
    * When the operation completed (success or failure)
    */
   completed_at?: string
@@ -5220,6 +5352,7 @@ export type BillingOpStatusResponse = {
    *
    */
   status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+  topup_purchase_amount?: TopUpPurchaseAmount
 }
 
 /**
@@ -5766,6 +5899,25 @@ export type BillingCapabilityDenials = {
    */
   can_manage_subscription?: 'not_a_member' | 'not_workspace_owner'
   /**
+   * Why can_open_plans is false, present only for a refused capability. Missing means no recognized explanation, never permission. It is the can_subscribe_self_serve reason with the creator rule always applied and a scheduled plan change set aside: a non-creator owner gets not_original_owner in every rollout mode, and subscription_change_in_progress never appears here.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not hold the workspace owner role.
+   * - not_original_owner: Plan changes require the workspace creator.
+   * - creator_only_provisioning: Only the creator can provision this billing identity.
+   * - tier_not_self_serve: The current tier is sales-managed or unrecognized.
+   * - subscription_not_started: The existing subscription has not started.
+   * - subscription_status_unrecognized: The existing subscription status is unrecognized.
+   *
+   */
+  can_open_plans?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'creator_only_provisioning'
+    | 'tier_not_self_serve'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
    * Present only when can_reactivate is false. The value names the resolver
    * branch that decided, not customer wording. Values are listed in the order the
    * resolver reaches them; the first one reached wins. cancellation_not_scheduled,
@@ -6009,6 +6161,10 @@ export type BillingCapabilitiesResponse = {
    * Time after which the client must refetch this snapshot.
    */
   expires_at: string
+  /**
+   * Whether any workspace billing operation needs support reconciliation (paid_ungrantable or supersede_uncancelled), across all operation types including automatic top-ups, and independent of an active plan. Shown only when can_manage_billing is true; true requests the payment support banner, not proof of a charge. False means the local read found no parked operation. Omitted for non-managers, unavailable reads, older servers or disabled billing; omission means unknown, not a healthy payment state.
+   */
+  has_parked_billing_operation?: boolean
   /**
    * Whether this actor may use payment management to recover an outstanding
    * subscription payment. True only when can_manage_billing is true, the
@@ -6297,6 +6453,10 @@ export type BillingCapabilities = {
    *
    */
   can_manage_subscription: boolean
+  /**
+   * Whether to offer this actor the way into Plans (Manage, Explore plans, Choose a plan). Creator-only, whatever the lifecycle rollout mode: false for members and for owners who are not the workspace's creator. Otherwise the same rule as can_subscribe_self_serve, except that a plan change already scheduled (subscription_change_in_progress) does not close it, so the creator can still open Plans to review or revert that change. Which plans are selectable stays with the plans listing. False when an older billing-api omits it. Guidance only; writes recheck.
+   */
+  can_open_plans: boolean
   /**
    * - Answers: may the user undo a SCHEDULED cancellation on a subscription that
    * is still running?
@@ -6925,6 +7085,17 @@ export type AgentThreadCreateRequest = {
 }
 
 /**
+ * One model round's thinking as persisted on an assistant message's content.thinking (services/agent/internal/loop.persistedThinking): the round's reasoning text, then its narration, scrubbed exactly as the live agent_thinking frames were. Display data only.
+ */
+export type AgentThinkingEntry = {
+  text: string
+  /**
+   * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
+   */
+  tool_call_id?: string
+}
+
+/**
  * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
  */
 export type AgentSkillPublishRequest = {
@@ -7334,7 +7505,7 @@ export type AgentPendingAsk =
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name carries the validated user-facing filename when name is an opaque storage key; the server may remove a registered emoji selector that does not change the displayed glyph. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name carries the validated user-facing filename when name is an opaque storage key; the server may remove a registered emoji selector that does not change the displayed glyph. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows. thinking is an optional array of AgentThinkingEntry on a completed assistant message: the agent_thinking text the live turn showed, one entry per model round in order, so a reload keeps the thinking in the turn's work trace. Omitted when the turn produced none.
    */
   content?: {
     attachment_refs?: Array<{
@@ -7344,6 +7515,7 @@ export type AgentMessage = {
       name?: string
       [key: string]: unknown
     }>
+    thinking?: Array<AgentThinkingEntry>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
@@ -9083,7 +9255,7 @@ export type CreateAssetData = {
      */
     preview_id?: string
     /**
-     * JSON-encoded array of freeform tag strings, e.g. '["models","checkpoint"]'. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
+     * JSON-encoded array of freeform tag strings, e.g. '["models","checkpoint"]'. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags?: string
     /**
@@ -9434,7 +9606,7 @@ export type RemoveAssetTagsResponse =
 export type AddAssetTagsData = {
   body: {
     /**
-     * Tags to add to the asset
+     * Tags to add to the asset. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. An add that would grow the asset's stored set (server-added tags included) past 64 is refused the same way; an asset already over 64 is not trimmed and can still re-apply its stored non-category tags that add no new server-derived tag (`input`, `output`, `temp` and `models` are refused with 422 `RESERVED_TAG` before any count check; re-applying a legacy bare model-directory tag whose `model_type:` twin is not stored adds that twin, so it counts as growth). The counted set is the stored one, which the response's `total_tags` need not equal, as it hides stored `model_type:` tags or shows synthesized ones, depending on the deployment. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags: Array<string>
   }
@@ -9498,7 +9670,7 @@ export type CreateAssetDownloadData = {
      */
     source_url: string
     /**
-     * Optional tags for the asset (e.g., ["model", "checkpoint"])
+     * Optional tags for the asset (e.g., ["model", "checkpoint"]). At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags?: Array<string>
     /**
@@ -9690,7 +9862,7 @@ export type CreateAssetFromHashData = {
      */
     name?: string
     /**
-     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
+     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags: Array<string>
     /**
@@ -11779,6 +11951,57 @@ export type GetTopupCheckoutResponses = {
 export type GetTopupCheckoutResponse =
   GetTopupCheckoutResponses[keyof GetTopupCheckoutResponses]
 
+export type CreateInteractiveTopupData = {
+  body: InteractiveTopupRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/interactive'
+}
+
+export type CreateInteractiveTopupErrors = {
+  /**
+   * Bad request (invalid amount, no payment method)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Immutable request mismatch, another pending operation, or billing reconciliation required. Do not start another purchase while unresolved.
+   */
+  409: ErrorResponse
+  /**
+   * Request body exceeds the 16 KiB resource limit.
+   */
+  413: unknown
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Interactive route unavailable or payment/workflow state unknown. Preserve the original request, key and operation; no fallback purchase.
+   */
+  503: ErrorResponse
+}
+
+export type CreateInteractiveTopupError =
+  CreateInteractiveTopupErrors[keyof CreateInteractiveTopupErrors]
+
+export type CreateInteractiveTopupResponses = {
+  /**
+   * Top-up initiated successfully
+   */
+  200: CreateTopupResponse
+}
+
+export type CreateInteractiveTopupResponse =
+  CreateInteractiveTopupResponses[keyof CreateInteractiveTopupResponses]
+
 export type CreateTopupQuoteData = {
   body: CreateTopupQuoteRequest
   path?: never
@@ -11828,7 +12051,7 @@ export type GetBillingUsageTimeSeriesData = {
   query?: {
     /**
      * `product_line` folds products into the customer-facing lines (Agent,
-     * Third-Party Partner API, Comfy Cloud, Serverless) plus an
+     * Partner Models, Comfy Cloud, Serverless) plus an
      * `unattributed` bucket that is always counted in the total.
      * `person` and `source` attribute spend to the member or to the API
      * key (`spend_source`) that caused it, read from the usage ledger

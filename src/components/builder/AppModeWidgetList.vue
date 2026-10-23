@@ -13,7 +13,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@/types/widgetId'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
@@ -23,7 +23,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -163,14 +163,7 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode && [
-          'draggable-item drag-handle pointer-events-auto cursor-grab [&.is-draggable]:cursor-grabbing',
-          draggableItemClass
-        ]
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
