@@ -665,6 +665,20 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
+    it('fails closed when its own config read was superseded', async () => {
+      remoteConfigState.value = 'authenticated'
+      mockRefreshRemoteConfig.mockResolvedValue({ kind: 'superseded' })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+    })
+
     it('does not retry a failure an immediate repeat cannot fix', async () => {
       remoteConfigState.value = 'error'
       mockRefreshRemoteConfig.mockResolvedValue({

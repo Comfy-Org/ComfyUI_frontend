@@ -99,7 +99,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import type { RemoteConfigRefreshOutcome } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -185,7 +184,7 @@ async function initialize(): Promise<void> {
     const outcome = await loadAuthenticatedRemoteConfig(controller)
     if (generation !== initializationGeneration) return
     configRejectedStatus = outcome?.kind === 'failed' ? outcome.status : null
-    if (remoteConfigState.value !== 'authenticated') {
+    if (outcome?.kind !== 'loaded') {
       throw new Error('Failed to load authenticated remote config')
     }
 
