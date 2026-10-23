@@ -29,7 +29,7 @@ const { StubWidgetComponent } = vi.hoisted(() => ({
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" :data-widget-has-callback="String(!!widget?.callback)" />'
+      '<button class="stub-widget" type="button" :aria-label="widget?.name" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" @click="widget?.callback?.()" />'
   }
 }))
 
@@ -109,8 +109,7 @@ function getStubWidget(container: Element) {
     options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
-    value: el.getAttribute('data-widget-value'),
-    hasCallback: el.getAttribute('data-widget-has-callback') === 'true'
+    value: el.getAttribute('data-widget-value')
   }
 }
 
@@ -215,27 +214,33 @@ describe('WidgetItem', () => {
       expect(stub.type).toBe('combo')
     })
 
-    it('renders a widget with no type instead of throwing', () => {
-      const widget = createMockWidget({ type: undefined, callback: vi.fn() })
+    it('renders a widget with no type instead of throwing', async () => {
+      const user = userEvent.setup()
+      const callback = vi.fn()
+      const widget = createMockWidget({ type: undefined, callback })
 
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
+      await user.click(screen.getByRole('button', { name: 'test_widget' }))
 
       expect(stub.name).toBe('test_widget')
       expect(stub.type).toBeNull()
-      expect(stub.hasCallback).toBe(false)
+      expect(callback).not.toHaveBeenCalled()
     })
 
-    it('renders a legacy widget with a non-string type', () => {
-      const widget = createMockWidget({ callback: vi.fn() })
+    it('renders a legacy widget with a non-string type', async () => {
+      const user = userEvent.setup()
+      const callback = vi.fn()
+      const widget = createMockWidget({ callback })
       Reflect.set(widget, 'type', 7)
 
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
+      await user.click(screen.getByRole('button', { name: 'test_widget' }))
 
       expect(stub.name).toBe('test_widget')
       expect(stub.type).toBe('7')
-      expect(stub.hasCallback).toBe(false)
+      expect(callback).not.toHaveBeenCalled()
     })
 
     it('passes name from widget state to the widget component', () => {
