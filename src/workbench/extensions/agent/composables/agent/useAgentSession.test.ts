@@ -2403,6 +2403,24 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
+    it('does not report a 409 naming only the same free text as another answer winning', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'a LoRA'
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(session.notices.value).toEqual([])
+    })
+
     it('does not report an answered frame with a null selection as another answer winning', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })

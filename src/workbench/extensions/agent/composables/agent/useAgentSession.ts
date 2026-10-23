@@ -358,10 +358,12 @@ function namesCommittedAnswer({
 
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
-  committed: Extract<AskUserResolution, { status: 'answered' }>
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
 ): boolean {
   return (
-    xor(submitted.selected, committed.selected).length > 0 ||
+    (selectionKnown &&
+      xor(submitted.selected, committed.selected).length > 0) ||
     (submitted.other_text || undefined) !== committed.otherText
   )
 }
@@ -1597,7 +1599,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
+    if (
+      submitted === undefined ||
+      !isSupersededAnswer(submitted, committed, Array.isArray(source.selected))
+    )
       return
     reportError(
       new Error(
