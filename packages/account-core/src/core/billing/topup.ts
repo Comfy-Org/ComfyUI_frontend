@@ -433,6 +433,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     if (refused) return refused
 
     const baseline = await credits.read()
+    if (input.signal?.aborted)
+      return { status: 'error', code: 'REQUEST_FAILED' }
     const session = await issueHostedCheckout(input)
     if (session.status === 'error') {
       return session.httpStatus === 404 ? NOT_AVAILABLE : session
