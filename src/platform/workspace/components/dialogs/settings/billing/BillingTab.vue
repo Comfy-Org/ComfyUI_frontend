@@ -4,6 +4,10 @@
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
     />
+    <BillingPlanCheckoutBanner
+      :banner="planCheckout.banner.value"
+      @dismiss="planCheckout.dismiss"
+    />
     <BillingLocalCreditBanner />
     <div
       v-if="load === 'loading'"
@@ -32,6 +36,7 @@
         :state="planRow"
         :action="action"
         :can-manage-subscription="capabilities.canManageSubscription.value"
+        @open-plan="openPlan"
       />
       <BillingCreditsCard
         :state="creditsCard"
@@ -75,14 +80,16 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
-import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
-import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
+import BillingLocalCreditBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingLocalCreditBanner.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
+import BillingPlanCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanCheckoutBanner.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
   deriveBillingTabLoad,
@@ -91,14 +98,17 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePlanCheckoutBanner } from '@/platform/workspace/composables/usePlanCheckoutBanner'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
+const planCheckout = usePlanCheckoutBanner()
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 const telemetry = useTelemetry()
 
 const HANDOFF_PATH = {
@@ -121,7 +131,7 @@ const load = computed(() =>
 
 const action = computed(() =>
   planRowAction(planRow.value, {
-    canSubscribeSelfServe: capabilities.canSubscribeSelfServe.value
+    canOpenPlans: capabilities.canOpenPlans.value
   })
 )
 
@@ -131,6 +141,10 @@ const handoffUrl = computed(() =>
 
 async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
+}
+
+function openPlan() {
+  showSubscriptionDialog({ reason: 'settings_billing_panel' })
 }
 
 function addCredits() {

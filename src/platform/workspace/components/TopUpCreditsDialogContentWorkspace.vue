@@ -715,6 +715,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
+  stopPayRetryOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -880,13 +881,16 @@ let stopDefaultCardReturnRefresh: (() => void) | null = null
 let checkoutScope: AbortController | null = null
 watch(
   () => workspaceStore.workspaceTransitionGeneration,
-  () => checkoutScope?.abort(),
+  () => {
+    checkoutScope?.abort()
+    stopPayRetryOnCardReturn()
+  },
   { flush: 'sync' }
 )
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
-  stopDefaultCardReturnRefresh?.()
+  stopPayRetryOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -911,24 +915,50 @@ function watchCheckoutCompletion() {
   })
 }
 
-function refreshOnDefaultCardReturn() {
+function stopPayRetryOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = null
+}
+
+function armPayRetryAfterNextDeparture() {
+  stopPayRetryOnCardReturn()
+  const arm = () => {
+    stopPayRetryOnCardReturn()
+    armPayRetryOnCardReturn()
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') arm()
+  }
+  window.addEventListener('blur', arm)
+  document.addEventListener('visibilitychange', onVisibility)
+  stopDefaultCardReturnRefresh = () => {
+    window.removeEventListener('blur', arm)
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
+}
+
+function armPayRetryOnCardReturn() {
+  stopPayRetryOnCardReturn()
+  const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const [paymentMethods] = await Promise.allSettled([
-      workspaceApi.listSavedPaymentMethods(),
-      fetchStatus(),
-      fetchBalance(),
-      billingCapabilities.refresh()
-    ])
-    if (
-      paymentMethods.status !== 'fulfilled' ||
-      !paymentMethods.value.some((method) => method.is_default)
-    ) {
+    const stop = stopDefaultCardReturnRefresh
+    stopDefaultCardReturnRefresh = null
+    stop?.()
+    if (step.value !== 'confirm') return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
       return
     }
-    stopDefaultCardReturnRefresh?.()
-    stopDefaultCardReturnRefresh = null
-    checkoutRecovery.value = null
+    const attempt = purchaseAttempt
+    await handleBuy()
+    if (unmounted) return
+    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
+      return
+    }
+    if (checkoutRecovery.value === 'refused') {
+      armPayRetryAfterNextDeparture()
+      return
+    }
+    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
   })
 }
 
@@ -952,7 +982,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    refreshOnDefaultCardReturn()
+    armPayRetryOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -962,7 +992,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  refreshOnDefaultCardReturn()
+  armPayRetryOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {

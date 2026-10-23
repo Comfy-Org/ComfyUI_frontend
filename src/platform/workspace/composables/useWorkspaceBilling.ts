@@ -819,7 +819,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents)
+      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'

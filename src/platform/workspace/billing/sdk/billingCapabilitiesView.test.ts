@@ -20,6 +20,7 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
     can_manage_subscription: false,
+    can_open_plans: false,
     can_run_workflows: false,
     can_upgrade: false,
     can_reactivate: false,
@@ -59,4 +60,16 @@ describe('projectBillingCapabilities', () => {
       rollout_defaults_applied: SNAPSHOT.rolloutDefaultsApplied
     })
   })
+
+  it.for([true, false])(
+    'passes payment_recovery_available %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({
+          ...SNAPSHOT,
+          paymentRecoveryAvailable: served
+        }).payment_recovery_available
+      ).toBe(served)
+    }
+  )
 })
