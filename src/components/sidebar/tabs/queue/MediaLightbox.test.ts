@@ -191,6 +191,67 @@ describe('MediaLightbox', () => {
     )
   })
 
+  describe('caption reveal and auto-hide', () => {
+    const caption = () => screen.getByTestId('lightbox-pill')
+
+    it('reveals the caption again after it auto-hides', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await nextTick()
+
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-0')
+
+        await user.hover(screen.getByTestId('lightbox-content'))
+
+        expect(caption()).toHaveClass('opacity-100')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('auto-hides the caption 2 seconds after the last pointer movement', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await nextTick()
+
+        await user.hover(screen.getByTestId('lightbox-content'))
+        expect(caption()).toHaveClass('opacity-100')
+
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-0')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps the caption visible while hovered and hides it on leave', async () => {
+      vi.useFakeTimers()
+      try {
+        const { user } = renderGallery()
+        await nextTick()
+
+        await user.hover(caption())
+        await vi.advanceTimersByTimeAsync(5000)
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
+
+        await user.unhover(caption())
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-0')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   it('shows gallery when activeIndex changes from -1', async () => {
     const { rerender, container } = renderGallery({ activeIndex: -1 })
 
