@@ -73,6 +73,7 @@ import type { DragAndScale } from './DragAndScale'
 
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { isDrawnEmphasized } from './nodeEmphasis'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 
@@ -181,7 +182,6 @@ import {
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
-import { coerceRestoredWidgetValue } from './utils/widget'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -1217,7 +1217,7 @@ export class LGraphNode
   private _getSelectedStrokeStyle(
     this: LGraphNode
   ): IDrawBoundingOptions | undefined {
-    if (this.selected) {
+    if (isDrawnEmphasized(this)) {
       return {
         padding: this.has_errors ? 20 : undefined
       }
@@ -1361,7 +1361,7 @@ export class LGraphNode
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
-            widget.name,
+            widget,
             getWidgetRestorationSlot(
               this,
               widget,
@@ -1369,8 +1369,7 @@ export class LGraphNode
               restoration.positional.length
             )
           )
-          if (restored)
-            widget.value = coerceRestoredWidgetValue(widget, restored.value)
+          if (restored) widget.value = restored.value
         }
       }
       if (this.pinned) this.resizable = false
@@ -2443,11 +2442,10 @@ export class LGraphNode
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
-      widget.name,
+      widget,
       positionalIndex
     )
-    if (restored)
-      widget.value = coerceRestoredWidgetValue(widget, restored.value)
+    if (restored) widget.value = restored.value
 
     return widget
   }
@@ -4137,7 +4135,7 @@ export class LGraphNode
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
-    const selected = this.selected
+    const selected = isDrawnEmphasized(this)
 
     if (this.onDrawTitleText) {
       this.onDrawTitleText(

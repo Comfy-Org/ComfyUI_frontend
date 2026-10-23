@@ -63,6 +63,7 @@ const NO_RIGHTS: BillingCapabilities = {
   can_manage_members: false,
   can_manage_partner_node_access: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
   can_reactivate: false,

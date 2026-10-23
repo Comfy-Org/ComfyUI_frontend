@@ -261,6 +261,31 @@ describe('attachDocOpMinter', () => {
     }
   })
 
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
+  })
+
   describe('mints one op per graph command', () => {
     it.for([
       {
@@ -2129,21 +2154,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
@@ -2722,6 +2753,10 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         }
       }
     }
+    const snapshot = wireNodeSnapshot(node)!
+    expect(snapshot).toMatchObject({
+      widgets_values: { mode: 'a', 'mode.steps': 4 }
+    })
     const doc = mint({ nodes: [], links: [] }, catalog)
     const operations: GraphOperation[] = [
       {
@@ -2729,7 +2764,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         node_id: node.id,
         class_type: 'Dynamic',
         pos: [0, 0],
-        node: wireNodeSnapshot(node)!
+        node: snapshot
       },
       { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
       { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
@@ -2747,6 +2782,45 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       'applied'
     ])
     expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
+  })
+
+  it('refuses an uncatalogued dynamic combo before accepting partial widget state', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+    const snapshot = wireNodeSnapshot(node)!
+    const catalog: WidgetCatalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: 'Dynamic',
+            pos: [0, 0],
+            node: snapshot
+          }
+        ],
+        { actor: 'human:user:tab', baseVersion: 1 }
+      ),
+      catalog
+    )
+
+    expect(outcomes).toEqual([
+      expect.objectContaining({
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
+      })
+    ])
+    expect(project(doc, catalog).nodes).toEqual([])
     doc.destroy()
   })
 })

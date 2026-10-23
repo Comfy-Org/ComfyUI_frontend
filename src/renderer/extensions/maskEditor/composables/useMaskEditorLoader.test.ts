@@ -1,0 +1,234 @@
+import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { api } from '@/scripts/api'
+import { useMaskEditorLoader } from './useMaskEditorLoader'
+
+let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
+vi.mock(import('@/scripts/api'))
+
+vi.mock(import('@/scripts/app'))
+
+// Mock Image constructor so the loader's image fetches resolve without a
+// network. Records every requested URL; URLs matching failUrlPattern reject
+// like a 404 would (reset per test in beforeEach).
+const requestedUrls: string[] = []
+let failUrlPattern: RegExp | null = null
+
+class MockImage {
+  crossOrigin = ''
+  onload: ((ev: Event) => void) | null = null
+  onerror: ((ev: unknown) => void) | null = null
+  private _src = ''
+  get src() {
+    return this._src
+  }
+  set src(value: string) {
+    this._src = value
+    requestedUrls.push(value)
+    queueMicrotask(() => {
+      if (failUrlPattern?.test(value)) this.onerror?.(new Event('error'))
+      else this.onload?.(new Event('load'))
+    })
+  }
+}
+
+const GRAPH_ID = 'maskeditor-loader-test'
+
+function createLoadImageNode(
+  widgetValue: string,
+  images?: LGraphNode['images']
+): LGraphNode {
+  const nodeId = toNodeId(7)
+  useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
+    type: 'string',
+    value: widgetValue,
+    options: {}
+  })
+  return fromAny<LGraphNode, unknown>({
+    id: nodeId,
+    type: 'LoadImage',
+    imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
+    images,
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
+}
+
+function createOutputNode(images: unknown[]): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id: 9,
+    type: 'PreviewImage',
+    imgs: [{ src: 'http://localhost:8188/api/view?filename=rendered.png' }],
+    images,
+    widgets: []
+  })
+}
+
+function subfolderOf(url: string): string | null {
+  return new URL(url).searchParams.get('subfolder')
+}
+
+function requestedLayerUrls(layerFilename: string): string[] {
+  return requestedUrls.filter((url) => url.includes(layerFilename))
+}
+
+describe('useMaskEditorLoader', () => {
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `http://localhost:8188/api${route}`
+    )
+    mockDataStore = useMaskEditorDataStore()
+    requestedUrls.length = 0
+    failUrlPattern = null
+    distribution.isCloud = false
+    mockDataStore.inputData = null
+    mockDataStore.sourceNode = null
+    vi.stubGlobal('Image', MockImage)
+  })
+
+  it('loads layer files from the input root for saves without a subfolder prefix', async () => {
+    const node = createLoadImageNode('clipspace-painted-masked-123.png [input]')
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    for (const layerFilename of [
+      'clipspace-mask-123.png',
+      'clipspace-paint-123.png'
+    ]) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBeNull()
+      }
+    }
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'clipspace-mask-123.png', type: 'input' },
+      nodeId: toNodeId(7)
+    })
+  })
+
+  it('loads layer files from the clipspace subfolder for legacy saves', async () => {
+    const node = createLoadImageNode(
+      'clipspace/clipspace-painted-masked-123.png [input]'
+    )
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    for (const layerFilename of [
+      'clipspace-mask-123.png',
+      'clipspace-paint-123.png'
+    ]) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBe('clipspace')
+      }
+    }
+  })
+
+  it('keeps the clipspace subfolder for cloud-resolved layer files', async () => {
+    distribution.isCloud = true
+    vi.mocked(api.fetchApi).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          painted_masked: 'hash-painted-masked.png',
+          painted: 'hash-painted.png',
+          paint: 'hash-paint.png',
+          mask: 'hash-mask.png'
+        })
+    } as Response)
+    const node = createLoadImageNode('clipspace-painted-masked-123.png [input]')
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    for (const layerFilename of ['hash-painted-masked.png', 'hash-paint.png']) {
+      const layerUrls = requestedLayerUrls(layerFilename)
+      expect(layerUrls.length).toBeGreaterThan(0)
+      for (const url of layerUrls) {
+        expect(subfolderOf(url)).toBe('clipspace')
+      }
+    }
+  })
+
+  it('falls back to the node image when layer files are missing', async () => {
+    failUrlPattern = /clipspace-(mask|paint)-123\.png/
+    const node = createLoadImageNode('clipspace-painted-masked-123.png [input]')
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'clipspace-painted-masked-123.png' },
+      paintLayer: undefined,
+      nodeId: toNodeId(7)
+    })
+  })
+
+  it('resolves the first usable entry when node.images leads with degenerate entries', async () => {
+    const node = createOutputNode([
+      null,
+      { status: 'unavailable', reason: 'upload_failed' },
+      { filename: 'good.png', subfolder: '', type: 'output' }
+    ])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(requestedUrls).not.toHaveLength(0)
+    expect(
+      requestedUrls.filter((url) => !url.includes('filename=good.png'))
+    ).toEqual([])
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'good.png', type: 'output' },
+      nodeId: 9
+    })
+  })
+
+  it('falls back to the rendered image when no entry carries a filename', async () => {
+    const node = createOutputNode([
+      null,
+      { status: 'unavailable', reason: 'upload_failed' }
+    ])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'rendered.png' },
+      nodeId: 9
+    })
+  })
+
+  it('skips a node output image without a filename', async () => {
+    const node = createLoadImageNode('$35-0', [{ type: 'output' }])
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'whatever.png' }
+    })
+  })
+
+  it('still fails when the node image itself cannot be loaded', async () => {
+    failUrlPattern = /./
+    const node = createLoadImageNode('some-regular-image.png [input]')
+
+    await expect(useMaskEditorLoader().loadFromNode(node)).rejects.toThrow()
+    expect(mockDataStore.setLoading).toHaveBeenLastCalledWith(
+      false,
+      expect.any(String)
+    )
+  })
+})

@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 
 const { t } = useI18n()
 const { gate } = usePartnerNodesRunGate()

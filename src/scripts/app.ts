@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -43,7 +43,7 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -95,12 +95,11 @@ import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
-import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -120,8 +119,8 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -142,21 +141,21 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
-} from '@/platform/missingModel/missingModelPipeline'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
   MissingModelPipelineResult
-} from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -191,9 +190,8 @@ import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
-import { ComfyUI } from './ui'
-import { $el } from './ui/utils'
-import { ComfyAppMenu } from './ui/menu/index'
+import type { ComfyUI } from './ui'
+import type { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import {
@@ -357,7 +355,7 @@ export class ComfyApp implements IComfyApp {
 
   vueAppReady: boolean
   api: ComfyApi
-  ui: ComfyUI
+  ui!: ComfyUI
   extensionManager!: ExtensionManager
   private readonly nodeOutputsData: Partial<
     Record<string, NodeExecutionOutput>
@@ -441,12 +439,12 @@ export class ComfyApp implements IComfyApp {
     return this.configuringGraphLevel > 0
   }
   ctx!: CanvasRenderingContext2D
-  bodyTop: HTMLElement
-  bodyLeft: HTMLElement
-  bodyRight: HTMLElement
-  bodyBottom: HTMLElement
-  canvasContainer: HTMLElement
-  menu: ComfyAppMenu
+  bodyTop!: HTMLElement
+  bodyLeft!: HTMLElement
+  bodyRight!: HTMLElement
+  bodyBottom!: HTMLElement
+  canvasContainer!: HTMLElement
+  menu!: ComfyAppMenu
   // Set by Comfy.Clipspace extension
   openClipspace: () => void = () => {}
 
@@ -548,35 +546,8 @@ export class ComfyApp implements IComfyApp {
 
   constructor() {
     this.vueAppReady = false
-    this.ui = new ComfyUI(this, {
-      resetView: () => useLitegraphService().resetView(),
-      restoreOutputs: (outputs) => useNodeOutputStore().restoreOutputs(outputs),
-      trackRunButton: (intent) =>
-        useRunButtonTelemetry().trackRunButton(intent),
-      enterFocusMode: () => {
-        useWorkspaceStore().focusMode = true
-      }
-    })
     this.api = api
-    // Dummy placeholder elements before GraphCanvas is mounted.
-    this.bodyTop = $el('div.comfyui-body-top')
-    this.bodyLeft = $el('div.comfyui-body-left')
-    this.bodyRight = $el('div.comfyui-body-right')
-    this.bodyBottom = $el('div.comfyui-body-bottom')
-    this.canvasContainer = $el('div.graph-canvas-container')
-
-    this.menu = new ComfyAppMenu()
-
-    /**
-     * Stores the execution output data for each node
-     * @type {Record<string, any>}
-     */
     this.nodeOutputs = {}
-
-    /**
-     * Stores the preview image data for each node
-     * @type {Record<string, Image>}
-     */
     this.nodePreviewImages = {}
   }
 
@@ -888,7 +859,9 @@ export class ComfyApp implements IComfyApp {
 
     this.canvasElRef.value = canvasEl
 
-    await useWorkspaceStore().workflow.syncWorkflows()
+    await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
+      useWorkspaceStore().workflow.syncWorkflows()
+    )
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
@@ -1097,7 +1070,12 @@ export class ComfyApp implements IComfyApp {
       await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     })
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      const phase = bootstrapTracer.startPhase('bootstrap/vue-node-defs')
+      try {
+        this.updateVueAppNodeDefs(defs)
+      } finally {
+        phase.stop()
+      }
     }
   }
 
