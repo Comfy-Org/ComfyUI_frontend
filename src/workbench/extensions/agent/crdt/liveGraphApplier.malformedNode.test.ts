@@ -1,10 +1,15 @@
-import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -87,24 +92,57 @@ describe('LiveGraphApplier malformed node report', () => {
     expect(nodesMap(doc).get('149')?.toJSON().inputs).toEqual([slot])
   })
 
+  it('creates a node whose slot type is a list of types', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', type: ['IMAGE', 'MASK'], link: null })],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(graph.getNodeById(toNodeId(NODE_ID))?.inputs[0]?.type).toEqual([
+      'IMAGE',
+      'MASK'
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports an opaque widget record with a length key instead of configuring from it', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
+      links: []
+    })
+    const node = nodesMap(doc).get(String(NODE_ID))
+    assert(node instanceof Y.Map)
+    node.set(OPAQUE_WIDGETS_KEY, { length: 3, video: 'clip.mp4' })
+
+    applyCollected()
+
+    expect(graph.getNodeById(toNodeId(NODE_ID))).toBeNull()
+    const [, options] = onlyReport()
+    expect(options).toMatchObject({
+      context: { valueShapes: `${OPAQUE_WIDGETS_KEY} custom object:2` }
+    })
+  })
+
   it.for<[Record<string, unknown>, string]>([
-    [{ name: 'image' }, 'absent'],
-    [{ name: 'image', type: undefined }, 'undefined'],
-    [{ name: 'image', type: null }, 'null'],
-    [{ name: 'image', type: true }, 'boolean'],
-    [{ name: 'image', type: [] }, 'array:0'],
-    [{ name: 'image', type: {} }, 'object:0'],
-    [{ name: 'image', type: { name: 'IMAGE' } }, 'object:1']
+    [{ name: 'image' }, 'invalid_union absent'],
+    [{ name: 'image', type: undefined }, 'invalid_union undefined'],
+    [{ name: 'image', type: null }, 'invalid_union null'],
+    [{ name: 'image', type: true }, 'invalid_union boolean'],
+    [{ name: 'image', type: [] }, 'too_small array:0'],
+    [{ name: 'image', type: {} }, 'invalid_union object:0'],
+    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1']
   ])(
     'separates %o, which zod collapses to one message, as %s',
-    ([slot, shape]) => {
+    ([slot, issue]) => {
       const { applyCollected } = setup({ nodes: [sinkNode(slot)], links: [] })
 
       applyCollected()
 
       const [, options] = onlyReport()
       expect(options).toMatchObject({
-        context: { valueShapes: `inputs.0.type invalid_union ${shape}` }
+        context: { valueShapes: `inputs.0.type ${issue}` }
       })
     }
   )
@@ -223,7 +261,7 @@ describe('LiveGraphApplier malformed node report', () => {
     const calls = vi.mocked(reportError).mock.calls
     expect(calls).toHaveLength(2)
     expect(calls[1]?.[1]).toMatchObject({
-      context: { valueShapes: 'inputs.0.type invalid_union array:0' }
+      context: { valueShapes: 'inputs.0.type too_small array:0' }
     })
   })
 })

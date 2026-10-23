@@ -234,4 +234,20 @@ describe('useNodeOutputsExport', () => {
     ])
     expect(useAssetExportStore().exportList).toEqual([])
   })
+
+  it('shows HDR outputs by their generated preview, or a placeholder without one', async () => {
+    const node = nodeWithOutputs([
+      { filename: 'sky.exr', type: 'output', preview_id: 'sky-preview' },
+      { filename: 'dusk.exr', type: 'output' },
+      { filename: 'a.png', type: 'output' }
+    ])
+
+    const { dialog } = await openExportDialog(node)
+
+    const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
+    expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
+      expect.stringContaining('/assets/sky-preview/content'),
+      expect.stringContaining('filename=a.png')
+    ])
+  })
 })

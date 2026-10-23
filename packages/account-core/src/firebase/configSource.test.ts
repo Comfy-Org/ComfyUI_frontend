@@ -4,7 +4,7 @@ import {
   fetchCloudFeatures,
   fetchFirebaseConfig,
   fetchStripePublishableKey
-} from './configSource.js'
+} from './configSource'
 
 const VALID_CONFIG = {
   apiKey: 'api-key',

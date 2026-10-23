@@ -6,27 +6,25 @@
       <Button
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.copyToClipboard')"
         :aria-label="$t('g.copyToClipboard')"
         @click="handleCopy"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+        <i class="icon-[lucide--copy] size-4 text-foreground" />
       </Button>
       <Button
         v-if="downloadUrl"
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.download')"
         :aria-label="$t('g.download')"
         @click="handleDownload"
         @pointerdown.capture.stop
       >
-        <i
-          class="icon-[lucide--download] size-4 text-component-node-foreground"
-        />
+        <i class="icon-[lucide--download] size-4 text-foreground" />
       </Button>
     </div>
 
@@ -47,10 +45,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
-          // Keep overflow stable so the scrollbar-gutter (from the base
-          // Textarea) stays reserved; a hover overflow toggle would reflow the
-          // content when the gutter appears.
+          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           'overflow-y-auto'
         )
       "

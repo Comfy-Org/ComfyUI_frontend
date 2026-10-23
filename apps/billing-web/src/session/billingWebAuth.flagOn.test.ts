@@ -192,7 +192,9 @@ describe('billing-web with unified_web_session on', () => {
 
     const { router, signInPage } = await arriveAt(CHECKOUT)
     expect(router.currentRoute.value.query.returnTo).toBe(CHECKOUT)
-    await vi.waitFor(() => expect(signInPage.available.value).toBe(true))
+    await vi.waitFor(() =>
+      expect(signInPage.identityStatus.value).toBe('ready')
+    )
     expect(h.initializeApp).toHaveBeenCalledOnce()
 
     await signInPage.signInWith('google')
@@ -238,7 +240,9 @@ describe('billing-web with unified_web_session on, as a funnel', () => {
     stubCloud({ kind: 'dead', code: 'no_session' })
 
     const { router, signInPage, events } = await arriveAt(CHECKOUT)
-    await vi.waitFor(() => expect(signInPage.available.value).toBe(true))
+    await vi.waitFor(() =>
+      expect(signInPage.identityStatus.value).toBe('ready')
+    )
     await signInPage.signInWith('google')
 
     await vi.waitFor(() =>
@@ -313,7 +317,9 @@ describe('billing-web with unified_web_session on, as a funnel', () => {
       )
 
       const { signInPage, events } = await arriveAt(CHECKOUT)
-      await vi.waitFor(() => expect(signInPage.available.value).toBe(true))
+      await vi.waitFor(() =>
+        expect(signInPage.identityStatus.value).toBe('ready')
+      )
       await signInPage.signInWith('google')
 
       await vi.waitFor(() => expect(events()).toHaveLength(3))

@@ -13,7 +13,7 @@
       :hide-when-detached="true"
       position-strategy="fixed"
       sticky="always"
-      class="job-details-popover z-1700 max-h-(--reka-popover-content-available-height) w-auto overflow-y-auto border-0 bg-transparent p-0 shadow-none will-change-transform"
+      class="job-details-popover max-h-(--reka-popover-content-available-height) w-auto overflow-y-auto border-0 bg-transparent p-0 shadow-none will-change-transform"
       @mouseenter="$emit('content-enter')"
       @mouseleave="$emit('content-leave')"
       @open-auto-focus.prevent

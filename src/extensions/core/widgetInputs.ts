@@ -10,10 +10,13 @@ import type {
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetLocator
+} from '@/lib/litegraph/src/types/widgets'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/widget'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import {
@@ -26,14 +29,18 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
+const isPrimitiveNode = (
+  node: LGraphNode
+): node is PrimitiveNode & LGraphNode => node.type === 'PrimitiveNode'
+
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
@@ -275,7 +282,6 @@ export class PrimitiveNode extends LGraphNode {
       type = 'COMBO'
     }
 
-    // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
     const restoredValue = this.graph
@@ -319,7 +325,8 @@ export class PrimitiveNode extends LGraphNode {
           widget.value = theirWidget.value
         }
       }
-      if (restoredValue) widget.value = restoredValue.value
+      if (restoredValue)
+        widget.value = coerceRestoredWidgetValue(widget, restoredValue.value)
 
       if (
         !inputData[1]?.control_after_generate &&
@@ -329,7 +336,6 @@ export class PrimitiveNode extends LGraphNode {
         if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
       }
 
-      // Restore any saved control values
       const controlValues = this.controlValues
       if (
         this.widgets &&
@@ -573,7 +579,7 @@ export function mergeIfValid(
   return { customConfig: customSpec?.[1] ?? {} }
 }
 
-app.registerExtension({
+export const widgetInputsExtension: ComfyExtension = {
   name: 'Comfy.WidgetInputs',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -669,4 +675,4 @@ app.registerExtension({
     )
     PrimitiveNode.category = 'utilities/primitive'
   }
-})
+}

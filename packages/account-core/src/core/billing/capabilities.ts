@@ -14,18 +14,19 @@
  */
 import {
   zBillingCapabilities,
+  zBillingCapabilitiesResponse,
   zBillingCapabilityRolloutDefaults,
   zBillingCapabilityScope
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
-import type { CapabilityDenials } from './capabilityDenials.js'
-import { decodeCapabilityDenials } from './capabilityDenials.js'
-import { createScopedReader } from './scopedReader.js'
-import type { ValidatedBillingResponse } from './sharedRead.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { sameBillingScope } from './billingScope'
+import type { CapabilityDenials } from './capabilityDenials'
+import { decodeCapabilityDenials } from './capabilityDenials'
+import { createScopedReader } from './scopedReader'
+import type { ValidatedBillingResponse } from './sharedRead'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -59,6 +60,8 @@ export type CapabilityRolloutDefaults = z.infer<
 const CapabilitiesBodySchema = z.object({
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
+  payment_recovery_available:
+    zBillingCapabilitiesResponse.shape.payment_recovery_available,
   resolved_for: zBillingCapabilityScope,
   revision: z.number(),
   rollout_defaults_applied: zBillingCapabilityRolloutDefaults
@@ -75,6 +78,10 @@ export interface CapabilitiesSnapshot {
    * key never implies the capability was granted — read `capabilities`.
    */
   readonly denials: CapabilityDenials
+  /**
+   * As received. Absent when the server omits it: unknown, not a refusal.
+   */
+  readonly paymentRecoveryAvailable?: boolean
   /** True values are rollout guidance, not evidence a write will succeed. */
   readonly rolloutDefaultsApplied: CapabilityRolloutDefaults
   readonly revision: number
@@ -166,19 +173,7 @@ export function createCapabilitiesReader(
   ): BillingResult<CapabilitiesSnapshot> {
     const { data, body, httpStatus } = response
 
-    // Capabilities resolve per (user, workspace), so both halves have to
-    // match. Checking only the workspace would accept another member's answer
-    // for the workspace the caller is in and publish it as the caller's own —
-    // an actor with fewer or greater rights deciding what this one is offered.
-    // Either mismatch is a contract violation rather than an answer about this
-    // scope, so it joins the transient bucket instead of being cached. The
-    // ingest service makes the same two-part check against its own upstream
-    // before it forwards a response.
-    const resolved = data.resolved_for
-    if (
-      resolved.user_id !== scope.userId ||
-      resolved.workspace_id !== scope.workspaceId
-    ) {
+    if (data.resolved_for.workspace_id !== scope.workspaceId) {
       return { status: 'error', code: 'REQUEST_FAILED', httpStatus }
     }
 
@@ -191,6 +186,7 @@ export function createCapabilitiesReader(
       value: {
         capabilities: data.capabilities,
         denials,
+        paymentRecoveryAvailable: data.payment_recovery_available,
         rolloutDefaultsApplied: data.rollout_defaults_applied,
         revision: data.revision,
         scope,

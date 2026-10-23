@@ -2,6 +2,8 @@ import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
+import { createLitegraphDeclarationTransform } from './scripts/litegraphDeclarations'
+
 export default defineConfig({
   build: {
     lib: {
@@ -17,8 +19,12 @@ export default defineConfig({
   plugins: [
     dts({
       copyDtsFiles: true,
-      rollupTypes: true,
-      tsconfigPath: 'tsconfig.types.json'
+      bundleTypes: true,
+      processor: 'vue',
+      tsconfigPath: 'tsconfig.types.json',
+      beforeWriteFile: createLitegraphDeclarationTransform(
+        resolve(__dirname, 'src/lib/litegraph/src')
+      )
     })
   ]
 })

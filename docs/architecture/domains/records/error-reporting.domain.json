@@ -1,0 +1,177 @@
+{
+  "id": "error-reporting",
+  "capability": "Error reporting and RUM diagnostics",
+  "description": "The reportError entry point and its Sentry, Datadog RUM, and desktop-host routing; Sentry and Datadog RUM SDK initialization; beforeSend filters that drop third-party noise and enrich Vue directive errors; assertion, preload, resource, and image load failure reporters; and the manual-refresh stability action. Product analytics dispatch and startup tracing are separate records.",
+  "modules": [
+    {
+      "path": "src/base/assert.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/base/assert.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/__mocks__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/assertFailureReporter.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/assertFailureReporter.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/assetLoadErrorReporting.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/assetLoadErrorReporting.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/datadogRumBeforeSend.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/datadogRumBeforeSend.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/imageFailureDiagnostics.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/imageFailureDiagnostics.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/initDatadogRum.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/initDatadogRum.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/initSentry.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/initSentry.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/manualRefreshTracker.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/manualRefreshTracker.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/telemetry/redactTelemetryUrls.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/redactTelemetryUrls.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/reportError.sentry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/reportError.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/reportError.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/telemetry/sentryBeforeSend.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/sentryBeforeSend.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/thirdPartyErrorNoise.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/telemetry/vueDirectiveErrorDiagnostics.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/preloadErrorUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": ["agent"],
+  "characterizationScenarios": [
+    {
+      "name": "reportError routes each failure once to the sinks enabled for the distribution and host",
+      "checks": [
+        "src/platform/telemetry/reportError.test.ts",
+        "src/platform/telemetry/reportError.sentry.test.ts",
+        "src/platform/telemetry/assertFailureReporter.test.ts",
+        "src/platform/telemetry/assetLoadErrorReporting.test.ts"
+      ]
+    },
+    {
+      "name": "Sentry and Datadog RUM initialize with filters that drop third-party noise and enrich directive errors",
+      "checks": [
+        "src/platform/telemetry/initSentry.test.ts",
+        "src/platform/telemetry/sentryBeforeSend.test.ts",
+        "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
+        "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts",
+        "src/platform/telemetry/initDatadogRum.test.ts",
+        "src/platform/telemetry/datadogRumBeforeSend.test.ts"
+      ]
+    },
+    {
+      "name": "Image load failures and manual refreshes produce bounded diagnostic metadata",
+      "checks": [
+        "src/platform/telemetry/imageFailureDiagnostics.test.ts",
+        "src/platform/telemetry/manualRefreshTracker.test.ts"
+      ]
+    },
+    {
+      "name": "Assertions throw in DEV and delegate to the registered reporter otherwise; preload failures are parsed for reporting",
+      "checks": [
+        "src/base/assert.test.ts",
+        "src/utils/preloadErrorUtil.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md",
+    "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md"
+  ],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "reportError() remains the only sanctioned path to Sentry and Datadog error sinks; callers must not call captureException or datadogRum.addError directly.",
+    "initDatadogRum and initSentry stay callable from src/bootstrap.ts and main.ts before Pinia and the telemetry registry exist.",
+    "reportError reading the host telemetry gate from the telemetry record, and sentryBeforeSend recognizing workspace API errors, remain visible as cross-domain coupling; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

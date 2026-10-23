@@ -1,4 +1,4 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -13,7 +13,7 @@ import InviteMembersForm from './InviteMembersForm.vue'
 
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -88,6 +88,21 @@ describe('InviteMembersForm', () => {
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getByText('c@d.com')).toBeInTheDocument()
     expect(screen.getByText('e@f.com')).toBeInTheDocument()
+  })
+
+  it('normalizes pasted emails and commits unfinished input on blur', async () => {
+    const { user } = renderForm()
+
+    await user.click(emailInput())
+    await user.paste('A@B.COM, C@D.COM')
+    await user.type(emailInput(), 'E@F.COM')
+    await user.tab()
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
+    expect(emailInput()).toHaveValue('')
+    expect(submitButton()).toBeEnabled()
   })
 
   it('disables submit with no chips and flags invalid emails', async () => {

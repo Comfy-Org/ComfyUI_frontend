@@ -1,32 +1,40 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import Badge from './Badge.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { remove: 'Remove' } } }
-})
-
 describe('Badge', () => {
+  it('requires a remove label only when removable', () => {
+    type Props = InstanceType<typeof Badge>['$props']
+
+    expectTypeOf<Record<string, never>>().toExtend<Props>()
+    expectTypeOf<{ removable: false }>().toExtend<Props>()
+    expectTypeOf<{
+      removable: true
+      removeLabel: string
+    }>().toExtend<Props>()
+    expectTypeOf<{ removable: true }>().not.toExtend<Props>()
+  })
+
   it('renders its content', () => {
     render(Badge, {
       props: { variant: 'badge' },
-      slots: { default: '12' },
-      global: { plugins: [i18n] }
+      slots: { default: '12' }
     })
 
     expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('keeps caller colors without losing the badge text size', () => {
     render(Badge, {
-      props: { variant: 'badge', class: 'bg-green-500 text-white' },
-      slots: { default: 'Input' },
-      global: { plugins: [i18n] }
+      props: {
+        variant: 'badge',
+        class: 'bg-green-500 text-white',
+        removable: false
+      },
+      slots: { default: 'Input' }
     })
 
     expect(screen.getByText('Input')).toHaveClass(
@@ -35,8 +43,8 @@ describe('Badge', () => {
       'text-xs'
     )
     expect(screen.getByText('Input')).not.toHaveClass(
-      'bg-secondary-background',
-      'text-base-foreground'
+      'bg-secondary',
+      'text-foreground'
     )
   })
 
@@ -44,9 +52,13 @@ describe('Badge', () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
     render(Badge, {
-      props: { variant: 'chip', removable: true, onRemove },
-      slots: { default: 'Filter' },
-      global: { plugins: [i18n] }
+      props: {
+        variant: 'chip',
+        removable: true,
+        onRemove,
+        removeLabel: 'Remove'
+      },
+      slots: { default: 'Filter' }
     })
 
     await user.tab()

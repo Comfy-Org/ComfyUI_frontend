@@ -225,7 +225,7 @@ export async function runAndVerify(
   const response = await accepted
   expect(response.status(), 'Router submission HTTP status').toBe(201)
   const { request_id: acceptedId } = z
-    .object({ request_id: z.string().uuid() })
+    .object({ request_id: z.uuid() })
     .parse(await response.json())
   await testInfo.attach(`${variant}-accepted-job`, {
     contentType: 'application/json',

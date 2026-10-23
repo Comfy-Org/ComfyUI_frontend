@@ -56,7 +56,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed, useTemplateRef } from 'vue'
@@ -109,7 +108,7 @@ const emit = defineEmits<{
 }>()
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signUpSchema),
+  validationSchema: signUpSchema,
   initialValues: { email: '', password: '', confirmPassword: '' }
 })
 

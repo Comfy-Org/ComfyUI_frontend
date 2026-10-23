@@ -5,11 +5,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type {
   JobListItem,
   JobStatus
@@ -266,10 +266,10 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
+    expect(queueButton).toHaveAttribute('data-variant', 'primary')
     expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
       'data-variant',
-      'inverted'
+      'primary'
     )
   })
 
@@ -306,7 +306,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
+    expect(queueButton).toHaveAttribute('data-variant', 'primary')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })

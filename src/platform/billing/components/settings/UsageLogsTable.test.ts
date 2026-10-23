@@ -1,0 +1,731 @@
+import { getActivePinia } from 'pinia'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+
+import { testI18n } from '@/utils/__tests__/testI18n'
+import {
+  EventType,
+  useCustomerEventsService
+} from '@/services/customerEventsService'
+
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { useTelemetry } from '@/platform/telemetry'
+import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import UsageLogsTable from './UsageLogsTable.vue'
+
+vi.mock(import('@/services/customerEventsService'))
+
+vi.mock(import('@/platform/telemetry'))
+
+const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
+
+const mockPendingTopup = vi.hoisted(() => ({
+  consumeCompletedTopup: vi.fn().mockReturnValue({ startedAtMs: Date.now() })
+}))
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => mockPendingTopup
+  })
+)
+
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
+
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
+
+// The table only ever calls `readEvents`; the other five are here so the
+// factory satisfies `BillingReadRail` and the module type stays checked.
+const mockBillingReadRail = vi.hoisted(() => ({
+  enabled: false,
+  readStatus: vi.fn(),
+  readBalance: vi.fn(),
+  readPlans: vi.fn(),
+  readCapabilities: vi.fn(),
+  readPaymentMethods: vi.fn(),
+  readEvents: vi.fn<BillingReadRail['readEvents']>()
+}))
+vi.mock(import('@/platform/billing/composables/useBillingReadRail'), () => ({
+  useBillingReadRail: () => {
+    if (!mockBillingReadRail.enabled) return null
+    const { enabled: _enabled, ...rail } = mockBillingReadRail
+    return rail
+  }
+}))
+
+async function flushMicrotasks() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
+}
+
+function setWorkspaceBilling(value: boolean) {
+  useBillingRouting().shouldUseWorkspaceBilling = computed(() => value)
+}
+
+function makeEventsResponse(
+  events: BillingEventsResponse['events'],
+  overrides: Record<string, unknown> = {}
+): BillingEventsResponse {
+  return {
+    events,
+    total: events.length,
+    page: 1,
+    limit: 7,
+    totalPages: 1,
+    ...overrides
+  }
+}
+
+describe('UsageLogsTable', () => {
+  const mockEventsResponse = makeEventsResponse([
+    {
+      event_id: 'event-1',
+      event_type: 'credit_added',
+      params: {
+        amount: 1000,
+        transaction_id: 'txn-123'
+      },
+      createdAt: '2024-01-01T10:00:00Z'
+    },
+    {
+      event_id: 'event-2',
+      event_type: 'api_usage_completed',
+      params: {
+        api_name: 'Image Generation',
+        model: 'sdxl-base',
+        duration: 5000
+      },
+      createdAt: '2024-01-02T10:00:00Z'
+    }
+  ])
+
+  beforeEach(() => {
+    setWorkspaceBilling(false)
+    vi.when(useCustomerEventsService().getMyEvents)
+      .calledWith({ page: 1, limit: 7 })
+      .thenResolve(mockEventsResponse)
+    vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+      mockEventsResponse
+    )
+    mockBillingReadRail.readEvents.mockResolvedValue({
+      status: 'ok',
+      value: mockEventsResponse
+    })
+    mockBillingReadRail.enabled = false
+  })
+
+  function renderComponent() {
+    return render(UsageLogsTable, {
+      global: {
+        plugins: [testI18n, getActivePinia()!]
+      }
+    })
+  }
+
+  async function renderLoaded() {
+    const result = renderComponent()
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument()
+    })
+    return result
+  }
+
+  describe('loading states', () => {
+    it('loads activity on mount without an external refresh', async () => {
+      await renderLoaded()
+
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads activity on mount on the workspace billing rail', async () => {
+      setWorkspaceBilling(true)
+
+      await renderLoaded()
+
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a loading spinner while the initial load is in flight', () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
+        new Promise(() => {})
+      )
+
+      renderComponent()
+
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    })
+
+    it('shows error message when service returns null', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = 'Failed to load events'
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load events')).toBeInTheDocument()
+      })
+    })
+
+    it('shows a localized fallback instead of a raw Error message', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockRejectedValue(
+        new Error('Network error')
+      )
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Network error')).not.toBeInTheDocument()
+    })
+
+    it('shows a localized fallback when the service reports no message', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
+      useCustomerEventsService().error.value = null
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Failed to load activity. Please try again.')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('shows data table without a paginator when one page holds every event', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        makeEventsResponse(mockEventsResponse.events, { total: 7 })
+      )
+
+      await renderLoaded()
+
+      expect(
+        screen.queryByRole('button', { name: 'Next' })
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('data rendering', () => {
+    it('renders event type badges', async () => {
+      await renderLoaded()
+
+      expect(useCustomerEventsService().formatEventType).toHaveBeenCalled()
+      expect(useCustomerEventsService().getEventSeverity).toHaveBeenCalled()
+    })
+
+    it.for([1000, '1000'])(
+      'renders credit added details with the formatted amount %j',
+      async (amount) => {
+        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'event-1',
+              event_type: EventType.CREDIT_ADDED,
+              params: { amount },
+              createdAt: '2024-01-01T10:00:00Z'
+            }
+          ])
+        )
+
+        await renderLoaded()
+
+        expect(screen.getByText(/Added \$/)).toBeInTheDocument()
+        expect(useCustomerEventsService().formatAmount).toHaveBeenCalledWith(
+          1000
+        )
+      }
+    )
+
+    it('renders API usage details with api name and model', async () => {
+      await renderLoaded()
+
+      expect(screen.getByText('Image Generation')).toBeInTheDocument()
+      expect(screen.getByText(/sdxl-base/)).toBeInTheDocument()
+    })
+
+    it('renders account created details', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-3',
+            event_type: 'account_created',
+            params: {},
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(screen.getByText('Account initialized')).toBeInTheDocument()
+      })
+    })
+
+    it('renders formatted dates', async () => {
+      await renderLoaded()
+
+      expect(useCustomerEventsService().formatDate).toHaveBeenCalled()
+    })
+
+    it('renders info buttons for events with additional info', async () => {
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        true
+      )
+
+      await renderLoaded()
+
+      const infoButtons = screen.getAllByRole('button', {
+        name: 'Additional Info'
+      })
+      expect(infoButtons.length).toBeGreaterThan(0)
+    })
+
+    it('shows each event param on its own tooltip line', async () => {
+      vi.mocked(useCustomerEventsService().formatJsonKey).mockImplementation(
+        (key) => `key(${key})`
+      )
+      vi.mocked(useCustomerEventsService().formatJsonValue).mockImplementation(
+        (value) => `value(${String(value)})`
+      )
+      await renderLoaded()
+
+      const [firstInfoButton] = screen.getAllByRole('button', {
+        name: 'Additional Info'
+      })
+      await userEvent.hover(firstInfoButton)
+
+      expect((await screen.findByRole('tooltip')).textContent).toBe(
+        'key(amount): value(1000)\nkey(transaction_id): value(txn-123)'
+      )
+    })
+
+    it.for([
+      { charge: 33_044, expected: 'Charge: 7 Credits' },
+      { charge: '36209', expected: 'Charge: 8 Credits' },
+      { charge: 10_000_000_000, expected: 'Charge: 2,110,000 Credits' },
+      { charge: 0, expected: 'Charge: 0 Credits' },
+      { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
+    ])(
+      'shows charge_micro_usd $charge as $expected',
+      async ({ charge, expected }) => {
+        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'agent-1',
+              event_type: 'agent_usage',
+              params: { charge_micro_usd: charge },
+              createdAt: '2024-01-03T10:00:00Z'
+            }
+          ])
+        )
+        await renderLoaded()
+
+        await userEvent.hover(
+          screen.getByRole('button', { name: 'Additional Info' })
+        )
+
+        expect((await screen.findByRole('tooltip')).textContent).toBe(expected)
+      }
+    )
+
+    it('does not render info buttons when no additional info', async () => {
+      vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
+        false
+      )
+
+      await renderLoaded()
+
+      expect(
+        screen.queryByRole('button', { name: 'Additional Info' })
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('pagination', () => {
+    it('calls getMyEvents with initial page params', async () => {
+      await renderLoaded()
+
+      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
+        page: 1,
+        limit: 7
+      })
+    })
+
+    const pagedResponse = (page?: number) =>
+      makeEventsResponse(mockEventsResponse.events, { page, total: 20 })
+
+    it.for([
+      {
+        workspaceBilling: false,
+        rail: false,
+        source: 'getMyEvents',
+        mockReader: () =>
+          vi
+            .mocked(useCustomerEventsService().getMyEvents)
+            .mockImplementation(async (params) => pagedResponse(params?.page))
+      },
+      {
+        workspaceBilling: true,
+        rail: false,
+        source: 'workspaceApi.getBillingEvents',
+        mockReader: () =>
+          vi
+            .mocked(workspaceApi.getBillingEvents)
+            .mockImplementation(async (params) => pagedResponse(params?.page))
+      },
+      {
+        workspaceBilling: true,
+        rail: true,
+        source: 'the SDK reader rail',
+        mockReader: () =>
+          mockBillingReadRail.readEvents.mockImplementation(async (params) => ({
+            status: 'ok',
+            value: pagedResponse(params?.page)
+          }))
+      }
+    ])(
+      'requests the 1-based page picked in the paginator from $source',
+      async ({ workspaceBilling, rail, mockReader }) => {
+        const user = userEvent.setup()
+        setWorkspaceBilling(workspaceBilling)
+        mockBillingReadRail.enabled = rail
+        const reader = mockReader()
+
+        await renderLoaded()
+        await user.click(screen.getByRole('button', { name: 'Page 3' }))
+
+        await waitFor(() =>
+          expect(reader).toHaveBeenLastCalledWith({ page: 3, limit: 7 })
+        )
+        await user.click(screen.getByRole('button', { name: 'Previous' }))
+
+        await waitFor(() =>
+          expect(reader).toHaveBeenLastCalledWith({ page: 2, limit: 7 })
+        )
+      }
+    )
+  })
+
+  describe('billing events source', () => {
+    it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
+      setWorkspaceBilling(true)
+
+      await renderLoaded()
+
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledWith({
+        page: 1,
+        limit: 7
+      })
+      expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+    })
+
+    it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderComponent()
+
+      workspaceBilling.value = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      resolveLegacy(
+        makeEventsResponse([
+          {
+            event_id: 'legacy-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'LegacyAPI', model: 'legacy-model' },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+
+      await flushMicrotasks()
+
+      expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+    })
+
+    it('runs top-up completion telemetry for a superseded response', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue({
+        startedAtMs: Date.now()
+      })
+      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
+      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
+        new Promise((resolve) => {
+          resolveLegacy = resolve
+        })
+      )
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'workspace-1',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+            createdAt: '2024-02-01T10:00:00Z'
+          }
+        ])
+      )
+
+      renderComponent()
+
+      workspaceBilling.value = true
+      await waitFor(() => {
+        expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
+      })
+
+      const legacyResponse = makeEventsResponse([
+        {
+          event_id: 'legacy-1',
+          event_type: EventType.CREDIT_ADDED,
+          params: { amount: 1000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+      ])
+      resolveLegacy(legacyResponse)
+
+      await waitFor(() => {
+        expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
+          legacyResponse.events
+        )
+        expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+      })
+    })
+
+    it.for([
+      {
+        name: 'a completed legacy top-up closes as succeeded, measured from its start',
+        completedTopup: { startedAtMs: CONFIRMED_AT_MS - 90_000 },
+        expectedEvents: [
+          [
+            {
+              operation: 'topup',
+              stage: 'succeeded',
+              outcome: 'success',
+              duration_ms: 90_000
+            }
+          ]
+        ]
+      },
+      {
+        name: 'no completed top-up reports nothing',
+        completedTopup: null,
+        expectedEvents: []
+      }
+    ])(
+      'reports top-up completion to the billing funnel: $name',
+      async ({ completedTopup, expectedEvents }) => {
+        vi.spyOn(Date, 'now').mockReturnValue(CONFIRMED_AT_MS)
+        mockPendingTopup.consumeCompletedTopup.mockReturnValue(completedTopup)
+
+        await renderLoaded()
+
+        const telemetry = useTelemetry()
+        assert.exists(telemetry)
+        expect(vi.mocked(telemetry.trackBillingEvent).mock.calls).toEqual(
+          expectedEvents
+        )
+      }
+    )
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue(null)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(
+        useTelemetry()?.trackApiCreditTopupSucceeded
+      ).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('SDK reader rail', () => {
+    const railResponse = makeEventsResponse(
+      [
+        {
+          event_id: 'rail-1',
+          event_type: EventType.API_USAGE_COMPLETED,
+          params: { api_name: 'RailAPI', model: 'rail-model' },
+          createdAt: '2024-03-01T10:00:00Z'
+        }
+      ],
+      { total: 20 }
+    )
+
+    const readers = {
+      legacy: () => useCustomerEventsService().getMyEvents,
+      workspaceApi: () => workspaceApi.getBillingEvents,
+      rail: () => mockBillingReadRail.readEvents
+    }
+
+    function onTheRail(
+      result: Awaited<ReturnType<BillingReadRail['readEvents']>> = {
+        status: 'ok',
+        value: railResponse
+      }
+    ) {
+      setWorkspaceBilling(true)
+      mockBillingReadRail.enabled = true
+      mockBillingReadRail.readEvents.mockResolvedValue(result)
+    }
+
+    it.for([
+      { workspaceBilling: false, rail: false, serves: 'legacy' },
+      { workspaceBilling: false, rail: true, serves: 'legacy' },
+      { workspaceBilling: true, rail: false, serves: 'workspaceApi' },
+      { workspaceBilling: true, rail: true, serves: 'rail' }
+    ] as const)(
+      'serves the page from $serves with workspaceBilling=$workspaceBilling rail=$rail',
+      async ({ workspaceBilling, rail, serves }) => {
+        setWorkspaceBilling(workspaceBilling)
+        mockBillingReadRail.enabled = rail
+
+        await renderLoaded()
+
+        expect(readers[serves]()).toHaveBeenCalledWith({ page: 1, limit: 7 })
+        for (const [name, reader] of Object.entries(readers)) {
+          if (name !== serves) expect(reader()).not.toHaveBeenCalled()
+        }
+      }
+    )
+
+    it('renders the reader page the way the legacy rail renders its own', async () => {
+      onTheRail()
+
+      await renderLoaded()
+
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+      expect(screen.getByText(/rail-model/)).toBeInTheDocument()
+    })
+
+    it('publishes nothing and reports nothing when the read is superseded', async () => {
+      onTheRail({ status: 'error', code: 'SUPERSEDED' })
+
+      await renderLoaded()
+
+      expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('Failed to load activity. Please try again.')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          'Something went wrong while loading activity. Please refresh and try again.'
+        )
+      ).not.toBeInTheDocument()
+    })
+
+    // The billing-mode watcher is the only thing that reloads this table, so a
+    // switch between two workspaces on the same mode leaves it mounted. A read
+    // superseded by that switch must not leave the previous workspace's events
+    // on screen.
+    it('drops the rendered rows when a later read is superseded', async () => {
+      const user = userEvent.setup()
+      onTheRail()
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      await user.click(screen.getByRole('button', { name: 'Next' }))
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
+      expect(
+        screen.queryByText(
+          'Something went wrong while loading activity. Please refresh and try again.'
+        )
+      ).not.toBeInTheDocument()
+    })
+
+    // The superseded branch only covers a switch that races an in-flight read.
+    // With nothing in flight, nothing reloaded this table at all and the rows
+    // of the workspace being left stayed on screen.
+    it('reloads and drops the rows when the active workspace changes', async () => {
+      onTheRail()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'ok',
+        value: { events: [], page: 1, limit: 7, total: 0, totalPages: 0 }
+      })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
+    })
+
+    it('shows the localized fallback when the read fails', async () => {
+      onTheRail({ status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 })
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('runs top-up completion telemetry off the reader page', async () => {
+      onTheRail()
+      mockPendingTopup.consumeCompletedTopup.mockReturnValue({
+        startedAtMs: Date.now()
+      })
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
+        railResponse.events
+      )
+      expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+    })
+  })
+})

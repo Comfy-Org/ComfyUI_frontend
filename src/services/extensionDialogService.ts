@@ -1,5 +1,5 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
