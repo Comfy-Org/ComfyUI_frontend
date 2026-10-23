@@ -60,9 +60,10 @@ export function useProcessingTopupPayment(
   const { flags } = useFeatureFlags()
   const payment = shallowRef<ProcessingTopupPayment | null>(null)
   let generation = 0
+  let disposed = false
 
   function reading() {
-    return toValue(shown) && flags.unifiedBillingSettingsEnabled
+    return !disposed && toValue(shown) && flags.unifiedBillingSettingsEnabled
   }
 
   async function load() {
@@ -86,7 +87,11 @@ export function useProcessingTopupPayment(
   }
 
   watch(reading, () => void load(), { immediate: true })
-  onScopeDispose(registerRefreshOnReturn(load))
+  const stopRefreshOnReturn = registerRefreshOnReturn(load)
+  onScopeDispose(() => {
+    disposed = true
+    stopRefreshOnReturn()
+  })
 
   return { payment }
 }

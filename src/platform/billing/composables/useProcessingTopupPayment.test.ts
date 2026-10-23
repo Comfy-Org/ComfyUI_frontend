@@ -194,10 +194,12 @@ function listed(sessionId: string) {
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((settle) => {
+  let reject!: (cause: unknown) => void
+  const promise = new Promise<T>((settle, fail) => {
     resolve = settle
+    reject = fail
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function renderPayment(shown: Ref<boolean>) {
@@ -358,5 +360,50 @@ describe('useProcessingTopupPayment', () => {
     leaveAndReturn()
 
     expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
+  })
+
+  it('does not start a queued return read after the surface is gone', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    const view = renderPayment(ref(true))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+    const pending = deferred<HostedTopupCheckout>()
+    vi.mocked(workspaceApi.getTopupCheckout).mockReturnValue(pending.promise)
+    leaveAndReturn()
+    await waitFor(() =>
+      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(2)
+    )
+    leaveAndReturn()
+    const lists = vi.mocked(workspaceApi.listTopupCheckouts).mock.calls.length
+
+    view.unmount()
+    pending.resolve(checkout('payment_processing', 2500, 'cs_bank'))
+    await pending.promise
+    await new Promise((settle) => setTimeout(settle))
+
+    expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
+  })
+
+  it('does not report a checkout read that fails after the surface is gone', async () => {
+    enableProcessingRead()
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_bank')],
+      next_cursor: null
+    })
+    const pending = deferred<HostedTopupCheckout>()
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockReturnValue(pending.promise)
+    const view = renderPayment(ref(true))
+    await waitFor(() =>
+      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+    )
+
+    view.unmount()
+    pending.reject(new WorkspaceApiError('unavailable', 503))
+    await pending.promise.catch(() => undefined)
+    await new Promise((settle) => setTimeout(settle))
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 })
