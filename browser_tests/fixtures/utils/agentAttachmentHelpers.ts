@@ -11,6 +11,7 @@ type DraggedAssetInfo = NonNullable<ReturnType<typeof parseAssetInfo>>
 
 export interface ExpectedAssetPreview {
   filename: string
+  assetId?: string
   kind: Extract<MediaKind, 'image' | 'video'>
   width: number
   height: number
@@ -56,31 +57,47 @@ export async function expectAssets(
   await expect
     .poll(
       () =>
-        previews.evaluateAll((elements) =>
-          elements.map((element) => {
-            if (element instanceof HTMLImageElement) {
-              return {
-                filename: element.alt,
-                kind: 'image',
-                width: element.naturalWidth,
-                height: element.naturalHeight
+        previews
+          .evaluateAll((elements) =>
+            elements.map((element) => {
+              if (element instanceof HTMLImageElement) {
+                return {
+                  filename: element.alt,
+                  kind: 'image',
+                  width: element.naturalWidth,
+                  height: element.naturalHeight
+                }
               }
-            }
-            if (element instanceof HTMLVideoElement) {
-              return {
-                filename: element.currentSrc
-                  ? new URL(element.currentSrc, location.href).searchParams.get(
-                      'filename'
-                    )
-                  : null,
-                kind: 'video',
-                width: element.videoWidth,
-                height: element.videoHeight
+              if (element instanceof HTMLVideoElement) {
+                return {
+                  filename: element.currentSrc
+                    ? new URL(
+                        element.currentSrc,
+                        location.href
+                      ).searchParams.get('filename')
+                    : null,
+                  assetId:
+                    /\/assets\/([^/]+)\/content$/.exec(
+                      new URL(element.currentSrc || '/', location.href).pathname
+                    )?.[1] ?? null,
+                  kind: 'video',
+                  width: element.videoWidth,
+                  height: element.videoHeight
+                }
               }
-            }
-            return null
-          })
-        ),
+              return null
+            })
+          )
+          .then((previews) =>
+            previews.map((preview) => {
+              if (!preview || !('assetId' in preview)) return preview
+              const { assetId, ...rest } = preview
+              const byId = assets.find((asset) => asset.assetId === assetId)
+              return byId && !rest.filename
+                ? { ...rest, filename: byId.filename }
+                : rest
+            })
+          ),
       { timeout }
     )
     .toEqual(

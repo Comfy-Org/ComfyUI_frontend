@@ -51,6 +51,7 @@ const secondImage = {
 } satisfies ExpectedAssetPreview
 const video = {
   filename: 'ComfyUI_00004_.mp4',
+  assetId: 'asset-video',
   kind: 'video',
   width: 128,
   height: 128,
@@ -86,7 +87,7 @@ for (const scenario of [
     historyContent: {
       attachment_refs: [
         references[0],
-        { name: video.filename, id: 'asset-video', kind: 'video' }
+        { name: video.filename, id: video.assetId, kind: 'video' }
       ]
     }
   }
