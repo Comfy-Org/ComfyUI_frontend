@@ -6236,13 +6236,7 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     await userEvent.paste(text)
   }
 
-  it('sends over the card and greys it out when the backend supports it', async () => {
-    getServerFeature.mockImplementation(
-      (name: string, defaultValue?: unknown) =>
-        name === 'agent'
-          ? { state: 'ready', ask_send_dismisses: true }
-          : defaultValue
-    )
+  it('sends over the card and greys it out', async () => {
     respondToFetch({}, () => json(200, {}))
     respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
       json(202, { thread_id: 'th-1', message_id: 'turn-2' })
@@ -6265,13 +6259,7 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     )
   })
 
-  it('keeps Stop over a running turn with no card, even when the backend supports it', async () => {
-    getServerFeature.mockImplementation(
-      (name: string, defaultValue?: unknown) =>
-        name === 'agent'
-          ? { state: 'ready', ask_send_dismisses: true }
-          : defaultValue
-    )
+  it('keeps Stop over a running turn with no card', async () => {
     respondToFetch({}, () => json(200, {}))
     workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
     renderWithSelectedTarget()
@@ -6289,20 +6277,68 @@ describe('AgentPanelRoot sending while a run card waits', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps Stop over the card when a ready backend does not advertise it', async () => {
-    getServerFeature.mockImplementation(
-      (name: string, defaultValue?: unknown) =>
-        name === 'agent' ? { state: 'ready' } : defaultValue
-    )
+  it('reopens the card with a hint and keeps Stop when the agent refuses the send', async () => {
     respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'turn-approval'
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(200, [
+        {
+          id: 'row-1',
+          thread_id: 'th-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'turn-approval',
+          content: { text: 'run it' }
+        },
+        {
+          id: 'turn-approval',
+          thread_id: 'th-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-approval',
+          content: {},
+          pending_ask: {
+            message_id: 'turn-approval',
+            ask_id: 'turn-approval:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])
+    )
     showRunCard()
     await typeInComposer('make it red instead')
 
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Answer the card or press Stop first.')
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+    expect(
+      screen.queryByText('Dismissed: you sent a new message instead.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent('make it red instead')
     expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: 'Send' })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
   })
 })
 

@@ -387,5 +387,4 @@ export const zAgentIdentity = zGeneratedAgentIdentity.extend({
 export interface AgentServerFeature {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
-  ask_send_dismisses?: boolean
 }

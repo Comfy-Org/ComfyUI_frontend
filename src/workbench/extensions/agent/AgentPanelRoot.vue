@@ -926,7 +926,7 @@ const {
   entries,
   editableTurnId,
   isStreaming,
-  askOpen,
+  sendDismissesAsk,
   status,
   notices,
   threadId,
@@ -965,9 +965,6 @@ const {
     draft: targetWorkflowDraft
   }
 })
-const sendDismissesAsk = computed(
-  () => askOpen.value && agentPanelStore.comfyAgent?.ask_send_dismisses === true
-)
 
 provide(
   agentBoundWorkflowIdKey,

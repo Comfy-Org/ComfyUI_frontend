@@ -83,7 +83,7 @@ const workflowLabel = computed(
           </span>
         </li>
       </ul>
-      <p class="m-0 text-muted-foreground">
+      <p v-if="!part.dismissed" class="m-0 text-muted-foreground">
         {{ t('agent.runApproval.question') }}
       </p>
     </div>

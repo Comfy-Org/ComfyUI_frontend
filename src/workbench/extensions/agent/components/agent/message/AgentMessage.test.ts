@@ -654,6 +654,7 @@ describe('AgentMessage run approval', () => {
       screen.getByText('Dismissed: you sent a new message instead.')
     ).toBeInTheDocument()
     expect(screen.getByText('Portrait workflow')).toBeInTheDocument()
+    expect(screen.queryByText('Do you approve?')).not.toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(emitted().approvalShown).toBeUndefined()
   })

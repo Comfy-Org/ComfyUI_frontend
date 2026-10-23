@@ -5838,6 +5838,7 @@
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "askDismissed": "Dismissed: you sent a new message instead.",
+    "askSendRefused": "Answer the card or press Stop first.",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
       "leadBound": "This tool wants to run this workflow.",

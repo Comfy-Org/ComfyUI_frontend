@@ -548,6 +548,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const askSendRefused = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
@@ -1193,10 +1194,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     accepted: boolean,
     reattached: boolean,
-    threadAtSend: string
+    threadAtSend: string,
+    dismissAsk: boolean
   ): void {
     if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
       return
+    // The refusal's reload shows the card still open: this agent can't take
+    // a message over a card, so fall back to answering it or Stop.
+    if (dismissAsk && conversationStore.activeAskOpen) {
+      askSendRefused.value = true
+      conversationStore.recordFailedSend(
+        nextLocalErrorId(),
+        text,
+        i18n.global.t('agent.askSendRefused')
+      )
+      return
+    }
     recordSendError(error, text, accepted, reattached)
   }
 
@@ -1314,7 +1327,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         generation
       )
       if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+      recordCurrentSendError(
+        error,
+        text,
+        accepted,
+        reattached,
+        threadAtSend,
+        dismissAsk
+      )
       return false
     }
   }
@@ -2040,7 +2060,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
-    askOpen: computed(() => conversationStore.activeAskOpen),
+    sendDismissesAsk: computed(
+      () => conversationStore.activeAskOpen && !askSendRefused.value
+    ),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
   }

@@ -2799,12 +2799,150 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(rest.cancelMessage).not.toHaveBeenCalled()
       const store = useAgentConversationStore()
       expect(store.activeTurnId).toBe('msg-1')
-      expect(session.askOpen.value).toBe(false)
+      expect(session.sendDismissesAsk.value).toBe(false)
       expect(
         store.messages.flatMap((message) =>
           message.parts.filter((part) => part.type === 'runApproval')
         )
       ).toEqual([expect.objectContaining({ dismissed: true })])
+    })
+
+    const turnInProgress = () =>
+      new AgentApiError('a turn is already in progress', 409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-1'
+      })
+
+    function refusedSend() {
+      return vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(turnInProgress())
+    }
+
+    // What the refusal's reload returns: the waiting turn, with its card
+    // still pending (an agent that can't take the message) or already closed.
+    function waitingTurn(cardOpen: boolean) {
+      return vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'build it and run it'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            status: 'streaming',
+            ...(cardOpen && {
+              pending_ask: {
+                message_id: 'msg-1',
+                ask_id: 'turn-1:call-1',
+                kind: 'run_approval',
+                context: { workflow_id: 'workflow-1' },
+                prompt: 'Run it?',
+                options: [
+                  { id: 'run', label: 'Run' },
+                  { id: 'cancel', label: 'Cancel' }
+                ],
+                min_selections: 1,
+                max_selections: 1,
+                allow_other: false
+              }
+            })
+          }
+        ]
+      )
+    }
+
+    function runCards() {
+      return useAgentConversationStore().messages.flatMap((message) =>
+        message.parts.filter((part) => part.type === 'runApproval')
+      )
+    }
+
+    function lastNotice(session: ReturnType<typeof useAgentSession>) {
+      const last = session.entries.value.at(-1)
+      const parts = last && 'parts' in last ? last.parts : []
+      const notice = parts.find((part) => part.type === 'notice')
+      return notice?.type === 'notice' ? notice.text : undefined
+    }
+
+    it('reopens the card and stops offering Send over cards when the agent refuses the message', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn(true)
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      await vi.waitFor(() =>
+        expect(runCards()).toEqual([
+          expect.not.objectContaining({ dismissed: true })
+        ])
+      )
+      expect(session.sendDismissesAsk.value).toBe(false)
+      expect(lastNotice(session)).toBe('Answer the card or press Stop first.')
+    })
+
+    it('keeps offering Send over cards when the refusal comes after the agent closed the card', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn(false)
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(runCards()).toEqual([])
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
+      emit(runApproval('msg-1', 'turn-1:call-2'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+    })
+
+    it('keeps offering Send over cards after an ordinary send is refused', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn(true)
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await session.sendMessage('and make it red')).toBe(false)
+
+      expect(session.sendDismissesAsk.value).toBe(true)
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
     })
 
     it('stops the waiting turn when Stop lands while the replacement is posting', async () => {
