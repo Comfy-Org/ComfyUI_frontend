@@ -1195,13 +1195,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     accepted: boolean,
     reattached: boolean,
     threadAtSend: string,
-    dismissAsk: boolean
+    dismissedAskIds: string[]
   ): void {
     if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
       return
-    // The refusal's reload shows the card still open: this agent can't take
-    // a message over a card, so fall back to answering it or Stop.
-    if (dismissAsk && conversationStore.activeAskOpen) {
+    if (conversationStore.isActiveAskPending(dismissedAskIds)) {
       askSendRefused.value = true
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
@@ -1281,6 +1279,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     let sentContext: WorkflowTurnContext | undefined
+    let dismissedAskIds: string[] = []
     let accepted = false
     try {
       await prepareWorkflow()
@@ -1291,7 +1290,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
-      dismissIfSentOverCard(dismissAsk)
+      dismissedAskIds = dismissIfSentOverCard(dismissAsk)
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -1333,14 +1332,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         accepted,
         reattached,
         threadAtSend,
-        dismissAsk
+        dismissedAskIds
       )
       return false
     }
   }
 
-  function dismissIfSentOverCard(dismissAsk: boolean): void {
-    if (dismissAsk) conversationStore.dismissActiveAsks()
+  function dismissIfSentOverCard(dismissAsk: boolean): string[] {
+    return dismissAsk ? conversationStore.dismissActiveAsks() : []
   }
 
   function observeAcceptedTurn(
