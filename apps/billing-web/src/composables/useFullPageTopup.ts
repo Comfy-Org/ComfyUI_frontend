@@ -344,12 +344,7 @@ export function useFullPageTopup() {
   async function settleHeldBeforeAnotherPayment() {
     dispatch({ type: 'payRejectedAsPending' })
     const recovered = await reconcile()
-    const operation = recovered?.status === 'ok' ? recovered.value : undefined
-    if (operation?.phase === 'succeeded' || operation?.phase === 'failed') {
-      held = undefined
-      return
-    }
-    if (operation?.phase === 'pending') return
+    if (recovered?.status !== 'ok' || recovered.value !== undefined) return
     dispatch({
       type: 'payFailed',
       outcome: { kind: 'processing_error', code: EARLIER_PAYMENT_UNRESOLVED }

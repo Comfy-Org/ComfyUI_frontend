@@ -661,6 +661,36 @@ describe('FullPageTopupView paying once', () => {
     expect(resent).toStrictEqual(first)
   })
 
+  it('keeps an unconfirmed purchase on its key when recovery only finds an earlier settled operation', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+    })
+    fake.createInteractiveTopup.mockResolvedValueOnce({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 503
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+    await screen.findByRole('alert')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: failedOperation('card_declined', 'op_earlier')
+    })
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+    await waitFor(() => expect(fake.recover).toHaveBeenCalled())
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.recover.mock.calls.length).toBeGreaterThanOrEqual(2)
+    )
+    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
   it.for([1, 2])(
     'a return from the bank check (%i loads) follows the operation already under way and pays nothing again',
     async (loads) => {
