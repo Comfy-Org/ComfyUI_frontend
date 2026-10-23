@@ -98,10 +98,8 @@ describe('shouldLoadExtension', () => {
     ).toBe(false)
   })
 
-  it('does not throw on a malformed backend entry', () => {
-    expect(() =>
-      shouldLoadExtension('http://[', { isCloudBuild: false })
-    ).not.toThrow()
+  it('loads a malformed backend entry rather than throwing', () => {
+    expect(shouldLoadExtension('http://[', { isCloudBuild: false })).toBe(true)
   })
 })
 
