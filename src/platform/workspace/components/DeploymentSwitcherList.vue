@@ -56,12 +56,15 @@
         :tooltip="row.tooltip"
         :tone="row.tone"
         :note="row.note"
+        :action-label="row.actionLabel"
+        :problem="row.problem"
         :muted="row.muted"
         :switching="row.switching"
         :disabled="row.disabled"
         :data-focus-row="row.value"
+        :aria-label="row.ariaLabel"
         :data-testid="row.testId"
-        @select="choose($event, row.deploymentId)"
+        @select="chooseRow($event, row)"
       />
     </DropdownMenuRadioGroup>
   </template>
@@ -107,9 +110,11 @@ import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/Deplo
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
 import { switcherItemClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
+import type { DeploymentRow } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 
 const { switchingTo } = defineProps<{
   switchingTo: string | null
@@ -137,7 +142,8 @@ const {
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
 const { currentLabel } = useDeploymentLabels()
-const { sections, pickedValue } = useDeploymentRows()
+const { sections, pickedValue, pickedRow } = useDeploymentRows()
+const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 useKeepRowFocus(sections)
 
@@ -149,9 +155,9 @@ const listedSections = computed(() =>
     rows: section.rows.map((row) => ({
       ...row,
       testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
+      muted: row.action !== 'pick' && !isSwitching.value,
       switching: isSwitching.value && switchingTo === row.value,
-      muted: !row.pickable && !isSwitching.value,
-      disabled: isSwitching.value || !row.pickable
+      disabled: isSwitching.value || row.action === 'none'
     }))
   }))
 )
@@ -159,6 +165,13 @@ const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
+  if (pickedRow.value?.action === 'start') {
+    return t(
+      'deploymentSwitcher.pickStopped',
+      { deployment: currentLabel.value },
+      { escapeParameter: false }
+    )
+  }
   if (goneDeployment.value !== 'default') return null
   return canSetDefault.value
     ? t('deploymentSwitcher.defaultGoneOwner')
@@ -180,6 +193,16 @@ const switchingNote = computed(() =>
     ? t('deploymentSwitcher.switchingNote')
     : t('deploymentSwitcher.switchingNoteWithoutDrafts')
 )
+
+function chooseRow(event: Event, row: DeploymentRow) {
+  if (row.action === 'pick') {
+    choose(event, row.deploymentId)
+    return
+  }
+  event.preventDefault()
+  if (row.action === 'none' || row.deploymentId === null) return
+  void startStore.start(row.deploymentId)
+}
 
 function choose(event: Event, deploymentId: string | null) {
   if (

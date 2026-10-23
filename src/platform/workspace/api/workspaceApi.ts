@@ -169,6 +169,23 @@ export const workspaceApi = {
       handleAxiosError(err, 'pickDeployment')
     }
   },
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        ingestApiUrl(
+          `/workspaces/${workspaceId}/deployments/${deploymentId}/start`
+        ),
+        undefined,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
+    }
+  },
   async clearDeployment(
     workspaceId: WorkspaceId,
     options: { follow?: 'workspace' } = {}

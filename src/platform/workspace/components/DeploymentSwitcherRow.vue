@@ -40,14 +40,23 @@
         ref="detailCell"
         :class="
           cn(
-            'w-14 shrink-0 truncate tabular-nums',
+            'flex w-14 shrink-0 truncate tabular-nums',
             tone === 'failed' && !switching
               ? 'text-warning'
               : 'text-muted-foreground'
           )
         "
       >
-        {{ switching ? $t('deploymentSwitcher.switching') : detail }}
+        <span
+          v-if="showsAction"
+          class="flex h-6 items-center rounded-md bg-accent px-2.5 text-foreground group-data-highlighted:bg-muted"
+          aria-hidden="true"
+        >
+          {{ actionLabel }}
+        </span>
+        <template v-else>{{
+          switching ? $t('deploymentSwitcher.switching') : detail
+        }}</template>
       </span>
       <span :class="switcherTrailingSlotClass">
         <i
@@ -65,6 +74,18 @@
       <span v-if="note" :id="noteId" hidden>{{ note }}</span>
     </MenuRadioItem>
   </TextTooltip>
+  <div
+    v-if="problem"
+    role="status"
+    class="w-0 min-w-full pr-2 pb-2 pl-7.5 text-xs text-pretty"
+    data-testid="deployment-row-problem"
+  >
+    <p class="m-0 text-warning">
+      {{ problem.summary }}
+      <template v-if="problem.message">{{ problem.message }}</template>
+    </p>
+    <p class="m-0 mt-0.5 text-muted-foreground">{{ problem.fix }}</p>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -92,6 +113,8 @@ const {
   tooltip,
   tone,
   note = null,
+  actionLabel = null,
+  problem = null,
   muted = false,
   switching = false,
   disabled = false
@@ -104,6 +127,8 @@ const {
   /** The deployment's status; leave it out for Comfy Cloud. */
   tone?: DeploymentStatusTone
   note?: string | null
+  actionLabel?: string | null
+  problem?: { summary: string; message: string | null; fix: string } | null
   muted?: boolean
   switching?: boolean
   disabled?: boolean
@@ -114,6 +139,8 @@ const emit = defineEmits<{
 }>()
 
 const noteId = useId()
+
+const showsAction = computed(() => actionLabel !== null && !switching)
 
 const titleText = useTemplateRef<HTMLElement>('titleText')
 const deploymentText = useTemplateRef<HTMLElement>('deploymentText')
