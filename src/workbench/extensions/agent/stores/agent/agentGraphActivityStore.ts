@@ -1,11 +1,10 @@
 import { defineStore } from 'pinia'
-import { onScopeDispose, ref, watch } from 'vue'
+import { effectScope, onScopeDispose, ref, watch } from 'vue'
 
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
-// oxlint-disable-next-line comfy/no-restricted-paths -- the store owns the lifetime of graph-activity decorations, including pruning removed nodes while the panel is closed.
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { parseNodeId } from '@/types/nodeId'
@@ -29,6 +28,12 @@ type ActivityState =
   | ({ phase: 'running' | 'settling' } & ActivityPayload)
   | ({ phase: 'complete' } & ActivityPayload)
 
+/**
+ * Reads the graph whose node removals prune this store's decorations. Supplied
+ * by a host that outlives the panel, so the store never imports the renderer.
+ */
+export type AgentGraphSource = () => LGraph | null | undefined
+
 export const useAgentGraphActivityStore = defineStore(
   'agentGraphActivity',
   () => {
@@ -37,8 +42,9 @@ export const useAgentGraphActivityStore = defineStore(
     const currentTurnId = ref<TurnId | null>(null)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
     const settingStore = useSettingStore()
-    const canvasStore = useCanvasStore()
     const minimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
+    const graphWatchScope = effectScope(true)
+    let graphSourceBound = false
 
     watch(
       state,
@@ -74,31 +80,47 @@ export const useAgentGraphActivityStore = defineStore(
       },
       { immediate: true }
     )
-    watch(
-      () => canvasStore.currentGraph,
-      (graph, _previous, onCleanup) => {
-        if (!graph?.events) return
-        const graphs = new Set([graph, graph.rootGraph])
-        const onNodeRemoved: EventListener = (event) => {
-          if (!(event instanceof CustomEvent)) return
-          const nodeId = parseNodeId(String(event.detail.node?.id))
-          if (nodeId) removeNodes([nodeId])
-        }
-        for (const graphToWatch of graphs)
-          graphToWatch.events.addEventListener('node:removed', onNodeRemoved)
-        onCleanup(() => {
-          for (const graphToWatch of graphs)
-            graphToWatch.events.removeEventListener(
-              'node:removed',
-              onNodeRemoved
-            )
-        })
-      },
-      { immediate: true }
-    )
+    /**
+     * Binds the graph whose removals prune decorations. The first host to call
+     * wins, and the subscription lives in this store's own scope rather than
+     * the caller's, so it keeps pruning while the panel is closed.
+     */
+    function useGraphSource(getGraph: AgentGraphSource): void {
+      if (graphSourceBound) return
+      graphSourceBound = true
+      graphWatchScope.run(() =>
+        watch(
+          getGraph,
+          (graph, _previous, onCleanup) => {
+            if (!graph?.events) return
+            const graphs = new Set([graph, graph.rootGraph])
+            const onNodeRemoved: EventListener = (event) => {
+              if (!(event instanceof CustomEvent)) return
+              const nodeId = parseNodeId(String(event.detail.node?.id))
+              if (nodeId) removeNodes([nodeId])
+            }
+            for (const graphToWatch of graphs)
+              graphToWatch.events.addEventListener(
+                'node:removed',
+                onNodeRemoved
+              )
+            onCleanup(() => {
+              for (const graphToWatch of graphs)
+                graphToWatch.events.removeEventListener(
+                  'node:removed',
+                  onNodeRemoved
+                )
+            })
+          },
+          { immediate: true }
+        )
+      )
+    }
+
     onScopeDispose(() => {
       if (settleTimer !== undefined) clearTimeout(settleTimer)
       settleTimer = undefined
+      graphWatchScope.stop()
       minimapLayer.dispose()
     })
 
@@ -176,6 +198,7 @@ export const useAgentGraphActivityStore = defineStore(
 
     return {
       state,
+      useGraphSource,
       startTurn,
       recordMaterialized,
       finishTurn,

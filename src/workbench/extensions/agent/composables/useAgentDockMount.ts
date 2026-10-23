@@ -2,11 +2,21 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { AgentGraphSource } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
+import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
   DockedAgentPanel: Component | null
+}
+
+interface AgentDockMountOptions {
+  /**
+   * Reads the graph whose node removals prune graph-activity decorations.
+   * Hosts without a canvas omit it.
+   */
+  getGraph?: AgentGraphSource
 }
 
 /**
@@ -15,7 +25,9 @@ interface AgentDockMount {
  * OSS builds; on cloud the async component is only requested once the gate
  * enables and opens the panel, so a flag-off session fetches no agent chunk.
  */
-export function useAgentDockMount(): AgentDockMount {
+export function useAgentDockMount({
+  getGraph
+}: AgentDockMountOptions = {}): AgentDockMount {
   // The local agent harness (VITE_AGENT_STANDALONE) mounts the panel in any
   // distribution; production keeps it cloud-only.
   if (
@@ -26,6 +38,8 @@ export function useAgentDockMount(): AgentDockMount {
   }
   const agentPanelStore = useAgentPanelStore()
   const { subscription } = useBillingContext()
+
+  if (getGraph) useAgentGraphActivityStore().useGraphSource(getGraph)
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
   // dock component, which is unmounted whenever the panel closes. Keep the

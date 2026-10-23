@@ -239,7 +239,9 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
-const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount({
+  getGraph: () => canvasStore.currentGraph
+})
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()

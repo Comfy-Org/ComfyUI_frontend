@@ -2,8 +2,6 @@ import { disposePinia, getActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// oxlint-disable-next-line comfy/no-restricted-paths -- exercise the production store's graph-removal subscription at its renderer boundary.
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { toRootGraphId } from '@/types/graphScopeId'
@@ -11,7 +9,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { toTurnId } from '../../schemas/agentApiSchema'
 import { useAgentGraphActivityStore } from './agentGraphActivityStore'
-import { nextTick } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
 const ROOT_GRAPH_ID = toRootGraphId('graph-1')
 const TURN_1 = toTurnId('turn-1')
@@ -180,18 +178,16 @@ describe('agentGraphActivityStore', () => {
       events: rootEvents,
       rootGraph: fromPartial<LGraph>({ events: rootEvents })
     })
-    const canvasStore = useCanvasStore()
-    canvasStore.canvas = fromPartial({ graph: rootGraph })
-    await nextTick()
-    canvasStore.currentGraph = rootGraph
+    const currentGraph = shallowRef<LGraph | null>(rootGraph)
     useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
+    activity.useGraphSource(() => currentGraph.value)
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
       [toNodeId(1), toNodeId(2)]
     )
 
-    canvasStore.currentGraph = fromPartial({
+    currentGraph.value = fromPartial<LGraph>({
       events: subgraphEvents,
       rootGraph
     })
@@ -209,14 +205,12 @@ describe('agentGraphActivityStore', () => {
       events: rootEvents,
       rootGraph: fromPartial<LGraph>({ events: rootEvents })
     })
-    const canvasStore = useCanvasStore()
-    canvasStore.canvas = fromPartial({ graph: rootGraph })
-    canvasStore.currentGraph = fromPartial({
-      events: new EventTarget(),
-      rootGraph
-    })
+    const currentGraph = shallowRef<LGraph | null>(
+      fromPartial<LGraph>({ events: new EventTarget(), rootGraph })
+    )
     useSettingStore().settingValues['Comfy.Minimap.Visible'] = true
     const activity = useAgentGraphActivityStore()
+    activity.useGraphSource(() => currentGraph.value)
     activity.recordMaterialized(
       { workflowId: 'wf-1', rootGraphId: ROOT_GRAPH_ID },
       [toNodeId(1), toNodeId(2)]
