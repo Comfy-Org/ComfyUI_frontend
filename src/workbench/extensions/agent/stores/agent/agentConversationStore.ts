@@ -15,13 +15,14 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
+  AskMark,
   AskUserResolution,
   AssistantMessage
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
   createAssistantMessage,
-  dismissAskParts,
+  markAskParts,
   isDismissibleAskPart,
   isOpenAskPart,
   isPendingAskPart,
@@ -431,20 +432,35 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    function dismissActiveAsks(): string[] {
+    function markActiveAsks(mark: AskMark): string[] {
       const slot = activeSlot.value
       if (!slot) return []
-      const answering = answeringAskIds.value
-      const askIds = messages.value[slot.index].parts.flatMap((part) =>
-        isDismissibleAskPart(part, answering) ? [part.askId] : []
+      const { parts, askIds } = markAskParts(
+        messages.value[slot.index].parts,
+        mark
       )
-      messages.value = messages.value.map((message, index) => {
-        if (index !== slot.index) return message
-        const parts = dismissAskParts(message.parts, answering)
-        return parts === message.parts ? message : { ...message, parts }
-      })
-      slot.transport.dismissAsks(answering)
+      if (askIds.length === 0) return askIds
+      messages.value = messages.value.map((message, index) =>
+        index === slot.index ? { ...message, parts } : message
+      )
+      slot.transport.markAsks(mark)
       return askIds
+    }
+
+    function dismissActiveAsks(): string[] {
+      const answering = answeringAskIds.value
+      return markActiveAsks({
+        dismissed: true,
+        matches: (part) => isDismissibleAskPart(part, answering)
+      })
+    }
+
+    function restoreActiveAsks(askIds: readonly string[]): void {
+      markActiveAsks({
+        dismissed: false,
+        matches: (part) =>
+          part.dismissed === true && askIds.includes(part.askId)
+      })
     }
 
     function isActiveAskPending(askIds: readonly string[]): boolean {
@@ -1298,6 +1314,7 @@ export const useAgentConversationStore = defineStore(
       commitAsk,
       retireAsk,
       dismissActiveAsks,
+      restoreActiveAsks,
       isActiveAskPending,
       startTurn,
       ingest,

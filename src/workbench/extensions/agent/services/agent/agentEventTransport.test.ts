@@ -919,7 +919,7 @@ describe('agentEventTransport settle lifecycle', () => {
     const transport = createAgentEventTransport(message, emit)
     transport.ingest(runApproval('ask-1'))
 
-    transport.dismissAsks(new Set())
+    transport.markAsks({ dismissed: true, matches: () => true })
 
     expect(emit.mock.lastCall?.[0].parts).toContainEqual(
       expect.objectContaining({ type: 'runApproval', dismissed: true })

@@ -2,6 +2,7 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 
 import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type {
+  AskMark,
   AskUserResolution,
   AssistantMessage,
   TextPart,
@@ -10,7 +11,7 @@ import type {
 } from './agentMessageParts'
 import {
   askIdOf,
-  dismissAskParts,
+  markAskParts,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
@@ -83,7 +84,7 @@ export interface AgentEventTransport {
   notifyCanvasCaughtUp: (evidence?: CanvasSyncEvidence) => void
   hasPendingCanvasSync: () => boolean
   retireAskPart: (askId: string, resolution: AskUserResolution) => void
-  dismissAsks: (answering: ReadonlySet<string>) => void
+  markAsks: (mark: AskMark) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -482,8 +483,8 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dismissAsks(answering: ReadonlySet<string>): void {
-    const parts = dismissAskParts(message.parts, answering)
+  function markAsks(mark: AskMark): void {
+    const { parts } = markAskParts(message.parts, mark)
     if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))
@@ -503,6 +504,6 @@ export function createAgentEventTransport(
     hasPendingCanvasSync,
     dispose,
     retireAskPart,
-    dismissAsks
+    markAsks
   }
 }

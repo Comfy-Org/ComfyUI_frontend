@@ -198,16 +198,27 @@ export function isDismissibleAskPart(
   return isPendingAskPart(part) && !answering.has(part.askId)
 }
 
-export function dismissAskParts(
+export interface AskMark {
+  dismissed: boolean
+  matches: (part: AskPart) => boolean
+}
+
+export function markAskParts(
   parts: MessagePart[],
-  answering: ReadonlySet<string>
-): MessagePart[] {
-  const dismissible = (part: MessagePart): part is AskPart =>
-    isDismissibleAskPart(part, answering)
-  if (!parts.some(dismissible)) return parts
-  return parts.map((part) =>
-    dismissible(part) ? { ...part, dismissed: true } : part
+  { dismissed, matches }: AskMark
+): { parts: MessagePart[]; askIds: string[] } {
+  const askIds = parts.flatMap((part) =>
+    isAskPart(part) && matches(part) ? [part.askId] : []
   )
+  if (askIds.length === 0) return { parts, askIds }
+  return {
+    parts: parts.map((part) =>
+      isAskPart(part) && askIds.includes(part.askId)
+        ? { ...part, dismissed }
+        : part
+    ),
+    askIds
+  }
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>

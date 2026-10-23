@@ -2,7 +2,8 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
-  dismissAskParts,
+  isDismissibleAskPart,
+  markAskParts,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart,
@@ -337,7 +338,7 @@ describe('toAskOrNoticePart', () => {
   })
 })
 
-describe('dismissAskParts', () => {
+describe('markAskParts', () => {
   it('dismisses open question and delete cards, not answered or in-flight ones', () => {
     const question = toAskPart(askUser({ ask_id: 'q' }))
     const deletion = toAskPart(
@@ -363,13 +364,39 @@ describe('dismissAskParts', () => {
     const inFlight: MessagePart = { ...question, askId: 'f' }
 
     expect(
-      dismissAskParts([question, deletion, answered, inFlight], new Set(['f']))
-    ).toEqual([
-      { ...question, dismissed: true },
-      { ...deletion, dismissed: true },
-      answered,
-      inFlight
-    ])
+      markAskParts([question, deletion, answered, inFlight], {
+        dismissed: true,
+        matches: (part) => isDismissibleAskPart(part, new Set(['f']))
+      })
+    ).toEqual({
+      parts: [
+        { ...question, dismissed: true },
+        { ...deletion, dismissed: true },
+        answered,
+        inFlight
+      ],
+      askIds: ['q', 'd']
+    })
+  })
+
+  it('reopens only the matching dismissed cards, and leaves the parts alone when none match', () => {
+    const question = toAskPart(askUser({ ask_id: 'q' }))
+    assert(question)
+    const other: MessagePart = { ...question, askId: 'o', dismissed: true }
+    const parts = [{ ...question, dismissed: true }, other]
+
+    expect(
+      markAskParts(parts, {
+        dismissed: false,
+        matches: (part) => part.askId === 'q'
+      })
+    ).toEqual({
+      parts: [{ ...question, dismissed: false }, other],
+      askIds: ['q']
+    })
+    expect(
+      markAskParts(parts, { dismissed: false, matches: () => false }).parts
+    ).toBe(parts)
   })
 })
 

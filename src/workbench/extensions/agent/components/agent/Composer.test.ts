@@ -421,6 +421,16 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  it('keeps Stop while a send over the card is still submitting', async () => {
+    mount({ streaming: true, submitting: true, sendDismissesAsk: true })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('and make it blue')
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Send' })
+    ).not.toBeInTheDocument()
+  })
+
   it('shows a disabled Send, not Stop, while a card waits on an uploading attachment', async () => {
     useAgentComposerStore().addAttachment({
       id: 'attachment-1',

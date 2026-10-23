@@ -426,6 +426,16 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function refusedBeforeAcceptance(error: unknown): boolean {
+  if (!(error instanceof AgentApiError)) return false
+  if (parseAdmissionError(error) !== undefined) return true
+  return (
+    error.status >= 400 &&
+    error.status < 500 &&
+    parseTurnInProgress(error) === undefined
+  )
+}
+
 function parseTurnInProgress(error: unknown) {
   if (!(error instanceof AgentApiError) || error.status !== 409)
     return undefined
@@ -1208,6 +1218,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return
     }
+    if (!accepted && refusedBeforeAcceptance(error))
+      conversationStore.restoreActiveAsks(dismissedAskIds)
     recordSendError(error, text, accepted, reattached)
   }
 
