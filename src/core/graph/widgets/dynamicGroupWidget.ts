@@ -89,7 +89,11 @@ export function dynamicGroupWidget(
     },
     callback: () =>
       changeRows(() => {
-        if (rows().length < max) controller.value = rows().length + 1
+        if (
+          rows().length < max &&
+          rows().length < dynamicGroupRowAllocationBound(controller)
+        )
+          controller.value = rows().length + 1
       })
   })
 
@@ -111,7 +115,10 @@ export function dynamicGroupWidget(
       })
       header.options.disabled = headers.length <= min
     })
-    add.options.disabled = headers.length >= max
+    add.options.disabled =
+      min > dynamicGroupRowAllocationBound(controller) ||
+      headers.length >= max ||
+      headers.length >= dynamicGroupRowAllocationBound(controller)
     if (controller.widgetId) store.setValue(controller.widgetId, headers.length)
     const graphId = resolveNodeRootGraphId(node)
     if (graphId && node.widgets)
@@ -377,16 +384,6 @@ export function dynamicGroupWidget(
     }
   }
 
-  /**
-   * Refuses a saved count this node's own file cannot account for.
-   *
-   * This is an authoring/restore guard, so it does not run against a followed
-   * document: a follower preserves the count the document carries and bounds
-   * only allocation, which the setter does for every writer. Running it on a
-   * remote write refused counts the document layer had accepted and left the
-   * document and the canvas disagreeing — see
-   * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
-   */
   function validateSavedRowCount(value: number, requested: number) {
     if (isRemoteDynamicGroupRowWrite(node)) return
     const graphId = resolveNodeRootGraphId(node)
@@ -409,19 +406,13 @@ export function dynamicGroupWidget(
       )
   }
 
-  /**
-   * Whether materialising `requested` rows would exceed this group's widget
-   * allocation budget.
-   *
-   * Allocation safety is held here because every writer — a restored file, the
-   * local UI, a peer, the agent — funnels through the controller's setter. It
-   * is deliberately not `max`, which is Core's executability policy; see
-   * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
-   */
   function exceedsAllocationBound(requested: number) {
     if (requested <= dynamicGroupRowAllocationBound(controller)) return false
-    reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
-    return true
+    if (!isRemoteDynamicGroupRowWrite(node))
+      reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
+    throw new RangeError(
+      `Row count exceeds the allocation bound for DynamicGroup '${inputName}'`
+    )
   }
 
   function resizeRows(count: number) {
@@ -450,8 +441,9 @@ export function dynamicGroupWidget(
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
       validateSavedRowCount(value, requested)
-      if (exceedsAllocationBound(requested)) return
-      resizeRows(Math.max(min, requested))
+      const count = Math.max(min, requested)
+      if (exceedsAllocationBound(count)) return
+      resizeRows(count)
     }
   })
   controller.value = initialCount

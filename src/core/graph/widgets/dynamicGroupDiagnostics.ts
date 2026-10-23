@@ -7,21 +7,8 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 
 type RowOperation = 'add_row' | 'remove_row' | 'remote_apply'
 
-/**
- * The widget allocation budget a single DynamicGroup may expand into.
- *
- * This is a defensive bound, not the `max` product policy: it exists so that no
- * writer — a restored file, a peer, the agent — can make a row count allocate
- * unbounded widgets and inputs. `max` is Core's executability policy and is
- * enforced by Core and by producers, never here. See
- * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
- *
- * It mirrors comfy-multi-player's `MAX_OVERFLOW_WIDGETS` on purpose and **must
- * not be lower than it**. A follower stricter than the document layer refuses
- * counts the document accepted, which leaves the document and the canvas
- * disagreeing; `dynamicGroupEnforcementBoundary.test.ts` pins the relation.
- */
-export const MAX_DYNAMIC_GROUP_ROW_WIDGETS = 4096
+export const MAX_DYNAMIC_GROUP_ROW_RESOURCES = 4096
+export const MAX_DYNAMIC_GROUP_ROWS = 256
 
 const rowFieldCounts = new WeakMap<IBaseWidget, number>()
 const reported = new Set<string>()
@@ -43,33 +30,26 @@ export function isDynamicGroupController(widget: IBaseWidget): boolean {
 export function dynamicGroupRowAllocationBound(widget: IBaseWidget): number {
   const fields = rowFieldCounts.get(widget)
   if (fields === undefined) return 0
-  return fields === 0
-    ? MAX_DYNAMIC_GROUP_ROW_WIDGETS
-    : Math.floor(MAX_DYNAMIC_GROUP_ROW_WIDGETS / fields)
+  return Math.min(
+    MAX_DYNAMIC_GROUP_ROWS,
+    Math.floor(MAX_DYNAMIC_GROUP_ROW_RESOURCES / (fields * 3 + 1))
+  )
 }
 
-/**
- * Whether the row count being written to `node` came from the document rather
- * than from local authoring. Guards that belong to the authoring or restore
- * path consult this so they do not also run against a followed document, whose
- * count the follower must preserve.
- */
+/** True while a document row count is being written to `node`. */
 export function isRemoteDynamicGroupRowWrite(node: LGraphNode): boolean {
   return remoteRowCountNode === node
 }
 
-/**
- * Runs a remote row count write to `node`. A refusal on that node inside it is
- * reported once, as the remote mismatch, not also as a local row change.
- */
-export function applyRemoteDynamicGroupRowCount(
+/** Runs a document row-count write with node-scoped provenance. */
+export function applyRemoteDynamicGroupRowCount<T>(
   node: LGraphNode,
-  write: () => void
-): void {
+  write: () => T
+): T {
   const previous = remoteRowCountNode
   remoteRowCountNode = node
   try {
-    write()
+    return write()
   } finally {
     remoteRowCountNode = previous
   }
