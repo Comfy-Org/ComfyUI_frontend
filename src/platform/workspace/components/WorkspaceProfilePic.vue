@@ -2,8 +2,9 @@
   <div
     :class="
       cn(
-        'flex aspect-square items-center justify-center rounded-md bg-secondary text-base font-semibold text-foreground',
-        large ? 'size-12' : 'size-8'
+        'flex aspect-square',
+        large ? 'size-12' : 'size-8',
+        'items-center justify-center rounded-md bg-secondary text-base font-semibold text-foreground'
       )
     "
     :style="workspaceAvatarStyle(workspaceName, subscriptionTier)"

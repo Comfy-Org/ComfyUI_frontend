@@ -11,8 +11,9 @@
       <h1
         :class="
           cn(
-            'm-0 truncate text-foreground select-none',
-            large ? 'text-2xl font-semibold' : 'text-base font-bold'
+            'm-0 truncate',
+            large ? 'text-2xl font-semibold' : 'text-base font-bold',
+            'text-foreground select-none'
           )
         "
       >
