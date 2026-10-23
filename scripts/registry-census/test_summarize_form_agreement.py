@@ -124,6 +124,21 @@ class TestReport(unittest.TestCase):
         self.assertIn('form emitted and agrees | 1', text)
         self.assertIn('form declined (safe) | 1', text)
 
+    def test_frontend_type_drive_coverage_is_explicit(self) -> None:
+        rows = [
+            row(
+                'p',
+                node('emitAgree'),
+                newTypes=['One', 'Two', 'Three'],
+                driveTypes={'One': 'ok', 'Two': 'ok'},
+                driveTypesOmitted=1,
+            )
+        ]
+        text = '\n'.join(sfa.report(rows))
+        self.assertIn(
+            'frontend-only types: 3 discovered, 2 driven, 1 omitted', text
+        )
+
     def test_disagreement_names_pack_and_node_class(self) -> None:
         rows = [
             row('videohelpersuite', node('emitDisagree:keyOrder', 'VHS_VideoCombine')),

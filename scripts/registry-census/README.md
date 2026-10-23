@@ -187,9 +187,13 @@ Only a strict majority withholds it as a harness failure. Shard jobs check
 harness integrity only (every built spec wrote its row; vitest's own exit
 code is ignored because pack code leaks unhandled rejections).
 
-**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`, per-op
-`sig` / `depr`, extension counts, no-JS skip counts. The report labels these
-explicitly. A number that is printed is not thereby a number that gates.
+**Telemetry, recorded but never gating:** `newTypes`, `driveTypes`,
+`driveTypesOmitted`, per-op `sig` / `depr`, extension counts, no-JS skip
+counts. The runner exercises up to 64 frontend-registered types per pack and
+the form report states how many discovered types were driven or omitted, so
+the safety cap cannot silently shrink the measured population. The report
+labels these explicitly. A number that is printed is not thereby a number
+that gates.
 
 Packs execute under real timers: the matrix config assigns `setupFiles`
 explicitly, keeping `vitest.setup.ts` (environment globals) and dropping

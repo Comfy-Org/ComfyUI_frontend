@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { runPack } from './matrix_runner'
 
@@ -52,6 +52,46 @@ describe('matrix runner', () => {
       expect(row.vueNodesMode).toBe(!selectedMode)
     }
   )
+
+  it('drives more than eight frontend-registered node types from one pack', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    const nodeTypes = Array.from(
+      { length: 12 },
+      (_, index) => `matrix-many-types-${String(index).padStart(2, '0')}`
+    )
+    await runPack(
+      'many-types',
+      {
+        entry: async () => {
+          for (const nodeType of nodeTypes) {
+            LiteGraph.registerNodeType(
+              nodeType,
+              class MatrixManyTypesNode extends LGraphNode {}
+            )
+          }
+        }
+      },
+      ['entry'],
+      'many-types'
+    )
+
+    const row = JSON.parse(
+      fs.readFileSync(path.join(outputDir, 'many-types.json'), 'utf8')
+    ) as {
+      driveTypes?: Record<string, string>
+      driveTypesOmitted?: number
+      formNodes?: Array<{ t: string; src: string }>
+    }
+    const drivenTypes = row.formNodes
+      ?.filter((node) => node.src === 'driven')
+      .map((node) => node.t)
+
+    expect(Object.keys(row.driveTypes ?? {})).toEqual(nodeTypes)
+    expect(row.driveTypesOmitted).toBe(0)
+    expect(drivenTypes).toEqual(nodeTypes)
+  })
 })
 
 describe('form/values agreement channel', () => {

@@ -141,6 +141,26 @@ def report(rows: list[dict]) -> list[str]:
         )
         return lines
 
+    discovered_types = sum(
+        len(r.get('newTypes', []))
+        for r in with_telemetry
+        if isinstance(r.get('newTypes'), list)
+    )
+    driven_types = sum(
+        len(r.get('driveTypes', {}))
+        for r in with_telemetry
+        if isinstance(r.get('driveTypes'), dict)
+    )
+    omitted_types = sum(
+        value
+        for r in with_telemetry
+        if isinstance((value := r.get('driveTypesOmitted')), int)
+    )
+    lines.append(
+        f'frontend-only types: {discovered_types} discovered, {driven_types}'
+        f' driven, {omitted_types} omitted by the per-pack safety cap'
+    )
+
     verdicts: Counter[str] = Counter()
     by_class: dict[str, Counter[str]] = defaultdict(Counter)
     packs_by_verdict: dict[str, set[str]] = defaultdict(set)

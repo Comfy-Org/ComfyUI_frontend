@@ -48,6 +48,11 @@ let DISPATCHED = true
 /** Store rows could not be read at all, as distinct from "read, and clean". */
 const UNMEASURED = 'unmeasured'
 
+// A pack can register an unbounded number of types. Exercise enough to cover
+// real multi-node packs without letting one pathological pack monopolise its
+// shard; any remainder is recorded explicitly below.
+const MAX_DRIVEN_TYPES_PER_PACK = 64
+
 type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 
 /** The pre-Vue "convert widget to input" convention, still shipped by packs. */
@@ -797,12 +802,23 @@ export async function runPack(
   // ---- drive the pack's OWN frontend-registered node types --------------
   const driven: Record<string, string> = {}
   const formDriven: FormRow[] = []
-  for (const t of newTypes.slice(0, 8)) {
+  const selectedTypes = newTypes.slice(0, MAX_DRIVEN_TYPES_PER_PACK)
+  row.driveTypesOmitted = newTypes.length - selectedTypes.length
+  for (const t of selectedTypes) {
     DEPR = []
     try {
       const n = LiteGraph.createNode(t)
       if (!n) {
         driven[t] = 'createNode null'
+        formDriven.push({
+          t,
+          v: 'noSerialisedNode',
+          o: 0,
+          k: 0,
+          w: 0,
+          a: 'absent',
+          src: 'driven'
+        })
         continue
       }
       n.pos = [1200, 100]
