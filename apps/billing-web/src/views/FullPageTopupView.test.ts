@@ -1,10 +1,13 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
+import type { VNode } from 'vue'
 
 import type {
   BillingOperationReceipt,
+  SavedPaymentMethod,
   SucceededBillingOperation,
-  TopupQuoteResult
+  TopupQuoteResult,
+  TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
@@ -19,6 +22,7 @@ import type {
 import {
   createFakeBillingClient,
   failedOperation,
+  pendingOperation,
   succeededOperation
 } from '@/test/fakeBillingClient'
 import { trackedBillingEvents } from '@/test/trackedBillingEvents'
@@ -33,9 +37,64 @@ const stripeKey = vi.hoisted(() => ({
   read: (): Promise<string | undefined> => Promise.resolve('pk_test_example')
 }))
 
-vi.mock(import('@/config/stripeKey'), () => ({
-  awaitBillingWebStripeKey: () => stripeKey.read()
+vi.mock(import('@/config/stripeKey'), async () => {
+  const { ref } = await import('vue')
+  return {
+    awaitBillingWebStripeKey: () => stripeKey.read(),
+    useBillingWebStripeKey: () => ref('pk_test_example')
+  }
+})
+
+const form = vi.hoisted(() => ({
+  mounts: 0,
+  payOnce: undefined as boolean | undefined,
+  configuration: undefined as string | undefined,
+  emit: (() => {}) as (event: string, ...payload: unknown[]) => void
 }))
+
+vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
+  const { h } = await import('vue')
+  return {
+    StripePaymentForm: {
+      name: 'StripePaymentForm',
+      props: {
+        canSubmit: { type: Boolean, default: true },
+        isLoading: { type: Boolean, default: false },
+        payOnce: { type: Boolean, default: false },
+        paymentMethodConfigurationId: { type: String, default: '' }
+      },
+      emits: ['confirm', 'phase'],
+      setup(
+        props: {
+          canSubmit: boolean
+          isLoading: boolean
+          payOnce: boolean
+          paymentMethodConfigurationId: string
+        },
+        {
+          emit,
+          slots
+        }: {
+          emit: (event: string, ...payload: unknown[]) => void
+          slots: { submit?: (slotProps: Record<string, unknown>) => VNode[] }
+        }
+      ) {
+        form.mounts += 1
+        form.emit = emit
+        form.payOnce = props.payOnce
+        form.configuration = props.paymentMethodConfigurationId
+        return () =>
+          h(
+            'div',
+            slots.submit?.({
+              disabled: !props.canSubmit,
+              loading: props.isLoading
+            })
+          )
+      }
+    }
+  }
+})
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
   createDeferredStripeChallengePort: () => ({
@@ -385,5 +444,219 @@ describe('FullPageTopupView', () => {
     expect(
       screen.queryByRole('button', { name: 'Pay' })
     ).not.toBeInTheDocument()
+  })
+})
+
+const PAYS_ONCE: TopupQuoteResult = {
+  status: 'ok',
+  value: {
+    amountCents: 2500,
+    credits: 5275,
+    expiresAt: '2027-09-30T12:00:00.000Z',
+    paymentMethodConfigurationId: 'pmc_topup'
+  }
+}
+
+const VISA: SavedPaymentMethod = {
+  id: 'pm_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '3184',
+  is_default: false
+}
+
+const MASTERCARD: SavedPaymentMethod = {
+  id: 'pm_mc',
+  type: 'card',
+  brand: 'mastercard',
+  last4: '4402',
+  is_default: false
+}
+
+const ALIPAY: SavedPaymentMethod = {
+  id: 'pm_alipay',
+  type: 'alipay',
+  is_default: true
+}
+
+const tab = (name: 'Saved' | 'Add new payment') =>
+  screen.getByRole('tab', { name })
+
+const savedPicker = () =>
+  screen.getByRole('combobox', { name: 'Choose a saved payment method' })
+
+const SUCCEEDED: TopupResult = {
+  status: 'ok',
+  operation: settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 }),
+  creditsReconciled: true
+}
+
+function readyCardForm() {
+  form.emit('phase', { phase: 'payment_element_ready', element: 'payment' })
+}
+
+describe('FullPageTopupView paying once', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('pays with the saved card the customer picks, though none is the invoice default, and offers only cards', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      topup: SUCCEEDED,
+      paymentMethods: { status: 'ok', value: [ALIPAY, VISA, MASTERCARD] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    await userEvent.click(savedPicker())
+    expect(
+      screen.queryByRole('option', { name: /Alipay/ })
+    ).not.toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    const [request] = fake.createInteractiveTopup.mock.calls[0]
+    expect(request).toMatchObject({
+      amountCents: 2500,
+      payment: { savedPaymentMethodId: 'pm_mc' }
+    })
+    expect(request.payment).not.toHaveProperty('confirmationToken')
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(
+      await screen.findByRole('heading', { name: '5,275 credits added' })
+    ).toBeInTheDocument()
+  })
+
+  it('pays once with a new card on the quoted configuration and comes back to the same workspace and amount', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      topup: SUCCEEDED,
+      paymentMethods: { status: 'ok', value: [] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    readyCardForm()
+
+    expect(form.payOnce).toBe(true)
+    expect(form.configuration).toBe('pmc_topup')
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    const { payment } = fake.createInteractiveTopup.mock.calls[0][0]
+    expect(payment).not.toHaveProperty('savedPaymentMethodId')
+    expect(payment).toMatchObject({ confirmationToken: 'ctoken_1' })
+    const back = new URL(
+      'returnUrl' in payment ? payment.returnUrl : 'https://missing.invalid'
+    )
+    expect(back.pathname).toBe('/v1/top-up')
+    expect(back.searchParams.get('amount_cents')).toBe('2500')
+    expect(back.searchParams.get('workspace')).toBe('ws-team')
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing for a new method that is not a card, and says a card is needed', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+    readyCardForm()
+
+    form.emit('confirm', 'ctoken_alipay', 'alipay')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Credits can only be paid for with a card.'
+    )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+  })
+
+  it('resends the same purchase under the same key until the server answers it, then starts a new one', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+    })
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 503
+      })
+      .mockResolvedValueOnce({
+        status: 'declined',
+        operation: {
+          ...failedOperation('card_declined', 'op_topup'),
+          phase: 'failed',
+          declineReason: 'card_declined',
+          retryable: true
+        }
+      })
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+    await screen.findByRole('alert')
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Payment declined')
+    )
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(3)
+    )
+    const [first, unresolved, fresh] =
+      fake.createInteractiveTopup.mock.calls.map(([request]) => request)
+    expect(unresolved.idempotencyKey).toBe(first.idempotencyKey)
+    expect(unresolved.payment).toStrictEqual(first.payment)
+    expect(fresh.idempotencyKey).not.toBe(first.idempotencyKey)
+    expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
+  })
+
+  it.for([1, 2])(
+    'a return from the bank check (%i loads) follows the operation already under way and pays nothing again',
+    async (loads) => {
+      const fakes = Array.from({ length: loads }, () =>
+        renderTopup({
+          topupQuote: PAYS_ONCE,
+          paymentMethods: { status: 'ok', value: [VISA] },
+          recover: {
+            status: 'ok',
+            value: { ...pendingOperation('op_topup'), kind: 'topup' }
+          }
+        })
+      )
+
+      expect(
+        (await screen.findAllByTestId('checkout-waiting')).length
+      ).toBeGreaterThan(0)
+      for (const fake of fakes) {
+        expect(fake.recover).toHaveBeenCalled()
+        expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+        expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+      }
+    }
+  )
+
+  it('keeps charging the method on file when the quote names no payment configuration', async () => {
+    const fake = renderTopup({
+      topup: SUCCEEDED,
+      paymentMethods: { status: 'ok', value: [{ ...VISA, is_default: true }] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+    expect(form.mounts).toBe(0)
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.createTopupCheckout).toHaveBeenCalledOnce())
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
   })
 })
