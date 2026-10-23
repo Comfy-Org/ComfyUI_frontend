@@ -18,13 +18,11 @@ const test = mergeTests(agentTest, workflowSelectionTest)
 // Supersedes the repro-only PR #18080, whose test asserted a blank "select a
 // workflow" target after New Chat; the accepted PM-1321 acceptance criteria
 // call for the tab on screen, not a blank state.
-// PM-2251: the target half held, but an unsent draft written on tab A still
-// followed the user into the new chat on tab B. New Chat now starts empty.
 test.describe(
   'New chat targets the workflow tab on screen',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('PM-1322: retargets to a tab the user switched to', async ({
+    test('PM-1322 / PM-2251: retargets to a tab the user switched to and starts with an empty composer', async ({
       page,
       workflowSelection
     }, testInfo) => {
@@ -50,7 +48,6 @@ test.describe(
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(initialComposer).toHaveText('Start in this workflow')
-      // PM-2251: leave an unsent draft about tab A; New Chat must not carry it.
       await initialComposer.fill('Only edit workflow A')
 
       // Open a second workflow tab (B), then switch back to A so B is just
