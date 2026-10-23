@@ -5,8 +5,8 @@ import type { Component } from 'vue'
 import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { BalanceInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -24,14 +24,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 vi.mock(import('@/platform/telemetry'))
 
@@ -178,6 +178,15 @@ describe('CurrentUserButton', () => {
     await user.click(screen.getByRole('button', { name: 'Current user' }))
 
     expect(screen.getByText('Popover Content')).toBeInTheDocument()
+  })
+
+  it('restores trigger focus after closing from inside the popover', async () => {
+    const { user } = renderComponent()
+    const trigger = screen.getByRole('button', { name: 'Current user' })
+    await user.click(trigger)
+    await user.click(screen.getByTestId('close-popover'))
+
+    expect(trigger).toHaveFocus()
   })
 
   it.for(['loading', 'error'] as const)(

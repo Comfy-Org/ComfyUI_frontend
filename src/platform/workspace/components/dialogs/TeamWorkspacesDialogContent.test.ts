@@ -29,7 +29,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceTierLabel'),
+  import('@/platform/billing/composables/useWorkspaceTierLabel'),
   () => ({
     useWorkspaceTierLabel: () => ({
       getTierLabel: (w: { subscriptionTier: string | null }) =>

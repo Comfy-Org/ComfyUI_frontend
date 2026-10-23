@@ -1,6 +1,7 @@
 import { until } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -676,26 +677,144 @@ describe('useRegistrySearch', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('keeps the first page when a later page fails', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce(
-        succeeded({
-          nodePacks: packs(DEFAULT_PAGE_SIZE),
-          querySuggestions: [],
-          hasMore: true,
-          rawResultsEmpty: false
-        })
-      )
-      .mockResolvedValueOnce(failed('search unavailable'))
-    const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
-    await until(search.isLoading).toBe(false)
-
-    await search.loadMore()
-
-    expect(search.firstPage.value).toEqual({
-      status: 'loaded',
-      query: 'gguf',
+  describe('a later page that fails', () => {
+    const firstPageResult: SearchPacksResult = {
+      nodePacks: [{ id: 'gguf-1' }],
+      querySuggestions: [],
+      hasMore: true,
       rawResultsEmpty: false
+    }
+    const secondPageResult: SearchPacksResult = {
+      nodePacks: [{ id: 'gguf-2' }],
+      querySuggestions: [],
+      hasMore: false,
+      rawResultsEmpty: false
+    }
+
+    async function searchUntilSecondPageFails(
+      searchMode: MaybeRefOrGetter<SearchMode> = 'packs'
+    ) {
+      vi.mocked(useRegistrySearchGateway().searchPacks)
+        .mockResolvedValueOnce(succeeded(firstPageResult))
+        .mockResolvedValueOnce(failed('search unavailable'))
+      const search = useRegistrySearch({ query: 'gguf', searchMode })
+      await until(search.isLoading).toBe(false)
+      expect(await search.loadMore()).toBe(false)
+      return search
+    }
+
+    const searchedPages = () =>
+      vi
+        .mocked(useRegistrySearchGateway().searchPacks)
+        .mock.calls.map(([query, params]) => [
+          query,
+          params.pageNumber,
+          params.restrictSearchableAttributes
+        ])
+
+    it('keeps the loaded packs and pauses pagination until it is retried', async () => {
+      const search = await searchUntilSecondPageFails()
+
+      expect(toValue(search.items)).toEqual([{ id: 'gguf-1' }])
+      expect(search.firstPage.value).toEqual({
+        status: 'loaded',
+        query: 'gguf',
+        rawResultsEmpty: false
+      })
+      expect(search.isNextPageFailed.value).toBe(true)
+      expect(toValue(search.hasMore)).toBe(false)
+    })
+
+    it('does not request the failed page again from a scroll load while paused', async () => {
+      const search = await searchUntilSecondPageFails()
+
+      expect(await search.loadMore()).toBe(false)
+
+      expect(searchedPages()).toHaveLength(2)
+      expect(search.isNextPageFailed.value).toBe(true)
+    })
+
+    it('ignores a retry when no page failed', async () => {
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+        succeeded(firstPageResult)
+      )
+      const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
+      await until(search.isLoading).toBe(false)
+
+      expect(await search.retryNextPage()).toBe(false)
+
+      expect(useRegistrySearchGateway().resetCircuits).not.toHaveBeenCalled()
+      expect(searchedPages()).toHaveLength(1)
+    })
+
+    it('loads the same page for the same search when retried', async () => {
+      const search = await searchUntilSecondPageFails()
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+        succeeded(secondPageResult)
+      )
+
+      expect(await search.retryNextPage()).toBe(true)
+
+      expect(useRegistrySearchGateway().resetCircuits).toHaveBeenCalledOnce()
+      expect(toValue(search.items)).toEqual([
+        { id: 'gguf-1' },
+        { id: 'gguf-2' }
+      ])
+      expect(search.isNextPageFailed.value).toBe(false)
+      expect(searchedPages()).toEqual([
+        ['gguf', 0, ['name', 'description']],
+        ['gguf', 1, ['name', 'description']],
+        ['gguf', 1, ['name', 'description']]
+      ])
+    })
+
+    it('requests the page once when retried again while the retry loads', async () => {
+      const search = await searchUntilSecondPageFails()
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+        succeeded(secondPageResult)
+      )
+
+      await Promise.all([
+        search.retryNextPage(),
+        search.retryNextPage(),
+        search.loadMore()
+      ])
+
+      expect(searchedPages()).toHaveLength(3)
+      expect(toValue(search.items)).toEqual([
+        { id: 'gguf-1' },
+        { id: 'gguf-2' }
+      ])
+    })
+
+    it('drops a retried page that lands after the mode changed', async () => {
+      const searchMode = ref<SearchMode>('packs')
+      const search = await searchUntilSecondPageFails(searchMode)
+      let resolveRetry: (result: SearchPacksResult) => void = () => {}
+      vi.mocked(useRegistrySearchGateway().searchPacks)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveRetry = (result) => resolve(succeeded(result))
+          })
+        )
+        .mockResolvedValueOnce(
+          succeeded({
+            nodePacks: [{ id: 'nodes-pack' }],
+            querySuggestions: [],
+            hasMore: false,
+            rawResultsEmpty: false
+          })
+        )
+      const retrying = search.retryNextPage()
+
+      searchMode.value = 'nodes'
+      await nextTick()
+      resolveRetry(secondPageResult)
+
+      expect(await retrying).toBe(false)
+      await until(search.isLoading).toBe(false)
+      expect(toValue(search.items)).toEqual([{ id: 'nodes-pack' }])
+      expect(search.isNextPageFailed.value).toBe(false)
     })
   })
 })
