@@ -15,7 +15,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
-} from '@/platform/missingModel/missingModelScan'
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'

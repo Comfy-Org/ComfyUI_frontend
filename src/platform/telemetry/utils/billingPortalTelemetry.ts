@@ -6,7 +6,7 @@ import type {
 
 import type { TelemetryDispatcher } from '@/platform/telemetry/types'
 import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 
 const PORTAL_TAB_BLOCKED: BillingTelemetryFailure = {
   failure_category: 'redirect',

@@ -3,13 +3,14 @@ import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { app, ComfyApp } from '@/scripts/app'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
+import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { isImageNode } from '@/utils/litegraphUtil'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import type { ComfyExtension } from '@/types/comfy'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
@@ -53,7 +54,7 @@ const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
   store.setBrushSize(newBrushSize)
 }
 
-app.registerExtension({
+export const maskEditorExtension: ComfyExtension = {
   name: 'Comfy.MaskEditor',
   settings: [
     {
@@ -175,4 +176,4 @@ app.registerExtension({
       openMaskEditorFromClipspace()
     }
   }
-})
+}

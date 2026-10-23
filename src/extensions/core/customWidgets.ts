@@ -14,6 +14,7 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@/types/widgetId'
+import type { ComfyExtension } from '@/types/comfy'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
@@ -268,7 +269,7 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
 }
 
-app.registerExtension({
+export const customWidgetsExtension: ComfyExtension = {
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === 'CustomCombo')
@@ -306,4 +307,4 @@ app.registerExtension({
       }
     }
   }
-})
+}
