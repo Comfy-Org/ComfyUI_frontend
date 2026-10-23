@@ -100,6 +100,12 @@ describe('shouldLoadExtension', () => {
       })
     ).toBe(false)
   })
+
+  it('does not throw on a malformed backend entry', () => {
+    expect(() =>
+      shouldLoadExtension('http://[', { isCloudBuild: false })
+    ).not.toThrow()
+  })
 })
 
 const BROKEN = '/extensions/comfyui-broken/main.js'
@@ -279,6 +285,25 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('reads safe mode from the URL while retaining discovered pack paths', async () => {
+      const originalUrl = window.location.href
+      window.history.replaceState({}, '', '/?safe')
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/agent-cushions/main.js'
+      ])
+
+      try {
+        await loadExtensions()
+
+        expect(reportError).not.toHaveBeenCalled()
+        expect(useExtensionStore().extensionPackPaths).toEqual([
+          '/extensions/agent-cushions/'
+        ])
+      } finally {
+        window.history.replaceState({}, '', originalUrl)
+      }
+    })
+
     it('reports every failing custom import as one aggregate', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/pack-a/main.js',

@@ -186,6 +186,7 @@ describe('ExtensionPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Reload to apply changes' })
     ).toBeVisible()
+    expect(screen.getByRole('alert')).toHaveTextContent('[-] agent-cushions')
   })
 
   it('filters, describes, and disables agent-created extensions', async () => {
