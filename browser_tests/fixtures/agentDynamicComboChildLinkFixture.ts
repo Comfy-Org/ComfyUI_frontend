@@ -229,6 +229,7 @@ export const dynamicComboChildLinkTest =
         page,
         WORKFLOW_ID,
         host,
+        'agent-dynamic-combo-child-link',
         'apply'
       )
       await hostSocket.install()
