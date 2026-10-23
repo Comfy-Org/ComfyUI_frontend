@@ -25,6 +25,8 @@ import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import {
+  dynamicGroupRowAllocationBound,
+  isRemoteDynamicGroupRowWrite,
   markDynamicGroupController,
   reportDynamicGroupRowRefusal
 } from './dynamicGroupDiagnostics'
@@ -51,7 +53,7 @@ export function dynamicGroupWidget(
     hidden: true,
     options: { min, max, socketless: true, serialize: false }
   })
-  markDynamicGroupController(controller)
+  markDynamicGroupController(controller, Object.keys(fields).length)
   node.addCustomWidget(
     new DynamicGroupNoticeWidget(
       {
@@ -375,7 +377,18 @@ export function dynamicGroupWidget(
     }
   }
 
+  /**
+   * Refuses a saved count this node's own file cannot account for.
+   *
+   * This is an authoring/restore guard, so it does not run against a followed
+   * document: a follower preserves the count the document carries and bounds
+   * only allocation, which the setter does for every writer. Running it on a
+   * remote write refused counts the document layer had accepted and left the
+   * document and the canvas disagreeing — see
+   * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
+   */
   function validateSavedRowCount(value: number, requested: number) {
+    if (isRemoteDynamicGroupRowWrite(node)) return
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return
     const widgets = node.widgets ?? []
@@ -396,30 +409,49 @@ export function dynamicGroupWidget(
       )
   }
 
+  /**
+   * Whether materialising `requested` rows would exceed this group's widget
+   * allocation budget.
+   *
+   * Allocation safety is held here because every writer — a restored file, the
+   * local UI, a peer, the agent — funnels through the controller's setter. It
+   * is deliberately not `max`, which is Core's executability policy; see
+   * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
+   */
+  function exceedsAllocationBound(requested: number) {
+    if (requested <= dynamicGroupRowAllocationBound(controller)) return false
+    reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
+    return true
+  }
+
+  function resizeRows(count: number) {
+    const hosts = createPromotionHostLookup()
+    for (let index = rows().length - 1; index >= count; index--) {
+      if (!removeRow(index, hosts)) break
+    }
+    const existing = new Set(node.widgets)
+    while (rows().length < count) {
+      if (!addRow(rows().length, hosts)) break
+    }
+    publish()
+    announceAddedValues(existing)
+    if (rowCount !== count)
+      reportDynamicGroupRowRefusal(
+        node,
+        rowCount > count ? 'remove_row' : 'add_row',
+        count,
+        rowCount
+      )
+  }
+
   Object.defineProperty(controller, 'value', {
     get: () => rowCount,
     set(value: unknown) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
       validateSavedRowCount(value, requested)
-      const count = Math.max(min, requested)
-      const hosts = createPromotionHostLookup()
-      for (let index = rows().length - 1; index >= count; index--) {
-        if (!removeRow(index, hosts)) break
-      }
-      const existing = new Set(node.widgets)
-      while (rows().length < count) {
-        if (!addRow(rows().length, hosts)) break
-      }
-      publish()
-      announceAddedValues(existing)
-      if (rowCount !== count)
-        reportDynamicGroupRowRefusal(
-          node,
-          rowCount > count ? 'remove_row' : 'add_row',
-          count,
-          rowCount
-        )
+      if (exceedsAllocationBound(requested)) return
+      resizeRows(Math.max(min, requested))
     }
   })
   controller.value = initialCount

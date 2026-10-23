@@ -505,17 +505,6 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
-/** Rows the document carries values for under the DynamicGroup `name`. */
-function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
-  if (widgets === undefined || Array.isArray(widgets)) return 0
-  const prefix = `${name}.`
-  const rows = new Set<string>()
-  for (const key of Object.keys(widgets)) {
-    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
-  }
-  return rows.size
-}
-
 function deferredRowCounts(
   node: LGraphNode,
   constructed: readonly IBaseWidget[],
@@ -1166,7 +1155,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
+        this.applyDynamicGroupRowCount(node, widget, value)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1295,28 +1284,25 @@ export class LiveGraphApplier {
     )
   }
 
+  /**
+   * Writes a document row count to a DynamicGroup controller.
+   *
+   * The follower preserves what the document says: it does not consult the
+   * group's `max`, which is Core's executability policy and is enforced by Core
+   * and by producers. Allocation safety lives in the controller's setter, which
+   * every writer funnels through, so a refusal here is reported rather than
+   * pre-empted. See
+   * `docs/adr/DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md`.
+   */
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue,
-    documentWidgets: DocNode['widgets']
+    value: WidgetValue
   ) {
-    const { max } = widget.options
-    const growsAboveMax =
-      typeof value === 'number' &&
-      max !== undefined &&
-      Math.trunc(value) >
-        Math.max(
-          max,
-          Number(widget.value),
-          documentedRowCount(widget.name, documentWidgets)
-        )
-    if (!growsAboveMax) {
-      applyRemoteDynamicGroupRowCount(node, () =>
-        this.setWidgetValue(node, widget, value)
-      )
-      if (reachesDynamicGroupRowCount(widget, value)) return
-    }
+    applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (reachesDynamicGroupRowCount(widget, value)) return
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
