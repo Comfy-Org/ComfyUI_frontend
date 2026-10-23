@@ -8,7 +8,12 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="cn('max-w-100 min-w-56', switcherMenuMotionClass)"
+      :class="
+        cn(
+          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
+          switcherMenuMotionClass
+        )
+      "
       @update:open="onOpenChange"
     >
       <template #trigger>

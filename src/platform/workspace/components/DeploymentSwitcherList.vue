@@ -44,6 +44,7 @@
       :title="$t('deploymentSwitcher.comfyCloud')"
       :switching="isSwitching && switchingTo === COMFY_CLOUD_ROW"
       :disabled="isSwitching"
+      :mark="markFor(null)"
       data-testid="deployment-row-cloud"
       @select="choose($event, null)"
     />
@@ -57,6 +58,7 @@
       :meta="deploymentMeta(deployment)"
       :switching="isSwitching && switchingTo === deployment.deployment_id"
       :disabled="isSwitching"
+      :mark="markFor(deployment.deployment_id)"
       :data-testid="`deployment-row-${deployment.deployment_id}`"
       @select="choose($event, deployment.deployment_id)"
     />
@@ -128,6 +130,7 @@ import {
   switcherItemClass,
   switcherTrailingSlotClass
 } from '@/platform/workspace/components/deploymentSwitcherStyles'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import {
   COMFY_CLOUD_ROW,
   deploymentStatusTone,
@@ -162,6 +165,7 @@ const {
 } = storeToRefs(useDeploymentPickStore())
 const { deploymentTitle, deploymentRowSubtitle, deploymentMeta, currentLabel } =
   useDeploymentLabels()
+const { markFor } = useDeploymentCompatibility()
 
 const createDeploymentUrl = `${getComfyPlatformBaseUrl()}/profile/deploy#builds`
 
