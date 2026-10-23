@@ -4,8 +4,9 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
@@ -508,10 +509,31 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) return
+    if (!belongsToActiveWorkflow(jobId)) {
+      reportAmbiguousExecutionStartRejection(jobId)
+      return
+    }
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+  }
+
+  function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
+    if (jobIdToWorkflowInstanceId.get(jobId)) return
+    reportError(
+      new Error('execution_start rejected for a job with no known owner'),
+      {
+        surface: 'graph',
+        errorType: 'warning_rejecting_unowned_execution_start',
+        level: 'warning',
+        context: {
+          jobId,
+          activeJobId: activeJobId.value,
+          hasOwnWorkflowRecord: !!queuedJobs.value[jobId]?.workflow,
+          activeWorkflowInstanceId: workflowStore.activeWorkflow?.instanceId
+        }
+      }
+    )
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {

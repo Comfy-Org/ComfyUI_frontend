@@ -4,7 +4,7 @@
   "description": "Stable catalog ids and resolvers that turn prompt, validation, execution, runtime, and missing-resource errors into localized user-facing messages, plus routing of account preconditions (sign-in, subscription, credits).",
   "modules": [
     {
-      "path": "src/platform/errorCatalog/**",
+      "path": "src/platform/workflowErrors/errorCatalog/**",
       "role": "domain"
     }
   ],
@@ -15,8 +15,8 @@
     {
       "name": "Run and missing-resource errors resolve to catalog messages and account preconditions",
       "checks": [
-        "src/platform/errorCatalog/errorMessageResolver.test.ts",
-        "src/platform/errorCatalog/accountPreconditionRouting.test.ts"
+        "src/platform/workflowErrors/errorCatalog/errorMessageResolver.test.ts",
+        "src/platform/workflowErrors/errorCatalog/accountPreconditionRouting.test.ts"
       ]
     }
   ],

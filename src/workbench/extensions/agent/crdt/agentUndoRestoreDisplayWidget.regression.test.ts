@@ -115,6 +115,7 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => null,
       docPromotedWidgets: () => null,
+      docWidgetValue: () => undefined,
       mayWritePromotedHost: () => true,
       docHasSubgraphDefinition: () => false,
       onWidgetWriteRefused: () => {}
