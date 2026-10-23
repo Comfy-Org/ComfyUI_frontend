@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
 
@@ -8,17 +9,19 @@ import {
 } from './refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
   remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from './remoteConfig'
 
 vi.mock(import('@/scripts/api'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
@@ -90,6 +93,21 @@ describe('refreshRemoteConfig', () => {
     expect(sessionAgentGrant.value).toBeUndefined()
     expect(authenticatedRemoteConfigState.value).toBe('unloaded')
     expect(sessionAgentGrantValidUntil.value).toBeUndefined()
+  })
+
+  it('persists the authenticated server flags to localStorage', async () => {
+    mockAuthenticatedFetch(
+      mockSuccessResponse({
+        billing_control_enabled: true,
+        v1_payment_recovery: true
+      })
+    )
+
+    await refreshRemoteConfig()
+    await nextTick()
+
+    expect(localStorage.getItem('billing_control_enabled')).toBe('true')
+    expect(localStorage.getItem('v1_payment_recovery')).toBe('true')
   })
 
   describe('with auth (default)', () => {

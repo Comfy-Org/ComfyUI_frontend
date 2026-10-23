@@ -2,6 +2,7 @@ import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { LGraphCanvas, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 /**
  * Draws a dashed border around selected items that maintains constant pixel size
@@ -49,7 +50,7 @@ function drawSelectionBorder(
 /**
  * Extension that adds a dashed selection border for multiple selected nodes
  */
-const ext = {
+export const selectionBorderExtension: ComfyExtension = {
   name: 'Comfy.SelectionBorder',
 
   async init() {
@@ -68,5 +69,3 @@ const ext = {
     }
   }
 }
-
-app.registerExtension(ext)

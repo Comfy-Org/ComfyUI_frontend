@@ -33,6 +33,7 @@ const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
+  user_id: z.string().optional(),
   workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
   role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())

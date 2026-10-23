@@ -289,6 +289,28 @@ interface ApiMessage<T extends keyof ApiCalls> {
 
 export class UnauthorizedError extends Error {}
 
+const CLIENT_ID_STORAGE_KEY = 'clientId'
+
+let reportedClientIdStorageFailure = false
+
+function withClientIdStorage<T>(
+  access: (storage: Storage) => T
+): T | undefined {
+  try {
+    return access(window.sessionStorage)
+  } catch (cause) {
+    if (!reportedClientIdStorageFailure) {
+      reportedClientIdStorageFailure = true
+      reportError(cause, {
+        errorType: 'failure_accessing_client_id_storage',
+        surface: 'platform',
+        level: 'warning'
+      })
+    }
+    return undefined
+  }
+}
+
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
 
@@ -423,6 +445,23 @@ export class PromptExecutionError extends Error {
   }
 }
 
+interface LaunchContext {
+  host: string
+  base: string
+  initialClientId: string | null
+}
+
+function readLaunchContext(): LaunchContext {
+  return {
+    host: location.host,
+    base: isCloud ? '' : location.pathname.split('/').slice(0, -1).join('/'),
+    initialClientId:
+      withClientIdStorage((storage) =>
+        storage.getItem(CLIENT_ID_STORAGE_KEY)
+      ) ?? null
+  }
+}
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -434,12 +473,7 @@ export class ComfyApi extends EventTarget {
     EventListenerOrEventListenerObject,
     EventListener
   >()
-  api_host: string
-  api_base: string
-  /**
-   * The client id from the initial session storage.
-   */
-  initialClientId: string | null
+  private launchContext?: LaunchContext
   /**
    * The current client id from websocket status updates.
    */
@@ -509,11 +543,44 @@ export class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.user = ''
-    this.api_host = location.host
-    this.api_base = isCloud
-      ? ''
-      : location.pathname.split('/').slice(0, -1).join('/')
-    this.initialClientId = sessionStorage.getItem('clientId')
+  }
+
+  /**
+   * Snapshots the page host, base path, and stored client id. Runs on first
+   * use; the bootstrap calls it before routing can change the location.
+   */
+  captureLaunchContext(): void {
+    this.launchContext ??= readLaunchContext()
+  }
+
+  private get capturedLaunchContext(): LaunchContext {
+    this.launchContext ??= readLaunchContext()
+    return this.launchContext
+  }
+
+  get api_host(): string {
+    return this.capturedLaunchContext.host
+  }
+
+  set api_host(host: string) {
+    this.launchContext = { ...this.capturedLaunchContext, host }
+  }
+
+  get api_base(): string {
+    return this.capturedLaunchContext.base
+  }
+
+  set api_base(base: string) {
+    this.launchContext = { ...this.capturedLaunchContext, base }
+  }
+
+  /** The client id from the initial session storage. */
+  get initialClientId(): string | null {
+    return this.capturedLaunchContext.initialClientId
+  }
+
+  set initialClientId(initialClientId: string | null) {
+    this.launchContext = { ...this.capturedLaunchContext, initialClientId }
   }
 
   internalURL(route: string): string {
@@ -909,7 +976,6 @@ export class ComfyApi extends EventTarget {
     let opened = false
     const existingSession = window.name
 
-    // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
 
     if (existingSession) {
@@ -923,9 +989,6 @@ export class ComfyApi extends EventTarget {
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
-    // A newer connect attempt (an identity reset, or a later reconnect) began
-    // while this one awaited its token. Abandon this attempt so only the latest
-    // generation owns this.socket and no superseded socket is opened.
     if (generation !== this.socketGeneration) return
 
     const socket = new WebSocket(wsUrl)
@@ -933,7 +996,6 @@ export class ComfyApi extends EventTarget {
     this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
 
-    // Armed before `open` so a socket that never opens still settles.
     const settleTimer = setTimeout(() => {
       if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
         this.serverFeatureFlagsSettled.value = true
@@ -943,7 +1005,6 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('open', () => {
       opened = true
 
-      // Send feature flags as the first message
       socket.send(
         JSON.stringify({
           type: 'feature_flags',
@@ -957,9 +1018,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('error', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) is
-      // already being torn down; ignore its late errors so it cannot start an
-      // unnecessary permanent polling loop for the previous identity.
       if (this.socket !== socket) return
       socket.close()
       if (!isReconnect && !opened) {
@@ -968,8 +1026,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('close', () => {
-      // A replaced socket (e.g. after resetSocket on an account switch) must
-      // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
@@ -985,8 +1041,6 @@ export class ComfyApi extends EventTarget {
     })
 
     socket.addEventListener('message', (event) => {
-      // Ignore late messages from a replaced socket so previous-account
-      // realtime data is not dispatched after an identity switch.
       if (this.socket !== socket) return
       try {
         if (event.data instanceof ArrayBuffer) {
@@ -1043,7 +1097,6 @@ export class ComfyApi extends EventTarget {
               break
             }
             case 4: {
-              // PREVIEW_IMAGE_WITH_METADATA
               const decoder4 = new TextDecoder()
               const metadataLength = view.getUint32(4)
               const metadataBytes = event.data.slice(8, 8 + metadataLength)
@@ -1056,7 +1109,6 @@ export class ComfyApi extends EventTarget {
                 type: imageMime4
               })
 
-              // Dispatch enhanced preview event with metadata
               this.dispatchCustomEvent('b_preview_with_metadata', {
                 blob: imageBlob4,
                 nodeId: metadata.node_id,
@@ -1066,7 +1118,6 @@ export class ComfyApi extends EventTarget {
                 jobId: metadata.prompt_id
               })
 
-              // Also dispatch legacy b_preview for backward compatibility
               this.dispatchCustomEvent('b_preview', imageBlob4)
               break
             }
@@ -1083,8 +1134,10 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isn't reused when duplicating tabs
-                sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                window.name = clientId
+                withClientIdStorage((storage) =>
+                  storage.setItem(CLIENT_ID_STORAGE_KEY, clientId)
+                )
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
@@ -1129,7 +1182,6 @@ export class ComfyApi extends EventTarget {
               break
             default:
               if (this._registered.has(msg.type)) {
-                // Fallback for custom types - calls super direct.
                 super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
@@ -1159,12 +1211,9 @@ export class ComfyApi extends EventTarget {
    * events over a handshake that was authenticated as that account.
    */
   async resetSocket(): Promise<void> {
-    // Clear every handshake identity source: createSocket() reads the client id
-    // from window.name (mirrored in session storage), not this.clientId, so the
-    // next connect must not inherit the prior account's id.
     this.clientId = undefined
     window.name = ''
-    sessionStorage.removeItem('clientId')
+    withClientIdStorage((storage) => storage.removeItem(CLIENT_ID_STORAGE_KEY))
     const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
     this.serverFeatureFlags.value = features
     await this.replaceSocket()
@@ -1467,8 +1516,11 @@ export class ComfyApi extends EventTarget {
    * @param jobId The job ID
    * @returns Full job details or undefined if not found
    */
-  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
-    return fetchJobDetail(this.fetchApi.bind(this), jobId)
+  async getJobDetail(
+    jobId: string,
+    signal?: AbortSignal
+  ): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId, signal)
   }
 
   /**

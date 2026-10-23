@@ -1,31 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
-import type { ComfyExtension } from '@/types/comfy'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-const registerExtension = vi.hoisted(() =>
-  vi.fn<(ext: ComfyExtension) => void>()
-)
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
-}))
-
-let extension: ComfyExtension
-
-beforeAll(async () => {
-  await import('./cameraInfo')
-  expect(registerExtension).toHaveBeenCalledOnce()
-  extension = registerExtension.mock.calls[0][0]
-})
+import { cameraInfoExtension as extension } from './cameraInfo'
 
 describe('Comfy.CreateCameraInfo extension', () => {
   it('keeps the viewport out of the right side panel', async () => {

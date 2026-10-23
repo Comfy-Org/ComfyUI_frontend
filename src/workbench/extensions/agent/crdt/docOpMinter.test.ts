@@ -219,6 +219,7 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let docDefinitionIds: Set<string>
   let graphAvailable: boolean
   let unbound: boolean
   let refusals: Array<[string, string]>
@@ -233,6 +234,7 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     mayWrite = true
+    docDefinitionIds = new Set()
     graphAvailable = true
     unbound = false
     refusals = []
@@ -246,6 +248,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
     })
@@ -256,6 +259,31 @@ describe('attachDocOpMinter', () => {
     for (const doc of seededPromotedDocs) {
       if (!doc.isDestroyed) doc.destroy()
     }
+  })
+
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
   })
 
   describe('mints one op per graph command', () => {
@@ -543,6 +571,7 @@ describe('attachDocOpMinter', () => {
       docInputNames: () => null,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
 
@@ -1687,6 +1716,84 @@ describe('attachDocOpMinter', () => {
     expect(minted[0]).not.toHaveProperty('promoted')
   })
 
+  function handAddedPromotedHost() {
+    const inner = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(inner.id, inner)
+    const outer = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(outer.id, outer)
+    withGraphIntentSource('load', () => {
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      outer.add(interior)
+      outer.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    const doc = mintDocFrom(graph)
+    seededPromotedDocs.add(doc)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    const host = createTestSubgraphNode(outer)
+    graph.add(host)
+    return { host, inner, outer, doc }
+  }
+
+  it('defines a hand-added host’s subgraphs the document lacks, so its promoted write places', async () => {
+    const { host, inner, outer, doc } = handAddedPromotedHost()
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', inner.id, outer.id])
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      promotedNames: ['text']
+    })
+
+    minted = []
+    host.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 0 })
+      })
+    ])
+    expect(refusals).toEqual([])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+  })
+
+  it('keeps the add and skips a definition that cannot serialize, with its dependents', async () => {
+    const { inner } = handAddedPromotedHost()
+    vi.spyOn(inner, 'asSerialisable').mockImplementation(() => {
+      throw new Error('extension serializer failed')
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(['add_node'])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: inner.id }
+      })
+    )
+  })
+
+  it('does not redefine a subgraph the document already holds', async () => {
+    const { inner, outer } = handAddedPromotedHost()
+    docDefinitionIds.add(inner.id)
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', outer.id])
+  })
+
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
     // Built the way useNodeProgressText builds it: `serialize: false` and
@@ -2047,21 +2154,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
