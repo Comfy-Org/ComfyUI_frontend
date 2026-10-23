@@ -194,11 +194,22 @@ describe('MediaLightbox', () => {
   describe('caption reveal and auto-hide', () => {
     const caption = () => screen.getByTestId('lightbox-pill')
 
+    /* Fires the load event the browser sends once the new image has painted; jsdom never loads images on its own. */
+    const finishImageLoad = () => {
+      /* oxlint-disable-next-line testing-library/no-node-access -- jsdom never fires img load; the event itself is the behavior under test. */
+      const img = screen.getByTestId('lightbox-content').querySelector('img')
+      if (img) img.dispatchEvent(new Event('load'))
+    }
+
     it('reveals the caption again after it auto-hides', async () => {
       vi.useFakeTimers()
       try {
         const { user } = renderGallery()
+        await screen.findByTestId('lightbox-content')
         await nextTick()
+        finishImageLoad()
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-100')
 
         await vi.advanceTimersByTimeAsync(2000)
         await nextTick()
@@ -216,7 +227,11 @@ describe('MediaLightbox', () => {
       vi.useFakeTimers()
       try {
         const { user } = renderGallery()
+        await screen.findByTestId('lightbox-content')
         await nextTick()
+        finishImageLoad()
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-100')
 
         await user.hover(screen.getByTestId('lightbox-content'))
         expect(caption()).toHaveClass('opacity-100')
@@ -225,6 +240,37 @@ describe('MediaLightbox', () => {
         await nextTick()
 
         expect(caption()).toHaveClass('opacity-0')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps the caption hidden after navigation until the new image loads', async () => {
+      vi.useFakeTimers()
+      try {
+        const { rerender } = renderGallery({ activeIndex: 0 })
+        await screen.findByTestId('lightbox-content')
+        await nextTick()
+        finishImageLoad()
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(2000)
+        await nextTick()
+        expect(caption()).toHaveClass('opacity-0')
+
+        await rerender({
+          allGalleryItems: mockGalleryItems,
+          activeIndex: 1
+        })
+        await nextTick()
+        await nextTick()
+
+        expect(caption()).toHaveTextContent('image2.jpg')
+        expect(caption()).toHaveClass('opacity-0')
+
+        finishImageLoad()
+        await nextTick()
+
+        expect(caption()).toHaveClass('opacity-100')
       } finally {
         vi.useRealTimers()
       }

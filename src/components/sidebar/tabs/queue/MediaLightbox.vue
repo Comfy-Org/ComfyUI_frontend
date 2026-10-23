@@ -169,16 +169,51 @@ const contentRef = ref<HTMLElement>()
 
 const captionVisible = ref(false)
 const captionPinned = ref(false)
+const mediaReady = ref(false)
+let revealQueued = false
+let mediaSeq = 0
 let captionHideTimer: ReturnType<typeof setTimeout> | undefined
 
-/* Reveals the caption while the pointer moves over the image or has focus, then auto-hides after 2s. */
+/* Reveals the caption while the pointer moves over the image or has focus, then auto-hides after 2s. While the new media is still loading the reveal is queued instead, so fast skips never flash the caption over an empty frame. */
 function showCaptionTransient() {
+  if (!mediaReady.value) {
+    revealQueued = true
+    return
+  }
   captionPinned.value = false
   captionVisible.value = true
   clearTimeout(captionHideTimer)
   captionHideTimer = setTimeout(() => {
     captionVisible.value = false
   }, 2000)
+}
+
+function markMediaReady(seq: number) {
+  if (seq !== mediaSeq) return
+  mediaReady.value = true
+  if (revealQueued) {
+    revealQueued = false
+    showCaptionTransient()
+  }
+}
+
+/* Resolves once the newly mounted image has painted (or failed, whose fallback still names the file). Non-image media is ready immediately. */
+function awaitMediaReady(item: AugmentedResultItem, seq: number) {
+  if (!isImageResult(item)) {
+    markMediaReady(seq)
+    return
+  }
+  const img = contentRef.value?.querySelector('img')
+  if (!img) {
+    markMediaReady(seq)
+    return
+  }
+  if (img.complete && img.naturalWidth > 0) {
+    markMediaReady(seq)
+    return
+  }
+  img.addEventListener('load', () => markMediaReady(seq), { once: true })
+  img.addEventListener('error', () => markMediaReady(seq), { once: true })
 }
 
 function hideCaptionNow() {
@@ -248,8 +283,18 @@ watch(
     galleryVisible.value = index !== -1
     if (index !== -1) {
       previouslyFocusedElement = document.activeElement as HTMLElement | null
-      showCaptionTransient()
-      void nextTick(() => dialogRef.value?.focus())
+      mediaSeq += 1
+      const seq = mediaSeq
+      mediaReady.value = false
+      revealQueued = false
+      hideCaptionNow()
+      void nextTick(() => {
+        if (seq !== mediaSeq) return
+        const item = activeItem.value
+        if (item) awaitMediaReady(item, seq)
+        showCaptionTransient()
+        dialogRef.value?.focus()
+      })
     } else {
       hideCaptionNow()
     }
@@ -258,6 +303,7 @@ watch(
 )
 
 function close() {
+  mediaSeq += 1
   galleryVisible.value = false
   emit('update:activeIndex', -1)
   previouslyFocusedElement?.focus()
