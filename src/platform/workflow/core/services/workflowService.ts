@@ -407,6 +407,7 @@ export const useWorkflowService = () => {
     beforeLoadNewGraph(true)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     const app = useApp()
+    useSubgraphNavigationStore().suppressRootGraphHash(graph)
     app.activateRootGraph(graph)
     useMissingModelStore().createVerificationAbortController().abort()
     useMissingMediaStore().createVerificationAbortController().abort()

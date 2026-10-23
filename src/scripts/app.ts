@@ -884,7 +884,6 @@ export class ComfyApp implements IComfyApp {
       previous?.stop()
       if (previous) unregisterDomWidgets(previous)
       this.rootGraphInternal = graph
-      useSubgraphNavigationStore().suppressRootGraphHash(graph)
       registerDomWidgets(graph)
     }
     this.canvas.setGraph(graph)
@@ -1279,6 +1278,7 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (clean) {
+        useSubgraphNavigationStore().suppressRootGraphHash(graph)
         this.activateRootGraph(graph)
         withGraphIntentSource('load', () => this.clean())
       }
