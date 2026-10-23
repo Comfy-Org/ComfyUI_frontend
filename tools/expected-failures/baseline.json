@@ -4,7 +4,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
+    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:recolouring a node mid-turn is not reverted when the agent renames it:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/agent/agentLocalNodeAppearanceSurvivesAgentEdit.spec.ts:reshaping a node mid-turn is not reverted when the agent renames it:1",
     "classification": "live-defect"
   },
   {
@@ -12,11 +16,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts:keeps repeated Enter presses to one rejected send:1",
+    "id": "playwright:browser_tests/tests/agent/agentNodeIdCollision.spec.ts:<expression:'wipes a duplicated node and replaces it with a phantom node when ' + \"the agent's write lands on the same id\">:1",
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/agent/agentRefusedDocSubscribe.spec.ts:reports a canvas edit as succeeded when the document never arrived:1",
+    "id": "playwright:browser_tests/tests/agent/agentRateLimitDuplicateSubmit.spec.ts:keeps repeated Enter presses to one rejected send:1",
     "classification": "live-defect"
   },
   {
@@ -32,11 +36,11 @@
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`blocks POST ${path} and fails even when the app catches it`>:1",
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`${client} retains the API origin and mutation guards`>:1",
     "classification": "infrastructure-assertion"
   },
   {
-    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`${client} retains the API origin and mutation guards`>:1",
+    "id": "playwright:browser_tests/tests/infrastructure/liveCloudBillingRouting.spec.ts:<expression:`blocks POST ${path} and fails even when the app catches it`>:1",
     "classification": "infrastructure-assertion"
   },
   {
