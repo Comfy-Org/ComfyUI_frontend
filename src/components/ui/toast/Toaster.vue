@@ -1,8 +1,15 @@
+<script lang="ts">
+export interface ToasterProps {
+  regionLabel: string
+  closeLabel: string
+  formatViewportLabel: (hotkey: string) => string
+}
+</script>
+
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ToastProvider } from 'reka-ui'
 import { computed, onBeforeUnmount } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -17,14 +24,15 @@ import ToastViewport from './ToastViewport.vue'
 import { useToast } from './toastStore'
 import type { Toast } from './toastStore'
 
+const { regionLabel, closeLabel, formatViewportLabel } =
+  defineProps<ToasterProps>()
+
 const toast = useToast()
 const { held, toasts } = storeToRefs(toast)
-const { t } = useI18n()
 
 onBeforeUnmount(toast.dismissAll)
 
 const shownToasts = computed(() => (held.value ? [] : toasts.value))
-const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
 
 const isAssertive = (item: Toast) =>
   item.kind === 'error' || item.kind === 'warning'
@@ -55,12 +63,11 @@ function updateToastOpen(id: ToastId, open: boolean) {
 }
 
 const icons = {
-  success: 'icon-[lucide--circle-check] text-success-background',
-  error: 'icon-[lucide--circle-x] text-destructive-background',
-  info: 'icon-[lucide--info] text-primary-background',
-  warning: 'icon-[lucide--triangle-alert] text-warning-background',
-  loading:
-    'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary-background'
+  success: 'icon-[lucide--circle-check] text-success',
+  error: 'icon-[lucide--circle-x] text-destructive',
+  info: 'icon-[lucide--info] text-primary',
+  warning: 'icon-[lucide--triangle-alert] text-warning',
+  loading: 'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary'
 } as const
 </script>
 
@@ -105,6 +112,7 @@ const icons = {
       <ToastTitle class="col-start-2 row-start-1">{{ item.title }}</ToastTitle>
       <ToastClose
         v-if="item.closable"
+        :aria-label="closeLabel"
         class="col-start-3 row-start-1"
         data-testid="toast-close"
       />
@@ -121,12 +129,6 @@ const icons = {
         {{ item.action.label }}
       </Button>
     </ToastRoot>
-    <ToastViewport
-      :label="
-        (hotkey: string) =>
-          t('toastMessages.notificationsViewportLabel', { hotkey })
-      "
-      data-testid="toast-viewport"
-    />
+    <ToastViewport :label="formatViewportLabel" data-testid="toast-viewport" />
   </ToastProvider>
 </template>

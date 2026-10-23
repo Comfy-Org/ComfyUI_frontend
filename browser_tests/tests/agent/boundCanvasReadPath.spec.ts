@@ -1,25 +1,23 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { MESSAGE_DONE_EVENT, agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import {
+  WORKFLOW_ID as BOUND_WORKFLOW_ID,
+  MESSAGE_DONE_EVENT,
+  agentTest,
+  pushAgentEvent,
+  refuseDocSubscribePermanently
+} from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-/** Must match WORKFLOW_ID in agentPanelMocks (the id the turn ack binds). */
-const BOUND_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
-
 const FIRST_PROMPT = 'What is on my canvas?'
 const SECOND_PROMPT = 'Describe the focused canvas.'
-
-function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
-  ws.send(JSON.stringify(event))
-}
 
 function parsePosted(raw: string | undefined): AgentPostMessageRequest {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
@@ -42,139 +40,231 @@ function draftNodeCount(body: AgentPostMessageRequest): number {
   return nodes.length
 }
 
-/**
- * Regression coverage for the "focused canvas is empty" read-path failure
- * (QA sweep GM-12): a populated workflow whose tab has been bound to a cloud
- * workflow id by the first turn ack must be sent on the next turn with both
- * the binding and a populated draft, otherwise the agent reads an empty graph.
- */
-test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
-  test.use({ connectWebSocketToServer: false })
+test.describe(
+  'Agent bound-canvas read path (QA sweep GM-12)',
+  { tag: '@cloud' },
+  () => {
+    test.use({ connectWebSocketToServer: false })
 
-  test('second turn on a bound populated tab carries the binding and a populated draft', async ({
-    agentPanel,
-    comfyPage,
-    postedMessages,
-    getWebSocket
-  }) => {
-    test.setTimeout(45_000)
+    test('second turn on a bound populated tab carries the binding and populated draft', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages,
+      getAgentSocket
+    }) => {
+      test.setTimeout(45_000)
 
-    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(
-      nodeCount,
-      'fixture canvas must be populated'
-    ).toBeGreaterThanOrEqual(3)
+      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(
+        nodeCount,
+        'fixture canvas must be populated'
+      ).toBeGreaterThanOrEqual(3)
 
-    await agentPanel.open()
-    const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+      await agentPanel.open()
+      const ws = await getAgentSocket()
 
-    // Turn 1: unbound temporary tab. The 202 ack binds the tab to
-    // BOUND_WORKFLOW_ID (AgentPanelRoot.onWorkflowAdopted).
-    await agentPanel.composer.fill(FIRST_PROMPT)
-    await agentPanel.sendButton.click()
-    await expect.poll(() => postedMessages.length).toBe(1)
-    const first = parsePosted(postedMessages[0])
-    expect(first.workflow_id).toBeUndefined()
-    expect(
-      draftNodeCount(first),
-      'turn 1 draft must carry the populated graph'
-    ).toBeGreaterThanOrEqual(3)
+      await test.step('turn 1 on an unbound tab carries the canvas inline', async () => {
+        await agentPanel.sendMessage(FIRST_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(1)
+        const first = parsePosted(postedMessages[0])
+        expect(first.workflow_id).toBeUndefined()
+        expect(
+          draftNodeCount(first),
+          'turn 1 draft must carry the populated graph'
+        ).toBe(nodeCount)
+      })
 
-    // Seeing the POST is not enough to push the done frame: the turn must
-    // already be the active one or agentConversationStore.ingest drops the
-    // frame with no retry, and the composer clears on submit so clearing
-    // proves nothing. The user bubble is the first rendered signal that
-    // activeTurnId is set (see agentTurnLockFixture.startTurn).
-    await expect(userBubbles).toHaveText([FIRST_PROMPT])
-    pushEvent(ws, MESSAGE_DONE_EVENT)
+      await test.step('the ack binds the tab and the turn settles', async () => {
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+        await agentPanel.expectTurnSettled()
+      })
 
-    // Turn 1 must actually settle before turn 2 is composed, otherwise the
-    // binding the ack applied may not be in place when the next POST is built.
-    await expect(agentPanel.stopButton).toHaveCount(0)
-    await expect(agentPanel.composer).toHaveText('')
+      const second =
+        await test.step('turn 2 is composed on the same bound tab', async () => {
+          await agentPanel.sendMessage(SECOND_PROMPT)
+          await expect.poll(() => postedMessages.length).toBe(2)
+          return parsePosted(postedMessages[1])
+        })
 
-    // Turn 2: same thread, same (now bound) tab, canvas unchanged. Send is
-    // disabled while the composer is empty, so it can only be asserted
-    // enabled after the prompt is in.
-    await agentPanel.composer.fill(SECOND_PROMPT)
-    await expect(agentPanel.sendButton).toBeEnabled()
-    await agentPanel.sendButton.click()
-    await expect.poll(() => postedMessages.length).toBe(2)
-    const second = parsePosted(postedMessages[1])
+      expect(second.workflow_id, 'binding from turn 1 ack must be sent').toBe(
+        BOUND_WORKFLOW_ID
+      )
+      expect(
+        second.current_tab_unbound,
+        'a bound tab must not be reported as unbound'
+      ).toBeFalsy()
+      expect(
+        second.open_tabs?.map((t) => t.workflow_id),
+        'open_tabs must include the bound id'
+      ).toContain(BOUND_WORKFLOW_ID)
+      expect(
+        draftNodeCount(second),
+        'a healthy bound follower must keep the populated human canvas authoritative'
+      ).toBe(nodeCount)
+    })
 
-    expect(second.workflow_id, 'binding from turn 1 ack must be sent').toBe(
-      BOUND_WORKFLOW_ID
-    )
-    // Which tab the turn is about is carried by `workflow_id` plus
-    // `current_tab_unbound`, not by `current_tab`. PM-1847 (`37f8246743`) made
-    // that pair the contract because a turn with neither reads server-side as
-    // "no tab selected"; `openTabsSnapshot` has not populated `current_tab`
-    // since. A bound tab is identifiable, so the unbound flag must be absent.
-    expect(
-      second.current_tab_unbound,
-      'a bound tab must not be reported as unbound'
-    ).toBeFalsy()
-    expect(
-      second.open_tabs?.map((t) => t.workflow_id),
-      'open_tabs must include the bound id'
-    ).toContain(BOUND_WORKFLOW_ID)
-    // Exact, not a lower bound: these tests pin down *which* graph the agent
-    // reads, so a draft over-populated from another open tab is also a
-    // read-path regression.
-    expect(
-      draftNodeCount(second),
-      'turn 2 draft must still carry the populated graph (GM-12: reads empty)'
-    ).toBe(nodeCount)
-  })
+    test.describe('canvas edits between turns', () => {
+      test.describe.configure({ timeout: 45_000 })
+      test.use({ objectInfo: 'server' })
 
-  test('switching to a new tab and back keeps the bound tab populated on the next turn', async ({
-    agentPanel,
-    comfyPage,
-    postedMessages,
-    getWebSocket
-  }) => {
-    test.setTimeout(45_000)
+      test('second turn carries a node and link the user added between turns', async ({
+        agentPanel,
+        comfyPage,
+        postedMessages,
+        getAgentSocket
+      }) => {
+        test.setTimeout(45_000)
 
-    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-    expect(nodeCount).toBeGreaterThanOrEqual(3)
+        const beforeEdit = await comfyPage.page.evaluate(() =>
+          window.app!.graph.serialize()
+        )
 
-    await agentPanel.open()
-    const userBubbles = agentPanel.root.getByTestId('user-message-bubble')
-    const ws = await getWebSocket()
+        await agentPanel.open()
+        const ws = await getAgentSocket()
+        await agentPanel.sendMessage(FIRST_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+        await agentPanel.expectTurnSettled()
 
-    await agentPanel.composer.fill(FIRST_PROMPT)
-    await agentPanel.sendButton.click()
-    await expect.poll(() => postedMessages.length).toBe(1)
-    await expect(userBubbles).toHaveText([FIRST_PROMPT])
-    pushEvent(ws, MESSAGE_DONE_EVENT)
-    await expect(agentPanel.stopButton).toHaveCount(0)
-    await expect(agentPanel.composer).toHaveText('')
+        const checkpointLoaders = await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )
+        expect(
+          checkpointLoaders,
+          'the default workflow must contain one checkpoint loader'
+        ).toHaveLength(1)
+        const sampler = await comfyPage.nodeOps.addNode('KSampler', undefined, {
+          x: 900,
+          y: 200
+        })
+        await comfyPage.nextFrame()
+        const checkpointModel = await checkpointLoaders[0].getOutput(0)
+        const modelLinksBefore = await checkpointModel.getLinkCount()
+        await checkpointLoaders[0].connectOutput(0, sampler, 0)
+        await comfyPage.nextFrame()
+        await checkpointModel.expectLinkCount(modelLinksBefore + 1)
 
-    // Open a fresh (empty, unbound) tab, then return to the bound one.
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeLessThan(nodeCount)
-    await comfyPage.menu.topbar.getTab(0).click()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount)
+        const editedGraph = await comfyPage.page.evaluate(() =>
+          window.app!.graph.serialize()
+        )
+        expect(editedGraph.nodes).toHaveLength(beforeEdit.nodes.length + 1)
+        expect(editedGraph.links).toHaveLength(beforeEdit.links.length + 1)
 
-    await agentPanel.composer.fill(SECOND_PROMPT)
-    await expect(agentPanel.sendButton).toBeEnabled()
-    await agentPanel.sendButton.click()
-    await expect.poll(() => postedMessages.length).toBe(2)
-    const second = parsePosted(postedMessages[1])
+        await agentPanel.sendMessage(SECOND_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(2)
+        const second = parsePosted(postedMessages[1])
 
-    expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
-    expect(second.current_tab_unbound).toBeFalsy()
-    expect(second.open_tabs?.map((tab) => tab.workflow_id)).toContain(
-      BOUND_WORKFLOW_ID
-    )
-    expect(
-      draftNodeCount(second),
-      'draft after tab switch must reflect the bound populated tab'
-    ).toBe(nodeCount)
-  })
-})
+        const editedContent = JSON.parse(
+          JSON.stringify({ nodes: editedGraph.nodes, links: editedGraph.links })
+        ) as { nodes: unknown[]; links: unknown[] }
+        expect(second.draft?.content).toMatchObject(editedContent)
+      })
+    })
+
+    test('switching to a new tab and back keeps the bound tab populated on the next turn', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages,
+      getAgentSocket
+    }) => {
+      test.setTimeout(45_000)
+
+      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(nodeCount).toBeGreaterThanOrEqual(3)
+
+      await agentPanel.open()
+      const ws = await getAgentSocket()
+
+      await agentPanel.sendMessage(FIRST_PROMPT)
+      await expect.poll(() => postedMessages.length).toBe(1)
+      await agentPanel.expectUserMessages([FIRST_PROMPT])
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await agentPanel.expectTurnSettled()
+
+      await test.step('user opens a fresh empty tab, then returns to the bound one', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBeLessThan(nodeCount)
+        await comfyPage.menu.topbar.getTab(0).click()
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(nodeCount)
+      })
+
+      await agentPanel.sendMessage(SECOND_PROMPT)
+      await expect.poll(() => postedMessages.length).toBe(2)
+      const second = parsePosted(postedMessages[1])
+
+      expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
+      expect(second.current_tab_unbound).toBeFalsy()
+      expect(second.open_tabs?.map((tab) => tab.workflow_id)).toContain(
+        BOUND_WORKFLOW_ID
+      )
+      expect(
+        draftNodeCount(second),
+        'a tab detour must keep the populated human canvas authoritative'
+      ).toBe(nodeCount)
+    })
+
+    for (const { code, message, detail, requiredText } of [
+      {
+        code: 'schema_version_mismatch',
+        message: 'Expected schema 2, found 1',
+        detail: `${enMessages.agent.workflowSyncFailedDetail} (Expected schema 2, found 1)`,
+        requiredText: 'Your canvas has been left unchanged.'
+      },
+      {
+        code: 'catalog_mismatch',
+        message:
+          'the document was minted under a different widget catalog; retrying will not help',
+        detail: enMessages.agent.workflowSyncFailedDetailCatalogMismatch,
+        requiredText: 'Your next message sends your canvas'
+      }
+    ] as const) {
+      test(`second turn still carries the populated graph when the follower is refused the bound document (${code})`, async ({
+        agentPanel,
+        comfyPage,
+        postedMessages,
+        getAgentSocket
+      }) => {
+        test.setTimeout(45_000)
+
+        const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+        expect(nodeCount).toBeGreaterThanOrEqual(3)
+
+        await agentPanel.open()
+        const ws = await getAgentSocket()
+
+        await agentPanel.sendMessage(FIRST_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+        await agentPanel.expectTurnSettled()
+
+        await test.step('the host permanently refuses the bound document and the user is told', async () => {
+          refuseDocSubscribePermanently(ws, code, message)
+          const toast = comfyPage.toast.toastErrors.filter({
+            hasText: enMessages.agent.workflowSyncFailedTitle
+          })
+          await expect(toast).toHaveCount(1)
+          await expect(toast.getByText(detail, { exact: true })).toHaveCount(1)
+          await expect(toast).toContainText(requiredText)
+          await comfyPage.toast.closeToasts()
+        })
+
+        await agentPanel.sendMessage(SECOND_PROMPT)
+        await expect.poll(() => postedMessages.length).toBe(2)
+        const second = parsePosted(postedMessages[1])
+
+        expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
+        expect(
+          draftNodeCount(second),
+          'a refused follower owns nothing, so the turn must carry the populated graph or the agent reads an empty canvas'
+        ).toBe(nodeCount)
+      })
+    }
+  }
+)

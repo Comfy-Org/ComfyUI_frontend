@@ -385,7 +385,7 @@ export function dynamicGroupWidget(
     const restored = store.getRestoredWidgetValue(
       graphId,
       node.id,
-      inputName,
+      controller,
       position
     )
     if (restored?.value !== value) return

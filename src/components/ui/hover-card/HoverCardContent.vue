@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import {
   HoverCardContent,
-  HoverCardPortal,
   injectHoverCardRootContext,
-  useForwardProps
+  useForwardProps,
+  HoverCardPortal
 } from 'reka-ui'
 import type { HoverCardContentProps } from 'reka-ui'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -21,19 +20,18 @@ const {
 
 const forwarded = useForwardProps(computed(() => rest))
 
-const contentStyle = useModalLiftedZIndex(injectHoverCardRootContext().open)
+const { open } = injectHoverCardRootContext()
 </script>
 
 <template>
-  <HoverCardPortal>
+  <HoverCardPortal :key="Number(rest.forceMount || open)">
     <HoverCardContent
       v-bind="forwarded"
       :side
       :side-offset
-      :style="contentStyle"
       :class="
         cn(
-          'z-1700 rounded-lg border border-border-subtle bg-secondary-background p-2.5 shadow-md outline-none',
+          'z-overlay rounded-lg border border-border/50 bg-secondary p-2.5 shadow-md outline-none',
           className
         )
       "

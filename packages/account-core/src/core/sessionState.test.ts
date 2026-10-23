@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { credential, testUser } from './__fixtures__/sessionFakes.js'
+import { credential, testUser } from './__fixtures__/sessionFakes'
 import type {
   MintAttempt,
   MintVerdict,
   SessionEffect,
   SessionEvent,
   SessionState
-} from './sessionState.js'
+} from './sessionState'
 import {
   arbitrateMint,
   initialSessionState,
   scheduledMintHolds,
   transition
-} from './sessionState.js'
+} from './sessionState'
 
 const user = testUser('uid-1')
 const otherUser = testUser('uid-2')

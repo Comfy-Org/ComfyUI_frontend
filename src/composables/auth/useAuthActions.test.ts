@@ -6,7 +6,7 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -74,12 +74,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({
-    startPendingTopup: mockStartPendingTopup,
-    clearPendingTopup: mockClearPendingTopup
+vi.mock<unknown>(
+  import('@/platform/billing/composables/usePendingTopup'),
+  () => ({
+    usePendingTopup: () => ({
+      startPendingTopup: mockStartPendingTopup,
+      clearPendingTopup: mockClearPendingTopup
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
@@ -135,6 +138,22 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
   mockDistributionState.isDesktop = false
+})
+
+describe('useAuthActions.accessBillingPortalDirect', () => {
+  it('rejects without opening a tab when no billing portal URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(mockAuthStore.accessBillingPortal).mockResolvedValueOnce(
+      fromPartial({})
+    )
+    const { accessBillingPortalDirect } = useAuthActions()
+
+    await expect(accessBillingPortalDirect()).rejects.toThrow(
+      'toastMessages.failedToAccessBillingPortal:No billing portal URL returned'
+    )
+
+    expect(open).not.toHaveBeenCalled()
+  })
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
@@ -652,6 +671,41 @@ describe('useAuthActions.reportError', () => {
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
+
+  describe('inside Comfy Desktop, which takes over the sign-in popup', () => {
+    beforeEach(() => {
+      window.__comfyDesktop2 = {}
+    })
+
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('points a blocked popup at the system browser instead of the pop-up blocker', () => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'info',
+          title: 'auth.desktopHost.continueInBrowser'
+        })
+      ])
+    })
+
+    it.for(
+      popupPermissionCodes.filter((code) => code !== 'auth/popup-blocked')
+    )('still warns for %s, which the user caused', (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(useToast().warning).toHaveBeenCalledWith('g.warning', {
+        description: `auth.errors.${code}`
+      })
+    })
+  })
 
   it('reports an account collision as an error, not a popup warning', () => {
     const { reportError, accessError } = useAuthActions()

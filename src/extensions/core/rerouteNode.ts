@@ -8,12 +8,13 @@ import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Node that allows you to redirect connections for cleaner graphs
 
-app.registerExtension({
+export const rerouteNodeExtension: ComfyExtension = {
   name: 'Comfy.RerouteNode',
   registerCustomNodes() {
     interface RerouteNode extends LGraphNode {
@@ -273,4 +274,4 @@ app.registerExtension({
 
     RerouteNode.category = 'utilities'
   }
-})
+}

@@ -1,0 +1,371 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "H3 Ref2VA \u00b7 INT8"
+    }
+  },
+  "2": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": ["1", 0]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "H3 sampling shift"
+    }
+  },
+  "3": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": ["2", 0]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "Optimized attention"
+    }
+  },
+  "4": {
+    "inputs": {
+      "lora_name": "minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+      "strength_model": 1,
+      "model": ["3", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "FL2V Turbo \u00b7 8-step LoRA"
+    }
+  },
+  "6": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Qwen \u00b7 H3 text encoder"
+    }
+  },
+  "7": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "H3 video VAE"
+    }
+  },
+  "8": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "H3 audio VAE"
+    }
+  },
+  "9": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "2 \u00b7 Character reference"
+    }
+  },
+  "30": {
+    "inputs": {
+      "file": "source.mp4"
+    },
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "1 \u00b7 Source performance video"
+    }
+  },
+  "31": {
+    "inputs": {
+      "resolution": 768,
+      "duration_seconds": 5.0,
+      "video": ["trim", 0]
+    },
+    "class_type": "H3CharacterSwapPrepareVideo",
+    "_meta": {
+      "title": "Prepare \u00b7 24 fps / pixel budget"
+    }
+  },
+  "58": {
+    "inputs": {
+      "device": "gpu:0",
+      "clip": ["6", 0]
+    },
+    "class_type": "SelectCLIPDevice",
+    "_meta": {
+      "title": "Text encoder device"
+    }
+  },
+  "100": {
+    "inputs": {
+      "ckpt_name": "sam3.1_multiplex_fp16.safetensors"
+    },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": {
+      "title": "SAM 3.1 \u00b7 model"
+    }
+  },
+  "101": {
+    "inputs": {
+      "text": "person",
+      "clip": ["100", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "4 \u00b7 Find the subject"
+    }
+  },
+  "102": {
+    "inputs": {
+      "batch_index": 0,
+      "length": 1,
+      "image": ["31", 0]
+    },
+    "class_type": "ImageFromBatch",
+    "_meta": {
+      "title": "Detection frame \u00b7 first frame"
+    }
+  },
+  "103": {
+    "inputs": {
+      "threshold": 0.35,
+      "refine_iterations": 2,
+      "individual_masks": true,
+      "model": ["100", 0],
+      "image": ["102", 0],
+      "conditioning": ["101", 0]
+    },
+    "class_type": "SAM3_Detect",
+    "_meta": {
+      "title": "Detect individual people"
+    }
+  },
+  "104": {
+    "inputs": {
+      "selection": "largest",
+      "index": 0,
+      "masks": ["103", 0]
+    },
+    "class_type": "H3CharacterSwapSelectSubject",
+    "_meta": {
+      "title": "Select the person to replace"
+    }
+  },
+  "105": {
+    "inputs": {
+      "detection_threshold": 0.5,
+      "max_objects": 1,
+      "detect_interval": 1,
+      "images": ["31", 0],
+      "model": ["100", 0],
+      "initial_mask": ["104", 0],
+      "conditioning": ["101", 0]
+    },
+    "class_type": "SAM3_VideoTrack",
+    "_meta": {
+      "title": "Track selected person"
+    }
+  },
+  "106": {
+    "inputs": {
+      "object_indices": "",
+      "track_data": ["105", 0]
+    },
+    "class_type": "SAM3_TrackToMask",
+    "_meta": {
+      "title": "Selected track \u2192 mask"
+    }
+  },
+  "107": {
+    "inputs": {
+      "source_frames": ["31", 5],
+      "recover_empty_frames": true,
+      "masks": ["106", 0],
+      "images": ["31", 0],
+      "model": ["100", 0],
+      "conditioning": ["101", 0],
+      "selection": ["104", 1]
+    },
+    "class_type": "H3CharacterSwapRecoverMasks",
+    "_meta": {
+      "title": "Recover empty frames \u00b7 same as app"
+    }
+  },
+  "110": {
+    "inputs": {
+      "source_frames": ["31", 5],
+      "expansion_px": 64,
+      "masks": ["107", 0],
+      "images": ["31", 0]
+    },
+    "class_type": "H3CharacterSwapExpandMask",
+    "_meta": {
+      "title": "Expand mask \u00b7 matches the app"
+    }
+  },
+  "800": {
+    "inputs": {
+      "model": ["850", 0],
+      "clip": ["58", 0],
+      "video_vae": ["7", 0],
+      "audio_vae": ["8", 0]
+    },
+    "class_type": "H3CharacterSwapModels",
+    "_meta": {
+      "title": "Shared models"
+    }
+  },
+  "801": {
+    "inputs": {
+      "prompt": "Replace the selected person with the reference character. Preserve source performance, scene and audio timing.",
+      "seed": 904239,
+      "audio_guide": true,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "er_sde",
+      "scheduler": "normal",
+      "activation_memory_gib": 17
+    },
+    "class_type": "H3CharacterSwapSettings",
+    "_meta": {
+      "title": "5 \u00b7 Prompt & audio guide"
+    }
+  },
+  "803": {
+    "inputs": {
+      "source_frames": ["31", 5],
+      "fps": ["31", 6],
+      "use_anchor": true,
+      "use_mask": true,
+      "shot_id": "character-swap",
+      "source_video": ["trim", 0],
+      "source": ["31", 0],
+      "source_audio": ["31", 1],
+      "reference": ["9", 0],
+      "anchor": ["anchor_fit", 0],
+      "body_mask": ["110", 0]
+    },
+    "class_type": "H3CharacterSwapShot",
+    "_meta": {
+      "title": "Prepare swap inputs"
+    }
+  },
+  "805": {
+    "inputs": {
+      "window_frames": "124",
+      "history_frames": "18",
+      "shot": ["803", 0],
+      "settings": ["801", 0]
+    },
+    "class_type": "H3CharacterSwapWindowPlan",
+    "_meta": {
+      "title": "Continuation \u00b7 window / history"
+    }
+  },
+  "806": {
+    "inputs": {
+      "models": ["800", 0],
+      "shot": ["803", 0],
+      "plan": ["805", 0]
+    },
+    "class_type": "H3CharacterSwapController",
+    "_meta": {
+      "title": "6 \u00b7 Generate character swap"
+    }
+  },
+  "807": {
+    "inputs": {
+      "filename_prefix": "character-swap",
+      "state": ["806", 0],
+      "shot": ["806", 1]
+    },
+    "class_type": "H3CharacterSwapAssemble",
+    "_meta": {
+      "title": "7 \u00b7 Result with source audio"
+    }
+  },
+  "850": {
+    "inputs": {
+      "lora_name": "h3_character_swap_v1.5.safetensors",
+      "strength_model": 1,
+      "model": ["4", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Character Swap \u00b7 V1 LoRA"
+    }
+  },
+  "trim": {
+    "class_type": "Video Slice",
+    "_meta": {
+      "title": "The chosen part"
+    },
+    "inputs": {
+      "video": ["30", 0],
+      "start_time": 0,
+      "duration": 5.0,
+      "strict_duration": false
+    }
+  },
+  "anchor_image": {
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Anchor made by the page"
+    },
+    "inputs": {
+      "image": "anchor.png"
+    }
+  },
+  "anchor_fit": {
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "Anchor at the video's exact size"
+    },
+    "inputs": {
+      "image": ["anchor_image", 0],
+      "upscale_method": "lanczos",
+      "width": ["31", 2],
+      "height": ["31", 3],
+      "crop": "center"
+    }
+  },
+  "808": {
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Video for the app"
+    },
+    "inputs": {
+      "images": ["807", 0],
+      "audio": ["807", 1],
+      "fps": 24,
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none"
+    }
+  },
+  "809": {
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save result"
+    },
+    "inputs": {
+      "video": ["808", 0],
+      "filename_prefix": "openjutsu/result",
+      "format": "mp4",
+      "format.codec": "h264"
+    }
+  }
+}

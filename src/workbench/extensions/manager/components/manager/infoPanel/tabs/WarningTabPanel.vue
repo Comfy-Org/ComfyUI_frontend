@@ -3,7 +3,7 @@
     <div
       v-for="(conflict, index) in conflictResult?.conflicts || []"
       :key="index"
-      class="rounded-md bg-secondary-background/60"
+      class="rounded-md bg-secondary/60"
     >
       <!-- Import failed conflicts show detailed error message -->
       <template v-if="conflict.type === 'import_failed'">

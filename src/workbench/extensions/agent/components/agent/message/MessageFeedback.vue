@@ -12,8 +12,8 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string
@@ -101,7 +101,7 @@ async function downloadAssets(): Promise<void> {
       <span class="icon-[lucide--download] size-3" />
     </Button>
     <div
-      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground has-data-[state=open]:bg-secondary-background-hover has-data-[state=open]:text-base-foreground"
+      class="flex h-6 w-14 rounded-lg transition-colors hover:bg-accent hover:text-foreground has-data-[state=open]:bg-accent has-data-[state=open]:text-foreground"
     >
       <Tooltip disable-closing-trigger>
         <TooltipTrigger as-child>
@@ -113,7 +113,7 @@ async function downloadAssets(): Promise<void> {
             :class="
               cn(
                 'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
-                copied ? 'text-base-foreground' : 'text-inherit'
+                copied ? 'text-foreground' : 'text-inherit'
               )
             "
             @click="copyPlainText()"

@@ -144,7 +144,7 @@
   <Teleport to="body">
     <div
       v-if="marqueeStyle"
-      class="pointer-events-none fixed z-9999 border border-primary-background bg-primary-background/20"
+      class="pointer-events-none fixed z-overlay border border-primary bg-primary/20"
       :style="marqueeStyle"
     />
   </Teleport>
@@ -152,10 +152,10 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
-  <ContextMenu
+  <Menu
     :id="contextMenuId"
-    ref="contextMenuRef"
-    :model="contextMenuItems"
+    v-bind="contextMenuProps"
+    :items="contextMenuItems"
   />
 </template>
 
@@ -176,7 +176,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -185,7 +185,8 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import { usePointMenu } from '@/components/ui/menu/usePointMenu'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -230,7 +231,7 @@ import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 
 const { t } = useI18n()
@@ -269,14 +270,19 @@ const skeletonGridStyle = computed(() => ({
   gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
 }))
 
-const contextMenuRef = useTemplateRef('contextMenuRef')
+const {
+  open: contextMenuOpen,
+  menuProps: contextMenuProps,
+  show: showContextMenu,
+  hide: hideContextMenu
+} = usePointMenu()
 const contextMenuId = useId()
 const contextMenuItems = ref<MenuItem[]>([])
 
 useDismissableOverlay({
-  isOpen: () => contextMenuRef.value?.visible ?? false,
+  isOpen: () => contextMenuOpen.value,
   getOverlayEl: () => document.getElementById(contextMenuId),
-  onDismiss: () => contextMenuRef.value?.hide(),
+  onDismiss: hideContextMenu,
   dismissOnScroll: true
 })
 
@@ -594,7 +600,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
       }
     ]
   }
-  contextMenuRef.value?.show(event)
+  showContextMenu(event)
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {

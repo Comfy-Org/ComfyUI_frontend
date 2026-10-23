@@ -12,11 +12,11 @@ import {
   widgetId
 } from '@/types/widgetId'
 
-import { createArrayMutationView } from '../infrastructure/createMutationView'
-import type { INodeInputSlot } from '../types/slots'
-import { isNodeBindable } from '../utils/type'
-import { getWidgetIds } from '../utils/widget'
-import { BaseWidget } from '../widgets/BaseWidget'
+import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 export type WidgetRefusalReport =
   | { kind: 'refusal'; finding: RefusedWidget<IBaseWidget> }
