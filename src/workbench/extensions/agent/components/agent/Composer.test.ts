@@ -1842,6 +1842,7 @@ describe('Composer', () => {
     const { emitted } = mount({ canAttach: true })
 
     await openAddMenu()
+    expect(screen.getByRole('separator')).toBeVisible()
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
