@@ -180,13 +180,8 @@ async function initialize(): Promise<void> {
       return
     }
 
-    configRejectedStatus = null
-    const outcome = await loadAuthenticatedRemoteConfig(controller)
+    await loadAuthenticatedRemoteConfig(controller)
     if (generation !== initializationGeneration) return
-    configRejectedStatus = outcome?.kind === 'failed' ? outcome.status : null
-    if (outcome?.kind !== 'loaded') {
-      throw new Error('Failed to load authenticated remote config')
-    }
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const needsUnifiedToken = await requiresUnifiedToken()
@@ -231,6 +226,17 @@ async function initialize(): Promise<void> {
 }
 
 async function loadAuthenticatedRemoteConfig(
+  controller: AbortController
+): Promise<void> {
+  configRejectedStatus = null
+  const outcome = await readAuthenticatedRemoteConfig(controller)
+  if (outcome?.kind === 'failed') configRejectedStatus = outcome.status
+  if (outcome?.kind !== 'loaded') {
+    throw new Error('Failed to load authenticated remote config')
+  }
+}
+
+async function readAuthenticatedRemoteConfig(
   controller: AbortController
 ): Promise<RemoteConfigRefreshOutcome | undefined> {
   const deadline = Date.now() + CONFIG_REFRESH_BUDGET_MS
