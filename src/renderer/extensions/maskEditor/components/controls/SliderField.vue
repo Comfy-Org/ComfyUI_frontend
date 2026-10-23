@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { useId } from 'vue'
+import { nextTick, useId } from 'vue'
 
 import Slider from '@/components/ui/slider/Slider.vue'
 
@@ -98,14 +98,14 @@ function onInput(event: Event) {
   commit((event.target as HTMLInputElement).valueAsNumber)
 }
 
-function onCommit(event: Event) {
+async function onCommit(event: Event) {
   const input = event.target as HTMLInputElement
   const parsed = input.valueAsNumber
-  if (!Number.isFinite(parsed)) {
-    input.value = String(modelValue)
-    return
+  if (Number.isFinite(parsed)) {
+    commit(parsed)
   }
-  commit(parsed)
+  await nextTick()
+  input.value = String(modelValue)
 }
 
 function onSliderChange(value: number[] | undefined) {

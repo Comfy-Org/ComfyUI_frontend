@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import SliderField from './SliderField.vue'
@@ -71,6 +72,38 @@ describe('SliderField', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
 
     expect(onUpdate).toHaveBeenCalledWith(100)
+  })
+
+  it('should resync the input to the model after a change commit', async () => {
+    const onUpdate = vi.fn()
+    renderField(onUpdate)
+    const input = screen.getByRole<HTMLInputElement>('spinbutton', {
+      name: 'Opacity'
+    })
+
+    input.value = '400'
+    input.dispatchEvent(new Event('change'))
+    await nextTick()
+    await nextTick()
+
+    expect(onUpdate).toHaveBeenCalledWith(100)
+    expect(input.value).toBe('40')
+  })
+
+  it('should reset a cleared input to the model on change', async () => {
+    const onUpdate = vi.fn()
+    renderField(onUpdate)
+    const input = screen.getByRole<HTMLInputElement>('spinbutton', {
+      name: 'Opacity'
+    })
+
+    input.value = ''
+    input.dispatchEvent(new Event('change'))
+    await nextTick()
+    await nextTick()
+
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(input.value).toBe('40')
   })
 
   it('should emit the slider value', async () => {
