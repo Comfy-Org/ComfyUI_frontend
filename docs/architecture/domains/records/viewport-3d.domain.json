@@ -1,0 +1,74 @@
+{
+  "id": "viewport-3d",
+  "capability": "3D viewport",
+  "description": "Shared Three.js viewport: WebGL renderer views and high-precision output, scene, camera, controls, lighting, view helper, and event managers, letterboxed sizing, render loop, context-menu guard, viewport widget shell, and node wiring. Model loading, animation, recording, serialization, and node extensions remain in the Load3D host.",
+  "modules": [
+    {
+      "path": "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/load3d/components/ViewportWidgetShell.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/load3d/components/menubar/menuBarStyles.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Viewport orchestration preserves sizing, render loop, and context-menu behavior",
+      "checks": [
+        "packages/viewport3d/src/load3d/Viewport3d.test.ts",
+        "packages/viewport3d/src/load3d/load3dViewport.test.ts",
+        "packages/viewport3d/src/load3d/load3dRenderLoop.test.ts",
+        "packages/viewport3d/src/load3d/load3dContextMenuGuard.test.ts"
+      ]
+    },
+    {
+      "name": "Scene, camera, controls, lighting, and view helper managers preserve Three.js state",
+      "checks": [
+        "packages/viewport3d/src/load3d/SceneManager.test.ts",
+        "packages/viewport3d/src/load3d/CameraManager.test.ts",
+        "packages/viewport3d/src/load3d/ControlsManager.test.ts",
+        "packages/viewport3d/src/load3d/LightingManager.test.ts",
+        "packages/viewport3d/src/load3d/ViewHelperManager.test.ts",
+        "packages/viewport3d/src/load3d/EventManager.test.ts"
+      ]
+    },
+    {
+      "name": "Shared WebGL renderer views preserve output precision and resource lifetimes",
+      "checks": [
+        "packages/viewport3d/src/three/sharedWebGLRenderer.test.ts",
+        "packages/viewport3d/src/three/RendererView.test.ts",
+        "packages/viewport3d/src/three/WebGLViewport.test.ts",
+        "packages/viewport3d/src/three/highPrecisionOutput.test.ts"
+      ]
+    },
+    {
+      "name": "Viewport widget shell and node wiring preserve host interaction",
+      "checks": [
+        "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
+        "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing imports and runtime behavior remain unchanged; model-viewer, camera, and light cross-domain imports remain visible without new dependency permissions.",
+    "Classification does not move model loading, animation, recording, serialization, or graph node state into the viewport capability."
+  ],
+  "deepImports": "inventory"
+}

@@ -4,7 +4,7 @@ import { workshopIdentity } from './workshop-account'
 
 const firebaseEvaluated = vi.hoisted(() => vi.fn())
 
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'), async () => {
   firebaseEvaluated()
   return import('./__mocks__/workshop-firebase')

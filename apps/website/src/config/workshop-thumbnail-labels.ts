@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import labelsJson from '../data/workshop-thumbnail-labels.json'
+import labelsJson from '@/data/workshop-thumbnail-labels.json'
 import type { WorkshopModel } from './models-catalogue'
 import { workshopExecutionId } from './models-catalogue'
 

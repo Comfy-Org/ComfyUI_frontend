@@ -8,10 +8,10 @@ import {
   DropdownMenuTrigger
 } from 'reka-ui'
 
-import type { Locale } from '../../../i18n/translations'
-import { installers, platformIcons } from '../../../composables/useDownloadUrl'
-import { translationsFor } from '../../../i18n/translations'
-import { captureDownloadClick } from '../../../scripts/posthog'
+import type { Locale } from '@/i18n/translations'
+import { installers, platformIcons } from '@/composables/useDownloadUrl'
+import { translationsFor } from '@/i18n/translations'
+import { captureDownloadClick } from '@/scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

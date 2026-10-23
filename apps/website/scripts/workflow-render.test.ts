@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
-import { workflowDetailsBySlug } from '../src/config/workshop-workflow-content'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import { urlUploadField } from '../src/config/workshop-playground'
-import { prepareWorkflowRender } from '../src/config/workflow-render'
-import { workflowCloudRequest } from '../src/config/workshop-workflow-api'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { urlUploadField } from '@/config/workshop-playground'
+import { prepareWorkflowRender } from '@/config/workflow-render'
+import { workflowCloudRequest } from '@/config/workshop-workflow-api'
 import { workflow_for_model, workflow_render } from './workflow-render'
 
 describe('CLI workflow rendering', () => {

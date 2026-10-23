@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { jsonLdId } from '../../utils/jsonLd'
+import { jsonLdId } from '@/utils/jsonLd'
 import { cliFaqs } from './faqs'
 import { cliPageJsonLd } from './jsonLd'
 

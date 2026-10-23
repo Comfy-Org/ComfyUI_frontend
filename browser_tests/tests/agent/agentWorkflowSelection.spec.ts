@@ -4,6 +4,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
@@ -246,31 +247,24 @@ test.describe(
         '{workflowName}',
         'Unsaved Workflow'
       )
-      const inline = panel.getByRole('button', {
-        name: 'mention nodes'
+      const tooltip = new Tooltip(page).named(reason)
+      const addToPrompt = panel.getByRole('button', {
+        name: enMessages.agent.addToPrompt
       })
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(reason)
-      await inline.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
-
-      await panel
-        .getByRole('button', { name: enMessages.agent.addToPrompt })
-        .click()
+      await addToPrompt.click()
       const plusNodes = page.getByRole('menuitem', {
         name: enMessages.agent.nodes,
         exact: true
       })
       await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(reason)
       await plusNodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await page.keyboard.press('Escape')
-      await expect(page.getByText(reason, { exact: true })).toBeHidden()
+      await expect(tooltip).toBeHidden()
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
-      await expect(
-        panel.getByRole('button', { name: enMessages.agent.addToPrompt })
-      ).toBeFocused()
+      await expect(addToPrompt).toBeFocused()
 
       await composer.fill('@')
       const nodes = panel.getByRole('menuitem', {
@@ -279,7 +273,7 @@ test.describe(
       })
       await expect(nodes).toHaveAttribute('aria-disabled', 'true')
       await nodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await testInfo.attach('disabled-node-references', {
         body: await panel.screenshot({
           path: testInfo.outputPath('disabled-node-references.png')
@@ -291,7 +285,7 @@ test.describe(
       await composer.press('Escape')
       await composer.press('ControlOrMeta+a')
       await composer.press('Backspace')
-      await expect(inline).toBeVisible()
+      await expect(addToPrompt).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
 
       await panel
@@ -302,19 +296,26 @@ test.describe(
         .click()
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await expect(inline).toHaveAttribute('aria-disabled', 'true')
-      await expect(inline).toHaveAccessibleDescription(
+      await addToPrompt.click()
+      await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
+      await expect(plusNodes).toHaveAccessibleDescription(
         /Switch to .+ to add nodes\./
       )
+      await page.keyboard.press('Escape')
+      await expect(plusNodes).toBeHidden()
       await page.getByTestId('workflow-tab').first().click()
-      await expect(inline).not.toHaveAttribute('aria-disabled', 'true')
+      await addToPrompt.click()
+      await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
     })
 
     test('shows headerless search results when the current tab is filtered out', async ({
@@ -436,7 +437,7 @@ test.describe(
       })
       await expect(targetMarker).toBeVisible()
       await targetMarker.hover()
-      await expect(page.getByRole('tooltip')).toHaveText(
+      await expect(new Tooltip(page).open).toHaveText(
         enMessages.agent.targetForThisChat
       )
       await expect(
@@ -444,7 +445,7 @@ test.describe(
       ).toBeVisible()
       await expect(targetMarker).toBeVisible()
       await targetTab.getByRole('button', { name: enMessages.g.close }).hover()
-      await expect(page.getByRole('tooltip')).toHaveCount(0)
+      await expect(new Tooltip(page).open).toHaveCount(0)
       await testInfo.attach('agent-target-active', {
         body: await page.getByTestId('topbar-workflow-tabs').screenshot({
           path: testInfo.outputPath('agent-target-active.png')
@@ -545,6 +546,7 @@ test.describe(
 
     test('keeps the failed selection open and allows retry without a naming dialog', async ({
       page,
+      toast,
       workflowSelection
     }) => {
       await new AgentPanel(page).open()
@@ -564,7 +566,7 @@ test.describe(
       await expect(row).toBeEnabled()
       await expect(row).toBeChecked()
       await expect(
-        page.getByText(enMessages.shareWorkflow.saveFailedTitle)
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()
       await expect(composer).toHaveText('Keep this draft')
       await row.click()

@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: $t('g.moreOptions'),
-      showDelay: 1000
-    }"
+    :tooltip="$t('g.moreOptions')"
     data-testid="more-options-button"
     variant="muted-textonly"
     :aria-label="$t('g.moreOptions')"

@@ -17,7 +17,7 @@ import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
@@ -249,9 +249,6 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       const movingLink = new MovingOutputLink(subgraph, link)
 
       // Mock console.warn to verify it's called
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
 
       // Add the link to the connector
       connector.renderLinks.push(movingLink)
@@ -271,15 +268,13 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.dropOnIoNode(subgraph.inputNode, mockEvent)
 
       // Verify that the invalid connection was skipped
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Invalid connection type',
         'string',
         '->',
         'number'
       )
       expect(connectSpy).not.toHaveBeenCalled()
-
-      consoleWarnSpy.mockRestore()
     })
 
     it('should allow valid connections when dropping on SubgraphInputNode', () => {

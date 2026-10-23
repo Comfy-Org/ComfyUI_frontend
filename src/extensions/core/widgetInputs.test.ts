@@ -17,7 +17,7 @@ import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -25,30 +25,20 @@ import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
 vi.mock(import('@/scripts/app'))
 
-function getRegisteredExtension(name: string) {
-  const extension = vi
-    .mocked(app.registerExtension)
-    .mock.calls.find(([extension]) => extension.name === name)?.[0]
-  if (!extension) throw new Error(`${name} was not registered`)
-  return extension
-}
-
 const {
   PrimitiveNode,
   convertToInput,
   getWidgetConfig,
   mergeIfValid,
-  setWidgetConfig
+  setWidgetConfig,
+  widgetInputsExtension
 } = await import('./widgetInputs')
 
 beforeEach(() => {
   app.canvas.graph = null
 })
 
-const widgetInputsExtension = getRegisteredExtension('Comfy.WidgetInputs')
-
-await import('./rerouteNode')
-const rerouteNodeExtension = getRegisteredExtension('Comfy.RerouteNode')
+const { rerouteNodeExtension } = await import('./rerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -132,6 +122,30 @@ describe('PrimitiveNode', () => {
     primitive.connect(0, target, 0)
 
     expect(primitive.widgets?.[0].value).toBe(333)
+  })
+
+  it('restores a boolean string saved for a BOOLEAN target as a boolean', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('enabled', 'BOOLEAN')
+    target.inputs[0].widget = {
+      name: 'enabled',
+      [GET_CONFIG]: () => ['BOOLEAN', {}]
+    }
+    target.addWidget('toggle', 'enabled', true, () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    vi.mocked(app).configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['false'], outputs: [{ type: 'BOOLEAN' }] })
+    )
+    vi.mocked(app).configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(false)
   })
 
   it.for([
@@ -477,7 +491,6 @@ describe('mergeIfValid', () => {
 
 describe('convertToInput', () => {
   it('warns and resolves the input slot hosting the widget', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const node = new LGraphNode('Target')
     node.addInput('seed', 'INT')
     node.addInput('steps', 'INT')
@@ -487,7 +500,7 @@ describe('convertToInput', () => {
       'steps'
     )
     expect(convertToInput(node, fromPartial({ name: 'seed' }))).toBeUndefined()
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('remove call to convertToInput')
     )
   })

@@ -57,6 +57,7 @@ describe('CustomizationDialog', () => {
       const { onConfirm } = renderDialog()
 
       await user.click(screen.getByRole('button', { name: 'icon.folder' }))
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
       await user.click(screen.getByText('g.confirm'))
 
       expect(onConfirm).toHaveBeenCalledWith('pi-folder', DEFAULT_COLOR)

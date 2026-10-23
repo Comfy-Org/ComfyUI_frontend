@@ -43,7 +43,7 @@ const catalog: WidgetCatalog = {
 }
 
 const noopUi: WidgetUiCallbacks = {
-  getTooltipConfig: () => ({}),
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 

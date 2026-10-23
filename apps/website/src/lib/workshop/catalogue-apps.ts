@@ -1,4 +1,5 @@
-import type { Locale, LocalizedText } from '../../i18n/translations'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale, LocalizedText } from '@/i18n/translations'
 
 /**
  * Copy for the Apps half only. It ships with that half's lazy chunk rather
@@ -14,7 +15,12 @@ const copy = {
     'zh-CN': '像在片场一样执导镜头'
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
-  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' }
+  reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  openjutsuName: { en: 'Openjutsu', 'zh-CN': 'Openjutsu' },
+  openjutsuTask: {
+    en: 'Swap a character in a video',
+    'zh-CN': '替换视频中的角色'
+  }
 } as const satisfies Record<string, LocalizedText>
 
 export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
@@ -26,5 +32,5 @@ export interface CatalogueApp {
   readonly name: string
   readonly task: string
   readonly href: string
-  readonly image?: string
+  readonly thumbnail?: WorkshopModel['thumbnail']
 }

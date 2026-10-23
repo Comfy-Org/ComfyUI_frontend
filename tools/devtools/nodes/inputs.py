@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import time
 
+from comfy_api.latest import _io
 from comfy_api.v0_0_2 import IO
 from nodes import LoadImage
 
@@ -408,6 +410,20 @@ class RefModLoader:
         return ()
 
 
+class FancyTimer:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "time"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces CRT Nodes Fancy Timer's onSerialize that hands back live node properties"
+
+    def time(self):
+        return ()
+
+
 class PreviewBridge:
     @classmethod
     def INPUT_TYPES(cls):
@@ -495,6 +511,31 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithDynamicGroup(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithDynamicGroup",
+            display_name="Node With Dynamic Group",
+            category="DevTools",
+            description="Echoes repeated widget rows without loading models.",
+            inputs=[
+                IO.String.Input("before", default="first"),
+                _io._DynamicGroup.Input("loras", template=[
+                    IO.Combo.Input("lora_name", options=["A.safetensors", "B.safetensors", "C.safetensors"]),
+                    IO.Float.Input("strength", default=1.0, min=-2.0, max=2.0, step=0.1),
+                    IO.Boolean.Input("enabled", default=True, optional=True),
+                ], min=0, max=3, group_name="LoRA"),
+                IO.String.Input("after", default="last"),
+            ],
+            outputs=[IO.String.Output("rows")],
+        )
+
+    @classmethod
+    def execute(cls, before, loras, after):
+        return IO.NodeOutput(json.dumps({"before": before, "loras": loras, "after": after}))
+
+
 class TestBranchNode(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -509,7 +550,7 @@ class TestBranchNode(IO.ComfyNode):
             inputs=[
                 IO.Autogrow.Input("autogrow", template=template),
                 IO.Combo.Input("branch", extra_dict={"widgetType": "COMFY_BRANCH_SELECTOR"}),
-                IO.Array.Input("branch_names", extra_dict={"widgetType": "COMFY_BRANCH_INPUT_NAMES", "socketless": True}),
+                IO.Array.Input("branch_names", extra_dict={"widgetType": "COMFY_BRANCH_INPUT_NAMES"}),
             ],
             outputs=[
                 IO.MatchType.Output(template=mtemplate, display_name="output"),
@@ -544,11 +585,15 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsWASPause": WASPause,
     "DevToolsRefModLoader": RefModLoader,
     "DevToolsPreviewBridge": PreviewBridge,
+    "DevToolsFancyTimer": FancyTimer,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
     "DevToolsBranchNode": TestBranchNode,
 }
+
+if hasattr(_io, "_DynamicGroup"):
+    NODE_CLASS_MAPPINGS["DevToolsNodeWithDynamicGroup"] = NodeWithDynamicGroup
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsLongComboDropdown": "Long Combo Dropdown",
@@ -573,6 +618,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsWASPause": "WAS Pause Compatibility",
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
     "DevToolsPreviewBridge": "Preview Bridge Compatibility",
+    "DevToolsFancyTimer": "Fancy Timer Compatibility",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",

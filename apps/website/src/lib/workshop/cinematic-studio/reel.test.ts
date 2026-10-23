@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RunFailure, RunOutput } from '../../../config/workshop-run'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type { Reel, ReelEvent } from './reel'
 import {
   EMPTY_REEL,

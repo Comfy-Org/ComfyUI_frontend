@@ -16,7 +16,7 @@
       ref="textareaRef"
       v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
-      class="absolute inset-0 min-h-[60px] w-full resize-none text-(length:--comfy-textarea-font-size)"
+      class="absolute inset-0 min-h-[60px] resize-none font-mono text-(length:--comfy-textarea-font-size)"
       data-capture-wheel="true"
       @blur="handleBlur"
       @pointerdown.capture.stop

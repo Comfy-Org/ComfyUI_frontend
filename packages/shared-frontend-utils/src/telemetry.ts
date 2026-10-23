@@ -27,8 +27,13 @@ export const COMFY_POSTHOG_OPTIONS = {
  */
 export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
-const EXTENSION_TAB_NOT_FOUND_MESSAGE =
-  'Invalid call to runtime.sendMessage(). Tab not found.'
+const EXTENSION_ERROR_MESSAGES = [
+  'Invalid call to runtime.sendMessage(). Tab not found.',
+  '[messaging] In this JS context, only one listener can be setup for'
+]
+
+const ERROR_MESSAGE_PREFIX =
+  /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',
@@ -41,10 +46,10 @@ const RUM_NOISE_HOSTS = [
 
 export function isThirdPartyErrorNoise(message?: string): boolean {
   if (!message) return false
-  const index = message.indexOf(EXTENSION_TAB_NOT_FOUND_MESSAGE)
-  if (index < 0) return false
-  const prefix = message.slice(0, index)
-  return /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/.test(prefix)
+  return EXTENSION_ERROR_MESSAGES.some((known) => {
+    const index = message.indexOf(known)
+    return index >= 0 && ERROR_MESSAGE_PREFIX.test(message.slice(0, index))
+  })
 }
 
 /** An error no Comfy page raised or can act on. */

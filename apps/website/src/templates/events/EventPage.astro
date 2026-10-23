@@ -4,12 +4,12 @@
 // The events directory renders behind the SSR'd-open video dialog; past events
 // carry VideoObject JSON-LD for the recording, upcoming ones an Event node and
 // an add-to-calendar action. Locale comes from the page's URL.
-import BaseLayout from '../../layouts/BaseLayout.astro'
+import BaseLayout from '@/layouts/BaseLayout.astro'
 import EventsDirectorySection from './EventsDirectorySection.vue'
 import EventVideoDialog from './EventVideoDialog.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import { localizeHref } from '../../config/routes'
-import type { ComfyEvent } from '../../data/events'
+import { localizeHref } from '@/config/routes'
+import type { ComfyEvent } from '@/data/events'
 import {
   eventJsonLdNode,
   eventOgImage,
@@ -18,14 +18,14 @@ import {
   pastEvents,
   toCalendarEvent,
   youtubeWatchHref
-} from '../../data/events'
-import type { JsonLdNode } from '../../utils/jsonLd'
+} from '@/data/events'
+import type { JsonLdNode } from '@/utils/jsonLd'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../../utils/jsonLd'
+} from '@/utils/jsonLd'
 
 interface Props {
   event: ComfyEvent

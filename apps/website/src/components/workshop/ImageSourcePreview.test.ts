@@ -21,6 +21,10 @@ describe('image source previews', () => {
     render(ImageSourcePreview, {
       props: { name: 'Source image', src: 'https://example.com/image.png' }
     })
+    expect(screen.getByRole('img', { name: 'Source image' })).toHaveAttribute(
+      'fetchpriority',
+      'low'
+    )
 
     await user.click(
       screen.getByRole('button', { name: 'Expand Source image' })

@@ -1,7 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -138,8 +137,7 @@ describe('PackVersionSelectorPopover', () => {
           }
         },
         plugins: [i18n],
-        components: { VerifiedIcon },
-        directives: { tooltip: Tooltip }
+        components: { VerifiedIcon }
       }
     })
     return { ...result, user }
@@ -419,11 +417,19 @@ describe('PackVersionSelectorPopover', () => {
   })
 
   it.for([
-    { installedVersion: '0.9.0', latestInstalled: true },
-    { installedVersion: '1.0.0', latestInstalled: false }
+    {
+      installedVersion: '0.9.0',
+      latestInstalled: true,
+      selectedLabel: 'Latest stable (0.9.0)'
+    },
+    {
+      installedVersion: '1.0.0',
+      latestInstalled: false,
+      selectedLabel: 'Latest (1.0.0) Flagged'
+    }
   ])(
     'checks Latest against installed Active version, with $installedVersion installed',
-    async ({ installedVersion, latestInstalled }) => {
+    async ({ installedVersion, latestInstalled, selectedLabel }) => {
       mockGetPackVersions.mockResolvedValueOnce([
         { version: '1.0.0', status: 'NodeVersionStatusFlagged' },
         { version: '0.9.0', status: 'NodeVersionStatusActive' }
@@ -437,6 +443,9 @@ describe('PackVersionSelectorPopover', () => {
         name: 'Latest stable (0.9.0)'
       })
       expect(latest).toHaveAttribute('aria-disabled', String(latestInstalled))
+      expect(
+        screen.getByRole('option', { name: selectedLabel })
+      ).toHaveAttribute('aria-selected', 'true')
     }
   )
 
@@ -557,9 +566,20 @@ describe('PackVersionSelectorPopover', () => {
         'true'
       )
 
+      const store = useComfyManagerStore()
+      vi.mocked(store.isPackInstalled).mockReturnValue(true)
+      vi.mocked(store.getInstalledPackVersion).mockReturnValue('3.0.0')
       mockGetPackVersions.mockResolvedValueOnce([
-        { version: '3.0.0', createdAt: '2023-07-01' },
-        { version: '0.9.0', createdAt: '2023-04-01' }
+        {
+          version: '3.0.0',
+          status: 'NodeVersionStatusActive',
+          createdAt: '2023-07-01'
+        },
+        {
+          version: '0.9.0',
+          status: 'NodeVersionStatusActive',
+          createdAt: '2023-04-01'
+        }
       ])
 
       const newNodePack = {

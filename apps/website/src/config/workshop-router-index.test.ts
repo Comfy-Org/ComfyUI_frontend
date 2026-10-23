@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   compileWorkshopContracts,
   compileWorkshopIndex
-} from '../../scripts/generate-workshop-router-contracts'
-import packedContracts from '../content/workshop-router-contracts.json'
-import packedIndex from '../content/workshop-router-index.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
+} from '@website/scripts/generate-workshop-router-contracts'
+import packedContracts from '@/content/workshop-router-contracts.json'
+import packedIndex from '@/content/workshop-router-index.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
 import {
   workshopModels,
   routerWorkshopModelPaths,

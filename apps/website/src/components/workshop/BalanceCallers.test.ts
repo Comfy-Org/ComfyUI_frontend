@@ -15,32 +15,32 @@ import {
   TOKEN,
   credential,
   stubCloud
-} from '../../config/__fixtures__/workshopCloudRecorder'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { resetWorkshopAccountSource } from '../../config/workshop-account-source'
-import { useWorkshopCredits } from '../../config/workshop-credits'
-import { resetWorkshopSessionBalance } from '../../config/workshop-session-balance'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { resetUnifiedWebSessionEnabled } from '../../config/workshop-web-session'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
+} from '@/config/__fixtures__/workshopCloudRecorder'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
+import { resetWorkshopAccountSource } from '@/config/workshop-account-source'
+import { useWorkshopCredits } from '@/config/workshop-credits'
+import { resetWorkshopSessionBalance } from '@/config/workshop-session-balance'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { resetUnifiedWebSessionEnabled } from '@/config/workshop-web-session'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { runnableCinematicModels } from '@/lib/workshop/cinematic-studio/models'
 import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import CinematicCreditAction from './cinematic-studio/CinematicCreditAction.vue'
 import CinematicStudio from './cinematic-studio/CinematicStudio.vue'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
-vi.mock(import('../../scripts/posthog'))
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-billing-sdk'))
-vi.mock(import('../../config/workshop-features'))
-vi.mock(import('../../config/workshop-firebase'))
-vi.mock(import('../../config/router-render'), { spy: true })
+vi.mock(import('@/scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-billing-sdk'))
+vi.mock(import('@/config/workshop-features'))
+vi.mock(import('@/config/workshop-firebase'))
+vi.mock(import('@/config/router-render'), { spy: true })
 vi.mock(import('astro:env/client'), () => ({
   WORKSHOP_LOCAL_DEV: false,
   WORKSHOP_RELEASE: 'test',

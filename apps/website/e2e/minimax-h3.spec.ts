@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { minimaxLinks, minimaxPage } from '../src/data/minimax'
-import { t } from '../src/i18n/translations'
-import { faqAnswerPlainText } from '../src/utils/faqAnswer'
+import { externalLinks, getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { minimaxLinks, minimaxPage } from '@/data/minimax'
+import { t } from '@/i18n/translations'
+import { faqAnswerPlainText } from '@/utils/faqAnswer'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -13,7 +13,7 @@ const HERO_TITLE =
   t('minimax.hero.titleModel', {}, { locale: 'en' }) +
   t('minimax.hero.titleRest', {}, { locale: 'en' })
 const MODELS_HEADING = t('minimax.models.heading', {}, { locale: 'en' })
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const CTA_HEADING = t('minimax.cta.heading', {}, { locale: 'en' })
 const CTA_PRIMARY = t('minimax.cta.primaryCta', {}, { locale: 'en' })
 const CLOUD_URL = externalLinks.cloud
@@ -94,7 +94,7 @@ test.describe('MiniMax H3 page — link targets', () => {
     const modelsCrumb = page
       .getByRole('navigation', { name: 'Breadcrumb' })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

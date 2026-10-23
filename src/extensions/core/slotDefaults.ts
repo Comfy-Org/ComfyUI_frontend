@@ -3,7 +3,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 // Adds defaults for quickly adding nodes with middle click on the input/output
 
@@ -17,7 +17,7 @@ interface SlotDefaultsExtension extends ComfyExtension {
   setDefaults(maxNum?: number | null): void
 }
 
-app.registerExtension({
+export const slotDefaultsExtension: ComfyExtension = {
   name: 'Comfy.SlotDefaults',
   suggestionsNumber: null,
   init(this: SlotDefaultsExtension) {
@@ -103,4 +103,4 @@ app.registerExtension({
       ].slice(0, max)
     }
   }
-})
+}

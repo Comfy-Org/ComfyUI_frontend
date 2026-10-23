@@ -2,9 +2,9 @@
 import { useElementVisibility, useRafFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ARTWORKS } from './serverlessArtworks'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

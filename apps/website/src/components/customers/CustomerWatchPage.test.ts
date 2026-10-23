@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { getCustomerVideoStory } from '../../data/customerVideos'
+import { getCustomerVideoStory } from '@/data/customerVideos'
 import CustomerWatchPage from './CustomerWatchPage.vue'
 
 const blackMath = getCustomerVideoStory('black-math')

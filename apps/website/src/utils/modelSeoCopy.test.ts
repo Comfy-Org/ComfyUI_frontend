@@ -4,7 +4,7 @@ import {
   getPageDescription,
   getFaqPricingAnswer
 } from './modelSeoCopy'
-import type { Model } from '../config/models'
+import type { Model } from '@/config/models'
 
 describe('modelSeoCopy', () => {
   const localModel: Model = {

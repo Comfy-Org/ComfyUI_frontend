@@ -21080,6 +21080,8 @@ export interface operations {
                 "application/json": {
                     /** @description Optional URL to redirect the customer after they're done with the billing portal */
                     return_url?: string;
+                    /** @description When true, opens the portal on the subscription cancel confirmation. Cannot be combined with target_tier. */
+                    cancel_subscription?: boolean;
                     /**
                      * @description Optional target subscription tier. When provided, creates a deep link directly to the subscription update confirmation screen with this tier pre-selected.
                      * @enum {string}

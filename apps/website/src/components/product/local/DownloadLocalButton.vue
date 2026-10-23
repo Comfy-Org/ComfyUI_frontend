@@ -7,11 +7,11 @@ import {
   installers,
   platformIcons,
   useDownloadUrl
-} from '../../../composables/useDownloadUrl'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
-import { captureDownloadClick } from '../../../scripts/posthog'
-import BrandButton from '../../common/BrandButton.vue'
+} from '@/composables/useDownloadUrl'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { captureDownloadClick } from '@/scripts/posthog'
+import BrandButton from '@/components/common/BrandButton.vue'
 import InstallerMenu from './InstallerMenu.vue'
 
 const {

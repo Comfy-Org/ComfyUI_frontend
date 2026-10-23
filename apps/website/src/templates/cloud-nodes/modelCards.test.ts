@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import { cloudNodeModelCards } from './modelCards'
 
 const locales: Locale[] = ['en', 'zh-CN']

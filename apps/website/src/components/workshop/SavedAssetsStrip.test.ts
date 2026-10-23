@@ -8,14 +8,14 @@ import {
   GenerationAccessError,
   getWorkshopGeneration,
   listWorkshopGenerations
-} from '../../config/workshop-generation-assets'
-import type { SavedGeneration } from '../../config/workshop-generation-assets'
-import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
-import { downloadOutput } from '../../config/workshop-output-download'
+} from '@/config/workshop-generation-assets'
+import type { SavedGeneration } from '@/config/workshop-generation-assets'
+import { WORKSHOP_ASSETS_URL } from '@/config/workshop-env'
+import { downloadOutput } from '@/config/workshop-output-download'
 import SavedAssetsStrip from './SavedAssetsStrip.vue'
 
-vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
-vi.mock(import('../../config/workshop-output-download'), { spy: true })
+vi.mock(import('@/config/workshop-generation-assets'), { spy: true })
+vi.mock(import('@/config/workshop-output-download'), { spy: true })
 
 const assetId = '932cad6b-c94f-4e83-bffa-84be407b0440'
 const running: SavedGeneration = {
@@ -179,7 +179,7 @@ describe('SavedAssetsStrip', () => {
 
     await waitFor(() =>
       expect(
-        vi.mocked(accessWorkshopAsset),
+        accessWorkshopAsset,
         'a signed URL the browser refuses is worth one retry, not a loop'
       ).toHaveBeenCalledTimes(2)
     )
@@ -230,7 +230,7 @@ describe('SavedAssetsStrip', () => {
     await vi.advanceTimersByTimeAsync(31_000)
 
     expect(
-      vi.mocked(accessWorkshopAsset),
+      accessWorkshopAsset,
       'an expired URL turns the strip into broken images while the reader is looking at it'
     ).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
@@ -251,7 +251,7 @@ describe('SavedAssetsStrip', () => {
     await vi.advanceTimersByTimeAsync(16_000)
 
     expect(
-      vi.mocked(accessWorkshopAsset),
+      accessWorkshopAsset,
       'list polling has stopped once the run is complete, so nothing else would ever ask'
     ).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
@@ -333,7 +333,7 @@ describe('SavedAssetsStrip', () => {
     await vi.advanceTimersByTimeAsync(3_100)
 
     expect(
-      vi.mocked(listWorkshopGenerations),
+      listWorkshopGenerations,
       'a run that finishes while the reader waits must appear without a reload'
     ).toHaveBeenCalledTimes(2)
     vi.useRealTimers()

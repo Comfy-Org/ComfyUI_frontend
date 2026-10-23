@@ -147,7 +147,7 @@ Look for:
 - Interface design and API clarity
 - Leftover debug code (console.log, commented code, TODO comments)
 - Hand-declared/inlined server or API response types that duplicate a type already generated from an OpenAPI spec (`@comfyorg/ingest-types`, `@comfyorg/registry-types` under `packages/`) instead of importing it — these silently drift from the real contract and caused real bugs in PR #14771
-- Gratuitous comments added by the diff (restating the next line, narrating obvious control flow, justifying a trivial fix) — run the `comment-sicko` skill (`.claude/skills/comment-sicko/SKILL.md`) as an additional pass and fold its findings into this same review instead of duplicating its diffing/classification logic
+- Any comment added by the diff other than curt JSDoc on an exported API (including comments that explain why, cite a ticket, or justify a workaround) — run the `comment-sicko` skill (`.claude/skills/comment-sicko/SKILL.md`) as an additional pass and fold its findings into this same review instead of duplicating its diffing/classification logic
 
 #### 3.2.1 Audit suppressions before approving
 
@@ -184,7 +184,7 @@ evidence in the review.
 
 CRITICAL: Flag any re-implementation of existing functionality:
 - **Tailwind CSS**: Custom CSS instead of utility classes
-- **PrimeVue**: Re-implementing buttons, modals, dropdowns, etc.
+- **Design system** (`src/components/ui`): Re-implementing buttons, modals, dropdowns, etc.
 - **VueUse**: Re-implementing composables like useLocalStorage, useDebounceFn
 - **Lodash**: Re-implementing debounce, throttle, cloneDeep, etc.
 - **Common components**: Not reusing from src/components/common/

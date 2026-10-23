@@ -1,4 +1,4 @@
-import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import type { RunOutput } from './workshop-run'
 import { rasterizeSvgImage } from './workshop-svg-rasterizer'
 

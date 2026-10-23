@@ -1,12 +1,24 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  toRaw,
+  watch
+} from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -15,11 +27,51 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
+
+interface AgentOnboardingPolicy {
+  startup: 'activationVisits' | 'lockedUntilConsent'
+  offerMemory: 'shown' | 'answered'
+  agentButton: 'requestConsent' | 'togglePanel'
+  persistSkipAsRefusal: boolean
+  introduceBeforeSignIn: boolean
+}
+
+const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'activationVisits',
+  offerMemory: 'shown',
+  agentButton: 'requestConsent',
+  persistSkipAsRefusal: true,
+  introduceBeforeSignIn: false
+}
+
+const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'lockedUntilConsent',
+  offerMemory: 'answered',
+  agentButton: 'togglePanel',
+  persistSkipAsRefusal: false,
+  introduceBeforeSignIn: true
+}
+
+function isLocalDesktopApp(): boolean {
+  if (isCloud) return false
+  if (isDesktop) return true
+  const bridge = window.__comfyDesktop2
+  if (!bridge) return false
+  return !(bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false)
+}
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -68,7 +120,26 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const onboarding = computed<
+    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
+  >(() =>
+    pendingServerFact(
+      'BE-22051',
+      isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
+    )
+  )
+  /** The server's `agent` feature; undefined unless its state is known. */
+  const comfyAgent = computed(() => {
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
+    const agent = featureFlags.agent
+    return agent?.state === 'starting' ||
+      agent?.state === 'ready' ||
+      agent?.state === 'failed'
+      ? (agent as AgentServerFeature)
+      : undefined
+  })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -78,6 +149,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
    */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const reportedFreeUseExposure = ref(false)
+  const reportedFreeUseImpression = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
+  let nextFundsRecheckId = 0
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -211,6 +291,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseExposure.value = false
+    reportedFreeUseImpression.value = false
+  }
+
   const isVisible = computed(() => enabled.value && isOpen.value)
 
   watch(isVisible, (visible) => {
@@ -220,8 +307,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
     hasEverOpened.value = true
     if (openedAt !== null) return
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -260,8 +346,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   ): void {
     if (isOpen.value) return
     isOpen.value = true
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -326,6 +411,68 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): void {
+    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
+    fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
+  onScopeDispose(cancelFundsRechecks)
+
   return {
     enabled,
     consentAccepted,
@@ -336,7 +483,19 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     view,
     interruptHistorySelection,
     flagsSettled,
+    comfyAgent,
+    onboarding,
     reportedExhaustionIdentity,
+    reportedFreeUseExposure,
+    reportedFreeUseImpression,
+    creditTransitionNotice: readonly(creditTransitionNotice),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
     requestedWidth,
     isOverlay,

@@ -1,4 +1,4 @@
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
 
 type MediaRole = WorkshopModelEntry['roles'][number]
 

@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import LiveTerminal from './LiveTerminal.vue'
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn()
 }))
 

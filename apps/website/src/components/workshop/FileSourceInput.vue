@@ -5,10 +5,10 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { FieldSchema, FileValue } from '../../config/workshop-playground'
-import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { FieldSchema, FileValue } from '@/config/workshop-playground'
+import { formatWorkshopUploadLimit } from '@/config/workshop-limits'
+import type { Locale, TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SelectedFileRow from './SelectedFileRow.vue'
 
 const {

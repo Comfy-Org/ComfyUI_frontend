@@ -3,22 +3,20 @@
     v-if="nodePacks?.length"
     class="flex scrollbar-custom h-full flex-col overflow-y-auto"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase">
-          {{ t('manager.actions') }}
-        </span>
+        {{ t('manager.actions') }}
       </template>
       <div class="flex flex-col gap-1 px-4">
         <!-- Mixed: Don't show any button -->
-        <div v-if="isMixed" class="text-sm text-neutral-500">
+        <div v-if="isMixed" class="text-sm text-muted-foreground">
           {{ $t('manager.mixedSelectionMessage') }}
         </div>
         <!-- All installed: Show update (if nightly) and uninstall buttons -->
         <template v-else-if="isAllInstalled">
           <Button
             v-if="hasNightlyPacks"
-            v-tooltip.top="$t('manager.tryUpdateTooltip')"
+            :tooltip="$t('manager.tryUpdateTooltip')"
             variant="textonly"
             size="md"
             :disabled="isUpdatingSelected"
@@ -40,11 +38,9 @@
       </div>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase">
-          {{ t('manager.basicInfo') }}
-        </span>
+        {{ t('manager.basicInfo') }}
       </template>
       <ModelInfoField :label="t('manager.selected')">
         <span>
@@ -80,7 +76,6 @@ import Button from '@/components/ui/button/Button.vue'
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
@@ -95,10 +90,6 @@ const { nodePacks } = defineProps<{
 }>()
 
 const { t } = useI18n()
-
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
 
 const managerStore = useComfyManagerStore()
 const nodePacksRef = toRef(() => nodePacks)

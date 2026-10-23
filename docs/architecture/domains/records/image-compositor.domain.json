@@ -1,0 +1,132 @@
+{
+  "id": "image-compositor",
+  "capability": "Image compositor",
+  "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
+  "modules": [
+    {
+      "path": "src/extensions/core/imageCompositor.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/imageCompositor.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/layerEditor.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Compositor sessions preserve layer state and save behavior",
+      "checks": [
+        "src/renderer/extensions/compositor/composables/compositorSession.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorSave.test.ts",
+        "src/renderer/extensions/compositor/composables/useCompositorAutoSave.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorLayerState.test.ts",
+        "src/renderer/extensions/compositor/composables/useCompositorLayers.test.ts",
+        "src/renderer/extensions/compositor/composables/compositorWidgets.test.ts",
+        "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+        "src/extensions/core/imageCompositor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor engine keeps the scene document, undo history, layer kinds, and transform tools consistent",
+      "checks": [
+        "packages/layer-editor/src/document.test.ts",
+        "packages/layer-editor/src/history.test.ts",
+        "packages/layer-editor/src/commands/structure.test.ts",
+        "packages/layer-editor/src/kinds/kinds.test.ts",
+        "packages/layer-editor/src/tools/tools.test.ts",
+        "packages/layer-editor/src/editor/editor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor renders the stack, bakes and places content, and exports PSD files",
+      "checks": [
+        "packages/layer-editor/src/render/renderStack.test.ts",
+        "packages/layer-editor/src/render/place.test.ts",
+        "src/renderer/extensions/layerEditor/psdExport.test.ts",
+        "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor dialog opens from node outputs and drives the editing session",
+      "checks": [
+        "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+        "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
+    "Layer state and save behavior remain characterized independently of presentation."
+  ],
+  "deepImports": "enforced"
+}

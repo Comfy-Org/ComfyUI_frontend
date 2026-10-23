@@ -1,4 +1,8 @@
-import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
+import {
+  OPAQUE_WIDGETS_KEY,
+  WIDGET_FORM_KEY,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -113,7 +117,8 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION || !isReadableKey(key)) return
+    if (key === NODE_INCARNATION || key === WIDGET_FORM_KEY) return
+    if (!isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
       node.widgets_values_named = Object.fromEntries(
         [...value.entries()].flatMap(([name, widgetValue]) =>
@@ -339,6 +344,73 @@ function definitionsMap(doc: Y.Doc): Y.Map<unknown> | null {
   return doc.getMap<unknown>(DEFINITIONS_ROOT)
 }
 
+/** The definitions root a deep observer can attach to. */
+export function definitionsObserverRoot(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>(DEFINITIONS_ROOT)
+}
+
+/** Interior widget values: named map, opaque array, or absent. */
+type InteriorWidgetValues =
+  | Record<string, unknown>
+  | readonly unknown[]
+  | undefined
+
+function readInteriorWidgets(source: Y.Map<unknown>): InteriorWidgetValues {
+  const widgets = source.get('widgets')
+  if (widgets instanceof Y.Map) {
+    return Object.fromEntries(
+      [...widgets.entries()].flatMap(([name, value]) =>
+        isReadableKey(name) ? [[name, plain(value)]] : []
+      )
+    )
+  }
+  const opaque = source.get(OPAQUE_WIDGETS_KEY)
+  if (opaque !== undefined) {
+    const value = plain(opaque)
+    return Array.isArray(value) ? value : undefined
+  }
+  return undefined
+}
+
+function collectInteriorWidgets(
+  source: Y.Map<unknown>,
+  into: Map<string, Map<string, InteriorWidgetValues>>
+): void {
+  const id = plain(source.get('id'))
+  const nodes = source.get('nodes')
+  if (typeof id === 'string' && nodes instanceof Y.Map) {
+    const interiors = new Map<string, InteriorWidgetValues>()
+    for (const nodeId of orderedKeys(source.get(NODE_ORDER), nodes)) {
+      const node = nodes.get(nodeId)
+      if (node instanceof Y.Map)
+        interiors.set(nodeId, readInteriorWidgets(node))
+    }
+    into.set(id, interiors)
+  }
+  const nested = source.get('definitions')
+  if (nested instanceof Y.Map) {
+    const subgraphs = nested.get('subgraphs')
+    if (subgraphs instanceof Y.Map) {
+      subgraphs.forEach((value) => {
+        if (value instanceof Y.Map) collectInteriorWidgets(value, into)
+      })
+    }
+  }
+}
+
+/** Every definition's interior widget values, in mint order. */
+export function readSubgraphInteriorWidgets(
+  doc: Y.Doc
+): Map<string, Map<string, InteriorWidgetValues>> {
+  const result = new Map<string, Map<string, InteriorWidgetValues>>()
+  const root = definitionsMap(doc)
+  if (!root) return result
+  root.forEach((value) => {
+    if (value instanceof Y.Map) collectInteriorWidgets(value, result)
+  })
+  return result
+}
+
 export function allSubgraphDefinitions(
   definitions: readonly ExportedSubgraph[]
 ): ExportedSubgraph[] {
@@ -383,4 +455,89 @@ export function readSubgraphDefinitions(
     if (definition) definitions.push(definition)
   })
   return definitions
+}
+
+/**
+ * What the document knows about a node's promoted widget layout.
+ *
+ * `valueCount` sizes the positional array a promoted write indexes.
+ * `promotedNames` reconstructs that array's exact name order from the
+ * definition plus the instance's input mirror: a definition input is promoted
+ * when the mirror either omits it or carries its widget marker. Neither source
+ * is sufficient alone because the mirror can omit promoted values the array
+ * still carries. An unreadable array or name sequence is represented by null
+ * so the minter can fail closed.
+ *
+ * `promotedNames` separates ABSENT from UNREADABLE, because they license
+ * opposite answers on a first write: `undefined` is a document carrying no
+ * definition for the node, which contradicts no ordering and lets the live
+ * order build the array, while `null` is a definition whose inputs cannot be
+ * read, which must fail closed.
+ */
+export interface DocPromotedWidgets {
+  valueCount: number | null
+  declaredNames: readonly string[]
+  promotedNames: readonly string[] | null | undefined
+}
+
+/** Null when the document holds no such node. */
+export function readDocPromotedWidgets(
+  doc: Y.Doc,
+  nodeId: string
+): DocPromotedWidgets | null {
+  const node = nodesMap(doc).get(nodeId)
+  if (!(node instanceof Y.Map)) return null
+  const stored = node.get(OPAQUE_WIDGETS_KEY)
+  return {
+    valueCount:
+      stored === undefined
+        ? 0
+        : stored instanceof Y.Array || Array.isArray(stored)
+          ? stored.length
+          : null,
+    declaredNames: declaredInputNames(doc, String(node.get('type') ?? '')),
+    promotedNames: promotedInputNames(doc, node, String(node.get('type') ?? ''))
+  }
+}
+
+function namedInputs(source: unknown): Array<[string, unknown]> | null {
+  const inputs =
+    source instanceof Y.Array
+      ? source.toArray()
+      : Array.isArray(source)
+        ? source
+        : null
+  if (inputs === null) return null
+  const named: Array<[string, unknown]> = []
+  for (const input of inputs) {
+    const name = readField(input, 'name')
+    if (typeof name !== 'string') return null
+    named.push([name, input])
+  }
+  return named
+}
+
+function promotedInputNames(
+  doc: Y.Doc,
+  node: Y.Map<unknown>,
+  definitionId: string
+): string[] | null | undefined {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return undefined
+  const declared = namedInputs(definition.get('inputs'))
+  const instance = namedInputs(node.get('inputs'))
+  if (declared === null || instance === null) return null
+  const instanceByName = new Map(instance)
+  return declared.flatMap(([name]) => {
+    const input = instanceByName.get(name)
+    return input === undefined || readField(input, 'widget') !== undefined
+      ? [name]
+      : []
+  })
+}
+
+function declaredInputNames(doc: Y.Doc, definitionId: string): string[] {
+  const definition = definitionsMap(doc)?.get(definitionId)
+  if (!(definition instanceof Y.Map)) return []
+  return namedInputs(definition.get('inputs'))?.map(([name]) => name) ?? []
 }

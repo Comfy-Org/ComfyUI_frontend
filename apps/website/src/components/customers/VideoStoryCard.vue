@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import PlayOverlay from '../blocks/PlayOverlay.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import PlayOverlay from '@/components/blocks/PlayOverlay.vue'
 
 const { story, locale = 'en' } = defineProps<{
   story: {

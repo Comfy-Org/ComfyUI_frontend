@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Coins as CreditsIcon } from '@lucide/vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   formatCreditsPerGbMonth,
   formatCreditsPerHour,
@@ -13,7 +13,7 @@ import {
   getStorageRate,
   groupStorageRatesForDisplay,
   rateCard
-} from '../../data/rateCard'
+} from '@/data/rateCard'
 
 const {
   locale = 'en',
@@ -52,6 +52,12 @@ const storageRates = groupStorageRatesForDisplay(rateCard.storage)
 const storageExampleAmount = formatStorageExampleAmount(
   getStorageRate('network_standard')
 )
+
+const gpuNotes = [
+  t('platform.pricing.billedPerSecond'),
+  t('platform.pricing.containerDiskIncluded'),
+  t('platform.pricing.commercialUse')
+]
 
 const rootTag = bare ? 'div' : 'section'
 const rootId = bare ? undefined : 'pricing'
@@ -119,7 +125,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
           </li>
         </ul>
         <p class="mt-6 text-xs text-primary-warm-gray">
-          {{ t('platform.pricing.billedPerSecond') }}
+          <span v-for="note in gpuNotes" :key="note" class="block">
+            {{ note }}
+          </span>
         </p>
       </article>
 
@@ -217,7 +225,9 @@ const mobileStorageRows = storageRates.map((rate) => ({
             </table>
           </div>
           <p class="mt-auto px-2 pt-6 text-xs text-primary-warm-gray">
-            {{ t('platform.pricing.billedPerSecond') }}
+            <span v-for="note in gpuNotes" :key="note" class="block">
+              {{ note }}
+            </span>
           </p>
         </article>
 

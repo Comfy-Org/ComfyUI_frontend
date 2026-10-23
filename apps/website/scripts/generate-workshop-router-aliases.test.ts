@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import catalog from '../src/content/workshop-models.json'
-import packedAliases from '../src/content/workshop-router-aliases.json'
-import rawAudit from '../src/data/workshop-router-identity-audit.json'
-import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
-import { workshopIdentityAuditSchema } from '../src/config/workshop-router-identity'
+import catalog from '@/content/workshop-models.json'
+import packedAliases from '@/content/workshop-router-aliases.json'
+import rawAudit from '@/data/workshop-router-identity-audit.json'
+import rawSnapshots from '@/data/workshop-router-openapi.snapshot.json'
+import { workshopIdentityAuditSchema } from '@/config/workshop-router-identity'
 import { compileWorkshopAliases } from './generate-workshop-router-aliases'
 
 const audit = workshopIdentityAuditSchema.parse(rawAudit)

@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { ROUTER_MIGRATION_PROMPT } from '../../config/router-migration-prompt'
+import { ROUTER_MIGRATION_PROMPT } from '@/config/router-migration-prompt'
 import RouterMigrationBanner from './RouterMigrationBanner.vue'
 
 describe('RouterMigrationBanner', () => {

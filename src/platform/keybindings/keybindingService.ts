@@ -50,7 +50,7 @@ export function useKeybindingService() {
     if (
       event.key === 'Escape' &&
       target instanceof Element &&
-      target.closest('[role="menu"], [role="menubar"]')
+      target.closest('[role="menu"], [role="menubar"], [role="dialog"]')
     ) {
       return
     }

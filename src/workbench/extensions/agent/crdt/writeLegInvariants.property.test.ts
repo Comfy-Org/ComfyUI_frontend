@@ -1,7 +1,7 @@
-import type { Op } from '@comfyorg/comfy-multi-player'
 import * as fc from 'fast-check'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 import type { OpsResultView } from './opSender'
@@ -120,13 +120,17 @@ describe('CRDT human write-leg invariants (property)', () => {
   it('serializes arbitrary operation sequences in causal mint order', () => {
     fc.assert(
       fc.property(arbOperations, (operations) => {
-        const sent: Op[][] = []
+        const sent: (readonly DocOp[])[] = []
         let producerVersion = 41
         let resultListener = (_result: OpsResultView): void => {
           throw new Error('Expected an operation-result listener')
         }
         const deps = {
-          sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
+          sendOps: (
+            _workflowId: string,
+            _tab: string,
+            ops: readonly DocOp[]
+          ) => {
             sent.push(ops)
             return true
           },
@@ -185,10 +189,14 @@ describe('CRDT human write-leg invariants (property)', () => {
         arbOperations,
         fc.integer({ min: 1, max: 4 }),
         (operations, failedAttempts) => {
-          const attempts: Op[][] = []
+          const attempts: (readonly DocOp[])[] = []
           let callCount = 0
           const deps = {
-            sendOps: (_workflowId: string, _tab: string, ops: Op[]) => {
+            sendOps: (
+              _workflowId: string,
+              _tab: string,
+              ops: readonly DocOp[]
+            ) => {
               attempts.push(ops)
               callCount += 1
               return callCount > failedAttempts

@@ -3,6 +3,7 @@ import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
@@ -43,6 +44,7 @@ import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
@@ -83,6 +85,7 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
   readonly toggleButton: Locator
+  readonly closeButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
@@ -92,11 +95,15 @@ class ComfyPropertiesPanel {
     this.toggleButton = page.getByRole('button', {
       name: 'Toggle properties panel'
     })
+    this.closeButton = this.root.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
   }
 }
 
 class ComfyMenu {
   private _appsTab: SidebarTab | null = null
+  private _jobHistoryTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -134,6 +141,11 @@ class ComfyMenu {
   get appsTab() {
     this._appsTab ??= new SidebarTab(this.page, 'apps')
     return this._appsTab
+  }
+
+  get jobHistoryTab() {
+    this._jobHistoryTab ??= new SidebarTab(this.page, 'job-history')
+    return this._jobHistoryTab
   }
 
   get assetsTab() {
@@ -183,7 +195,6 @@ export class ComfyPage {
   public readonly widgetTextBox: Locator
 
   // Buttons
-  public readonly resetViewButton: Locator
   public readonly queueButton: Locator // Run button in Legacy UI
   public readonly runButton: Locator // Run button (renamed "Queue" -> "Run")
 
@@ -211,6 +222,7 @@ export class ComfyPage {
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
+  public readonly currentUserPopover: CurrentUserPopover
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
   public readonly featureFlags: FeatureFlagHelper
@@ -221,7 +233,6 @@ export class ComfyPage {
   public readonly assets: AssetsHelper
   public readonly modelLibrary: ModelLibraryHelper
   public readonly cloudAuth: CloudAuthHelper
-  public readonly visibleToasts: Locator
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -243,7 +254,6 @@ export class ComfyPage {
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
-    this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
@@ -261,15 +271,15 @@ export class ComfyPage {
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
-    this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
+    this.canvasOps = new CanvasHelper(page, this.canvas)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
     this.clipboard = new ClipboardHelper(this.keyboard, page)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
+    this.currentUserPopover = new CurrentUserPopover(page)
     this.toast = new ToastHelper(page)
-    this.visibleToasts = this.toast.visibleToasts
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
@@ -335,6 +345,7 @@ export class ComfyPage {
           'Comfy.EnableTooltips': false,
           'Comfy.TutorialCompleted': true,
           [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+          ...DEPLOY_ACTION_SEEN_SETTINGS,
           'Comfy.Queue.MaxHistoryItems': 64,
           'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
           'Comfy.VersionCompatibility.DisableWarnings': true,
@@ -361,9 +372,8 @@ export class ComfyPage {
     mockReleases?: boolean
     url?: string
   } = {}) {
-    // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
-      await this.page.route('**/releases**', async (route) => {
+      await this.page.context().route('**/releases**', async (route) => {
         const url = route.request().url()
         if (
           url.includes('api.comfy.org') ||
@@ -381,8 +391,6 @@ export class ComfyPage {
     }
 
     if (clearStorage) {
-      // Navigate to a lightweight same-origin endpoint to obtain a page
-      // context for clearing storage without loading the full frontend app.
       await this.page.goto(`${this.url}/api/users`)
       await this.page.evaluate((id) => {
         localStorage.clear()
@@ -398,6 +406,8 @@ export class ComfyPage {
 
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
+    if ((await this.settings.getSetting('Comfy.UseNewMenu')) === 'Disabled')
+      await this.startInFocusMode()
   }
 
   /**
@@ -516,8 +526,9 @@ export class ComfyPage {
     })
   }
 
-  async closeMenu() {
+  private async startInFocusMode() {
     await this.page.locator('button.comfy-close-menu-btn').click()
+    await this.canvasOps.moveMouseToEmptyArea()
     await this.nextFrame()
   }
 
@@ -536,27 +547,6 @@ export class ComfyPage {
 
   get domWidgets(): Locator {
     return this.page.locator('.dom-widget')
-  }
-
-  async expectScreenshot(
-    locator: Locator,
-    name: string | string[],
-    options?: {
-      animations?: 'disabled' | 'allow'
-      caret?: 'hide' | 'initial'
-      mask?: Array<Locator>
-      maskColor?: string
-      maxDiffPixelRatio?: number
-      maxDiffPixels?: number
-      omitBackground?: boolean
-      scale?: 'css' | 'device'
-      stylePath?: string | Array<string>
-      threshold?: number
-      timeout?: number
-    }
-  ): Promise<void> {
-    await this.nextFrame()
-    await comfyExpect(locator).toHaveScreenshot(name, options)
   }
 
   async setFocusMode(focusMode: boolean) {

@@ -2,17 +2,17 @@
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
-import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import type { CliClientId } from '../../scripts/posthog'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import SurfaceToggle from '@/components/common/SurfaceToggle.vue'
+import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { CliClientId } from '@/scripts/posthog'
 import {
   captureCliClientTabClick,
   captureCliConnectionTabClick
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

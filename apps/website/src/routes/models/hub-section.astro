@@ -1,10 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import type { CatalogueTab } from '../../components/workshop/CatalogueTabs.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
-import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '../../config/hub-models'
-import { isIndexableModelPage } from '../../config/indexing'
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import { challengeBannerConfig } from '@/config/banner'
+import ModelsPage from '@/components/workshop/ModelsPage.vue'
+import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
+import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
+import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-models'
+import { isIndexableModelPage } from '@/config/indexing'
 import { HUB_SECTION_COPY } from './hub-section-copy'
 
 const SECTIONS: Readonly<Record<string, Exclude<CatalogueTab, 'models'>>> = {
@@ -22,9 +23,10 @@ const copy = HUB_SECTION_COPY[section]
   description={copy.description}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
+  banner={challengeBannerConfig}
 >
   <script>
-    import '../../scripts/hubNavigation'
+    import '@/scripts/hubNavigation'
   </script>
   <ModelsPage
     section={section}
