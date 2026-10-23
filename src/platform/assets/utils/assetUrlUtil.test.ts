@@ -229,6 +229,11 @@ describe('getApiMediaRoute', () => {
       route: '/view?filename=a.png'
     },
     {
+      name: 'a view route with a percent-encoded query',
+      href: `${origin}/api/view?filename=Beach+photo.png&subfolder=vid%2F2026`,
+      route: '/view?filename=Beach+photo.png&subfolder=vid%2F2026'
+    },
+    {
       name: 'an assets content route',
       href: `${origin}/api/assets/asset-1/content?disposition=inline`,
       route: '/assets/asset-1/content?disposition=inline'
