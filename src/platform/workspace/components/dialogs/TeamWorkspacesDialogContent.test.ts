@@ -124,6 +124,7 @@ describe('TeamWorkspacesDialogContent', () => {
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     workspaceStore.workspaces = []
+    workspaceStore.workspacesManagedByOrganization = false
   })
 
   describe('workspace listing', () => {
@@ -192,6 +193,30 @@ describe('TeamWorkspacesDialogContent', () => {
       expect(useToast().error).toHaveBeenCalledWith(
         'workspaceSwitcher.failedToSwitch',
         { description: 'Network error' }
+      )
+    })
+  })
+
+  describe('when creation is refused', () => {
+    it('replaces the create form with the organization notice', () => {
+      setOwnedWorkspaces()
+      workspaceStore.workspacesManagedByOrganization = true
+      const { container } = mountComponent()
+      expect(container.querySelector('#workspace-name-input')).toBeNull()
+      expect(container.textContent).toContain(
+        'workspaceSwitcher.managedByOrganization'
+      )
+      expect(container.textContent).toContain('Team Alpha')
+    })
+
+    it('explains the owned-workspace limit', () => {
+      workspaceStore.workspaces = Array.from({ length: 10 }, (_, i) =>
+        createTeamWorkspace({ id: `ws-${i}`, name: `Team ${i}`, role: 'owner' })
+      )
+      const { container } = mountComponent()
+      expect(container.querySelector('#workspace-name-input')).toBeNull()
+      expect(container.textContent).toContain(
+        'workspaceSwitcher.maxWorkspacesReached'
       )
     })
   })
