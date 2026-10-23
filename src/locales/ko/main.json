@@ -1259,7 +1259,6 @@
       "openCheckout": "결제 페이지 열기",
       "openPaymentPage": "결제 페이지 열기",
       "payAmount": "{amount} 결제하기",
-      "purchaseDisclosure": "크레딧을 구매해도 구독이 시작되거나 Cloud 워크플로가 잠금 해제되지는 않습니다. Cloud에서 워크플로를 실행하려면 요금제가 필요합니다. 로컬 ComfyUI 및 Desktop의 Partner Nodes는 요금제 없이도 크레딧을 사용할 수 있습니다.",
       "purchaseError": "구매 실패",
       "purchaseErrorDetail": "크레딧 구매 실패: {error}",
       "purchaseSuccess": "크레딧이 성공적으로 추가되었습니다!",

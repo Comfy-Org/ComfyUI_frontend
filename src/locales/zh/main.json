@@ -1259,7 +1259,6 @@
       "openCheckout": "打开结账页面",
       "openPaymentPage": "打开付款页面",
       "payAmount": "支付 {amount}",
-      "purchaseDisclosure": "购买积分不会开始订阅，也不会解锁云端工作流。在云端运行工作流需要订阅计划。本地 ComfyUI 和桌面版中的合作伙伴节点无需订阅计划即可使用积分。",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",

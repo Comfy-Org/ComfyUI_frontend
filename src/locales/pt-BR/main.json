@@ -1259,7 +1259,6 @@
       "openCheckout": "Abrir checkout",
       "openPaymentPage": "Abrir página de pagamento",
       "payAmount": "Pagar {amount}",
-      "purchaseDisclosure": "A compra de créditos não inicia uma assinatura nem desbloqueia fluxos de trabalho na Cloud. É necessário ter um plano para executar fluxos de trabalho na Cloud. Os Partner Nodes no ComfyUI local e no Desktop podem usar créditos sem um plano.",
       "purchaseError": "Falha na compra",
       "purchaseErrorDetail": "Falha ao comprar créditos: {error}",
       "purchaseSuccess": "Créditos adicionados com sucesso!",

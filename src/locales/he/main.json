@@ -1259,7 +1259,6 @@
       "openCheckout": "פתח את דף התשלום",
       "openPaymentPage": "פתח את דף התשלום",
       "payAmount": "שלם {amount}",
-      "purchaseDisclosure": "רכישת קרדיטים אינה מתחילה מנוי ואינה פותחת תהליכי עבודה ב-Cloud. נדרשת תוכנית כדי להפעיל תהליכי עבודה ב-Cloud. צמתי שותפים ב-ComfyUI מקומי וב-Desktop יכולים להשתמש בקרדיטים ללא תוכנית.",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",
       "purchaseSuccess": "הקרדיטים נוספו בהצלחה!",
