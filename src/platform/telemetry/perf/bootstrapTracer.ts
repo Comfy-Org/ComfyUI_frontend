@@ -57,11 +57,8 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
-import { datadogRum } from '@datadog/browser-rum'
-
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getDatadogRum } from '@/platform/telemetry/rumContext'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
@@ -213,7 +210,7 @@ export class BootstrapTracer {
   }
 
   private _publishRumTiming(name: string): void {
-    if (isCloud) datadogRum.addTiming(toRumTimingName(name))
+    getDatadogRum()?.addTiming(toRumTimingName(name))
   }
 
   /**
@@ -287,11 +284,9 @@ export class BootstrapTracer {
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      if (isCloud) {
-        datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-      }
+      getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
-      if (isCloud && outcome === 'completed') datadogRum.setViewLoadingTime()
+      if (outcome === 'completed') getDatadogRum()?.setViewLoadingTime()
       this._logSummary(rows, totalMs)
     } catch {
       return
