@@ -62,7 +62,8 @@ function onlyReport() {
 
 function onlyReportContext(): Record<string, unknown> {
   const [, options] = onlyReport()
-  return (options as unknown as { context: Record<string, unknown> }).context
+  assert(options.context)
+  return options.context
 }
 
 beforeEach(() => {
