@@ -5849,7 +5849,7 @@
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
-      "lead": "This tool wants to run the workflow:",
+      "lead": "Comfy Agent wants to run the workflow:",
       "leadBound": "Comfy Agent wants to run this workflow.",
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",

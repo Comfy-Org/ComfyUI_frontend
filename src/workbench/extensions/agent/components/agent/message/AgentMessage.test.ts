@@ -622,7 +622,7 @@ describe('AgentMessage run approval', () => {
     })
 
     expect(
-      screen.getByText('This tool wants to run the workflow:')
+      screen.getByText('Comfy Agent wants to run the workflow:')
     ).toBeInTheDocument()
     expect(screen.getByText('Do you approve?')).toBeInTheDocument()
 
