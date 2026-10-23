@@ -288,17 +288,19 @@ describe('UserMessage', () => {
 
   it.for([
     {
+      source: 'its asset content route when the assets API is on',
       assetsEnabled: true,
       url: expect.stringMatching(
         /\/api\/assets\/asset-9\/content\?disposition=inline$/
       )
     },
     {
+      source: 'its input filename when the assets API is off',
       assetsEnabled: false,
       url: expect.stringContaining('/view?filename=upload.png&type=input')
     }
   ])(
-    'previews a rehydrated attachment by its server asset id (assets API: $assetsEnabled)',
+    'previews a rehydrated attachment by $source',
     ({ assetsEnabled, url }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
       const persisted: AgentMessages[number] = {
