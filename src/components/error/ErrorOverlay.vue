@@ -47,7 +47,7 @@
           </p>
         </div>
 
-        <ErrorOverlayDeploymentOffer v-if="isCloud && hasMissingNodes" />
+        <ErrorOverlayDeploymentOffer v-if="hasMissingNodes" />
 
         <div class="flex w-full items-center justify-end pt-2">
           <Button
@@ -85,11 +85,10 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import ErrorOverlayDeploymentOffer from '@/components/error/ErrorOverlayDeploymentOffer.vue'
-import { isCloud } from '@/platform/distribution/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 

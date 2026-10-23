@@ -110,8 +110,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
-import MissingNodeDeploymentOffer from '@/components/rightSidePanel/errors/MissingNodeDeploymentOffer.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import MissingNodeDeploymentOffer from '@/platform/workspace/components/MissingNodeDeploymentOffer.vue'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean

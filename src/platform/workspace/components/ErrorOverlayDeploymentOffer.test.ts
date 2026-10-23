@@ -26,7 +26,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-import ErrorOverlay from './ErrorOverlay.vue'
+import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 
 const hoisted = vi.hoisted(() => ({
   rootGraph: undefined as unknown,
