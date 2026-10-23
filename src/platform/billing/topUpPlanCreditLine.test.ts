@@ -5,15 +5,40 @@ import { topUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 const cloudReady = {
   isCloud: true,
   isBillingInitialized: true,
-  canTopUp: true
+  canTopUp: true,
+  freeRunsRemaining: 0
 }
 
 describe('topUpPlanCreditLine', () => {
   it.for([
     {
-      case: 'a Free workspace that never subscribed',
+      case: 'a Free workspace with free runs left',
+      facts: { subscriptionState: 'never_subscribed', freeRunsRemaining: 3 },
+      line: 'planRequiredFreeRuns'
+    },
+    {
+      case: 'a Free workspace whose free runs are used up',
       facts: { subscriptionState: 'never_subscribed' },
       line: 'planRequiredSubscribe'
+    },
+    {
+      case: 'an ended plan with free runs served',
+      facts: { subscriptionState: 'ended', freeRunsRemaining: 3 },
+      line: 'planRequiredResubscribe'
+    },
+    {
+      case: 'an active plan with free runs served',
+      facts: { subscriptionState: 'active', freeRunsRemaining: 3 },
+      line: null
+    },
+    {
+      case: 'free runs left while top-up is refused',
+      facts: {
+        subscriptionState: 'never_subscribed',
+        freeRunsRemaining: 3,
+        canTopUp: false
+      },
+      line: null
     },
     {
       case: 'an ended plan',

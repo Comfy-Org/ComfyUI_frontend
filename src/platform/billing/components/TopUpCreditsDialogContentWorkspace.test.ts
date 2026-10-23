@@ -614,6 +614,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
+  it('says Subscribe keeps runs going while the served free runs remain', () => {
+    remoteConfig.value = {
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    }
+    onTestFinished(() => {
+      remoteConfig.value = {}
+    })
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
+    renderDialog()
+
+    expect(screen.getByTestId('top-up-plan-credit-line')).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    )
+  })
+
   it('shows no plan line for an active plan', () => {
     const billing = mockBillingContext()
     billing.isInitialized.value = true
