@@ -117,19 +117,29 @@ describe('ToolPanel', () => {
   })
 
   describe('color picker', () => {
-    it.for([Tools.MaskPen, Tools.Eraser] as const)(
-      'should show the color picker for %s',
-      (tool) => {
-        mockStore.currentTool = tool
-        renderPanel()
+    it('should show the color picker for the paint pen', () => {
+      mockStore.currentTool = Tools.PaintPen
+      renderPanel()
 
-        const input = screen.getByLabelText('Color Selector')
-        expect(useMaskEditorStore().colorInput).toBe(input)
-      }
-    )
+      const input = screen.getByLabelText('Color Selector')
+      expect(useMaskEditorStore().colorInput).toBe(input)
+    })
+
+    it.for([
+      Tools.MaskPen,
+      Tools.Eraser,
+      Tools.MaskBucket,
+      Tools.MaskColorFill
+    ] as const)('should hide the color picker for %s', (tool) => {
+      mockStore.currentTool = tool
+      renderPanel()
+
+      expect(screen.queryByLabelText('Color Selector')).toBeNull()
+      expect(useMaskEditorStore().colorInput).toBeNull()
+    })
 
     it('should clear the store ref when the panel unmounts', () => {
-      mockStore.currentTool = Tools.Eraser
+      mockStore.currentTool = Tools.PaintPen
       const { unmount } = renderPanel()
       expect(useMaskEditorStore().colorInput).not.toBeNull()
 

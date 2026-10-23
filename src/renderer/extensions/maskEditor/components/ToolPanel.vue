@@ -26,7 +26,7 @@
     </div>
 
     <div class="mt-auto flex flex-col items-center">
-      <div class="mb-3 flex justify-center">
+      <div v-if="showColorPicker" class="mb-3 flex justify-center">
         <div
           class="relative flex size-12 cursor-pointer items-center justify-center rounded-[10px] p-1"
         >
@@ -91,6 +91,7 @@ function onToolSelect(tool: ToolName) {
 }
 
 const currentTool = computed(() => store.currentTool)
+const showColorPicker = computed(() => currentTool.value === Tools.PaintPen)
 
 const zoomText = computed(() => `${Math.round(store.displayZoomRatio * 100)}%`)
 const dimensionsText = computed(() => {
