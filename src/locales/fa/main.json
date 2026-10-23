@@ -1259,7 +1259,6 @@
       "openCheckout": "باز کردن صفحه پرداخت",
       "openPaymentPage": "باز کردن صفحه پرداخت",
       "payAmount": "پرداخت {amount}",
-      "purchaseDisclosure": "خرید اعتبار، اشتراکی را آغاز نمی‌کند و workflowهای Cloud را باز نمی‌کند. برای اجرای workflowها در Cloud، داشتن یک طرح لازم است. nodeهای شریک در ComfyUI محلی و Desktop می‌توانند بدون طرح از اعتبار استفاده کنند.",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",
       "purchaseSuccess": "اعتبار با موفقیت افزوده شد!",

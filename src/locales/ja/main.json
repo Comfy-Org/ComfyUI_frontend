@@ -1259,7 +1259,6 @@
       "openCheckout": "チェックアウトを開く",
       "openPaymentPage": "支払いページを開く",
       "payAmount": "{amount} を支払う",
-      "purchaseDisclosure": "クレジットを購入しても、サブスクリプションは開始されず、Cloud ワークフローも解除されません。Cloud でワークフローを実行するにはプランが必要です。ローカルの ComfyUI と Desktop の Partner Nodes は、プランなしでクレジットを使用できます。",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",

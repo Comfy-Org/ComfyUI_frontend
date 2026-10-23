@@ -1259,7 +1259,6 @@
       "openCheckout": "Открыть страницу оформления заказа",
       "openPaymentPage": "Открыть страницу оплаты",
       "payAmount": "Оплатить {amount}",
-      "purchaseDisclosure": "Покупка кредитов не оформляет подписку и не открывает доступ к рабочим процессам Cloud. Для запуска рабочих процессов в Cloud требуется план. Partner Nodes в локальном ComfyUI и Desktop могут использовать кредиты без плана.",
       "purchaseError": "Покупка не удалась",
       "purchaseErrorDetail": "Не удалось купить кредиты: {error}",
       "purchaseSuccess": "Кредиты успешно добавлены!",

@@ -1259,7 +1259,6 @@
       "openCheckout": "Ödeme sayfasını aç",
       "openPaymentPage": "Ödeme sayfasını aç",
       "payAmount": "{amount} öde",
-      "purchaseDisclosure": "Kredi satın almak abonelik başlatmaz veya Cloud iş akışlarının kilidini açmaz. Cloud üzerinde iş akışları çalıştırmak için bir plan gereklidir. Yerel ComfyUI ve Desktop'taki Partner Nodes, plan olmadan kredi kullanabilir.",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",

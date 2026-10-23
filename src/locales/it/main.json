@@ -1259,7 +1259,6 @@
       "openCheckout": "Apri il checkout",
       "openPaymentPage": "Apri la pagina di pagamento",
       "payAmount": "Paga {amount}",
-      "purchaseDisclosure": "L'acquisto di crediti non avvia un abbonamento né sblocca i workflow Cloud. Per eseguire workflow su Cloud è necessario un piano. I nodi partner in ComfyUI locale e Desktop possono utilizzare crediti senza un piano.",
       "purchaseError": "Acquisto fallito",
       "purchaseErrorDetail": "Impossibile acquistare crediti: {error}",
       "purchaseSuccess": "Crediti aggiunti con successo!",
