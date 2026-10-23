@@ -56,12 +56,14 @@ const TEAM_CREDIT_STOPS = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 69000
+        price_cents: 69000,
+        period_charge_cents: 69000
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 70000,
-        price_cents: 63000
+        price_cents: 63000,
+        period_charge_cents: 756000
       }
     }
   ]
