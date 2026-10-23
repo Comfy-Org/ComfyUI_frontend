@@ -2233,6 +2233,13 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
       corrections: [7]
     },
     {
+      name: 'refuses a non-numeric string and restores the document',
+      widget: 'cfg',
+      docValue: 'invalid',
+      live: [5, 'euler'],
+      corrections: [5]
+    },
+    {
       name: 'keeps a number finer than its display precision',
       widget: 'cfg',
       docValue: 1.23456,
