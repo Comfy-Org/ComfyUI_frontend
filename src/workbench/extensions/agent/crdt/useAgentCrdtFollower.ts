@@ -226,7 +226,7 @@ interface AgentCrdtFollowerEvents {
    * single message for every permanent reason.
    */
   onSyncError?: (message?: string, code?: string) => void
-  /** Human ops the host settled without applying. */
+  /** Human ops the host definitely did not apply. */
   onHumanOpsUnapplied?: (ops: readonly Op[]) => void
 }
 
@@ -539,11 +539,13 @@ function startAgentCrdtFollower(
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
-    const applied = new Set(
-      outcome.state === 'acknowledged' ? outcome.result.applied : []
-    )
-    const unapplied = outcome.ops.filter((op) => !applied.has(op.op_id))
-    if (unapplied.length > 0) events.onHumanOpsUnapplied?.(unapplied)
+    if (outcome.state === 'acknowledged' || outcome.state === 'undeliverable') {
+      const applied = new Set(
+        outcome.state === 'acknowledged' ? outcome.result.applied : []
+      )
+      const unapplied = outcome.ops.filter((op) => !applied.has(op.op_id))
+      if (unapplied.length > 0) events.onHumanOpsUnapplied?.(unapplied)
+    }
     noteSettledHumanOps(outcome)
   }
 
