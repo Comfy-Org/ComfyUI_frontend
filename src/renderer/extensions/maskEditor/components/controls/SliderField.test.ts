@@ -9,7 +9,7 @@ vi.mock<unknown>(import('@/components/ui/slider/Slider.vue'), () => ({
     name: 'SliderStub',
     props: ['modelValue', 'min', 'max', 'step', 'disabled', 'ariaLabelledby'],
     emits: ['update:modelValue'],
-    template: `<button data-slider="true" :aria-labelledby="ariaLabelledby" :disabled="disabled" @click="$emit('update:modelValue', [7])">{{ modelValue?.[0] }}</button>`
+    template: `<button data-slider="true" :aria-labelledby="ariaLabelledby" :disabled="disabled" :data-min="min" :data-max="max" :data-step="step" @click="$emit('update:modelValue', [7])">{{ modelValue?.[0] }}</button>`
   }
 }))
 
@@ -81,5 +81,57 @@ describe('SliderField', () => {
     await user.click(screen.getByRole('button', { name: 'Opacity' }))
 
     expect(onUpdate).toHaveBeenCalledWith(7)
+  })
+
+  it('should pass the value range to the slider by default', () => {
+    renderField()
+
+    const slider = screen.getByRole('button', { name: 'Opacity' })
+
+    expect(slider).toHaveAttribute('data-min', '0')
+    expect(slider).toHaveAttribute('data-max', '100')
+    expect(slider).toHaveAttribute('data-step', '1')
+  })
+
+  describe('slider position mode', () => {
+    const renderThickness = (
+      onSliderUpdate: (position: number) => void,
+      onUpdate?: (value: number) => void
+    ) =>
+      render(SliderField, {
+        props: {
+          label: 'Thickness',
+          modelValue: 16,
+          min: 1,
+          max: 250,
+          step: 1,
+          slider: { value: 0.5, min: 0, max: 1, step: 0.001 },
+          onSliderUpdate,
+          'onUpdate:modelValue': onUpdate
+        }
+      })
+
+    it('should drive the slider from the position config', () => {
+      renderThickness(vi.fn())
+
+      const slider = screen.getByRole('button', { name: 'Thickness' })
+
+      expect(slider).toHaveTextContent('0.5')
+      expect(slider).toHaveAttribute('data-min', '0')
+      expect(slider).toHaveAttribute('data-max', '1')
+      expect(slider).toHaveAttribute('data-step', '0.001')
+    })
+
+    it('should emit the raw position instead of committing a value', async () => {
+      const onSliderUpdate = vi.fn()
+      const onUpdate = vi.fn()
+      const user = userEvent.setup()
+      renderThickness(onSliderUpdate, onUpdate)
+
+      await user.click(screen.getByRole('button', { name: 'Thickness' }))
+
+      expect(onSliderUpdate).toHaveBeenCalledWith(7)
+      expect(onUpdate).not.toHaveBeenCalled()
+    })
   })
 })

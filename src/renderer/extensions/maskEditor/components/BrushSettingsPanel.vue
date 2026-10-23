@@ -65,10 +65,7 @@
       :max="250"
       :step="1"
       suffix="px"
-      :slider-value="thicknessSliderValue"
-      :slider-min="0"
-      :slider-max="1"
-      :slider-step="0.001"
+      :slider="thicknessSlider"
       @update:model-value="commitThickness"
       @slider-update="onThicknessSliderPosition"
     />
@@ -131,6 +128,13 @@ const thicknessSliderValue = computed(() => {
   }
   return Math.log(Math.max(brushSize.value, 1)) / Math.log(250)
 })
+
+const thicknessSlider = computed(() => ({
+  value: thicknessSliderValue.value,
+  min: 0,
+  max: 1,
+  step: 0.001
+}))
 
 function commitThickness(value: number) {
   if (!Number.isFinite(value)) return
