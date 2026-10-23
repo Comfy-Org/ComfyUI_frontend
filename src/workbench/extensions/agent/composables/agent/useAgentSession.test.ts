@@ -2746,7 +2746,9 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
 
-      expect(await sendOverCard(session, 'actually, do this instead')).toBe(false)
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
 
       expect(rest.cancelMessage).not.toHaveBeenCalled()
       const store = useAgentConversationStore()

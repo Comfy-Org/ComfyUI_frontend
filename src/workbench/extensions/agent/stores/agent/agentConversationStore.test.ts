@@ -2198,19 +2198,22 @@ describe('useAgentConversationStore', () => {
         persisted: [{ type: 'text', text: 'done', state: 'done' }]
       },
       { name: 'an empty terminal row', persisted: undefined }
-    ])('keeps a dismissed card when $name settles the turn', ({ persisted }) => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.startTurn(T1)
-      store.ingest(runApproval('t1', 'turn-1:call-1'))
-      store.dismissActiveAsks()
+    ])(
+      'keeps a dismissed card when $name settles the turn',
+      ({ persisted }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.startTurn(T1)
+        store.ingest(runApproval('t1', 'turn-1:call-1'))
+        store.dismissActiveAsks()
 
-      store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
+        store.settleTurn({ threadId: 'th', messageId: T1 }, persisted)
 
-      expect(store.messages[0].parts).toContainEqual(
-        expect.objectContaining({ type: 'runApproval', dismissed: true })
-      )
-    })
+        expect(store.messages[0].parts).toContainEqual(
+          expect.objectContaining({ type: 'runApproval', dismissed: true })
+        )
+      }
+    )
   })
 
   describe('a dropped approval ask is reported', () => {

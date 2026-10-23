@@ -1274,7 +1274,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
-      if (dismissAsk) conversationStore.dismissActiveAsks()
+      dismissIfSentOverCard(dismissAsk)
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -1313,6 +1313,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
     }
+  }
+
+  function dismissIfSentOverCard(dismissAsk: boolean): void {
+    if (dismissAsk) conversationStore.dismissActiveAsks()
   }
 
   function observeAcceptedTurn(
