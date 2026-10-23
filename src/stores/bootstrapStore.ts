@@ -131,6 +131,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       until(needsLogin).toBe(false)
     )
 
+    api.prefetchNodeDefs()
     const storeLoads = loadAuthenticatedStores()
     void Promise.allSettled(storeLoads).then(() => {
       bootstrapTracer.milestone('stores-ready')

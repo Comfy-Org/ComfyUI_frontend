@@ -770,28 +770,28 @@
       {
         "name": "camera-authoring/application",
         "patterns": [
-          "src/composables/useCameraAngle.test.ts",
-          "src/composables/useCameraAngle.ts",
-          "src/composables/useCameraInfo.test.ts",
-          "src/composables/useCameraInfo.ts",
-          "src/extensions/core/cameraAngle/**",
-          "src/extensions/core/cameraInfo/widgetBridge.test.ts",
-          "src/extensions/core/cameraInfo/widgetBridge.ts"
+          "src/extensions/core/load3d/composables/useCameraAngle.test.ts",
+          "src/extensions/core/load3d/composables/useCameraAngle.ts",
+          "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
+          "src/extensions/core/load3d/composables/useCameraInfo.ts",
+          "src/extensions/core/load3d/cameraAngle/**",
+          "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+          "src/extensions/core/load3d/cameraInfo/widgetBridge.ts"
         ]
       },
       {
         "name": "camera-authoring/presentation",
         "patterns": [
-          "src/components/cameraAngle/**",
-          "src/components/cameraInfo/**"
+          "src/extensions/core/load3d/components/cameraAngle/**",
+          "src/extensions/core/load3d/components/cameraInfo/**"
         ]
       },
       {
         "name": "camera-authoring/integration",
         "patterns": [
-          "src/extensions/core/cameraAngle.test.ts",
-          "src/extensions/core/cameraAngle.ts",
-          "src/extensions/core/cameraInfo.ts"
+          "src/extensions/core/load3d/cameraAngle.test.ts",
+          "src/extensions/core/load3d/cameraAngle.ts",
+          "src/extensions/core/load3d/cameraInfo.ts"
         ]
       },
       {
@@ -1097,7 +1097,7 @@
       },
       {
         "name": "error-catalog/domain",
-        "patterns": ["src/platform/errorCatalog/**"]
+        "patterns": ["src/platform/workflowErrors/errorCatalog/**"]
       },
       {
         "name": "error-handling/domain",
@@ -1851,15 +1851,19 @@
       {
         "name": "light-authoring/application",
         "patterns": [
-          "src/components/lightInfo/useLightInfo.test.ts",
-          "src/components/lightInfo/useLightInfo.ts"
+          "src/extensions/core/load3d/composables/useLightInfo.test.ts",
+          "src/extensions/core/load3d/composables/useLightInfo.ts"
         ]
+      },
+      {
+        "name": "light-authoring/presentation",
+        "patterns": ["src/extensions/core/load3d/components/lightInfo/**"]
       },
       {
         "name": "light-authoring/integration",
         "patterns": [
-          "src/extensions/core/lightInfo.test.ts",
-          "src/extensions/core/lightInfo.ts",
+          "src/extensions/core/load3d/lightInfo.test.ts",
+          "src/extensions/core/load3d/lightInfo.ts",
           "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
           "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
@@ -1989,19 +1993,12 @@
         ]
       },
       {
-        "name": "mask-editor/domain",
-        "patterns": ["src/extensions/core/maskeditor/**"]
-      },
-      {
         "name": "mask-editor/application",
         "patterns": [
-          "src/composables/maskeditor/**",
+          "src/renderer/extensions/maskEditor/composables/**",
+          "src/renderer/extensions/maskEditor/stores/**",
           "src/scripts/clipspace.test.ts",
-          "src/scripts/clipspace.ts",
-          "src/stores/maskEditorDataStore.test.ts",
-          "src/stores/maskEditorDataStore.ts",
-          "src/stores/maskEditorStore.test.ts",
-          "src/stores/maskEditorStore.ts"
+          "src/scripts/clipspace.ts"
         ]
       },
       {
@@ -2014,7 +2011,7 @@
       },
       {
         "name": "mask-editor/presentation",
-        "patterns": ["src/components/maskeditor/**"]
+        "patterns": ["src/renderer/extensions/maskEditor/components/**"]
       },
       {
         "name": "mask-editor/integration",
@@ -2071,53 +2068,49 @@
       {
         "name": "missing-media/domain",
         "patterns": [
-          "src/platform/missingMedia/missingMediaGrouping.ts",
-          "src/platform/missingMedia/types.ts"
+          "src/platform/workflowErrors/missingMedia/missingMediaGrouping.ts",
+          "src/platform/workflowErrors/missingMedia/types.ts"
         ]
       },
       {
-        "name": "missing-media/application",
-        "patterns": ["src/stores/missingMediaPreviewRegression.test.ts"]
-      },
-      {
         "name": "missing-media/presentation",
-        "patterns": ["src/platform/missingMedia/components/**"]
+        "patterns": ["src/platform/workflowErrors/missingMedia/components/**"]
       },
       {
         "name": "missing-models/domain",
         "patterns": [
-          "src/platform/missingModel/missingModelGrouping.test.ts",
-          "src/platform/missingModel/missingModelGrouping.ts",
-          "src/platform/missingModel/missingModelViewUtils.test.ts",
-          "src/platform/missingModel/missingModelViewUtils.ts",
-          "src/platform/missingModel/types.ts"
+          "src/platform/workflowErrors/missingModel/missingModelGrouping.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelGrouping.ts",
+          "src/platform/workflowErrors/missingModel/missingModelViewUtils.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts",
+          "src/platform/workflowErrors/missingModel/types.ts"
         ]
       },
       {
         "name": "missing-models/application",
         "patterns": [
-          "src/platform/missingModel/composables/**",
-          "src/platform/missingModel/missingModelDownload.test.ts",
-          "src/platform/missingModel/missingModelDownload.ts",
-          "src/platform/missingModel/missingModelMetadata.ts",
-          "src/platform/missingModel/missingModelPipeline.test.ts",
-          "src/platform/missingModel/missingModelPipeline.ts",
-          "src/platform/missingModel/missingModelScan.test.ts",
-          "src/platform/missingModel/missingModelScan.ts",
-          "src/platform/missingModel/missingModelStore.test.ts",
-          "src/platform/missingModel/missingModelStore.ts"
+          "src/platform/workflowErrors/missingModel/composables/**",
+          "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelDownload.ts",
+          "src/platform/workflowErrors/missingModel/missingModelMetadata.ts",
+          "src/platform/workflowErrors/missingModel/missingModelPipeline.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelPipeline.ts",
+          "src/platform/workflowErrors/missingModel/missingModelScan.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelScan.ts",
+          "src/platform/workflowErrors/missingModel/missingModelStore.test.ts",
+          "src/platform/workflowErrors/missingModel/missingModelStore.ts"
         ]
       },
       {
         "name": "missing-models/infrastructure",
         "patterns": [
-          "src/platform/missingModel/folderPathCache.test.ts",
-          "src/platform/missingModel/folderPathCache.ts"
+          "src/platform/workflowErrors/missingModel/folderPathCache.test.ts",
+          "src/platform/workflowErrors/missingModel/folderPathCache.ts"
         ]
       },
       {
         "name": "missing-models/presentation",
-        "patterns": ["src/platform/missingModel/components/**"]
+        "patterns": ["src/platform/workflowErrors/missingModel/components/**"]
       },
       {
         "name": "model-3d/domain",
@@ -2131,17 +2124,17 @@
       {
         "name": "model-3d/application",
         "patterns": [
-          "src/components/load3d/modelThumbnail.deferredImport.test.ts",
-          "src/components/load3d/modelThumbnail.test.ts",
-          "src/components/load3d/modelThumbnail.ts",
-          "src/composables/useLoad3d.test.ts",
-          "src/composables/useLoad3d.ts",
-          "src/composables/useLoad3dDrag.test.ts",
-          "src/composables/useLoad3dDrag.ts",
-          "src/composables/useLoad3dViewer.test.ts",
-          "src/composables/useLoad3dViewer.ts",
-          "src/services/load3dService.test.ts",
-          "src/services/load3dService.ts"
+          "src/extensions/core/load3d/components/modelThumbnail.deferredImport.test.ts",
+          "src/extensions/core/load3d/components/modelThumbnail.test.ts",
+          "src/extensions/core/load3d/components/modelThumbnail.ts",
+          "src/extensions/core/load3d/composables/useLoad3d.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3d.ts",
+          "src/extensions/core/load3d/composables/useLoad3dDrag.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3dDrag.ts",
+          "src/extensions/core/load3d/composables/useLoad3dViewer.test.ts",
+          "src/extensions/core/load3d/composables/useLoad3dViewer.ts",
+          "src/extensions/core/load3d/services/load3dService.test.ts",
+          "src/extensions/core/load3d/services/load3dService.ts"
         ]
       },
       {
@@ -2154,21 +2147,21 @@
       {
         "name": "model-3d/integration",
         "patterns": [
-          "src/extensions/core/load3d.test.ts",
-          "src/extensions/core/load3d.ts",
+          "src/extensions/core/load3d/load3d.test.ts",
+          "src/extensions/core/load3d/load3d.ts",
           "src/extensions/core/load3d/Load3DConfiguration.test.ts",
           "src/extensions/core/load3d/Load3DConfiguration.ts",
           "src/extensions/core/load3d/exportMenuHelper.test.ts",
           "src/extensions/core/load3d/exportMenuHelper.ts",
           "src/extensions/core/load3d/load3dSerialize.test.ts",
           "src/extensions/core/load3d/load3dSerialize.ts",
-          "src/extensions/core/load3dAdvanced.ts",
-          "src/extensions/core/load3dLazy.test.ts",
-          "src/extensions/core/load3dLazy.ts",
-          "src/extensions/core/load3dPreviewExtensions.test.ts",
-          "src/extensions/core/load3dPreviewExtensions.ts",
-          "src/extensions/core/saveMesh.test.ts",
-          "src/extensions/core/saveMesh.ts"
+          "src/extensions/core/load3d/load3dAdvanced.ts",
+          "src/extensions/core/load3d/load3dLazy.test.ts",
+          "src/extensions/core/load3d/load3dLazy.ts",
+          "src/extensions/core/load3d/load3dPreviewExtensions.test.ts",
+          "src/extensions/core/load3d/load3dPreviewExtensions.ts",
+          "src/extensions/core/load3d/saveMesh.test.ts",
+          "src/extensions/core/load3d/saveMesh.ts"
         ]
       },
       {
@@ -2345,18 +2338,22 @@
       {
         "name": "node-replacement/domain",
         "patterns": [
-          "src/platform/nodeReplacement/cnrIdUtil.test.ts",
-          "src/platform/nodeReplacement/cnrIdUtil.ts",
-          "src/platform/nodeReplacement/types.ts"
+          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.test.ts",
+          "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
+          "src/platform/workflowErrors/nodeReplacement/types.ts"
         ]
       },
       {
         "name": "node-replacement/infrastructure",
-        "patterns": ["src/platform/nodeReplacement/nodeReplacementService.ts"]
+        "patterns": [
+          "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts"
+        ]
       },
       {
         "name": "node-replacement/presentation",
-        "patterns": ["src/platform/nodeReplacement/components/**"]
+        "patterns": [
+          "src/platform/workflowErrors/nodeReplacement/components/**"
+        ]
       },
       {
         "name": "node-templates/integration",
@@ -2520,11 +2517,11 @@
       },
       {
         "name": "painter/application",
-        "patterns": ["src/composables/painter/**"]
+        "patterns": ["src/renderer/extensions/painter/composables/**"]
       },
       {
         "name": "painter/presentation",
-        "patterns": ["src/components/painter/**"]
+        "patterns": ["src/renderer/extensions/painter/components/**"]
       },
       {
         "name": "painter/integration",
@@ -3036,16 +3033,16 @@
       {
         "name": "viewport-3d/presentation",
         "patterns": [
-          "src/components/load3d/ViewportWidgetShell.test.ts",
-          "src/components/load3d/ViewportWidgetShell.vue",
-          "src/components/load3d/menubar/menuBarStyles.ts"
+          "src/extensions/core/load3d/components/ViewportWidgetShell.test.ts",
+          "src/extensions/core/load3d/components/ViewportWidgetShell.vue",
+          "src/extensions/core/load3d/components/menubar/menuBarStyles.ts"
         ]
       },
       {
         "name": "viewport-3d/integration",
         "patterns": [
-          "src/composables/useViewportNodeWiring.test.ts",
-          "src/composables/useViewportNodeWiring.ts"
+          "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts",
+          "src/extensions/core/load3d/composables/useViewportNodeWiring.ts"
         ]
       },
       {
@@ -3740,10 +3737,6 @@
         "patterns": ["src/platform/keybindings/**"]
       },
       {
-        "name": "light-authoring/presentation/outer-1",
-        "patterns": ["src/components/lightInfo/**"]
-      },
-      {
         "name": "linear-mode/presentation/outer-1",
         "patterns": ["src/renderer/extensions/linearMode/**"]
       },
@@ -3757,11 +3750,11 @@
       },
       {
         "name": "missing-media/application/outer-1",
-        "patterns": ["src/platform/missingMedia/**"]
+        "patterns": ["src/platform/workflowErrors/missingMedia/**"]
       },
       {
         "name": "model-3d/presentation/outer-1",
-        "patterns": ["src/components/load3d/**"]
+        "patterns": ["src/extensions/core/load3d/components/**"]
       },
       {
         "name": "navigation/domain/outer-1",
@@ -3777,7 +3770,7 @@
       },
       {
         "name": "node-replacement/application/outer-1",
-        "patterns": ["src/platform/nodeReplacement/**"]
+        "patterns": ["src/platform/workflowErrors/nodeReplacement/**"]
       },
       {
         "name": "node-widgets/presentation/outer-1",
@@ -5388,11 +5381,19 @@
         "allow": ["light-authoring/application", "unclassified"]
       },
       {
+        "from": "light-authoring/presentation",
+        "allow": [
+          "light-authoring/application",
+          "light-authoring/presentation",
+          "unclassified"
+        ]
+      },
+      {
         "from": "light-authoring/integration",
         "allow": [
           "light-authoring/application",
+          "light-authoring/presentation",
           "light-authoring/integration",
-          "light-authoring/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -5477,13 +5478,8 @@
         "allow": ["markdown-rendering/infrastructure", "unclassified"]
       },
       {
-        "from": "mask-editor/domain",
-        "allow": ["mask-editor/domain", "unclassified"]
-      },
-      {
         "from": "mask-editor/application",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "unclassified"
@@ -5492,7 +5488,6 @@
       {
         "from": "mask-editor/infrastructure",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "unclassified"
@@ -5501,7 +5496,6 @@
       {
         "from": "mask-editor/presentation",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
           "unclassified"
@@ -5510,7 +5504,6 @@
       {
         "from": "mask-editor/integration",
         "allow": [
-          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",
@@ -5587,19 +5580,9 @@
         "allow": ["missing-media/domain", "unclassified"]
       },
       {
-        "from": "missing-media/application",
-        "allow": [
-          "missing-media/domain",
-          "missing-media/application",
-          "missing-media/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "missing-media/presentation",
         "allow": [
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/presentation",
           "missing-media/application/outer-1",
           "unclassified"
@@ -7202,14 +7185,6 @@
         ]
       },
       {
-        "from": "light-authoring/presentation/outer-1",
-        "allow": [
-          "light-authoring/application",
-          "light-authoring/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "linear-mode/presentation/outer-1",
         "allow": [
           "linear-mode/domain",
@@ -7242,7 +7217,6 @@
         "from": "missing-media/application/outer-1",
         "allow": [
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/application/outer-1",
           "unclassified"
         ]
@@ -7823,6 +7797,7 @@
           "keybindings/presentation",
           "keybindings/integration",
           "light-authoring/application",
+          "light-authoring/presentation",
           "light-authoring/integration",
           "linear-mode/domain",
           "linear-mode/application",
@@ -7846,7 +7821,6 @@
           "minimap/infrastructure",
           "minimap/presentation",
           "missing-media/domain",
-          "missing-media/application",
           "missing-media/presentation",
           "missing-models/domain",
           "missing-models/application",
@@ -8023,7 +7997,6 @@
           "job-queue/infrastructure/outer-1",
           "job-queue/presentation/outer-1",
           "keybindings/application/outer-1",
-          "light-authoring/presentation/outer-1",
           "linear-mode/presentation/outer-1",
           "media-metadata/infrastructure/outer-1",
           "minimap/infrastructure/outer-1",

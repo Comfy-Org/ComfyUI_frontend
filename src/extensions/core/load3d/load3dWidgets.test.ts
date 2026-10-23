@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { useLoad3d } from '@/composables/useLoad3d'
+import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
@@ -14,7 +14,7 @@ const { waitForLoad3d, markLoad3dSceneDirty } = vi.hoisted(() => ({
   markLoad3dSceneDirty: vi.fn()
 }))
 
-vi.mock(import('@/composables/useLoad3d'), () => ({
+vi.mock(import('@/extensions/core/load3d/composables/useLoad3d'), () => ({
   useLoad3d: () => fromPartial<ReturnType<typeof useLoad3d>>({ waitForLoad3d }),
   markLoad3dSceneDirty
 }))

@@ -2,7 +2,7 @@ import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { isViewMode } from '@/extensions/core/cameraAngle/widgetBridge'
+import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
@@ -21,16 +21,17 @@ import {
 } from '@comfyorg/viewport3d/load3d/constants'
 
 const Load3D = defineAsyncComponent(
-  () => import('@/components/load3d/Load3D.vue')
+  () => import('@/extensions/core/load3d/components/Load3D.vue')
 )
 const Load3DAdvanced = defineAsyncComponent(
-  () => import('@/components/load3d/Load3DAdvanced.vue')
+  () => import('@/extensions/core/load3d/components/Load3DAdvanced.vue')
 )
 const CameraInfo = defineAsyncComponent(
-  () => import('@/components/cameraInfo/CameraInfo.vue')
+  () => import('@/extensions/core/load3d/components/cameraInfo/CameraInfo.vue')
 )
 const CameraAngle = defineAsyncComponent(
-  () => import('@/components/cameraAngle/CameraAngle.vue')
+  () =>
+    import('@/extensions/core/load3d/components/cameraAngle/CameraAngle.vue')
 )
 
 const VIEWPORT_STATE_NODES = new Set([
@@ -73,7 +74,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
     )
 
     const { useLoad3d, markLoad3dSceneDirty } =
-      await import('@/composables/useLoad3d')
+      await import('@/extensions/core/load3d/composables/useLoad3d')
 
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
@@ -103,7 +104,8 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
 
   try {
     await Load3dUtils.uploadMultipleFiles(files, resourceSubfolder(node))
-    const { markLoad3dSceneDirty } = await import('@/composables/useLoad3d')
+    const { markLoad3dSceneDirty } =
+      await import('@/extensions/core/load3d/composables/useLoad3d')
     markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
@@ -113,7 +115,8 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
 
 async function clearModel(node: LGraphNode) {
   try {
-    const { markLoad3dSceneDirty } = await import('@/composables/useLoad3d')
+    const { markLoad3dSceneDirty } =
+      await import('@/extensions/core/load3d/composables/useLoad3d')
     const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
     if (modelWidget) modelWidget.value = LOAD3D_NONE_MODEL
     markLoad3dSceneDirty(node)
