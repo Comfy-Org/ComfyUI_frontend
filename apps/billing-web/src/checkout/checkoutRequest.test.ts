@@ -45,7 +45,7 @@ describe('teamCheckoutPlan', () => {
                   action: 'subscribe',
                   list_price_cents: 70_000n,
                   price_cents: 63_000n,
-                  period_charge_cents: 756_000n
+                  period_charge_cents: 756_001n
                 }
               }
             ]
@@ -57,6 +57,7 @@ describe('teamCheckoutPlan', () => {
         name: 'Team Plan',
         monthlyPriceUsd: { monthly: monthlyUsd, yearly: monthlyUsd },
         monthlyCredits: 147_700,
+        yearlyChargeUsd: 7560.01,
         pricedByQuote: false
       })
     }
