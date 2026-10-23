@@ -14,7 +14,7 @@
  * the customer, carried so a host can show it the way the legacy client does;
  * nothing in the core branches on it.
  */
-import type { SessionClient } from '../session.js'
+import type { SessionClient } from '#/core/session'
 
 /**
  * The session members the billing core reaches for. A host's client is typed

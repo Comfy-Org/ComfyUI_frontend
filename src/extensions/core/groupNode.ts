@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
@@ -15,7 +16,7 @@ import type {
   ComfyNode,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type {
   ComfyNodeDef,
   ComfyOutputTypesSpec,
@@ -26,7 +27,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 import { mergeIfValid } from './widgetInputs'
 
 /**
@@ -910,7 +911,7 @@ export class GroupNodeHandler {
       let left: number | undefined
       // deserialiseAndCreate selects the created nodes in creation order, which
       // matches nodeData.nodes order.
-      const selectedIds = Object.keys(app.canvas.selected_nodes)
+      const selectedIds = selectedCanvasNodes(app.canvas).map((n) => n.id)
       const newNodes: LGraphNode[] = []
       // Shared across every inner node processed below, in nodeData.nodes
       // order, so a widget already paired to one inner node's value can
@@ -1119,7 +1120,7 @@ const id = 'Comfy.GroupNode'
  * synthesizing temporary group-node definitions during load.
  */
 let globalDefs: Partial<Record<string, ComfyNodeDef>> = {}
-const ext: ComfyExtension = {
+export const groupNodeExtension: ComfyExtension = {
   name: id,
   addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
     globalDefs = defs
@@ -1200,5 +1201,3 @@ const ext: ComfyExtension = {
     }
   }
 }
-
-app.registerExtension(ext)

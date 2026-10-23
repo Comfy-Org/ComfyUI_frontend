@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { createGraphThumbnail } from './graphThumbnailRenderer'
 

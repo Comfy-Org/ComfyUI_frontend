@@ -19,10 +19,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -229,8 +229,8 @@ const tabs = computed<RightSidePanelTabList>(() => {
             className: cn(
               'ml-1',
               hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
-                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+                ? 'icon-[lucide--octagon-alert] bg-destructive'
+                : 'icon-[lucide--triangle-alert] bg-warning'
             ),
             label: () =>
               t(
@@ -350,7 +350,7 @@ function handleTitleCancel() {
 <template>
   <div
     data-testid="properties-panel"
-    class="flex size-full flex-col bg-comfy-menu-bg"
+    class="flex size-full flex-col bg-background"
   >
     <!-- Panel Header -->
     <section class="pt-1">
@@ -371,7 +371,7 @@ function handleTitleCancel() {
               variant="link"
               size="unset"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 shrink-0"
+              class="top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
@@ -389,7 +389,7 @@ function handleTitleCancel() {
             size="icon"
             data-testid="subgraph-editor-toggle"
             :aria-label="t('rightSidePanel.editSubgraph')"
-            :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
+            :class="cn(isEditingSubgraph && 'bg-muted')"
             @click="
               rightSidePanelStore.openPanel(
                 isEditingSubgraph ? 'parameters' : 'subgraph'

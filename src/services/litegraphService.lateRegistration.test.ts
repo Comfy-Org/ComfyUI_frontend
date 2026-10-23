@@ -7,6 +7,7 @@ import type {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
+import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -146,6 +147,7 @@ function layoutEntities(graph: LGraph) {
 }
 
 beforeEach(async () => {
+  installErrorNodeWidgets()
   layoutStore.resetForTests()
   await useLitegraphService().registerNodeDef(INSTALLED, nodeDef(INSTALLED))
 })

@@ -71,6 +71,10 @@ export const useExtensionStore = defineStore('extension', () => {
     extensionByName.value[extension.name] = markRaw(extension)
   }
 
+  function unregisterExtension(name: string) {
+    delete extensionByName.value[name]
+  }
+
   function loadDisabledExtensionNames(names: string[]) {
     disabledExtensionNames.value = new Set(names)
     for (const name of ALWAYS_DISABLED_EXTENSIONS) {
@@ -106,6 +110,7 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionEnabled,
     isExtensionReadOnly,
     registerExtension,
+    unregisterExtension,
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,

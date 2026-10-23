@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const SETTLE_MS = 1_000
 

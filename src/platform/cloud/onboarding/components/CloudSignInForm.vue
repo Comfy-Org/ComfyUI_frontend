@@ -26,7 +26,7 @@
         >
           {{ t('auth.login.passwordLabel') }}
         </FieldLabel>
-        <PasswordInput
+        <AppPasswordInput
           v-bind="componentField"
           id="cloud-sign-in-password"
           autocomplete="current-password"
@@ -72,7 +72,7 @@ import Field from '@/components/ui/field/Field.vue'
 import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Message from '@/components/ui/message/Message.vue'
 import {
   CLOUD_AUTH_FIELD_CLASS,
@@ -81,7 +81,6 @@ import {
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
@@ -100,7 +99,7 @@ const emit = defineEmits<{
 const emailInputId = 'cloud-sign-in-email'
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signInSchema),
+  validationSchema: signInSchema,
   initialValues: { email: '', password: '' }
 })
 

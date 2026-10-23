@@ -10,18 +10,28 @@ import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
+import { reportError } from '@/platform/telemetry/reportError'
 
-void (async () => {
-  if (!isDesktop) return
+export async function registerElectronAdapterExtension(): Promise<boolean> {
+  if (!isDesktop) return false
 
   const electronAPI = getElectronAPI()
-  const desktopAppVersion = await electronAPI.getElectronVersion()
+  const desktopAppVersion = await electronAPI
+    .getElectronVersion()
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'failure_reading_desktop_app_version'
+      })
+      return undefined
+    })
+  if (desktopAppVersion === undefined) return false
+
   const workflowStore = useWorkflowStore()
   const toast = useToast()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
   const onChangeRestartApp = async (newValue: unknown, oldValue: unknown) => {
-    // Add a delay to allow changes to take effect before restarting.
     if (oldValue !== undefined && newValue !== oldValue) {
       await electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
     }
@@ -240,7 +250,6 @@ void (async () => {
         label: 'Quit',
         icon: 'pi pi-sign-out',
         async function() {
-          // Confirm if unsaved workflows are open
           if (workflowStore.modifiedWorkflows.length > 0) {
             const confirmed = await useDialogService().confirm({
               message: t('desktopMenu.confirmQuit'),
@@ -300,4 +309,5 @@ void (async () => {
       }
     ]
   })
-})()
+  return true
+}

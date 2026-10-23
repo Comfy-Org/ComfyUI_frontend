@@ -8,13 +8,13 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 import type {
   CloudWorkflowLifecycle,
   useAgentWorkflowResolver
@@ -24,6 +24,20 @@ type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
+
+interface WorkflowRestoration {
+  ready: boolean
+  committedWorkflowId: string | null
+}
+
+const NOT_RESTORED: WorkflowRestoration = {
+  ready: true,
+  committedWorkflowId: null
+}
+const RESTORE_ABANDONED: WorkflowRestoration = {
+  ready: false,
+  committedWorkflowId: null
+}
 
 function restorationOutcomeFor(
   lifecycle: CloudWorkflowLifecycle,
@@ -259,25 +273,23 @@ export function useAgentWorkflowSelection({
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
-  ): Promise<boolean> {
-    if (!isSessionCurrent()) return false
-    // A target that is already decided (e.g. a remounted panel) needs no
-    // restoration, so the chat is ready as far as its workflow goes.
-    if (!canRestoreWorkflow.value) return true
+  ): Promise<WorkflowRestoration> {
+    if (!isSessionCurrent()) return RESTORE_ABANDONED
+    if (!canRestoreWorkflow.value) return NOT_RESTORED
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
-    if (workflowId === undefined) return true
+    if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
       return openRestoredWorkflow(cached, workflowId, isCurrent)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
-    if (resolved.outcome === 'superseded') return false
+    if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
       panelStore.markWorkflowTargetUnavailable()
-      return true
+      return NOT_RESTORED
     }
     return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
   }
@@ -286,31 +298,31 @@ export function useAgentWorkflowSelection({
     target: ComfyWorkflow | null,
     workflowId: string,
     isCurrent: () => boolean
-  ): Promise<boolean> {
+  ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()
-        if (!isCurrent()) return false
+        if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
         warnRestoreFailed()
-        return false
+        return RESTORE_ABANDONED
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
-      if (!isCurrent()) return false
+      if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
         warnRestoreFailed()
-        return false
+        return RESTORE_ABANDONED
       }
       commitWorkflowTarget(target, workflowId, 'restored')
-      return true
+      return { ready: true, committedWorkflowId: workflowId }
     } catch {
-      if (!isCurrent()) return false
+      if (!isCurrent()) return RESTORE_ABANDONED
       warnRestoreFailed()
-      return false
+      return RESTORE_ABANDONED
     }
   }
 

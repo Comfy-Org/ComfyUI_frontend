@@ -396,7 +396,7 @@ function applyHostValueToInput(
   entry: PendingEntry
 ): boolean {
   if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
-  return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
+  return useWidgetValueStore().restoreValue(input.widgetId, entry.hostValue)
 }
 
 function applyHostLabelToInput(
@@ -773,7 +773,7 @@ export function appendQuarantine(
 
     const input = hostNode.inputs.find((input) => input.name === inputName)
     if (input?.widgetId)
-      useWidgetValueStore().setValue(input.widgetId, hostValue)
+      useWidgetValueStore().restoreValue(input.widgetId, hostValue)
   }
 
   const existing = parseProxyWidgetErrorQuarantine(

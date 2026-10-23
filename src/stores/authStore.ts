@@ -28,6 +28,7 @@ import {
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import {
   webSessionRequests,
@@ -49,10 +50,13 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
+const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -672,6 +676,14 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthTokenOrThrow = async (): Promise<string> => {
+    const token = await getWorkspaceAuthToken()
+    if (!token) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return token
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
@@ -1105,6 +1117,7 @@ export const useAuthStore = defineStore('auth', () => {
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
+        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
@@ -1178,6 +1191,14 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
     getWorkspaceAuthToken,
+    getWorkspaceAuthTokenOrThrow,
     notifyTokenRefreshed
   }
+})
+
+provideAuthStore(useAuthStore)
+provideEnsureSessionCookie(async () => {
+  const { useSessionCookie } =
+    await import('@/platform/auth/session/useSessionCookie')
+  await useSessionCookie().ensureSessionCookie()
 })

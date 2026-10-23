@@ -88,7 +88,7 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({
       hide: mockHideTemplateSelector
@@ -293,8 +293,9 @@ describe('useSharedWorkflowUrlLoader', () => {
       contentProps: { openingAction: 'copy-and-open' }
     })
     expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
-    expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
-    expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
+    expect(
+      dialogInstance.dialogComponentProps.dismissOnPointerDownOutside
+    ).toBeUndefined()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
     graphLoad.resolve()

@@ -62,8 +62,8 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
   }) => {
     const cancel = comfyPage.actionbar.cancelButton
     const [secondary, destructive] = await Promise.all([
-      resolveColorVariable(comfyPage.page, '--color-secondary-background'),
-      resolveColorVariable(comfyPage.page, '--color-destructive-background')
+      resolveColorVariable(comfyPage.page, '--color-secondary'),
+      resolveColorVariable(comfyPage.page, '--color-destructive')
     ])
     expect(destructive).not.toBe(secondary)
 
