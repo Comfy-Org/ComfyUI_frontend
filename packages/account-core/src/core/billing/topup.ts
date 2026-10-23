@@ -10,6 +10,7 @@
  * own vocabulary, and the terminal operation is embedded whenever one was
  * observed so a host reads the coded decline and recovery action from it.
  */
+import type { InteractiveTopupRequest } from '@comfyorg/ingest-types'
 import {
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
@@ -272,10 +273,10 @@ function validateHostedCheckoutInput(
   return fields.has('amount_cents') ? INVALID_AMOUNT : INVALID_RETURN_URL
 }
 
-type PurchaseBody = {
-  readonly amount_cents: number
-  readonly idempotency_key: string
-}
+type PurchaseBody = Pick<
+  InteractiveTopupRequest,
+  'amount_cents' | 'idempotency_key'
+>
 
 const SUPERSEDED = {
   status: 'error',

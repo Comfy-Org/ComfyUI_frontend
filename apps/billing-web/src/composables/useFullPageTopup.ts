@@ -27,7 +27,6 @@ import {
   UNREADABLE_LINK,
   awaitingServer,
   challengeToReopen,
-  ownOperationOf,
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
@@ -84,15 +83,6 @@ interface HeldAttempt {
   readonly idempotencyKey: string
 }
 
-function declinesOwnPay(before: CheckoutPage, event: CheckoutPageEvent) {
-  if (event.type !== 'operationChanged' && event.type !== 'reconciled')
-    return false
-  const { operation } = event
-  return (
-    operation?.phase === 'failed' && operation.id === ownOperationOf(before)
-  )
-}
-
 /**
  * A top-up link is always for sale, so a top-up this tab already saw
  * succeed ends the revisit on Already completed instead of a second form.
@@ -108,7 +98,8 @@ function revisited(page: CheckoutPage): boolean {
  * quotes the link's amount. With `unified_billing_settings` on, a quote with
  * a payment configuration pays once with a new card or a chosen saved card,
  * resending one purchase under one key until the server answers it. A Pay
- * with no answer keeps the page locked while it re-reads what the key became;
+ * with no answer keeps its key and the page locked while it re-reads what
+ * the workspace is waiting on;
  * any other page charges the method on file.
  * The lifecycle's operation moves the page to its ending.
  */
@@ -171,7 +162,6 @@ export function useFullPageTopup() {
   function dispatch(event: CheckoutPageEvent) {
     const before = page.value
     page.value = reduceCheckoutPage(before, event)
-    if (declinesOwnPay(before, event)) held = undefined
     if (before.kind !== 'resolving' && page.value.kind === 'resolving')
       void readCapture()
   }

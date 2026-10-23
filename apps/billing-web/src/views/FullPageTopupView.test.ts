@@ -763,7 +763,7 @@ describe('FullPageTopupView paying once', () => {
         status: 'ok',
         value: settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 })
       }),
-      heading: '5,275 credits added'
+      heading: "You're all set"
     },
     {
       name: 'the bank is still settling is Payment in progress',
@@ -854,8 +854,9 @@ describe('FullPageTopupView paying once', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: '5,275 credits added' })
+      await screen.findByRole('heading', { name: "You're all set" })
     ).toBeInTheDocument()
+    expect(screen.getByText('+5,275')).toBeInTheDocument()
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
   })
 
@@ -917,7 +918,7 @@ describe('FullPageTopupView paying once', () => {
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
   })
 
-  it('clears the key once the operation an unanswered Pay became is declined, so the next Pay is a new purchase', async () => {
+  it('keeps an unanswered purchase on its key when the pending operation recovery found is declined, since nothing ties that operation to this Pay', async () => {
     const fake = renderTopup({
       topupQuote: PAYS_ONCE,
       paymentMethods: { status: 'ok', value: [VISA] }
@@ -941,18 +942,16 @@ describe('FullPageTopupView paying once', () => {
       kind: 'topup'
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment declined'
-    )
     await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     await userEvent.click(payButton())
     await waitFor(() =>
       expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
     )
-    const [first, fresh] = fake.createInteractiveTopup.mock.calls.map(
+    const [first, resent] = fake.createInteractiveTopup.mock.calls.map(
       ([request]) => request
     )
-    expect(fresh.idempotencyKey).not.toBe(first.idempotencyKey)
+    expect(resent).toStrictEqual(first)
   })
 
   it.for([1, 2])(

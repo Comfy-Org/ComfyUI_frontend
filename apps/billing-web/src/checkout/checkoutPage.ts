@@ -178,7 +178,6 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
-      readonly started?: true
       readonly rail?: PaymentRail
       readonly cancel?: PaymentCancel
     }
@@ -186,7 +185,6 @@ export type CheckoutPage =
       readonly kind: 'unconfirmed'
       readonly operationId?: string
       readonly sibling?: true
-      readonly started?: true
     }
   | {
       readonly kind: 'terminal'
@@ -865,23 +863,8 @@ function recheckLost(page: CheckoutPage): CheckoutPage {
   )
     return page
   return page.outcome.because === 'unanswered'
-    ? { kind: 'unconfirmed', started: true }
+    ? { kind: 'unconfirmed', sibling: true }
     : { kind: 'unconfirmed' }
-}
-
-function rereadsOwnPay(page: Capture): boolean {
-  return (
-    page.outcome?.kind === 'reconciling' &&
-    page.outcome.because === 'unanswered'
-  )
-}
-
-/** The operation a watching page follows for its own unanswered Pay. */
-export function ownOperationOf(page: CheckoutPage): string | undefined {
-  if (page.kind === 'waiting' && page.started === true) return page.operation.id
-  return page.kind === 'unconfirmed' && page.started === true
-    ? page.operationId
-    : undefined
 }
 
 /**
@@ -923,12 +906,10 @@ type Watching = Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
 
 interface Provenance {
   readonly sibling?: true
-  readonly started?: true
 }
 
 function provenanceOf(page: Provenance): Provenance {
-  if (page.sibling === true) return { sibling: true }
-  return page.started === true ? { started: true } : {}
+  return page.sibling === true ? { sibling: true } : {}
 }
 
 const unconfirmed = (
@@ -1069,13 +1050,14 @@ function watchedWaiting(
 
 /**
  * A screen that promised to update on its own resolves to the success it
- * was waiting for. A first read that finds the money already through, which
- * the page only ever saw as verifying, was settled before it arrived.
+ * was waiting for, and so does money another tab sent while this one
+ * watched. A first read that finds the money already through, which the
+ * page only ever saw as verifying, was settled before it arrived.
  */
 function attributionOf(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
 ): Attribution {
-  if (page.started === true) return 'started'
+  if (page.sibling === true) return 'followed'
   return page.kind === 'waiting' && waitingOn(page.operation) === 'verifying'
     ? 'settled'
     : 'followed'
@@ -1099,23 +1081,28 @@ function succeededInCapture(
         attribution: 'started',
         ...quoteOf(page.attempt)
       }
-    : { kind: 'terminal', operation, attribution: 'settled' }
+    : {
+        kind: 'terminal',
+        operation,
+        attribution: awaitsUnansweredPay(page) ? 'followed' : 'settled'
+      }
+}
+
+function awaitsUnansweredPay(page: Capture): boolean {
+  return (
+    page.outcome?.kind === 'reconciling' &&
+    page.outcome.because === 'unanswered'
+  )
 }
 
 function waitingInCapture(
   page: Capture,
   operation: BillingOperationState,
-  outcome: OperationOutcome | undefined,
-  started: boolean
+  outcome: OperationOutcome | undefined
 ): CheckoutPage {
   if (!isInFlight(operation) || outcome !== undefined)
     return nothingPending(page)
-  return {
-    kind: 'waiting',
-    operation,
-    ...(started ? { started: true } : { sibling: true }),
-    rail: page.rail
-  }
+  return { kind: 'waiting', operation, sibling: true, rail: page.rail }
 }
 
 /**
@@ -1132,14 +1119,14 @@ function followedInCapture(
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
-  const started = page.attempt.kind === 'sent' || rereadsOwnPay(page)
+  const started = page.attempt.kind === 'sent'
   if (operation.phase === 'succeeded')
     return succeededInCapture(page, operation, started)
   if (outcomeUnknown(operation))
     return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
-  return waitingInCapture(page, operation, outcome, started)
+  return waitingInCapture(page, operation, outcome)
 }
 
 /**
