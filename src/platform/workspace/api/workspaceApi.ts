@@ -17,6 +17,8 @@ import type {
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
+  HostedTopupCheckout,
+  HostedTopupCheckoutList,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -988,6 +990,42 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'createTopupCheckout')
+    }
+  },
+
+  /**
+   * List the workspace's hosted top-up checkouts, newest first
+   * GET /api/billing/topup/checkouts
+   */
+  async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckoutList>(
+        workspaceApiUrl('/billing/topup/checkouts'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listTopupCheckouts')
+    }
+  },
+
+  /**
+   * Get the current payment state of one hosted top-up checkout
+   * GET /api/billing/topup/checkouts/{id}
+   */
+  async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<HostedTopupCheckout>(
+        workspaceApiUrl(
+          `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
+        ),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getTopupCheckout')
     }
   },
 
