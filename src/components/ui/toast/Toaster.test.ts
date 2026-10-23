@@ -103,6 +103,26 @@ describe('Toaster', () => {
     )
   })
 
+  it('renders and runs multiple notification actions', async () => {
+    const user = userEvent.setup()
+    const manage = vi.fn()
+    const disable = vi.fn()
+    renderToaster()
+
+    useToast().info('Extension added', {
+      actions: [
+        { label: 'Manage', onClick: manage },
+        { label: 'Disable', onClick: disable }
+      ]
+    })
+    await nextTick()
+    await user.click(screen.getByRole('button', { name: 'Manage' }))
+    await user.click(screen.getByRole('button', { name: 'Disable' }))
+
+    expect(manage).toHaveBeenCalledOnce()
+    expect(disable).toHaveBeenCalledOnce()
+  })
+
   it('uses caller labels for notification regions and close buttons', async () => {
     const { rerender } = render(Toaster, {
       props: {

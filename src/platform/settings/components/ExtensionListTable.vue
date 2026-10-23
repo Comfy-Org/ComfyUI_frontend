@@ -56,7 +56,22 @@
           <Badge v-if="extensionStore.isCoreExtension(extension.name)">
             {{ $t('g.core') }}
           </Badge>
+          <Badge
+            v-else-if="extensionStore.isAgentCreatedExtension(extension)"
+            severity="info"
+          >
+            {{ $t('g.createdByAgent') }}
+          </Badge>
           <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
+          <div
+            v-if="extensionStore.isAgentCreatedExtension(extension)"
+            class="text-xs text-muted-foreground"
+          >
+            <span>{{ agentPackName(extension.name) }}</span>
+            <span v-if="extension.provenance?.summary">
+              · {{ extension.provenance.summary }}
+            </span>
+          </div>
         </TableCell>
         <TableCell class="text-right">
           <Switch
@@ -114,4 +129,8 @@ const emit = defineEmits<{
 }>()
 
 const extensionStore = useExtensionStore()
+
+function agentPackName(name: string) {
+  return name.startsWith('agent.') ? (name.split('.')[1] ?? name) : name
+}
 </script>

@@ -187,4 +187,44 @@ describe('ExtensionPanel', () => {
       screen.getByRole('button', { name: 'Reload to apply changes' })
     ).toBeVisible()
   })
+
+  it('filters, describes, and disables agent-created extensions', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({ name: 'Manual.Toolbar' })
+    extensionStore.registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: {
+        createdBy: 'comfy-agent',
+        summary: 'Adds cushion controls'
+      }
+    })
+    extensionStore.loadExtensionPackPaths(['/extensions/cushions/'], [])
+    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+
+    renderPanel()
+    expect(screen.getByText('Created by agent')).toBeVisible()
+    expect(screen.getByText(/Adds cushion controls/)).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Agent-created' }))
+    expect(
+      screen.getByRole('switch', { name: 'agent.cushions.toolbar' })
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('switch', { name: 'Manual.Toolbar' })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    await user.click(
+      await screen.findByRole('menuitem', {
+        name: 'Disable all agent-created'
+      })
+    )
+    expect(setSetting).toHaveBeenCalledWith('Comfy.Extension.Disabled', [
+      'agent.cushions.toolbar'
+    ])
+    expect(setSetting).toHaveBeenCalledWith('Comfy.Extension.DisabledPacks', [
+      '/extensions/cushions/'
+    ])
+  })
 })

@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -76,15 +76,21 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
 
-const filterTypeKeys = ['all', 'core', 'custom'] as const
-type FilterTypeKey = (typeof filterTypeKeys)[number]
-const filterTypes = computed(() =>
-  filterTypeKeys.map((key) => ({
-    label: t(`g.${key}`),
-    value: key
-  }))
+type FilterTypeKey = 'all' | 'core' | 'custom' | 'agentCreated'
+const filterTypes = computed(
+  () =>
+    [
+      { label: t('g.all'), value: 'all' },
+      { label: t('g.core'), value: 'core' },
+      { label: t('g.custom'), value: 'custom' },
+      { label: t('g.agentCreated'), value: 'agentCreated' }
+    ] satisfies { label: string; value: FilterTypeKey }[]
 )
-const filterType = ref<FilterTypeKey>('all')
+const filterType = ref<FilterTypeKey>(
+  new URLSearchParams(window.location.search).get('filter') === 'agent'
+    ? 'agentCreated'
+    : 'all'
+)
 const selectedExtensionNames = ref(new Set<string>())
 const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
@@ -92,8 +98,22 @@ const nameSortDirection = ref<TableSortDirection | null>(null)
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
 
-const editingEnabledExtensions = ref<Record<string, boolean>>({})
-const editingEnabledExtensionPacks = ref<Record<string, boolean>>({})
+const editingEnabledExtensions = ref<Record<string, boolean>>(
+  Object.fromEntries(
+    extensionStore.extensions.map((extension) => [
+      extension.name,
+      extensionStore.isExtensionEnabled(extension.name)
+    ])
+  )
+)
+const editingEnabledExtensionPacks = ref<Record<string, boolean>>(
+  Object.fromEntries(
+    extensionStore.extensionPackPaths.map((path) => [
+      path,
+      extensionStore.isExtensionPackEnabled(path)
+    ])
+  )
+)
 
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
@@ -106,6 +126,8 @@ const filteredExtensions = computed(() => {
       return extensions.filter(
         (ext) => !extensionStore.isCoreExtension(ext.name)
       )
+    case 'agentCreated':
+      return extensionStore.agentExtensions
     default:
       return extensions
   }
@@ -148,17 +170,6 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
       : []
   )
 }
-
-onMounted(() => {
-  extensionStore.extensions.forEach((ext) => {
-    editingEnabledExtensions.value[ext.name] =
-      extensionStore.isExtensionEnabled(ext.name)
-  })
-  extensionStore.extensionPackPaths.forEach((path) => {
-    editingEnabledExtensionPacks.value[path] =
-      extensionStore.isExtensionPackEnabled(path)
-  })
-})
 
 function extensionPackName(path: string) {
   return path.split('/').filter(Boolean).at(-1) ?? path
@@ -245,6 +256,22 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
+const disableAgentExtensions = async () => {
+  extensionStore.agentExtensions.forEach((ext) => {
+    editingEnabledExtensions.value[ext.name] = false
+    const packPath = extensionStore.getAgentExtensionPackPath(ext)
+    if (packPath) editingEnabledExtensionPacks.value[packPath] = false
+  })
+  await updateExtensionStatus()
+  const disabledPackPaths = Object.entries(editingEnabledExtensionPacks.value)
+    .filter(([_, enabled]) => !enabled)
+    .map(([packPath]) => packPath)
+  await settingStore.set('Comfy.Extension.DisabledPacks', [
+    ...extensionStore.inactiveDisabledExtensionPackPaths,
+    ...disabledPackPaths
+  ])
+}
+
 const applyChanges = () => {
   // Refresh the page to apply changes
   window.location.reload()
@@ -293,6 +320,12 @@ const extensionActions = computed<MenuItem[]>(() => [
     icon: 'pi pi-times',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
+  },
+  {
+    label: t('g.disableAgentCreated'),
+    icon: 'pi pi-times',
+    command: disableAgentExtensions,
+    disabled: !extensionStore.hasAgentExtensions
   }
 ])
 </script>

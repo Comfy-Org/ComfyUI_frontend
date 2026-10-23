@@ -697,6 +697,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.59.0'
   },
   {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extensions',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.59.0'
+  },
+  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',

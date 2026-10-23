@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -159,5 +159,25 @@ describe('SideToolbar', () => {
     Object.assign(useUserStore(), { isMultiUserServer: true })
     renderToolbar()
     expect(screen.getByTestId('logout')).toBeInTheDocument()
+  })
+
+  it('badges sourced agent tabs and exposes management actions', async () => {
+    useSidebarTabStore().sidebarTabs = [
+      {
+        ...assetsTab,
+        source: {
+          extensionName: 'agent.cushions.toolbar',
+          provenance: { createdBy: 'comfy-agent' }
+        }
+      }
+    ]
+    renderToolbar()
+
+    expect(screen.getByText('AI')).toBeVisible()
+    await fireEvent.contextMenu(screen.getByRole('button', { name: 'Assets' }))
+    expect(
+      await screen.findByRole('menuitem', { name: /manage/i })
+    ).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: /disable/i })).toBeVisible()
   })
 })

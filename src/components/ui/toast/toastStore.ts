@@ -15,6 +15,7 @@ export interface Toast {
   kind: ToastKind
   title: string
   action?: ToastAction
+  actions?: ToastAction[]
   description?: string
 }
 
@@ -28,6 +29,7 @@ export const useToast = defineStore('toast', () => {
       ...toasts.value.filter((toast) => toast.id !== id),
       {
         action: options.action,
+        actions: options.actions,
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,

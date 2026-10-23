@@ -42,9 +42,17 @@ const politeToasts = computed(() =>
 const assertiveToasts = computed(() => toasts.value.filter(isAssertive))
 
 function announcement(item: Toast) {
-  return [item.title, item.description, item.action?.label]
+  return [
+    item.title,
+    item.description,
+    ...toastActions(item).map((action) => action.label)
+  ]
     .filter(Boolean)
     .join('. ')
+}
+
+function toastActions(item: Toast) {
+  return item.actions ?? (item.action ? [item.action] : [])
 }
 
 let escapeToastId: ToastId | undefined
@@ -119,15 +127,19 @@ const icons = {
       <ToastDescription v-if="item.description" class="col-start-2 row-start-2">
         {{ item.description }}
       </ToastDescription>
-      <Button
-        v-if="item.action"
-        class="col-span-2 col-start-2 row-start-3 mt-3 justify-self-end"
-        size="md"
-        variant="secondary"
-        @click="item.action.onClick()"
+      <div
+        class="col-span-2 col-start-2 row-start-3 mt-3 flex justify-end gap-2 empty:hidden"
       >
-        {{ item.action.label }}
-      </Button>
+        <Button
+          v-for="action in toastActions(item)"
+          :key="action.label"
+          size="md"
+          variant="secondary"
+          @click="action.onClick()"
+        >
+          {{ action.label }}
+        </Button>
+      </div>
     </ToastRoot>
     <ToastViewport :label="formatViewportLabel" data-testid="toast-viewport" />
   </ToastProvider>

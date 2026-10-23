@@ -66,6 +66,33 @@ describe('extensionStore', () => {
         '/extensions/missing/'
       ])
     })
+
+    it('maps agent-prefixed extensions to their discovered pack', () => {
+      const store = useExtensionStore()
+      store.loadExtensionPackPaths(['/extensions/cushions/'], [])
+      const extension = { name: 'agent.cushions.toolbar' }
+
+      expect(store.isAgentCreatedExtension(extension)).toBe(true)
+      expect(store.getAgentExtensionPackPath(extension)).toBe(
+        '/extensions/cushions/'
+      )
+    })
+  })
+
+  describe('agent provenance', () => {
+    it('recognizes explicit provenance without requiring the name prefix', () => {
+      const store = useExtensionStore()
+      store.registerExtension({
+        name: 'custom.toolbar',
+        provenance: { createdBy: 'comfy-agent' }
+      })
+      store.registerExtension({ name: 'custom.manual' })
+
+      expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
+        'custom.toolbar'
+      ])
+      expect(store.hasAgentExtensions).toBe(true)
+    })
   })
 
   describe('isExtensionEnabled / loadDisabledExtensionNames', () => {

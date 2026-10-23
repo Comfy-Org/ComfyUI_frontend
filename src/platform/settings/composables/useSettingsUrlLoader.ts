@@ -12,6 +12,7 @@ import type { SettingPanelType } from '@/platform/settings/types'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
 
 const DEEP_LINKABLE_PANELS: Record<string, SettingPanelType> = {
+  extension: 'extension',
   'plan-credits': 'workspace',
   members: 'workspace-members'
 }

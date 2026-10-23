@@ -27,6 +27,19 @@ export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
   const extensions = computed(() => Object.values(extensionByName.value))
+  const isAgentCreatedExtension = (extension: ComfyExtension) =>
+    extension.provenance?.createdBy === 'comfy-agent' ||
+    extension.name.startsWith('agent.')
+  const agentExtensions = computed(() =>
+    extensions.value.filter(isAgentCreatedExtension)
+  )
+  const getAgentExtensionPackPath = (extension: ComfyExtension) => {
+    if (!extension.name.startsWith('agent.')) return undefined
+    const packName = extension.name.split('.')[1]
+    return extensionPackPaths.value.find(
+      (path) => path.split('/').filter(Boolean).at(-1) === packName
+    )
+  }
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
@@ -116,9 +129,11 @@ export const useExtensionStore = defineStore('extension', () => {
   const hasThirdPartyExtensions = computed(() => {
     return extensions.value.some((ext) => !isCoreExtension(ext.name))
   })
+  const hasAgentExtensions = computed(() => agentExtensions.value.length > 0)
 
   return {
     extensions,
+    agentExtensions,
     enabledExtensions,
     extensionPackPaths,
     inactiveDisabledExtensionNames,
@@ -126,6 +141,8 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionInstalled,
     isExtensionEnabled,
     isExtensionReadOnly,
+    isAgentCreatedExtension,
+    getAgentExtensionPackPath,
     registerExtension,
     unregisterExtension,
     loadDisabledExtensionNames,
@@ -133,6 +150,7 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionPackEnabled,
     captureCoreExtensions,
     isCoreExtension,
-    hasThirdPartyExtensions
+    hasThirdPartyExtensions,
+    hasAgentExtensions
   }
 })

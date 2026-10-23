@@ -1,4 +1,6 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import { t } from '@/i18n'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -10,6 +12,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ComfyExtension } from '@/types/comfy'
 import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
@@ -123,6 +127,67 @@ export function reportExtensionLoadFailures(
   })
 }
 
+async function disableAgentExtension(extension: ComfyExtension) {
+  const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
+  const packPath = extensionStore.getAgentExtensionPackPath(extension)
+  if (packPath) {
+    await settingStore.set('Comfy.Extension.DisabledPacks', [
+      ...new Set([
+        ...settingStore.get('Comfy.Extension.DisabledPacks'),
+        packPath
+      ])
+    ])
+  } else {
+    await settingStore.set('Comfy.Extension.Disabled', [
+      ...new Set([
+        ...settingStore.get('Comfy.Extension.Disabled'),
+        extension.name
+      ])
+    ])
+  }
+  window.location.reload()
+}
+
+export async function notifyNewAgentExtensions() {
+  const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
+  const seenNames = settingStore.get('Comfy.Extension.SeenAgentExtensions')
+  const seen = new Set(seenNames)
+  const unseen = extensionStore.agentExtensions.filter(
+    (extension) => !seen.has(extension.name)
+  )
+  if (unseen.length === 0) return
+
+  for (const extension of unseen) {
+    useToast().info(t('g.agentExtensionAdded', { name: extension.name }), {
+      description: extension.provenance?.summary,
+      actions: [
+        {
+          label: t('g.manage'),
+          onClick: () => {
+            const url = new URL(window.location.href)
+            url.searchParams.set('filter', 'agent')
+            window.history.replaceState(window.history.state, '', url)
+            useSettingsDialog().show('extension')
+          }
+        },
+        {
+          label: t('g.disable'),
+          onClick: () => disableAgentExtension(extension)
+        }
+      ]
+    })
+  }
+
+  await settingStore.set('Comfy.Extension.SeenAgentExtensions', [
+    ...new Set([
+      ...seenNames,
+      ...extensionStore.agentExtensions.map((x) => x.name)
+    ])
+  ])
+}
+
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
@@ -177,4 +242,5 @@ export async function loadExtensions() {
       )
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
+  await notifyNewAgentExtensions()
 }

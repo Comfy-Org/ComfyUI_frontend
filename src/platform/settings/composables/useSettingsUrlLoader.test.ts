@@ -34,7 +34,8 @@ describe('useSettingsUrlLoader', () => {
 
   it.for([
     ['plan-credits', 'workspace'],
-    ['members', 'workspace-members']
+    ['members', 'workspace-members'],
+    ['extension', 'extension']
   ] as const)(
     'opens the panel for ?settings=%s and strips the param',
     async ([param, panel]) => {

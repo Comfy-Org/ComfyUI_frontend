@@ -3,11 +3,15 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
 import {
   loadExtensions,
+  notifyNewAgentExtensions,
   reportExtensionLoadFailures,
   shouldLoadExtension
 } from './extensionLoader'
@@ -343,5 +347,57 @@ describe('extension loading', () => {
         'bootstrap/extensions-load-custom:end'
       ])
     })
+  })
+})
+
+describe('agent extension discovery', () => {
+  it('notifies once with manage and disable actions and records the seen name', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: {
+        'Comfy.Extension.Disabled': [],
+        'Comfy.Extension.DisabledPacks': [],
+        'Comfy.Extension.SeenAgentExtensions': []
+      }
+    })
+    const setSetting = vi.spyOn(settingStore, 'set').mockResolvedValue()
+    useExtensionStore().registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: {
+        createdBy: 'comfy-agent',
+        summary: 'Adds cushion controls'
+      }
+    })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        title: 'Your agent added agent.cushions.toolbar',
+        description: 'Adds cushion controls',
+        actions: [
+          expect.objectContaining({ label: 'Manage' }),
+          expect.objectContaining({ label: 'Disable' })
+        ]
+      })
+    ])
+    expect(setSetting).toHaveBeenCalledWith(
+      'Comfy.Extension.SeenAgentExtensions',
+      ['agent.cushions.toolbar']
+    )
+  })
+
+  it('does not notify for an agent extension already in the seen set', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: {
+        'Comfy.Extension.SeenAgentExtensions': ['agent.cushions.toolbar']
+      }
+    })
+    useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([])
   })
 })
