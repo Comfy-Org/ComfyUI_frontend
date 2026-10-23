@@ -40,7 +40,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -253,7 +252,7 @@ function isValueWidget(
   return type !== 'button' && serialize !== false
 }
 
-function nodeKey(graphId: string, nodeId: NodeId): string {
+function nodeKey(graphId: string, nodeId: NodeId | WireNodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
@@ -855,7 +854,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (graphId === undefined) return
     for (const op of ops) {
       if (op.op !== 'connect' || !op.grow) continue
-      const key = nodeKey(graphId, toNodeId(op.to_node))
+      const key = nodeKey(graphId, op.to_node)
       const grows = unechoedGrows.get(key)
       if (!grows) continue
       const names = grows.names.filter((name) => name !== op.grow.name)
