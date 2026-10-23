@@ -84,4 +84,13 @@ describe('projectBillingCapabilities', () => {
       ).toBe(served)
     }
   )
+
+  it('omits has_parked_billing_operation when the snapshot has no value', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        hasParkedBillingOperation: undefined
+      })
+    ).not.toHaveProperty('has_parked_billing_operation')
+  })
 })
