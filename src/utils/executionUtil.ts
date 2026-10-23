@@ -47,6 +47,34 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
   return value
 }
 
+/** Executable DTOs for every node in execution order, keyed by execution ID. */
+export function buildExecutableNodeMap(
+  graph: LGraph
+): Map<ExecutionId, ExecutableLGraphNode> {
+  const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
+  for (const node of graph.computeExecutionOrder(false)) {
+    const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
+      node,
+      [],
+      nodeDtoMap
+    )
+
+    nodeDtoMap.set(dto.id, dto)
+
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    ) {
+      continue
+    }
+
+    for (const innerNode of dto.getInnerNodes()) {
+      nodeDtoMap.set(innerNode.id, innerNode)
+    }
+  }
+  return nodeDtoMap
+}
+
 /**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
@@ -89,27 +117,7 @@ export const graphToPrompt = async (
   workflow.extra ??= {}
   workflow.extra.frontendVersion = __COMFYUI_FRONTEND_VERSION__
 
-  const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
-  for (const node of graph.computeExecutionOrder(false)) {
-    const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
-      node,
-      [],
-      nodeDtoMap
-    )
-
-    nodeDtoMap.set(dto.id, dto)
-
-    if (
-      node.mode === LGraphEventMode.NEVER ||
-      node.mode === LGraphEventMode.BYPASS
-    ) {
-      continue
-    }
-
-    for (const innerNode of dto.getInnerNodes()) {
-      nodeDtoMap.set(innerNode.id, innerNode)
-    }
-  }
+  const nodeDtoMap = buildExecutableNodeMap(graph)
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution
