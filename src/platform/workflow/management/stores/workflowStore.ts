@@ -480,6 +480,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
   const workflowRenamed = createEventHook<ComfyWorkflow>()
+  const userActivation = createEventHook<ComfyWorkflow>()
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
@@ -731,6 +732,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createNewTemporary,
     renameWorkflow,
     onWorkflowRenamed: workflowRenamed.on,
+    onUserActivation: userActivation.on,
+    reportUserActivation: (workflow: ComfyWorkflow) =>
+      void userActivation.trigger(workflow),
     deleteWorkflow,
     saveAs,
     saveWorkflow,

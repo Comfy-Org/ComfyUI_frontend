@@ -437,6 +437,7 @@ export const useWorkflowService = () => {
       force?: boolean
       navigationIntentId?: number
       isCurrent?: () => boolean
+      initiator?: 'user'
     } = {}
   ): Promise<boolean> => {
     if (options.isCurrent?.() === false) return Promise.resolve(false)
@@ -491,6 +492,8 @@ export const useWorkflowService = () => {
         showPendingWarnings(undefined, {
           silent: !loadFromRemote && !options.force
         })
+        if (options.initiator === 'user')
+          workflowStore.reportUserActivation(workflow)
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
@@ -508,7 +511,11 @@ export const useWorkflowService = () => {
    */
   const closeWorkflow = async (
     workflow: ComfyWorkflow,
-    options: { warnIfUnsaved: boolean; hint?: string } = {
+    options: {
+      warnIfUnsaved: boolean
+      hint?: string
+      onReplacementOpened?: (workflow: ComfyWorkflow) => void
+    } = {
       warnIfUnsaved: true
     }
   ): Promise<boolean> => {
@@ -577,6 +584,7 @@ export const useWorkflowService = () => {
         // path); a rejection still propagates as before.
         if (replacementWorkflow) {
           if (!(await openWorkflow(replacementWorkflow))) return false
+          options.onReplacementOpened?.(replacementWorkflow)
         } else {
           if ((await loadDefaultWorkflow()) === false) return false
         }
@@ -873,17 +881,50 @@ export const useWorkflowService = () => {
     canvas._deserializeItems(items, options)
   }
 
-  const loadNextOpenedWorkflow = async () => {
-    const nextWorkflow = workflowStore.openedWorkflowIndexShift(1)
-    if (nextWorkflow) {
-      await openWorkflow(nextWorkflow)
+  /** Closes `workflows` in order, stopping at the first one that stays open. */
+  const closeWorkflows = async (
+    workflows: ComfyWorkflow[],
+    {
+      initiator,
+      ...options
+    }: { warnIfUnsaved: boolean; hint?: string; initiator?: 'user' }
+  ): Promise<void> => {
+    const opened: { replacement?: ComfyWorkflow } = {}
+    const onReplacementOpened = (replacement: ComfyWorkflow) => {
+      opened.replacement = replacement
+    }
+    try {
+      for (const workflow of workflows)
+        if (
+          !(await closeWorkflow(workflow, { ...options, onReplacementOpened }))
+        )
+          break
+    } finally {
+      const { replacement } = opened
+      if (
+        initiator === 'user' &&
+        replacement !== undefined &&
+        workflowStore.isActive(replacement)
+      )
+        workflowStore.reportUserActivation(replacement)
     }
   }
 
-  const loadPreviousOpenedWorkflow = async () => {
+  const loadNextOpenedWorkflow = async (
+    options: { initiator?: 'user' } = {}
+  ) => {
+    const nextWorkflow = workflowStore.openedWorkflowIndexShift(1)
+    if (nextWorkflow) {
+      await openWorkflow(nextWorkflow, options)
+    }
+  }
+
+  const loadPreviousOpenedWorkflow = async (
+    options: { initiator?: 'user' } = {}
+  ) => {
     const previousWorkflow = workflowStore.openedWorkflowIndexShift(-1)
     if (previousWorkflow) {
-      await openWorkflow(previousWorkflow)
+      await openWorkflow(previousWorkflow, options)
     }
   }
 
@@ -962,6 +1003,7 @@ export const useWorkflowService = () => {
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
+    closeWorkflows,
     renameWorkflow,
     deleteWorkflow,
     insertWorkflow,
