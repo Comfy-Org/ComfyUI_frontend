@@ -3,21 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
-import type { ComfyExtension } from '@/types/comfy'
 
-import './dynamicPrompts'
-
-const registerExtension = vi.hoisted(() =>
-  vi.fn<(extension: ComfyExtension) => void>()
-)
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
-}))
-
-const extension = registerExtension.mock.calls[0][0]
+import { dynamicPromptsExtension as extension } from './dynamicPrompts'
 
 function createPromptWidget(
   type: 'text' | 'number',

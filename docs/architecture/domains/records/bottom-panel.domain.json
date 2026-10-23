@@ -1,7 +1,7 @@
 {
   "id": "bottom-panel",
   "capability": "Bottom panel",
-  "description": "Bottom-panel presentation and core tab registration, log and command terminals, and the keyboard-shortcuts reference. Generic contribution registries remain in the workbench shell.",
+  "description": "Bottom-panel presentation, core tab registration, and log and command terminals. The keyboard-shortcuts reference belongs to keybindings; generic contribution registries remain in the workbench shell.",
   "modules": [
     {
       "path": "src/components/bottomPanel/**",
@@ -20,10 +20,6 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/bottomPanelTabs/useCommandSubcategories.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/bottomPanelTabs/useLogsTerminal.ts",
       "role": "infrastructure"
     },
@@ -33,7 +29,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -41,13 +37,6 @@
       "checks": [
         "src/components/bottomPanel/tabs/terminal/BaseTerminal.test.ts",
         "src/components/bottomPanel/tabs/terminal/LogsTerminal.test.ts"
-      ]
-    },
-    {
-      "name": "Shortcuts tab lists essential and view-control keybindings",
-      "checks": [
-        "src/components/bottomPanel/tabs/shortcuts/EssentialsPanel.test.ts",
-        "src/components/bottomPanel/tabs/shortcuts/ShortcutsList.test.ts"
       ]
     },
     {

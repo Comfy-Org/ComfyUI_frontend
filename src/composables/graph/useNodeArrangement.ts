@@ -34,25 +34,25 @@ export function useNodeArrangement() {
       name: 'top',
       localizedName: t('contextMenu.Top'),
       value: 'top',
-      icon: 'icon-[lucide--align-start-vertical]'
+      icon: 'icon-[lucide--align-start-horizontal]'
     },
     {
       name: 'bottom',
       localizedName: t('contextMenu.Bottom'),
       value: 'bottom',
-      icon: 'icon-[lucide--align-end-vertical]'
+      icon: 'icon-[lucide--align-end-horizontal]'
     },
     {
       name: 'left',
       localizedName: t('contextMenu.Left'),
       value: 'left',
-      icon: 'icon-[lucide--align-start-horizontal]'
+      icon: 'icon-[lucide--align-start-vertical]'
     },
     {
       name: 'right',
       localizedName: t('contextMenu.Right'),
       value: 'right',
-      icon: 'icon-[lucide--align-end-horizontal]'
+      icon: 'icon-[lucide--align-end-vertical]'
     }
   ]
 

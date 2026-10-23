@@ -91,14 +91,22 @@ const BaseModalLayoutStub = defineComponent({
   }
 })
 
+const LOAD_MORE = 'Scroll to the end'
+
 const VirtualGridStub = defineComponent({
-  props: { items: { type: Array as PropType<NodePack[]>, required: true } },
+  props: {
+    items: { type: Array as PropType<NodePack[]>, required: true },
+    onLoadMore: { type: Function as PropType<() => unknown>, required: true }
+  },
   setup(props) {
     return () =>
-      h(
-        'ul',
-        props.items.map((pack) => h('li', pack.name))
-      )
+      h('div', [
+        h(
+          'ul',
+          props.items.map((pack) => h('li', pack.name))
+        ),
+        h('button', { onClick: () => props.onLoadMore() }, LOAD_MORE)
+      ])
   }
 })
 
@@ -604,6 +612,147 @@ describe('ManagerDialog failed search', () => {
     expect(
       screen.queryByText(enMessages.manager.errorConnecting)
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('ManagerDialog failed next page', () => {
+  const FIRST_PACK: NodePack = { id: 'gguf-1', name: 'GGUF One' }
+  const SECOND_PACK: NodePack = { id: 'gguf-2', name: 'GGUF Two' }
+
+  async function renderUntilSecondPageFails(tab?: ManagerTab) {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce(succeeded([FIRST_PACK], false, true))
+      .mockResolvedValueOnce(failed('search unavailable'))
+    const { user } = renderDialog(tab)
+    await settleSearch()
+    await user.click(screen.getByRole('button', { name: LOAD_MORE }))
+    await settleSearch()
+    return user
+  }
+
+  it('keeps the loaded packs and offers a retry below them', async () => {
+    await renderUntilSecondPageFails()
+
+    expect(screen.getByText('GGUF One')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enMessages.manager.loadMoreFailed
+    )
+    expect(
+      screen.queryByText(enMessages.manager.errorConnecting)
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers a retry instead of an empty state when the tab filters out every loaded pack', async () => {
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+
+    await renderUntilSecondPageFails(ManagerTab.NotInstalled)
+
+    expect(screen.queryByText('GGUF One')).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enMessages.manager.loadMoreFailed
+    )
+    expect(
+      screen.getByRole('button', { name: enMessages.g.retry })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the grid instead of an empty state while a retry loads on a tab that filters out every loaded pack', async () => {
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+    const user = await renderUntilSecondPageFails(ManagerTab.NotInstalled)
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
+      new Promise(() => {})
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(screen.getByRole('button', { name: LOAD_MORE })).toBeInTheDocument()
+  })
+
+  it('holds the legacy-manager tip while the failed page may hold the match', async () => {
+    useManagerState().isNewManagerUI = computed(() => true)
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockImplementation(
+      async (_query, { pageNumber }) =>
+        pageNumber === 0
+          ? succeeded([FIRST_PACK], false, true)
+          : failed('search unavailable')
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.NotInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+    await user.click(screen.getByRole('button', { name: LOAD_MORE }))
+    await settleSearch()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enMessages.manager.loadMoreFailed
+    )
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('returns focus to Retry when the retried page fails again', async () => {
+    const user = await renderUntilSecondPageFails()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+      failed('search unavailable')
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(
+      screen.getByRole('button', { name: enMessages.g.retry })
+    ).toHaveFocus()
+  })
+
+  it('leaves focus where the user moved it while the retry loaded', async () => {
+    const user = await renderUntilSecondPageFails()
+    let failRetry: () => void = () => {}
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
+      new Promise((resolve) => {
+        failRetry = () => resolve(failed('search unavailable'))
+      })
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    const searchBox = screen.getByRole('combobox')
+    searchBox.focus()
+    failRetry()
+    await settleSearch()
+
+    expect(searchBox).toHaveFocus()
+  })
+
+  it('appends the failed page below the loaded packs when retried', async () => {
+    const user = await renderUntilSecondPageFails()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+      succeeded([SECOND_PACK], false)
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(
+      ['GGUF One', 'GGUF Two']
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      vi
+        .mocked(useRegistrySearchGateway().searchPacks)
+        .mock.calls.map(([, params]) => params.pageNumber)
+    ).toEqual([0, 1, 1])
   })
 })
 
