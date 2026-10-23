@@ -153,7 +153,7 @@ const {
 // subscription dialog chain (billing capability reads, async initialize) -
 // that chain is covered by useAccountPreconditionDialog's own tests.
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useAccountPreconditionDialog'),
+  import('@/platform/billing/subscription/composables/useAccountPreconditionDialog'),
   () => ({
     useAccountPreconditionDialog: () => ({ open: mockOpenAccountPrecondition })
   })
