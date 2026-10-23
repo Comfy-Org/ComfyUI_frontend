@@ -61,6 +61,7 @@ async function mockWorkspaces(page: Page) {
       body: JSON.stringify({
         token: 'mock-team-jwt',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: TEAM.id, name: TEAM.name, type: TEAM.type },
         role: TEAM.role,
         permissions: []

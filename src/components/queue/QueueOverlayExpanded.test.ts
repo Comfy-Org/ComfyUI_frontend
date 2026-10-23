@@ -1,13 +1,15 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent } from 'vue'
+import { computed, defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 vi.mock<unknown>(import('@/composables/queue/useJobMenu'), () => ({
-  useJobMenu: () => ({ jobMenuEntries: { value: [] } })
+  useJobMenu: () => ({
+    jobMenuEntries: computed(() => [{ label: 'Inspect' }])
+  })
 }))
 
 vi.mock(import('@/composables/useErrorHandling'))
@@ -55,17 +57,6 @@ const JobAssetsListStub = defineComponent({
   `
 })
 
-const showMenuMock = vi.fn()
-const toggleMenuMock = vi.fn()
-
-const ContextMenuStub = defineComponent({
-  methods: {
-    show: showMenuMock,
-    toggle: toggleMenuMock
-  },
-  template: '<div />'
-})
-
 const defaultProps = {
   headerTitle: 'Jobs',
   queuedCount: 1,
@@ -79,8 +70,7 @@ const defaultProps = {
 const stubs = {
   QueueOverlayHeader: QueueOverlayHeaderStub,
   JobFiltersBar: JobFiltersBarStub,
-  JobAssetsList: JobAssetsListStub,
-  ContextMenu: ContextMenuStub
+  JobAssetsList: JobAssetsListStub
 }
 
 const global = {
@@ -124,22 +114,27 @@ describe('QueueOverlayExpanded', () => {
     expect(onViewItem).toHaveBeenCalledWith(testJob)
   })
 
-  it('toggles the same clicked job and repositions for another job or right click', async () => {
-    const user = userEvent.setup()
+  it('toggles the same clicked job and reopens for another job or right click', async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
     render(QueueOverlayExpanded, {
       props: defaultProps,
       global
     })
+    const menuClosed = () =>
+      waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
 
     await user.click(screen.getByTestId('stub-menu-first'))
+    expect(
+      await screen.findByRole('menuitem', { name: 'Inspect' })
+    ).toBeVisible()
+
     await user.click(screen.getByTestId('stub-menu-first'))
+    await menuClosed()
+
     await user.click(screen.getByTestId('stub-menu-second'))
-    await user.pointer({
-      keys: '[MouseRight]',
-      target: screen.getByTestId('stub-menu-context')
-    })
+    expect(await screen.findByRole('menu')).toBeVisible()
 
-    expect(toggleMenuMock).toHaveBeenCalledOnce()
-    expect(showMenuMock).toHaveBeenCalledTimes(3)
+    await fireEvent.contextMenu(screen.getByTestId('stub-menu-context'))
+    expect(await screen.findByRole('menu')).toBeVisible()
   })
 })

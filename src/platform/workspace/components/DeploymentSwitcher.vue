@@ -8,7 +8,12 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="cn('max-w-100 min-w-56', switcherMenuMotionClass)"
+      :class="
+        cn(
+          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
+          switcherMenuMotionClass
+        )
+      "
       @update:open="onOpenChange"
     >
       <template #trigger>
@@ -57,6 +62,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
@@ -89,6 +95,7 @@ const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
 
 let pendingRetry: Promise<void> | undefined
+let lastFocusRetryAt = -Infinity
 
 onMounted(() => {
   if (!isOffered.value) return
@@ -100,6 +107,8 @@ onMounted(() => {
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
   if (isVisible.value || listingRefused.value) return
+  if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
+  lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
     pendingRetry = undefined
   })

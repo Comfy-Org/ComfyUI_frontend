@@ -48,11 +48,15 @@ import {
   readDocPromotedWidgets,
   readSubgraphDefinitionIds
 } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import {
+  forgetUnsyncedAtLoad,
+  recordUnsyncedHumanOps
+} from './unsyncedHumanOps'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -259,31 +263,6 @@ type AgentCrdtApplierDeps = Omit<
   'getGraph' | 'holdsLocalWrite'
 >
 
-function reportRejectedHumanOps(
-  workflowId: string | null,
-  ops: readonly Op[],
-  result: OpsResultView
-): void {
-  const settled = new Set([...result.applied, ...result.skipped])
-  const rejected = ops.filter((op) => !settled.has(op.op_id))
-  const { failed } = result
-  reportError(
-    new Error(
-      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
-    ),
-    {
-      surface: 'agent',
-      errorType: 'agent_crdt_human_ops_rejected',
-      context: {
-        workflowId,
-        opId: failed?.op_id ?? rejected[0]?.op_id,
-        code: failed?.code,
-        rejectedOps: rejected.map((op) => op.op)
-      }
-    }
-  )
-}
-
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
   userId?: () => string | null
@@ -372,6 +351,8 @@ export function useAgentCrdtFollower(
       follower.value?.enqueueHumanOperations(operations),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      follower.value?.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
@@ -512,8 +493,6 @@ function startAgentCrdtFollower(
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
     const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
     if (workflowId === null) return
 
     const applied = new Set(outcome.result.applied)
@@ -532,12 +511,33 @@ function startAgentCrdtFollower(
       ])
   }
 
+  const workflowByUnsettledOpId = new Map<string, string>()
+  const workflowsWithLostOps = new Set<string>()
+  const recordUnsynced = (): void => {
+    const unsynced = new Set(workflowsWithLostOps)
+    for (const { workflowId, ops } of sender.pendingOps()) {
+      unsynced.add(workflowId)
+      for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
+    }
+    recordUnsyncedHumanOps(tabId, unsynced)
+  }
+  const noteSettledHumanOps = (outcome: BatchOutcome): void => {
+    const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
+    for (const op of outcome.ops) workflowByUnsettledOpId.delete(op.op_id)
+    if (workflowId !== undefined && outcome.state !== 'acknowledged')
+      workflowsWithLostOps.add(workflowId)
+    recordUnsynced()
+  }
+
   const settleHumanOps = (outcome: BatchOutcome) => {
-    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
-    recordDevEvent('human_ops_settled', outcome)
+    if (outcome.state === 'acknowledged') {
+      trackAcknowledgedDeletes(outcome)
+      recordDevEvent('human_ops_settled', outcome)
+    }
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
+    noteSettledHumanOps(outcome)
   }
 
   const sender = createOpSender({
@@ -555,12 +555,17 @@ function startAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
-    tab: tabId,
+    get tab() {
+      return tabId
+    },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
   })
-  const coalescer = createOpCoalescer(sender.admit, sender.flush)
+  const coalescer = createOpCoalescer((operations) => {
+    sender.admit(operations)
+    recordUnsynced()
+  }, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
   const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
@@ -778,6 +783,7 @@ function startAgentCrdtFollower(
         clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
+      forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)
@@ -865,6 +871,8 @@ function startAgentCrdtFollower(
     projection.replaceOnNextFrame(detail.workflowId)
     reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
+    workflowsWithLostOps.delete(detail.workflowId)
+    recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
     markCanvasStale()
@@ -1147,7 +1155,6 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
-      () => rejectedOpNotifier.cancel(),
       () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => {
@@ -1191,6 +1198,8 @@ function startAgentCrdtFollower(
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      readDocWidgetValue(bridge.follower.doc, String(nodeId), widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
     mayWritePromotedHost: (nodeId: NodeId) =>
