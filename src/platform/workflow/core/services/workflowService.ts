@@ -537,6 +537,17 @@ export const useWorkflowService = () => {
       }
     }
 
+    // The default load is a replacement too: closing the last tab leaves the
+    // default workflow active, and a user-initiated close has to report that
+    // tab like any other. `loadDefaultWorkflow` resolves a boolean rather than
+    // the workflow it opened, so read the tab it left active.
+    const loadDefaultAsReplacement = async (): Promise<boolean> => {
+      if ((await loadDefaultWorkflow()) === false) return false
+      const opened = workflowStore.activeWorkflow
+      if (opened) options.onReplacementOpened?.(opened)
+      return true
+    }
+
     // Captured once: a mid-close rename mutates workflow.path in place.
     const closingPath = workflow.path
     const closing = closingKey(workflow)
@@ -586,7 +597,7 @@ export const useWorkflowService = () => {
           if (!(await openWorkflow(replacementWorkflow))) return false
           options.onReplacementOpened?.(replacementWorkflow)
         } else {
-          if ((await loadDefaultWorkflow()) === false) return false
+          if (!(await loadDefaultAsReplacement())) return false
         }
       } else if (
         // Read live, post-drain: the awaits above can change the answer.
@@ -595,7 +606,7 @@ export const useWorkflowService = () => {
           closingWorkflowCounts.has(closingKey(open))
         )
       ) {
-        if ((await loadDefaultWorkflow()) === false) return false
+        if (!(await loadDefaultAsReplacement())) return false
       }
 
       await workflowStore.closeWorkflow(workflow)
