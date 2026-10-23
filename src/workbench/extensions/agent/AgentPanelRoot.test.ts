@@ -2067,8 +2067,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         })
     )
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (threadListRoute.test(String(input)))
-        return json(200, agentThreadList())
+      const url = String(input)
+      if (threadListRoute.test(url)) return json(200, agentThreadList())
+      if (url.includes('/workflows')) return json(200, emptyWorkflowList())
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
     paywallHasFunds.value = false
@@ -2095,8 +2096,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
 
   it('waits for an adopted billing read when its own refresh is superseded', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (threadListRoute.test(String(input)))
-        return json(200, agentThreadList())
+      const url = String(input)
+      if (threadListRoute.test(url)) return json(200, agentThreadList())
+      if (url.includes('/workflows')) return json(200, emptyWorkflowList())
       return json(202, { thread_id: 'th-1', message_id: 'm-1' })
     })
     paywallHasFunds.value = false
@@ -5321,11 +5323,12 @@ describe('AgentPanelRoot history', () => {
   })
 
   it('keeps a new chat rename when the first turn creates its thread', async () => {
-    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
-      threadListRoute.test(String(input))
-        ? json(200, agentThreadList())
-        : json(202, { thread_id: 'th-new', message_id: 'm-new' })
-    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (threadListRoute.test(url)) return json(200, agentThreadList())
+      if (url.includes('/workflows')) return json(200, emptyWorkflowList())
+      return json(202, { thread_id: 'th-new', message_id: 'm-new' })
+    })
     workflowStore.activeWorkflow = addTab('workflows/new-chat.json')
     renderWithSelectedTarget()
 
