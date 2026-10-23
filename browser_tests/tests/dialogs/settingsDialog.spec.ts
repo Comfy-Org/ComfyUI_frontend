@@ -4,6 +4,7 @@ import type { Keybinding } from '@/platform/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
@@ -35,7 +36,8 @@ test.describe(
       await dialog.searchBox.blur()
       await expect(dialog.searchBox).not.toBeFocused()
 
-      await expect(dialog.leftPanel).toHaveScreenshot(
+      await expectElementScreenshot(
+        dialog.leftPanel,
         'settings-left-panel.png',
         { threshold: 0.05 }
       )
