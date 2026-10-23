@@ -46,7 +46,7 @@ jobs:
           package_json_file: pull-request/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: pull-request/.nvmrc
 
@@ -70,7 +70,7 @@ jobs:
           printf '%s\n' "$MODE" > "$ARTIFACT_DIR/mode"
 
       - name: Upload repair artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pr-lockfile-repair
           path: ${{ runner.temp }}/lockfile-repair
