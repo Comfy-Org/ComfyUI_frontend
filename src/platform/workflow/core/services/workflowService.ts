@@ -541,10 +541,6 @@ export const useWorkflowService = () => {
       }
     }
 
-    // The default load is a replacement too: closing the last tab leaves the
-    // default workflow active, and a user-initiated close has to report that
-    // tab like any other. `loadDefaultWorkflow` resolves a boolean rather than
-    // the workflow it opened, so read the tab it left active.
     const loadDefaultAsReplacement = async (): Promise<boolean> => {
       if ((await loadDefaultWorkflow()) === false) return false
       const opened = workflowStore.activeWorkflow
