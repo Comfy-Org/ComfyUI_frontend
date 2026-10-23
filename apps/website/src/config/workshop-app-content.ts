@@ -1,6 +1,6 @@
-import displayJson from '../content/workshop-display.json'
-import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import displayJson from '@/content/workshop-display.json'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
 import { hubAppHref, hubAppName } from './hub-models'
 import type { AppWorkshopModel } from './models-catalogue'
 import {

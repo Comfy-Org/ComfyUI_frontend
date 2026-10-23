@@ -1,14 +1,11 @@
-import type { RouterParameterName } from '../../../config/router-parameters'
+import type { RouterParameterName } from '@/config/router-parameters'
 import {
   createRouterParameters,
   routerParameterMappings
-} from '../../../config/router-parameters'
-import type { WorkshopContract } from '../../../config/workshop-contract'
-import { formForContract } from '../../../config/workshop-contract'
-import {
-  defaultValues,
-  schemaForModel
-} from '../../../config/workshop-playground'
+} from '@/config/router-parameters'
+import type { WorkshopContract } from '@/config/workshop-contract'
+import { formForContract } from '@/config/workshop-contract'
+import { defaultValues, schemaForModel } from '@/config/workshop-playground'
 
 /*
  * A finished take reused as an input. Most providers return a link the page

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { Locale } from '@/i18n/translations'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
-import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
-import { translationsFor } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
+import AddToCalendarButton from '@/components/blocks/AddToCalendarButton.vue'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 
 const { row, locale = 'en' } = defineProps<{
   row: DirectoryRow

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   WorkshopDetailModel,
   WorkshopFormValues
-} from '../../config/workshop-detail'
+} from '@/config/workshop-detail'
 import WorkshopForm from './WorkshopForm.vue'
 
 const model = {
@@ -94,9 +94,7 @@ describe('WorkshopForm', () => {
   it('shows the run control as not yet available', () => {
     renderForm()
 
-    const submit = screen.getByRole('button', {
-      name: 'Run model — sign-in coming next'
-    })
+    const submit = screen.getByRole('button', { name: 'Run' })
     expect(submit.hasAttribute('disabled')).toBe(true)
   })
 })

@@ -26,9 +26,9 @@ for (const location of ['left', 'right'] as const) {
       const dividerColor = await comfyPage.menu.topbar.workflowTabs.evaluate(
         (element) => getComputedStyle(element).borderBottomColor
       )
-      const gutter = comfyPage.page
-        .getByRole('separator')
-        .and(comfyPage.page.locator('.p-splitter-gutter'))
+      const gutter = comfyPage.page.locator(
+        '.side-bar-panel + [role="separator"], [role="separator"]:has(+ .side-bar-panel)'
+      )
       await expect(gutter).toBeVisible()
       await expect(gutter).toHaveCSS('background-color', dividerColor)
       await expect(comfyPage.menu.sideToolbar).toHaveCSS(

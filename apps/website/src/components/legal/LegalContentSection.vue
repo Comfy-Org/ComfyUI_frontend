@@ -3,12 +3,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { translationsFor } from '../../i18n/translations'
-import en from '../../locales/en/main.json' with { type: 'json' }
-import { scrollTo } from '../../scripts/smoothScroll'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
+import en from '@/locales/en/main.json' with { type: 'json' }
+import { scrollTo } from '@/scripts/smoothScroll'
 import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const {

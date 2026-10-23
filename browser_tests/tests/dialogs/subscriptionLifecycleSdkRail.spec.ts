@@ -450,7 +450,8 @@ test.describe(
        * reservation tells the customer why and asks neither transport.
        */
       test('mints no portal session when the browser refuses the tab', async ({
-        page
+        page,
+        toast
       }) => {
         test.setTimeout(60_000)
         const routes = await mockCloudBoot(page, { railOnFeatures: true })
@@ -461,7 +462,7 @@ test.describe(
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()
 
         await expect(
-          page.getByText(
+          toast.withText(
             "Couldn't open the billing page. Allow pop-ups for this site and try again."
           )
         ).toBeVisible()

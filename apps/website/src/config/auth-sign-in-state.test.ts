@@ -1,7 +1,7 @@
 import { ENUMERATION_ORACLE } from '@comfyorg/account-core/testing'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../i18n/translations'
+import { t } from '@/i18n/translations'
 import type { AuthSignInState } from './auth-sign-in-state'
 import { authSignInTransition, signInErrorMessage } from './auth-sign-in-state'
 
@@ -132,6 +132,33 @@ describe('authSignInTransition', () => {
       authSignInTransition(pending, { type: 'signInAbandoned' }),
       'a flag flip mid-attempt must leave pending so a later restore is not ignored'
     ).toEqual(idle)
+  })
+
+  it('holds an SSO redirect against new attempts and sign-out until the page is restored', () => {
+    const redirecting = authSignInTransition(
+      { step: 'pending', provider: 'email' },
+      { type: 'ssoRedirected' }
+    )
+    expect(redirecting).toEqual({ step: 'redirecting' })
+
+    expect(
+      authSignInTransition(redirecting, {
+        type: 'signInStarted',
+        provider: 'google'
+      }),
+      'a popup started mid-navigation would race the SSO sign-in'
+    ).toBe(redirecting)
+    expect(authSignInTransition(redirecting, { type: 'signedOut' })).toBe(
+      redirecting
+    )
+    expect(
+      authSignInTransition(redirecting, { type: 'signInAbandoned' }),
+      'back from Cloud must give the visitor live controls again'
+    ).toEqual(idle)
+  })
+
+  it('redirects only an attempt that is still pending', () => {
+    expect(authSignInTransition(idle, { type: 'ssoRedirected' })).toBe(idle)
   })
 })
 

@@ -49,10 +49,7 @@ function prepare(
 }
 
 beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response('video bytes'))
-  )
+  vi.mocked(fetch).mockImplementation(async () => new Response('video bytes'))
   vi.spyOn(api, 'fetchApi').mockResolvedValue(
     Response.json({
       name: 'kitten_cop.mp4',

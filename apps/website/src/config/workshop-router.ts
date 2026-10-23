@@ -1,4 +1,4 @@
-import { combineAbortSignals } from '../utils/abortSignal'
+import { combineAbortSignals } from '@/utils/abortSignal'
 import type { WorkshopContract } from './workshop-contract'
 import { workshopContentPolicyBody } from './workshop-content-policy'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'

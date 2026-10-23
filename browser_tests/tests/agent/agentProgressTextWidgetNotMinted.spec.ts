@@ -1,14 +1,13 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
-import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
-import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  AgentNonValueWidgetRig,
+  progressTextFrame
+} from '@e2e/fixtures/agentNonValueWidgetRig'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 /**
  * `$$node-text-preview` is a `serialize: false` widget written by binary
@@ -20,7 +19,6 @@ const NODE_ID = 501
 const WORKFLOW_ID = 'c4e2d5b3-0000-4000-8000-000000000060'
 const MESSAGE_ID = 'c4e2d5b3-0000-4000-8000-000000000061'
 const THREAD_ID = 'c4e2d5b3-0000-4000-8000-000000000062'
-const SOCKET_SID = 'c4e2d5b3-0000-4000-8000-000000000063'
 
 const PREVIEW_WIDGET = '$$node-text-preview'
 const SEED_VALUE = 111111
@@ -73,38 +71,15 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-/** Binary WS frame type 3 (`progress_text`): [u32 type][u32 idLen][id][text]. */
-function progressTextFrame(nodeId: string, text: string): Buffer {
-  const id = Buffer.from(nodeId, 'utf8')
-  const body = Buffer.from(text, 'utf8')
-  const frame = Buffer.alloc(8 + id.length + body.length)
-  frame.writeUInt32BE(3, 0)
-  frame.writeUInt32BE(id.length, 4)
-  id.copy(frame, 8)
-  body.copy(frame, 8 + id.length)
-  return frame
-}
-
 const rigConfig = {
   catalog,
   messageId: MESSAGE_ID,
   nodeDefs: { [NODE_TYPE]: nodeDef },
   samplerNodeId: NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: NODE_ID,
   workflowId: WORKFLOW_ID
-}
-
-/** One execution progress tick, through the widget's real setter. */
-async function streamProgress(
-  page: Page,
-  hostSocket: AgentFollowerHostSocket,
-  text: string
-): Promise<void> {
-  hostSocket.sendExecutionBinary(progressTextFrame(String(NODE_ID), text))
-  await nextFrame(page)
 }
 
 test.describe(
@@ -112,16 +87,17 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
   () => {
     test('streaming execution progress mints nothing and never tells the user an edit was rejected', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(60_000)
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
       const { hostSocket } = rig
 
       await test.step('stream three progress ticks into the ephemeral widget', async () => {
-        await streamProgress(page, hostSocket, PROGRESS_TEXT)
-        await streamProgress(page, hostSocket, LATER_PROGRESS_TEXT)
-        await streamProgress(page, hostSocket, 'Status: Done')
+        await rig.streamProgressText(NODE_ID, PROGRESS_TEXT)
+        await rig.streamProgressText(NODE_ID, LATER_PROGRESS_TEXT)
+        await rig.streamProgressText(NODE_ID, 'Status: Done')
 
         // The widget really was written, so this test cannot pass by never
         // exercising the path at all.
@@ -147,7 +123,7 @@ test.describe(
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
-        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        const rejectionToast = toast.toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
         })
         await expect(rejectionToast).toHaveCount(0)

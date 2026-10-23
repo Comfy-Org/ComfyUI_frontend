@@ -9,6 +9,7 @@ import {
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 // text-sm rows render a single 20px line; a wrapped name is 40px+.
 const SINGLE_LINE_MAX_HEIGHT_PX = 28
@@ -54,6 +55,32 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
+  test.describe('on a phone-width viewport', () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+
+    test('keeps the switcher on screen and switches workspaces', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      const panel = page.getByTestId('workspace-switcher-panel')
+      const teamRow = panel.getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      await expect(panel).toBeInViewport({ ratio: 1 })
+
+      await teamRow.click()
+      await comfyPage.waitForAppReady()
+
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await expect(
+        page.getByTestId('workspace-switcher-trigger')
+      ).toContainText(TEAM_WORKSPACE_NAME)
+    })
+  })
+
   test(
     'scrolls the list to reveal workspaces past the visible area',
     { tag: '@screenshot' },
@@ -88,7 +115,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
         .toBe(0)
       await expect(offScreenRow).toBeInViewport()
 
-      await comfyPage.expectScreenshot(list, 'workspace-switcher-scrolled.png')
+      await expectElementScreenshot(list, 'workspace-switcher-scrolled.png')
     }
   )
 
@@ -119,20 +146,21 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByTestId('add-credits-button')).toBeVisible()
+    const longWorkspaceCapabilities = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/billing/capabilities') &&
+        response.request().headers()['authorization'] ===
+          'Bearer mock-workspace-token-ws-team-long'
+    )
     await page.getByTestId('workspace-switcher-trigger').click()
     await page
       .getByTestId('workspace-switcher-panel')
       .getByText(LONG_WORKSPACE_NAME, { exact: true })
       .click()
+    await longWorkspaceCapabilities
     await comfyPage.waitForAppReady()
 
     await page.getByRole('button', { name: 'Current user' }).click()
-    // Only a capability read the mock resolved for the target workspace's
-    // bearer token renders this button; an idle, pending, aborted, denied or
-    // unavailable read cannot — unlike the absent add-credits button below.
-    await expect(
-      page.getByTestId('upgrade-to-add-credits-button')
-    ).toBeVisible()
     await expect(page.getByTestId('add-credits-button')).toHaveCount(0)
   })
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { frameParameters, watermarksOff } from './frames'
 import { runnableCinematicModels } from './models'
 import { studioRouterForm } from './request'

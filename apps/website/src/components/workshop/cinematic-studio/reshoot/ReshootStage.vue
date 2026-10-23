@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { Maximize2, Minimize2 } from '@lucide/vue'
 import { useFullscreen } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
-import type {
-  DepthState,
-  ReshootTake
-} from '../../../../composables/useReshoot'
+import type { DepthState, ReshootTake } from '@/composables/useReshoot'
 import type {
   CameraKey,
   ReshootCamera,
   ReshootMotion
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
-import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
-import type { ReshootRunPhase } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/run'
-import type { Locale } from '../../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Pose } from '@/lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import type { ReshootRunPhase } from '@/lib/workshop/cinematic-studio/reshoot-engine/run'
+import type { Locale } from '@/i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
 import ReshootOutputBar from './ReshootOutputBar.vue'
 import ReshootTakes from './ReshootTakes.vue'

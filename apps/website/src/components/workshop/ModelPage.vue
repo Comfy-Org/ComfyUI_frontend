@@ -2,14 +2,14 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
+import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
+import { getRoutes } from '@/config/routes'
 import type {
   RouterWorkshopModelDetail,
   WorkshopModel
-} from '../../config/models-catalogue'
-import { formForContract } from '../../config/workshop-contract'
-import { t } from '../../i18n/translations'
+} from '@/config/models-catalogue'
+import { formForContract } from '@/config/workshop-contract'
+import { t } from '@/i18n/translations'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'

@@ -8,35 +8,24 @@
  * This file only gathers what was built; `hreflangAudit.ts` holds the rules, so
  * they can be tested against fixtures rather than a full build.
  */
-import type { Alternate } from '../src/utils/hreflangRoutes'
+import type { Alternate } from '@/utils/hreflangRoutes'
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, relative } from 'node:path'
 
 import {
   auditBuiltSite,
+  auditLanguageLinks,
+  languageLinksIn,
   routeOfHref,
   sitemapChunkNames
-} from '../src/utils/hreflangAudit'
+} from '@/utils/hreflangAudit'
+
+import { htmlFiles, routeOf } from './dist-html'
 
 const DIST = join(process.cwd(), 'dist')
 const PUBLIC = join(process.cwd(), 'public')
 const ORIGIN = 'https://comfy.org'
-
-function htmlFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) return htmlFiles(full)
-    return entry.name.endsWith('.html') ? [full] : []
-  })
-}
-
-/** `dist/zh-CN/about/index.html` -> `/zh-CN/about/` */
-function routeOf(file: string): string {
-  const rel = relative(DIST, file).split(sep).join('/')
-  const withoutIndex = rel.replace(/index\.html$/, '')
-  return `/${withoutIndex}`.replace(/\/{2,}/g, '/')
-}
 
 function alternatesIn(html: string): Alternate[] {
   const out: Alternate[] = []
@@ -91,22 +80,33 @@ const publicHtmlPaths = new Set(
     ? htmlFiles(PUBLIC).map((file) => relative(PUBLIC, file))
     : []
 )
-const files = htmlFiles(DIST).filter(
+const builtFiles = htmlFiles(DIST)
+const files = builtFiles.filter(
   (file) => !publicHtmlPaths.has(relative(DIST, file))
 )
 const pages = new Map<string, Alternate[]>()
+const pageLanguageLinks = new Map<string, Alternate[]>()
 const canonicals = new Map<string, string>()
 
-for (const file of files) {
-  const route = routeOf(file)
+for (const file of builtFiles) {
+  const route = routeOf(DIST, file)
   const html = readFileSync(file, 'utf-8')
+  pageLanguageLinks.set(route, languageLinksIn(html))
+  if (publicHtmlPaths.has(relative(DIST, file))) continue
   const alternates = alternatesIn(html)
   pages.set(route, alternates)
   const canonical = /<link\s+rel="canonical"\s+href="([^"]+)"/.exec(html)?.[1]
   if (canonical !== undefined) canonicals.set(route, canonical)
 }
 const sitemap = sitemapAlternates()
-const errors = auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN })
+const renderedLinks = [...pageLanguageLinks.values()].flat()
+const errors = [
+  ...auditBuiltSite({ pages, canonicals, sitemap, origin: ORIGIN }),
+  ...auditLanguageLinks(pageLanguageLinks, ORIGIN),
+  ...(renderedLinks.length === 0
+    ? ['no page rendered a language link, so none of them were checked']
+    : [])
+]
 
 const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 // The repo's lint config allows console.warn and console.error only, and this
@@ -114,6 +114,7 @@ const withCluster = [...pages.values()].filter((list) => list.length > 0).length
 console.warn(
   `[hreflang] ${files.length} pages built, ${withCluster} in a language cluster, ` +
     `${files.length - withCluster} standalone, ` +
+    `${renderedLinks.length} rendered language links checked, ` +
     `${[...(sitemap?.values() ?? [])].filter((list) => list.length > 0).length} sitemap entries with alternates.`
 )
 
@@ -124,6 +125,6 @@ if (errors.length > 0) {
   process.exit(1)
 }
 console.warn(
-  '[hreflang] every alternate resolves, every cluster is reciprocal, and every ' +
+  '[hreflang] every alternate and language link resolves, every cluster is reciprocal, and every ' +
     'locale points where it claims.'
 )

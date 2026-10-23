@@ -1,10 +1,16 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosResponse } from 'axios'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
@@ -63,7 +69,14 @@ const createMockOptions = (inputOverrides = {}) => ({
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
+  const response: AxiosResponse<unknown> = {
+    data,
+    status,
+    statusText: '',
+    headers: new AxiosHeaders(),
+    config: { headers: new AxiosHeaders() }
+  }
+  vi.mocked(axios.get).mockResolvedValueOnce(response)
 }
 
 function mockAxiosError(error: Error | string) {
@@ -160,7 +173,7 @@ describe('useRemoteWidget', () => {
       const mockData = ['optionA', 'optionB']
       const { hook, result } = await setupHookWithResponse(mockData)
       expect(result).toEqual(mockData)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
+      expect(axios.get).toHaveBeenCalledWith(
         hook.cacheKey.split(';')[0], // Get the route part from cache key
         expect.any(Object)
       )
@@ -237,7 +250,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         await getResolvedValue(hook)
 
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(axios.get).toHaveBeenCalledTimes(1)
       })
 
       it('permanent widgets should re-fetch if refreshValue is called', async () => {
@@ -257,7 +270,7 @@ describe('useRemoteWidget', () => {
           expect(hook.getCachedValue()).toEqual(refreshedData)
         })
 
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+        expect(axios.get).toHaveBeenCalledTimes(2)
       })
 
       it('permanent widgets should still retry if request fails', async () => {
@@ -265,12 +278,12 @@ describe('useRemoteWidget', () => {
 
         const hook = useRemoteWidget(createMockOptions())
         await getResolvedValue(hook)
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(axios.get).toHaveBeenCalledTimes(1)
 
         vi.advanceTimersByTime(FIRST_BACKOFF)
         const secondData = await getResolvedValue(hook)
         expect(secondData).toBe('Loading...')
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+        expect(axios.get).toHaveBeenCalledTimes(2)
       })
 
       it('should treat empty refresh field as permanent', async () => {
@@ -279,7 +292,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         await getResolvedValue(hook)
 
-        expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+        expect(axios.get).toHaveBeenCalledTimes(1)
       })
     })
 
@@ -295,7 +308,7 @@ describe('useRemoteWidget', () => {
       const newData = await getResolvedValue(hook)
 
       expect(newData).toEqual(mockData2)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(axios.get).toHaveBeenCalledTimes(2)
     })
 
     it('should not refresh when data is not stale', async () => {
@@ -306,7 +319,7 @@ describe('useRemoteWidget', () => {
       vi.advanceTimersByTime(128)
       await getResolvedValue(hook)
 
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
     })
 
     it('should use backoff instead of refresh after error', async () => {
@@ -318,13 +331,13 @@ describe('useRemoteWidget', () => {
       mockAxiosError('Network error')
       vi.advanceTimersByTime(refresh)
       await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(axios.get).toHaveBeenCalledTimes(2)
 
       mockAxiosResponse(['second success'])
       vi.advanceTimersByTime(FIRST_BACKOFF)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toEqual(['second success'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
+      expect(axios.get).toHaveBeenCalledTimes(3)
     })
 
     it('should use last valid value after error', async () => {
@@ -338,7 +351,7 @@ describe('useRemoteWidget', () => {
       const secondData = await getResolvedValue(hook)
 
       expect(secondData).toEqual(['a valid value'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(axios.get).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -352,15 +365,15 @@ describe('useRemoteWidget', () => {
       expect(entry1?.error).toBeTruthy()
 
       await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
 
       vi.advanceTimersByTime(500)
       await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
+      expect(axios.get).toHaveBeenCalledTimes(1) // Still backing off
 
       vi.advanceTimersByTime(3000)
       await getResolvedValue(hook)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
+      expect(axios.get).toHaveBeenCalledTimes(2)
       expect(entry1?.data).toBeDefined()
     })
 
@@ -456,7 +469,7 @@ describe('useRemoteWidget', () => {
       // Both should see the same cached data
       expect(hook.getCachedValue()).toEqual(mockData)
       // Only one axios call should have been made
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -475,7 +488,7 @@ describe('useRemoteWidget', () => {
 
       expect(data1).toEqual(['shared data'])
       expect(data2).toEqual(['shared data'])
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
       expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
     })
 
@@ -496,7 +509,7 @@ describe('useRemoteWidget', () => {
       expect(data2).toBe(data1)
       expect(data3).toBe(data1)
       expect(data4).toBe(data1)
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
       expect(hook1.getCachedValue()).toBe(hook2.getCachedValue())
       expect(hook2.getCachedValue()).toBe(hook3.getCachedValue())
       expect(hook3.getCachedValue()).toBe(hook4.getCachedValue())
@@ -565,7 +578,7 @@ describe('useRemoteWidget', () => {
           const hook = useRemoteWidget(createMockOptions())
           await getResolvedValue(hook)
 
-          expect(vi.mocked(axios.get)).toHaveBeenCalledWith(
+          expect(axios.get).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({
               headers: { Authorization: 'Bearer test-token' }
@@ -614,7 +627,6 @@ describe('useRemoteWidget', () => {
     beforeEach(() => {
       scope = sessionScope
       send = vi.fn<(url: string, init: RequestInit) => Promise<Response>>()
-      vi.stubGlobal('fetch', vi.fn())
     })
 
     afterEach(() => {
@@ -688,7 +700,7 @@ describe('useRemoteWidget', () => {
             signal: expect.any(AbortSignal)
           }
         )
-        expect(vi.mocked(axios.get)).not.toHaveBeenCalled()
+        expect(axios.get).not.toHaveBeenCalled()
         expect(hook.getCachedValue()).toEqual(value)
       }
     )
@@ -762,7 +774,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
 
         expect(send).not.toHaveBeenCalled()
-        expect(vi.mocked(axios.get)).toHaveBeenCalledExactlyOnceWith(route, {
+        expect(axios.get).toHaveBeenCalledExactlyOnceWith(route, {
           params: undefined,
           signal: expect.any(AbortSignal),
           timeout: 4096,
@@ -792,7 +804,7 @@ describe('useRemoteWidget', () => {
 
         await getResolvedValue(hook)
 
-        expect(vi.mocked(axios.get)).toHaveBeenCalledExactlyOnceWith(
+        expect(axios.get).toHaveBeenCalledExactlyOnceWith(
           options.remoteConfig.route,
           {
             params: { q: '1' },
@@ -930,6 +942,59 @@ describe('useRemoteWidget', () => {
       expect(refreshSpy).not.toHaveBeenCalled()
     })
 
+    it('initializes a remote widget after the same node is removed and re-added', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('remote')
+      graph.add(node)
+      const widget = node.addWidget('combo', 'model', DEFAULT_VALUE, () => {}, {
+        values: []
+      })
+      assert(isComboWidget(widget))
+      const hook = useRemoteWidget({
+        node,
+        widget,
+        remoteConfig: createMockConfig(),
+        defaultValue: DEFAULT_VALUE
+      })
+
+      try {
+        graph.remove(node)
+        graph.add(node)
+        mockAxiosResponse(['optionA', 'optionB'])
+
+        await getResolvedValue(hook)
+
+        expect(widget.value).toBe('optionA')
+      } finally {
+        graph.remove(node)
+      }
+    })
+
+    it('does not apply a pending response after the owning widget is removed', async () => {
+      let resolveResponse!: (value: AxiosResponse<string[]>) => void
+      const response = new Promise<AxiosResponse<string[]>>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(axios.get).mockReturnValueOnce(response)
+      const options = createMockOptions()
+      options.widget.value = 'saved'
+      const cleanup = vi.fn()
+      options.widget.onRemove = cleanup
+      const hook = useRemoteWidget(options)
+      const loaded = getResolvedValue(hook)
+      options.widget.onRemove()
+      resolveResponse({
+        data: ['replacement'],
+        status: 200,
+        statusText: 'OK',
+        headers: new AxiosHeaders(),
+        config: { headers: new AxiosHeaders() }
+      })
+      await loaded
+      expect(options.widget.value).toBe('saved')
+      expect(cleanup).toHaveBeenCalledOnce()
+    })
+
     it('should cleanup event listener on node removal', async () => {
       let executionSuccessHandler: (() => void) | undefined
 
@@ -1016,7 +1081,7 @@ describe('useRemoteWidget', () => {
       await hook.waitForInventory()
 
       expect(hook.getInventoryStatus()).toBe('ready')
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
     })
 
     it('reports error when the request fails', async () => {
@@ -1060,14 +1125,13 @@ describe('useRemoteWidget', () => {
 
     it('handles errors thrown by the completion callback', async () => {
       const error = new Error('completion callback failed')
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const hook = createHookWithData(['option1'])
 
       hook.getValue(() => {
         throw error
       })
 
-      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      await vi.waitFor(() => expect(console.error).toHaveBeenCalledWith(error))
       expect(hook.getInventoryStatus()).toBe('ready')
     })
 
@@ -1115,7 +1179,7 @@ describe('useRemoteWidget', () => {
 
       expect(hook.getInventoryStatus()).toBe('ready')
       expect(options.widget.value).toBe('restored')
-      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+      expect(axios.get).toHaveBeenCalledTimes(1)
     })
 
     it('follows a replacement request started by a refresh', async () => {

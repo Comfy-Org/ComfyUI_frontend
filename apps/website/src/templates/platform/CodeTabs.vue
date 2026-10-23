@@ -10,10 +10,10 @@ import {
 import { TabsContent, TabsRoot } from 'reka-ui'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import CodeTabsCode from './CodeTabsCode.vue'
 import CodeTabsPicker from './CodeTabsPicker.vue'
-import type { CodeLang } from '../../lib/highlight'
+import type { CodeLang } from '@/lib/highlight'
 import type { CodeSegment } from './codeTokens'
 import { tokenizeSegments } from './codeTokens'
 

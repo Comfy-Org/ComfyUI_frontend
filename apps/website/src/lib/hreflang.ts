@@ -1,13 +1,13 @@
-import { isNoindexPathname } from '../config/indexing'
-import type { Hreflang, Locale } from '../config/locales'
+import { isNoindexPathname } from '@/config/indexing'
+import type { Hreflang, Locale } from '@/config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
   NON_DEFAULT_LOCALE_PREFIXES,
   normalizeRoute,
   withRouteSlash
-} from '../config/locales'
-import { supportsLocaleRoute } from '../config/routes'
+} from '@/config/locales'
+import { supportsLocaleRoute } from '@/config/routes'
 
 export interface Alternate {
   hreflang: Hreflang | 'x-default'
@@ -23,30 +23,41 @@ function englishPath(pathname: string): string {
   return path
 }
 
+export interface LocaleAlternate {
+  locale: Locale
+  path: string
+}
+
+export function localeAlternates(pathname: string): LocaleAlternate[] {
+  const en = englishPath(pathname)
+  return LOCALE_CODES.flatMap((locale) => {
+    if (!supportsLocaleRoute(locale, en)) return []
+    const path = withRouteSlash(
+      `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
+    )
+    return [{ locale, path }]
+  })
+}
+
 export function hreflangAlternates(
   pathname: string,
   origin: string
 ): Alternate[] {
-  const en = englishPath(pathname)
-  const locales = LOCALE_CODES.filter((locale) => {
-    if (!supportsLocaleRoute(locale, en)) return false
-    const localePath = `${LOCALES[locale].prefix}${en === '/' ? '' : en}`
-    return !isNoindexPathname(localePath)
-  })
+  const locales = localeAlternates(pathname).filter(
+    ({ path }) => !isNoindexPathname(path)
+  )
   // A cluster needs at least one translation to link to; a lone indexable
-  // page (or one whose only published locale is itself noindexed, like
-  // /comfy-agent) has nothing to pair with, so hreflang has nothing to say.
+  // page has nothing to pair with, so hreflang has nothing to say.
   if (locales.length < 2) return []
 
-  const enHref = new URL(withRouteSlash(en), origin).href
-  const alternates: Alternate[] = locales.map((locale) => ({
+  const alternates: Alternate[] = locales.map(({ locale, path }) => ({
     hreflang: LOCALES[locale].hreflang,
-    href: new URL(
-      withRouteSlash(`${LOCALES[locale].prefix}${en === '/' ? '' : en}`),
-      origin
-    ).href
+    href: new URL(path, origin).href
   }))
-  alternates.push({ hreflang: 'x-default', href: enHref })
+  alternates.push({
+    hreflang: 'x-default',
+    href: new URL(withRouteSlash(englishPath(pathname)), origin).href
+  })
   return alternates
 }
 

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { ModelMetadataFetchOutcome } from '@/platform/missingModel/missingModelDownload'
+import type { ModelMetadataFetchOutcome } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resolveTemplateModelMetadata } from './templateModelMetadata'
 
@@ -8,9 +8,12 @@ const mocks = vi.hoisted(() => ({
   fetchModelMetadataWithStatus: vi.fn()
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
+  })
+)
 
 function model(name: string, url = `https://example.com/${name}`): ModelFile {
   return { name, url, directory: 'checkpoints' }
@@ -42,10 +45,6 @@ function deferred<T>() {
 }
 
 describe('resolveTemplateModelMetadata', () => {
-  beforeEach(() => {
-    mocks.fetchModelMetadataWithStatus.mockReset()
-  })
-
   it('fetches each URL once while preserving input order and repeated identity', async () => {
     const shared = model('shared.safetensors')
     const unique = model('unique.safetensors')

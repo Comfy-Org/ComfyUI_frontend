@@ -3,10 +3,10 @@ import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
 import { computed } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { deployPromptFor } from '../../config/deploy-prompt'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { deployPromptFor } from '@/config/deploy-prompt'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import LiveTerminal from './LiveTerminal.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

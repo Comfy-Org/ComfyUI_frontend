@@ -2,38 +2,31 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
+  base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
-      secondary:
-        'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover',
-      primary:
-        'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
-      inverted:
-        'bg-base-foreground text-base-background hover:bg-base-foreground/80',
-      destructive:
-        'bg-destructive-background text-base-foreground hover:bg-destructive-background-hover',
-      textonly:
-        'bg-transparent text-base-foreground hover:bg-secondary-background-hover',
-      'muted-textonly':
-        'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
+      secondary: 'bg-secondary text-foreground hover:bg-accent',
+      primary: 'bg-primary text-foreground hover:bg-primary/90',
+      inverted: 'bg-foreground text-background hover:bg-foreground/80',
+      destructive: 'bg-destructive text-foreground hover:bg-destructive/90',
+      textonly: 'bg-transparent text-foreground hover:bg-accent',
+      'muted-textonly': 'bg-transparent text-muted-foreground hover:bg-accent',
       'destructive-textonly':
-        'bg-transparent text-destructive-background hover:bg-destructive-background/10',
+        'bg-transparent text-destructive hover:bg-destructive/10',
       outline:
-        'border border-solid border-border-default bg-transparent text-base-foreground hover:bg-secondary-background-hover',
-      link: 'bg-transparent text-muted-foreground hover:text-base-foreground',
+        'border border-solid bg-transparent text-foreground hover:bg-accent',
+      link: 'bg-transparent text-muted-foreground hover:text-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
-      base: 'bg-base-background text-base-foreground hover:bg-secondary-background-hover',
-      tertiary:
-        'bg-tertiary-background text-base-foreground hover:bg-tertiary-background-hover',
+      base: 'bg-background text-foreground hover:bg-accent',
+      tertiary: 'bg-muted text-foreground hover:bg-muted/80',
       subscribe:
         'border-transparent bg-credit text-charcoal-800 hover:opacity-80',
       'brand-ghost':
-        'bg-transparency-white-t8 text-primary-warm-white hover:bg-transparency-white-t20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
+        'bg-white/8 text-primary-warm-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
       'brand-solid':
         'bg-brand-yellow text-primary-comfy-ink hover:bg-brand-yellow/90 focus-visible:ring-2 focus-visible:ring-primary-warm-white',
       'brand-ghost-accent':
-        'bg-transparency-white-t8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
+        'bg-white/8 text-primary-warm-white hover:bg-brand-yellow hover:text-primary-comfy-ink focus-visible:ring-2 focus-visible:ring-brand-yellow'
     },
     size: {
       sm: 'h-6 rounded-sm px-2 py-1 text-xs',
@@ -42,6 +35,7 @@ export const buttonVariants = cva({
       'icon-sm': 'size-5 p-0',
       icon: 'size-8 rounded-lg',
       'icon-lg': 'size-10 rounded-lg',
+      link: 'gap-1 px-0 py-2 text-sm/5 font-normal hover:underline',
       brand:
         'h-12 rounded-2xl px-5 font-formula text-sm font-semibold tracking-[0.7px] uppercase lg:h-13 xl:h-14 2xl:h-16',
       'brand-icon': 'size-10 rounded-2xl xl:size-12',
@@ -82,6 +76,7 @@ const sizes = [
   'icon-sm',
   'icon',
   'icon-lg',
+  'link',
   'brand',
   'brand-icon'
 ] as const satisfies Array<ButtonVariants['size']>

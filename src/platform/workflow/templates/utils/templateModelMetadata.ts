@@ -1,8 +1,8 @@
-import { fetchModelMetadataWithStatus } from '@/platform/missingModel/missingModelDownload'
+import { fetchModelMetadataWithStatus } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type {
   ModelMetadata,
   ModelMetadataFetchOutcome
-} from '@/platform/missingModel/missingModelDownload'
+} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const MAX_CONCURRENT_METADATA_REQUESTS = 6

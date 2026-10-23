@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicStage from './CinematicStage.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'

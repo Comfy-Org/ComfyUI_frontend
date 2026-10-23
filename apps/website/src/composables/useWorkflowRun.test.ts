@@ -1,29 +1,33 @@
 import type { JobDetailResponse } from '@comfyorg/ingest-types'
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { render, waitFor } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, ref, shallowRef } from 'vue'
 
-import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
-import { markWorkshopCreditsDirty } from '../config/workshop-credits'
-import { initialWorkshopPageState } from '../config/workshop-page-state'
-import type { FormValues } from '../config/workshop-playground'
-import { restoreFormValues } from '../config/workshop-playground'
-import type { WorkshopSession } from '../config/workshop-session-state'
-import { useWorkshopSession } from '../config/workshop-session-state'
-import { workflowDetailsBySlug } from '../config/workshop-workflow-content'
-import type { SavedWorkflow } from '../config/workshop-workflow-storage'
-import { workflowStorage } from '../config/workshop-workflow-storage'
-import { createWorkflowUploader } from '../config/workshop-workflow-upload'
-import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import { markWorkshopCreditsDirty } from '@/config/workshop-credits'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import type { FormValues } from '@/config/workshop-playground'
+import { restoreFormValues } from '@/config/workshop-playground'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import type { SavedWorkflow } from '@/config/workshop-workflow-storage'
+import { workflowStorage } from '@/config/workshop-workflow-storage'
+import { createWorkflowUploader } from '@/config/workshop-workflow-upload'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 import { useWorkflowFormDraft } from './useWorkflowFormDraft'
 import { useWorkflowRun } from './useWorkflowRun'
 
-vi.mock(import('../config/workshop-session-state'))
-vi.mock(import('../config/workshop-credits'))
-vi.mock(import('../config/workshop-workflow-upload'))
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-workflow-upload'))
+vi.mock(import('@/scripts/posthog'))
 
 const runId = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
+const PROMPT_URL = `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`
+const JOB_URL = `${WORKSHOP_CLOUD_BASE_URL}/api/jobs/${runId}?short_link=ephemeral_tool_chain`
 const input = { image: 'https://storage.googleapis.com/inputs/canonical' }
 
 function credential(
@@ -92,11 +96,9 @@ function fixture(model = authoredWorkflow()) {
   vi.mocked(createWorkflowUploader).mockReturnValue(
     async () => 'canonical-image.webp'
   )
-  const fetch = vi.fn<typeof globalThis.fetch>()
-  vi.stubGlobal('fetch', fetch)
   const scope = callerScope(owner)
   const view = mountWorkflow(model, scope)
-  return { ...view, model, owner, current, session, fetch, scope }
+  return { ...view, model, owner, current, session, scope }
 }
 
 function finished(): JobDetailResponse {
@@ -116,9 +118,10 @@ function finished(): JobDetailResponse {
 describe('workflow page caller lifecycle', () => {
   it('reports one Cloud attempt without inputs and does not count link refresh or restored jobs as new runs', async () => {
     const f = fixture()
-    f.fetch
-      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
-      .mockResolvedValue(Response.json(finished()))
+    respondToFetch(PROMPT_URL, () => Response.json({ prompt_id: runId }), {
+      times: 1
+    })
+    respondToFetch(JOB_URL, () => Response.json(finished()))
     await f.workflow.start(input)
     const started = vi.mocked(captureWorkshopEvent).mock.calls.at(0)?.[0]
     expect(started).toMatchObject({
@@ -146,7 +149,6 @@ describe('workflow page caller lifecycle', () => {
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toMatch(/canonical|result\.png|token|https:/)
     vi.mocked(captureWorkshopEvent).mockClear()
-    f.fetch.mockImplementation(async () => Response.json(finished()))
     const output = f.workflow.observation.value?.outputs[0]
     assert(output)
     await f.workflow.refreshOutput(output.id)
@@ -160,9 +162,10 @@ describe('workflow page caller lifecycle', () => {
 
   it('marks the credits dirty once for a run submitted here', async () => {
     const f = fixture()
-    f.fetch
-      .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
-      .mockResolvedValue(Response.json(finished()))
+    respondToFetch(PROMPT_URL, () => Response.json({ prompt_id: runId }), {
+      times: 1
+    })
+    respondToFetch(JOB_URL, () => Response.json(finished()))
 
     await f.workflow.start(input)
     await f.workflow.retryDelivery()
@@ -193,11 +196,12 @@ describe('workflow page caller lifecycle', () => {
         vi.useRealTimers()
       })
       const f = fixture(model)
-      f.fetch
-        .mockResolvedValueOnce(Response.json({ ...finished(), status }))
-        .mockResolvedValue(Response.json(finished()))
+      respondToFetch(JOB_URL, () => Response.json(finished()))
+      respondToFetch(JOB_URL, () => Response.json({ ...finished(), status }), {
+        times: 1
+      })
 
-      await vi.waitFor(() => expect(f.fetch).toHaveBeenCalled(), {
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalled(), {
         interval: 1
       })
       await vi.advanceTimersByTimeAsync(2_000)
@@ -220,12 +224,12 @@ describe('workflow page caller lifecycle', () => {
       })
     })
     expect(f.workflow.state.value.phase).toBe('failed')
-    expect(f.fetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('records a credit refusal without exposing the Cloud error body', async () => {
     const f = fixture()
-    f.fetch.mockResolvedValueOnce(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response('private provider details', { status: 402 })
     )
     await f.workflow.start(input)
@@ -268,7 +272,7 @@ describe('workflow page caller lifecycle', () => {
     })
     const last = vi.mocked(captureWorkshopEvent).mock.calls.at(-1)?.[0]
     expect(last?.properties).not.toHaveProperty('request_id')
-    expect(f.fetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     uploaded.resolve('input.webp')
     await pending
     expect(captureWorkshopEvent).toHaveBeenCalledTimes(2)
@@ -278,7 +282,7 @@ describe('workflow page caller lifecycle', () => {
     'records a confirmed Cloud job %s outcome',
     async (status) => {
       const f = fixture()
-      f.fetch
+      vi.mocked(fetch)
         .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
         .mockResolvedValueOnce(
           Response.json({ ...finished(), status, outputs: {} })
@@ -298,7 +302,7 @@ describe('workflow page caller lifecycle', () => {
 
   it('records where a failed Cloud job broke without its message', async () => {
     const f = fixture()
-    f.fetch
+    vi.mocked(fetch)
       .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
       .mockResolvedValueOnce(
         Response.json({
@@ -378,7 +382,9 @@ describe('workflow page caller lifecycle', () => {
       name: 'an account switch during 401 token renewal',
       next: () => credential('bob'),
       prepare(f, pending, requested) {
-        f.fetch.mockResolvedValueOnce(Response.json({}, { status: 401 }))
+        vi.mocked(fetch).mockResolvedValueOnce(
+          Response.json({}, { status: 401 })
+        )
         vi.mocked(f.session.remint).mockImplementationOnce(async () => {
           requested()
           return pending.promise
@@ -419,9 +425,9 @@ describe('workflow page caller lifecycle', () => {
       pendingCredential.resolve({ status: 'ok', session: f.current.value })
       await pending
       expect(
-        f.fetch.mock.calls
-          .filter(([, init]) => init?.method === 'POST')
-          .map(([, init]) => new Headers(init?.headers).get('Authorization'))
+        fetchRequests({ method: 'POST' }).map(({ headers }) =>
+          headers.get('Authorization')
+        )
       ).toEqual(postedTokens)
       expect(f.workflow.signedIn.value).toBe(false)
       expect(f.workflow.state.value).toEqual(presentationBeforeSwitch)
@@ -452,7 +458,7 @@ describe('workflow page caller lifecycle', () => {
       const f = fixture()
       const response = Promise.withResolvers<Response>()
       const requested = Promise.withResolvers<void>()
-      f.fetch
+      vi.mocked(fetch)
         .mockResolvedValueOnce(
           Response.json({ prompt_id: runId, node_errors: {} })
         )
@@ -494,7 +500,7 @@ describe('workflow page caller lifecycle', () => {
     const f = fixture()
     const response = Promise.withResolvers<Response>()
     const requested = Promise.withResolvers<void>()
-    f.fetch
+    vi.mocked(fetch)
       .mockResolvedValueOnce(
         Response.json({ prompt_id: runId, node_errors: {} })
       )
@@ -521,12 +527,12 @@ describe('workflow page caller lifecycle', () => {
     expect(replacement.workflow.state.value).toEqual({ phase: 'idle' })
     expect(replacement.workflow.observation.value).toBeUndefined()
     expect(markWorkshopCreditsDirty).not.toHaveBeenCalled()
-    expect(f.fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('retains an unknown submission through reconnect and remount without sending again', async () => {
     const f = fixture()
-    f.fetch.mockRejectedValueOnce(new TypeError('Lost response'))
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Lost response'))
     await f.workflow.start(input)
     expect(f.workflow.state.value).toMatchObject({
       phase: 'interrupted',
@@ -542,12 +548,12 @@ describe('workflow page caller lifecycle', () => {
         error: { code: 'submission_unknown' }
       })
     )
-    expect(f.fetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it('resumes a known job on reconnect without resubmission and marks the owner’s credits dirty', async () => {
     const f = fixture()
-    f.fetch
+    vi.mocked(fetch)
       .mockResolvedValueOnce(
         Response.json({ prompt_id: runId, node_errors: {} })
       )
@@ -557,14 +563,14 @@ describe('workflow page caller lifecycle', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
       expect.objectContaining({ name: 'run_finished' })
     )
-    f.fetch.mockResolvedValueOnce(Response.json(finished()))
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(finished()))
     window.dispatchEvent(new Event('online'))
     await waitFor(() => expect(markWorkshopCreditsDirty).toHaveBeenCalledOnce())
     expect(f.workflow.state.value.phase).toBe('settled')
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
     ).toEqual(['run_started', 'run_finished'])
-    expect(f.fetch.mock.calls.map(([, init]) => init?.method)).toEqual([
+    expect(fetchRequests().map(({ method }) => method)).toEqual([
       'POST',
       'GET',
       'GET'
@@ -573,7 +579,7 @@ describe('workflow page caller lifecycle', () => {
 
   it('finishes a dismissed unknown submission as a client failure once', async () => {
     const f = fixture()
-    f.fetch.mockRejectedValueOnce(new TypeError('Lost response'))
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Lost response'))
     await f.workflow.start(input)
     f.workflow.dismiss()
     f.workflow.dismiss()
@@ -592,7 +598,7 @@ describe('workflow page caller lifecycle', () => {
       })
     ])
     expect(finished[0]).not.toHaveProperty('request_id')
-    expect(f.fetch).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   it.for(['known job', 'storage failure', 'restored intent'])(
@@ -600,10 +606,10 @@ describe('workflow page caller lifecycle', () => {
     async (scenario) => {
       const f = fixture()
       if (scenario === 'known job')
-        f.fetch.mockResolvedValueOnce(
+        vi.mocked(fetch).mockResolvedValueOnce(
           Response.json({ prompt_id: runId, node_errors: {} })
         )
-      f.fetch.mockRejectedValueOnce(new TypeError('Lost response'))
+      vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Lost response'))
       await f.workflow.start(input)
       let workflow = f.workflow
       if (scenario === 'storage failure')
@@ -674,10 +680,7 @@ describe('workflow page caller lifecycle', () => {
       status: 'ok',
       session: owner
     })
-    const fetch = vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValueOnce(Response.json(finished()))
-    vi.stubGlobal('fetch', fetch)
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(finished()))
     const restored = mountWorkflow(model, scope)
     await waitFor(() =>
       expect(restored.workflow.state.value.phase).toBe('settled')
@@ -691,6 +694,6 @@ describe('workflow page caller lifecycle', () => {
         }
       }
     })
-    expect(fetch.mock.calls.map(([, init]) => init?.method)).toEqual(['GET'])
+    expect(fetchRequests().map(({ method }) => method)).toEqual(['GET'])
   })
 })

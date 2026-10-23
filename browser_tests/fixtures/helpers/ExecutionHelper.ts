@@ -233,6 +233,28 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_error` WS event carrying cloud validation node errors. */
+  validationError(
+    jobId: string,
+    nodeId: string,
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          exception_message: JSON.stringify({ node_errors: nodeErrors }),
+          exception_type: 'prompt_outputs_failed_validation',
+          traceback: []
+        }
+      })
+    )
+  }
+
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
     this.requireWs().send(

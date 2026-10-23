@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import RadioGroup from './RadioGroup.vue'
 import RadioGroupItem from './RadioGroupItem.vue'
 
-const meta = {
+const meta: Meta<typeof RadioGroup> = {
   title: 'Components/RadioGroup',
   component: RadioGroup,
   tags: ['autodocs'],
@@ -12,7 +12,7 @@ const meta = {
     disabled: { control: 'boolean' },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof RadioGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -93,7 +93,7 @@ export const WithDescriptions: Story = {
             class="flex items-center justify-between gap-7 py-2"
           >
             <label :for="option.value" class="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5">
-              <span class="text-sm/tight text-base-foreground">{{ option.title }}</span>
+              <span class="text-sm/tight text-foreground">{{ option.title }}</span>
               <span class="text-sm/tight text-muted-foreground">{{ option.description }}</span>
             </label>
             <RadioGroupItem :id="option.value" :value="option.value" />

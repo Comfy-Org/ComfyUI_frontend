@@ -1,17 +1,17 @@
 import { expect } from '@playwright/test'
 
-import { getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { wanAnimate2Page } from '../src/data/wanAnimate2'
-import { t } from '../src/i18n/translations'
-import type { ModelLaunchCta } from '../src/templates/model-launch/types'
+import { getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { wanAnimate2Page } from '@/data/wanAnimate2'
+import { t } from '@/i18n/translations'
+import type { ModelLaunchCta } from '@/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH = '/wan-animate-2'
 const ZH_PATH = '/zh-CN/wan-animate-2'
 const HERO_TITLE = t('wanAnimate2.hero.title', {}, { locale: 'en' })
 const HERO_PRIMARY = t('wanAnimate2.hero.primaryCta', {}, { locale: 'en' })
-const MODELS_ROUTE = getRoutes('en').models
+const MODELS_ROUTE = getRoutes('en').workshop
 const STEPS_HEADING = t('wanAnimate2.steps.heading', {}, { locale: 'en' })
 const REVIEWS_HEADING = t('wanAnimate2.reviews.heading', {}, { locale: 'en' })
 const HIGHLIGHT_CTA = t(
@@ -66,7 +66,7 @@ test.describe('Wan Animate 2 page — link targets', () => {
         name: t('ui.breadcrumb', {}, { locale: 'en' })
       })
       .getByRole('link', {
-        name: t('models.breadcrumb.models', {}, { locale: 'en' })
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
       })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })

@@ -29,6 +29,11 @@ export interface TeamCreditStopPrice {
   readonly credits: number
   /** The yearly discount as a whole percent; monthly billing halves it. */
   readonly discountPercentYearly: number
+  /** What the server bills for one period of each cycle, in USD. */
+  readonly periodChargeUsd: {
+    readonly monthly: number
+    readonly yearly: number
+  }
 }
 
 /**
@@ -39,7 +44,12 @@ export function mapApiTeamCreditStops(
   stops: readonly {
     id: string
     credits: number
-    yearly: { list_price_cents: number; price_cents: number }
+    monthly: { period_charge_cents: number }
+    yearly: {
+      list_price_cents: number
+      price_cents: number
+      period_charge_cents: number
+    }
   }[]
 ): TeamCreditStopPrice[] {
   return stops.map((stop) => {
@@ -52,7 +62,11 @@ export function mapApiTeamCreditStops(
       id: stop.id,
       usd: Math.round(listCents / 100),
       credits: stop.credits,
-      discountPercentYearly
+      discountPercentYearly,
+      periodChargeUsd: {
+        monthly: stop.monthly.period_charge_cents / 100,
+        yearly: stop.yearly.period_charge_cents / 100
+      }
     }
   })
 }

@@ -2,26 +2,25 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import { readGeometry } from '@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import {
   fakeGeometry,
   fakeTransport,
   signIn
-} from '../../../../lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
-import { reshootTransport } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'
+} from '@/lib/workshop/cinematic-studio/reshoot-engine/__fixtures__/reshootFakes'
+import { reshootTransport } from '@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'
 import ReshootStudio from './ReshootStudio.vue'
 
-vi.mock(import('../../../../config/workshop-session-state'))
-vi.mock(import('../../../../config/workshop-credits'))
-vi.mock(import('../../../../scripts/posthog'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(
-  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
+  import('@/lib/workshop/cinematic-studio/reshoot-engine/transport-config'),
   () => ({ reshootTransport: vi.fn() })
 )
-vi.mock(
-  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
-  () => ({ readGeometry: vi.fn() })
-)
+vi.mock(import('@/lib/workshop/cinematic-studio/reshoot-engine/cvgeo'), () => ({
+  readGeometry: vi.fn()
+}))
 
 function setup() {
   render(ReshootStudio)
@@ -32,9 +31,8 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.mocked(reshootTransport).mockReturnValue(fakeTransport())
   vi.mocked(readGeometry).mockResolvedValue(fakeGeometry())
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  vi.mocked(fetch).mockImplementation(
+    async () => new Response(new Blob(['clip'], { type: 'video/mp4' }))
   )
   signIn()
 })

@@ -4,9 +4,9 @@ import { parseArgs } from 'node:util'
 import { chromium } from '@playwright/test'
 import { build } from 'vite'
 
-import { isWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
-import type { WorkshopCloudEnv } from '../src/config/workshop-cloud-env'
-import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
+import { isWorkshopCloudEnv } from '@/config/workshop-cloud-env'
+import type { WorkshopCloudEnv } from '@/config/workshop-cloud-env'
+import { WORKSHOP_ROUTER_BASE_URL } from '@/config/workshop-env'
 import { workshopUploadOrigin } from './workshop-upload-origin'
 import type { runWorkshopUploadProbe } from './workshop-upload-probe'
 

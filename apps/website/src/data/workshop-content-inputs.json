@@ -25,15 +25,18 @@
   },
   "byteplus--seedance-1-0-lite-first-last-frame--animate-images": {
     "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
-    "options": { "mode": "first-last", "urlMedia": true }
+    "options": { "mode": "first-last", "urlMedia": true },
+    "unavailableReason": "Router retired Seedance 1.0 Lite image-to-video; this entry has no native target."
   },
   "byteplus--seedance-1-0-lite-image-reference--animate-images": {
     "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
-    "options": { "mode": "reference", "urlMedia": true }
+    "options": { "mode": "reference", "urlMedia": true },
+    "unavailableReason": "Router retired Seedance 1.0 Lite image-to-video; this entry has no native target."
   },
   "byteplus--seedance-1-0-lite-image-to-video--animate-images": {
     "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
-    "options": { "mode": "image", "urlMedia": true }
+    "options": { "mode": "image", "urlMedia": true },
+    "unavailableReason": "Router retired Seedance 1.0 Lite image-to-video; this entry has no native target."
   },
   "byteplus--seedance-2-fast-first-last-frame--animate-images": {
     "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",

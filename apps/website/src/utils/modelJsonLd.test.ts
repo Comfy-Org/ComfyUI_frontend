@@ -1,12 +1,27 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { MODEL_DEVELOPERS, modelDeveloper } from '../config/model-vendors'
+import type { ModelPageLaunch } from '@/config/model-page-launch'
+import { MODEL_DEVELOPERS, modelDeveloper } from '@/config/model-vendors'
+import { modelsUrlKind, modelsUrlPaths } from '@/config/models-url-registry'
+import { workshopModels } from '@/config/workshop-browse-content'
 import {
   getWorkshopPageDetail,
   workshopPagePaths
-} from '../config/workshop-page-content'
+} from '@/config/workshop-page-content'
 import type { JsonLdNode } from './jsonLd'
-import { modelPageJsonLd } from './modelJsonLd'
+import { modelPageJsonLd, modelsHubJsonLd } from './modelJsonLd'
+import { modelsByProvider } from '@/routes/models/models-directory'
+
+const launch = vi.hoisted(
+  (): {
+    launchedModelPages: ModelPageLaunch
+    launchedWorkflowPages: boolean
+  } => ({
+    launchedModelPages: 'all',
+    launchedWorkflowPages: false
+  })
+)
+vi.mock(import('@/config/model-page-launch'), () => launch)
 
 const siteUrl = 'https://comfy.org'
 const url = 'https://comfy.org/hub/models/example/'
@@ -135,5 +150,112 @@ describe('MODEL_DEVELOPERS', () => {
   it('links only well-formed Wikidata ids', () => {
     for (const developer of Object.values(MODEL_DEVELOPERS))
       if (developer?.wikidata) expect(developer.wikidata).toMatch(/^Q\d+$/)
+  })
+})
+
+describe('modelsHubJsonLd', () => {
+  const hubUrl = 'https://comfy.org/hub/models/'
+  const directoryModels = modelsByProvider(workshopModels, 'Other').flatMap(
+    (group) => group.models
+  )
+  const directoryUrls = directoryModels.flatMap(({ href }) =>
+    href === undefined ? [] : [`${siteUrl}${href}`]
+  )
+  const [workflowPath] = modelsUrlPaths('workflow')
+
+  function listedUrls(
+    models: Parameters<typeof modelsHubJsonLd>[0]['models'],
+    launched: ModelPageLaunch = 'all'
+  ) {
+    return modelsHubJsonLd({
+      models,
+      url: hubUrl,
+      siteUrl,
+      launched
+    }).extraJsonLd.flatMap(({ itemListElement }) =>
+      Array.isArray(itemListElement)
+        ? itemListElement.map((element: { url: string }) => element.url)
+        : []
+    )
+  }
+
+  it('lists every directory link, in the order the directory shows them', () => {
+    const { pageType, mainEntityId, extraJsonLd } = modelsHubJsonLd({
+      models: directoryModels,
+      url: hubUrl,
+      siteUrl,
+      launched: 'all'
+    })
+    expect(directoryUrls.length).toBeGreaterThan(0)
+    expect(pageType).toBe('CollectionPage')
+    expect(mainEntityId).toBe(`${hubUrl}#itemlist`)
+    expect(extraJsonLd[0]).toMatchObject({
+      '@type': 'ItemList',
+      numberOfItems: directoryUrls.length
+    })
+    expect(listedUrls(directoryModels)).toEqual(directoryUrls)
+  })
+
+  it('lists only absolute, unique model page URLs from the registry', () => {
+    const urls = listedUrls(directoryModels)
+    expect(new Set(urls).size).toBe(urls.length)
+    expect(
+      urls.map((listed) => {
+        const { origin, pathname } = new URL(listed)
+        return {
+          origin,
+          trailingSlash: pathname.endsWith('/'),
+          kind: modelsUrlKind(pathname)
+        }
+      })
+    ).toEqual(
+      urls.map(() => ({ origin: siteUrl, trailingSlash: true, kind: 'model' }))
+    )
+  })
+
+  it('leaves out a launched workflow page and links that are not model pages', () => {
+    const [listedModel] = directoryModels
+    expect(workflowPath).toBeDefined()
+    launch.launchedWorkflowPages = true
+    onTestFinished(() => {
+      launch.launchedWorkflowPages = false
+    })
+    expect(
+      listedUrls([
+        { name: 'No page' },
+        { name: 'Workflow', href: workflowPath },
+        { name: 'Unknown', href: '/hub/models/not-a-model/' },
+        listedModel
+      ])
+    ).toEqual([`${siteUrl}${listedModel.href}`])
+  })
+
+  it('lists only the model pages the launch keeps', () => {
+    const [kept] = directoryModels
+    const dropped = directoryModels
+      .filter(({ routerId }) => routerId !== kept.routerId)
+      .slice(0, 1)
+    expect(dropped).toHaveLength(1)
+    expect(listedUrls([kept, ...dropped], new Set([kept.routerId]))).toEqual([
+      `${siteUrl}${kept.href}`
+    ])
+  })
+
+  it('resolves a link without a trailing slash to the canonical page URL', () => {
+    const [model] = directoryModels
+    expect(
+      listedUrls([{ name: model.name, href: model.href?.replace(/\/$/, '') }])
+    ).toEqual([`${siteUrl}${model.href}`])
+  })
+
+  it('keeps the Home > Models breadcrumb but drops the list when nothing is listed', () => {
+    expect(modelsHubJsonLd({ models: [], url: hubUrl, siteUrl })).toEqual({
+      pageType: 'CollectionPage',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://comfy.org/' },
+        { name: 'Models' }
+      ],
+      extraJsonLd: []
+    })
   })
 })
