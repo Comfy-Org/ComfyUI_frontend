@@ -9,6 +9,7 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -109,6 +110,13 @@ async function openDefaultMenu(user: ReturnType<typeof userEvent.setup>) {
   defaultMenu.focus()
   await user.keyboard('{ArrowRight}')
   return screen.findByTestId('default-row-cloud')
+}
+
+async function focusWindowEvery(ms: number, times: number) {
+  for (let focus = 0; focus < times; focus++) {
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(ms)
+  }
 }
 
 function asOwner() {
@@ -565,6 +573,23 @@ describe('DeploymentSwitcher', () => {
       )
     }
   )
+
+  it('asks again on focus at most once a minute while the listing keeps failing', async () => {
+    mockWorkspaceApi.listDeployments.mockRejectedValue(
+      new WorkspaceApiError('Service unavailable', 503)
+    )
+    renderSwitcher()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(3)
+
+    await focusWindowEvery(5_000, 10)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(4)
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(5)
+  })
 
   it('waits for the boot listing before a focus retries it', async () => {
     let answer: (list: WorkspaceDeploymentList) => void = () => {}
