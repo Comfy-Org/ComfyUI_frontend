@@ -176,7 +176,9 @@ describe('useGapDragSession', () => {
     session.commit()
 
     expect(moveBoxes).toHaveBeenCalled()
-    for (const [nodes] of moveBoxes.mock.calls) expect(nodes).toEqual(rowNodes)
+    expect(moveBoxes.mock.calls.map(([nodes]) => nodes)).toEqual(
+      moveBoxes.mock.calls.map(() => rowNodes)
+    )
   })
 
   it('puts the nodes it started with back when it is cancelled after the selection changes', () => {

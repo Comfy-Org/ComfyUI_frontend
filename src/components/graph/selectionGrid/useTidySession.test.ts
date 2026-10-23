@@ -88,7 +88,9 @@ describe('useTidySession', () => {
     session.finish()
 
     expect(tidyUp).toHaveBeenCalled()
-    for (const [nodes] of tidyUp.mock.calls) expect(nodes).toEqual([a, b])
+    expect(tidyUp.mock.calls.map(([nodes]) => nodes)).toEqual(
+      tidyUp.mock.calls.map(() => [a, b])
+    )
   })
 
   it('commits a previewed gap that was never released when the bar closes', () => {
