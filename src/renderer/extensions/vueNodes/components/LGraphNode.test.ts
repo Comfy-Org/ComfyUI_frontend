@@ -31,7 +31,10 @@ import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidg
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { setSelectedIn } from '@/core/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -217,6 +220,21 @@ const mockRerouteNodeData: NodeState = {
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
+}
+
+function selectMockNode() {
+  const graph: Record<string, unknown> = {
+    id: mockNodeData.graphId,
+    getNodeById: () => null,
+    subgraphs: new Map()
+  }
+  graph.rootGraph = graph
+  useCanvasStore().currentGraph = fromAny(graph)
+  setSelectedIn(
+    graphScopeOf(fromAny(graph)),
+    toSelectableKey('node', mockNodeData.id),
+    true
+  )
 }
 
 describe('LGraphNode', () => {
@@ -427,9 +445,7 @@ describe('LGraphNode', () => {
   })
 
   it('should apply selected styling when selected prop is true', async () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -635,8 +651,7 @@ describe('LGraphNode', () => {
   })
 
   it('should widen the selection outline rounding when the node has an error', () => {
-    const canvasStore = useCanvasStore()
-    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    selectMockNode()
     useExecutionErrorStore().recordNodeErrors({
       [mockNodeData.id]: nodeError([
         validationError('required_input_missing', 'positive')

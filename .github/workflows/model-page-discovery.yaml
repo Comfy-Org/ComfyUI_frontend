@@ -7,6 +7,7 @@ on:
 
 jobs:
   discover:
+    if: vars.WEBSITE_DEPLOYS_FROM_MONOREPO != 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: read

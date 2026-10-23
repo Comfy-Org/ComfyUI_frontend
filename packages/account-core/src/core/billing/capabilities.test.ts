@@ -55,6 +55,7 @@ const CAPABILITIES = {
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
   can_manage_subscription: false,
+  can_open_plans: false,
   can_run_workflows: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
@@ -97,6 +98,31 @@ describe('createCapabilitiesReader', () => {
     })
     expect(result.value.rolloutDefaultsApplied.can_top_up).toBe(true)
   })
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps payment_recovery_available $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { payment_recovery_available: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.paymentRecoveryAvailable).toBe(expected)
+    }
+  )
 
   it.for([true, false])(
     'preserves can_manage_members=%s from the server',

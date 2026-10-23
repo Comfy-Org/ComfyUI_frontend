@@ -1,24 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-const registerExtension = vi.hoisted(() =>
-  vi.fn<(ext: ComfyExtension) => void>()
-)
-
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
-}))
+import { cameraAngleExtension as extension } from './cameraAngle'
 
 class CameraAngleNode extends LGraphNode {
   static comfyClass = 'CameraAngle'
@@ -27,14 +18,6 @@ class CameraAngleNode extends LGraphNode {
 class OtherNode extends LGraphNode {
   static comfyClass = 'SomethingElse'
 }
-
-let extension: ComfyExtension
-
-beforeAll(async () => {
-  await import('./cameraAngle')
-  expect(registerExtension).toHaveBeenCalledOnce()
-  extension = registerExtension.mock.calls[0][0]
-})
 
 async function addCameraAngleNode(graph: LGraph) {
   const node = new CameraAngleNode('CameraAngle')
