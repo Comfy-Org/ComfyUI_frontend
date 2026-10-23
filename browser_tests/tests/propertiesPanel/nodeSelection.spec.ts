@@ -35,6 +35,32 @@ test.describe('Properties panel - Node selection', () => {
       await expect(panel.contentArea.getByText('steps')).toBeVisible()
     })
 
+    test('renders a legacy widget with no type', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => candidate.type === 'KSampler'
+        )
+        if (!node) throw new Error('KSampler node not found')
+        const widget = {
+          name: 'typeless_legacy',
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0,
+          draw() {}
+        }
+        Reflect.deleteProperty(widget, 'type')
+        node.addCustomWidget(widget)
+      })
+
+      await panel.getTab('Info').click()
+      await panel.getTab('Parameters').click()
+      await panel.searchWidgets('typeless_legacy')
+      await expect(
+        panel.contentArea.getByText('typeless_legacy', { exact: true })
+      ).toBeVisible()
+    })
+
     test(
       'hideInPanel keeps a widget on the node but removes it from Parameters',
       { tag: '@vue-nodes' },

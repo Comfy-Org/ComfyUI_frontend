@@ -2,6 +2,7 @@ import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
+import type { DeploymentHint } from '@/platform/workspace/deploymentHint'
 import {
   hasDeploymentLink,
   readDeploymentHint
@@ -9,27 +10,25 @@ import {
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-function bootHint(): 'deployment' | 'cloud' | 'unknown' {
+function bootHint(): DeploymentHint {
   if (hasDeploymentLink()) return 'deployment'
   return readDeploymentHint(useTeamWorkspaceStore().workspaceId)
 }
 
-/**
- * Whether this page may boot on a deployment: what the boot listing said
- * once it answered. Before that, false only when this browser's hint for
- * the active workspace says Comfy Cloud and no deployment link opened the
- * page; a hint that says a deployment, or no hint at all, may be one.
- */
+/** Whether this page may boot on a deployment: the boot listing's answer, else false only for a confirmed Comfy Cloud hint. */
 export function couldBootOnDeployment(): boolean {
   const { bootDeployment } = useDeploymentPickStore()
   if (bootDeployment !== undefined) return bootDeployment !== null
   return bootHint() !== 'cloud'
 }
 
-/**
- * Waits for the boot listing to say where this page runs: up to 5 s with no hint, 45 s when a hint or link names a deployment.
- * `onLateDeployment` runs when a listing that answers after the 5 s names a deployment.
- */
+function listingWaitMs(hint: DeploymentHint): number {
+  if (hint === 'deployment') return DEPLOYMENT_LISTING_BACKSTOP_MS
+  if (hint === 'unconfirmed') return 0
+  return DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
+}
+
+/** Waits for the boot listing to say where this page runs; `onLateDeployment` runs if a late listing names a deployment. */
 export async function waitForDeploymentPick(
   onLateDeployment: () => void = () => {}
 ): Promise<boolean> {
@@ -45,12 +44,7 @@ export async function waitForDeploymentPick(
     const confirmed = await Promise.race([
       listing.then(() => store.bootDeployment !== undefined),
       new Promise<false>((resolve) => {
-        timeout = setTimeout(
-          () => resolve(false),
-          hint === 'deployment'
-            ? DEPLOYMENT_LISTING_BACKSTOP_MS
-            : DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
-        )
+        timeout = setTimeout(() => resolve(false), listingWaitMs(hint))
       })
     ])
     if (confirmed) return true

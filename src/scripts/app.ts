@@ -96,7 +96,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
@@ -119,8 +119,8 @@ import {
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -141,21 +141,21 @@ import { getErrorMessage } from '@/utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
-} from '@/platform/missingModel/missingModelPipeline'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+} from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
   MissingModelPipelineResult
-} from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@/utils/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'

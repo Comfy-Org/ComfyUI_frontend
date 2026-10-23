@@ -9,6 +9,11 @@ import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspace
 import enMessages from '@/locales/en/main.json'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -20,7 +25,25 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   pickDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
-  clearDefaultDeployment: vi.fn()
+  clearDefaultDeployment: vi.fn(),
+  checkDeploymentCompatibility: vi.fn()
+}))
+
+const hoisted = vi.hoisted(() => ({
+  rootGraph: undefined as unknown
+}))
+
+vi.mock(import('@/composables/useFeatureFlags'))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    get rootGraph() {
+      return hoisted.rootGraph
+    },
+    get isGraphReady() {
+      return hoisted.rootGraph !== undefined
+    }
+  }
 }))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
@@ -91,6 +114,12 @@ const listing: WorkspaceDeploymentList = {
   ]
 }
 
+function workflowWith(...types: string[]): LGraph {
+  const graph = createTestRootGraph()
+  for (const type of types) graph.add(new LGraphNode(type, type))
+  return graph
+}
+
 function renderSwitcher(plugin = i18n) {
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(DeploymentSwitcher, {
@@ -111,6 +140,13 @@ async function openDefaultMenu(user: ReturnType<typeof userEvent.setup>) {
   return screen.findByTestId('default-row-cloud')
 }
 
+async function focusWindowEvery(ms: number, times: number) {
+  for (let focus = 0; focus < times; focus++) {
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(ms)
+  }
+}
+
 function asOwner() {
   Object.assign(useTeamWorkspaceStore(), {
     workspaceId: 'ws-1',
@@ -122,6 +158,7 @@ describe('DeploymentSwitcher', () => {
   const reload = vi.fn()
 
   beforeEach(() => {
+    hoisted.rootGraph = undefined
     sessionStorage.clear()
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
@@ -566,6 +603,23 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
+  it('asks again on focus at most once a minute while the listing keeps failing', async () => {
+    mockWorkspaceApi.listDeployments.mockRejectedValue(
+      new WorkspaceApiError('Service unavailable', 503)
+    )
+    renderSwitcher()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(3)
+
+    await focusWindowEvery(5_000, 10)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(4)
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(5)
+  })
+
   it('waits for the boot listing before a focus retries it', async () => {
     let answer: (list: WorkspaceDeploymentList) => void = () => {}
     mockWorkspaceApi.listDeployments.mockReturnValueOnce(
@@ -904,6 +958,128 @@ describe('DeploymentSwitcher', () => {
       ).toHaveTextContent(
         "This browser now runs on Vinh's R&D/Prod · staging & co. Reload to get its nodes."
       )
+    })
+  })
+
+  describe('marks which deployments can run the open workflow', () => {
+    beforeEach(() => {
+      hoisted.rootGraph = workflowWith(
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      )
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        true
+    })
+
+    it('shows the rows as before and sends no check while its switch is off', async () => {
+      vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
+        false
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(
+        await screen.findByTestId(`deployment-row-${D2}`)
+      ).toHaveTextContent('Studio Build')
+      await nextTick()
+      expect(
+        mockWorkspaceApi.checkDeploymentCompatibility
+      ).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
+    })
+
+    it('says which rows run it, which miss nodes (named on hover and in the row description), and which were not checked', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          {
+            deployment_id: D1,
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
+          },
+          { deployment_id: D9, missing_node_types: [], unknown: true }
+        ],
+        cloud: {
+          missing_node_types: ['Power Lora Loader (rgthree)', 'Image Saver']
+        }
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
+          'Runs this workflow'
+        )
+      )
+      expect(
+        mockWorkspaceApi.checkDeploymentCompatibility
+      ).toHaveBeenCalledWith('ws-1', [
+        'KSampler',
+        'Power Lora Loader (rgthree)'
+      ])
+      expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveTextContent(
+        'Missing 1 node'
+      )
+      expect(screen.getByText('Missing 1 node')).toHaveAttribute(
+        'title',
+        'Power Lora Loader (rgthree)'
+      )
+      expect(
+        screen.getByTestId(`deployment-row-${D1}`)
+      ).toHaveAccessibleDescription('Power Lora Loader (rgthree)')
+      expect(
+        screen.getByTestId(`deployment-row-${D2}`)
+      ).not.toHaveAccessibleDescription()
+      expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
+        'Not checked'
+      )
+      expect(screen.getByTestId('deployment-row-cloud')).toHaveTextContent(
+        'Missing 2 nodes'
+      )
+      expect(screen.getByText('Missing 2 nodes')).toHaveAttribute(
+        'title',
+        'Power Lora Loader (rgthree), Image Saver'
+      )
+      expect(
+        screen.getByTestId('deployment-row-cloud')
+      ).toHaveAccessibleDescription('Power Lora Loader (rgthree), Image Saver')
+    })
+
+    it('keeps the deployment title whole and shortens its subtitle first, in a list no wider than the screen', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: [] }
+      })
+      const user = renderSwitcher()
+      const menu = await openList(user)
+      const row = await screen.findByTestId(`deployment-row-${D2}`)
+      await waitFor(() => expect(row).toHaveTextContent('Runs this workflow'))
+
+      expect(menu).toHaveClass('max-w-[min(25rem,calc(100vw-1rem))]')
+      expect(within(row).getByText('Studio Build')).toHaveClass('shrink-0')
+      const subtitle = within(row).getByText('production · v2')
+      expect(subtitle).toHaveClass('min-w-0', 'truncate')
+      expect(subtitle).not.toHaveClass('shrink-0')
+      expect(subtitle).toHaveAttribute('title', 'production · v2')
+    })
+
+    it('shows the rows as before when the check fails', async () => {
+      mockWorkspaceApi.checkDeploymentCompatibility.mockRejectedValue(
+        new WorkspaceApiError('not found', 404)
+      )
+      const user = renderSwitcher()
+      await openList(user)
+      await waitFor(() =>
+        expect(mockWorkspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+      )
+      await nextTick()
+
+      expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveTextContent(
+        'Studio Build'
+      )
+      expect(screen.queryByTestId('deployment-row-mark')).toBeNull()
     })
   })
 })

@@ -30,20 +30,25 @@ const activeFacts: CreditsCardFacts = {
   planKind: 'active',
   billingStatus: 'paid',
   planPoolCredits: 1000,
-  isCloud: true,
   renewalDate: null
 }
 
+const SUBSCRIBE_NOTE =
+  "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+
 const CARD_NOTES = [
   'Your runs used 211 more credits than you had.',
-  'Subscribe to use credits on Cloud.',
-  'Resubscribe to use credits on Cloud.',
+  SUBSCRIBE_NOTE,
   "Couldn't load your balance."
 ]
 
-function renderCard(facts: CreditsCardFacts, canTopUp = true) {
+function renderCard(
+  facts: CreditsCardFacts,
+  canTopUp = true,
+  planCreditNote: string | null = null
+) {
   return render(BillingCreditsCard, {
-    props: { state: deriveCreditsCard(facts), canTopUp },
+    props: { state: deriveCreditsCard(facts), canTopUp, planCreditNote },
     global: {
       plugins: [
         createI18n({
@@ -61,6 +66,7 @@ describe('BillingCreditsCard', () => {
     case: string
     facts: Partial<CreditsCardFacts>
     canTopUp?: boolean
+    planCreditNote?: string
     available: string
     plan: string | null
     topUp: string | null
@@ -119,20 +125,21 @@ describe('BillingCreditsCard', () => {
       notes: ['Your runs used 211 more credits than you had.']
     },
     {
-      case: 'no plan on Cloud',
+      case: 'no plan with the served plan-required note',
       facts: {
         planKind: 'noPlan',
         balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
       },
+      planCreditNote: SUBSCRIBE_NOTE,
       available: '422',
       plan: null,
       topUp: null,
       inUse: false,
       addCredits: true,
-      notes: ['Subscribe to use credits on Cloud.']
+      notes: [SUBSCRIBE_NOTE]
     },
     {
-      case: 'an ended plan on Cloud',
+      case: 'an ended plan without a note',
       facts: {
         planKind: 'ended',
         balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
@@ -142,21 +149,18 @@ describe('BillingCreditsCard', () => {
       topUp: null,
       inUse: false,
       addCredits: true,
-      notes: ['Resubscribe to use credits on Cloud.']
+      notes: []
     },
     {
-      case: 'no plan off Cloud',
-      facts: {
-        planKind: 'noPlan',
-        isCloud: false,
-        balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
-      },
-      available: '422',
-      plan: null,
-      topUp: null,
+      case: 'a Free plan with the served plan-required note',
+      facts: {},
+      planCreditNote: SUBSCRIBE_NOTE,
+      available: '1,477',
+      plan: '844 of 1,000',
+      topUp: '633',
       inUse: false,
       addCredits: true,
-      notes: []
+      notes: [SUBSCRIBE_NOTE]
     },
     {
       case: 'a server that refuses top-up',
@@ -195,7 +199,11 @@ describe('BillingCreditsCard', () => {
       notes: ["Couldn't load your balance."]
     }
   ])('renders $case', (row) => {
-    renderCard({ ...activeFacts, ...row.facts }, row.canTopUp ?? true)
+    renderCard(
+      { ...activeFacts, ...row.facts },
+      row.canTopUp ?? true,
+      row.planCreditNote ?? null
+    )
 
     expect(
       screen.getByTestId('billing-credits-available').textContent.trim()
