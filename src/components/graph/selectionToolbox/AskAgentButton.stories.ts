@@ -20,7 +20,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import AskAgentButton from './AskAgentButton.vue'
 
-function prepareAskAgentToolbox(seen?: { toolbar?: boolean; menu?: boolean }) {
+function prepareAskAgentToolbox(toolbarSeen: boolean, menuSeen: boolean) {
   const graph = new LGraph()
   const node = new LGraphNode('KSampler')
   node.pos = [240, 180]
@@ -45,18 +45,18 @@ function prepareAskAgentToolbox(seen?: { toolbar?: boolean; menu?: boolean }) {
   })
   useAgentPanelStore().enabled = true
   useSettingStore().settingValues[ASK_AGENT_TOOLBAR_SEEN_SETTING_ID] =
-    seen?.toolbar ?? false
+    toolbarSeen
   useSettingStore().settingValues[REFERENCE_IN_AGENT_MENU_SEEN_SETTING_ID] =
-    seen?.menu ?? false
+    menuSeen
   return { canvasEl }
 }
 
-function renderToolbox(seen?: { toolbar?: boolean; menu?: boolean }) {
+function renderToolbox(toolbarSeen: boolean, menuSeen: boolean) {
   return {
     components: { SelectionToolbox, NodeContextMenu },
     setup() {
       const host = useTemplateRef<HTMLElement>('host')
-      const { canvasEl } = prepareAskAgentToolbox(seen)
+      const { canvasEl } = prepareAskAgentToolbox(toolbarSeen, menuSeen)
       onMounted(() => {
         host.value?.prepend(canvasEl)
       })
@@ -105,15 +105,15 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Toolbar: Story = {
-  render: () => renderToolbox()
+  render: () => renderToolbox(false, false)
 }
 
 export const ToolbarNewDot: Story = {
-  render: () => renderToolbox({ toolbar: false })
+  render: () => renderToolbox(false, false)
 }
 
 export const ToolbarSeen: Story = {
-  render: () => renderToolbox({ toolbar: true })
+  render: () => renderToolbox(true, false)
 }
 
 export const MoreMenu: Story = {
@@ -128,7 +128,7 @@ export const MoreMenu: Story = {
 }
 
 export const MoreMenuNewPill: Story = {
-  render: () => renderToolbox({ menu: false }),
+  render: () => renderToolbox(false, false),
   play: async ({ canvasElement }) => {
     const page = await openMoreMenu(canvasElement)
     await expect(page.getByRole('menu')).toBeVisible()
@@ -139,7 +139,7 @@ export const MoreMenuNewPill: Story = {
 }
 
 export const MoreMenuSeen: Story = {
-  render: () => renderToolbox({ menu: true }),
+  render: () => renderToolbox(false, true),
   play: async ({ canvasElement }) => {
     const page = await openMoreMenu(canvasElement)
     await expect(page.getByRole('menu')).toBeVisible()

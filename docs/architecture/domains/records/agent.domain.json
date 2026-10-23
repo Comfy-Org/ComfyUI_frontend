@@ -797,7 +797,7 @@
     "workbench-shell",
     "workflow-management"
   ],
-  "allowedConsumers": [],
+  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Host registration gates the dock on feature flag, open intent, and per-user and per-workspace consent",
