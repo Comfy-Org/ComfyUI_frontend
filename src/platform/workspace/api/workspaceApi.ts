@@ -17,6 +17,8 @@ import type {
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
+  DeploymentCompatibility,
+  DeploymentCompatibilityRequest,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -51,6 +53,7 @@ import type {
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
+  zDeploymentCompatibility,
   zRetentionAcceptance,
   zRetentionFlowResponse
 } from '@comfyorg/ingest-types/zod'
@@ -172,15 +175,7 @@ export type BillingRecoveryAction = NonNullable<
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
 
-/** The node types each deployment, and Comfy Cloud, lacks for a workflow. */
-export interface DeploymentCompatibility {
-  deployments: {
-    deployment_id: string
-    missing_node_types: string[]
-    unknown?: boolean
-  }[]
-  cloud: { missing_node_types: string[] }
-}
+export type { DeploymentCompatibility }
 
 interface GetBillingEventsParams {
   page?: number
@@ -450,12 +445,12 @@ export const workspaceApi = {
   ): Promise<DeploymentCompatibility> {
     const auth = await requestAuth()
     try {
-      const response = await workspaceApiClient.post<DeploymentCompatibility>(
+      const response = await workspaceApiClient.post<unknown>(
         workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
-        { node_types: nodeTypes },
+        { node_types: nodeTypes } satisfies DeploymentCompatibilityRequest,
         auth
       )
-      return response.data
+      return zDeploymentCompatibility.parse(response.data)
     } catch (err) {
       handleAxiosError(err, 'checkDeploymentCompatibility')
     }

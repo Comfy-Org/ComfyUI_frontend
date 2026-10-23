@@ -991,10 +991,11 @@ describe('DeploymentSwitcher', () => {
     it('says which rows run it, which miss nodes (named on hover and in the row description), and which were not checked', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
         deployments: [
-          { deployment_id: D2, missing_node_types: [] },
+          { deployment_id: D2, missing_node_types: [], unknown: false },
           {
             deployment_id: D1,
-            missing_node_types: ['Power Lora Loader (rgthree)']
+            missing_node_types: ['Power Lora Loader (rgthree)'],
+            unknown: false
           },
           { deployment_id: D9, missing_node_types: [], unknown: true }
         ],
@@ -1046,7 +1047,9 @@ describe('DeploymentSwitcher', () => {
 
     it('keeps the deployment title whole and shortens its subtitle first, in a list no wider than the screen', async () => {
       mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
-        deployments: [{ deployment_id: D2, missing_node_types: [] }],
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false }
+        ],
         cloud: { missing_node_types: [] }
       })
       const user = renderSwitcher()

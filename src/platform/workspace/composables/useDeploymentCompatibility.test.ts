@@ -129,10 +129,11 @@ function ready(deployments: WorkspaceDeployment[]): DeploymentPickState {
 
 const answer: DeploymentCompatibility = {
   deployments: [
-    { deployment_id: 'dep-rgthree', missing_node_types: [] },
+    { deployment_id: 'dep-rgthree', missing_node_types: [], unknown: false },
     {
       deployment_id: 'dep-plain',
-      missing_node_types: ['Power Lora Loader (rgthree)']
+      missing_node_types: ['Power Lora Loader (rgthree)'],
+      unknown: false
     },
     { deployment_id: 'dep-building', missing_node_types: [], unknown: true }
   ],
@@ -483,7 +484,9 @@ describe('useDeploymentCompatibility', () => {
     expect(markFor('dep-plain')).toBeNull()
 
     answerCoreOnly({
-      deployments: [{ deployment_id: 'dep-plain', missing_node_types: [] }],
+      deployments: [
+        { deployment_id: 'dep-plain', missing_node_types: [], unknown: false }
+      ],
       cloud: { missing_node_types: [] }
     })
 
@@ -512,7 +515,13 @@ describe('useDeploymentCompatibility', () => {
 
       vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue({
         ...answer,
-        deployments: [{ deployment_id: 'dep-building', missing_node_types: [] }]
+        deployments: [
+          {
+            deployment_id: 'dep-building',
+            missing_node_types: [],
+            unknown: false
+          }
+        ]
       })
       useDeploymentPickStore().state = ready([
         deployment('dep-rgthree'),
@@ -535,7 +544,9 @@ describe('useDeploymentCompatibility', () => {
     })
     vi.mocked(workspaceApi.checkDeploymentCompatibility)
       .mockResolvedValue({
-        deployments: [{ deployment_id: 'dep-plain', missing_node_types: [] }],
+        deployments: [
+          { deployment_id: 'dep-plain', missing_node_types: [], unknown: false }
+        ],
         cloud: { missing_node_types: [] }
       })
       .mockReturnValueOnce(firstAnswer)

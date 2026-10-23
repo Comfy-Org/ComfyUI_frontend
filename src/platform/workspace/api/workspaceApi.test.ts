@@ -478,7 +478,9 @@ describe('workspaceApi', () => {
 
     it('checkDeploymentCompatibility() sends POST /workspaces/:id/deployments/compatibility with the node types', async () => {
       const data = {
-        deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+        deployments: [
+          { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+        ],
         cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
       }
       mockAxiosInstance.post.mockResolvedValue({ data })
@@ -495,6 +497,34 @@ describe('workspaceApi', () => {
       )
       expect(result).toEqual(data)
     })
+
+    it.for([
+      {
+        answer: 'a Comfy Cloud answer with no missing list',
+        data: {
+          deployments: [
+            { deployment_id: 'dep-1', missing_node_types: [], unknown: false }
+          ],
+          cloud: {}
+        }
+      },
+      {
+        answer: 'a deployment answer with no unknown flag',
+        data: {
+          deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
+          cloud: { missing_node_types: [] }
+        }
+      }
+    ])(
+      'checkDeploymentCompatibility() rejects $answer instead of reading it as runs',
+      async ({ data }) => {
+        mockAxiosInstance.post.mockResolvedValue({ data })
+
+        await expect(
+          workspaceApi.checkDeploymentCompatibility('ws-1', ['KSampler'])
+        ).rejects.toMatchObject({ name: 'ZodError' })
+      }
+    )
   })
 
   describe('member management', () => {
