@@ -12,16 +12,29 @@
       @mouseup="onMaskMouseUp"
       @keydown.stop="handleKeyDown"
     >
-      <!-- Close Button -->
-      <Button
-        variant="secondary"
-        size="icon-lg"
-        class="absolute top-4 right-4 z-10 rounded-full"
-        :aria-label="$t('g.close')"
-        @click="close"
-      >
-        <i class="icon-[lucide--x] size-5" />
-      </Button>
+      <!-- Top-right actions -->
+      <div class="absolute top-4 right-4 z-10 flex gap-2">
+        <Button
+          v-if="activeItem"
+          variant="secondary"
+          size="icon-lg"
+          class="rounded-full"
+          :title="$t('g.download')"
+          :aria-label="$t('g.download')"
+          @click="downloadActiveItem"
+        >
+          <i class="icon-[lucide--download] size-5" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon-lg"
+          class="rounded-full"
+          :aria-label="$t('g.close')"
+          @click="close"
+        >
+          <i class="icon-[lucide--x] size-5" />
+        </Button>
+      </div>
 
       <!-- Previous Button -->
       <Button
@@ -38,7 +51,7 @@
       <!-- Content -->
       <div
         ref="contentRef"
-        class="relative flex max-h-full max-w-full flex-col items-center justify-center"
+        class="relative flex max-h-full max-w-full items-center justify-center"
         data-testid="lightbox-content"
         @mousemove="onContentMouseMove"
         @touchstart="onContentTouchStart"
@@ -70,41 +83,28 @@
             />
           </KeepAlive>
         </template>
+      </div>
 
-        <div
-          v-if="activeItem"
-          data-testid="lightbox-pill"
-          :class="
-            cn(
-              'mt-2 flex max-w-[90vw] items-center gap-2 rounded-full bg-black/60 py-1 pr-1 pl-4 backdrop-blur-sm transition-opacity',
-              captionPinned || captionVisible
-                ? 'pointer-events-auto opacity-100'
-                : 'pointer-events-none opacity-0'
-            )
-          "
-          @mouseenter="onCaptionMouseEnter"
-          @mouseleave="onCaptionMouseLeave"
-          @focusin="onCaptionFocusIn"
-          @focusout="onCaptionFocusOut"
-        >
-          <span
-            class="min-w-0 truncate text-xs text-white/90"
-            data-testid="lightbox-filename"
-            :title="activeItem.filename"
-          >
-            {{ activeItem.filename }}
-          </span>
-          <Button
-            variant="secondary"
-            size="icon"
-            class="shrink-0 rounded-full"
-            :title="$t('g.download')"
-            :aria-label="$t('g.download')"
-            @click="downloadActiveItem"
-          >
-            <i class="icon-[lucide--download] size-4" />
-          </Button>
-        </div>
+      <!-- Filename caption -->
+      <div
+        v-if="activeItem"
+        data-testid="lightbox-caption"
+        :class="
+          cn(
+            'absolute bottom-4 left-4 z-10 max-w-[60vw] truncate bg-black/60 px-2 py-1 text-xs text-white/90 backdrop-blur-sm transition-opacity',
+            captionPinned || captionVisible
+              ? 'pointer-events-auto opacity-100'
+              : 'pointer-events-none opacity-0'
+          )
+        "
+        @mouseenter="onCaptionMouseEnter"
+        @mouseleave="onCaptionMouseLeave"
+        @focusin="onCaptionFocusIn"
+        @focusout="onCaptionFocusOut"
+      >
+        <span data-testid="lightbox-filename" :title="activeItem.filename">
+          {{ activeItem.filename }}
+        </span>
       </div>
 
       <!-- Next Button -->
@@ -225,7 +225,7 @@ function hideCaptionNow() {
 function onContentMouseMove(event: MouseEvent) {
   if (
     event.target instanceof HTMLElement &&
-    event.target.closest('[data-testid="lightbox-pill"]')
+    event.target.closest('[data-testid="lightbox-caption"]')
   )
     return
   showCaptionTransient()
