@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
 import { isCloud } from '@/platform/distribution/types'
@@ -15,6 +16,7 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
     currentTeamCreditStop,
     renewalDate
   } = useBillingContext()
+  const { canManageSubscription } = useBillingCapabilities()
 
   const planPoolCredits = computed(
     () =>
@@ -32,6 +34,7 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       billingStatus: billingStatus.value,
       planPoolCredits: planPoolCredits.value,
       isCloud,
+      canManageSubscription: canManageSubscription.value,
       renewalDate: renewalDate.value
     })
   )
