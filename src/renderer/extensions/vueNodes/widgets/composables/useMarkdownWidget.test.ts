@@ -102,7 +102,12 @@ describe('useMarkdownWidget', () => {
     const widget = createMarkdownWidget(createMockDOMWidgetNode())
     onTestFinished(() => widget.onRemove?.())
 
-    await expect.poll(() => reportErrorMock.mock.calls[0]?.[0]).toBe(error)
+    await vi.waitFor(() =>
+      expect(reportErrorMock).toHaveBeenCalledWith(error, {
+        errorType: 'error_loading_markdown_editor',
+        surface: 'platform'
+      })
+    )
   })
 
   it('toggles editing on dblclick/blur and stops keydown propagation', () => {
