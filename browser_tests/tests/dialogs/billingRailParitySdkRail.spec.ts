@@ -476,7 +476,10 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')
       expect(idempotencyKey(purchase)).toBeUndefined()
-      expect(purchase.postDataJSON()).toEqual({ amount_cents: 5_000 })
+      expect(purchase.postDataJSON()).toEqual({
+        amount_cents: 5_000,
+        idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
+      })
       await expect
         .poll(() => routes.balanceRequests.length)
         .toBeGreaterThan(readsBeforePurchase)
