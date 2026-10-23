@@ -26,6 +26,7 @@ export class AgentExecutionHelper {
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
   private readonly addressedJobs = new Set<string>()
+  private readonly registeredJobs = new Set<string>()
   private jobCounter = 0
 
   private addressedToThisTab: (jobId: string) => boolean = () => true
@@ -71,12 +72,28 @@ export class AgentExecutionHelper {
     this.addressedToThisTab = predicate
   }
 
+  /**
+   * Withholding a frame from a run this tab is not addressed by is the point
+   * of `addressFramesWhen`. Withholding one from a run that was never
+   * registered is a miswired test: the frame vanishes, the canvas never
+   * updates, and a `toHaveCount(0)` assertion then passes for the wrong
+   * reason. So an unregistered run throws instead of dropping silently —
+   * register through the `/prompt` route or `enqueueServerRun()` first.
+   */
   private unicast(jobId: string, frame: ExecutionHostFrame): void {
+    if (!this.registeredJobs.has(jobId)) {
+      throw new Error(
+        `No run registered for "${jobId}", so its ${frame.type} frame ` +
+          `would be dropped unobserved. Submit it through the /prompt ` +
+          `route or enqueueServerRun() before sending execution frames.`
+      )
+    }
     if (!this.addressedJobs.has(jobId)) return
     this.hostSocket.sendExecution(frame)
   }
 
   private recordAddressing(jobId: string): void {
+    this.registeredJobs.add(jobId)
     if (this.addressedToThisTab(jobId)) this.addressedJobs.add(jobId)
   }
 
