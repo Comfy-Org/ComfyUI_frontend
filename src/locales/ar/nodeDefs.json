@@ -1002,6 +1002,28 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "أزل الخلفية من صورة باستخدام Bria مع الإبقاء على ما يصفه الموجّه. تُستعاد البكسلات الأصلية بالدقة الكاملة مع قناة ألفا جديدة. لقصّ بسيط، تكون تكلفة Bria لإزالة خلفية الصورة أقل.",
+    "display_name": "Bria لإزالة الخلفية الموجَّهة",
+    "inputs": {
+      "image": {
+        "name": "الصورة"
+      },
+      "moderation": {
+        "name": "الاعتدال",
+        "tooltip": "إعدادات الاعتدال"
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "ما تريد الإبقاء عليه أو استبعاده أو حصره، مثل «الشخص مع السجادة والنبات»، أو «المرأة عند مكتبها من دون المصباح»، أو «الكرسي فقط». يعيد الموجّه الذي لا يطابق أي شيء صورة شفافة بالكامل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "عدّل الصور باستخدام Bria FIBO 2.0.",
     "display_name": "Bria FIBO 2.0 Image Edit",
@@ -1116,6 +1138,42 @@
       "moderation": {
         "name": "الإشراف",
         "tooltip": "إعدادات الإشراف"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "ضع منتجًا في يدي شخص باستخدام Bria. يُحافَظ على هوية الشخص ووضعية جسمه وخلفيته، ويُعاد تصيير المشهد بدقة تقارب 1 ميغابكسل.",
+    "display_name": "Bria لحمل المنتج",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يحافظ auto على تأطير صورة الشخص بدقة تقارب 1 ميغابكسل. تُرجع النسبة الثابتة دقة من 0.6 إلى 1 ميغابكسل، مثل 768x1024 للنسبة 3:4."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "توجيه إضافي اختياري يُضاف إلى تعليمات Bria المدمجة، مثل اليد التي يجب استخدامها أو الاتجاه الذي يجب أن تواجهه التسمية."
+      },
+      "moderation": {
+        "name": "الاعتدال",
+        "tooltip": "إعدادات الاعتدال"
+      },
+      "person_image": {
+        "name": "person_image"
+      },
+      "product_images": {
+        "name": "product_images",
+        "tooltip": "1-3 صور لمنتج واحد: المنتج نفسه، أو تغليفه، أو زاوية أخرى له، أو عنصر مرافق. يُحتسب الإدخال المُجمَّع مرة واحدة لكل صورة. تُعامل المناطق الشفافة على أنها بيضاء."
+      },
+      "seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
@@ -1431,6 +1489,42 @@
       "video": {
         "name": "فيديو",
         "tooltip": "فيديو المقدمة الذي سيتم استبدال خلفيته."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "ألبس شخصًا ملابس أو إكسسوارات باستخدام Bria. يُحافَظ على هوية الشخص ووضعية جسمه وخلفيته، ويُعاد تصيير المشهد بدقة تقارب 1 ميغابكسل.",
+    "display_name": "Bria للتجربة الافتراضية",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يحافظ auto على تأطير صورة الشخص بدقة تقارب 1 ميغابكسل. تُرجع النسبة الثابتة دقة من 0.6 إلى 1 ميغابكسل، مثل 768x1024 للنسبة 3:4."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "garment_images": {
+        "name": "garment_images",
+        "tooltip": "1-3 قطع ملابس أو إكسسوارات تُرتدى معًا، تحلّ كل منها محل القطعة المطابقة التي يرتديها الشخص. يُحتسب الإدخال المُجمَّع مرة واحدة لكل صورة. تُعامل المناطق الشفافة على أنها بيضاء."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "توجيه إضافي اختياري يُضاف إلى تعليمات Bria المدمجة، مثل اليد التي يجب استخدامها أو الاتجاه الذي يجب أن تواجهه التسمية."
+      },
+      "moderation": {
+        "name": "الاعتدال",
+        "tooltip": "إعدادات الاعتدال"
+      },
+      "person_image": {
+        "name": "person_image"
+      },
+      "seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
@@ -9071,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "يولّد SVG قابلًا للتحرير من موجّه نصي، مع إمكانية توجيهه بما يصل إلى 5 صور، باستخدام Ideogram Vector.",
+    "display_name": "Ideogram Vector لتوليد SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "يحوّل صورة إلى SVG قابل للتحرير باستخدام Ideogram Vector. تبقى المناطق الشفافة في الصورة ذات قناة ألفا شفافة.",
+    "display_name": "Ideogram Vector: تحويل الصورة إلى SVG",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_mode": {
+        "name": "الوضع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "ImageAddNoise",
     "inputs": {
@@ -9147,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "حوّل بين sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ) وHDR LogC3 وHDR ACEScct. يستخدم LogC3 منحنى EI 800 مع الألوان الأولية لـ Rec.709 والرموز المقيّدة ضمن [0, 1]. يستخدم ACEScct الألوان الأولية AP1 والنقطة البيضاء D60، مع تكييف Bradford إلى D65. حوّل LogC3 أو ACEScct إلى خطّي للحفظ بتنسيق EXR. يستخدم الخطّي 1.0 نفس الأبيض المرجعي البالغ 203 نت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بسطوع 1000 نت. تحافظ مخرجات الخطّي وACEScct على القيم الممتدة. تحافظ التحويلات من الخطّي إلى HDR على الإضاءات العالية دون تعيين النغمات؛ وتقص مخرجات HLG وPQ القنوات السالبة. يطبق إخراج SDR والتحويل من PQ إلى HLG تعيين النغمات على النصوع الزائد عبر الدفعة ويضغطان الألوان خارج النطاق اللوني. تُحسب التحويلات بدقة float32 وتُرجع الجهاز الوسيط ونوع البيانات. لا يُحوّل ألفا المستقيم لونياً.",
+    "description": "تحويل بين sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ) وHDR LogC3 وACEScg الخطي وHDR ACEScct. يستخدم LogC3 منحنى EI 800 مع الألوان الأساسية لـRec.709 والقيم مقيّدة ضمن [0, 1]. يكون ACEScg خطيًا للمشهد وفق AP1 مع نقطة بيضاء D60. وACEScct هو ترميز السجل لـACEScg. يستخدم كلاهما تكيّف Bradford إلى D65. حوّل LogC3 أو ACEScct إلى ACEScg خطي (خطي للمشهد وفق AP1) أو إلى خطي (Rec.709) قبل حفظ EXR. يستخدم Linear 1.0 وACEScg 1.0 نفس الأبيض المرجعي البالغ 203 شمعة/م² مثل sRGB؛ بينما يستخدم HLG شاشة مرجعية بسطوع 1000 شمعة/م². تحافظ مخرجات Linear وACEScg وACEScct على القيم الممتدة. تحافظ التحويلات من الخطي إلى HDR على الإضاءات العالية دون تعيين النغمات؛ بينما تقص مخرجات HLG وPQ القنوات السالبة. يطبّق إخراج SDR والتحويل من PQ إلى HLG تعيين النغمات على الإضاءة الزائدة عبر الدفعة ويضغطان الألوان خارج النطاق اللوني. تُجرى التحويلات باستخدام float32 وتُعيد الجهاز الوسيط ونوع البيانات الوسيط. لا تخضع ألفا غير المضاعفة مسبقًا لتحويل الألوان.",
     "display_name": "تحويل مساحة ألوان الصورة",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "مساحة الألوان لبكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها. حوّل LogC3 أو ACEScct إلى خطية قبل حفظ EXR، أو إلى sRGB/HDR/HDR PQ قبل حفظ الفيديو."
+        "tooltip": "مساحة ألوان بكسلات الإخراج. اضبط عقدة الحفظ على مساحة الألوان نفسها. حوّل LogC3 أو ACEScct إلى ACEScg خطي لملفات ACEScg EXR، أو إلى خطي لملفات Rec.709 EXR. حوّل إلى sRGB/HDR/HDR PQ قبل حفظ الفيديو."
       },
       "image": {
         "name": "image"
@@ -14261,6 +14403,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "إنشاء شبكة مثلثات جاهزة للألعاب مباشرةً بعدد وجوه مستهدف.",
+    "display_name": "Meshy: تحويل الصورة إلى نموذج (طوبولوجيا ذكية)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ والنتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "العدد التقريبي للمثلثات في الشبكة المُنشأة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: من صور متعددة إلى نموذج",
     "inputs": {
@@ -14471,6 +14665,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "إنشاء شبكة مثلثات جاهزة للألعاب مباشرةً بعدد وجوه مستهدف.",
+    "display_name": "Meshy: تحويل النص إلى نموذج (طوبولوجيا ذكية)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "prompt": {
+        "name": "الموجّه"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ والنتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "العدد التقريبي للمثلثات في الشبكة المُنشأة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -15158,6 +15392,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "أنشئ مؤثرات صوتية من وصف نصي باستخدام Mirelo SFX.",
+    "display_name": "Mirelo: تحويل النص إلى المؤثرات الصوتية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "أنشئ مؤثرات صوتية متزامنة مع فيديو باستخدام Mirelo SFX.",
+    "display_name": "تحويل فيديو Mirelo إلى مؤثرات صوتية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "الصوت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "الكلام",
+        "tooltip": "الحوار المفصول عن المسار الصوتي؛ يكون صامتاً عند عدم العثور على كلام."
       }
     }
   },
@@ -24875,7 +25174,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "القيمة الفارغة هي الوصف الفارغ الذي دُرّب عليه Fibo 2.0 للإرشاد الخالي من المصنّف."
+        "tooltip": "تعني القيمة الفارغة التسمية التوضيحية الخالية التي دُرّب Fibo 2.0 عليها لاستخدام CFG مع مسارات عمل التحرير."
       },
       "prompt": {
         "name": "الموجّه"
@@ -24937,6 +25236,33 @@
       },
       "prompt": {
         "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "يُرمّز تعليمة تحرير مع صور مرجعية من أجل LoRA لتحرير MOSS-Image؛ استخدمه للموجّه السلبي أيضاً. تُستخدم المراجع بالحجم الذي ترد به، لذا غيّر حجمها أولاً.",
+    "display_name": "ترميز النص لتحرير MOSS-Image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "التخطيط الذي دُرّب عليه LoRA الخاص بالتحرير: MOSS-Image Edit Training من ai-toolkit (مع تفعيل خيار kv_cache أو تعطيله) أو Moss-Image-Edit. عند تعطيل kv_cache، تنتبه المراجع أيضاً إلى الصورة التي يجري توليدها، لذا يُعاد حسابها في كل خطوة."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "prompt": {
+        "name": "الموجّه"
       },
       "vae": {
         "name": "vae"
@@ -25159,7 +25485,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز الخاص بنقطة التحقق. لا تأثير دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يظل الإخراج المُعيَّن موزعًا بصورة صحيحة، لكنه يختلف عن إخراج غير MTP للبذرة نفسها."
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز المميزة لنقطة التحقق. لا تأثير له من دون أوزان MTP. يتكيف auto مع عمق واتساع المسودة بناءً على تطابقات الرموز المميزة المرصودة وتكلفة التنفيذ؛ تثبّت 2-5 عمق مسودة ثابتاً؛ وتثبّت أوضاع الشجرة كلاً من الاتساع والعمق. يبقى خرج العيّنات موزعاً بشكل صحيح، لكنه يختلف عن الخرج دون MTP للبذرة نفسها."
       },
       "prompt": {
         "name": "الموجه"
@@ -25233,7 +25559,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "فك الترميز التخميني باستخدام رأس التنبؤ متعدد الرموز الخاص بنقطة التحقق. لا تأثير له من دون أوزان MTP. يتكيف auto مع عمق المسودة؛ وتثبّته 2-5. يبقى توزيع المخرجات المُعيّنة صحيحًا، لكنه يختلف عن المخرجات غير المعتمدة على MTP للبذرة نفسها."
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز المميزة لنقطة التحقق. لا تأثير له من دون أوزان MTP. يتكيف auto مع عمق واتساع المسودة بناءً على تطابقات الرموز المميزة المرصودة وتكلفة التنفيذ؛ تثبّت 2-5 عمق مسودة ثابتاً؛ وتثبّت أوضاع الشجرة كلاً من الاتساع والعمق. يبقى خرج العيّنات موزعاً بشكل صحيح، لكنه يختلف عن الخرج دون MTP للبذرة نفسها."
       },
       "prompt": {
         "name": "المطالبة"
@@ -27854,6 +28180,119 @@
       "0": {
         "name": "voxel_colors",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "أزل ضوضاء الخلفية من الكلام باستخدام VEED. صُمم للكلام بأي لغة: تُزال الموسيقى والمؤثرات الصوتية أيضاً. يعيد صوتاً أحادي القناة بتردد 48 kHz.",
+    "display_name": "تنقية الصوت من VEED",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "تسجيل كلام أقصر من 30 دقيقة."
+      },
+      "loudness": {
+        "name": "علو الصوت"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "الشدة",
+        "tooltip": "مقدار الضوضاء المُزالة تحت الكلام. تقلل القيمة المنخفضة إزالة أجواء المكان خلف الصوت؛ وتُنظَّف فواصل الكلمات دائماً بالكامل، كما أن القيم الأعلى من الافتراضي تغيّر القليل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "أزل ضوضاء الخلفية من الكلام في فيديو باستخدام VEED. يتغير المسار الصوتي فقط: إذ يُستبدل بكلام أحادي القناة بتردد 48 كيلوهرتز بعد تنظيفه.",
+    "display_name": "تنقية الصوت من VEED (في الفيديو)",
+    "inputs": {
+      "loudness": {
+        "name": "ارتفاع الصوت"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "القوة",
+        "tooltip": "مقدار الضوضاء التي تُزال أثناء الكلام. تحافظ القيم المنخفضة على قدر أكبر من صوت الغرفة خلف الصوت؛ وتُنظَّف الفواصل بين الكلمات بالكامل دائمًا، بينما لا تغيّر القيم الأعلى من الافتراضي إلا قليلًا."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "فيديو يحتوي على مسار صوتي للكلام، ومدته أقل من 30 دقيقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "حوّل صورة ثابتة ومسارًا صوتيًا للكلام إلى فيديو متحدث ومتزامن مع حركة الشفاه باستخدام VEED Fabric. يعمل مع الصور الفوتوغرافية والرسوم التوضيحية والتمائم؛ وتكون مدة الفيديو مساوية لمدة الصوت.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "أعد مزامنة فم متحدث في فيديو مع مسار كلام جديد باستخدام VEED Lipsync. متحدث واحد لكل فيديو؛ ويحافظ الناتج على دقة الفيديو بمعدل 25 إطارًا في الثانية، وتكون مدته مساوية لمدة الصوت.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "اعزل الموضوع من فيديو باستخدام VEED وأعد الإطارات مع قناع ألفا. استخدمها للتركيب، أو ادمجها مع Join Image with Alpha وSave WEBM لكتابة فيديو شفاف.",
+    "display_name": "VEED إزالة خلفية الفيديو",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "قياسي: أي خلفية، أفضل حواف، وإخراج حتى 3840x2160. سريع: أسرع، وإخراج حتى 1920x1080. شاشة خضراء: يعزل خلفية خضراء، وإخراج حتى 3840x2160. تُصغَّر مقاطع الفيديو الأكبر."
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": "القيمة 1 حيث أُزيلت الخلفية. استخدم Join Image with Alpha وSave WEBM للحصول على فيديو شفاف؛ أضف Invert Mask قبل Image Composite Masked."
       }
     }
   },

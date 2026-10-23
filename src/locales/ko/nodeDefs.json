@@ -1002,6 +1002,28 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "Bria를 사용해 프롬프트에서 설명한 대상을 유지하면서 이미지에서 배경을 제거합니다. 원본 픽셀은 새 알파 채널과 함께 전체 해상도로 복원됩니다. 단순한 누끼 이미지는 Bria Remove Image Background가 비용이 더 적게 듭니다.",
+    "display_name": "Bria 안내형 배경 제거",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "유지하거나 제거할 대상 또는 범위를 좁힐 대상을 지정합니다. 예: '매트와 식물이 있는 사람', '램프 없이 책상에 앉은 여성', '의자만'. 아무것도 일치하지 않는 프롬프트는 완전히 투명한 이미지를 반환합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Bria FIBO 2.0을 사용하여 이미지를 편집합니다.",
     "display_name": "Bria FIBO 2.0 Image Edit",
@@ -1116,6 +1138,42 @@
       "moderation": {
         "name": "콘텐츠 검토",
         "tooltip": "콘텐츠 검토 설정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "Bria를 사용해 사람의 손에 제품을 들려줍니다. 사람의 정체성, 포즈 및 배경은 유지되며 장면은 약 100만 픽셀로 다시 렌더링됩니다.",
+    "display_name": "Bria 제품 들기",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "auto는 인물 사진의 구도를 약 100만 픽셀로 유지합니다. 고정 비율은 0.6~100만 픽셀을 반환하며, 예를 들어 3:4에서는 768x1024입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "instruction": {
+        "name": "지시",
+        "tooltip": "어느 손을 사용할지 또는 라벨이 어느 방향을 향할지 등 Bria의 기본 지시에 추가하는 선택적 지시입니다."
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      },
+      "person_image": {
+        "name": "인물_이미지"
+      },
+      "product_images": {
+        "name": "제품_이미지",
+        "tooltip": "하나의 제품 이미지 1~3장: 제품 자체, 포장, 다른 각도 또는 함께 사용하는 품목입니다. 배치 입력은 이미지당 한 번씩 계산됩니다. 투명 영역은 흰색으로 처리됩니다."
+      },
+      "seed": {
+        "name": "시드"
       }
     },
     "outputs": {
@@ -1431,6 +1489,42 @@
       "video": {
         "name": "video",
         "tooltip": "배경이 교체될 전경 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "Bria를 사용해 사람에게 의류나 액세서리를 착용시킵니다. 사람의 정체성, 포즈 및 배경은 유지되며 장면은 약 100만 픽셀로 다시 렌더링됩니다.",
+    "display_name": "Bria 가상 피팅",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "auto는 인물 사진의 구도를 약 100만 픽셀로 유지합니다. 고정 비율은 0.6~100만 픽셀을 반환하며, 예를 들어 3:4에서는 768x1024입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "garment_images": {
+        "name": "의류_이미지",
+        "tooltip": "함께 착용하는 의류 또는 액세서리 1~3개로, 각각 사람이 착용한 해당 품목을 대체합니다. 배치 입력은 이미지당 한 번씩 계산됩니다. 투명 영역은 흰색으로 처리됩니다."
+      },
+      "instruction": {
+        "name": "지시",
+        "tooltip": "어느 손을 사용할지 또는 라벨이 어느 방향을 향할지 등 Bria의 기본 지시에 추가하는 선택적 지시입니다."
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      },
+      "person_image": {
+        "name": "인물_이미지"
+      },
+      "seed": {
+        "name": "시드"
       }
     },
     "outputs": {
@@ -9071,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "Ideogram Vector를 사용하여 텍스트 프롬프트에서 편집 가능한 SVG를 생성하며, 선택적으로 최대 5장의 이미지로 안내할 수 있습니다.",
+    "display_name": "Ideogram Vector SVG 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "Ideogram Vector를 사용하여 이미지를 편집 가능한 SVG로 변환합니다. 알파가 있는 이미지의 투명 영역은 계속 투명하게 유지됩니다.",
+    "display_name": "Ideogram 벡터 이미지를 SVG로",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_mode": {
+        "name": "모드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "이미지에 노이즈 추가",
     "inputs": {
@@ -9147,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScct는 AP1 원색과 D60 백색점을 사용하며, D65로 Bradford 적응을 적용합니다. EXR 저장을 위해 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 값을 유지합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 유지하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력 및 PQ에서 HLG로의 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖 색상을 압축합니다. 변환은 float32로 계산되며 중간 디바이스와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ), HDR LogC3, 선형 ACEScg 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1] 범위로 제한된 코드값을 사용하는 EI 800 곡선을 사용합니다. ACEScg는 D60 화이트를 사용하는 장면 선형 AP1입니다. ACEScct는 ACEScg의 로그 인코딩입니다. 둘 다 D65에 대한 Bradford 적응을 사용합니다. EXR을 저장하기 전에 LogC3 또는 ACEScct를 선형 ACEScg(AP1 장면 선형) 또는 선형(Rec.709)으로 변환하세요. 선형 1.0 및 ACEScg 1.0은 sRGB와 동일한 203니트 기준 화이트를 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형, ACEScg 및 ACEScct 출력은 확장 값을 유지합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 유지하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력과 PQ에서 HLG로의 변환은 배치 전반에서 초과 휘도를 톤 매핑하고 색 영역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. EXR로 저장하기 전에는 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오로 저장하기 전에는 sRGB/HDR/HDR PQ로 변환하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. ACEScg EXR의 경우 LogC3 또는 ACEScct를 선형 ACEScg로, Rec.709 EXR의 경우 선형으로 변환하세요. 비디오를 저장하기 전에 sRGB/HDR/HDR PQ로 변환하세요."
       },
       "image": {
         "name": "image"
@@ -14261,6 +14403,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "목표 면 수에 맞춰 바로 게임용으로 사용할 수 있는 삼각형 메시를 생성합니다.",
+    "display_name": "Meshy: 이미지를 모델로(스마트 토폴로지)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "생성된 메시의 대략적인 삼각형 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
     "inputs": {
@@ -14471,6 +14665,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "목표 면 수에 맞춰 바로 게임용으로 사용할 수 있는 삼각형 메시를 생성합니다.",
+    "display_name": "Meshy: 텍스트를 모델로(스마트 토폴로지)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "생성된 메시의 대략적인 삼각형 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -15158,6 +15392,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "Mirelo SFX를 사용하여 텍스트 설명으로 음향 효과를 생성합니다.",
+    "display_name": "Mirelo 텍스트를 SFX로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "Mirelo SFX를 사용하여 비디오에 동기화된 음향 효과를 생성합니다.",
+    "display_name": "Mirelo 비디오를 SFX로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "오디오",
+        "tooltip": null
+      },
+      "1": {
+        "name": "음성",
+        "tooltip": "사운드트랙에서 분리된 대화입니다. 음성이 발견되지 않으면 무음입니다."
       }
     }
   },
@@ -24875,7 +25174,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "비어 있으면 classifier-free guidance를 위해 Fibo 2.0이 학습한 null 캡션이 사용됩니다."
+        "tooltip": "비어 있으면 CFG를 사용한 편집 워크플로를 위해 Fibo 2.0이 학습한 널 캡션이 됩니다."
       },
       "prompt": {
         "name": "프롬프트"
@@ -24931,6 +25230,33 @@
     "inputs": {
       "clip": {
         "name": "clip"
+      },
+      "images": {
+        "name": "이미지"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "MOSS-Image 편집 LoRA용으로 참조 이미지와 함께 편집 지시를 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기로 사용되므로 먼저 크기를 조정하세요.",
+    "display_name": "텍스트 인코드 MOSS-Image 편집",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "편집 LoRA가 학습된 레이아웃입니다: ai-toolkit의 MOSS-Image Edit Training(kv_cache 옵션 켜짐 또는 꺼짐) 또는 Moss-Image-Edit. kv_cache가 꺼져 있으면 참조 이미지도 생성되는 이미지에 어텐션하므로 매 단계마다 다시 계산됩니다."
       },
       "images": {
         "name": "이미지"
@@ -25159,7 +25485,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "체크포인트의 다중 토큰 예측 헤드를 사용한 추측적 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 초안 깊이를 조정하고, 2-5는 이를 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만 동일한 시드에서도 비 MTP 출력과 다릅니다."
+        "tooltip": "체크포인트의 멀티 토큰 예측 헤드를 사용하는 추측 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 관측된 토큰 일치와 실행 비용에 맞춰 초안 깊이와 폭을 조정합니다. 2-5는 일정한 초안 깊이를 고정합니다. tree 모드는 폭과 깊이를 모두 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만, 같은 시드에서는 MTP 미사용 출력과 달라집니다."
       },
       "prompt": {
         "name": "프롬프트"
@@ -25233,7 +25559,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "체크포인트의 멀티 토큰 예측 헤드를 사용한 추측 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 초안 깊이를 자동 조정하고, 2-5는 이를 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만 동일한 시드에서 비-MTP 출력과는 다릅니다."
+        "tooltip": "체크포인트의 멀티 토큰 예측 헤드를 사용하는 추측 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 관측된 토큰 일치와 실행 비용에 맞춰 초안 깊이와 폭을 조정합니다. 2-5는 일정한 초안 깊이를 고정합니다. tree 모드는 폭과 깊이를 모두 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만, 같은 시드에서는 MTP 미사용 출력과 달라집니다."
       },
       "prompt": {
         "name": "프롬프트"
@@ -27854,6 +28180,119 @@
       "0": {
         "name": "복셀 색상",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "VEED를 사용하여 음성에서 배경 노이즈를 제거합니다. 모든 언어의 음성에 맞게 설계되었으며, 음악과 음향 효과도 제거됩니다. 48 kHz 모노 오디오를 반환합니다.",
+    "display_name": "VEED 오디오 정리",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "30분 미만의 음성 녹음입니다."
+      },
+      "loudness": {
+        "name": "음량"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "음성 아래에서 제거되는 노이즈의 양입니다. 낮을수록 음성 뒤의 공간음을 더 유지합니다. 단어 사이의 멈춤 구간은 항상 완전히 정리되며, 기본값보다 큰 값은 변화가 거의 없습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "VEED로 비디오의 음성에서 배경 소음을 제거합니다. 사운드트랙만 변경되며, 정리된 48 kHz 모노 음성으로 대체됩니다.",
+    "display_name": "VEED 오디오 정리(비디오 내)",
+    "inputs": {
+      "loudness": {
+        "name": "음량"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "음성 아래의 소음을 얼마나 제거할지 설정합니다. 낮을수록 음성 뒤의 실내 잔향이 더 유지됩니다. 단어 사이의 무음 구간은 항상 완전히 정리되며, 기본값보다 높은 값은 변화가 거의 없습니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "음성 사운드트랙이 포함된 30분 미만의 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "VEED Fabric을 사용하여 정지 이미지와 음성 트랙으로 말하고 입 모양이 동기화된 비디오를 만듭니다. 사진, 일러스트레이션, 마스코트와 함께 사용할 수 있으며 비디오 길이는 오디오 길이와 같습니다.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "VEED Lipsync를 사용하여 비디오 속 화자의 입 모양을 새 음성 트랙에 맞춰 다시 동기화합니다. 비디오당 화자는 한 명이며, 출력은 비디오의 해상도를 25 fps로 유지하고 길이는 오디오와 같습니다.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "VEED로 비디오에서 피사체를 잘라내고 프레임과 알파 마스크를 반환합니다. 이를 합성에 사용하거나 Join Image with Alpha 및 Save WEBM과 결합하여 투명한 비디오를 만들 수 있습니다.",
+    "display_name": "VEED 비디오 배경 제거",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "standard: 모든 배경에 사용 가능하며, 가장자리 품질이 가장 좋고 최대 3840x2160으로 출력합니다. fast: 더 빠르며 최대 1920x1080으로 출력합니다. green screen: 녹색 배경을 제거하며 최대 3840x2160으로 출력합니다. 더 큰 비디오는 축소됩니다."
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "1": {
+        "name": "마스크",
+        "tooltip": "배경이 제거된 부분은 1입니다. 투명한 비디오에는 Join Image with Alpha 및 Save WEBM을 사용하세요. Image Composite Masked 전에 Invert Mask를 추가하세요."
       }
     }
   },

@@ -1002,6 +1002,28 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "display_name": "Bria Guided Remove Background",
+    "description": "Remove the background from an image with Bria, keeping what the prompt describes. The original pixels come back at full resolution with a new alpha channel. For a plain cutout, Bria Remove Image Background costs less.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "What to keep, drop or narrow to, such as 'the person with the mat and the plant', 'the woman at her desk without the lamp' or 'only the chair'. A prompt that matches nothing returns a fully transparent image."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "display_name": "Bria FIBO 2.0 Image Edit",
     "description": "Edit images using Bria FIBO 2.0.",
@@ -1116,6 +1138,42 @@
       "moderation": {
         "name": "moderation",
         "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "display_name": "Bria Product Holding",
+    "description": "Put a product in a person's hands with Bria. The person's identity, pose and background are kept and the scene is re-rendered at about 1 megapixel.",
+    "inputs": {
+      "person_image": {
+        "name": "person_image"
+      },
+      "product_images": {
+        "name": "product_images",
+        "tooltip": "1-3 images of one product: the product itself, its packaging, another angle or a companion item. A batched input counts once per image. Transparent areas are treated as white."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "Optional extra direction added to Bria's built-in instruction, such as which hand to use or which way the label faces."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto keeps the person photo's framing at about 1 megapixel. A fixed ratio returns 0.6 to 1 megapixel, for example 768x1024 for 3:4."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -1428,6 +1486,42 @@
       "background_video": {
         "name": "background_video",
         "tooltip": "Background video to composite behind the foreground. Provide either a background image or a background video, not both."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "display_name": "Bria Virtual Try-On",
+    "description": "Dress a person in garments or accessories with Bria. The person's identity, pose and background are kept and the scene is re-rendered at about 1 megapixel.",
+    "inputs": {
+      "person_image": {
+        "name": "person_image"
+      },
+      "garment_images": {
+        "name": "garment_images",
+        "tooltip": "1-3 garments or accessories worn together, each replacing the matching item the person wears. A batched input counts once per image. Transparent areas are treated as white."
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "Optional extra direction added to Bria's built-in instruction, such as which hand to use or which way the label faces."
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto keeps the person photo's framing at about 1 megapixel. A fixed ratio returns 0.6 to 1 megapixel, for example 768x1024 for 3:4."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -9071,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "display_name": "Ideogram Vector Generate SVG",
+    "description": "Generates an editable SVG from a text prompt, optionally guided by up to 5 images, using Ideogram Vector.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "display_name": "Ideogram Vector Image to SVG",
+    "description": "Converts an image into an editable SVG using Ideogram Vector. Transparent areas of an image with alpha stay transparent.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "model_mode": {
+        "name": "mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "Add Noise to Image",
     "inputs": {
@@ -9148,7 +9290,7 @@
   },
   "ImageColorSpace": {
     "display_name": "Convert Image Color Space",
-    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, and HDR ACEScct. LogC3 uses the EI 800 curve with Rec.709 primaries and codes clamped to [0, 1]. ACEScct uses AP1 primaries and D60 white, with Bradford adaptation to D65. Convert LogC3 or ACEScct to linear for EXR saving. Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear and ACEScct outputs preserve extended values. Linear-to-HDR conversions preserve highlights without tone mapping; HLG and PQ outputs clip negative channels. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, linear ACEScg, and HDR ACEScct. LogC3 uses the EI 800 curve with Rec.709 primaries and codes clamped to [0, 1]. ACEScg is scene-linear AP1 with D60 white. ACEScct is the ACEScg log encoding. Both use Bradford adaptation to D65. Convert LogC3 or ACEScct to linear ACEScg (AP1 scene-linear) or linear (Rec.709) before saving EXR. Linear 1.0 and ACEScg 1.0 use the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear, ACEScg, and ACEScct outputs preserve extended values. Linear-to-HDR conversions preserve highlights without tone mapping; HLG and PQ outputs clip negative channels. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
     "inputs": {
       "image": {
         "name": "image"
@@ -9159,7 +9301,7 @@
       },
       "destination": {
         "name": "destination",
-        "tooltip": "Color space of the output pixels. Set the save node to this same color space. Convert LogC3 or ACEScct to linear before saving EXR, or to sRGB/HDR/HDR PQ before saving video."
+        "tooltip": "Color space of the output pixels. Set the save node to this same color space. Convert LogC3 or ACEScct to linear ACEScg for ACEScg EXR, or to linear for Rec.709 EXR. Convert to sRGB/HDR/HDR PQ before saving video."
       }
     },
     "outputs": {
@@ -14184,6 +14326,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "display_name": "Meshy: Image to Model (Smart Topology)",
+    "description": "Generate a game-ready triangle mesh directly at a target face count.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "Approximate number of triangles in the generated mesh."
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Image to Model",
     "inputs": {
@@ -14394,6 +14588,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "display_name": "Meshy: Text to Model (Smart Topology)",
+    "description": "Generate a game-ready triangle mesh directly at a target face count.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "Approximate number of triangles in the generated mesh."
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -15081,6 +15315,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "display_name": "Mirelo Text to SFX",
+    "description": "Generate sound effects from a text description with Mirelo SFX.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "display_name": "Mirelo Video to SFX",
+    "description": "Generate sound effects synced to a video with Mirelo SFX.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      },
+      "1": {
+        "name": "speech",
+        "tooltip": "The dialogue separated from the soundtrack; silent when no speech is found."
       }
     }
   },
@@ -24867,7 +25166,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Empty is the null caption Fibo 2.0 was trained with for classifier-free guidance."
+        "tooltip": "Empty is the null caption Fibo 2.0 was trained with for CFG with edit workflows."
       },
       "images": {
         "name": "images",
@@ -25011,6 +25310,33 @@
       "vae": {
         "name": "vae",
         "tooltip": "Without a VAE the images only condition the text encoder through the vision tower."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "display_name": "Text Encode MOSS-Image Edit",
+    "description": "Encodes an edit instruction with reference images for a MOSS-Image edit LoRA, use it for the negative prompt too. The references are used at the size they come in, scale them first.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "The layout the edit LoRA was trained with: ai-toolkit's MOSS-Image Edit Training (its kv_cache option on or off) or Moss-Image-Edit. With kv_cache off the references also attend to the image being generated, so they are recomputed every step."
+      },
+      "images": {
+        "name": "images"
       }
     },
     "outputs": {
@@ -25177,7 +25503,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Speculative decoding with the checkpoint's multi-token-prediction head. No effect without MTP weights. auto adapts the draft depth; 2-5 pins it. Sampled output stays correctly distributed but differs from non-MTP output for the same seed."
+        "tooltip": "Speculative decoding with the checkpoint's multi-token-prediction head. No effect without MTP weights. auto adapts the draft depth and breadth to observed token matches and execution cost; 2-5 pins a constant draft depth; tree modes pin both breadth and depth. Sampled output stays correctly distributed but differs from non-MTP output for the same seed."
       },
       "system_prompt": {
         "name": "system_prompt",
@@ -25251,7 +25577,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Speculative decoding with the checkpoint's multi-token-prediction head. No effect without MTP weights. auto adapts the draft depth; 2-5 pins it. Sampled output stays correctly distributed but differs from non-MTP output for the same seed."
+        "tooltip": "Speculative decoding with the checkpoint's multi-token-prediction head. No effect without MTP weights. auto adapts the draft depth and breadth to observed token matches and execution cost; 2-5 pins a constant draft depth; tree modes pin both breadth and depth. Sampled output stays correctly distributed but differs from non-MTP output for the same seed."
       },
       "system_prompt": {
         "name": "system_prompt",
@@ -27736,6 +28062,119 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "display_name": "VEED Clean Audio",
+    "description": "Remove background noise from speech with VEED. Built for speech in any language: music and sound effects are removed too. Returns 48 kHz mono audio.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Speech recording, shorter than 30 minutes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "How much noise is removed under speech. Lower keeps more room tone behind the voice; pauses between words are always fully cleaned, and values above the default change little."
+      },
+      "loudness": {
+        "name": "loudness"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "display_name": "VEED Clean Audio (in Video)",
+    "description": "Remove background noise from the speech in a video with VEED. Only the soundtrack changes: it is replaced with the cleaned 48 kHz mono speech.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video with a speech soundtrack, shorter than 30 minutes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "How much noise is removed under speech. Lower keeps more room tone behind the voice; pauses between words are always fully cleaned, and values above the default change little."
+      },
+      "loudness": {
+        "name": "loudness"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "display_name": "VEED Fabric 1.0",
+    "description": "Turn a still image and a speech track into a talking, lip-synced video with VEED Fabric. Works with photos, illustrations and mascots; the video is as long as the audio.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "display_name": "VEED Lipsync 2.0",
+    "description": "Re-sync a speaker's mouth in a video to a new speech track with VEED Lipsync. One speaker per video; the output keeps the video's resolution at 25 fps and is as long as the audio.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "display_name": "VEED Remove Video Background",
+    "description": "Cut the subject out of a video with VEED and return the frames plus an alpha mask. Use them for compositing, or combine them with Join Image with Alpha and Save WEBM to write a transparent video.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "standard: any background, best edges, output up to 3840x2160. fast: quicker, output up to 1920x1080. green screen: keys out a green backdrop, output up to 3840x2160. Larger videos are downscaled."
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": "1 where the background was removed. Use Join Image with Alpha and Save WEBM for a transparent video; add Invert Mask before Image Composite Masked."
       }
     }
   },
