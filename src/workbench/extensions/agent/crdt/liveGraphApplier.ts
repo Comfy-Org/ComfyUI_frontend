@@ -5,7 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
-import { isEqual } from 'es-toolkit'
+import { isEqual, isPlainObject, omit } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
@@ -78,6 +78,7 @@ export interface FrameChanges {
 export interface RemoteApplyContext {
   actor: string
   opIds: readonly string[]
+  liveAgentTurn?: boolean
 }
 
 export interface LiveGraphApplierDeps {
@@ -133,12 +134,17 @@ const SYNCED_APPEARANCE_FIELDS = [
 
 const AGENT_APPLY_TAGS = { subsystem: 'agent-crdt', layer: 'graph-api' }
 
-interface DocNode {
+type DocNode = {
   id: string
   type: string
   serialised: ISerialisedNode
-  widgets: Record<string, unknown> | unknown[] | undefined
-}
+} & (
+  | {
+      widgets: Record<string, unknown> | unknown[] | undefined
+      widgetRecord?: never
+    }
+  | { widgets?: never; widgetRecord: Record<string, unknown> }
+)
 
 interface DocLink {
   id: LinkId
@@ -169,8 +175,14 @@ function syncedFlags(flags: INodeFlags | undefined): INodeFlags {
 }
 
 const zDocSlot = z
-  .object({ name: z.string(), type: z.union([z.string(), z.number()]) })
+  .object({
+    name: z.string(),
+    type: z.union([z.string(), z.array(z.string()).nonempty(), z.number()])
+  })
   .passthrough()
+const zWidgetRecord = z
+  .record(z.string(), z.unknown())
+  .refine((record) => !Object.hasOwn(record, 'length'), 'has a length key')
 const zNodeProperty = z.union([
   z.string(),
   z.number(),
@@ -197,7 +209,8 @@ const zDocNodeFields = zComfyNode
     title: z.string().optional(),
     inputs: z.array(zDocSlot).optional(),
     outputs: z.array(zDocSlot).optional(),
-    properties: z.record(z.string(), zNodeProperty.optional()).optional()
+    properties: z.record(z.string(), zNodeProperty.optional()).optional(),
+    [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
 
 /**
@@ -218,11 +231,109 @@ interface MalformedDocNode {
   }
 }
 
+const MAX_SHAPED_ELEMENTS = 16
+const MAX_DIAGNOSTIC_CHARS = 1024
+const OMISSION_MARKER_CHARS = 8
+
+interface DiagnosticString {
+  path: readonly (string | number)[]
+  value: string
+}
+
+function elementShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
+}
+
 function valueShape(value: unknown): string {
   if (value === null) return 'null'
-  if (Array.isArray(value)) return `array:${value.length}`
+  if (Array.isArray(value)) {
+    const shaped = value.slice(0, MAX_SHAPED_ELEMENTS).map(elementShape)
+    const omitted = value.length - shaped.length
+    if (omitted > 0) shaped.push(`+${omitted}`)
+    return `array:${value.length}[${shaped.join(',')}]`
+  }
   if (typeof value === 'object') return `object:${Object.keys(value).length}`
   return typeof value
+}
+
+function diagnosticStrings(
+  value: unknown,
+  path: readonly (string | number)[] = []
+): DiagnosticString[] {
+  if (typeof value === 'string') return [{ path, value }]
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) =>
+      diagnosticStrings(entry, [...path, index])
+    )
+  }
+  if (!isPlainObject(value)) return []
+  return Object.entries(value).flatMap(([key, entry]) =>
+    diagnosticStrings(entry, [...path, key])
+  )
+}
+
+function diagnosticPath(path: readonly (string | number)[]): string {
+  return JSON.stringify(path)
+}
+
+function replaceDiagnosticValue(
+  value: unknown,
+  path: readonly (string | number)[],
+  replacements: ReadonlyMap<string, string>
+): unknown {
+  if (typeof value === 'string') {
+    return replacements.get(diagnosticPath(path)) ?? value
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry, index) =>
+      replaceDiagnosticValue(entry, [...path, index], replacements)
+    )
+  }
+  if (!isPlainObject(value)) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      key,
+      replaceDiagnosticValue(entry, [...path, key], replacements)
+    ])
+  )
+}
+
+function replaceDiagnosticStrings(
+  context: Record<string, unknown>,
+  replacements: ReadonlyMap<string, string>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(context).map(([key, value]) => [
+      key,
+      replaceDiagnosticValue(value, [key], replacements)
+    ])
+  )
+}
+
+function boundedContext(
+  context: Record<string, unknown>
+): Record<string, unknown> {
+  const shortestFirst = diagnosticStrings(context).sort(
+    (left, right) => left.value.length - right.value.length
+  )
+  let remaining = MAX_DIAGNOSTIC_CHARS
+  const truncated = new Map<string, string>()
+  for (const { path, value } of shortestFirst) {
+    if (value.length <= remaining) {
+      remaining -= value.length
+      continue
+    }
+    const kept = value.slice(0, Math.max(0, remaining - OMISSION_MARKER_CHARS))
+    truncated.set(
+      diagnosticPath(path),
+      kept === '' ? '' : `${kept}+${value.length - kept.length}`
+    )
+    remaining = 0
+  }
+  if (truncated.size === 0) return context
+  return replaceDiagnosticStrings(context, truncated)
 }
 
 /** `absent` when the path's own key is missing, so it is not read as `undefined`. */
@@ -282,16 +393,20 @@ function readDocNode(
 
   const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
+  let record: unknown
   source.forEach((value, key) => {
     if (key === 'widgets' && value instanceof Y.Map) {
       widgets = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
+      else if (isPlainObject(opaque)) record = opaque
     } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
   })
+  if (widgets === undefined && record !== undefined)
+    fields[OPAQUE_WIDGETS_KEY] = record
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -314,6 +429,7 @@ function readDocNode(
     flags,
     order = 0,
     mode = 0,
+    [OPAQUE_WIDGETS_KEY]: widgetRecord,
     ...rest
   } = parsed.data
   const serialised: ISerialisedNode = {
@@ -324,7 +440,10 @@ function readDocNode(
     order,
     mode
   }
-  return { id, type: serialised.type, serialised, widgets }
+  const node = { id, type: serialised.type, serialised }
+  return widgetRecord === undefined
+    ? { ...node, widgets }
+    : { ...node, widgetRecord }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
@@ -484,6 +603,39 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
+/** Rows the document carries values for under the DynamicGroup `name`. */
+function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
+  if (widgets === undefined || Array.isArray(widgets)) return 0
+  const prefix = `${name}.`
+  const rows = new Set<string>()
+  for (const key of Object.keys(widgets)) {
+    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
+  }
+  return rows.size
+}
+
+function deferredRowCounts(
+  node: LGraphNode,
+  constructed: readonly IBaseWidget[],
+  widgets: DocNode['widgets']
+): ReadonlySet<string> {
+  if (
+    widgets === undefined ||
+    Array.isArray(widgets) ||
+    supportsDynamicWidgetOverflow(node)
+  )
+    return new Set()
+  return new Set(
+    constructed
+      .filter(
+        (widget) =>
+          isDynamicGroupController(widget) &&
+          Object.hasOwn(widgets, widget.name)
+      )
+      .map((widget) => widget.name)
+  )
+}
+
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
  * the constructed list, and names the constructor did not build but the node
@@ -494,13 +646,14 @@ function mountedWidgetValues(
   node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[],
-  constructedNames: ReadonlySet<string>
+  constructedNames: ReadonlySet<string>,
+  deferred: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name)
+      ? !constructedNames.has(name) || deferred.has(name)
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -514,7 +667,8 @@ function mountedWidgetValues(
  */
 function positionalWidgetValues(
   node: LGraphNode,
-  widgets: DocNode['widgets']
+  widgets: DocNode['widgets'],
+  deferred: ReadonlySet<string>
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
@@ -523,6 +677,7 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
+    if (deferred.has(widget.name)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
@@ -616,7 +771,10 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        if (mode === 'merge') this.placeBatch(graph, created)
+        if (mode === 'merge')
+          this.placeBatch(graph, created, {
+            moveCollisions: context.liveAgentTurn === true
+          })
         return {
           createdNodeIds: created,
           failureCount: this.currentFailureCount()
@@ -646,20 +804,15 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * One frame is one change: the same `before-change`/`after-change` bracket
-   * a multi-step human edit emits, so the change tracker records a single
-   * undo entry and flips `isModified` once.
-   */
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      graph.canvasAction((canvas) => canvas.emitBeforeChange())
+      this.deps.getCanvas?.()?.emitBeforeChange()
       try {
         return withGraphIntentSource('agent-remote', fn)
       } finally {
         graph.setDirtyCanvas(true, true)
-        graph.canvasAction((canvas) => canvas.emitAfterChange())
+        this.deps.getCanvas?.()?.emitAfterChange()
       }
     })
   }
@@ -694,7 +847,7 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType,
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context
+        context: boundedContext(context)
       }
     )
   }
@@ -776,7 +929,8 @@ export class LiveGraphApplier {
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets, mode)
+      if (docNode.widgetRecord) restoreWidgetRecord(live, docNode.widgetRecord)
+      else this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
@@ -802,6 +956,8 @@ export class LiveGraphApplier {
         (output): ISerialisableNodeOutput => ({ ...output })
       )
     }
+    if (docNode.widgetRecord)
+      info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
     node.pos = [info.pos[0], info.pos[1]]
     graph.add(node)
@@ -831,15 +987,20 @@ export class LiveGraphApplier {
         const constructedNames = new Set(
           node.widgets?.map((widget) => widget.name)
         )
+        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         node.configure({
           ...info,
-          widgets_values: positionalWidgetValues(node, docNode.widgets)
+          widgets_values:
+            docNode.widgetRecord === undefined
+              ? positionalWidgetValues(node, docNode.widgets, deferred)
+              : info.widgets_values
         })
         const mounted = mountedWidgetValues(
           node,
           docNode.widgets,
           constructed,
-          constructedNames
+          constructedNames,
+          deferred
         )
         if (mounted)
           this.applyWidgets(node, mounted, mode, {
@@ -907,6 +1068,10 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
+    if (docNode.widgetRecord) {
+      restoreWidgetRecord(node, docNode.widgetRecord)
+      return
+    }
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
       this.applyWidgets(node, widgets, mode)
@@ -1099,7 +1264,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value)
+        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1231,12 +1396,25 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue
+    value: WidgetValue,
+    documentWidgets: DocNode['widgets']
   ) {
-    applyRemoteDynamicGroupRowCount(node, () =>
-      this.setWidgetValue(node, widget, value)
-    )
-    if (reachesDynamicGroupRowCount(widget, value)) return
+    const { max } = widget.options
+    const growsAboveMax =
+      typeof value === 'number' &&
+      max !== undefined &&
+      Math.trunc(value) >
+        Math.max(
+          max,
+          Number(widget.value),
+          documentedRowCount(widget.name, documentWidgets)
+        )
+    if (!growsAboveMax) {
+      applyRemoteDynamicGroupRowCount(node, () =>
+        this.setWidgetValue(node, widget, value)
+      )
+      if (reachesDynamicGroupRowCount(widget, value)) return
+    }
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
@@ -1358,7 +1536,11 @@ export class LiveGraphApplier {
     return created ? 'connected' : 'refused'
   }
 
-  private placeBatch(graph: LGraph, created: readonly NodeId[]): void {
+  private placeBatch(
+    graph: LGraph,
+    created: readonly NodeId[],
+    { moveCollisions }: { moveCollisions: boolean }
+  ): void {
     if (created.length === 0) return
     const createdSet = new Set(created)
     const rect = (node: LGraphNode): PlacementRect => ({
@@ -1373,7 +1555,8 @@ export class LiveGraphApplier {
         .filter((node) => !createdSet.has(node.id))
         .map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect)
+      incoming: incoming.map(rect),
+      moveCollisions
     })
     if (!offset) return
     for (const node of incoming) {
@@ -1440,6 +1623,22 @@ function ordinaryWidgetEntries(
     widget.name,
     widgets[index]
   ])
+}
+
+function restoreWidgetRecord(
+  node: LGraphNode,
+  record: Record<string, unknown>
+): void {
+  const widgets_values = record as unknown as WidgetValue[]
+  if (node.has_errors) {
+    const snapshot = node.last_serialization
+    if (snapshot) node.last_serialization = { ...snapshot, widgets_values }
+    return
+  }
+  node.configure({
+    ...omit(node.serialize(), ['widgets_values_named']),
+    widgets_values
+  })
 }
 
 /**

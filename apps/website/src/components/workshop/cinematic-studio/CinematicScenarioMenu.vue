@@ -12,16 +12,26 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 interface ScenarioOption {
   readonly id: string
   readonly label: string
 }
 
-const { apps, layouts, appHeading, layoutHeading } = defineProps<{
+const {
+  apps,
+  layouts,
+  appHeading,
+  layoutHeading,
+  editor = false
+} = defineProps<{
   apps: readonly ScenarioOption[]
   layouts: readonly ScenarioOption[]
   appHeading: string
   layoutHeading: string
+  /** Sits in an editor's header on phones, clear of its bottom sheet. */
+  editor?: boolean
 }>()
 
 const app = defineModel<string>('app', { required: true })
@@ -43,7 +53,12 @@ const groups = computed(() => [
   <DropdownMenuRoot>
     <DropdownMenuTrigger
       :aria-label="triggerLabel"
-      class="fixed right-3 bottom-56 z-60 flex size-8 items-center justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 lg:right-5 lg:bottom-5"
+      :class="
+        cn(
+          'fixed right-3 bottom-56 z-60 flex size-8 items-center justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 lg:right-5 lg:bottom-5',
+          editor && 'max-lg:top-16 max-lg:right-3 max-lg:bottom-auto'
+        )
+      "
     >
       <Ellipsis class="size-4" aria-hidden="true" />
     </DropdownMenuTrigger>

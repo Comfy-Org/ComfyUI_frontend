@@ -16,13 +16,11 @@ import {
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,
-  cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
-  cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigState,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -43,6 +41,20 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+
+const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
+  useRemoteConfigCache()
+
+function persistFromAnotherTab(key: string, value: string) {
+  localStorage.setItem(key, value)
+  window.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: value,
+      storageArea: localStorage
+    })
+  )
+}
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -376,9 +388,12 @@ describe('useFeatureFlags', () => {
   })
 
   describe.for([
-    { flag: 'unifiedBillingSettingsEnabled' as const },
-    { flag: 'autoTopUpEnabled' as const }
-  ])('$flag', ({ flag }) => {
+    {
+      flag: 'unifiedBillingSettingsEnabled' as const,
+      offCloudTrue: true
+    },
+    { flag: 'autoTopUpEnabled' as const, offCloudTrue: false }
+  ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
     })
@@ -398,7 +413,25 @@ describe('useFeatureFlags', () => {
         expected: false
       },
       { case: 'true on cloud', cloud: true, value: true, expected: true },
-      { case: 'true off cloud', cloud: false, value: true, expected: false }
+      {
+        case: 'missing off cloud',
+        cloud: false,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false off cloud', cloud: false, value: false, expected: false },
+      {
+        case: 'malformed off cloud',
+        cloud: false,
+        value: 'true',
+        expected: false
+      },
+      {
+        case: 'true off cloud',
+        cloud: false,
+        value: true,
+        expected: offCloudTrue
+      }
     ])('is $expected when $case', ({ cloud, value, expected }) => {
       vi.mocked(distributionTypes).isCloud = cloud
       vi.mocked(api.getServerFeature).mockReturnValue(value)
@@ -609,66 +642,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('legacyBillingMigrationEnabled', () => {
-    beforeEach(() => {
-      vi.mocked(distributionTypes).isCloud = true
-      authenticatedRemoteConfigState.value = 'authenticated'
-      remoteConfigState.value = 'authenticated'
-    })
-
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-      authenticatedRemoteConfigState.value = 'unloaded'
-      remoteConfigState.value = 'unloaded'
-      remoteConfig.value = {}
-      cachedLegacyBillingMigrationEnabled.value = undefined
-    })
-
-    it('migrates legacy billing when enabled by remote config', () => {
-      remoteConfig.value = { legacy_billing_migration_enabled: true }
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.legacyBillingMigrationEnabled).toBe(true)
-    })
-
-    it('keeps migration off when remote config explicitly disables it', () => {
-      remoteConfig.value = { legacy_billing_migration_enabled: false }
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.legacyBillingMigrationEnabled).toBe(false)
-    })
-
-    it('uses the server feature when authenticated config leaves it unset', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED
-            ? true
-            : defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.legacyBillingMigrationEnabled).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        false
-      )
-    })
-
-    it('keeps legacy billing when the rollout flag is unset', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue
-      )
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.legacyBillingMigrationEnabled).toBe(false)
-    })
-  })
-
   describe('onboardingTourEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
@@ -758,7 +731,6 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
-      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
     })
 
@@ -767,25 +739,41 @@ describe('useFeatureFlags', () => {
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
       cachedBillingControlEnabled.value = undefined
-      cachedLegacyBillingMigrationEnabled.value = undefined
       cachedV1PaymentRecovery.value = undefined
     })
 
+    it.for([
+      { stored: 'false', expected: false },
+      { stored: 'true', expected: true }
+    ])(
+      'resolves a persisted $stored as a boolean during the auth window',
+      ({ stored, expected }) => {
+        onTestFinished(() => {
+          localStorage.removeItem('billing_control_enabled')
+          localStorage.removeItem('v1_payment_recovery')
+        })
+        persistFromAnotherTab('billing_control_enabled', stored)
+        persistFromAnotherTab('v1_payment_recovery', stored)
+
+        const { flags } = useFeatureFlags()
+
+        expect(flags.billingControlEnabled).toBe(expected)
+        expect(flags.v1PaymentRecovery).toBe(expected)
+      }
+    )
+
     it('returns the cached session value during the auth window', () => {
       cachedBillingControlEnabled.value = true
-      cachedLegacyBillingMigrationEnabled.value = true
       cachedV1PaymentRecovery.value = true
 
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(true)
-      expect(flags.legacyBillingMigrationEnabled).toBe(true)
       expect(flags.v1PaymentRecovery).toBe(true)
     })
 
     it('defaults to false during the auth window when nothing is cached', () => {
       const { flags } = useFeatureFlags()
       expect(flags.billingControlEnabled).toBe(false)
-      expect(flags.legacyBillingMigrationEnabled).toBe(false)
       expect(flags.v1PaymentRecovery).toBe(false)
     })
 

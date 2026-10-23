@@ -10,9 +10,9 @@ import { zListSavedPaymentMethodsResponse } from '@comfyorg/ingest-types/zod'
 import type { zSavedPaymentMethod } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { createScopedReader } from './scopedReader.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { createScopedReader } from './scopedReader'
 
 export const PAYMENT_METHODS_ROUTE = '/billing/payment-methods'
 

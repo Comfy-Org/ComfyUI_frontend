@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   ModelDownloadDispatchOutcome,
   ModelWithUrl
-} from '@/platform/missingModel/missingModelDownload'
+} from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 

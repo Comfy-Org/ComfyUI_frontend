@@ -118,7 +118,7 @@ import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -178,9 +178,12 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (agentPanelStore.isVisible) {
+    if (
+      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
+      agentPanelStore.isVisible
+    ) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: 'closed'
+        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
       })
       agentPanelStore.toggle()
       return

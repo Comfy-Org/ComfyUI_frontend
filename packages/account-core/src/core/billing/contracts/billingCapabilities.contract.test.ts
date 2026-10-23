@@ -7,7 +7,7 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
-import type { CapabilityDenialReason } from '../capabilityDenials.js'
+import type { CapabilityDenialReason } from '#/core/billing/capabilityDenials'
 
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
@@ -27,6 +27,7 @@ function capabilities(): Capabilities {
     can_manage_auto_top_up: true,
     can_manage_members: true,
     can_manage_subscription: true,
+    can_open_plans: true,
     can_delete_workspace: false,
     can_leave_workspace: false,
     can_manage_billing: false,
@@ -65,6 +66,7 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'denied_reason_params'
   | 'denied_reasons'
   | 'expires_at'
+  | 'has_parked_billing_operation'
   | 'payment_recovery_available'
   | 'plan_kind'
   | 'recovery_route'
@@ -86,6 +88,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_manage_members: boolean
   can_manage_partner_node_access: boolean
   can_manage_subscription: boolean
+  can_open_plans: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
   can_run_workflows: boolean

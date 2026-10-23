@@ -120,10 +120,6 @@
       "role": "domain"
     },
     {
-      "path": "src/storybook/mocks/useJobActions.ts",
-      "role": "application"
-    },
-    {
       "path": "src/storybook/mocks/useJobList.ts",
       "role": "application"
     },

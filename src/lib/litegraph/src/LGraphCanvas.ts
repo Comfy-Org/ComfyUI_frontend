@@ -65,6 +65,18 @@ import {
   isLinkRevealed,
   setRevealedLinks
 } from './canvas/linkRevealState'
+import {
+  cancelLinkHideTransition,
+  clearRootLinkHideTransitions,
+  hasLinkHideTransitions,
+  linkHideLabelScale,
+  linkHideSnap
+} from './canvas/linkHideTransition'
+import {
+  chainHead,
+  chainTail,
+  linkSplineChain
+} from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
@@ -93,22 +105,28 @@ import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
+  collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
-  queryLinkBadgeAtPoint
+  queryLinkBadgeHitAtPoint,
+  toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
+  getLinkStackMenuOptions,
   getVisibleRerouteLink,
   hideLink,
   hideLinks,
   promptRenameLinkBadge,
-  showLink
+  showLink,
+  showLinks
 } from './canvas/linkVisibility'
 import {
   clearLinkSelection,
   getSelectedLinkIds,
-  selectLinksInMarquee
+  hasModifierKey,
+  selectLinksInMarquee,
+  selectSlotLinks
 } from './canvas/linkSelection'
 import {
   resolvePointerTarget,
@@ -496,6 +514,17 @@ function connectSearchBoxNodeTo(
   )
 }
 
+type DeselectAllOptions = {
+  keepSelected?: Positionable
+  notify?: boolean
+}
+
+function isDeselectAllOptions(
+  value: Positionable | DeselectAllOptions | undefined
+): value is DeselectAllOptions {
+  return value != null && !('boundingRect' in value)
+}
+
 function marqueeSelectsLinks(
   canvas: LGraphCanvas,
   e: Pick<CanvasPointerEvent, 'shiftKey' | 'altKey'>
@@ -503,6 +532,17 @@ function marqueeSelectsLinks(
   return (
     !canvas.selectOnly && !canvas.selectedItems.size && !e.shiftKey && !e.altKey
   )
+}
+
+function toggleStackOnceOnDoubleClick(): void {}
+
+interface SnappingLink {
+  link: LLink
+  snap: number
+  startPos: Point
+  endPos: Point
+  startDirection?: LinkDirection
+  endDirection?: LinkDirection
 }
 
 /**
@@ -1135,6 +1175,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   onNodeMoved?: (node_dragged: LGraphNode | undefined) => void
   /** @deprecated Called with the deprecated {@link selected_nodes} when the selection changes. Replacement not yet impl. */
   onSelectionChange?: (selected: Dictionary<Positionable>) => void
+  private selectionNotificationDepth = 0
+
+  private withSelectionNotificationsSuppressed<T>(action: () => T): T {
+    this.selectionNotificationDepth++
+    try {
+      return action()
+    } finally {
+      this.selectionNotificationDepth--
+    }
+  }
+
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -2166,8 +2217,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   setGraph(newGraph: LGraph | Subgraph): void {
     const { graph } = this
-    if (graph) clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
+    if (graph) {
+      const { rootGraphId } = graphScopeOf(graph)
+      clearRootLinkReveals(rootGraphId)
+      clearRootLinkHideTransitions(rootGraphId)
+    }
     clearLinkBadgeHitAreas(this)
+    collapseLinkBadgeStacks(this)
     this.dirty_bgcanvas = true
     if (newGraph === graph) return
 
@@ -2432,8 +2488,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._dirty()
       }
     })
-    this._autoPan.updatePointer(this.mouse[0], this.mouse[1])
-    this._autoPan.start()
+    pointer.onDragStart = () => {
+      if (this._spaceKeyHeld) return
+      this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+      this._autoPan?.start()
+    }
   }
 
   /**
@@ -2780,6 +2839,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return
       }
 
+      case 'linkBadgeStack': {
+        const { stackKey } = target
+        pointer.onClick = () => {
+          toggleLinkBadgeStack(this, stackKey)
+          this.dirty_bgcanvas = true
+        }
+        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
+        pointer.onDragStart = () => (this.dragging_canvas = true)
+        pointer.finally = () => (this.dragging_canvas = false)
+        return
+      }
+
       case 'subgraphIO': {
         const { ioNode } = target
         ioNode.onPointerDown(e, pointer, linkConnector)
@@ -3033,9 +3104,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
           }
 
-          // TODO: Move callbacks to the start of this closure (onInputClick is already correct).
           pointer.onDoubleClick = () => node.onOutputDblClick?.(i, e)
-          pointer.onClick = () => node.onOutputClick?.(i, e)
+          pointer.onClick = () => {
+            node.onOutputClick?.(i, e)
+            if (
+              !hasModifierKey(e) &&
+              selectSlotLinks(this, node, 'output', i, {
+                x: link_pos[0],
+                y: link_pos[1]
+              })
+            )
+              this.setDirty(true, true)
+          }
 
           return
         }
@@ -3051,7 +3131,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         if (isInSlot) {
           pointer.onDoubleClick = () => node.onInputDblClick?.(i, e)
-          pointer.onClick = () => node.onInputClick?.(i, e)
+          pointer.onClick = () => {
+            node.onInputClick?.(i, e)
+            if (
+              !hasModifierKey(e) &&
+              selectSlotLinks(this, node, 'input', i, {
+                x: link_pos[0],
+                y: link_pos[1]
+              })
+            )
+              this.setDirty(true, true)
+          }
 
           const shouldBreakLink =
             LiteGraph.ctrl_alt_click_do_break_link &&
@@ -3499,13 +3589,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[0] = x
     this.graph_mouse[1] = y
 
-    const hoveredBadge = queryLinkBadgeAtPoint(this, x, y)
-    const nodeAtPoint =
-      hoveredBadge === undefined
-        ? null
-        : graph.getNodeOnPos(x, y, this.visible_nodes)
-    const revealed =
-      hoveredBadge !== undefined && !nodeAtPoint ? [hoveredBadge] : []
+    const hoveredBadge = queryLinkBadgeHitAtPoint(this, x, y)
+    const nodeAtPoint = hoveredBadge
+      ? graph.getNodeOnPos(x, y, this.visible_nodes)
+      : null
+    const revealed = hoveredBadge && !nodeAtPoint ? hoveredBadge.linkIds : []
     if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
       this.dirty_bgcanvas = true
     }
@@ -3942,8 +4030,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodeId: node.id
     })
 
-    this.deselectAll()
-    this.select(node)
+    this.selectItems([node])
     this.isDragging = true
 
     this._startNodeAutoPan()
@@ -4058,8 +4145,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     /** The mouseup event occurred near the mousedown event. */
     /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
+    const { eDown } = pointer
+    const pressedBadge =
+      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
     const isClick = pointer.up(e)
     if (isClick) {
+      if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
+        this.dirty_bgcanvas = true
+      }
       pointer.isDown = false
       pointer.isDouble = false
       // Required until all link behaviour is added to Pointer API
@@ -4207,7 +4300,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
         if (
           this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
+          (this.isDragging ||
+            (this.linkConnector.isConnecting && this.pointer.dragStarted))
         ) {
           this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
           this._autoPan?.start()
@@ -4244,6 +4338,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.node_panel?.close()
         this.options_panel?.close()
         if (this.node_panel || this.options_panel) block_default = true
+        if (collapseLinkBadgeStacks(this)) {
+          this.dirty_bgcanvas = true
+          block_default = true
+        }
       }
 
       // TODO
@@ -4340,8 +4438,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
-    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
-    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    try {
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    } catch (error) {
+      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+      reportError(error, {
+        errorType: 'error_writing_clipboard_storage',
+        surface: 'graph'
+      })
+    }
     return serializedData
   }
 
@@ -4676,9 +4782,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selectOnly: this.selectOnly,
       sticky
     })
-    if (!applyClickSelection(this, intent, item ?? undefined)) return
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      applyClickSelection(this, intent, item ?? undefined)
+    )
+    if (!changed) return
 
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selectionView.selectedNodes)
     this.setDirty(true)
   }
 
@@ -4689,12 +4799,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable,
     {
+      notify = true,
       selectGroupChildren = this.groupSelectChildren
-    }: { selectGroupChildren?: boolean } = {}
+    }: { notify?: boolean; selectGroupChildren?: boolean } = {}
   ): void {
     clearLinkSelection(this)
-    if (!changeCanvasSelection(this, [item], true, selectGroupChildren)) return
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      changeCanvasSelection(this, [item], true, selectGroupChildren)
+    )
+    if (changed && notify && this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selectionView.selectedNodes)
   }
 
   /**
@@ -4702,10 +4816,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param item The canvas item to remove from the selection.
    */
   deselect<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable
+    item: TPositionable,
+    { notify = true }: { notify?: boolean } = {}
   ): void {
-    if (!changeCanvasSelection(this, [item], false)) return
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      changeCanvasSelection(this, [item], false)
+    )
+    if (changed && notify && this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selectionView.selectedNodes)
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
@@ -4751,9 +4869,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (itemsToSelect.length === 0 && items?.length) return
     clearLinkSelection(this)
     const initialSelection = new Set(this.selectedItems)
-    if (!add_to_current_selection) clearCanvasSelection(this)
-    changeCanvasSelection(this, itemsToSelect, true)
-    this.reportSelectionChange(initialSelection)
+    this.withSelectionNotificationsSuppressed(() => {
+      if (!add_to_current_selection) clearCanvasSelection(this)
+      changeCanvasSelection(this, itemsToSelect, true)
+    })
+    if (this.selectionNotificationDepth === 0)
+      this.reportSelectionChange(initialSelection)
     this.setDirty(true)
   }
 
@@ -4770,15 +4891,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselect(node)
   }
 
-  /**
-   * Deselects all items on the canvas.
-   * @param keepSelected If set, this item will not be removed from the selection.
-   */
-  deselectAll(keepSelected?: Positionable): void {
-    clearLinkSelection(this)
-    if (!clearCanvasSelection(this, keepSelected)) return
+  /** Deselects all items on the canvas. */
+  deselectAll(options?: DeselectAllOptions): void
+  /** @deprecated Pass `{ keepSelected }` instead. */
+  deselectAll(keepSelected?: Positionable): void
+  deselectAll(optionsOrKeepSelected?: Positionable | DeselectAllOptions): void {
+    const { keepSelected, notify = true } = isDeselectAllOptions(
+      optionsOrKeepSelected
+    )
+      ? optionsOrKeepSelected
+      : { keepSelected: optionsOrKeepSelected }
 
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    clearLinkSelection(this)
+    const changed = this.withSelectionNotificationsSuppressed(() =>
+      clearCanvasSelection(this, keepSelected)
+    )
+    if (!changed) return
+
+    if (notify && this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selectionView.selectedNodes)
     this.setDirty(true)
   }
 
@@ -4787,10 +4918,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselectAll()
   }
 
-  /**
-   * Deletes all selected items from the graph.
-   * @todo Refactor deletion task to LGraph.  Selection is a canvas property, delete is a graph action.
-   */
   deleteSelected(): void {
     const { graph } = this
     if (!graph) throw new NullGraphError()
@@ -4798,21 +4925,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.emitBeforeChange()
     graph.beforeChange()
 
-    // Snapshot to prevent mutation during iteration (e.g. group deselect cascade)
     const toDelete = [...this.selectedItems]
-    for (const item of toDelete) {
-      if (item instanceof LGraphNode) {
-        const node = item
-        if (node.block_delete) continue
-        node.connectInputToOutput()
-        graph.remove(node)
-        this.onNodeDeselected?.(node)
-      } else if (item instanceof LGraphGroup) {
-        graph.remove(item)
-      } else if (item instanceof Reroute) {
-        graph.removeReroute(item.id)
+    this.withSelectionNotificationsSuppressed(() => {
+      for (const item of toDelete) {
+        if (item instanceof LGraphNode) {
+          const node = item
+          if (node.block_delete) continue
+          node.connectInputToOutput()
+          graph.remove(node)
+          this.onNodeDeselected?.(node)
+        } else if (item instanceof LGraphGroup) {
+          graph.remove(item)
+        } else if (item instanceof Reroute) {
+          graph.removeReroute(item.id)
+        }
       }
-    }
+    })
 
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
@@ -6061,6 +6189,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.default_link_color
     )
     const renderedRerouteSegments = new Set<Reroute>()
+    const snappingLinks: SnappingLink[] = []
 
     const renderConnection = (
       link: LLink,
@@ -6070,8 +6199,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       endDirection?: LinkDirection
     ): void => {
       const hiddenLayout = hiddenLinkLayouts.get(link.id)
-      if (hiddenLayout && !isLinkRevealed(graphScope.rootGraphId, link.id))
+      if (hiddenLayout && isLinkRevealed(graphScope.rootGraphId, link.id)) {
+        cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+      } else if (hiddenLayout) {
+        const snap = linkHideSnap(graphScope.rootGraphId, link.id, now)
+        if (snap === undefined) return
+        if (this.links_render_mode !== LinkRenderType.SPLINE_LINK) {
+          cancelLinkHideTransition(graphScope.rootGraphId, link.id)
+          return
+        }
+
+        snappingLinks.push({
+          link,
+          snap,
+          startPos,
+          endPos,
+          startDirection,
+          endDirection
+        })
         return
+      }
 
       this._renderAllLinkSegments(
         ctx,
@@ -6160,6 +6307,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
+    for (const snapping of snappingLinks)
+      this._renderSnappingLink(ctx, snapping)
+
     if (graph.floatingLinks.size > 0) {
       this._renderFloatingLinks(
         ctx,
@@ -6211,8 +6361,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       link.disconnectOnDrop = distSquared < radius ** 2
     })
 
-    for (const layout of hiddenLinkLayouts.values()) {
-      drawHiddenLinkBadges(ctx, layout, margin_area)
+    drawHiddenLinkBadges(ctx, this, margin_area, (linkId) =>
+      linkHideLabelScale(graphScope.rootGraphId, linkId, now)
+    )
+
+    if (hasLinkHideTransitions(graphScope.rootGraphId, now)) {
+      this.dirty_bgcanvas = true
     }
 
     ctx.globalAlpha = 1
@@ -6295,6 +6449,49 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
     ctx.globalAlpha = globalAlpha
+  }
+
+  private _renderSnappingLink(
+    ctx: CanvasRenderingContext2D,
+    { link, snap, startPos, endPos, startDirection, endDirection }: SnappingLink
+  ): void {
+    const remaining = Math.abs(1 - snap) / 2
+    if (remaining === 0 || !this.graph) return
+    const chain = linkSplineChain(
+      [
+        startPos,
+        ...LLink.getReroutes(this.graph, link).map((reroute) => reroute.pos),
+        endPos
+      ],
+      startDirection || LinkDirection.RIGHT,
+      endDirection || LinkDirection.LEFT
+    )
+    const halves = [
+      ...chainHead(chain, remaining),
+      ...chainTail(chain, remaining)
+    ]
+    const color =
+      link.color ||
+      LGraphCanvas.link_type_colors[slotTypeKey(link.type)] ||
+      this.default_link_color
+    const strokes: [CanvasColour, number][] = [[color, this.connections_width]]
+    if (this.render_connections_border && !this.low_quality) {
+      strokes.unshift(['rgba(0,0,0,0.5)', this.connections_width + 4])
+    }
+
+    ctx.save()
+    ctx.lineCap = 'round'
+    for (const [strokeStyle, lineWidth] of strokes) {
+      ctx.strokeStyle = strokeStyle
+      ctx.lineWidth = lineWidth
+      ctx.beginPath()
+      for (const [from, c1, c2, to] of halves) {
+        ctx.moveTo(from[0], from[1])
+        ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], to[0], to[1])
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
   }
 
   private _renderAllLinkSegments(
@@ -8671,11 +8868,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, group } = getCanvasContextMenuTarget(
-        this,
-        event.canvasX,
-        event.canvasY
-      )
+      const { reroute, linkSegment, link, stackedLinks, group } =
+        getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
+      if (stackedLinks) {
+        const graphScope = graphScopeOf(this.graph)
+        new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
+          event,
+          callback: () =>
+            showLinks(
+              this,
+              graphScope,
+              stackedLinks.map(({ id }) => id)
+            )
+        })
+        return
+      }
       if (reroute) {
         menu_info.unshift(
           {

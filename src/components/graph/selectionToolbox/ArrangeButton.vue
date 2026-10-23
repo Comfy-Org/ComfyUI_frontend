@@ -12,12 +12,12 @@
         </div>
       </Button>
     </PopoverTrigger>
-    <PopoverPortal>
+    <PopoverPortal :key="Number(isOpen)">
       <PopoverContent
         side="bottom"
         :side-offset="5"
         :collision-padding="10"
-        class="z-1700 rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">
           <Slider
@@ -64,9 +64,9 @@
 
 <script setup lang="ts">
 import {
+  PopoverPortal,
   PopoverArrow,
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'

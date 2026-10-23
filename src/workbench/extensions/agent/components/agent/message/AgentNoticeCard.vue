@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import type {
   AskUnavailablePart,
   NoticePart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part } = defineProps<{ part: NoticePart | AskUnavailablePart }>()
 

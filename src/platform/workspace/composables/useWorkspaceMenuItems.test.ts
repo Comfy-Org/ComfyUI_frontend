@@ -1,6 +1,6 @@
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -21,28 +21,34 @@ const state = vi.hoisted(() => ({
   isSubscriptionCancelled: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    billingStatus: computed(() => state.billingStatus),
-    isFreeTier: computed(() => state.isFreeTier),
-    subscription: computed(() => ({
-      isCancelled: state.isSubscriptionCancelled,
-      endDate: '2026-08-01T00:00:00Z',
-      planSlug: state.planSlug,
-      tier: state.tier
-    }))
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: () => ({
+      billingStatus: computed(() => state.billingStatus),
+      isFreeTier: computed(() => state.isFreeTier),
+      subscription: computed(() => ({
+        isCancelled: state.isSubscriptionCancelled,
+        endDate: '2026-08-01T00:00:00Z',
+        planSlug: state.planSlug,
+        tier: state.tier
+      }))
+    })
   })
-}))
+)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingRouting'),
+  () => ({
+    useBillingRouting: () => ({
+      shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+    })
   })
-}))
+)
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -55,11 +61,6 @@ vi.mock<unknown>(
           }
         }
       },
-      uiConfig: computed(() => ({
-        showEditWorkspaceMenuItem: false,
-        workspaceMenuAction: null,
-        workspaceMenuDisabledTooltip: null
-      })),
       canAccessSubscriptionFeatures: computed(
         () => state.canAccessSubscriptionFeatures
       ),
@@ -69,7 +70,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/services/dialogService'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const apps: App<Element>[] = []
@@ -117,6 +118,9 @@ afterEach(() => {
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
+    useBillingCapabilities().canEditWorkspace = computed(() =>
+      receiveServerFact('can_edit_workspace', false)
+    )
     state.billingStatus = 'paid'
 
     state.canManageSubscriptionLifecycle = false
