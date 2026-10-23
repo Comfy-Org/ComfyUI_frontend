@@ -22,7 +22,11 @@
         </li>
       </ul>
       <div class="flex justify-end">
-        <Button variant="destructive" @click="applyChanges">
+        <Button
+          variant="destructive"
+          :disabled="extensionStore.isSavingExtensionPacks"
+          @click="applyChanges"
+        >
           {{ $t('g.reloadToApplyChanges') }}
         </Button>
       </div>
@@ -40,7 +44,7 @@
     </div>
     <ExtensionPackTable
       :packs="extensionStore.extensionPackPaths"
-      :enabled-by-path="editingEnabledExtensionPacks"
+      :enabled-by-path="enabledExtensionPacks"
       @set-enabled="setExtensionPackEnabled"
     />
     <ExtensionListTable
@@ -59,7 +63,7 @@
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -69,16 +73,17 @@ import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
-import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
 import {
   agentExtensionFilterRequest,
   consumeAgentExtensionFilterRequest,
   getAgentExtensionDisableSettings
 } from '@/platform/settings/agentExtensionService'
 import type { ExtensionFilterType } from '@/platform/settings/agentExtensionService'
+import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
+import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
 
@@ -107,23 +112,17 @@ watch(
   },
   { immediate: true }
 )
-const persistedDisabledPackPaths = new Set(
-  settingStore.get('Comfy.Extension.DisabledPacks')
-)
 
-const editingEnabledExtensions = ref<Record<string, boolean>>(
-  Object.fromEntries(
-    extensionStore.extensions.map((extension) => [
-      extension.name,
-      extensionStore.isExtensionEnabled(extension.name)
-    ])
-  )
-)
-const editingEnabledExtensionPacks = ref<Record<string, boolean>>(
+const editingEnabledExtensions = ref<Record<string, boolean>>({})
+
+// Projected from the setting rather than staged here: packs have exactly one
+// authoritative current state, and a second copy of it is what let a rolled
+// back save and a remount each display a different answer.
+const enabledExtensionPacks = computed(() =>
   Object.fromEntries(
     extensionStore.extensionPackPaths.map((path) => [
       path,
-      !persistedDisabledPackPaths.has(path)
+      extensionStore.isExtensionPackCurrentlyEnabled(path)
     ])
   )
 )
@@ -184,14 +183,12 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
   )
 }
 
-function extensionPackName(path: string) {
-  const name = path.split('/').filter(Boolean).at(-1) ?? path
-  try {
-    return decodeURIComponent(name)
-  } catch {
-    return name
-  }
-}
+onMounted(() => {
+  extensionStore.extensions.forEach((ext) => {
+    editingEnabledExtensions.value[ext.name] =
+      extensionStore.isExtensionEnabled(ext.name)
+  })
+})
 
 const changedExtensions = computed(() => {
   return extensionStore.extensions.filter(
@@ -204,7 +201,7 @@ const changedExtensions = computed(() => {
 const changedExtensionPacks = computed(() => {
   return extensionStore.extensionPackPaths.filter(
     (path) =>
-      editingEnabledExtensionPacks.value[path] !==
+      extensionStore.isExtensionPackCurrentlyEnabled(path) !==
       extensionStore.isExtensionPackEnabled(path)
   )
 })
@@ -234,23 +231,19 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
 }
 
 async function setExtensionPackEnabled(path: string, enabled: boolean) {
-  const previous = editingEnabledExtensionPacks.value[path]
-  editingEnabledExtensionPacks.value[path] = enabled
-  const editingDisabledExtensionPackPaths = Object.entries(
-    editingEnabledExtensionPacks.value
-  )
-    .filter(([_, isEnabled]) => !isEnabled)
-    .map(([packPath]) => packPath)
+  const result = await extensionStore.setExtensionPackEnabled(path, enabled)
+  if (result.ok) return
 
-  try {
-    await settingStore.set('Comfy.Extension.DisabledPacks', [
-      ...extensionStore.inactiveDisabledExtensionPackPaths,
-      ...editingDisabledExtensionPackPaths
-    ])
-  } catch (error) {
-    editingEnabledExtensionPacks.value[path] = previous
-    throw error
-  }
+  // The setting owner has already returned the key to the value the server
+  // holds, so the switch goes back to it on its own and nothing offers a
+  // reload. Reported so a save the user watched fail is not also silent.
+  reportError(result.detail, {
+    errorType: 'extension_pack_save_failed',
+    surface: 'platform',
+    level: 'warning',
+    tags: { reason: result.reason },
+    context: { path, enabled }
+  })
 }
 
 const enableAllExtensions = async () => {
@@ -290,16 +283,6 @@ const disableAgentExtensions = async () => {
       name,
       settings['Comfy.Extension.Disabled'].includes(name) ? false : enabled
     ])
-  )
-  editingEnabledExtensionPacks.value = Object.fromEntries(
-    Object.entries(editingEnabledExtensionPacks.value).map(
-      ([path, enabled]) => [
-        path,
-        settings['Comfy.Extension.DisabledPacks'].includes(path)
-          ? false
-          : enabled
-      ]
-    )
   )
 }
 

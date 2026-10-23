@@ -1,7 +1,25 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
+
+/**
+ * Display name for an extension pack path.
+ *
+ * Shared rather than duplicated per consumer: the table text, its accessible
+ * label and the pending-change banner all name the same pack, so the decoding
+ * and its malformed-encoding fallback have to be applied identically or an
+ * encoded name reads differently in each place.
+ */
+export function extensionPackName(path: string) {
+  const name = path.split('/').filter(Boolean).at(-1) ?? path
+  try {
+    return decodeURIComponent(name)
+  } catch {
+    return name
+  }
+}
 
 /**
  * These extensions are always active, even if they are disabled in the setting.
@@ -44,6 +62,10 @@ export const useExtensionStore = defineStore('extension', () => {
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
   const extensionPackPaths = ref<string[]>([])
+  // Boot-time snapshot, for the same reason as `disabledExtensionNames`:
+  // disabling a pack only takes effect after a reload, so this is what the
+  // panel compares against to decide whether to offer one. It deliberately
+  // does not follow the setting, which changes the instant a switch flips.
   const disabledExtensionPackPaths = ref<Set<string>>(new Set())
 
   // Disabled extension names that are currently not in the extension list.
@@ -54,12 +76,6 @@ export const useExtensionStore = defineStore('extension', () => {
       (name) => !(name in extensionByName.value)
     )
   })
-  const inactiveDisabledExtensionPackPaths = computed(() => {
-    return Array.from(disabledExtensionPackPaths.value).filter(
-      (path) => !extensionPackPaths.value.includes(path)
-    )
-  })
-
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) =>
@@ -114,6 +130,66 @@ export const useExtensionStore = defineStore('extension', () => {
     !disabledExtensionPackPaths.value.has(path)
 
   /**
+   * The disabled-pack paths as currently persisted, read straight from the
+   * setting that owns them. Consumers project their controls from this instead
+   * of staging a parallel draft, so a save the setting owner rolls back cannot
+   * leave a switch and the stored value disagreeing — and reopening a panel
+   * cannot show a different answer than the one that was just displayed.
+   */
+  const currentDisabledExtensionPackPaths = computed(
+    () => new Set(useSettingStore().get('Comfy.Extension.DisabledPacks'))
+  )
+
+  const isExtensionPackCurrentlyEnabled = (path: string) =>
+    !currentDisabledExtensionPackPaths.value.has(path)
+
+  const pendingPackSaves = ref(0)
+  /**
+   * True until every pack save has been acknowledged. Reloading while one is
+   * outstanding would re-read the list the server still holds and drop the
+   * change the switch already shows, so the reload has to wait for this.
+   */
+  const isSavingExtensionPacks = computed(() => pendingPackSaves.value > 0)
+
+  let packSaveChain: Promise<unknown> = Promise.resolve()
+
+  /**
+   * Enable or disable a whole extension pack, persisting through the setting
+   * owner and reporting whether the write landed.
+   *
+   * Saves are chained rather than issued concurrently. The setting holds the
+   * whole array, so two overlapping writes can be acknowledged in the opposite
+   * order to the clicks that produced them, leaving the later pack enabled
+   * while its switch reads off. Each save instead reads the value the previous
+   * one persisted and adds or removes exactly this path — which also preserves
+   * the paths of packs that are not installed here, with no separate merge.
+   */
+  async function setExtensionPackEnabled(path: string, enabled: boolean) {
+    const settingStore = useSettingStore()
+    const write = () => {
+      const disabled = new Set(
+        settingStore.get('Comfy.Extension.DisabledPacks')
+      )
+      if (enabled) disabled.delete(path)
+      else disabled.add(path)
+      return settingStore.setOrRevert('Comfy.Extension.DisabledPacks', [
+        ...disabled
+      ])
+    }
+
+    // Both arms run `write`: a failed save must not stall every later one,
+    // and the next save reads the value the server actually holds anyway.
+    const run = packSaveChain.then(write, write)
+    packSaveChain = run.catch(() => {})
+    pendingPackSaves.value++
+    try {
+      return await run
+    } finally {
+      pendingPackSaves.value--
+    }
+  }
+
+  /**
    * Core extensions are extensions that are defined in the core package.
    * See /extensions/core/index.ts for the list.
    */
@@ -137,7 +213,6 @@ export const useExtensionStore = defineStore('extension', () => {
     enabledExtensions,
     extensionPackPaths,
     inactiveDisabledExtensionNames,
-    inactiveDisabledExtensionPackPaths,
     isExtensionInstalled,
     isExtensionEnabled,
     isExtensionReadOnly,
@@ -148,6 +223,9 @@ export const useExtensionStore = defineStore('extension', () => {
     loadDisabledExtensionNames,
     loadExtensionPackPaths,
     isExtensionPackEnabled,
+    isExtensionPackCurrentlyEnabled,
+    isSavingExtensionPacks,
+    setExtensionPackEnabled,
     captureCoreExtensions,
     isCoreExtension,
     hasThirdPartyExtensions,

@@ -574,6 +574,93 @@ describe('useSettingStore', () => {
       )
     })
 
+    describe('when the write does not land', () => {
+      const localeSetting: SettingParams = {
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
+        type: 'text',
+        defaultValue: 'default'
+      }
+
+      // `api.fetchApi` resolves for any status it got a response for, so
+      // without this an HTTP 500 is indistinguishable from a saved value.
+      it.for([
+        {
+          label: 'refuses the write',
+          storeSetting: () =>
+            Promise.resolve(
+              new Response(null, { status: 500, statusText: 'Server Error' })
+            ),
+          expected: { ok: false, reason: 'refused', detail: '500 Server Error' }
+        },
+        {
+          label: 'is unreachable',
+          storeSetting: () => Promise.reject(new Error('offline')),
+          expected: { ok: false, reason: 'unreachable', detail: 'offline' }
+        }
+      ])(
+        'setOrRevert reports it and restores the stored value when the server $label',
+        async ({ storeSetting, expected }) => {
+          store.addSetting(localeSetting)
+          await store.set('Comfy.Locale', 'saved')
+          vi.mocked(api.storeSetting).mockImplementation(storeSetting)
+
+          expect(await store.setOrRevert('Comfy.Locale', 'rejected')).toEqual(
+            expected
+          )
+          expect(store.get('Comfy.Locale')).toBe('saved')
+        }
+      )
+
+      // Restoring a value here would make the setting read as user-set on the
+      // strength of a write that never landed.
+      it('setOrRevert leaves a never-stored setting unset', async () => {
+        store.addSetting(localeSetting)
+        vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+
+        expect(
+          await store.setOrRevert('Comfy.Locale', 'rejected')
+        ).toMatchObject({ ok: false })
+
+        expect(store.exists('Comfy.Locale')).toBe(false)
+        expect(store.get('Comfy.Locale')).toBe('default')
+      })
+
+      it('setOrRevert does not restore over a value a later write stored', async () => {
+        const acknowledge: Array<(response: Response) => void> = []
+        vi.mocked(api.storeSetting).mockImplementation(
+          () => new Promise<Response>((resolve) => acknowledge.push(resolve))
+        )
+        store.addSetting(localeSetting)
+
+        const first = store.setOrRevert('Comfy.Locale', 'first')
+        await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
+        const second = store.setOrRevert('Comfy.Locale', 'second')
+        await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
+
+        acknowledge[1](new Response())
+        expect(await second).toEqual({ ok: true })
+        acknowledge[0](new Response(null, { status: 500 }))
+        expect(await first).toMatchObject({ ok: false })
+
+        expect(store.get('Comfy.Locale')).toBe('second')
+      })
+
+      // Some callers want the optimistic value even though the write failed —
+      // a dismissal that should stay dismissed for the session — and have
+      // always learned about an unreachable backend from a rejection.
+      it('set keeps the local value and still rejects when unreachable', async () => {
+        store.addSetting(localeSetting)
+        vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+
+        await expect(store.set('Comfy.Locale', 'optimistic')).rejects.toThrow(
+          'offline'
+        )
+
+        expect(store.get('Comfy.Locale')).toBe('optimistic')
+      })
+    })
+
     it('exposes the new value to onChange handlers', async () => {
       const observed: unknown[] = []
       store.addSetting({

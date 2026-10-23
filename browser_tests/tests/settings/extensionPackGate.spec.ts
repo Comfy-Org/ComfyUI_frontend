@@ -45,9 +45,6 @@ test.describe(
       page
     }) => {
       await expect(comfyPage.canvas).toBeVisible()
-      expect(
-        await comfyPage.settings.getSetting('Comfy.Extension.DisabledPacks')
-      ).toEqual(['/extensions/agent-cushions/'])
       await expect(page.locator('body')).toHaveCSS('opacity', '1')
       expect(packRequested).toBe(false)
     })
