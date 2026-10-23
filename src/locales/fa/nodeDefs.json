@@ -1002,6 +1002,28 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "پس‌زمینه را با Bria از یک تصویر حذف کنید و آنچه prompt توصیف می‌کند نگه دارید. پیکسل‌های اصلی با وضوح کامل و یک کانال آلفای جدید بازمی‌گردند. برای یک برش ساده، Bria Remove Image Background هزینه کمتری دارد.",
+    "display_name": "حذف پس‌زمینه هدایت‌شده Bria",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "آنچه باید نگه داشته، حذف یا به آن محدود شود؛ مانند «فردی با زیرانداز و گیاه»، «زنی پشت میزش بدون چراغ» یا «فقط صندلی». promptی که با هیچ‌چیز مطابقت نداشته باشد، تصویری کاملاً شفاف برمی‌گرداند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "تصاویر را با استفاده از Bria FIBO ۲.۰ ویرایش کنید.",
     "display_name": "ویرایش تصویر Bria FIBO ۲.۰",
@@ -1116,6 +1138,42 @@
       "moderation": {
         "name": "تعدیل محتوا",
         "tooltip": "تنظیمات تعدیل محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "با Bria محصولی را در دستان یک شخص قرار دهید. هویت، ژست و پس‌زمینه شخص حفظ می‌شوند و صحنه با وضوح حدود ۱ مگاپیکسل بازپردازی می‌شود.",
+    "display_name": "نگه‌داشتن محصول Bria",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد",
+        "tooltip": "auto کادربندی عکس شخص را در حدود ۱ مگاپیکسل حفظ می‌کند. یک نسبت ثابت، ۰.۶ تا ۱ مگاپیکسل برمی‌گرداند؛ برای نمونه 768x1024 برای ۳:۴."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "راهنمای اضافی اختیاری که به دستورالعمل داخلی Bria افزوده می‌شود؛ مانند اینکه از کدام دست استفاده شود یا برچسب به کدام سمت باشد."
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "person_image": {
+        "name": "تصویر_شخص"
+      },
+      "product_images": {
+        "name": "تصاویر_محصول",
+        "tooltip": "۱-۳ تصویر از یک محصول: خود محصول، بسته‌بندی آن، نمایی دیگر یا یک مورد همراه. ورودی دسته‌ای برای هر تصویر یک‌بار شمارش می‌شود. نواحی شفاف سفید در نظر گرفته می‌شوند."
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -1431,6 +1489,42 @@
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیوی پیش‌زمینه که پس‌زمینه آن جایگزین می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "با Bria به یک شخص لباس یا لوازم جانبی بپوشانید. هویت، ژست و پس‌زمینه شخص حفظ می‌شوند و صحنه با وضوح حدود ۱ مگاپیکسل بازپردازی می‌شود.",
+    "display_name": "پرو مجازی Bria",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت_ابعاد",
+        "tooltip": "auto کادربندی عکس شخص را در حدود ۱ مگاپیکسل حفظ می‌کند. یک نسبت ثابت، ۰.۶ تا ۱ مگاپیکسل برمی‌گرداند؛ برای نمونه 768x1024 برای ۳:۴."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "garment_images": {
+        "name": "تصاویر_پوشاک",
+        "tooltip": "۱-۳ لباس یا لوازم جانبی که با هم پوشیده می‌شوند و هرکدام جایگزین مورد متناظرِ پوشیده‌شده توسط شخص می‌گردند. ورودی دسته‌ای برای هر تصویر یک‌بار شمارش می‌شود. نواحی شفاف سفید در نظر گرفته می‌شوند."
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "راهنمای اضافی اختیاری که به دستورالعمل داخلی Bria افزوده می‌شود؛ مانند اینکه از کدام دست استفاده شود یا برچسب به کدام سمت باشد."
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "person_image": {
+        "name": "تصویر_شخص"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -9071,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "با استفاده از Ideogram Vector، یک SVG قابل‌ویرایش از یک prompt متنی تولید می‌کند که می‌تواند به‌صورت اختیاری با حداکثر ۵ تصویر هدایت شود.",
+    "display_name": "تولید SVG برداری Ideogram",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "یک تصویر را با استفاده از Ideogram Vector به SVG قابل‌ویرایش تبدیل می‌کند. نواحی شفافِ تصویر دارای آلفا شفاف باقی می‌مانند.",
+    "display_name": "تصویر Ideogram Vector به SVG",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_mode": {
+        "name": "حالت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "افزودن نویز به تصویر",
     "inputs": {
@@ -9147,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB، ‏Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3 و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI 800 با رنگ‌های اصلی Rec.709 استفاده می‌کند و کدها به [0, 1] محدود می‌شوند. ACEScct از رنگ‌های اصلی AP1 و سفید D60 استفاده می‌کند، با تطبیق Bradford به D65. برای ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید. خطی 1.0 از همان سفید مرجع ۲۰۳ نیتِ sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی‌های خطی و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های خطی به HDR، هایلایت‌ها را بدون tone mapping حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را clip می‌کنند. خروجی SDR و تبدیل PQ به HLG، روشنایی اضافی را در سراسر batch با tone mapping تنظیم کرده و رنگ‌های خارج از gamut را فشرده می‌کنند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
+    "description": "فضاهای رنگی sRGB، Rec.709 خطی، HDR (Rec.2020 HLG)، HDR PQ (Rec.2020 PQ)، HDR LogC3، ACEScg خطی و HDR ACEScct را تبدیل می‌کند. LogC3 از منحنی EI ۸۰۰ با رنگ‌های اصلی Rec.709 و کدهای محدودشده به [0, 1] استفاده می‌کند. ACEScg، AP1 خطیِ صحنه با سفید D60 است. ACEScct رمزگذاری لگاریتمی ACEScg است. هر دو از انطباق Bradford با D65 استفاده می‌کنند. پیش از ذخیره‌سازی EXR، LogC3 یا ACEScct را به ACEScg خطی (AP1 خطی صحنه) یا خطی (Rec.709) تبدیل کنید. ۱.۰ خطی و ۱.۰ ACEScg از سفید مرجع ۲۰۳ نیت یکسانی با sRGB استفاده می‌کنند؛ HLG از نمایشگر مرجع ۱۰۰۰ نیت استفاده می‌کند. خروجی‌های خطی، ACEScg و ACEScct مقادیر گسترده را حفظ می‌کنند. تبدیل‌های خطی به HDR، هایلایت‌ها را بدون نگاشت تُن حفظ می‌کنند؛ خروجی‌های HLG و PQ کانال‌های منفی را برش می‌دهند. خروجی SDR و تبدیل PQ به HLG، روشنایی بیش‌ازحد را در سراسر batch نگاشت تُن کرده و رنگ‌های خارج از گستره را فشرده می‌کنند. تبدیل‌ها در float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. پیش از ذخیره‌سازی EXR، LogC3 یا ACEScct را به خطی تبدیل کنید؛ یا پیش از ذخیره‌سازی ویدئو، آن را به sRGB/HDR/HDR PQ تبدیل کنید."
+        "tooltip": "فضای رنگی پیکسل‌های خروجی. node ذخیره را روی همین فضای رنگی تنظیم کنید. برای EXR ‏ACEScg، LogC3 یا ACEScct را به ACEScg خطی تبدیل کنید، یا برای EXR ‏Rec.709 به خطی تبدیل کنید. پیش از ذخیره ویدئو، به sRGB/HDR/HDR PQ تبدیل کنید."
       },
       "image": {
         "name": "image"
@@ -14261,6 +14403,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "یک مش مثلثی مناسب بازی را مستقیماً با تعداد وجه هدف تولید کنید.",
+    "display_name": "Meshy: تصویر به مدل (توپولوژی هوشمند)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "تعداد تقریبی مثلث‌ها در مش تولیدشده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: چند تصویر به مدل",
     "inputs": {
@@ -14471,6 +14665,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "یک مش مثلثی مناسب بازی را مستقیماً با تعداد وجه هدف تولید کنید.",
+    "display_name": "Meshy: متن به مدل (توپولوژی هوشمند)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "تعداد تقریبی مثلث‌ها در مش تولیدشده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -15158,6 +15392,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "با Mirelo SFX از یک توضیح متنی، افکت‌های صوتی تولید کنید.",
+    "display_name": "Mirelo: متن به SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "با Mirelo SFX افکت‌های صوتی همگام با یک ویدیو تولید کنید.",
+    "display_name": "ویدیو به SFX با Mirelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      },
+      "1": {
+        "name": "گفتار",
+        "tooltip": "دیالوگِ جداشده از موسیقی متن؛ هنگامی که گفتاری یافت نشود، بی‌صدا است."
       }
     }
   },
@@ -24875,7 +25174,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "خالی بودن، کپشن تهی‌ای است که Fibo 2.0 برای هدایت بدون طبقه‌بند با آن آموزش دیده است."
+        "tooltip": "مقدار خالی همان زیرنویس تهی است که Fibo ۲.۰ برای CFG در workflowهای ویرایش با آن آموزش دیده است."
       },
       "prompt": {
         "name": "پرامپت"
@@ -24931,6 +25230,33 @@
     "inputs": {
       "clip": {
         "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "یک دستور ویرایش را همراه با تصاویر مرجع برای یک LoRA ویرایش MOSS-Image کدگذاری می‌کند؛ آن را برای پرامپت منفی نیز استفاده کنید. مراجع با همان اندازهٔ ورودی‌شان استفاده می‌شوند؛ ابتدا آن‌ها را مقیاس‌بندی کنید.",
+    "display_name": "کدگذاری متن برای ویرایش MOSS-Image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "چیدمانی که LoRA ویرایش با آن آموزش دیده است: MOSS-Image Edit Training از ai-toolkit (با گزینهٔ kv_cache روشن یا خاموش) یا Moss-Image-Edit. با خاموش بودن kv_cache، مراجع به تصویر در حال تولید نیز توجه می‌کنند؛ بنابراین در هر گام دوباره محاسبه می‌شوند."
       },
       "images": {
         "name": "تصاویر"
@@ -25159,7 +25485,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "رمزگشایی حدسی با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق پیش‌نویس را تطبیق می‌دهد؛ 2-5 آن را ثابت می‌کند. خروجی نمونه‌گیری‌شده توزیع صحیحی حفظ می‌کند، اما برای seed یکسان با خروجی غیر-MTP متفاوت است."
+        "tooltip": "رمزگشایی گمانه‌زن با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق و پهنای پیش‌نویس را با تطبیق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا سازگار می‌کند؛ 2-5 یک عمق پیش‌نویس ثابت را تعیین می‌کند؛ حالت‌های tree هم پهنا و هم عمق را ثابت می‌کنند. خروجی نمونه‌گیری‌شده همچنان توزیع درستی دارد، اما برای بذر یکسان با خروجی بدون MTP متفاوت است."
       },
       "prompt": {
         "name": "پرامپت"
@@ -25233,7 +25559,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "رمزگشایی گمانه‌زن با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. حالت خودکار عمق پیش‌نویس را تطبیق می‌دهد؛ ۲-۵ آن را ثابت می‌کند. خروجی نمونه‌برداری‌شده توزیع صحیح خود را حفظ می‌کند، اما برای seed یکسان با خروجی غیر-MTP متفاوت است."
+        "tooltip": "رمزگشایی گمانه‌زن با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق و پهنای پیش‌نویس را با تطبیق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا سازگار می‌کند؛ 2-5 یک عمق پیش‌نویس ثابت را تعیین می‌کند؛ حالت‌های tree هم پهنا و هم عمق را ثابت می‌کنند. خروجی نمونه‌گیری‌شده همچنان توزیع درستی دارد، اما برای بذر یکسان با خروجی بدون MTP متفاوت است."
       },
       "prompt": {
         "name": "پرامپت"
@@ -27854,6 +28180,119 @@
       "0": {
         "name": "رنگ‌های وکسل",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "با VEED نویز پس‌زمینه را از گفتار حذف کنید. برای گفتار به هر زبانی ساخته شده است: موسیقی و افکت‌های صوتی نیز حذف می‌شوند. صدای مونو با نرخ ۴۸ kHz برمی‌گرداند.",
+    "display_name": "پاک‌سازی صدا با VEED",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "ضبط گفتار، کوتاه‌تر از ۳۰ دقیقه."
+      },
+      "loudness": {
+        "name": "بلندی صدا"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان نویزی که در زیر گفتار حذف می‌شود. مقدار کمتر، صدای محیط بیشتری را پشت صدا حفظ می‌کند؛ مکث‌های بین واژه‌ها همیشه کاملاً پاک‌سازی می‌شوند و مقادیر بالاتر از مقدار پیش‌فرض تغییر اندکی ایجاد می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "نویز پس‌زمینه را با VEED از گفتارِ یک ویدیو حذف می‌کند. فقط ترک صوتی تغییر می‌کند: با گفتار مونوِ پاک‌سازی‌شده با نرخ ۴۸ kHz جایگزین می‌شود.",
+    "display_name": "پاک‌سازی صدا با VEED (در ویدیو)",
+    "inputs": {
+      "loudness": {
+        "name": "بلندی صدا"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان نویزی که در حین گفتار حذف می‌شود. مقادیر کمتر، صدای محیط بیشتری را پشت صدا حفظ می‌کنند؛ مکث‌های بین کلمات همیشه به‌طور کامل پاک‌سازی می‌شوند و مقادیر بالاتر از مقدار پیش‌فرض تأثیر اندکی دارند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی با یک ترک گفتار که کمتر از ۳۰ دقیقه طول دارد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "یک تصویر ثابت و یک ترک گفتار را با VEED Fabric به ویدیویی سخنگو با همگام‌سازی لب تبدیل می‌کند. با عکس‌ها، تصویرسازی‌ها و شخصیت‌های نمادین کار می‌کند؛ طول ویدیو برابر با صوت است.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "دهان یک گوینده را در ویدیو با VEED Lipsync با یک ترک گفتار جدید دوباره همگام‌سازی می‌کند. هر ویدیو یک گوینده دارد؛ خروجی وضوح ویدیو را با نرخ ۲۵ fps حفظ می‌کند و طول آن برابر با صوت است.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "سوژه را با VEED از یک ویدیو جدا کرده و فریم‌ها را به‌همراه یک ماسک آلفا بازمی‌گرداند. از آن‌ها برای کامپوزیت استفاده کنید، یا آن‌ها را با Join Image with Alpha و Save WEBM ترکیب کنید تا یک ویدیوی شفاف ذخیره شود.",
+    "display_name": "حذف پس‌زمینه ویدیو با VEED",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "standard: هر پس‌زمینه‌ای، بهترین لبه‌ها، خروجی تا ۳۸۴۰x۲۱۶۰. fast: سریع‌تر، خروجی تا ۱۹۲۰x۱۰۸۰. green screen: پس‌زمینه سبز را حذف می‌کند، خروجی تا ۳۸۴۰x۲۱۶۰. ویدیوهای بزرگ‌تر کوچک‌مقیاس می‌شوند."
+      },
+      "model_refine_foreground_edges": {
+        "name": "refine_foreground_edges"
+      },
+      "model_subject_is_person": {
+        "name": "subject_is_person"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک",
+        "tooltip": "۱ در نواحی‌ای که پس‌زمینه حذف شده است. برای ویدیوی شفاف از Join Image with Alpha و Save WEBM استفاده کنید؛ پیش از Image Composite Masked، Invert Mask را اضافه کنید."
       }
     }
   },

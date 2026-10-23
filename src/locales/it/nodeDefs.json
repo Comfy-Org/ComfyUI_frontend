@@ -1002,6 +1002,28 @@
       }
     }
   },
+  "BriaGuidedRemoveBackground": {
+    "description": "Rimuove lo sfondo da un'immagine con Bria, mantenendo ciò che descrive il prompt. I pixel originali vengono restituiti alla risoluzione completa con un nuovo canale alfa. Per un semplice ritaglio, Bria Remove Image Background costa meno.",
+    "display_name": "Rimozione guidata dello sfondo Bria",
+    "inputs": {
+      "image": {
+        "name": "immagine"
+      },
+      "moderation": {
+        "name": "moderazione",
+        "tooltip": "Impostazioni di moderazione"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cosa mantenere, rimuovere o a cui restringere, ad esempio \"la persona con il tappetino e la pianta\", \"la donna alla scrivania senza la lampada\" oppure \"solo la sedia\". Un prompt che non corrisponde a nulla restituisce un'immagine completamente trasparente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "Modifica immagini usando Bria FIBO 2.0.",
     "display_name": "Bria FIBO 2.0 Image Edit",
@@ -1116,6 +1138,42 @@
       "moderation": {
         "name": "moderazione",
         "tooltip": "Impostazioni di moderazione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaProductHolding": {
+    "description": "Mette un prodotto nelle mani di una persona con Bria. L'identità, la posa e lo sfondo della persona vengono mantenuti e la scena viene nuovamente renderizzata a circa 1 megapixel.",
+    "display_name": "Prodotto in mano Bria",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto_aspetto",
+        "tooltip": "auto mantiene l'inquadratura della foto della persona a circa 1 megapixel. Un rapporto fisso restituisce da 0,6 a 1 megapixel, ad esempio 768x1024 per 3:4."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "instruction": {
+        "name": "istruzione",
+        "tooltip": "Indicazione aggiuntiva facoltativa da aggiungere all'istruzione integrata di Bria, ad esempio quale mano usare o in quale direzione è rivolto l'etichetta."
+      },
+      "moderation": {
+        "name": "moderazione",
+        "tooltip": "Impostazioni di moderazione"
+      },
+      "person_image": {
+        "name": "immagine_persona"
+      },
+      "product_images": {
+        "name": "immagini_prodotto",
+        "tooltip": "1-3 immagini di un prodotto: il prodotto stesso, la sua confezione, un'altra angolazione o un articolo complementare. Un input in batch viene conteggiato una volta per immagine. Le aree trasparenti vengono trattate come bianche."
+      },
+      "seed": {
+        "name": "seme"
       }
     },
     "outputs": {
@@ -1431,6 +1489,42 @@
       "video": {
         "name": "video",
         "tooltip": "Video in primo piano il cui sfondo viene sostituito."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVirtualTryOn": {
+    "description": "Veste una persona con capi o accessori tramite Bria. L'identità, la posa e lo sfondo della persona vengono mantenuti e la scena viene nuovamente renderizzata a circa 1 megapixel.",
+    "display_name": "Prova virtuale Bria",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto_aspetto",
+        "tooltip": "auto mantiene l'inquadratura della foto della persona a circa 1 megapixel. Un rapporto fisso restituisce da 0,6 a 1 megapixel, ad esempio 768x1024 per 3:4."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "garment_images": {
+        "name": "immagini_capi",
+        "tooltip": "1-3 capi o accessori indossati insieme, ciascuno dei quali sostituisce l'articolo corrispondente indossato dalla persona. Un input in batch viene conteggiato una volta per immagine. Le aree trasparenti vengono trattate come bianche."
+      },
+      "instruction": {
+        "name": "istruzione",
+        "tooltip": "Indicazione aggiuntiva facoltativa da aggiungere all'istruzione integrata di Bria, ad esempio quale mano usare o in quale direzione è rivolto l'etichetta."
+      },
+      "moderation": {
+        "name": "moderazione",
+        "tooltip": "Impostazioni di moderazione"
+      },
+      "person_image": {
+        "name": "immagine_persona"
+      },
+      "seed": {
+        "name": "seme"
       }
     },
     "outputs": {
@@ -9071,6 +9165,54 @@
       }
     }
   },
+  "IdeogramVectorGenerateApi": {
+    "description": "Genera un SVG modificabile da un prompt di testo, facoltativamente guidato da un massimo di 5 immagini, usando Ideogram Vector.",
+    "display_name": "Generazione SVG vettoriale Ideogram",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "rapporto_aspetto"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualità"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramVectorImageToSVGApi": {
+    "description": "Converte un'immagine in un SVG modificabile usando Ideogram Vector. Le aree trasparenti di un'immagine con canale alpha restano trasparenti.",
+    "display_name": "Ideogram Vector: immagine in SVG",
+    "inputs": {
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_mode": {
+        "name": "modalità"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageAddNoise": {
     "display_name": "Aggiungi Rumore all'Immagine",
     "inputs": {
@@ -9147,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converti tra sRGB, Rec.709 lineare, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 usa la curva EI 800 con primari Rec.709 e codici limitati a [0, 1]. ACEScct usa primari AP1 e punto di bianco D60, con adattamento Bradford a D65. Converti LogC3 o ACEScct in lineare per il salvataggio EXR. Il lineare 1.0 usa lo stesso bianco di riferimento da 203 nit di sRGB; HLG usa un display di riferimento da 1000 nit. Gli output lineari e ACEScct conservano i valori estesi. Le conversioni da lineare a HDR preservano le alte luci senza tone mapping; gli output HLG e PQ ritagliano i canali negativi. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso nell'intero batch e comprimono i colori fuori gamut. Le conversioni vengono calcolate in float32 e restituiscono device e dtype intermedi. L'alfa non premoltiplicato non viene trasformato nello spazio colore.",
+    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, ACEScg lineare e HDR ACEScct. LogC3 usa la curva EI 800 con primari Rec.709 e codici limitati a [0, 1]. ACEScg è AP1 lineare di scena con punto di bianco D60. ACEScct è la codifica logaritmica di ACEScg. Entrambi usano l'adattamento Bradford a D65. Converti LogC3 o ACEScct in ACEScg lineare (AP1 lineare di scena) o lineare (Rec.709) prima di salvare EXR. 1.0 lineare e 1.0 ACEScg usano lo stesso bianco di riferimento di 203 nit di sRGB; HLG usa un display di riferimento di 1000 nit. Gli output lineare, ACEScg e ACEScct conservano i valori estesi. Le conversioni da lineare a HDR conservano le alte luci senza tone mapping; gli output HLG e PQ tagliano i canali negativi. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso nell'intero batch e comprimono i colori fuori gamma. Le conversioni sono calcolate in float32 e restituiscono il dispositivo intermedio e il dtype. L'alpha non premoltiplicato non viene trasformato nel colore.",
     "display_name": "Converti spazio colore dell'immagine",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Spazio colore dei pixel di output. Imposta il nodo di salvataggio sullo stesso spazio colore. Converti LogC3 o ACEScct in lineare prima di salvare in EXR, oppure in sRGB/HDR/HDR PQ prima di salvare un video."
+        "tooltip": "Spazio colore dei pixel in output. Imposta il nodo di salvataggio sullo stesso spazio colore. Converti LogC3 o ACEScct in ACEScg lineare per EXR ACEScg, oppure in lineare per EXR Rec.709. Converti in sRGB/HDR/HDR PQ prima di salvare un video."
       },
       "image": {
         "name": "image"
@@ -14261,6 +14403,58 @@
       }
     }
   },
+  "MeshyImageToModelSmartTopologyNode": {
+    "description": "Genera una mesh triangolare pronta per i videogiochi direttamente con un numero di facce desiderato.",
+    "display_name": "Meshy: immagine in modello (topologia intelligente)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "image": {
+        "name": "immagine"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Il seme controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seme."
+      },
+      "should_texture": {
+        "name": "should_texture"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "Numero approssimativo di triangoli nella mesh generata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Da Immagini Multiple a Modello",
     "inputs": {
@@ -14471,6 +14665,46 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelSmartTopologyNode": {
+    "description": "Genera una mesh triangolare pronta per i videogiochi direttamente con un numero di facce desiderato.",
+    "display_name": "Meshy: testo in modello (topologia intelligente)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "pose_mode": {
+        "name": "pose_mode"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Il seme controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seme."
+      },
+      "target_polycount": {
+        "name": "target_polycount",
+        "tooltip": "Numero approssimativo di triangoli nella mesh generata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -15158,6 +15392,71 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "MireloTextToSFX": {
+    "description": "Genera effetti sonori da una descrizione testuale con Mirelo SFX.",
+    "display_name": "Mirelo: testo in SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MireloVideoToSFX": {
+    "description": "Genera effetti sonori sincronizzati a un video con Mirelo SFX.",
+    "display_name": "Da video a SFX di Mirelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da utilizzare."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_preserve_speech": {
+        "name": "preserve_speech"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_seed": {
+        "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      },
+      "1": {
+        "name": "parlato",
+        "tooltip": "Il dialogo separato dalla colonna sonora; silenzioso quando non viene rilevato alcun parlato."
       }
     }
   },
@@ -24875,7 +25174,7 @@
       },
       "negative_prompt": {
         "name": "negative_prompt",
-        "tooltip": "Il valore vuoto è la didascalia nulla con cui Fibo 2.0 è stato addestrato per la classifier-free guidance."
+        "tooltip": "Vuoto è la didascalia nulla con cui Fibo 2.0 è stato addestrato per CFG con i flussi di lavoro di modifica."
       },
       "prompt": {
         "name": "prompt"
@@ -24934,6 +25233,33 @@
       },
       "images": {
         "name": "images"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeMOSSImageEdit": {
+    "description": "Codifica un'istruzione di modifica con immagini di riferimento per un LoRA MOSS-Image Edit; usalo anche per il prompt negativo. I riferimenti vengono utilizzati nelle dimensioni in cui arrivano, quindi ridimensionali prima.",
+    "display_name": "Codifica testo MOSS-Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "edit_format": {
+        "name": "edit_format",
+        "tooltip": "Il layout con cui è stato addestrato il LoRA di modifica: MOSS-Image Edit Training di ai-toolkit (con l'opzione kv_cache attivata o disattivata) oppure Moss-Image-Edit. Con kv_cache disattivato, anche i riferimenti partecipano all'attenzione sull'immagine generata, quindi vengono ricalcolati a ogni passaggio."
+      },
+      "images": {
+        "name": "immagini"
       },
       "prompt": {
         "name": "prompt"
@@ -25159,7 +25485,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Decodifica speculativa con la testa di previsione multi-token del checkpoint. Nessun effetto senza pesi MTP. auto adatta la profondità della bozza; 2-5 la fissa. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output senza MTP con lo stesso seed."
+        "tooltip": "Decodifica speculativa con la testa multi-token-prediction del checkpoint. Nessun effetto senza pesi MTP. auto adatta la profondità e l'ampiezza della bozza alle corrispondenze di token osservate e al costo di esecuzione; 2-5 fissa una profondità della bozza costante; le modalità tree fissano sia l'ampiezza sia la profondità. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output senza MTP con lo stesso seme."
       },
       "prompt": {
         "name": "prompt"
@@ -25233,7 +25559,7 @@
       },
       "mtp": {
         "name": "mtp",
-        "tooltip": "Decodifica speculativa con la testa di predizione multi-token del checkpoint. Nessun effetto senza pesi MTP. auto adatta la profondità della bozza; 2-5 la fissa. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output non MTP con lo stesso seed."
+        "tooltip": "Decodifica speculativa con la testa multi-token-prediction del checkpoint. Nessun effetto senza pesi MTP. auto adatta la profondità e l'ampiezza della bozza alle corrispondenze di token osservate e al costo di esecuzione; 2-5 fissa una profondità della bozza costante; le modalità tree fissano sia l'ampiezza sia la profondità. L'output campionato mantiene la distribuzione corretta, ma differisce dall'output senza MTP con lo stesso seme."
       },
       "prompt": {
         "name": "prompt"
@@ -27854,6 +28180,119 @@
       "0": {
         "name": "voxel_colors",
         "tooltip": null
+      }
+    }
+  },
+  "VeedCleanAudioNode": {
+    "description": "Rimuovi il rumore di fondo dal parlato con VEED. Progettato per il parlato in qualsiasi lingua: vengono rimossi anche musica ed effetti sonori. Restituisce audio mono a 48 kHz.",
+    "display_name": "VEED Clean Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Registrazione vocale, di durata inferiore a 30 minuti."
+      },
+      "loudness": {
+        "name": "volume"
+      },
+      "loudness_target_lufs": {
+        "name": "target_lufs"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "Quanto rumore viene rimosso sotto il parlato. Valori più bassi mantengono più rumore ambientale dietro la voce; le pause tra le parole vengono sempre pulite completamente e i valori superiori a quello predefinito cambiano poco."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedCleanVideoAudioNode": {
+    "description": "Rimuove il rumore di fondo dal parlato in un video con VEED. Viene modificata solo la traccia audio: viene sostituita dal parlato pulito mono a 48 kHz.",
+    "display_name": "VEED Clean Audio (nel video)",
+    "inputs": {
+      "loudness": {
+        "name": "volume"
+      },
+      "loudness_target_lufs": {
+        "name": "lufs_target"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "Quanto rumore viene rimosso sotto il parlato. Un valore più basso conserva più rumore ambientale dietro la voce; le pause tra le parole vengono sempre pulite completamente e i valori superiori a quello predefinito cambiano poco."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video con una traccia audio parlata, di durata inferiore a 30 minuti."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedFabricNode": {
+    "description": "Trasforma un'immagine statica e una traccia parlata in un video parlante con sincronizzazione labiale tramite VEED Fabric. Funziona con foto, illustrazioni e mascotte; il video dura quanto l'audio.",
+    "display_name": "VEED Fabric 1.0",
+    "inputs": {
+      "model": {
+        "name": "modello"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedLipsyncNode": {
+    "description": "Risincroizza la bocca di un oratore in un video con una nuova traccia parlata tramite VEED Lipsync. Un solo oratore per video; l'output mantiene la risoluzione del video a 25 fps e dura quanto l'audio.",
+    "display_name": "VEED Lipsync 2.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedRemoveVideoBackgroundNode": {
+    "description": "Ritaglia il soggetto da un video con VEED e restituisce i fotogrammi più una mask alfa. Usali per il compositing oppure combinali con Join Image with Alpha e Save WEBM per creare un video trasparente.",
+    "display_name": "VEED Rimuovi sfondo video",
+    "inputs": {
+      "model": {
+        "name": "modello",
+        "tooltip": "standard: qualsiasi sfondo, bordi ottimali, output fino a 3840x2160. fast: più rapido, output fino a 1920x1080. green screen: rimuove uno sfondo verde, output fino a 3840x2160. I video più grandi vengono ridimensionati."
+      },
+      "model_refine_foreground_edges": {
+        "name": "raffina_bordi_primo_piano"
+      },
+      "model_subject_is_person": {
+        "name": "soggetto_è_una_persona"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "immagini",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": "1 dove lo sfondo è stato rimosso. Usa Join Image with Alpha e Save WEBM per un video trasparente; aggiungi Invert Mask prima di Image Composite Masked."
       }
     }
   },
