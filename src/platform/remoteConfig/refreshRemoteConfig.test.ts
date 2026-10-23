@@ -405,6 +405,83 @@ describe('refreshRemoteConfig', () => {
     })
   })
 
+  describe('outcome', () => {
+    it.for([
+      { status: 503, transient: true },
+      { status: 429, transient: true },
+      { status: 404, transient: false },
+      { status: 401, transient: false }
+    ])(
+      'reports HTTP $status as transient=$transient',
+      async ({ status, transient }) => {
+        mockAuthenticatedFetch(mockErrorResponse(status, 'Error'))
+
+        await expect(refreshRemoteConfig()).resolves.toEqual({
+          kind: 'failed',
+          transient,
+          status
+        })
+      }
+    )
+
+    it('reports a loaded config', async () => {
+      mockAuthenticatedFetch(mockSuccessResponse())
+
+      await expect(refreshRemoteConfig()).resolves.toEqual({ kind: 'loaded' })
+    })
+
+    it('reports a network failure as transient', async () => {
+      vi.mocked(api.fetchApi).mockRejectedValue(new Error('offline'))
+
+      await expect(refreshRemoteConfig()).resolves.toEqual({
+        kind: 'failed',
+        transient: true,
+        status: null
+      })
+    })
+
+    it('reports a superseded refresh without committing it', async () => {
+      let release: ((response: Response) => void) | undefined
+      vi.mocked(api.fetchApi).mockImplementationOnce(
+        () => new Promise((resolve) => (release = resolve))
+      )
+      const first = refreshRemoteConfig()
+      mockAuthenticatedFetch(mockSuccessResponse())
+      await refreshRemoteConfig()
+      release?.(mockErrorResponse(503, 'Unavailable'))
+
+      await expect(first).resolves.toEqual({ kind: 'superseded' })
+      expect(remoteConfigState.value).toBe('authenticated')
+    })
+
+    it.for([Number.NaN, -1, Infinity, 2 ** 31])(
+      'falls back to the default timeout for an invalid timeoutMs (%s)',
+      async (timeoutMs) => {
+        vi.useFakeTimers()
+        try {
+          let signal: AbortSignal | undefined
+          vi.mocked(global.fetch).mockImplementation((_url, init) => {
+            signal = init?.signal ?? undefined
+            return new Promise<Response>((_resolve, reject) => {
+              signal?.addEventListener('abort', () =>
+                reject(new DOMException('Aborted', 'AbortError'))
+              )
+            })
+          })
+
+          const refresh = refreshRemoteConfig({ useAuth: false, timeoutMs })
+          await vi.advanceTimersByTimeAsync(4_999)
+          expect(signal?.aborted).toBe(false)
+          await vi.advanceTimersByTimeAsync(1)
+          expect(signal?.aborted).toBe(true)
+          await refresh
+        } finally {
+          vi.useRealTimers()
+        }
+      }
+    )
+  })
+
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
       mockAuthenticatedFetch(mockErrorResponse(401, 'Unauthorized'))

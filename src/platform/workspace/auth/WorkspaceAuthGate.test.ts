@@ -54,6 +54,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
+const LOADED = { kind: 'loaded' } as const
+const TRANSIENT = { kind: 'failed', transient: true, status: null } as const
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
@@ -97,7 +99,7 @@ describe('WorkspaceAuthGate', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-123'
     })
-    mockRefreshRemoteConfig.mockResolvedValue(undefined)
+    mockRefreshRemoteConfig.mockResolvedValue(LOADED)
     vi.mocked(useBillingCapabilities().initialize).mockResolvedValue(undefined)
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
       async () => {
@@ -314,6 +316,7 @@ describe('WorkspaceAuthGate', () => {
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
         vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+        return LOADED
       })
 
       mountComponent()
@@ -371,10 +374,10 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('stops initialization when unmounted', async () => {
-      let resolveRefresh: (() => void) | undefined
+      let resolveRefresh: ((outcome: typeof LOADED) => void) | undefined
       mockRefreshRemoteConfig.mockImplementation(
         () =>
-          new Promise<void>((resolve) => {
+          new Promise<typeof LOADED>((resolve) => {
             resolveRefresh = resolve
           })
       )
@@ -385,7 +388,7 @@ describe('WorkspaceAuthGate', () => {
       )
       const signal = mockRefreshRemoteConfig.mock.calls[0][0].signal
       unmount()
-      resolveRefresh?.()
+      resolveRefresh?.(LOADED)
       await flushPromises()
 
       expect(signal.aborted).toBe(true)
@@ -583,32 +586,44 @@ describe('WorkspaceAuthGate', () => {
         screen.queryByText("Couldn't load your workspace")
       ).not.toBeInTheDocument()
 
-      await vi.advanceTimersByTimeAsync(13_001)
+      await vi.advanceTimersByTimeAsync(20_999)
+      expect(
+        screen.queryByText("Couldn't load your workspace")
+      ).not.toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(2)
 
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
     })
 
-    it('retries once when a slow authenticated read does not authenticate, then loads', async () => {
+    it('retries a timed-out read after a short delay within the remaining budget, then loads', async () => {
       remoteConfigState.value = 'error'
       mockRefreshRemoteConfig
         .mockImplementationOnce(
-          () => new Promise<void>((resolve) => setTimeout(resolve, 12_000))
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve(TRANSIENT), 12_000)
+            )
         )
         .mockImplementationOnce(async () => {
           remoteConfigState.value = 'authenticated'
+          return LOADED
         })
 
       mountComponent()
-      await vi.advanceTimersByTimeAsync(11_999)
+      await vi.advanceTimersByTimeAsync(12_000)
       expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
       expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
 
-      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(1_000)
       await flushPromises()
 
       expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
+      const { timeoutMs } = mockRefreshRemoteConfig.mock.calls[1][0]
+      expect(timeoutMs).toBeGreaterThanOrEqual(7_000)
+      expect(timeoutMs).toBeLessThanOrEqual(7_500)
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(
         screen.queryByText("Couldn't load your workspace")
@@ -617,8 +632,10 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
       remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig.mockResolvedValue(TRANSIENT)
 
       mountComponent()
+      await vi.advanceTimersByTimeAsync(1_000)
       await flushPromises()
 
       expect(
@@ -631,12 +648,14 @@ describe('WorkspaceAuthGate', () => {
     it('gives the authenticated config read its own budget and retries it once', async () => {
       remoteConfigState.value = 'error'
       mockRefreshRemoteConfig
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(TRANSIENT)
         .mockImplementationOnce(async () => {
           remoteConfigState.value = 'authenticated'
+          return LOADED
         })
 
       mountComponent()
+      await vi.advanceTimersByTimeAsync(1_000)
       await flushPromises()
 
       expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
@@ -646,10 +665,46 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
+    it('does not retry a failure an immediate repeat cannot fix', async () => {
+      remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig.mockResolvedValue({
+        kind: 'failed',
+        transient: false,
+        status: null
+      })
+
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(1_000)
+      await flushPromises()
+
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+    })
+
+    it('ignores a stale credential rejection left by an earlier refresh', async () => {
+      remoteConfigState.value = 'error'
+      remoteConfigErrorStatus.value = 401
+      mockRefreshRemoteConfig.mockResolvedValue(TRANSIENT)
+
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(1_000)
+      await flushPromises()
+
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument()
+    })
+
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
       remoteConfigState.value = 'error'
-      remoteConfigErrorStatus.value = 401
+      mockRefreshRemoteConfig.mockResolvedValue({
+        kind: 'failed',
+        transient: false,
+        status: 401
+      })
 
       mountComponent()
       await flushPromises()
@@ -865,12 +920,12 @@ describe('WorkspaceAuthGate', () => {
 
     it('keeps the retry action named while retrying', async () => {
       const user = userEvent.setup()
-      let resolveRetry: (() => void) | undefined
+      let resolveRetry: ((outcome: typeof LOADED) => void) | undefined
       mockRefreshRemoteConfig
         .mockRejectedValueOnce(new Error('Network error'))
         .mockImplementationOnce(
           () =>
-            new Promise<void>((resolve) => {
+            new Promise<typeof LOADED>((resolve) => {
               resolveRetry = resolve
             })
         )
@@ -884,17 +939,17 @@ describe('WorkspaceAuthGate', () => {
         'true'
       )
 
-      resolveRetry?.()
+      resolveRetry?.(LOADED)
     })
 
     it('stops a pending retry before logging out', async () => {
       const user = userEvent.setup()
-      let resolveRetry: (() => void) | undefined
+      let resolveRetry: ((outcome: typeof LOADED) => void) | undefined
       mockRefreshRemoteConfig
         .mockRejectedValueOnce(new Error('Network error'))
         .mockImplementationOnce(
           () =>
-            new Promise<void>((resolve) => {
+            new Promise<typeof LOADED>((resolve) => {
               resolveRetry = resolve
             })
         )
@@ -904,7 +959,7 @@ describe('WorkspaceAuthGate', () => {
       await user.click(screen.getByRole('button', { name: 'Try again' }))
       const retrySignal = mockRefreshRemoteConfig.mock.calls[1][0].signal
       await user.click(screen.getByRole('button', { name: 'Log Out' }))
-      resolveRetry?.()
+      resolveRetry?.(LOADED)
       await flushPromises()
 
       expect(retrySignal.aborted).toBe(true)

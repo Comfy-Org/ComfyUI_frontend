@@ -29,6 +29,19 @@ interface RefreshRemoteConfigOptions {
   timeoutMs?: number
 }
 
+/** What one refresh did; `transient` failures are worth retrying. */
+export type RemoteConfigRefreshOutcome =
+  | { kind: 'loaded' }
+  | { kind: 'superseded' }
+  | { kind: 'failed'; transient: boolean; status: number | null }
+
+const SUPERSEDED: RemoteConfigRefreshOutcome = { kind: 'superseded' }
+const MAX_TIMEOUT_MS = 2 ** 31 - 1
+
+function isTransientStatus(status: number): boolean {
+  return status >= 500 || status === 408 || status === 429
+}
+
 let refreshGeneration = 0
 let authenticatedLoadingGeneration: number | undefined
 let agentGrantExpiryTimer: ReturnType<typeof setTimeout> | undefined
@@ -190,12 +203,15 @@ function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
  */
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
-): Promise<void> {
-  const {
-    useAuth = true,
-    signal,
-    timeoutMs = FEATURES_FETCH_TIMEOUT_MS
-  } = options
+): Promise<RemoteConfigRefreshOutcome> {
+  const { useAuth = true, signal } = options
+  const timeoutMs =
+    options.timeoutMs !== undefined &&
+    Number.isFinite(options.timeoutMs) &&
+    options.timeoutMs > 0 &&
+    options.timeoutMs <= MAX_TIMEOUT_MS
+      ? options.timeoutMs
+      : FEATURES_FETCH_TIMEOUT_MS
   const generation = ++refreshGeneration
   const previousAuthenticatedState = authenticatedRemoteConfigState.value
   if (useAuth && previousAuthenticatedState !== 'authenticated') {
@@ -215,13 +231,13 @@ export async function refreshRemoteConfig(
       useAuth,
       controller.signal
     )
-    if (generation !== refreshGeneration) return
-    if (signal?.aborted) return
+    if (generation !== refreshGeneration) return SUPERSEDED
+    if (signal?.aborted) return SUPERSEDED
 
     if (response.ok) {
       const config = await response.json()
-      if (generation !== refreshGeneration) return
-      if (signal?.aborted) return
+      if (generation !== refreshGeneration) return SUPERSEDED
+      if (signal?.aborted) return SUPERSEDED
       if (useAuth && !authenticated) {
         authenticatedRemoteConfigState.value = 'error'
         authenticatedLoadingGeneration = undefined
@@ -231,17 +247,23 @@ export async function refreshRemoteConfig(
           'Rejected authenticated remote config response without credentials'
         )
         remoteConfigRevision.value++
-        return
+        return { kind: 'failed', transient: false, status: null }
       }
       commitRemoteConfigSuccess(config, useAuth)
       if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
-      return
+      return { kind: 'loaded' }
     }
     commitRemoteConfigFailure(response, useAuth)
+    return {
+      kind: 'failed',
+      transient: isTransientStatus(response.status),
+      status: response.status
+    }
   } catch (error) {
-    if (generation !== refreshGeneration) return
-    if (signal?.aborted) return
+    if (generation !== refreshGeneration) return SUPERSEDED
+    if (signal?.aborted) return SUPERSEDED
     commitRemoteConfigException(error, useAuth)
+    return { kind: 'failed', transient: true, status: null }
   } finally {
     if (authenticatedLoadingGeneration === generation) {
       authenticatedRemoteConfigState.value = previousAuthenticatedState
