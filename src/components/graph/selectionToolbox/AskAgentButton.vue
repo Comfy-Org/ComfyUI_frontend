@@ -11,7 +11,7 @@
       v-if="showToolbarDot"
       variant="dot"
       severity="default"
-      class="absolute -top-1 -right-1"
+      class="absolute top-1 right-1"
       data-testid="ask-agent-new-dot"
       aria-hidden="true"
     />
