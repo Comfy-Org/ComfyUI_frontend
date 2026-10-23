@@ -301,6 +301,46 @@ describe('TelemetryRegistry', () => {
     )
   })
 
+  it('dispatches prompt editor experiment events to every registered provider', () => {
+    const providers = [0, 1].map(
+      (): TelemetryProvider => ({
+        trackPromptEditorExposure: vi.fn(),
+        trackPromptEditorOpened: vi.fn(),
+        trackPromptEditorClosed: vi.fn()
+      })
+    )
+    const registry = new TelemetryRegistry()
+    providers.forEach((provider) => registry.registerProvider(provider))
+    const exposure = { '$feature/prompt-editor-surface': 'panel' as const }
+    const opened = {
+      surface: 'panel' as const,
+      trigger: 'expand_button' as const,
+      ...exposure
+    }
+    const closed = {
+      ...opened,
+      duration_ms: 1200,
+      input_count: 4,
+      node_switch_count: 2
+    }
+
+    registry.trackPromptEditorExposure(exposure)
+    registry.trackPromptEditorOpened(opened)
+    registry.trackPromptEditorClosed(closed)
+
+    for (const provider of providers) {
+      expect(
+        provider.trackPromptEditorExposure
+      ).toHaveBeenCalledExactlyOnceWith(exposure)
+      expect(provider.trackPromptEditorOpened).toHaveBeenCalledExactlyOnceWith(
+        opened
+      )
+      expect(provider.trackPromptEditorClosed).toHaveBeenCalledExactlyOnceWith(
+        closed
+      )
+    }
+  })
+
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',

@@ -94,6 +94,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
@@ -163,9 +164,11 @@ async function handleCopy() {
   })
 }
 
+const promptEditorExperiment = usePromptEditorExperimentStore()
 let closeTextEditor: (() => void) | undefined
 
 function openTextEditor() {
+  promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,

@@ -1,9 +1,12 @@
 import type { TextareaHTMLAttributes } from 'vue'
 
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import type { PromptEditorOpenedMetadata } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
 import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/TextEditorDialogHeader.vue'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -12,6 +15,7 @@ interface TextEditorOptions {
   widgetLabel: string
   nodeTitle?: string
   readOnly: () => boolean
+  trigger?: PromptEditorOpenedMetadata['trigger']
   onEdit: (text: string) => void
   textareaAttributes?: () => TextareaHTMLAttributes
 }
@@ -21,6 +25,7 @@ export function showTextEditor({
   widgetLabel,
   nodeTitle,
   readOnly,
+  trigger = 'expand_button',
   onEdit,
   textareaAttributes
 }: TextEditorOptions): () => void {
@@ -28,7 +33,14 @@ export function showTextEditor({
   dialogStore.closeDialog({ key: TEXT_EDITOR_DIALOG_KEY })
 
   let isOpen = true
-  let isEdited = false
+  let inputCount = 0
+  const openedAt = performance.now()
+  const openedMetadata: PromptEditorOpenedMetadata = {
+    surface: 'dialog',
+    trigger,
+    ...usePromptEditorExperimentStore().experimentProperties
+  }
+  useTelemetry()?.trackPromptEditorOpened(openedMetadata)
 
   dialogStore.showDialog({
     key: TEXT_EDITOR_DIALOG_KEY,
@@ -45,7 +57,7 @@ export function showTextEditor({
       readOnly,
       attributes: textareaAttributes,
       onEdit: (value: string) => {
-        isEdited = true
+        inputCount++
         onEdit(value)
         useWorkflowStore().activeWorkflow?.changeTracker.markModified()
       }
@@ -56,10 +68,17 @@ export function showTextEditor({
       maximizable: true,
       onRemoved: () => {
         isOpen = false
-        if (!isEdited) return
-        const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-        changeTracker?.captureCanvasState()
-        changeTracker?.updateModified()
+        if (inputCount > 0) {
+          const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
+          changeTracker?.captureCanvasState()
+          changeTracker?.updateModified()
+        }
+        useTelemetry()?.trackPromptEditorClosed({
+          ...openedMetadata,
+          duration_ms: Math.round(performance.now() - openedAt),
+          input_count: inputCount,
+          node_switch_count: 0
+        })
       }
     }
   })
