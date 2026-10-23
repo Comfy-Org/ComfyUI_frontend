@@ -66,10 +66,8 @@
           :collision-padding="10"
         >
           <template #trigger>
-            <MenuTriggerButton
-              :aria-labelledby="`${labelId} color-comparison-method-value`"
-            >
-              <span id="color-comparison-method-value">
+            <MenuTriggerButton :aria-labelledby="`${labelId} ${methodValueId}`">
+              <span :id="methodValueId">
                 {{ methodLabels[store.colorComparisonMethod] }}
               </span>
             </MenuTriggerButton>
@@ -106,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Menu from '@/components/ui/menu/Menu.vue'
@@ -123,6 +121,7 @@ import SliderField from './controls/SliderField.vue'
 const { t } = useI18n()
 const store = useMaskEditorStore()
 const methodMenuOpen = ref(false)
+const methodValueId = useId()
 
 const methodLabels = computed(
   (): Record<ColorComparisonMethod, string> => ({
