@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -1407,6 +1407,10 @@ describe('useAgentConversationStore', () => {
     const kept = createSharedObjectUrl(new Blob())
     const replacement = createSharedObjectUrl(new Blob())
     const store = useAgentConversationStore()
+    onTestFinished(() => {
+      store.reset()
+      releaseSharedObjectUrl(replacement)
+    })
     store.startTurn(T1)
     store.recordUser(T1, 'first', [{ name: 'a.png', previewUrl: kept }])
     releaseSharedObjectUrl(kept)
