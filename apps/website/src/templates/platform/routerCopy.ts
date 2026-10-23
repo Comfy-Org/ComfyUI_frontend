@@ -1,7 +1,7 @@
-import type { FaqItem } from '../../components/common/FAQSection.vue'
-import { DEFAULT_LOCALE } from '../../config/locales'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { FaqItem } from '@/components/common/FAQSection.vue'
+import { DEFAULT_LOCALE } from '@/config/locales'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 /** The FAQ entries, in order, for as many numbered pairs as the copy holds. */
 export function routerFaq(locale: Locale = 'en'): FaqItem[] {

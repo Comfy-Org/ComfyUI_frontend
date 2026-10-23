@@ -1,11 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 
 import { z } from 'zod'
 
-import { workshopNodePricingSchema } from '../src/config/workshop-node-pricing.schema'
+import { websiteRoot } from '@website/paths'
+import { workshopNodePricingSchema } from '@/config/workshop-node-pricing.schema'
 
 const directory = process.argv[2]
 if (!directory)
@@ -36,10 +36,7 @@ const bindings = z
   .parse(
     JSON.parse(
       readFileSync(
-        new URL(
-          '../src/data/workshop-node-pricing-bindings.json',
-          import.meta.url
-        ),
+        join(websiteRoot, 'src/data/workshop-node-pricing-bindings.json'),
         'utf8'
       )
     )
@@ -114,9 +111,7 @@ const rows = workshopNodePricingSchema.parse(
     return { ...row, sourceCommit }
   })
 )
-const output = fileURLToPath(
-  new URL('../src/data/workshop-node-pricing.json', import.meta.url)
-)
+const output = join(websiteRoot, 'src/data/workshop-node-pricing.json')
 writeFileSync(
   output,
   `[\n${rows.map((row) => JSON.stringify(row)).join(',\n')}\n]\n`

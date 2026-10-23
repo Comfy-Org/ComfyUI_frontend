@@ -6,8 +6,8 @@ import {
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { z } from 'zod'
 
-import pricingJson from '../data/workshop-node-pricing.json'
-import publishedPricingJson from '../data/workshop-published-pricing.json'
+import pricingJson from '@/data/workshop-node-pricing.json'
+import publishedPricingJson from '@/data/workshop-published-pricing.json'
 import type { UseCase, WorkshopModel } from './models-catalogue'
 import type { WorkshopRunSettings } from './workshop-node-pricing-context'
 import {

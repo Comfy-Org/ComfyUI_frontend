@@ -28,7 +28,8 @@ const presentationSchema = z.object({
   thumbnail: z
     .object({
       url: z.string(),
-      kind: z.enum(['image', 'video', 'audio'])
+      kind: z.enum(['image', 'video', 'audio']),
+      poster: z.string().optional()
     })
     .optional(),
   useCases: z.array(z.enum(USE_CASES)).optional(),
@@ -58,7 +59,7 @@ export const workflowModelSchema = presentationSchema.extend({
 
 const appModelSchema = presentationSchema.extend({
   type: z.literal('APP'),
-  appId: z.enum(['studio', 'reshoot']),
+  appId: z.enum(['studio', 'reshoot', 'openjutsu']),
   routerId: z.never().optional(),
   workflowId: z.never().optional()
 })

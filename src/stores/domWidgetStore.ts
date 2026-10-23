@@ -5,8 +5,8 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 
-import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { PositionConfig } from '@/types/positionConfig'
+import type { BaseDOMWidget } from '@/types/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance

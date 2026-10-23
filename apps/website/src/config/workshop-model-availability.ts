@@ -1,4 +1,4 @@
-import rawAvailability from '../data/workshop-model-availability.json'
+import rawAvailability from '@/data/workshop-model-availability.json'
 import { workshopModelAvailabilitySchema } from './workshop-model-availability-schema'
 
 export const workshopModelAvailability = new Map(

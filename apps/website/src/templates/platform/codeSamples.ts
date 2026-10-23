@@ -1,5 +1,5 @@
-import type { RouterServingProviderId } from '../../config/router-providers'
-import { ROUTER_PROVIDER_COVERAGE } from '../../config/router-providers'
+import type { RouterServingProviderId } from '@/config/router-providers'
+import { ROUTER_PROVIDER_COVERAGE } from '@/config/router-providers'
 import type { CodeTab } from './CodeTabs.vue'
 
 // Cycling segments are index-synced: the model id, prompt, and output

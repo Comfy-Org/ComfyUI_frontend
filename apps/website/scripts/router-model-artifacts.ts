@@ -4,7 +4,7 @@ import { open } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import { z } from 'zod'
 
-import type { RunOutput } from '../src/config/workshop-run'
+import type { RunOutput } from '@/config/workshop-run'
 
 const execute = promisify(execFile)
 export type MediaKind = 'image' | 'video' | 'audio'

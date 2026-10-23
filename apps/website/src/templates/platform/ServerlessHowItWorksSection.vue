@@ -9,10 +9,10 @@ import { computed, ref, useId, useTemplateRef, watchEffect } from 'vue'
 
 import TeamSharingChat from './TeamSharingChat.vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

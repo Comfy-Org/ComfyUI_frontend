@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { WorkflowWorkshopModelDetail } from '../src/config/models-catalogue'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 
 export interface WorkflowCheck {
   readonly slug: string

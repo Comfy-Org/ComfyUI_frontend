@@ -1,4 +1,4 @@
-import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import type { FileValue } from './workshop-playground'
 
 import {

@@ -6,7 +6,7 @@ import {
   FakeIntersectionObserver,
   setAllIntersecting,
   stubIntersectionObserver
-} from '../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import { usePreviewVideo } from './usePreviewVideo'
 
 const motion = vi.hoisted(() => ({ reduced: false }))

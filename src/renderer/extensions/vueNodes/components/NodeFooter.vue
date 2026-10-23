@@ -29,7 +29,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -79,7 +79,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -145,7 +145,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -177,7 +177,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -246,8 +246,8 @@ const errorLabel = computed(() =>
 )
 const errorColorClass = computed(() =>
   errorSeverity === 'missing'
-    ? 'bg-warning-background text-warning-on-background hover:bg-warning-background-hover'
-    : 'bg-destructive-background text-white hover:bg-destructive-background-hover'
+    ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+    : 'bg-destructive text-white hover:bg-destructive/90'
 )
 
 let suppressNextClick = false

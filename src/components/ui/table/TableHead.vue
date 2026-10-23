@@ -3,7 +3,7 @@
     scope="col"
     :class="
       cn(
-        'h-10 px-2 text-left align-middle text-sm font-normal whitespace-nowrap text-muted-foreground',
+        'h-10 px-2 text-left align-middle font-normal whitespace-nowrap text-muted-foreground',
         className
       )
     "

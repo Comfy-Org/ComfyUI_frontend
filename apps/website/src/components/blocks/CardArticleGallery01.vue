@@ -9,7 +9,7 @@ import type { CardArticleItem } from './CardArticle01.vue'
 import {
   GALLERY_FILTER_ALL,
   useFilteredGallery
-} from '../../composables/useFilteredGallery'
+} from '@/composables/useFilteredGallery'
 
 export type CardArticleGalleryItem = CardArticleItem & {
   filterKey?: string

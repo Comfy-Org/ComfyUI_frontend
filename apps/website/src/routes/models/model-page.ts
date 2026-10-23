@@ -1,16 +1,16 @@
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
-import { getWorkshopModel } from '../../config/workshop-browse-content'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { catalogSearch, useCaseFor } from '@/config/models-catalogue'
+import { getWorkshopModel } from '@/config/workshop-browse-content'
 import {
   getWorkshopPageDetail,
   workshopPages
-} from '../../config/workshop-page-content'
-import { relatedModels } from '../../config/workshop-related'
-import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { describesCapability } from '../../lib/workshop/model-tags'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+} from '@/config/workshop-page-content'
+import { relatedModels } from '@/config/workshop-related'
+import { estimateWorkshopNodePrice } from '@/config/workshop-node-pricing'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { describesCapability } from '@/lib/workshop/model-tags'
+import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
 
 const TAGS_SHOWN = 3
 
@@ -23,7 +23,9 @@ function splitShownTags<T>(tags: readonly T[]) {
 export function modelOgImage(
   model: Pick<WorkshopModel, 'thumbnail'>
 ): string | undefined {
-  return model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined
+  return model.thumbnail?.kind === 'image'
+    ? model.thumbnail.url
+    : model.thumbnail?.poster
 }
 
 export async function prepareModelPage(

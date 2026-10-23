@@ -12,14 +12,14 @@ import {
 } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import { readWorkshopDraft } from '../config/workshop-draft-storage'
-import * as draftStorage from '../config/workshop-draft-storage'
+import { readWorkshopDraft } from '@/config/workshop-draft-storage'
+import * as draftStorage from '@/config/workshop-draft-storage'
 import type {
   FieldSchema,
   FileValue,
   FormValues
-} from '../config/workshop-playground'
-import { runBeforeSignInLeave } from '../config/workshop-return'
+} from '@/config/workshop-playground'
+import { runBeforeSignInLeave } from '@/config/workshop-return'
 import { useWorkflowFormDraft } from './useWorkflowFormDraft'
 
 const slug = 'workflows/draft-test'

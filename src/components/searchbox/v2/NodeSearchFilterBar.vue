@@ -12,7 +12,7 @@
       <i class="icon-[lucide--panel-left] size-4" />
     </button>
 
-    <div class="h-5 w-px shrink-0 bg-border-subtle" />
+    <div class="h-5 w-px shrink-0 bg-border/50" />
 
     <div
       data-testid="filter-chips-scroll"
@@ -31,7 +31,7 @@
         {{ btn.label }}
       </button>
 
-      <div class="h-5 w-px shrink-0 bg-border-subtle" />
+      <div class="h-5 w-px shrink-0 bg-border/50" />
 
       <!-- Type filter popovers (Input / Output) -->
       <NodeSearchTypeFilterPopover
@@ -65,26 +65,17 @@
   </div>
 </template>
 
-<script lang="ts">
-import type { FuseFilter } from '@/utils/fuseUtil'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-
-export interface FilterChip {
-  key: string
-  label: string
-  filter: FuseFilter<ComfyNodeDefImpl, string>
-}
-</script>
-
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -168,12 +159,12 @@ const typeFilters = computed(() => [
 
 function chipClass(isActive: boolean, hasSelections = false) {
   return cn(
-    'flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md border border-secondary-background px-3 py-1 font-inter text-sm transition-colors',
+    'flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md border border-secondary px-3 py-1 font-inter text-sm transition-colors',
     isActive
-      ? 'border-base-foreground bg-base-foreground text-base-background'
+      ? 'border-foreground bg-foreground text-background'
       : hasSelections
-        ? 'border-base-foreground/60 bg-transparent text-base-foreground/60 hover:border-base-foreground/60 hover:text-base-foreground/60'
-        : 'bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
+        ? 'border-foreground/60 bg-transparent text-foreground/60 hover:border-foreground/60 hover:text-foreground/60'
+        : 'bg-transparent text-muted-foreground hover:border-foreground/60 hover:text-foreground/60'
   )
 }
 </script>

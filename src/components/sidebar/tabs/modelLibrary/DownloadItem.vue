@@ -5,6 +5,7 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Badge
+        :remove-label="$t('g.remove')"
         variant="chip"
         severity="danger"
         class="mt-2 h-6 text-sm font-light"
@@ -18,7 +19,7 @@
       v-if="
         ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
       "
-      class="mt-2 flex flex-row items-center gap-2"
+      class="mt-2 flex items-center gap-2"
     >
       <div
         role="progressbar"
@@ -28,9 +29,9 @@
         aria-valuemax="100"
         class="flex-1"
       >
-        <div class="h-5 overflow-hidden rounded-full bg-secondary-background">
+        <div class="h-5 overflow-hidden rounded-full bg-secondary">
           <div
-            class="h-full bg-primary-background transition-[width]"
+            class="h-full bg-primary transition-[width]"
             :style="{ width: `${downloadProgressPercent}%` }"
           />
         </div>
@@ -41,7 +42,7 @@
 
       <Button
         v-if="download.status === 'in_progress'"
-        v-tooltip.top="t('electronFileDownload.pause')"
+        :tooltip="t('electronFileDownload.pause')"
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
@@ -53,7 +54,7 @@
 
       <Button
         v-if="download.status === 'paused'"
-        v-tooltip.top="t('electronFileDownload.resume')"
+        :tooltip="t('electronFileDownload.resume')"
         class="size-[22px] rounded-full"
         variant="secondary"
         size="icon-sm"
@@ -65,7 +66,7 @@
 
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
-        v-tooltip.top="t('electronFileDownload.cancel')"
+        :tooltip="t('electronFileDownload.cancel')"
         class="size-[22px] rounded-full"
         variant="destructive"
         size="icon-sm"

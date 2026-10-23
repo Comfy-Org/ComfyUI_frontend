@@ -1,30 +1,20 @@
 import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent, watch } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+import { useBillingIdentity } from './useBillingIdentity'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
-  DockedAgentPanel: Component | null
+  DockedAgentPanel: Component
 }
 
-/**
- * The one distribution seam for the dock mounts. The literal comparison is
- * what dead-code-eliminates the store and both panel component chunks from
- * OSS builds; on cloud the async component is only requested once the gate
- * enables and opens the panel, so a flag-off session fetches no agent chunk.
- */
 export function useAgentDockMount(): AgentDockMount {
-  // The local agent harness (VITE_AGENT_STANDALONE) mounts the panel in any
-  // distribution; production keeps it cloud-only.
-  if (
-    __DISTRIBUTION__ !== 'cloud' &&
-    import.meta.env.VITE_AGENT_STANDALONE !== 'true'
-  ) {
-    return { docked: computed(() => false), DockedAgentPanel: null }
-  }
   const agentPanelStore = useAgentPanelStore()
+  useAgentPanelRenderStore()
   const { subscription } = useBillingContext()
 
   // This composable is owned by the persistent graph/linear hosts, unlike the
@@ -35,6 +25,17 @@ export function useAgentDockMount(): AgentDockMount {
     () => subscription.value?.agentHasFunds,
     (hasFunds) => {
       if (hasFunds === true) agentPanelStore.reportedExhaustionIdentity = null
+    },
+    { immediate: true }
+  )
+
+  const billingIdentity = useBillingIdentity()
+
+  watch(
+    [billingIdentity, () => subscription.value?.agentScopedHasFunds],
+    ([identity, scopedHasFunds]) => {
+      if (scopedHasFunds === undefined) return
+      agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
     },
     { immediate: true }
   )

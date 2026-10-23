@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveModelRouterRender } from '../../../config/router-render'
-import { workshopContract } from '../../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { resolveModelRouterRender } from '@/config/router-render'
+import { workshopContract } from '@/config/workshop-contract-catalog'
+import { getAuthoredRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import type { CinematicModel } from './models'
 import { runnableCinematicModels, videoShotBlock } from './models'
 

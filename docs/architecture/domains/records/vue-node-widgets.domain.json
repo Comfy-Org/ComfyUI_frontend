@@ -1,0 +1,528 @@
+{
+  "id": "vue-node-widgets",
+  "capability": "Vue node widget runtime (shared technical module)",
+  "description": "Shared technical module, not a business domain. The node widget runtime shared by the Vue node renderer, the classic canvas, linear mode, and the properties panel: the widget-type-to-component registry, generic widget components (number, text, textarea, toggle, select and form dropdown, color, chart, galleria, button, resolution preview, value control, dynamic group rows), the DOM and legacy canvas widget hosts, widget constructors that create LiteGraph widgets from node definitions, remote and asset-backed combo data, promoted-widget resolution, and the PrimitiveNode type guard. Constructors and hosts adapt to the LiteGraph and DOM widget runtime and are integration. The legacy LiteGraph widget layer and widget value contracts belong to node-widgets. Capability widgets already recorded (audio, Markdown, image compare, text preview, bounding boxes, compositor, light, painter) stay with their records.",
+  "modules": [
+    {
+      "path": "src/components/boundingbox/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/WidgetCurve.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/DomWidgets.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/MultiSelectWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/widgets/TextPreviewWidget.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/WidgetColors.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/WidgetRange.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/element/useDomClipping.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/node/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/canvasImagePreviewTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUpstreamValue.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/uploadImage.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetChart.types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/types.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.desktop.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useChartWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useColorsWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCurveWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRangeWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.webSession.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/registry/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/utils/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.performance.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/domWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/errorNodeWidgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/widgets.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/domWidgetStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/domWidgetStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/widgetStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/positionConfig.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/simplifiedWidget.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetConstructor.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/widgetTypes.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/imageUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/imageUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mediaUploadUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/mediaUploadUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/widgetPropFilter.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": ["bounding-boxes"],
+  "characterizationScenarios": [
+    {
+      "name": "Widget constructors create LiteGraph widgets from node definitions",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useFloatWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useComboWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.test.ts",
+        "browser_tests/tests/vueNodes/widgets/int/integerWidget.spec.ts"
+      ]
+    },
+    {
+      "name": "Registry and widget components render and edit widget values",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderer.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.test.ts"
+      ]
+    },
+    {
+      "name": "Select widgets load remote and asset-backed options",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetSelect.asset-mode.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData.test.ts",
+        "browser_tests/tests/vueNodes/widgets/combo/comboWidget.spec.ts",
+        "browser_tests/tests/remoteWidgets.spec.ts"
+      ]
+    },
+    {
+      "name": "DOM, legacy, and promoted widgets stay connected to their host nodes",
+      "checks": [
+        "src/renderer/extensions/vueNodes/widgets/components/WidgetDOM.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/utils/multilineTextarea.promoted.test.ts",
+        "browser_tests/tests/vueNodes/widgets/legacy.spec.ts",
+        "browser_tests/tests/domWidget.spec.ts"
+      ]
+    },
+    {
+      "name": "DOM widget host positions, stacks, and reports mount failures for DOM widgets",
+      "checks": [
+        "src/components/graph/DomWidgets.test.ts",
+        "src/components/graph/widgets/DomWidget.test.ts",
+        "src/components/graph/widgets/domWidgetZIndex.test.ts",
+        "src/components/graph/widgets/domWidgetMountReporting.test.ts"
+      ]
+    },
+    {
+      "name": "Value-editor widget adapters bind curve, range, color, bounding box, multi-select, and progress text values",
+      "checks": [
+        "src/components/curve/WidgetCurve.test.ts",
+        "src/components/range/WidgetRange.test.ts",
+        "src/components/palette/WidgetColors.test.ts",
+        "src/components/boundingbox/WidgetBoundingBox.test.ts",
+        "src/components/graph/widgets/MultiSelectWidget.test.ts",
+        "src/components/graph/widgets/TextPreviewWidget.test.ts"
+      ]
+    },
+    {
+      "name": "Widget type registry resolves core and extension widget constructors and DOM widget state tracks mounted DOM widgets",
+      "checks": [
+        "src/stores/widgetStore.test.ts",
+        "src/stores/domWidgetStore.test.ts"
+      ]
+    },
+    {
+      "name": "Node image upload combines drag-and-drop, file input, and paste handlers with accepted media types",
+      "checks": [
+        "src/composables/node/useNodeImageUpload.test.ts",
+        "src/composables/node/useNodeDragAndDrop.test.ts",
+        "src/composables/node/useNodeFileInput.test.ts",
+        "src/composables/node/useNodePaste.test.ts",
+        "src/utils/mediaUploadUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Node image, animated image, canvas image, and progress-text previews attach to nodes",
+      "checks": [
+        "src/composables/node/useNodeImage.test.ts",
+        "src/composables/node/useNodeAnimatedImage.test.ts",
+        "src/composables/node/useNodeCanvasImagePreview.test.ts",
+        "src/composables/node/useProgressTextPreviews.test.ts",
+        "src/utils/imageUtil.test.ts"
+      ]
+    },
+    {
+      "name": "DOM widgets clip to the canvas and widgets read upstream linked values",
+      "checks": [
+        "src/composables/element/useDomClipping.test.ts",
+        "src/composables/useUpstreamValue.test.ts"
+      ]
+    },
+    {
+      "name": "DOM widget hosts preserve position, visibility, and bounded layout reads",
+      "checks": [
+        "src/scripts/domWidget.test.ts",
+        "src/scripts/domWidget.performance.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md",
+    "docs/adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md",
+    "docs/adr/WIDGET-GROUP-0031-dynamic-group-widget-lifecycle.md",
+    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md",
+    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+  ],
+  "compatibilityPromises": [
+    "Existing widget registration, Vue node renderer, linear mode, properties panel, asset, and capability callers may continue importing widget runtime internals during inventory; this record grants no new cross-domain permissions.",
+    "Widget types, node.widgets entries, serialized widget values, and addCustomWidget behavior seen by extensions remain unchanged."
+  ],
+  "deepImports": "inventory"
+}

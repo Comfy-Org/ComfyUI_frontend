@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Button from '../../components/ui/button/Button.vue'
-import { getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import Button from '@/components/ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en', showCustomerProof = false } = defineProps<{
   locale?: Locale

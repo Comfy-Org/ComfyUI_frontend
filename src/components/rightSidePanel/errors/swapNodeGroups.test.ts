@@ -2,9 +2,9 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useErrorGroups } from './useErrorGroups'
 vi.mock(import('@/services/comfyRegistryService'), () => ({

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { minimaxLicenseComparison } from '../../data/minimaxLicense'
+import { minimaxLicenseComparison } from '@/data/minimaxLicense'
 import MinimaxLicensePricingSection from './MinimaxLicensePricingSection.vue'
 
 const { columns, rows } = minimaxLicenseComparison

@@ -9,11 +9,11 @@ import {
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { RunOutput, RunState } from '../../config/workshop-run'
+import type { RunOutput, RunState } from '@/config/workshop-run'
 import PlaygroundOutput from './PlaygroundOutput.vue'
-import { downloadOutput } from '../../config/workshop-output-download'
+import { downloadOutput } from '@/config/workshop-output-download'
 
-vi.mock(import('../../config/workshop-output-download'), () => ({
+vi.mock(import('@/config/workshop-output-download'), () => ({
   downloadOutput: vi.fn(async () => true)
 }))
 
@@ -423,7 +423,9 @@ describe('PlaygroundOutput', () => {
       'Example'
     )
     expect(screen.queryByTestId('output-download')).toBeNull()
-    expect(screen.getByRole('img').getAttribute('src')).toContain('example')
+    const example = screen.getByRole('img')
+    expect(example.getAttribute('src')).toContain('example')
+    expect(example).toHaveAttribute('fetchpriority', 'high')
   })
 
   it('names the expanded image by the alt its output carries', async () => {

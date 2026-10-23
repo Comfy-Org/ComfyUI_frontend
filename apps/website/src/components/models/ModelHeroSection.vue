@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import BrandButton from '../common/BrandButton.vue'
-import { translationsFor } from '../../i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import { translationsFor } from '@/i18n/translations'
 
 const { t } = translationsFor('en')
 const {

@@ -63,18 +63,18 @@ describe('browser network isolation lint rules', () => {
     ).toEqual([])
   })
 
-  it('preserves shared PrimeVue restrictions in the website E2E override', () => {
+  it('preserves shared import restrictions in the website E2E override', () => {
     const directory = mkdtempSync(
-      path.resolve('apps/website/e2e/__primevue_policy_')
+      path.resolve('apps/website/e2e/__shared_policy_')
     )
     try {
       const filename = path.join(directory, 'fixture.spec.ts')
       writeFileSync(
         filename,
         [
-          "import Calendar from 'primevue/calendar'",
+          "import { captureException } from '@sentry/vue'",
           "import { test } from '@playwright/test'",
-          'void Calendar',
+          'void captureException',
           'void test'
         ].join('\n')
       )

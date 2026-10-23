@@ -3,28 +3,28 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
-import SectionHeader from '../../components/common/SectionHeader.vue'
-import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import SurfaceToggle from '@/components/common/SurfaceToggle.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import type {
   ConnectionId,
   McpClient,
   McpClientId,
   McpConnections
-} from '../../config/mcpClients'
+} from '@/config/mcpClients'
 import {
   createMcpConnections,
   isConnectionId,
   isMcpClientId
-} from '../../config/mcpClients'
-import { externalLinks, getRoutes } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/mcpClients'
+import { externalLinks, getRoutes } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import {
   captureMcpClientTabClick,
   captureMcpConnectionTabClick
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

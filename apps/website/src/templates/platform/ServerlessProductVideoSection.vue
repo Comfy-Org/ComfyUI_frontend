@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import VideoPlayer from '../../components/common/VideoPlayer.vue'
-import { productVideoLabelFor } from '../../config/product-video-label'
-import type { Locale } from '../../i18n/translations'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import { productVideoLabelFor } from '@/config/product-video-label'
+import type { Locale } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>

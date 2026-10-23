@@ -5,9 +5,9 @@ import { nextTick } from 'vue'
 
 import AuthForgotPassword from './AuthForgotPassword.vue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(
-  import('../../config/workshop-firebase'),
+  import('@/config/workshop-firebase'),
   () => new Promise<never>(() => {})
 )
 

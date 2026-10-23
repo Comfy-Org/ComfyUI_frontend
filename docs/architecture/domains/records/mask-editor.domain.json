@@ -1,0 +1,80 @@
+{
+  "id": "mask-editor",
+  "capability": "Mask editor",
+  "description": "Mask editing UI, host adapters (loader, saver, image widget, dialog, brush persistence), and the core extension contract. The stroke, GPU, pan/zoom, canvas-history and tool-manager engine lives in the @comfyorg/mask-editor package.",
+  "modules": [
+    {
+      "path": "src/extensions/core/clipspace.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/maskeditor.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/maskeditor.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/maskEditor/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/maskEditor/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/maskEditor/stores/**",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/clipspace.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/clipspace.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/utils/__fixtures__/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/pngEncodeUtil.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/pngEncodeUtil.ts",
+      "role": "infrastructure"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Drawing operations preserve brush and canvas-history behavior",
+      "checks": [
+        "packages/mask-editor/src/useBrushDrawing.test.ts",
+        "packages/mask-editor/src/useCanvasHistory.test.ts"
+      ]
+    },
+    {
+      "name": "Loading and saving preserve image-layer and widget boundaries",
+      "checks": [
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.test.ts"
+      ]
+    },
+    {
+      "name": "Mask PNG encoding round-trips through the decoder fixture",
+      "checks": ["src/utils/pngEncodeUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension remains the host integration seam for opening the editor.",
+    "Image widget values and layer output remain covered by loader and saver characterization tests."
+  ],
+  "deepImports": "enforced"
+}

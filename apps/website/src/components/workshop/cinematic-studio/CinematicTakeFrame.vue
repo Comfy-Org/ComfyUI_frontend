@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { LoaderCircle } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import CinematicTakeMedia from './CinematicTakeMedia.vue'
 import CinematicTakeNotice from './CinematicTakeNotice.vue'

@@ -24,18 +24,15 @@ vi.mock(import('@comfyorg/account-core/webSessionIdentity'), async () => {
   await identityModule.arrives
   return { createWebSessionIdentity: () => identityModule.identity }
 })
-vi.mock(import('../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 vi.mock(import('./workshop-firebase'))
 
 it('never boots a session whose module arrives after the cap', async () => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (_input, init = {}) =>
-      Response.json(
-        init.credentials === 'include'
-          ? { unified_web_session: true }
-          : { web_session_probe: true }
-      )
+  vi.mocked(fetch).mockImplementation(async (_input, init = {}) =>
+    Response.json(
+      init.credentials === 'include'
+        ? { unified_web_session: true }
+        : { web_session_probe: true }
     )
   )
   vi.useFakeTimers({ shouldAdvanceTime: false })

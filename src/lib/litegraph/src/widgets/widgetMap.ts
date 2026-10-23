@@ -1,4 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type {
   IAssetWidget,
   IBaseWidget,
@@ -22,6 +23,7 @@ import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { BoundingBoxesWidget } from './BoundingBoxesWidget'
+import { LightInfoWidget } from './LightInfoWidget'
 import { ColorsWidget } from './ColorsWidget'
 import { CompositorWidget } from './CompositorWidget'
 import { PainterWidget } from './PainterWidget'
@@ -69,6 +71,7 @@ export type WidgetTypeMap = {
   range: RangeWidget
   videoedit: VideoEditWidget
   boundingboxes: BoundingBoxesWidget
+  lightinfo: LightInfoWidget
   colors: ColorsWidget
   [key: string]: BaseWidget
 }
@@ -271,6 +274,8 @@ function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toWidgetClass(VideoEditWidget, narrowedWidget, node)
     case 'boundingboxes':
       return toWidgetClass(BoundingBoxesWidget, narrowedWidget, node)
+    case 'lightinfo':
+      return toWidgetClass(LightInfoWidget, narrowedWidget, node)
     case 'colors':
       return toWidgetClass(ColorsWidget, narrowedWidget, node)
     default: {

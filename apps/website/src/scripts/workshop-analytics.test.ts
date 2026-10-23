@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../config/models-catalogue'
-import { WorkshopWorkflowError } from '../config/workshop-workflow-api'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
 import {
   WorkshopRouterError,
   workshopResponseDetails
-} from '../config/workshop-router-errors'
+} from '@/config/workshop-router-errors'
 import {
   workshopFailureAnalytics,
   workshopRouterErrorType,

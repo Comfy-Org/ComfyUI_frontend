@@ -9,6 +9,8 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
 
+wstest.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
 wstest(
   'Seed handling',
   { tag: '@vue-nodes' },

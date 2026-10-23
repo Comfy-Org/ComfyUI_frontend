@@ -7,6 +7,8 @@ import {
 } from './telemetry'
 
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
+const MESSAGING_ERROR =
+  '[messaging] In this JS context, only one listener can be setup for queryMediaBinding'
 
 describe('isThirdPartyErrorNoise', () => {
   it.for([
@@ -14,14 +16,21 @@ describe('isThirdPartyErrorNoise', () => {
     `Error: ${EXTENSION_ERROR}`,
     `Unhandled promise rejection: ${EXTENSION_ERROR}`,
     `Unhandled promise rejection: Error: ${EXTENSION_ERROR}`,
-    `${EXTENSION_ERROR} extension context`
+    `${EXTENSION_ERROR} extension context`,
+    MESSAGING_ERROR,
+    `Error: ${MESSAGING_ERROR}`,
+    `Unhandled promise rejection: ${MESSAGING_ERROR}`,
+    `Unhandled promise rejection: Error: ${MESSAGING_ERROR}`
   ])('identifies the extension tab error in %s', (message) => {
     expect(isThirdPartyErrorNoise(message)).toBe(true)
   })
 
   it.for([
     'Invalid call to runtime.sendMessage(). Receiving end does not exist.',
-    `Application failed: ${EXTENSION_ERROR}`
+    `Application failed: ${EXTENSION_ERROR}`,
+    `Application failed: ${MESSAGING_ERROR}`,
+    'Only one listener can be setup for the websocket channel',
+    '[messaging] Receiving end does not exist'
   ])('does not suppress %s', (message) => {
     expect(isThirdPartyErrorNoise(message)).toBe(false)
   })

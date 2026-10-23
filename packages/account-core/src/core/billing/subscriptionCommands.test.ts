@@ -8,33 +8,30 @@ import {
   vi
 } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { CapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import type { CreditsReader } from './credits.js'
+} from './billingContracts'
+import type { CapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import type { CreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import {
-  OPERATION_POLL_BUDGET,
-  OPERATION_POLL_TIMING
-} from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_BUDGET, OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
 import type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusSnapshot
-} from './status.js'
-import type { SubscriptionPreview } from './subscriptionCommands.js'
+} from './status'
+import type { SubscriptionPreview } from './subscriptionCommands'
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
@@ -43,7 +40,7 @@ import {
   SUBSCRIBE_ROUTE,
   cancelOperationRoute,
   createBillingCommands
-} from './subscriptionCommands.js'
+} from './subscriptionCommands'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
@@ -656,6 +653,48 @@ describe('createBillingCommands', () => {
         })
       ])
       expect(h.posts()[0]?.idempotencyKey).toBeUndefined()
+    })
+
+    it("keeps the server's credit counts, which converting the cents can miss by one", async () => {
+      const granted = http(200, {
+        ...QUOTE_BODY,
+        credits_today_cents: 1991,
+        credits_next_period_cents: 1991,
+        credits_today: 4200,
+        credits_next_period: 4200
+      })
+      const h = harness({ status: FREE, script: { [POST_PREVIEW]: [granted] } })
+
+      const result = await h.commands.previewSubscribe({
+        planSlug: 'pro-monthly'
+      })
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { credits_today: 4200, credits_next_period: 4200 }
+      })
+    })
+
+    it.for([
+      ['a fraction of a credit', 'credits_today', 4200.5],
+      ['a fraction of a credit', 'credits_next_period', 4200.5],
+      ['a negative count', 'credits_today', -1],
+      ['a negative count', 'credits_next_period', -1]
+    ] as const)('refuses %s at %s', async ([, field, count]) => {
+      const h = harness({
+        status: FREE,
+        script: {
+          [POST_PREVIEW]: [http(200, { ...QUOTE_BODY, [field]: count })]
+        }
+      })
+
+      await expect(
+        h.commands.previewSubscribe({ planSlug: 'pro-monthly' })
+      ).resolves.toEqual({
+        status: 'error',
+        code: 'MALFORMED_RESPONSE',
+        httpStatus: 200
+      })
     })
 
     it('hands the applied discounts back, echoing the promotion code it sent', async () => {

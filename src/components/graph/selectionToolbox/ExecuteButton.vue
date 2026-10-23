@@ -1,9 +1,6 @@
 <template>
   <Button
-    v-tooltip.top="{
-      value: t('selectionToolbox.executeButton.tooltip'),
-      showDelay: 1000
-    }"
+    :tooltip="t('selectionToolbox.executeButton.tooltip')"
     variant="primary"
     :aria-label="t('selectionToolbox.executeButton.tooltip')"
     @mouseenter="() => handleMouseEnter()"

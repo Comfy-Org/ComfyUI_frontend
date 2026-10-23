@@ -2,43 +2,27 @@
 <template>
   <template v-for="item in dialogStore.dialogStack" :key="item.key">
     <Dialog
-      v-if="isRekaItem(item)"
       :open="item.visible"
-      :modal="item.dialogComponentProps.modal ?? true"
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay
-          v-reka-z-index
-          :class="item.dialogComponentProps.overlayClass"
-        />
+        <DialogOverlay />
         <DialogContent
-          v-reka-z-index
-          v-bind="
-            item.dialogComponentProps.useAutomaticLabeling
-              ? {}
-              : { 'aria-labelledby': item.key }
+          v-bind="isNamedByHeader(item) ? { 'aria-labelledby': item.key } : {}"
+          :size="
+            item.dialogComponentProps.headless
+              ? 'fit'
+              : (item.dialogComponentProps.size ?? 'md')
           "
-          :size="item.dialogComponentProps.size ?? 'md'"
+          :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
-          :class="item.dialogComponentProps.contentClass"
           :data-dialog-key="item.key"
-          @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
-              item.dialogComponentProps.closeOnEscape === false &&
-              e.preventDefault()
+              item.dialogComponentProps.closable === false && e.preventDefault()
           "
           @pointer-down-outside="
-            (e) =>
-              onRekaPointerDownOutside(
-                item.dialogComponentProps,
-                e,
-                dialogStore.activeKey === item.key
-              )
-          "
-          @focus-outside="
-            (e) => onRekaFocusOutside(e, item.dialogComponentProps)
+            (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
           "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
@@ -50,7 +34,13 @@
             />
           </template>
           <template v-else>
-            <DialogHeader :class="item.dialogComponentProps.headerClass">
+            <DialogHeader
+              :class="
+                item.headerComponent &&
+                item.dialogComponentProps.flush &&
+                cn('p-0', hasHeaderActions(item) && 'pr-3')
+              "
+            >
               <component
                 :is="item.headerComponent"
                 v-if="item.headerComponent"
@@ -60,25 +50,31 @@
               <DialogTitle v-else :id="item.key">
                 {{ item.title || ' ' }}
               </DialogTitle>
-              <div class="flex items-center gap-1">
+              <div
+                v-if="hasHeaderActions(item)"
+                class="flex items-center gap-1"
+              >
                 <DialogMaximize
                   v-if="item.dialogComponentProps.maximizable"
+                  :aria-label="
+                    item.dialogComponentProps.maximized
+                      ? $t('g.restoreDialog')
+                      : $t('g.maximizeDialog')
+                  "
                   :maximized="!!item.dialogComponentProps.maximized"
                   @toggle="toggleMaximize(item)"
                 />
                 <DialogClose
-                  v-if="
-                    item.dialogComponentProps.closable !== false &&
-                    item.dialogComponentProps.showCloseButton !== false
-                  "
+                  v-if="hasCloseButton(item)"
+                  :aria-label="$t('g.close')"
                 />
               </div>
             </DialogHeader>
             <div
               :class="
                 cn(
-                  'flex-1 overflow-auto px-4 py-2',
-                  item.dialogComponentProps.bodyClass
+                  'flex min-h-0 flex-1 flex-col overflow-auto',
+                  !item.dialogComponentProps.flush && 'px-4 py-2'
                 )
               "
             >
@@ -90,7 +86,7 @@
             </div>
             <DialogFooter
               v-if="item.footerComponent"
-              :class="item.dialogComponentProps.footerClass"
+              :class="item.dialogComponentProps.flush && 'p-0'"
             >
               <component :is="item.footerComponent" v-bind="item.footerProps" />
             </DialogFooter>
@@ -98,43 +94,10 @@
         </DialogContent>
       </DialogPortal>
     </Dialog>
-    <PrimeDialog
-      v-else
-      v-model:visible="item.visible"
-      class="global-dialog"
-      v-bind="item.dialogComponentProps"
-      :aria-labelledby="item.key"
-    >
-      <template #header>
-        <div v-if="!item.dialogComponentProps?.headless">
-          <component
-            :is="item.headerComponent"
-            v-if="item.headerComponent"
-            v-bind="item.headerProps"
-            :id="item.key"
-          />
-          <h3 v-else :id="item.key">
-            {{ item.title || ' ' }}
-          </h3>
-        </div>
-      </template>
-
-      <component
-        :is="item.component"
-        v-bind="item.contentProps"
-        :maximized="item.dialogComponentProps.maximized"
-      />
-
-      <template v-if="item.footerComponent" #footer>
-        <component :is="item.footerComponent" v-bind="item.footerProps" />
-      </template>
-    </PrimeDialog>
   </template>
 </template>
 
 <script setup lang="ts">
-import PrimeDialog from 'primevue/dialog'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Dialog from '@/components/ui/dialog/Dialog.vue'
@@ -146,82 +109,35 @@ import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import {
-  onRekaFocusOutside,
-  onRekaPointerDownOutside
-} from '@/components/dialog/rekaPrimeVueBridge'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 
-function isRekaItem(item: DialogInstance) {
-  return item.dialogComponentProps.renderer === 'reka'
-}
-
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
 }
 
-// Reka's FocusScope focuses the first tabbable element on open (often a header
-// or footer button). Dialog content that marks an input with `autofocus` (e.g.
-// the keybinding capture input, the prompt input) relied on PrimeVue honoring
-// that attribute, so honor it here: focus the autofocus target and cancel
-// Reka's default auto-focus when one is present.
-function onRekaOpenAutoFocus(event: Event, key: string) {
-  const content = document.querySelector<HTMLElement>(
-    `[data-dialog-key="${CSS.escape(key)}"]`
+function isNamedByHeader(item: DialogInstance) {
+  return (
+    !item.dialogComponentProps.headless &&
+    (!!item.headerComponent || !!item.title)
   )
-  const autofocusEl = content?.querySelector<HTMLElement>('[autofocus]')
-  if (autofocusEl) {
-    event.preventDefault()
-    autofocusEl.focus()
-  }
+}
+
+function hasCloseButton({ dialogComponentProps }: DialogInstance) {
+  return (
+    dialogComponentProps.closable !== false &&
+    dialogComponentProps.showCloseButton !== false
+  )
+}
+
+function hasHeaderActions(item: DialogInstance) {
+  return !!item.dialogComponentProps.maximizable || hasCloseButton(item)
 }
 
 function toggleMaximize(item: DialogInstance) {
   item.dialogComponentProps.maximized = !item.dialogComponentProps.maximized
 }
 </script>
-
-<style>
-.global-dialog {
-  max-width: calc(100vw - 1rem);
-}
-
-.global-dialog .p-dialog-header {
-  padding: calc(var(--spacing) * 2);
-  padding-bottom: 0;
-}
-
-.global-dialog .p-dialog-content {
-  padding: calc(var(--spacing) * 2);
-  padding-top: 0;
-}
-
-@media (min-width: 1536px) {
-  .global-dialog .p-dialog-header {
-    padding: var(--p-dialog-header-padding);
-    padding-bottom: 0;
-  }
-
-  .global-dialog .p-dialog-content {
-    padding: var(--p-dialog-content-padding);
-    padding-top: 0;
-  }
-}
-
-.manager-dialog {
-  height: 80vh;
-  max-width: 1724px;
-  max-height: 1026px;
-}
-
-@media (min-width: 3000px) {
-  .manager-dialog {
-    max-width: 2200px;
-    max-height: 1320px;
-  }
-}
-</style>

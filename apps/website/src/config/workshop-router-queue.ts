@@ -1,4 +1,4 @@
-import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import type {
   AttemptContext,
