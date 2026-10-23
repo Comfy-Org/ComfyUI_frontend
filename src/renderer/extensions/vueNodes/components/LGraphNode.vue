@@ -17,7 +17,7 @@
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-foreground',
+        isEmphasized && 'outline-foreground',
         executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -41,6 +41,14 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
+    <NodeBloodDrips
+      v-if="
+        !isRerouteNode &&
+        !isCollapsed &&
+        !nodeData.flags?.ghost &&
+        ['spooky', 'zombie'].includes(settingStore.get('Comfy.ColorPalette'))
+      "
+    />
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -51,14 +59,14 @@
       :id="nodeId"
     />
     <div
-      v-if="isSelected || executing"
+      v-if="isEmphasized || executing"
       data-testid="node-state-outline-overlay"
       :class="
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected ? 'border-foreground' : 'border-primary'
+          isEmphasized ? 'border-foreground' : 'border-primary'
         )
       "
     />
@@ -298,6 +306,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -309,9 +319,10 @@ import { isTransparent } from '@/utils/colorUtil'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-import { RESIZE_HANDLES } from '../interactions/resize/resizeHandleConfig'
-import { useNodeResize } from '../interactions/resize/useNodeResize'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
+import NodeBloodDrips from './NodeBloodDrips.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
@@ -340,9 +351,10 @@ useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
-const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
-const isSelected = computed(() => {
-  return selectedNodeIds.value.has(nodeId.value)
+const { isGhostPlacing } = storeToRefs(useCanvasStore())
+const isEmphasized = computed(() => {
+  const graph = canvasStore.currentGraph
+  return isNodeEmphasized(graph ? graphScopeOf(graph) : undefined, nodeId.value)
 })
 
 const nodeLocatorId = computed(

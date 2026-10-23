@@ -41,6 +41,9 @@ on:
       unavailable:
         description: Why the E2E run cannot supply the snapshots
         value: ${{ jobs.harvest.outputs.unavailable }}
+      missing:
+        description: Comma-separated E2E jobs that left no snapshot updates to commit
+        value: ${{ jobs.harvest.outputs.missing }}
 
 jobs:
   setup:
@@ -112,6 +115,7 @@ jobs:
     outputs:
       run-id: ${{ steps.harvest.outputs.run-id }}
       unavailable: ${{ steps.harvest.outputs.unavailable }}
+      missing: ${{ steps.harvest.outputs.missing }}
     steps:
       - name: Find the E2E run's snapshot updates
         id: harvest
@@ -146,19 +150,34 @@ jobs:
           fi
           [ "$watch_status" -eq 0 ] || exit "$watch_status"
 
-          conclusions=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
-            --jq '.jobs[] | select(.name | startswith(env.JOB_PREFIX)) | .conclusion')
-          if printf '%s' "$conclusions" | grep -qvE '^(success|failure|skipped)$'; then
+          jobs=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            --jq '.jobs[]
+              | select(.name | startswith(env.JOB_PREFIX))
+              | select((.steps | length) == 0 or any(.steps[]; .name == "Upload snapshot updates"))
+              | {id, name, conclusion}')
+          if [ "$(jq -s 'map(select(.conclusion | IN("success", "failure", "skipped") | not)) | length' <<< "$jobs")" -gt 0 ]; then
             unavailable "Some ${JOB_PREFIX} jobs in ${run_url} did not finish."
           fi
-          ran=$(printf '%s' "$conclusions" | grep -cE '^(success|failure)$' || true)
-          artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
-            --jq '.artifacts[] | select((.name | startswith(env.ARTIFACT_PREFIX)) and (.expired | not)) | .name' | wc -l)
+          ran=$(jq -s 'map(select(.conclusion | IN("success", "failure"))) | length' <<< "$jobs")
           if [ "$ran" -eq 0 ]; then
             unavailable "No ${JOB_PREFIX} jobs ran in ${run_url}."
           fi
-          if [ "$artifacts" -ne "$ran" ]; then
-            unavailable "${artifacts} of ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
+
+          artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select((.name | startswith(env.ARTIFACT_PREFIX)) and (.expired | not)) | .name')
+          if [ -z "$artifacts" ]; then
+            unavailable "None of the ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
+          fi
+
+          missing=$(jq -rs --arg artifacts "$artifacts" '
+            ($artifacts | split("\n")) as $names
+            | map(select(.conclusion | IN("success", "failure"))
+              | select((.id | tostring) as $id | $names | any(endswith("-" + $id)) | not)
+              | .name)
+            | join(", ")' <<< "$jobs")
+          if [ -n "$missing" ]; then
+            echo "::warning::These ${JOB_PREFIX} jobs in ${run_url} left no usable ${ARTIFACT_PREFIX}* artifact, so their screenshots are not checked: ${missing}"
+            echo "missing=${missing}" >> "$GITHUB_OUTPUT"
           fi
 
           echo "run-id=${run_id}" >> "$GITHUB_OUTPUT"

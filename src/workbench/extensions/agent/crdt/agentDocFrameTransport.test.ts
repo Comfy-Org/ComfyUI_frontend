@@ -39,16 +39,16 @@ describe('createAgentDocFrameTransport', () => {
     expect(details).toEqual([])
   })
 
-  it('reports each time the shared socket opens, so a dropped subscribe can be re-driven', () => {
+  it('reports every shared socket status edge', () => {
     const fake = createFakeAgentSocket()
-    const connected = vi.fn()
-    fake.transport.onSocketOpen(connected)
+    const status = vi.fn()
+    fake.transport.onSocketStatus(status)
 
     fake.open()
     fake.drop()
     fake.open()
 
-    expect(connected).toHaveBeenCalledTimes(2)
+    expect(status.mock.calls).toEqual([[false], [true], [false], [true]])
   })
 
   it('stops listening once destroyed', () => {

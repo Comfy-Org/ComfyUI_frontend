@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
-import type { ComposerAttachment } from '../../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import InlineAssetReference from './InlineAssetReference.vue'
 
 function renderReference(

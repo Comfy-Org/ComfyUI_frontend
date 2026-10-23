@@ -7,8 +7,11 @@ import { api } from '@/scripts/api'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import { listSkillPacks, SkillPacksApiError } from '../api/skillsApi'
-import type { SkillPack } from '../types'
+import {
+  listSkillPacks,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
+import type { SkillPack } from '@/platform/skills/types'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'

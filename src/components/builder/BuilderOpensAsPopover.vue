@@ -1,5 +1,5 @@
 <template>
-  <PopoverRoot>
+  <PopoverRoot v-slot="{ open }">
     <PopoverAnchor as-child>
       <div
         data-testid="builder-opens-as"
@@ -32,12 +32,12 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal>
+        <PopoverPortal :key="Number(open)">
           <PopoverContent
             side="top"
             :side-offset="5"
             :collision-padding="10"
-            class="z-1700 rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
+            class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
           >
             <ViewTypeRadioGroup
               :model-value="isAppMode"
@@ -53,14 +53,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
+  PopoverPortal,
   PopoverAnchor,
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 

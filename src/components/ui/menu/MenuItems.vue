@@ -7,7 +7,7 @@ import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
 import MenuSeparator from './MenuSeparator.vue'
 import MenuSubmenu from './MenuSubmenu.vue'
-import type { MenuItem } from './types'
+import type { MenuItem, MenuItemAction } from './types'
 
 defineOptions({ name: 'MenuItems' })
 
@@ -19,14 +19,14 @@ type MenuItemSlotProps = {
 const [DefineItemContent, ReuseItemContent] =
   createReusableTemplate<MenuItemSlotProps>()
 
-const { itemContent, items, ownerId } = defineProps<{
+const { itemContent, items } = defineProps<{
   items: MenuItem[]
   itemContent?: Slot<MenuItemSlotProps>
-  ownerId?: string
 }>()
 
 const emit = defineEmits<{
   select: []
+  activate: [item: MenuItemAction]
 }>()
 
 const visibleItems = computed(() =>
@@ -50,14 +50,14 @@ const visibleItems = computed(() =>
     :key="item.key ?? toValue(item.label) ?? index"
   >
     <MenuSeparator v-if="item.separator" />
-    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item :owner-id>
+    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item>
       <ReuseItemContent :item :has-submenu="true" />
       <template #content="{ items: childItems }">
         <MenuItems
           :items="childItems"
           :item-content="itemContent ?? $slots.item"
-          :owner-id
           @select="emit('select')"
+          @activate="emit('activate', $event)"
         />
       </template>
     </MenuSubmenu>
@@ -66,6 +66,7 @@ const visibleItems = computed(() =>
       :item
       :allow-commandless="Boolean(itemContent ?? $slots.item)"
       @select="emit('select')"
+      @activate="emit('activate', $event)"
     >
       <ReuseItemContent :item :has-submenu="false" />
     </MenuAction>

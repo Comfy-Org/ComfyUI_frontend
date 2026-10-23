@@ -1,6 +1,6 @@
 import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
@@ -67,7 +67,7 @@ beforeEach(() => {
   useAlgoliaSearchProvider().clearSearchCache()
 })
 
-const searchPacks = (
+const searchOutcome = (
   query: string,
   pageNumber = 0,
   pageSize = DEFAULT_PAGE_SIZE
@@ -78,10 +78,21 @@ const searchPacks = (
     restrictSearchableAttributes: ['name', 'description']
   })
 
+async function searchPacks(...args: Parameters<typeof searchOutcome>) {
+  const outcome = await searchOutcome(...args)
+  assert(outcome.ok, 'expected the search to succeed')
+  return outcome.result
+}
+
+const failedWith = (message: string) => ({
+  ok: false,
+  cause: expect.objectContaining({ message: expect.stringContaining(message) })
+})
+
 describe('pack search against recorded live Algolia responses', () => {
   it('refuses to replay an unrecorded query named like an Object.prototype key', async () => {
-    await expect(searchPacks('constructor')).rejects.toThrow(
-      'No recorded Algolia response for query "constructor"'
+    await expect(searchOutcome('constructor')).resolves.toEqual(
+      failedWith('No recorded Algolia response for query "constructor"')
     )
   })
 
@@ -158,14 +169,14 @@ describe('pack search against recorded live Algolia responses', () => {
     })
 
     it('refuses to replay a page past the recorded hits', async () => {
-      await expect(searchPacks('qwen3', 1)).rejects.toThrow(
-        'Only the first 64 of 138 hits for "qwen3" are recorded'
+      await expect(searchOutcome('qwen3', 1)).resolves.toEqual(
+        failedWith('Only the first 64 of 138 hits for "qwen3" are recorded')
       )
     })
 
     it('refuses to replay a page that runs past the recorded hits', async () => {
-      await expect(searchPacks('qwen3', 1, 50)).rejects.toThrow(
-        'Only the first 64 of 138 hits for "qwen3" are recorded'
+      await expect(searchOutcome('qwen3', 1, 50)).resolves.toEqual(
+        failedWith('Only the first 64 of 138 hits for "qwen3" are recorded')
       )
     })
 
