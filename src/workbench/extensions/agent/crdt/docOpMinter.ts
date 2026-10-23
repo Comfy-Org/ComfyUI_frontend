@@ -15,6 +15,7 @@ import type {
   NodeId as WireNodeId,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
@@ -28,6 +29,8 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -41,6 +44,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -64,7 +68,16 @@ export interface DocOpMinterDeps {
    * flight, or no document is subscribed).
    */
   docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
+  /**
+   * The bound document's value for a node's widget. The dynamic-combo
+   * selection gate cannot tell a stale document from one that lacks the
+   * widget without it, so every caller supplies it.
+   */
+  docWidgetValue(nodeId: NodeId, widgetName: string): unknown
 }
+
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS = 3 * SUBSCRIBE_ACK_TIMEOUT_MS
+export const PROMOTED_WRITE_RETRY_MS = 100
 
 export interface DocOpMinter {
   detach(): void
@@ -78,6 +91,42 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
+
+interface DeferredDynamicConnect {
+  kind: 'connect'
+  operation: Omit<
+    Extract<GraphOperation, { op: 'connect'; to_slot: number }>,
+    'to_slot' | 'grow'
+  >
+}
+
+interface DeferredDynamicDisconnect {
+  kind: 'disconnect'
+  operation: Omit<Extract<GraphOperation, { op: 'disconnect' }>, 'to_slot'>
+}
+
+type DeferredDynamicOperation =
+  | DeferredDynamicConnect
+  | DeferredDynamicDisconnect
+
+interface PendingDynamicSlot {
+  rootGraphId: string
+  nodeId: NodeId
+  inputName: string
+  growLinkId: WireNodeId
+  since: number
+  sent: boolean
+  deferred: DeferredDynamicOperation[]
+}
+
+interface PendingWidgetValue {
+  nodeId: NodeId
+  widgetName: string
+  value: unknown
+  documentValueAtWrite: unknown
+}
+
+type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
@@ -265,24 +314,196 @@ function docInputIndex(
 function growForMissingSlot(
   target: LGraphNode | null | undefined,
   input: INodeInputSlot | undefined
-): { name: string; type: string; widget?: string } | undefined {
+):
+  | {
+      grow: { name: string; type: string; widget?: string }
+      selection?: DynamicComboSelection
+    }
+  | undefined {
   if (!target || !input) return undefined
   const widgetBacked = !!input.widget && !target.isSubgraphNode()
-  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
-    return undefined
+  const autogrow = !!liveAutogrowGroupOf(target, input.name)
+  const selection = useNodeDefStore().getDynamicComboSelectionForInput(
+    target,
+    input.name
+  )
+  if (!widgetBacked && !autogrow && !selection) return undefined
   return {
-    name: input.name,
-    type: String(input.type),
-    ...(input.widget ? { widget: input.widget.name } : {})
+    grow: {
+      name: input.name,
+      type: String(input.type),
+      ...(input.widget ? { widget: input.widget.name } : {})
+    },
+    ...(selection ? { selection } : {})
   }
 }
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
+  const pendingDynamicSlots = new Map<string, PendingDynamicSlot>()
+  const pendingWidgetValues = new Map<string, PendingWidgetValue>()
   const reported = new Set<string>()
+  let dynamicSlotRetryTimer: ReturnType<typeof setTimeout> | null = null
   let flushScheduled = false
   let detached = false
+
+  /**
+   * Scopes a pending slot to the document it was grown in, so a delayed
+   * operation can never be found — and replayed — under another one.
+   */
+  function dynamicSlotKey(
+    rootGraphId: string,
+    nodeId: NodeId,
+    inputName: string
+  ): string {
+    return JSON.stringify([rootGraphId, String(nodeId), inputName])
+  }
+
+  function widgetValueKey(nodeId: NodeId, widgetName: string): string {
+    return JSON.stringify([String(nodeId), widgetName])
+  }
+
+  /**
+   * True while the document still reads what it read when the write was
+   * minted, which is the only state in which that write can still be the
+   * next one to land. A document that reflects the written value has settled
+   * it; any other value superseded it.
+   */
+  function widgetWriteInFlight(pending: PendingWidgetValue): boolean {
+    const documentValue = deps.docWidgetValue(
+      pending.nodeId,
+      pending.widgetName
+    )
+    return (
+      isEqual(documentValue, pending.documentValueAtWrite) &&
+      !isEqual(documentValue, pending.value)
+    )
+  }
+
+  /** Drops recorded writes the document has settled or superseded. */
+  function retireSettledWidgetValues(): void {
+    for (const [key, pending] of pendingWidgetValues)
+      if (!widgetWriteInFlight(pending)) pendingWidgetValues.delete(key)
+  }
+
+  /**
+   * Whether the bound document will carry this selector value by the time the
+   * grow lands. An in-flight selector write decides it, because that write is
+   * what the document reads next; otherwise the document's own value does.
+   */
+  function documentMatchesSelection(
+    nodeId: NodeId,
+    selection: DynamicComboSelection
+  ): boolean {
+    const key = widgetValueKey(nodeId, selection.widget)
+    const pending = pendingWidgetValues.get(key)
+    if (pending && !widgetWriteInFlight(pending))
+      pendingWidgetValues.delete(key)
+    const inFlight = pendingWidgetValues.get(key)
+    if (inFlight) return isEqual(inFlight.value, selection.value)
+    return isEqual(
+      deps.docWidgetValue(nodeId, selection.widget),
+      selection.value
+    )
+  }
+
+  function resolvedDynamicSlot(state: PendingDynamicSlot): number | undefined {
+    const names = deps.docInputNames(state.nodeId)
+    const index = names?.indexOf(state.inputName) ?? -1
+    return index < 0 ? undefined : index
+  }
+
+  function scheduleDeferredDynamicOperation(
+    deferred: DeferredDynamicOperation,
+    toSlot: number
+  ): void {
+    schedule({
+      kind: 'op',
+      operation: { ...deferred.operation, to_slot: toSlot }
+    })
+  }
+
+  function releaseDynamicSlot(state: PendingDynamicSlot): boolean {
+    const toSlot = resolvedDynamicSlot(state)
+    if (toSlot === undefined) return false
+    pendingDynamicSlots.delete(pendingSlotKey(state))
+    for (const deferred of state.deferred)
+      scheduleDeferredDynamicOperation(deferred, toSlot)
+    return true
+  }
+
+  function pendingSlotKey(state: PendingDynamicSlot): string {
+    return dynamicSlotKey(state.rootGraphId, state.nodeId, state.inputName)
+  }
+
+  /**
+   * Drops a pending slot whose document is no longer bound, so its deferred
+   * operations are never re-addressed to the document that replaced it.
+   */
+  function dropRetargetedDynamicSlot(state: PendingDynamicSlot): boolean {
+    const boundRootGraphId =
+      deps.boundRootGraphId() ?? deps.getGraph()?.rootGraph.id ?? null
+    if (boundRootGraphId === null || boundRootGraphId === state.rootGraphId)
+      return false
+    const key = pendingSlotKey(state)
+    pendingDynamicSlots.delete(key)
+    reportOnce(
+      `dynamic_slot_workflow_changed:${key}`,
+      `Dynamic-combo input ${state.inputName} of node ${String(state.nodeId)} belongs to graph ${state.rootGraphId}, which is no longer bound; dropping its deferred link operations rather than replaying them into ${boundRootGraphId}`,
+      'agent_crdt_link_slot_workflow_changed',
+      {
+        nodeId: state.nodeId,
+        input: state.inputName,
+        rootGraphId: state.rootGraphId,
+        boundRootGraphId,
+        operations: state.deferred.map(({ kind }) => kind)
+      }
+    )
+    return true
+  }
+
+  function dropExpiredDynamicSlot(state: PendingDynamicSlot): boolean {
+    if (performance.now() - state.since < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      return false
+    const key = pendingSlotKey(state)
+    pendingDynamicSlots.delete(key)
+    reportOnce(
+      `dynamic_slot_timeout:${key}`,
+      `Dynamic-combo input ${state.inputName} of node ${String(state.nodeId)} never reached the bound document; dropping its deferred link operations`,
+      'agent_crdt_link_slot_not_in_doc',
+      {
+        nodeId: state.nodeId,
+        input: state.inputName,
+        operations: state.deferred.map(({ kind }) => kind)
+      }
+    )
+    return true
+  }
+
+  function retryDynamicSlots(): void {
+    dynamicSlotRetryTimer = null
+    if (detached) return
+    let waiting = false
+    for (const state of pendingDynamicSlots.values()) {
+      if (dropRetargetedDynamicSlot(state)) continue
+      if (releaseDynamicSlot(state) || dropExpiredDynamicSlot(state)) continue
+      waiting = true
+    }
+    if (waiting)
+      dynamicSlotRetryTimer = setTimeout(
+        retryDynamicSlots,
+        PROMOTED_WRITE_RETRY_MS
+      )
+  }
+
+  function retryDynamicSlotsSoon(): void {
+    if (dynamicSlotRetryTimer !== null) return
+    dynamicSlotRetryTimer = setTimeout(
+      retryDynamicSlots,
+      PROMOTED_WRITE_RETRY_MS
+    )
+  }
 
   function schedule(op: PendingOp): void {
     pending.push(op)
@@ -321,6 +542,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         pos: [node.pos[0], node.pos[1]],
         node: snapshot
       })
+    }
+    for (const state of pendingDynamicSlots.values()) {
+      if (state.sent) continue
+      state.sent = operations.some(
+        (operation) =>
+          operation.op === 'connect' &&
+          operation.link_id === state.growLinkId &&
+          'grow' in operation
+      )
     }
     if (operations.length > 0) deps.enqueue(operations)
   }
@@ -376,7 +606,29 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const operation = routedWidgetOperation(graph, rootGraphId, event, owner)
-    if (operation) schedule({ kind: 'op', operation })
+    if (operation) {
+      rememberPendingWidgetValue(operation, event)
+      schedule({ kind: 'op', operation })
+    }
+  }
+
+  function rememberPendingWidgetValue(
+    operation: GraphOperation,
+    event: IntentOf<'set_widget'>
+  ): void {
+    if (
+      operation.op !== 'set_widget' ||
+      'path' in operation ||
+      'promoted' in operation
+    )
+      return
+    retireSettledWidgetValues()
+    pendingWidgetValues.set(widgetValueKey(event.nodeId, event.name), {
+      nodeId: event.nodeId,
+      widgetName: event.name,
+      value: event.value,
+      documentValueAtWrite: deps.docWidgetValue(event.nodeId, event.name)
+    })
   }
 
   function mintSetNodeField(event: IntentOf<'set_node_field'>): void {
@@ -398,6 +650,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
+    for (const [key, state] of pendingDynamicSlots)
+      if (state.nodeId === event.node.id) pendingDynamicSlots.delete(key)
+    for (const [key, pending] of pendingWidgetValues)
+      if (pending.nodeId === event.node.id) pendingWidgetValues.delete(key)
     const key = nodeKey(event.graph.id, event.node.id)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
@@ -427,6 +683,59 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
   }
 
+  function mintMissingSlotConnect(
+    rootGraphId: string,
+    link: LLink,
+    target: LGraphNode | null | undefined,
+    input: INodeInputSlot | undefined,
+    slotKey: string | undefined,
+    pendingSlot: PendingDynamicSlot | undefined,
+    connect: DeferredDynamicConnect['operation']
+  ): void {
+    const growth = growForMissingSlot(target, input)
+    if (growth?.selection) {
+      if (!documentMatchesSelection(link.target_id, growth.selection)) {
+        if (input) reportSlotNotInDoc('connect', link, input)
+        return
+      }
+      if (pendingSlot) {
+        pendingSlot.deferred.push({ kind: 'connect', operation: connect })
+        retryDynamicSlotsSoon()
+        return
+      }
+    }
+    if (!growth) {
+      if (input) reportSlotNotInDoc('connect', link, input)
+      return
+    }
+    scheduleGrowthConnect(rootGraphId, link, input, slotKey, connect, growth)
+  }
+
+  function scheduleGrowthConnect(
+    rootGraphId: string,
+    link: LLink,
+    input: INodeInputSlot | undefined,
+    slotKey: string | undefined,
+    connect: DeferredDynamicConnect['operation'],
+    growth: MissingSlotGrowth
+  ): void {
+    schedule({
+      kind: 'op',
+      operation: { ...connect, to_slot: null, grow: growth.grow }
+    })
+    if (!growth.selection || !input || !slotKey) return
+    pendingDynamicSlots.set(slotKey, {
+      rootGraphId,
+      nodeId: link.target_id,
+      inputName: input.name,
+      growLinkId: link.id,
+      since: performance.now(),
+      sent: false,
+      deferred: []
+    })
+    retryDynamicSlotsSoon()
+  }
+
   function mintConnect(event: IntentOf<'connect'>): void {
     if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
     const { link } = event
@@ -434,6 +743,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const input = target?.inputs[link.target_slot]
     const docNames = deps.docInputNames(link.target_id)
     const toSlot = docInputIndex(docNames, input, link.target_slot)
+    const rootGraphId = event.graph.rootGraph.id
+    const slotKey = input
+      ? dynamicSlotKey(rootGraphId, link.target_id, input.name)
+      : undefined
+    const pendingSlot = slotKey ? pendingDynamicSlots.get(slotKey) : undefined
+    if (pendingSlot && toSlot !== undefined) releaseDynamicSlot(pendingSlot)
     const connect = {
       op: 'connect',
       link_id: link.id,
@@ -446,15 +761,47 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    const grow = growForMissingSlot(target, input)
-    if (grow) {
-      schedule({
-        kind: 'op',
-        operation: { ...connect, to_slot: null, grow }
-      })
+    mintMissingSlotConnect(
+      rootGraphId,
+      link,
+      target,
+      input,
+      slotKey,
+      pendingSlot,
+      connect
+    )
+  }
+
+  function mintMissingSlotDisconnect(
+    link: LLink,
+    input: INodeInputSlot | undefined,
+    slotKey: string | undefined,
+    pendingSlot: PendingDynamicSlot | undefined
+  ): void {
+    if (!pendingSlot) {
+      if (input) reportSlotNotInDoc('disconnect', link, input)
       return
     }
-    if (input) reportSlotNotInDoc('connect', link, input)
+    if (!pendingSlot.sent && pendingSlot.growLinkId === link.id) {
+      pending = pending.filter(
+        (entry) =>
+          entry.kind !== 'op' ||
+          entry.operation.op !== 'connect' ||
+          entry.operation.link_id !== link.id ||
+          !('grow' in entry.operation)
+      )
+      if (slotKey) pendingDynamicSlots.delete(slotKey)
+      return
+    }
+    pendingSlot.deferred.push({
+      kind: 'disconnect',
+      operation: {
+        op: 'disconnect',
+        link_id: link.id,
+        to_node: link.target_id
+      }
+    })
+    retryDynamicSlotsSoon()
   }
 
   function mintDisconnect(event: IntentOf<'disconnect'>): void {
@@ -463,15 +810,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const input = event.graph.getNodeById(link.target_id)?.inputs[
       link.target_slot
     ]
+    const slotKey = input
+      ? dynamicSlotKey(event.graph.rootGraph.id, link.target_id, input.name)
+      : undefined
+    const pendingSlot = slotKey ? pendingDynamicSlots.get(slotKey) : undefined
     const toSlot = docInputIndex(
       deps.docInputNames(link.target_id),
       input,
       link.target_slot
     )
     if (toSlot === undefined) {
-      if (input) reportSlotNotInDoc('disconnect', link, input)
+      mintMissingSlotDisconnect(link, input, slotKey, pendingSlot)
       return
     }
+    if (pendingSlot) releaseDynamicSlot(pendingSlot)
     schedule({
       kind: 'op',
       operation: {
@@ -556,6 +908,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      pendingDynamicSlots.clear()
+      pendingWidgetValues.clear()
+      if (dynamicSlotRetryTimer !== null) clearTimeout(dynamicSlotRetryTimer)
+      dynamicSlotRetryTimer = null
       detachIntents()
       unregisterDocBoundProbe()
     }

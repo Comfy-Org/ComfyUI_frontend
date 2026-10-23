@@ -131,7 +131,8 @@ describe('a human-added node across a tab switch', () => {
       enqueue: followerApi.enqueueHumanOperations,
       getGraph: () => graph,
       boundRootGraphId: () => null,
-      docInputNames: followerApi.docInputNames
+      docInputNames: followerApi.docInputNames,
+      docWidgetValue: followerApi.docWidgetValue
     })
     const cleanup = () => {
       minter.detach()
