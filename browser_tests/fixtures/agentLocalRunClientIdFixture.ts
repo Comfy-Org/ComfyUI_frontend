@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
@@ -14,12 +14,7 @@ import {
 /** A stale `sessionStorage` client id that must never reach the wire. */
 export const STALE_SESSION_CLIENT_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
 
-const turnPostBodySchema = zAgentPostMessageRequest
-  .extend({
-    client_message_id: z.string().optional(),
-    client_id: z.string().optional()
-  })
-  .passthrough()
+const turnPostBodySchema = zAgentPostMessageRequest.passthrough()
 
 /** The turn POST body as the server receives it. */
 export type TurnPostBody = z.infer<typeof turnPostBodySchema>
