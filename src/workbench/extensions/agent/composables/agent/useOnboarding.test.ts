@@ -22,6 +22,14 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
   placement: 'left-center'
 }))
 
+function pendingResponse() {
+  let resolve: (response: Response) => void = () => {}
+  const promise = new Promise<Response>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
 function onboardedScopes(): string[] | undefined {
   return useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
 }
@@ -71,17 +79,50 @@ describe('useOnboarding', () => {
     )
   })
 
-  it('persists a restart issued before the finish write settles', async () => {
+  it('sends a restart only after the finish write settles', async () => {
+    const { promise: finishWrite, resolve: settleFinish } = pendingResponse()
+    vi.mocked(api.storeSetting).mockReturnValueOnce(finishWrite)
     const tour = useOnboarding(STEPS, KEY)
+
     tour.finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
     tour.restart()
+    await nextTick()
+    expect(api.storeSetting).toHaveBeenCalledTimes(1)
+
+    settleFinish(new Response())
 
     await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
     expect(api.storeSetting).toHaveBeenLastCalledWith(
       AGENT_ONBOARDED_SCOPES_SETTING_ID,
       []
     )
-    expect(onboardedScopes()).toEqual([])
+  })
+
+  it('keeps retrying a restart whose write failed after an older write succeeded', async () => {
+    const { promise: finishWrite, resolve: settleFinish } = pendingResponse()
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(finishWrite)
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+    const tour = useOnboarding(STEPS, KEY)
+    tour.finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    tour.restart()
+    settleFinish(new Response())
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    await nextTick()
+
+    resetCoach(KEY)
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
   })
 
   it('replays after clearing both the local and settings completion', async () => {
