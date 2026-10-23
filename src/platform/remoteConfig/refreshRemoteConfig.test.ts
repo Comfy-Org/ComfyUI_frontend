@@ -386,11 +386,7 @@ describe('refreshRemoteConfig', () => {
         expect(signal?.aborted).toBe(false)
         await vi.advanceTimersByTimeAsync(1)
         expect(signal?.aborted).toBe(true)
-        await expect(refresh).resolves.toEqual({
-          kind: 'failed',
-          transient: false,
-          status: null
-        })
+        await expect(refresh).resolves.toEqual({ kind: 'failed', status: null })
         expect(remoteConfigState.value).toBe('error')
       } finally {
         vi.useRealTimers()
@@ -410,22 +406,13 @@ describe('refreshRemoteConfig', () => {
   })
 
   describe('outcome', () => {
-    it.for([
-      { status: 502, transient: true },
-      { status: 504, transient: true },
-      { status: 503, transient: false },
-      { status: 500, transient: false },
-      { status: 429, transient: false },
-      { status: 404, transient: false },
-      { status: 401, transient: false }
-    ])(
-      'reports HTTP $status as transient=$transient',
-      async ({ status, transient }) => {
+    it.for([503, 404, 401])(
+      'reports HTTP %s with its status',
+      async (status) => {
         mockAuthenticatedFetch(mockErrorResponse(status, 'Error'))
 
         await expect(refreshRemoteConfig()).resolves.toEqual({
           kind: 'failed',
-          transient,
           status
         })
       }
@@ -437,12 +424,11 @@ describe('refreshRemoteConfig', () => {
       await expect(refreshRemoteConfig()).resolves.toEqual({ kind: 'loaded' })
     })
 
-    it('reports a network failure as transient', async () => {
+    it('reports a network failure without a status', async () => {
       vi.mocked(api.fetchApi).mockRejectedValue(new Error('offline'))
 
       await expect(refreshRemoteConfig()).resolves.toEqual({
         kind: 'failed',
-        transient: true,
         status: null
       })
     })

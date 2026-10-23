@@ -55,7 +55,7 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
 const LOADED = { kind: 'loaded' } as const
-const TRANSIENT = { kind: 'failed', transient: true, status: null } as const
+const FAILED = { kind: 'failed', status: null } as const
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
@@ -586,7 +586,7 @@ describe('WorkspaceAuthGate', () => {
         screen.queryByText("Couldn't load your workspace")
       ).not.toBeInTheDocument()
 
-      await vi.advanceTimersByTimeAsync(20_999)
+      await vi.advanceTimersByTimeAsync(12_999)
       expect(
         screen.queryByText("Couldn't load your workspace")
       ).not.toBeInTheDocument()
@@ -598,78 +598,36 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
     })
 
-    it('does not retry a transient failure that came back slowly', async () => {
+    it('shows a recoverable error when authenticated config is unavailable', async () => {
       remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig.mockImplementation(
-        () =>
-          new Promise((resolve) => setTimeout(() => resolve(TRANSIENT), 3_001))
-      )
+      mockRefreshRemoteConfig.mockResolvedValue(FAILED)
+
+      mountComponent()
+      await vi.advanceTimersByTimeAsync(1_000)
+      await flushPromises()
+
+      expect(
+        screen.getByText("Couldn't load your workspace")
+      ).toBeInTheDocument()
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
+    })
+
+    it('makes a single authenticated read with its own budget and leaves retrying to the user', async () => {
+      remoteConfigState.value = 'error'
+      mockRefreshRemoteConfig.mockResolvedValue(FAILED)
 
       mountComponent()
       await vi.advanceTimersByTimeAsync(5_000)
       await flushPromises()
 
       expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
-      expect(
-        screen.getByText("Couldn't load your workspace")
-      ).toBeInTheDocument()
-    })
-
-    it('does not retry a read that timed out', async () => {
-      remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig.mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(
-              () => resolve({ kind: 'failed', transient: false, status: null }),
-              12_000
-            )
-          )
-      )
-
-      mountComponent()
-      await vi.advanceTimersByTimeAsync(14_000)
-      await flushPromises()
-
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
-      expect(
-        screen.getByText("Couldn't load your workspace")
-      ).toBeInTheDocument()
-    })
-
-    it('shows a recoverable error when authenticated config is unavailable', async () => {
-      remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig.mockResolvedValue(TRANSIENT)
-
-      mountComponent()
-      await vi.advanceTimersByTimeAsync(1_000)
-      await flushPromises()
-
-      expect(
-        screen.getByText("Couldn't load your workspace")
-      ).toBeInTheDocument()
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
-      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
-    })
-
-    it('gives the authenticated config read its own budget and retries it once', async () => {
-      remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig
-        .mockResolvedValueOnce(TRANSIENT)
-        .mockImplementationOnce(async () => {
-          remoteConfigState.value = 'authenticated'
-          return LOADED
-        })
-
-      mountComponent()
-      await vi.advanceTimersByTimeAsync(1_000)
-      await flushPromises()
-
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledTimes(2)
-      expect(mockRefreshRemoteConfig).toHaveBeenLastCalledWith(
+      expect(mockRefreshRemoteConfig).toHaveBeenCalledWith(
         expect.objectContaining({ useAuth: true, timeoutMs: 12_000 })
       )
-      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument()
     })
 
     it('fails closed when its own config read was superseded', async () => {
@@ -686,28 +644,10 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
     })
 
-    it('does not retry a failure an immediate repeat cannot fix', async () => {
-      remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig.mockResolvedValue({
-        kind: 'failed',
-        transient: false,
-        status: null
-      })
-
-      mountComponent()
-      await vi.advanceTimersByTimeAsync(1_000)
-      await flushPromises()
-
-      expect(mockRefreshRemoteConfig).toHaveBeenCalledOnce()
-      expect(
-        screen.getByText("Couldn't load your workspace")
-      ).toBeInTheDocument()
-    })
-
     it('ignores a stale credential rejection left by an earlier refresh', async () => {
       remoteConfigState.value = 'error'
       remoteConfigErrorStatus.value = 401
-      mockRefreshRemoteConfig.mockResolvedValue(TRANSIENT)
+      mockRefreshRemoteConfig.mockResolvedValue(FAILED)
 
       mountComponent()
       await vi.advanceTimersByTimeAsync(1_000)
@@ -721,11 +661,7 @@ describe('WorkspaceAuthGate', () => {
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
       remoteConfigState.value = 'error'
-      mockRefreshRemoteConfig.mockResolvedValue({
-        kind: 'failed',
-        transient: false,
-        status: 401
-      })
+      mockRefreshRemoteConfig.mockResolvedValue({ kind: 'failed', status: 401 })
 
       mountComponent()
       await flushPromises()

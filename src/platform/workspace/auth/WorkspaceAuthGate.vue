@@ -113,10 +113,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
 const CONFIG_REFRESH_TIMEOUT_MS = 12_000
-const CONFIG_REFRESH_BUDGET_MS = 20_000
-const CONFIG_REFRESH_ATTEMPTS = 2
-const CONFIG_RETRY_DELAY_MS = 500
-const CONFIG_FAST_FAILURE_MS = 3_000
 
 const initializationState = ref<
   'initializing' | 'retrying' | 'ready' | 'error' | 'no_workspace'
@@ -231,51 +227,29 @@ async function loadAuthenticatedRemoteConfig(
 ): Promise<void> {
   configRejectedStatus = null
   const outcome = await readAuthenticatedRemoteConfig(controller)
-  if (outcome?.kind === 'failed') configRejectedStatus = outcome.status
-  if (outcome?.kind !== 'loaded') {
+  if (outcome.kind === 'failed') configRejectedStatus = outcome.status
+  if (outcome.kind !== 'loaded') {
     throw new Error('Failed to load authenticated remote config')
   }
 }
 
 async function readAuthenticatedRemoteConfig(
   controller: AbortController
-): Promise<RemoteConfigRefreshOutcome | undefined> {
-  const deadline = Date.now() + CONFIG_REFRESH_BUDGET_MS
+): Promise<RemoteConfigRefreshOutcome> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
-  const backstop = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      controller.abort()
-      reject(new Error('Config refresh timeout'))
-    }, CONFIG_REFRESH_BUDGET_MS + 1_000)
-  })
-  try {
-    let outcome: RemoteConfigRefreshOutcome | undefined
-    for (let attempt = 1; attempt <= CONFIG_REFRESH_ATTEMPTS; attempt++) {
-      const startedAt = Date.now()
-      const remaining = deadline - startedAt
-      if (remaining <= 0) break
-      outcome = await Promise.race([
-        refreshRemoteConfig({
-          useAuth: true,
-          signal: controller.signal,
-          timeoutMs: Math.min(CONFIG_REFRESH_TIMEOUT_MS, remaining)
-        }),
-        backstop
-      ])
-      if (outcome.kind !== 'failed' || !outcome.transient) break
-      if (Date.now() - startedAt > CONFIG_FAST_FAILURE_MS) break
-      if (attempt === CONFIG_REFRESH_ATTEMPTS) break
-      const delay = CONFIG_RETRY_DELAY_MS * (1 + Math.random())
-      await Promise.race([
-        new Promise((resolve) => setTimeout(resolve, delay)),
-        backstop
-      ])
-      if (controller.signal.aborted) break
-    }
-    return outcome
-  } finally {
-    clearTimeout(timeoutId)
-  }
+  return Promise.race([
+    refreshRemoteConfig({
+      useAuth: true,
+      signal: controller.signal,
+      timeoutMs: CONFIG_REFRESH_TIMEOUT_MS
+    }),
+    new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort()
+        reject(new Error('Config refresh timeout'))
+      }, CONFIG_REFRESH_TIMEOUT_MS + 1_000)
+    })
+  ]).finally(() => clearTimeout(timeoutId))
 }
 
 function initializationFailureReport(

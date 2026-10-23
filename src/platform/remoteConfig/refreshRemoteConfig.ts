@@ -29,18 +29,14 @@ interface RefreshRemoteConfigOptions {
   timeoutMs?: number
 }
 
-/** What one refresh did; `transient` failures are worth retrying. */
+/** What one refresh did; `status` is the HTTP status of a failed response. */
 export type RemoteConfigRefreshOutcome =
   | { kind: 'loaded' }
   | { kind: 'superseded' }
-  | { kind: 'failed'; transient: boolean; status: number | null }
+  | { kind: 'failed'; status: number | null }
 
 const SUPERSEDED: RemoteConfigRefreshOutcome = { kind: 'superseded' }
 const MAX_TIMEOUT_MS = 2 ** 31 - 1
-
-function isTransientStatus(status: number): boolean {
-  return status === 502 || status === 504
-}
 
 let refreshGeneration = 0
 let authenticatedLoadingGeneration: number | undefined
@@ -224,11 +220,7 @@ export async function refreshRemoteConfig(
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) abort()
 
-  let timedOut = false
-  const timeoutId = setTimeout(() => {
-    timedOut = true
-    controller.abort()
-  }, timeoutMs)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const { response, authenticated } = await fetchRemoteConfig(
@@ -251,23 +243,19 @@ export async function refreshRemoteConfig(
           'Rejected authenticated remote config response without credentials'
         )
         remoteConfigRevision.value++
-        return { kind: 'failed', transient: false, status: null }
+        return { kind: 'failed', status: null }
       }
       commitRemoteConfigSuccess(config, useAuth)
       if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
       return { kind: 'loaded' }
     }
     commitRemoteConfigFailure(response, useAuth)
-    return {
-      kind: 'failed',
-      transient: isTransientStatus(response.status),
-      status: response.status
-    }
+    return { kind: 'failed', status: response.status }
   } catch (error) {
     if (generation !== refreshGeneration) return SUPERSEDED
     if (signal?.aborted) return SUPERSEDED
     commitRemoteConfigException(error, useAuth)
-    return { kind: 'failed', transient: !timedOut, status: null }
+    return { kind: 'failed', status: null }
   } finally {
     if (authenticatedLoadingGeneration === generation) {
       authenticatedRemoteConfigState.value = previousAuthenticatedState
