@@ -130,9 +130,18 @@ describe('LiveGraphApplier malformed node report', () => {
     [{ name: 'image', type: undefined }, 'invalid_union undefined'],
     [{ name: 'image', type: null }, 'invalid_union null'],
     [{ name: 'image', type: true }, 'invalid_union boolean'],
-    [{ name: 'image', type: [] }, 'too_small array:0'],
+    [{ name: 'image', type: [] }, 'too_small array:0[]'],
     [{ name: 'image', type: {} }, 'invalid_union object:0'],
-    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1']
+    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1'],
+    [{ name: 'image', type: [0, 0] }, 'invalid_union array:2[number,number]'],
+    [
+      { name: 'image', type: [null, 'IMAGE'] },
+      'invalid_union array:2[null,string]'
+    ],
+    [
+      { name: 'image', type: ['IMAGE', [1]] },
+      'invalid_union array:2[string,array]'
+    ]
   ])(
     'separates %o, which zod collapses to one message, as %s',
     ([slot, issue]) => {
@@ -261,7 +270,7 @@ describe('LiveGraphApplier malformed node report', () => {
     const calls = vi.mocked(reportError).mock.calls
     expect(calls).toHaveLength(2)
     expect(calls[1]?.[1]).toMatchObject({
-      context: { valueShapes: 'inputs.0.type too_small array:0' }
+      context: { valueShapes: 'inputs.0.type too_small array:0[]' }
     })
   })
 })

@@ -231,9 +231,20 @@ interface MalformedDocNode {
   }
 }
 
+/**
+ * `typeof` per element, never the element's value: array-typed slots are
+ * reported in Sentry, and an element could carry arbitrary user data.
+ */
+function elementShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
+}
+
 function valueShape(value: unknown): string {
   if (value === null) return 'null'
-  if (Array.isArray(value)) return `array:${value.length}`
+  if (Array.isArray(value))
+    return `array:${value.length}[${value.map(elementShape).join(',')}]`
   if (typeof value === 'object') return `object:${Object.keys(value).length}`
   return typeof value
 }
