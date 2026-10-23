@@ -803,7 +803,7 @@ function serializedCanvas(target: ComfyWorkflow) {
  */
 function temporaryWorkflowContent(
   workflow: ComfyWorkflow
-): ComfyWorkflowJSON | undefined {
+): Record<string, unknown> | undefined {
   if (!workflow.isTemporary || workflow.content === null) return undefined
   try {
     const parsed: unknown = JSON.parse(workflow.content)
@@ -811,7 +811,9 @@ function temporaryWorkflowContent(
       ? zComfyWorkflow1
       : zComfyWorkflow
     const result = schema.safeParse(parsed)
-    return result.success ? result.data : undefined
+    // Both accepted workflow schemas validate a JSON object. Normalize that
+    // object to the generic canvas snapshot contract at this boundary.
+    return result.success ? (result.data as Record<string, unknown>) : undefined
   } catch {
     return undefined
   }
@@ -846,7 +848,7 @@ function canvasMissedDocumentFrames(documentId: string | undefined): boolean {
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
   const target = boundOrOpenWorkflowFor(workflowId)
-  return target ? serializedCanvas(target) : null
+  return target ? (serializedCanvas(target) ?? null) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
