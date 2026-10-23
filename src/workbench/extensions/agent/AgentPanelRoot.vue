@@ -793,14 +793,9 @@ function targetWorkflowTurnContext(
 function serializedCanvas(target: ComfyWorkflow) {
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  return target.activeState ?? temporaryWorkflowContent(target)
+  return target.activeState ?? temporaryWorkflowContent(target) ?? null
 }
 
-/**
- * A newly-created temporary tab is visible before its async load installs a
- * change tracker. During that window activeState is null, but createTemporary
- * has already stored the canonical empty graph in content.
- */
 function temporaryWorkflowContent(
   workflow: ComfyWorkflow
 ): Record<string, unknown> | undefined {
@@ -811,8 +806,6 @@ function temporaryWorkflowContent(
       ? zComfyWorkflow1
       : zComfyWorkflow
     const result = schema.safeParse(parsed)
-    // Both accepted workflow schemas validate a JSON object. Normalize that
-    // object to the generic canvas snapshot contract at this boundary.
     return result.success ? (result.data as Record<string, unknown>) : undefined
   } catch {
     return undefined
@@ -848,7 +841,7 @@ function canvasMissedDocumentFrames(documentId: string | undefined): boolean {
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
   const target = boundOrOpenWorkflowFor(workflowId)
-  return target ? (serializedCanvas(target) ?? null) : null
+  return target ? serializedCanvas(target) : null
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
