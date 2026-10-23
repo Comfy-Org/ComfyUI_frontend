@@ -408,7 +408,7 @@ describe('refreshRemoteConfig', () => {
   describe('outcome', () => {
     it.for([
       { status: 503, transient: true },
-      { status: 429, transient: true },
+      { status: 429, transient: false },
       { status: 404, transient: false },
       { status: 401, transient: false }
     ])(

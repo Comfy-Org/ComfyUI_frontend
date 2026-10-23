@@ -39,7 +39,7 @@ const SUPERSEDED: RemoteConfigRefreshOutcome = { kind: 'superseded' }
 const MAX_TIMEOUT_MS = 2 ** 31 - 1
 
 function isTransientStatus(status: number): boolean {
-  return status >= 500 || status === 408 || status === 429
+  return status >= 500 || status === 408
 }
 
 let refreshGeneration = 0
