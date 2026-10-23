@@ -58,43 +58,20 @@
       </div>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between gap-2">
-        <label
-          id="brush-thickness-label"
-          for="brush-thickness-input"
-          class="text-left font-sans text-xs text-muted-foreground"
-        >
-          {{ t('maskEditor.thickness') }}
-        </label>
-        <div class="flex items-center gap-1">
-          <input
-            id="brush-thickness-input"
-            data-testid="brush-thickness-input"
-            :value="brushSize"
-            type="number"
-            class="w-16 [appearance:textfield] rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            :min="1"
-            :max="250"
-            :step="1"
-            @input="onThicknessInput"
-            @change="onThicknessCommit"
-          />
-          <span class="text-xs text-muted-foreground" aria-hidden="true">
-            px
-          </span>
-        </div>
-      </div>
-      <Slider
-        :model-value="[thicknessSliderValue]"
-        class="flex-1"
-        :min="0"
-        :max="1"
-        :step="0.001"
-        aria-labelledby="brush-thickness-label"
-        @update:model-value="onThicknessSliderChange"
-      />
-    </div>
+    <SliderField
+      :label="t('maskEditor.thickness')"
+      :model-value="brushSize"
+      :min="1"
+      :max="250"
+      :step="1"
+      suffix="px"
+      :slider-value="thicknessSliderValue"
+      :slider-min="0"
+      :slider-max="1"
+      :slider-step="0.001"
+      @update:model-value="commitThickness"
+      @slider-update="onThicknessSliderPosition"
+    />
 
     <SliderField
       :label="t('maskEditor.opacity')"
@@ -133,7 +110,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
 import { BrushShape } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -161,25 +137,9 @@ function commitThickness(value: number) {
   store.setBrushSize(Math.round(Math.min(250, Math.max(1, value))))
 }
 
-function onThicknessInput(event: Event) {
-  commitThickness((event.target as HTMLInputElement).valueAsNumber)
-}
-
-function onThicknessCommit(event: Event) {
-  const input = event.target as HTMLInputElement
-  const parsed = input.valueAsNumber
-  if (!Number.isFinite(parsed)) {
-    input.value = String(brushSize.value)
-    return
-  }
-  commitThickness(parsed)
-}
-
-function onThicknessSliderChange(value: number[] | undefined) {
-  const next = value?.[0]
-  if (next === undefined || !Number.isFinite(next)) return
-  rawSliderValue.value = next
-  commitThickness(Math.pow(250, next))
+function onThicknessSliderPosition(position: number) {
+  rawSliderValue.value = position
+  commitThickness(Math.pow(250, position))
 }
 
 const brushOpacity = computed(() =>

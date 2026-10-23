@@ -32,11 +32,11 @@
       </div>
     </div>
     <Slider
-      :model-value="[modelValue]"
+      :model-value="[sliderValue ?? modelValue]"
       class="flex-1"
-      :min="min"
-      :max="max"
-      :step="step"
+      :min="sliderMin ?? min"
+      :max="sliderMax ?? max"
+      :step="sliderStep ?? step"
       :disabled="disabled"
       :aria-labelledby="labelId"
       @update:model-value="onSliderChange"
@@ -58,7 +58,11 @@ const {
   modelValue,
   step = 1,
   suffix,
-  helpText
+  helpText,
+  sliderValue,
+  sliderMax,
+  sliderMin,
+  sliderStep
 } = defineProps<{
   label: string
   modelValue: number
@@ -68,10 +72,15 @@ const {
   suffix?: string
   disabled?: boolean
   helpText?: string
+  sliderValue?: number
+  sliderMin?: number
+  sliderMax?: number
+  sliderStep?: number
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: number]
+  sliderUpdate: [position: number]
 }>()
 
 const inputId = useId()
@@ -103,6 +112,10 @@ function onCommit(event: Event) {
 function onSliderChange(value: number[] | undefined) {
   const next = value?.[0]
   if (next === undefined) return
+  if (sliderValue !== undefined) {
+    emit('sliderUpdate', next)
+    return
+  }
   commit(next)
 }
 </script>
