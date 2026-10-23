@@ -7,10 +7,15 @@ import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 
 // The `1rem` the viewer's own width cap reserves inside the visible workspace:
-// `max-w-[min(80vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))]`. Not
+// `max-w-[min(90vw,calc(100vw-var(--workspace-inset-right,0px)-1rem))]`. Not
 // shared with the dialog clamp's own `0.5rem` gutter floor, which is a separate
 // production value that only happens to be half of this one.
 const VIEWER_CAP_RESERVE = 16
+
+// The viewport fraction in the same cap's other term. Read off the `full`
+// size's compound variant in `src/components/ui/dialog/dialog.variants.ts`,
+// which is the one declaration that produces this width.
+const VIEWER_CAP_VIEWPORT_FRACTION = 0.9
 
 // The slack the rest of this file already allows on bounding boxes, so a
 // fractional panel width or transform rounding cannot turn a correct layout
@@ -90,14 +95,16 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
 
     await test.step('size the viewer against the docked panel either side of the sm breakpoint', async () => {
       // The viewer keeps its own inset-aware width cap while every other dialog
-      // now resolves against the raw viewport. The cap is declared twice —
-      // unprefixed and `sm:`-prefixed — because the `full` dialog size already
-      // ships `sm:max-w-[calc(100vw-1rem)]`, which outranks an unprefixed cap
-      // above the breakpoint. So the prefixed declaration is the live one above
-      // `sm` and the unprefixed one below it, and the loop runs a viewport each
-      // side so neither can drift unobserved. The pre-existing steps below only
-      // bound the viewer rather than sizing it, which is why dropping the
-      // prefixed declaration left them green while the viewer covered the panel.
+      // now resolves against the raw viewport. That cap is a single unprefixed
+      // declaration on the `full` size's compound variant, and the `full` size
+      // itself contributes no classes, so nothing breakpoint-prefixed competes
+      // with it at any viewport. The loop still samples either side of `sm`
+      // because the sized siblings (`sm:max-w-*`) are prefixed, so a future
+      // change that gives `full` a prefixed cap would outrank this one above
+      // the breakpoint only — exactly the drift the two narrow samples catch.
+      // The pre-existing steps below only bound the viewer rather than sizing
+      // it, which is why losing the cap above `sm` would leave them green
+      // while the viewer covered the panel.
       //
       // This dialog is always on the centring term of the clamp's `max()`,
       // never its 0.5rem gutter floor: the cap holds the width at or under
@@ -115,12 +122,10 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
         .poll(() => viewer.dialog.evaluate((el) => el.getAnimations().length))
         .toBe(0)
 
-      // 640 is the breakpoint itself, the narrowest viewport at which the
-      // prefixed declaration is live, so it is what pins *where* that happens:
-      // retarget the duplicate from `sm:` to `md:` and every wider sample
-      // stays green while 640 falls back to the generic
-      // `sm:max-w-[calc(100vw-1rem)]` and fails. 560 is the sub-`sm` case,
-      // where the unprefixed declaration is the live one.
+      // 640 is the `sm` breakpoint itself, the narrowest viewport at which a
+      // prefixed cap would be live, so it is what pins *where* a regression
+      // takes effect: prefix this cap at `sm:` and 640 and every wider sample
+      // fail while 560 alone stays green. 560 is the sub-`sm` case.
       //
       // Both narrow samples depend on the panel staying docked. `isOverlay`
       // compares `requestedWidth + reservedWorkspaceWidth`, so neither term is
@@ -177,9 +182,14 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
             'the docked panel publishes its width as the workspace inset'
           )
 
-          // `min(80vw, 100vw - inset - 1rem)`. Above ~2180px at the default
-          // panel width the 80vw term is the smaller one and the cap stops
-          // binding, which is correct and must not fail the step.
+          // `min(90vw, 100vw - inset - 1rem)`, mirroring the production
+          // declaration rather than only the term that happens to bind. The
+          // viewport term is the smaller one only above `(inset + 1rem) * 10`
+          // — 4360px at the default 420px panel — so it binds at none of the
+          // samples below. It is kept because it is the cap's actual shape: a
+          // wider panel or a wider viewport moves the crossover, and pinning
+          // only the inset term would then assert a width production no
+          // longer produces.
           //
           // This is a claim about the dialog's box and nothing else. At the
           // two narrow samples the box is 124px and 204px, which is narrower
@@ -191,7 +201,10 @@ test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
           // here rather than pass silently.
           expectPixels(
             dialogBox.width,
-            Math.min(width * 0.8, width - inset - VIEWER_CAP_RESERVE),
+            Math.min(
+              width * VIEWER_CAP_VIEWPORT_FRACTION,
+              width - inset - VIEWER_CAP_RESERVE
+            ),
             'the viewer box is the width its cap resolves to'
           )
 
