@@ -2770,11 +2770,12 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.activeJobId).toBe('job-visible')
     expect(reportError).toHaveBeenCalledOnce()
     const [, options] = vi.mocked(reportError).mock.calls[0]
-    expect(options.errorType).toBe('execution_start_unowned_job_rejected')
+    expect(options.errorType).toBe('warning_rejecting_unowned_execution_start')
     expect(options.context).toMatchObject({
       jobId: 'job-unowned',
       activeJobId: 'job-visible',
-      hasOwnWorkflowRecord: false
+      hasOwnWorkflowRecord: false,
+      activeWorkflowInstanceId: visibleWorkflow.instanceId
     })
   })
 
