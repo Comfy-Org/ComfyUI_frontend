@@ -31,6 +31,8 @@ const CATALOG: WidgetCatalog = { types: { TestSink: { widget_order: [] } } }
 const CONTEXT = { actor: 'agent:test:turn-1', opIds: ['op-1'] }
 const HUMAN_ACTOR = 'human:user-1:tab-1'
 const NODE_ID = 149
+const DIAGNOSTIC_BUDGET = 1024
+const OMISSION_MARKER_ALLOWANCE = 8
 
 function sinkNode(slot: Record<string, unknown>) {
   return {
@@ -56,6 +58,11 @@ function onlyReport() {
   const calls = vi.mocked(reportError).mock.calls
   expect(calls).toHaveLength(1)
   return calls[0]
+}
+
+function onlyReportContext(): Record<string, unknown> {
+  const [, options] = onlyReport()
+  return (options as unknown as { context: Record<string, unknown> }).context
 }
 
 beforeEach(() => {
@@ -155,6 +162,48 @@ describe('LiveGraphApplier malformed node report', () => {
       })
     }
   )
+
+  it('keeps the real array length while shaping a bounded number of elements', () => {
+    const { applyCollected } = setup({
+      nodes: [
+        sinkNode({ name: 'image', type: Array.from({ length: 40 }, () => 0) })
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    const shapes = String(onlyReportContext().valueShapes)
+    expect(shapes).toContain('array:40[')
+    expect(shapes).toContain('+24]')
+    expect(shapes.split('number').length - 1).toBe(16)
+  })
+
+  it('bounds an oversized diagnostic context instead of forwarding it whole', () => {
+    const { applyCollected } = setup({
+      nodes: [
+        {
+          ...sinkNode({ name: 'image' }),
+          inputs: Array.from({ length: 60 }, (_, index) => ({
+            name: `slot${index}`
+          }))
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    const context = onlyReportContext()
+    const stringChars = Object.values(context)
+      .filter((value): value is string => typeof value === 'string')
+      .reduce((total, value) => total + value.length, 0)
+    expect(stringChars).toBeLessThanOrEqual(
+      DIAGNOSTIC_BUDGET + OMISSION_MARKER_ALLOWANCE
+    )
+    expect(context).toMatchObject({ nodeId: '149', classType: 'TestSink' })
+    expect(context.valueShapes).toMatch(/\+\d+$/)
+  })
 
   it('names the stamping operation, and the actor kind without its user segments', () => {
     const { graph, doc, collector, applier } = setup({ nodes: [], links: [] })

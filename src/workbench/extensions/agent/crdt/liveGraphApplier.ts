@@ -231,10 +231,10 @@ interface MalformedDocNode {
   }
 }
 
-/**
- * `typeof` per element, never the element's value: array-typed slots are
- * reported in Sentry, and an element could carry arbitrary user data.
- */
+const MAX_SHAPED_ELEMENTS = 16
+const MAX_DIAGNOSTIC_CHARS = 1024
+const OMISSION_MARKER_CHARS = 8
+
 function elementShape(value: unknown): string {
   if (value === null) return 'null'
   if (Array.isArray(value)) return 'array'
@@ -243,10 +243,38 @@ function elementShape(value: unknown): string {
 
 function valueShape(value: unknown): string {
   if (value === null) return 'null'
-  if (Array.isArray(value))
-    return `array:${value.length}[${value.map(elementShape).join(',')}]`
+  if (Array.isArray(value)) {
+    const shaped = value.slice(0, MAX_SHAPED_ELEMENTS).map(elementShape)
+    const omitted = value.length - shaped.length
+    if (omitted > 0) shaped.push(`+${omitted}`)
+    return `array:${value.length}[${shaped.join(',')}]`
+  }
   if (typeof value === 'object') return `object:${Object.keys(value).length}`
   return typeof value
+}
+
+function boundedContext(
+  context: Record<string, unknown>
+): Record<string, unknown> {
+  const entries = Object.entries(context)
+  const shortestFirst = entries
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    .sort(([, left], [, right]) => left.length - right.length)
+  let remaining = MAX_DIAGNOSTIC_CHARS
+  const truncated = new Map<string, string>()
+  for (const [key, value] of shortestFirst) {
+    if (value.length <= remaining) {
+      remaining -= value.length
+      continue
+    }
+    const kept = value.slice(0, Math.max(0, remaining - OMISSION_MARKER_CHARS))
+    truncated.set(key, `${kept}+${value.length - kept.length}`)
+    remaining = 0
+  }
+  if (truncated.size === 0) return context
+  return Object.fromEntries(
+    entries.map(([key, value]) => [key, truncated.get(key) ?? value])
+  )
 }
 
 /** `absent` when the path's own key is missing, so it is not read as `undefined`. */
@@ -760,7 +788,7 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType,
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context
+        context: boundedContext(context)
       }
     )
   }
