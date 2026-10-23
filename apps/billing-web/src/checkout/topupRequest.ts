@@ -5,6 +5,9 @@ import type {
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
 
+import type { Recheck } from '@/checkout/checkoutPage'
+import type { PayVerdict } from '@/checkout/payVerdict'
+import { topupVerdictOf } from '@/checkout/payVerdict'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
 
 const CARD_METHOD_TYPE = 'card'
@@ -52,7 +55,7 @@ export function interactivePaymentOf(
   return { confirmationToken: choice.confirmationToken, returnUrl }
 }
 
-/** Whether two interactive payments name the same card and confirmation. */
+/** Whether a Pay names the held purchase: the same saved card, or the card form again with its card still typed in. */
 export function isSamePayment(
   held: InteractiveTopupPayment,
   next: InteractiveTopupPayment | undefined
@@ -63,11 +66,7 @@ export function isSamePayment(
       'savedPaymentMethodId' in next &&
       held.savedPaymentMethodId === next.savedPaymentMethodId
     )
-  return (
-    'confirmationToken' in next &&
-    held.confirmationToken === next.confirmationToken &&
-    held.returnUrl === next.returnUrl
-  )
+  return 'confirmationToken' in next && held.returnUrl === next.returnUrl
 }
 
 /**
@@ -87,4 +86,24 @@ export function settlesAttempt(result: TopupResult): boolean {
     httpStatus !== CONFLICT &&
     httpStatus !== RATE_LIMITED
   )
+}
+
+/** A pay-once Pay the server never answered for good is re-read under its held key, never shown a card. */
+export function interactiveVerdictOf(result: TopupResult): PayVerdict {
+  if (result.status === 'unsettled') return rereads('unanswered')
+  if (result.status !== 'error' || settlesAttempt(result))
+    return topupVerdictOf(result)
+  const httpStatus = 'httpStatus' in result ? result.httpStatus : undefined
+  if (httpStatus === CONFLICT) return rereads(undefined)
+  return rereads(httpStatus === RATE_LIMITED ? 'rate_limited' : 'unanswered')
+}
+
+function rereads(because: Recheck | undefined): PayVerdict {
+  return {
+    kind: 'outcome',
+    outcome: {
+      kind: 'reconciling',
+      ...(because === undefined ? {} : { because })
+    }
+  }
 }

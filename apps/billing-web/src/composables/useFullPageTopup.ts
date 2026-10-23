@@ -27,6 +27,7 @@ import {
   UNREADABLE_LINK,
   awaitingServer,
   challengeToReopen,
+  ownOperationOf,
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
@@ -39,6 +40,7 @@ import {
 import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
 import {
   interactivePaymentOf,
+  interactiveVerdictOf,
   isSamePayment,
   settlesAttempt,
   topupReturnUrl
@@ -68,8 +70,6 @@ function capabilityStop(
 
 const CARD_METHOD_TYPE = 'card'
 const CARD_REQUIRED = 'CARD_REQUIRED'
-const HELD_FOR_ANOTHER_PAYMENT = 'HELD_FOR_ANOTHER_PAYMENT'
-const EARLIER_PAYMENT_UNRESOLVED = 'EARLIER_PAYMENT_UNRESOLVED'
 
 type RecoveredOperation = BillingResult<BillingOperationState | undefined>
 
@@ -82,6 +82,15 @@ function eligibleCards(
 interface HeldAttempt {
   readonly payment: InteractiveTopupPayment
   readonly idempotencyKey: string
+}
+
+function declinesOwnPay(before: CheckoutPage, event: CheckoutPageEvent) {
+  if (event.type !== 'operationChanged' && event.type !== 'reconciled')
+    return false
+  const { operation } = event
+  return (
+    operation?.phase === 'failed' && operation.id === ownOperationOf(before)
+  )
 }
 
 /**
@@ -98,8 +107,9 @@ function revisited(page: CheckoutPage): boolean {
  * with whatever the workspace is already waiting on, reads `can_top_up`, and
  * quotes the link's amount. With `unified_billing_settings` on, a quote with
  * a payment configuration pays once with a new card or a chosen saved card,
- * resending one purchase under one key until the server answers it; any
- * other page charges the method on file.
+ * resending one purchase under one key until the server answers it. A Pay
+ * with no answer keeps the page locked while it re-reads what the key became;
+ * any other page charges the method on file.
  * The lifecycle's operation moves the page to its ending.
  */
 export function useFullPageTopup() {
@@ -156,9 +166,12 @@ export function useFullPageTopup() {
     ...(amountCents === undefined ? {} : { initialAmountCents: amountCents })
   })
 
+  let held: HeldAttempt | undefined
+
   function dispatch(event: CheckoutPageEvent) {
     const before = page.value
     page.value = reduceCheckoutPage(before, event)
+    if (declinesOwnPay(before, event)) held = undefined
     if (before.kind !== 'resolving' && page.value.kind === 'resolving')
       void readCapture()
   }
@@ -301,20 +314,14 @@ export function useFullPageTopup() {
   )
 
   let payGeneration = 0
-  let held: HeldAttempt | undefined
   const billedWorkspace = useBilledWorkspace()
 
-  function attemptFor(
-    choice: NonNullable<PayChoice>
-  ): HeldAttempt | typeof HELD_FOR_ANOTHER_PAYMENT | undefined {
+  function attemptFor(choice: NonNullable<PayChoice>): HeldAttempt | undefined {
     const returnUrl =
       arrival &&
       topupReturnUrl(arrival, billedWorkspace(), window.location.origin)
     const payment = interactivePaymentOf(choice, returnUrl)
-    if (held !== undefined)
-      return isSamePayment(held.payment, payment)
-        ? held
-        : HELD_FOR_ANOTHER_PAYMENT
+    if (held !== undefined && isSamePayment(held.payment, payment)) return held
     if (payment === undefined) return undefined
     held = { payment, idempotencyKey: crypto.randomUUID() }
     return held
@@ -336,46 +343,33 @@ export function useFullPageTopup() {
   function sendFor(
     choice: PayChoice,
     amount: number
-  ):
-    | (() => Promise<TopupResult>)
-    | typeof CARD_REQUIRED
-    | typeof HELD_FOR_ANOTHER_PAYMENT
-    | undefined {
+  ): (() => Promise<TopupResult>) | typeof CARD_REQUIRED | undefined {
     if (!paysOnce.value) return () => purchase.submit()
     if (choice === undefined) return undefined
     const attempt = attemptFor(choice)
     if (attempt === undefined) return CARD_REQUIRED
-    if (attempt === HELD_FOR_ANOTHER_PAYMENT) return attempt
     return () => send(attempt, amount)
-  }
-
-  async function settleHeldBeforeAnotherPayment() {
-    dispatch({ type: 'payRejectedAsPending' })
-    const recovered = await reconcile()
-    if (recovered?.status !== 'ok' || recovered.value !== undefined) return
-    dispatch({
-      type: 'payFailed',
-      outcome: { kind: 'processing_error', code: EARLIER_PAYMENT_UNRESOLVED }
-    })
   }
 
   async function follow(verdict: PayVerdict) {
     if (verdict.kind === 'settled') return dispatch({ type: 'paySettled' })
     if (verdict.kind !== 'outcome') return
-    if (verdict.outcome.kind === 'reconciling') {
-      dispatch({ type: 'payRejectedAsPending' })
+    const { outcome } = verdict
+    if (outcome.kind === 'reconciling') {
+      dispatch({
+        type: 'payRejectedAsPending',
+        ...(outcome.because === undefined ? {} : { because: outcome.because })
+      })
       return reconcile()
     }
-    purchase.reset()
-    dispatch({ type: 'payFailed', outcome: verdict.outcome })
+    if (!paysOnce.value) purchase.reset()
+    dispatch({ type: 'payFailed', outcome })
   }
 
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
-    if (run === HELD_FOR_ANOTHER_PAYMENT)
-      return settleHeldBeforeAnotherPayment()
     if (run === CARD_REQUIRED)
       return dispatch({
         type: 'payFailed',
@@ -384,7 +378,10 @@ export function useFullPageTopup() {
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
     await stripeKeyRead
-    const verdict = topupVerdictOf(await run())
+    const result = await run()
+    const verdict = paysOnce.value
+      ? interactiveVerdictOf(result)
+      : topupVerdictOf(result)
     if (mine === payGeneration) await follow(verdict)
   }
 

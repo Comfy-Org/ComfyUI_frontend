@@ -52,9 +52,10 @@ type CollectRail = Extract<PaymentRail, { method: 'collect' }>
 /**
  * What the last Pay left above the button. A `processing_error` with a
  * `code` is a Pay the server refused outright, before any operation existed.
- * `reconciling` is a Pay the server refused because an operation is already
- * pending or settled: no card, Pay stays locked until the page re-reads that
- * operation.
+ * `reconciling` is a Pay the page re-reads before anything else: one the
+ * server refused because an operation is already pending or settled, or one
+ * `because` it got no answer or was rate limited. No card, and the page stays
+ * locked until the re-read lands.
  */
 export type InlineOutcome =
   | {
@@ -71,7 +72,10 @@ export type InlineOutcome =
   | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
-  | { readonly kind: 'reconciling' }
+  | { readonly kind: 'reconciling'; readonly because?: Recheck }
+
+/** Why a Pay is re-read: `unanswered` may have moved money for this page; `rate_limited` was refused before it was taken. */
+export type Recheck = 'unanswered' | 'rate_limited'
 
 /**
  * A plan set to end is kept only once the customer ticks the consent. Pay
@@ -174,13 +178,15 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
+      readonly started?: true
       readonly rail?: PaymentRail
       readonly cancel?: PaymentCancel
     }
   | {
       readonly kind: 'unconfirmed'
-      readonly operationId: string
+      readonly operationId?: string
       readonly sibling?: true
+      readonly started?: true
     }
   | {
       readonly kind: 'terminal'
@@ -257,7 +263,7 @@ export type CheckoutPageEvent =
       readonly type: 'payFailed'
       readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
     }
-  | { readonly type: 'payRejectedAsPending' }
+  | { readonly type: 'payRejectedAsPending'; readonly because?: Recheck }
   /** The server activated the plan on the spot, issuing no operation to follow. */
   | { readonly type: 'paySettled' }
   /** A fresh quote after the server refused the old one; the form stays as typed. */
@@ -447,8 +453,10 @@ export function reduceCheckoutPage(
   if (isRailEvent(event)) return reduceRail(page, event)
   if (isAttemptEvent(event)) return reduceAttempt(page, event)
   if (isCancelEvent(event)) return reduceCancel(page, event)
-  if (isStopEvent(event))
-    return page.kind === 'resolving' ? stoppedOn(page, event) : page
+  if (isStopEvent(event)) {
+    if (page.kind === 'resolving') return stoppedOn(page, event)
+    return event.type === 'recheckFailed' ? recheckLost(page) : page
+  }
   switch (event.type) {
     case 'requoteFailed':
       return leavingCapture(page, {
@@ -784,7 +792,10 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       return withCapture(page, (capture) => ({
         ...capture,
         attempt: IDLE,
-        outcome: { kind: 'reconciling' }
+        outcome: {
+          kind: 'reconciling',
+          ...(event.because === undefined ? {} : { because: event.because })
+        }
       }))
     case 'paySettled':
       return page.kind === 'capture'
@@ -831,11 +842,46 @@ function nothingPending(page: CheckoutPage): CheckoutPage {
       return RESOLVING
     case 'capture':
       return page.outcome?.kind === 'reconciling'
-        ? { ...page, attempt: IDLE, outcome: undefined }
+        ? { ...page, attempt: IDLE, ...nothingChargedNotice(page.outcome) }
         : page
     default:
       return page
   }
+}
+
+function nothingChargedNotice(
+  outcome: Extract<InlineOutcome, { kind: 'reconciling' }>
+): Pick<Capture, 'outcome'> {
+  return outcome.because === 'rate_limited'
+    ? { outcome: { kind: 'processing_error' } }
+    : { outcome: undefined }
+}
+
+function recheckLost(page: CheckoutPage): CheckoutPage {
+  if (
+    page.kind !== 'capture' ||
+    page.outcome?.kind !== 'reconciling' ||
+    page.outcome.because === undefined
+  )
+    return page
+  return page.outcome.because === 'unanswered'
+    ? { kind: 'unconfirmed', started: true }
+    : { kind: 'unconfirmed' }
+}
+
+function rereadsOwnPay(page: Capture): boolean {
+  return (
+    page.outcome?.kind === 'reconciling' &&
+    page.outcome.because === 'unanswered'
+  )
+}
+
+/** The operation a watching page follows for its own unanswered Pay. */
+export function ownOperationOf(page: CheckoutPage): string | undefined {
+  if (page.kind === 'waiting' && page.started === true) return page.operation.id
+  return page.kind === 'unconfirmed' && page.started === true
+    ? page.operationId
+    : undefined
 }
 
 /**
@@ -875,17 +921,23 @@ const outcomeUnknown = (operation: BillingOperationState) =>
 
 type Watching = Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
 
-/** Whether money another tab sent is what a watching page is looking at. */
-const siblingOf = (page: { readonly sibling?: true }) =>
-  page.sibling === true ? { sibling: true as const } : {}
+interface Provenance {
+  readonly sibling?: true
+  readonly started?: true
+}
+
+function provenanceOf(page: Provenance): Provenance {
+  if (page.sibling === true) return { sibling: true }
+  return page.started === true ? { started: true } : {}
+}
 
 const unconfirmed = (
   operation: { readonly id: string },
-  from: { readonly sibling?: true } = {}
+  from: Provenance = {}
 ): CheckoutPage => ({
   kind: 'unconfirmed',
   operationId: operation.id,
-  ...siblingOf(from)
+  ...provenanceOf(from)
 })
 
 /**
@@ -998,7 +1050,7 @@ function watchedUnconfirmed(
   operation: BillingOperationState
 ): CheckoutPage {
   if (isInFlight(operation) && waitingOn(operation) === 'received')
-    return { kind: 'waiting', operation, ...siblingOf(page) }
+    return { kind: 'waiting', operation, ...provenanceOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
     ? page
     : RESOLVING
@@ -1023,6 +1075,7 @@ function watchedWaiting(
 function attributionOf(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
 ): Attribution {
+  if (page.started === true) return 'started'
   return page.kind === 'waiting' && waitingOn(page.operation) === 'verifying'
     ? 'settled'
     : 'followed'
@@ -1048,7 +1101,7 @@ function followedInCapture(
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
-  const started = page.attempt.kind === 'sent'
+  const started = page.attempt.kind === 'sent' || rereadsOwnPay(page)
   if (operation.phase === 'succeeded')
     return started
       ? {
@@ -1063,7 +1116,12 @@ function followedInCapture(
   if (page.attempt.kind === 'sent')
     return followedOwn(page, page.attempt, operation, outcome)
   return isInFlight(operation) && outcome === undefined
-    ? { kind: 'waiting', operation, sibling: true, rail: page.rail }
+    ? {
+        kind: 'waiting',
+        operation,
+        ...(started ? { started: true } : { sibling: true }),
+        rail: page.rail
+      }
     : nothingPending(page)
 }
 
@@ -1193,13 +1251,15 @@ function isProcessing(operation: PendingBillingOperation): boolean {
 
 /**
  * Money on its way locks the page: the back arrow, the tabs, the saved
- * methods and the card form are inert until the attempt resolves back to
- * capture or reaches a terminal. Only Cancel payment stays live.
+ * methods and the card form are inert until the attempt, or the re-read of
+ * a Pay, resolves back to capture or reaches a terminal. Only Cancel payment
+ * stays live.
  */
 export function isLocked(page: CheckoutPage): boolean {
   return (
     page.kind === 'waiting' ||
-    (page.kind === 'capture' && page.attempt.kind === 'sent')
+    (page.kind === 'capture' &&
+      (page.attempt.kind === 'sent' || page.outcome?.kind === 'reconciling'))
   )
 }
 

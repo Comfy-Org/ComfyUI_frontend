@@ -5,6 +5,9 @@ import type { VNode } from 'vue'
 
 import type {
   BillingOperationReceipt,
+  BillingOperationState,
+  BillingResult,
+  PendingBillingOperation,
   SavedPaymentMethod,
   SucceededBillingOperation,
   TopupQuoteResult,
@@ -25,7 +28,8 @@ import {
   createFakeBillingClient,
   failedOperation,
   pendingOperation,
-  succeededOperation
+  succeededOperation,
+  unresolvedOperation
 } from '@/test/fakeBillingClient'
 import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import FullPageTopupView from '@/views/FullPageTopupView.vue'
@@ -507,6 +511,22 @@ const SUCCEEDED: TopupResult = {
   creditsReconciled: true
 }
 
+const NO_ANSWER: TopupResult = {
+  status: 'error',
+  code: 'REQUEST_FAILED',
+  httpStatus: 503
+}
+
+const topupInFlight = (
+  facts: Partial<
+    Pick<PendingBillingOperation, 'authenticationState' | 'serverPhase'>
+  >
+): PendingBillingOperation => ({
+  ...pendingOperation('op_topup'),
+  kind: 'topup',
+  ...facts
+})
+
 function readyCardForm() {
   form.emit('phase', { phase: 'payment_element_ready', element: 'payment' })
 }
@@ -597,11 +617,7 @@ describe('FullPageTopupView paying once', () => {
       paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
     })
     fake.createInteractiveTopup
-      .mockResolvedValueOnce({
-        status: 'error',
-        code: 'REQUEST_FAILED',
-        httpStatus: 503
-      })
+      .mockResolvedValueOnce(NO_ANSWER)
       .mockResolvedValueOnce({
         status: 'declined',
         operation: {
@@ -615,7 +631,7 @@ describe('FullPageTopupView paying once', () => {
     await screen.findByText('Add credits · Acme Team')
 
     await userEvent.click(payButton())
-    await screen.findByRole('alert')
+    await waitFor(() => expect(payButton()).toBeEnabled())
     await userEvent.click(payButton())
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Payment declined')
@@ -635,41 +651,72 @@ describe('FullPageTopupView paying once', () => {
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
 
-  it('keeps an unconfirmed purchase on its card and key when the customer picks another one', async () => {
+  it.for<{ name: string; answer: TopupResult }>([
+    { name: 'a 503', answer: NO_ANSWER },
+    {
+      name: 'no response',
+      answer: { status: 'error', code: 'REQUEST_FAILED' }
+    },
+    {
+      name: 'a 429',
+      answer: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 429 }
+    },
+    {
+      name: 'a 409',
+      answer: { status: 'error', code: 'CONFLICT', httpStatus: 409 }
+    }
+  ])(
+    'keeps the page locked with no card while it re-reads a Pay that got $name, so no other card can be chosen',
+    async ({ answer }) => {
+      const fake = renderTopup({
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+      })
+      fake.createInteractiveTopup.mockResolvedValueOnce(answer)
+      await screen.findByText('Add credits · Acme Team')
+      fake.recover.mockImplementation(() => new Promise(() => {}))
+
+      await userEvent.click(payButton())
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: 'Back' })
+        ).not.toBeInTheDocument()
+      )
+      expect(payButton()).toBeDisabled()
+      expect(payButton()).toHaveAttribute('aria-busy', 'true')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'Contact support' })
+      ).not.toBeInTheDocument()
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('goes back to the form with the card still typed in when the re-read finds nothing charged, and Pay resends it under the same key', async () => {
     const fake = renderTopup({
       topupQuote: PAYS_ONCE,
-      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+      topup: SUCCEEDED,
+      paymentMethods: { status: 'ok', value: [] }
     })
-    fake.createInteractiveTopup
-      .mockResolvedValueOnce({
-        status: 'error',
-        code: 'REQUEST_FAILED',
-        httpStatus: 503
-      })
-      .mockResolvedValueOnce(SUCCEEDED)
+    fake.createInteractiveTopup.mockResolvedValueOnce(NO_ANSWER)
     await screen.findByText('Add credits · Acme Team')
-
-    await userEvent.click(payButton())
-    await screen.findByRole('alert')
-    await userEvent.click(savedPicker())
-    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    readyCardForm()
     const recoversBefore = fake.recover.mock.calls.length
-    await userEvent.click(payButton())
 
+    form.emit('confirm', 'ctoken_1', 'card')
     await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        "Your earlier payment hasn't been confirmed yet."
-      )
+      expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
     )
-    expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
-    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    await waitFor(() => expect(payButton()).toBeEnabled())
 
-    await userEvent.click(savedPicker())
-    await userEvent.click(await screen.findByRole('option', { name: /3184/ }))
-    await userEvent.click(payButton())
-    await waitFor(() =>
-      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
-    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(form.mounts).toBe(1)
+    form.emit('confirm', 'ctoken_2', 'card')
+
+    expect(
+      await screen.findByRole('heading', { name: '5,275 credits added' })
+    ).toBeInTheDocument()
     const [first, resent] = fake.createInteractiveTopup.mock.calls.map(
       ([request]) => request
     )
@@ -681,29 +728,231 @@ describe('FullPageTopupView paying once', () => {
       topupQuote: PAYS_ONCE,
       paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
     })
-    fake.createInteractiveTopup.mockResolvedValueOnce({
-      status: 'error',
-      code: 'REQUEST_FAILED',
-      httpStatus: 503
-    })
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce(SUCCEEDED)
     await screen.findByText('Add credits · Acme Team')
-
-    await userEvent.click(payButton())
-    await screen.findByRole('alert')
     fake.recover.mockResolvedValue({
       status: 'ok',
       value: failedOperation('card_declined', 'op_earlier')
     })
-    await userEvent.click(savedPicker())
-    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+
     await userEvent.click(payButton())
-    await waitFor(() => expect(fake.recover).toHaveBeenCalled())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, resent] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(resent).toStrictEqual(first)
+  })
+
+  it.for<{
+    name: string
+    found: () => BillingResult<BillingOperationState | undefined>
+    heading: string
+    code?: string
+  }>([
+    {
+      name: 'went through is Success',
+      found: () => ({
+        status: 'ok',
+        value: settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 })
+      }),
+      heading: '5,275 credits added'
+    },
+    {
+      name: 'the bank is still settling is Payment in progress',
+      found: () => ({
+        status: 'ok',
+        value: topupInFlight({
+          authenticationState: 'processing',
+          serverPhase: 'in_progress'
+        })
+      }),
+      heading: 'Payment in progress',
+      code: 'op_topup'
+    },
+    {
+      name: 'the server parked for a human is We couldn’t confirm your payment',
+      found: () => ({
+        status: 'ok',
+        value: {
+          ...unresolvedOperation('reconciliation_needed', 'op_topup'),
+          kind: 'topup'
+        }
+      }),
+      heading: "We couldn't confirm your payment",
+      code: 'op_topup'
+    },
+    {
+      name: 'cannot be read is We couldn’t confirm your payment',
+      found: () => ({ status: 'error', code: 'REQUEST_FAILED' }),
+      heading: "We couldn't confirm your payment"
+    }
+  ])(
+    'an unanswered Pay whose re-read $name, with no form',
+    async ({ found, heading, code }) => {
+      const fake = renderTopup({
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA] }
+      })
+      fake.createInteractiveTopup.mockResolvedValueOnce(NO_ANSWER)
+      await screen.findByText('Add credits · Acme Team')
+      fake.recover.mockImplementation(async () => found())
+
+      await userEvent.click(payButton())
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Pay' })
+      ).not.toBeInTheDocument()
+      if (code === undefined)
+        expect(
+          screen.queryByTestId('checkout-ending-code')
+        ).not.toBeInTheDocument()
+      else
+        expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+          code
+        )
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('342-4767: an unanswered Pay whose charge is still processing says it cannot be canceled, then lands on Success', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup.mockResolvedValueOnce(NO_ANSWER)
+    await screen.findByText('Add credits · Acme Team')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: topupInFlight({ authenticationState: 'processing' })
+    })
+
     await userEvent.click(payButton())
 
-    await waitFor(() =>
-      expect(fake.recover.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(
+      await screen.findByText(
+        "This payment is already processing and can't be canceled."
+      )
+    ).toBeInTheDocument()
+    expect(payButton()).toBeDisabled()
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
+
+    fake.publishOperation(
+      settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 })
     )
+
+    expect(
+      await screen.findByRole('heading', { name: '5,275 credits added' })
+    ).toBeInTheDocument()
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('a rate-limited Pay that charged nothing shows the couldn’t-be-processed card and keeps its key', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 429
+      })
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+    const recoversBefore = fake.recover.mock.calls.length
+
+    await userEvent.click(payButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Payment couldn't be processed"
+    )
+    expect(fake.recover.mock.calls.length).toBeGreaterThan(recoversBefore)
+    expect(
+      screen.queryByRole('link', { name: 'Contact support' })
+    ).not.toBeInTheDocument()
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, resent] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(resent).toStrictEqual(first)
+  })
+
+  it('a Pay blocked by a pending operation follows that operation, never a retry card', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup.mockResolvedValueOnce({
+      status: 'error',
+      code: 'CONFLICT',
+      httpStatus: 409
+    })
+    await screen.findByText('Add credits · Acme Team')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: topupInFlight({ authenticationState: 'processing' })
+    })
+
+    await userEvent.click(payButton())
+
+    expect(await screen.findByTestId('checkout-waiting')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(payButton()).toBeDisabled()
+    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('clears the key once the operation an unanswered Pay became is declined, so the next Pay is a new purchase', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+    fake.recover.mockResolvedValueOnce({
+      status: 'ok',
+      value: topupInFlight({ authenticationState: 'processing' })
+    })
+
+    await userEvent.click(payButton())
+    await screen.findByText(
+      "This payment is already processing and can't be canceled."
+    )
+    fake.recover.mockResolvedValue({ status: 'ok', value: undefined })
+    fake.publishOperation({
+      ...failedOperation('card_declined', 'op_topup'),
+      kind: 'topup'
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment declined'
+    )
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, fresh] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(fresh.idempotencyKey).not.toBe(first.idempotencyKey)
   })
 
   it.for([1, 2])(
