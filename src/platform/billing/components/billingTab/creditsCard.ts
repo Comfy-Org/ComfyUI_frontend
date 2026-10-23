@@ -8,6 +8,7 @@ export interface CreditsCardFacts {
   billingStatus: BillingStatus | null
   planPoolCredits: number | null
   isCloud: boolean
+  canManageSubscription: boolean
   renewalDate: string | null
 }
 
@@ -16,7 +17,7 @@ export type CreditsCardState =
   | {
       kind: 'noPlan'
       availableCents: number
-      hint: 'subscribe' | 'resubscribe' | null
+      hint: 'subscribe' | 'resubscribe' | 'memberResubscribe' | null
     }
   | {
       kind: 'plan'
@@ -28,6 +29,14 @@ export type CreditsCardState =
       renewalDate: string | null
     }
 
+function noPlanHint(
+  facts: CreditsCardFacts
+): 'subscribe' | 'resubscribe' | 'memberResubscribe' {
+  if (facts.planKind === 'noPlan') return 'subscribe'
+  if (facts.canManageSubscription) return 'resubscribe'
+  return 'memberResubscribe'
+}
+
 /** Maps the served balance and plan state onto the Credits card. */
 export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   const { balance } = facts
@@ -37,8 +46,11 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   const availableCents = balance.effectiveBalanceMicros ?? balance.amountMicros
 
   if (facts.planKind === 'noPlan' || facts.planKind === 'ended') {
-    const hint = facts.planKind === 'noPlan' ? 'subscribe' : 'resubscribe'
-    return { kind: 'noPlan', availableCents, hint: facts.isCloud ? hint : null }
+    return {
+      kind: 'noPlan',
+      availableCents,
+      hint: facts.isCloud ? noPlanHint(facts) : null
+    }
   }
 
   const overdrawn = availableCents < 0
