@@ -48,7 +48,7 @@
     "knip:components": "knip --production --workspace . --include files",
     "lint:fix:ci": "pnpm lint:fix --cache-strategy content",
     "lint:fix": "pnpm lint:icons && pnpm oxlint --fix && eslint --cache --concurrency auto --fix",
-    "lint:icons": "pnpm --filter @comfyorg/design-system test src/css/icons.test.ts",
+    "lint:icons": "pnpm --filter @comfyorg/design-system lint:icons",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",
     "lint": "pnpm lint:icons && pnpm stylelint && pnpm oxlint && pnpm architecture:check && eslint --cache --concurrency auto",
