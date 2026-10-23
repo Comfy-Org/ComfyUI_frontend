@@ -838,7 +838,7 @@ export const noServerFactLiterals: Rule = {
 const FACT_CONSTRUCTOR = 'receiveServerFact'
 const FACT_PROVIDERS = [
   /(?:^|\/)src\/platform\/serverFacts\/serverFact\.ts$/,
-  /(?:^|\/)src\/platform\/workspace\/composables\/useBillingCapabilities\.ts$/,
+  /(?:^|\/)src\/platform\/billing\/composables\/useBillingCapabilities\.ts$/,
   /\.(?:test|spec|stories)\.ts$/,
   /(?:^|\/)__mocks__\//,
   /(?:^|\/)src\/storybook\//

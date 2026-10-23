@@ -71,16 +71,16 @@ import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -178,7 +178,9 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
-await import('@/extensions/core/cloudSessionCookie')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
 const router = await createAppRouter()
 

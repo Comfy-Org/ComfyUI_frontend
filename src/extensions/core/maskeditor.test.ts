@@ -27,9 +27,8 @@ vi.mock(
   })
 )
 
-import '@/extensions/core/maskeditor'
-
-const ext = vi.mocked(app.registerExtension).mock.calls[0][0]
+const { maskEditorExtension: ext } =
+  await import('@/extensions/core/maskeditor')
 const canvas = fromPartial<LGraphCanvas>({})
 const nodeData = fromPartial<ComfyNodeDef>({ name: 'LoadImage' })
 

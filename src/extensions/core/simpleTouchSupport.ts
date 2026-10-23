@@ -3,8 +3,9 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 import { touchGesture } from './touchPointerGuards'
+import type { ComfyExtension } from '@/types/comfy'
 
-app.registerExtension({
+export const simpleTouchSupportExtension: ComfyExtension = {
   name: 'Comfy.SimpleTouchSupport',
   setup() {
     let touchDist: number | null = null
@@ -157,4 +158,4 @@ app.registerExtension({
       true
     )
   }
-})
+}

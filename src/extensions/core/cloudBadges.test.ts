@@ -6,24 +6,14 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
-import type { ComfyExtension } from '@/types/comfy'
 
-const registerExtension = vi.hoisted(() => vi.fn())
+import { cloudBadgesExtension as extension } from './cloudBadges'
 
 vi.mock(import('@/i18n'))
 
 vi.mock(import('vue'), { spy: true })
 
-vi.mock(import('@/services/extensionService'), () => ({
-  useExtensionService: () =>
-    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
-}))
-
-await import('./cloudBadges')
-
 const watchersStartedAtImport = vi.mocked(watch).mock.calls.length
-const extension: ComfyExtension = registerExtension.mock.calls[0][0]
 
 describe('cloudBadges', () => {
   it('reads no canvas store and starts no watcher at import', () => {

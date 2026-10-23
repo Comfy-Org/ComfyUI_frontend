@@ -1,6 +1,6 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -11,7 +11,10 @@ import { createI18n } from 'vue-i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -41,7 +44,7 @@ afterAll(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 function makeSubscription(
   overrides: Partial<SubscriptionInfo> = {}
@@ -68,9 +71,9 @@ const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
