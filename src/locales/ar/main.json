@@ -5431,6 +5431,7 @@
     "logoProviderSeparator": " و "
   },
   "textEditor": {
+    "characterCount": "{count} حرف | {count} حرف",
     "expand": "توسيع",
     "title": "{widget} · {node}"
   },

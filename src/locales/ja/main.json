@@ -5431,6 +5431,7 @@
     "logoProviderSeparator": " ＆ "
   },
   "textEditor": {
+    "characterCount": "{count} 文字",
     "expand": "拡大",
     "title": "{widget} · {node}"
   },

@@ -4134,6 +4134,7 @@
     }
   },
   "textEditor": {
+    "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
     "title": "{widget} · {node}"
   },

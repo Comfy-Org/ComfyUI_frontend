@@ -8,87 +8,82 @@
       )
     "
   >
-    <label
-      v-if="!hideLayoutField"
-      :for="id"
-      :class="
-        cn(
-          'pointer-events-none absolute top-1 left-2 z-10 rounded-sm px-1 text-2xs text-muted-foreground',
-          isReadOnly ? 'bg-input/50' : 'bg-input'
-        )
-      "
-    >
-      {{ displayName }}
-    </label>
-    <Textarea
-      v-bind="filteredProps"
-      :id
-      ref="textAreaRef"
-      v-model="modelValue"
-      :class="
-        cn(
-          WidgetInputBaseClass,
-          'size-full resize-none pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal',
-          !hideLayoutField && 'pt-5',
-          'overflow-hidden hover:overflow-auto focus:overflow-auto'
-        )
-      "
-      :placeholder
-      :readonly="isReadOnly"
-      data-capture-wheel="true"
-      @pointerdown.capture.stop="trackFocus"
-      @pointermove.capture.stop
-      @pointerup.capture.stop
-      @contextmenu.capture="handleContextMenu"
-    />
     <div
-      role="group"
-      :aria-label="$t('g.actions')"
-      class="pointer-events-none absolute top-0 right-0 z-10 flex gap-1 py-1.5 pr-1.5 pl-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+      :class="
+        cn(
+          'flex size-full flex-col overflow-hidden rounded-md',
+          !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
+        )
+      "
     >
-      <div
-        aria-hidden="true"
-        class="absolute inset-0 -z-10 scrollbar-gutter-stable overflow-hidden pr-4"
-      >
+      <div class="flex h-6 shrink-0 items-center gap-2 px-3">
+        <label
+          v-if="!hideLayoutField"
+          :for="id"
+          class="min-w-0 truncate text-2xs text-muted-foreground"
+        >
+          {{ displayName }}
+        </label>
         <div
-          :class="
-            cn(
-              'size-full bg-linear-to-r from-transparent to-50%',
-              isReadOnly ? 'to-input/50' : 'to-input'
-            )
-          "
-        />
+          role="group"
+          :aria-label="$t('g.actions')"
+          class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+        >
+          <span class="pr-1 text-2xs text-muted-foreground tabular-nums">
+            {{ characterCount }}
+          </span>
+          <span aria-hidden="true" class="mr-1 h-3 w-px bg-border" />
+          <Button
+            variant="textonly"
+            size="icon-sm"
+            :class="actionButtonClass"
+            :title="$t('g.copyToClipboard')"
+            :aria-label="$t('g.copyToClipboard')"
+            @click="handleCopy"
+            @pointerdown.capture.stop
+          >
+            <i class="icon-[lucide--copy] size-3" />
+          </Button>
+          <Button
+            v-if="!widget.linkedUpstream"
+            variant="textonly"
+            size="icon-sm"
+            :class="actionButtonClass"
+            :title="$t('textEditor.expand')"
+            :aria-label="$t('textEditor.expand')"
+            @click="openTextEditor"
+            @pointerdown.capture.stop
+          >
+            <i class="icon-[lucide--maximize-2] size-3" />
+          </Button>
+        </div>
       </div>
-      <Button
-        v-if="isReadOnly"
-        variant="tertiary"
-        size="unset"
-        :class="actionButtonClass"
-        :title="$t('g.copyToClipboard')"
-        :aria-label="$t('g.copyToClipboard')"
-        @click="handleCopy"
-        @pointerdown.capture.stop
-      >
-        <i class="icon-[lucide--copy] size-3" />
-      </Button>
-      <Button
-        v-if="!widget.linkedUpstream"
-        variant="tertiary"
-        size="unset"
-        :class="actionButtonClass"
-        :title="$t('textEditor.expand')"
-        :aria-label="$t('textEditor.expand')"
-        @click="openTextEditor"
-        @pointerdown.capture.stop
-      >
-        <i class="icon-[lucide--maximize-2] size-3" />
-      </Button>
+      <Textarea
+        v-bind="filteredProps"
+        :id
+        ref="textAreaRef"
+        v-model="modelValue"
+        :class="
+          cn(
+            'min-h-0 flex-1 resize-none rounded-none border-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground focus-visible:ring-0',
+            'overflow-hidden hover:overflow-auto focus:overflow-auto'
+          )
+        "
+        :placeholder
+        :readonly="isReadOnly"
+        data-capture-wheel="true"
+        @pointerdown.capture.stop="trackFocus"
+        @pointermove.capture.stop
+        @pointerup.capture.stop
+        @contextmenu.capture="handleContextMenu"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -106,10 +101,8 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import { WidgetInputBaseClass } from './layout'
-
 const actionButtonClass =
-  'pointer-events-none size-6 border border-solid border-border shadow-md group-hover:pointer-events-auto'
+  'pointer-events-none rounded-sm hover:bg-muted group-hover:pointer-events-auto'
 
 const {
   widget,
@@ -138,6 +131,14 @@ const filteredProps = computed(() =>
 )
 
 const displayName = computed(() => widget.label || widget.name)
+const { t, n } = useI18n()
+const characterCount = computed(() =>
+  t(
+    'textEditor.characterCount',
+    { count: n(modelValue.value.length) },
+    modelValue.value.length
+  )
+)
 const id = useId()
 
 const isReadOnly = computed(() =>
