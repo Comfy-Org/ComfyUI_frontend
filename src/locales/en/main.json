@@ -1580,7 +1580,9 @@
     "Browse Templates": "Browse Templates",
     "Copy": "Copy",
     "Delete Selected Items": "Delete Selected Items",
+    "Delete Selected Links": "Delete Selected Links",
     "Zoom to fit": "Zoom to fit",
+    "Hide Selected Links": "Hide Selected Links",
     "Lock Canvas": "Lock Canvas",
     "Move Selected Nodes Down": "Move Selected Nodes Down",
     "Move Selected Nodes Left": "Move Selected Nodes Left",
@@ -1591,6 +1593,7 @@
     "Reset View": "Reset View",
     "Resize Selected Nodes": "Resize Selected Nodes",
     "Select All": "Select All",
+    "Show Selected Links": "Show Selected Links",
     "Node Links": "Node Links",
     "Canvas Toggle Lock": "Canvas Toggle Lock",
     "Minimap": "Minimap",
@@ -1986,6 +1989,8 @@
     "mage": "mage",
     "joyimage": "joyimage",
     "boogu": "boogu",
+    "moss_image": "moss_image",
+    "fibo": "fibo",
     "chroma radiance": "chroma radiance",
     "supir": "supir",
     "anima": "anima",
@@ -2034,6 +2039,7 @@
     "Meshy": "Meshy",
     "Meta": "Meta",
     "MiniMax": "MiniMax",
+    "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
@@ -2048,10 +2054,12 @@
     "sync_so": "sync.so",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
-    "WaveSpeed": "WaveSpeed"
+    "WaveSpeed": "WaveSpeed",
+    "testing": "testing"
   },
   "dataTypes": {
     "*": "*",
@@ -2689,7 +2697,7 @@
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
       "unverifiedBadge": "Name not verified",
-      "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} \u2014 make sure you recognize it.",
+      "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
       "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
@@ -2981,6 +2989,8 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "purchaseDisclosure": "Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.",
+      "planRequiredResubscribe": "Credits don't include a Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Credits don't include a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3589,6 +3599,7 @@
           "updatePayment": "Update payment"
         },
         "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "turnedOff": "Turned off after 3 declined charges. Update your payment method, then turn it back on.",
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
@@ -3599,6 +3610,7 @@
         "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
         "status": {
           "failed": "Failed",
+          "turnedOff": "Turned off",
           "off": "Off",
           "on": "On",
           "onHold": "On hold",
@@ -3617,8 +3629,9 @@
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
-        "resubscribe": "Resubscribe to use credits on Cloud.",
-        "subscribe": "Subscribe to use credits on Cloud.",
+        "memberResubscribe": "Your workspace owner needs to resubscribe to run workflows on Cloud.",
+        "resubscribe": "Resubscribe to run workflows on Cloud.",
+        "subscribe": "Subscribe to run workflows on Cloud.",
         "title": "Credits",
         "topUp": "Top-up",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
@@ -3687,6 +3700,14 @@
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
+      },
+      "autoTopUpFailed": {
+        "title": "Auto top-up failed",
+        "body": "Your auto top-up charge didn't go through. Update your payment method or add credits manually."
+      },
+      "autoTopUpOff": {
+        "title": "Auto top-up turned off",
+        "body": "Your payment method was declined 3 times in a row. Update your payment method, then turn auto top-up back on."
       },
       "lowCredits": {
         "title": "Credits are low",
@@ -4045,7 +4066,10 @@
     "linkRefused": "Couldn't open this deployment",
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
-    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again."
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -5824,6 +5848,7 @@
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
@@ -5999,6 +6024,8 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",
+    "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
+    "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6047,7 +6074,7 @@
     "targetNavigationUnavailable": "This workflow target is no longer available.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
-    "workflowSyncFailedDetailCatalogMismatch": "This workflow uses a node catalog that is incompatible with this workspace. Your canvas has been left unchanged.",
+    "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
     "workflowSyncFailedDetailStaleClient": "This page is out of date, so the agent's changes can't be shown. Reload the page to see them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",

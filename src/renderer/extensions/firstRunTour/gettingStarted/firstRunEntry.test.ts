@@ -8,7 +8,7 @@ import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
@@ -61,7 +61,7 @@ vi.mocked(VueUse.createSharedComposable).mockImplementation(
   sharedComposable.create
 )
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
