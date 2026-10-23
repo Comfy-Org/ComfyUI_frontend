@@ -214,34 +214,26 @@ describe('WidgetItem', () => {
       expect(stub.type).toBe('combo')
     })
 
-    it('renders a widget with no type instead of throwing', async () => {
-      const user = userEvent.setup()
-      const callback = vi.fn()
-      const widget = createMockWidget({ type: undefined, callback })
+    it.for([
+      { scenario: 'no type', type: undefined, renderedType: null },
+      { scenario: 'a non-string type', type: 7, renderedType: '7' }
+    ])(
+      'renders a legacy widget with $scenario',
+      async ({ type, renderedType }) => {
+        const user = userEvent.setup()
+        const callback = vi.fn()
+        const widget = createMockWidget({ callback })
+        Reflect.set(widget, 'type', type)
 
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-      await user.click(screen.getByRole('button', { name: 'test_widget' }))
+        const { container } = renderWidgetItem(widget)
+        const stub = getStubWidget(container)
+        await user.click(screen.getByRole('button', { name: 'test_widget' }))
 
-      expect(stub.name).toBe('test_widget')
-      expect(stub.type).toBeNull()
-      expect(callback).not.toHaveBeenCalled()
-    })
-
-    it('renders a legacy widget with a non-string type', async () => {
-      const user = userEvent.setup()
-      const callback = vi.fn()
-      const widget = createMockWidget({ callback })
-      Reflect.set(widget, 'type', 7)
-
-      const { container } = renderWidgetItem(widget)
-      const stub = getStubWidget(container)
-      await user.click(screen.getByRole('button', { name: 'test_widget' }))
-
-      expect(stub.name).toBe('test_widget')
-      expect(stub.type).toBe('7')
-      expect(callback).not.toHaveBeenCalled()
-    })
+        expect(stub.name).toBe('test_widget')
+        expect(stub.type).toBe(renderedType)
+        expect(callback).not.toHaveBeenCalled()
+      }
+    )
 
     it('passes name from widget state to the widget component', () => {
       const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
