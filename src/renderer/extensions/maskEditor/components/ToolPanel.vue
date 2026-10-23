@@ -43,9 +43,9 @@
       <button
         type="button"
         class="mb-2 flex size-12 cursor-pointer flex-col items-center justify-center rounded-md border-none bg-transparent text-muted-foreground transition-colors duration-200 hover:bg-accent"
-        :aria-label="t('maskEditor.clickToResetZoom')"
         @click="onResetZoom"
       >
+        <span class="sr-only">{{ t('maskEditor.clickToResetZoom') }}</span>
         <span data-testid="zoom-percentage" class="text-sm">{{
           zoomText
         }}</span>

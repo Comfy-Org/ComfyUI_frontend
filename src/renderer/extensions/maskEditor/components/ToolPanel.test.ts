@@ -155,6 +155,9 @@ describe('ToolPanel', () => {
       renderPanel()
 
       expect(screen.getByTestId('zoom-percentage').textContent).toBe('124%')
+      expect(
+        screen.getByRole('button', { name: /Click to reset zoom/ })
+      ).toHaveAccessibleName(/124%/)
     })
 
     it('should render image dimensions when an image is loaded', () => {
@@ -176,7 +179,7 @@ describe('ToolPanel', () => {
       renderPanel()
 
       await user.click(
-        screen.getByRole('button', { name: 'Click to reset zoom' })
+        screen.getByRole('button', { name: /Click to reset zoom/ })
       )
 
       expect(mockStore.resetZoom).toHaveBeenCalledTimes(1)
