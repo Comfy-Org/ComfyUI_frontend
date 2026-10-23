@@ -5791,6 +5791,7 @@
     "loadFailed": "The agent panel failed to load.",
     "askAgent": "Ask agent",
     "referenceInAgent": "Reference in agent",
+    "new": "NEW",
     "entryButton": "Agent",
     "entryStarting": "Agent starting…",
     "entryFailed": "Agent unavailable",

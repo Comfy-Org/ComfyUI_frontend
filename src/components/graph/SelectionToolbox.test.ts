@@ -337,6 +337,26 @@ describe('SelectionToolbox', () => {
       ).toBeTruthy()
     })
 
+    it('shows the ask agent new dot when the agent is on and unseen', () => {
+      useAgentPanelStore().enabled = true
+      setCanvasSelection([new LGraphNode('Test Node')])
+      const { container } = renderComponent()
+
+      expect(
+        container.querySelector('[data-testid="ask-agent-new-dot"]')
+      ).toBeTruthy()
+    })
+
+    it('hides the ask agent new dot when the agent is off', () => {
+      useAgentPanelStore().enabled = false
+      setCanvasSelection([new LGraphNode('Test Node')])
+      const { container } = renderComponent()
+
+      expect(
+        container.querySelector('[data-testid="ask-agent-new-dot"]')
+      ).toBeFalsy()
+    })
+
     it('should show mask editor only for single image nodes', () => {
       const imageNode = new LGraphNode('Test Node')
       imageNode.previewMediaType = 'image'

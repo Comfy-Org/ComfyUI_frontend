@@ -15,6 +15,14 @@
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <span class="flex-1">{{ item.label }}</span>
+        <Badge
+          v-if="item.badge"
+          variant="pill"
+          severity="default"
+          class="ml-3 px-1.5 uppercase"
+        >
+          {{ item.badge }}
+        </Badge>
         <span
           v-if="item.shortcut"
           class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
@@ -34,6 +42,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
+import Badge from '@/components/ui/badge/Badge.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
 import type {
@@ -137,6 +146,7 @@ function convertToMenuItem(option: MenuOption): NodeMenuItem {
     icon: option.icon,
     disabled: option.disabled,
     shortcut: option.shortcut,
+    badge: option.badgeLabel,
     command: option.action
   }
 }

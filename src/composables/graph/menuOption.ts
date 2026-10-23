@@ -7,6 +7,7 @@ export interface MenuOption {
   action?: () => void
   submenu?: SubMenuOption[]
   badge?: BadgeVariant
+  badgeLabel?: string
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
