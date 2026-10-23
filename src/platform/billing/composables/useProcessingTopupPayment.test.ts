@@ -8,7 +8,10 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { BalanceInfo, SubscriptionInfo } from '@/platform/billing/composables/types'
+import type {
+  BalanceInfo,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
@@ -30,7 +33,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
@@ -42,7 +45,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return state.isCloud
   }
 }))
-vi.mock(import('@/config/billingWeb'), () => ({
+vi.mock(import('@/platform/billing/billingWeb'), () => ({
   getBillingWebUrl: () => new URL('http://localhost:5174')
 }))
 vi.mock(import('@/config/comfyApi'), () => ({

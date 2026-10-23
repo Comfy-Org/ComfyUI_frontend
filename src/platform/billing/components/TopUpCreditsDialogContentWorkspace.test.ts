@@ -2458,6 +2458,24 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(screen.getByRole('button', { name: '$50' })).toBeEnabled()
     })
 
+    it('places the notice between the amount choices and Add credits', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      const preset = screen.getByRole('button', { name: '$50' })
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(
+        preset.compareDocumentPosition(notice) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      expect(
+        notice.compareDocumentPosition(addCredits) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
     it('drops the amount when the server does not serve one', async () => {
       vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
       serveProcessingCheckout(null)

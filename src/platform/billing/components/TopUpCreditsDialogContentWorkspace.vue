@@ -40,23 +40,6 @@
         <i class="icon-[lucide--x] size-6" />
       </button>
     </div>
-    <div
-      v-if="processingPayment && step === 'amount'"
-      role="status"
-      class="mx-8 mb-2 flex flex-col gap-1 rounded-2xl border border-border/60 p-4"
-      data-testid="topup-payment-processing-notice"
-    >
-      <div class="flex items-center gap-2">
-        <i
-          class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
-        <span class="text-sm text-foreground">{{ processingNoticeTitle }}</span>
-      </div>
-      <p class="m-0 pl-6 text-sm text-muted-foreground">
-        {{ $t('credits.topUp.paymentProcessingBody') }}
-      </p>
-    </div>
     <p
       v-if="isInsufficientCredits && step === 'amount'"
       class="m-0 px-8 text-sm text-muted-foreground"
@@ -361,6 +344,25 @@
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
       <div v-else class="flex flex-col gap-2">
+        <div
+          v-if="processingPayment && step === 'amount'"
+          role="status"
+          class="flex flex-col gap-1 rounded-2xl border border-border/60 p-4"
+          data-testid="topup-payment-processing-notice"
+        >
+          <div class="flex items-center gap-2">
+            <i
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span class="text-sm text-foreground">{{
+              processingNoticeTitle
+            }}</span>
+          </div>
+          <p class="m-0 pl-6 text-sm text-muted-foreground">
+            {{ $t('credits.topUp.paymentProcessingBody') }}
+          </p>
+        </div>
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
