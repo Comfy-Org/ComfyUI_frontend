@@ -67,9 +67,7 @@ function stopPreview(event: Event): void {
       :class="
         cn(
           'flex items-center justify-center',
-          multi
-            ? 'size-full'
-            : 'aspect-square w-40 bg-accent'
+          multi ? 'size-full' : 'aspect-square w-40 bg-accent'
         )
       "
     >
