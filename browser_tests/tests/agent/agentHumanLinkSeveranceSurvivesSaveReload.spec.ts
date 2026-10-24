@@ -40,10 +40,29 @@ test.describe(
       await test.step('the user severs one connection on the canvas', async () => {
         const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
         const targetInput = await targetNode.getInput(0)
-        await comfyPage.canvasOps.dragAndDrop(await targetInput.getPosition(), {
-          x: 800,
-          y: 100
+        const emptyCanvasPosition = await page.evaluate(() => {
+          const app = window.app!
+          const canvas = app.canvas.canvas
+          const bounds = canvas.getBoundingClientRect()
+
+          for (let y = bounds.bottom - 40; y >= bounds.top + 40; y -= 40) {
+            for (let x = bounds.left + 40; x <= bounds.right - 40; x += 40) {
+              if (document.elementFromPoint(x, y) !== canvas) continue
+
+              const [canvasX, canvasY] = app.clientPosToCanvasPos([x, y])
+              if (!app.graph.getNodeOnPos(canvasX, canvasY, app.graph.nodes)) {
+                return { x, y }
+              }
+            }
+          }
+
+          throw new Error('No visible empty canvas position found')
         })
+        await comfyPage.canvasOps.dragAndDrop(
+          await targetInput.getPosition(),
+          emptyCanvasPosition
+        )
+        await targetInput.expectLinkCount(0)
         expect(await agentConversation.canvasLinkIds()).not.toContain(
           SEVERED_LINK_ID
         )
