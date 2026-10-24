@@ -136,10 +136,13 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     compatibility: DeploymentCompatibility
   } | null>(null)
   let checkFailureReported = false
+  let latestCheck = 0
 
   watch(
     requestKey,
     async (key) => {
+      const check = ++latestCheck
+      answer.value = null
       const current = request.value
       if (key === null || current === null) return
       try {
@@ -147,7 +150,7 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
           current.workspaceId,
           current.nodeTypes
         )
-        if (requestKey.value === key) answer.value = { key, compatibility }
+        if (check === latestCheck) answer.value = { key, compatibility }
       } catch (error) {
         if (checkFailureReported) return
         checkFailureReported = true

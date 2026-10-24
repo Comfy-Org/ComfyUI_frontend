@@ -1148,6 +1148,28 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
+  it('opens its list when the missing-nodes message asks for the switcher', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.queryByRole('menu')).toBeNull()
+
+    useDeploymentPickStore().requestSwitcherOpen()
+
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+  })
+
+  it('does not open on its own later for an ask made before it could show', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    useDeploymentPickStore().requestSwitcherOpen()
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-trigger')
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
   describe('marks which deployments can run the open workflow', () => {
     beforeEach(() => {
       hoisted.rootGraph = workflowWith(
