@@ -1324,8 +1324,9 @@ export class ComfyApi extends EventTarget {
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const prefetched = this.nodeDefsPrefetch
     this.nodeDefsPrefetch = undefined
-    const resp = await (prefetched ??
-      this.fetchApi('/object_info', { cache: 'no-store' }))
+    const fetchFresh = () =>
+      this.fetchApi('/object_info', { cache: 'no-store' })
+    const resp = await (prefetched?.catch(fetchFresh) ?? fetchFresh())
     return await resp.json()
   }
 

@@ -160,6 +160,32 @@ describe('CreditSlider', () => {
     )
   })
 
+  it.for([
+    ['monthly', '$390'],
+    ['yearly', '$378']
+  ] as const)(
+    'shows the served %s price, not the rounded discount applied to the list price',
+    async ([cycle, price]) => {
+      renderSlider({
+        modelValue: 400,
+        cycle,
+        stops: [
+          {
+            id: 'team_400',
+            usd: 400,
+            credits: 84_400,
+            discountPercentYearly: 6,
+            priceUsd: { monthly: 390, yearly: 378 },
+            periodChargeUsd: { monthly: 390, yearly: 4536 }
+          }
+        ]
+      })
+      await flush()
+
+      expect(screen.getByTestId('credit-slider-price')).toHaveTextContent(price)
+    }
+  )
+
   it('applies the fractional monthly discount at $400 (2.5%)', async () => {
     renderSlider({ modelValue: 400, cycle: 'monthly' })
     await flush()
