@@ -1,4 +1,4 @@
-import { partition, sortBy } from 'es-toolkit'
+import { inRange, partition, sortBy } from 'es-toolkit'
 
 import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import {
@@ -39,7 +39,7 @@ interface LinkSelectionHost extends LinkMutationHost {
 
 interface LinkJumpHost {
   graph: LGraph | null
-  ds: Pick<DragAndScale, 'fitToBounds'>
+  ds: Pick<DragAndScale, 'fitToBounds' | 'getViewportSize' | 'scale'>
   animateToBounds(bounds: ReadOnlyRect, options?: AnimationOptions): void
   setDirty(foreground: boolean, background?: boolean): void
 }
@@ -263,18 +263,25 @@ function linkEndNode(graph: LGraph, nodeId: NodeId): LinkEndNode | undefined {
   return node ? { kind: 'node', node } : undefined
 }
 
+function slotCount(end: LinkEndNode, type: SlotType): number {
+  if (end.kind !== 'node') return end.node.slots.length
+  return type === 'input' ? end.node.inputs.length : end.node.outputs.length
+}
+
 function socketPosition(
   end: LinkEndNode,
   type: SlotType,
   slot: number
 ): Point | undefined {
-  const pos =
+  if (!Number.isInteger(slot) || !inRange(slot, slotCount(end, type)))
+    return undefined
+  const [x, y] =
     end.kind !== 'node'
-      ? end.node.slots.at(slot)?.pos
+      ? end.node.slots[slot].pos
       : type === 'input'
         ? end.node.getInputPos(slot)
         : end.node.getOutputPos(slot)
-  return pos && { x: pos[0], y: pos[1] }
+  return { x, y }
 }
 
 /** The nodes at the far end of a socket's selected links, top to bottom; none for a marquee. */
@@ -308,9 +315,17 @@ export function goToLinkDestination(
   const destination = getSelectedLinkDestinations(graph).find(
     (candidate) => candidate.nodeId === nodeId
   )
-  if (!destination || !selectArrivalSocket(graph, socketType, destination))
-    return false
-  panToBounds(host, destination.node.boundingRect, options)
+  if (!destination) return false
+  const arrival = selectArrivalSocket(graph, socketType, destination)
+  if (!arrival) return false
+  const nodeBounds = destination.node.boundingRect
+  panToBounds(
+    host,
+    fitsInView(host.ds, nodeBounds, options.viewport)
+      ? nodeBounds
+      : [arrival.x, arrival.y, 0, 0],
+    options
+  )
   return true
 }
 
@@ -318,16 +333,27 @@ function selectArrivalSocket(
   graph: LGraph,
   departureType: SlotType,
   destination: LinkDestination
-): boolean {
+): Point | undefined {
   const arrivalType = oppositeSlotType(departureType)
   const arrivalSlot = Math.min(
     ...destination.links.map((link) => farEnd(link, departureType).slot)
   )
   const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
   const position = socketPosition(destination, arrivalType, arrivalSlot)
-  if (!links.length || !position) return false
+  if (!links.length || !position) return undefined
   selectSocketLinks(links, arrivalType, position)
-  return true
+  return position
+}
+
+function fitsInView(
+  ds: LinkJumpHost['ds'],
+  [, , width, height]: ReadOnlyRect,
+  viewport: ReadOnlyRect | undefined
+): boolean {
+  const [viewWidth, viewHeight] = viewport
+    ? [viewport[2], viewport[3]]
+    : ds.getViewportSize()
+  return width * ds.scale <= viewWidth && height * ds.scale <= viewHeight
 }
 
 function panToBounds(
