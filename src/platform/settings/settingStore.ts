@@ -259,11 +259,7 @@ export const useSettingStore = defineStore('setting', () => {
     await persistSetting(key, value, { revertOnFailure: false })
   }
 
-  /**
-   * Set a value, restoring the one it replaced when the write does not
-   * succeed. An unreachable backend may still have committed the value, so the
-   * restore reflects the local store only and is not a claim about the server.
-   */
+  /** Set a value, restoring the previous local value if the write fails. */
   async function setOrRevert<K extends RevertibleSettingId>(
     key: K,
     value: Settings[K]
