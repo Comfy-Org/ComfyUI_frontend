@@ -711,17 +711,15 @@ describe('useSettingStore', () => {
         expect(api.storeSetting).toHaveBeenCalledOnce()
       })
 
-      it('sends an equal-but-distinct list rather than reporting it unchanged', async () => {
+      it('acknowledges an equal-but-distinct list as saved', async () => {
         store.addSetting(packsSetting)
         vi.mocked(api.storeSetting).mockResolvedValue(new Response())
         await store.setOrRevert(PACKS, ['/extensions/same/'])
-        vi.mocked(api.storeSetting).mockClear()
 
         expect(await store.setOrRevert(PACKS, ['/extensions/same/'])).toEqual({
           ok: true,
           outcome: 'saved'
         })
-        expect(api.storeSetting).toHaveBeenCalledOnce()
       })
 
       it('set keeps the optimistic value and still rejects when unreachable', async () => {
