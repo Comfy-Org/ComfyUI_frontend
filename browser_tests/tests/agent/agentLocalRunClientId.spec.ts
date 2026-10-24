@@ -11,26 +11,30 @@ test.describe(
   'Agent local run follows this canvas by borrowing its client id (PM-1875)',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('a run the agent starts highlights and lands its output on this canvas', async ({
+    test('a run the agent starts highlights and lands its output only on this connected canvas', async ({
       rig: {
         turnPosts,
         startRunForUser,
         finishRunForUser,
         runningOutline,
         outputImage,
-        outputFilename
+        outputFilename,
+        openPeer
       },
       page
     }) => {
+      test.setTimeout(60_000)
       expect(turnPosts()).toHaveLength(1)
       expect(turnPosts()[0]).toMatchObject({ client_id: COMFY_SOCKET_SID })
 
+      const peer = await openPeer()
       const jobId = 'agent-local-run-addressed'
-      await startRunForUser(jobId)
+      await Promise.all([startRunForUser(jobId), peer.startRunForUser(jobId)])
 
       await expect(runningOutline).toBeVisible()
+      await expect(peer.runningOutline).toHaveCount(0)
 
-      await finishRunForUser(jobId)
+      await Promise.all([finishRunForUser(jobId), peer.finishRunForUser(jobId)])
 
       await expect(outputImage).toBeVisible()
       await expect(outputImage).toHaveAttribute(
@@ -41,6 +45,11 @@ test.describe(
       const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await expect(queuePanel.jobRow(jobId)).toBeVisible()
+
+      const peerQueuePanel = new QueuePanel(peer.page)
+      await peerQueuePanel.open()
+      await expect(peerQueuePanel.jobRow(jobId)).toBeVisible()
+      await expect(peer.outputImage).toHaveCount(0)
     })
 
     test.describe('before this tab has a socket id of its own', () => {

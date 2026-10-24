@@ -165,7 +165,7 @@ export class AgentExecutionHelper {
     { nodeId, filename }: { nodeId: string; filename: string }
   ): void {
     this.viewFiles[filename] = {}
-    this.hostSocket.sendExecution({
+    this.unicast(jobId, {
       type: 'executed',
       data: {
         prompt_id: jobId,
