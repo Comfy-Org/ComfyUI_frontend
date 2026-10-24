@@ -1,0 +1,157 @@
+{
+  "10": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "11": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["10", 0],
+      "lora_name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+      "strength_model": 1
+    }
+  },
+  "12": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    }
+  },
+  "13": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    }
+  },
+  "14": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    }
+  },
+  "15": {
+    "class_type": "ResolutionSelector",
+    "inputs": {
+      "aspect_ratio": "16:9 (Widescreen)",
+      "megapixels": 0.4,
+      "multiple": 32
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "KEY ART"
+    },
+    "inputs": {
+      "image": "c6b90062f3f35b280f3a83dd08aa2a55dc2a933317e9b25fe956f3ad1f5e7110.png"
+    }
+  },
+  "17": {
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "SOURCE VIDEO"
+    },
+    "inputs": {
+      "video": "823d082a6cd396393aa578e9c0833cd75a3b2bf7cc01678939df953246a26deb.mp4",
+      "force_rate": 24,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 124,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    }
+  },
+  "18": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": ["12", 0],
+      "prompt": "Restyle the video using <Picture 1> as the reference for style, background and lighting. Keep the motion, framing and timing of <Video 1> exactly as they are. Replace the environment with the shattered stone courtyard from <Picture 1>, molten orange firelight, heavy volumetric smoke, deep teal shadows, cinematic high contrast film grade.",
+      "width": ["15", 0],
+      "height": ["15", 1],
+      "length": 124,
+      "ref_image_size": "match",
+      "vae": ["13", 0],
+      "audio_vae": ["14", 0],
+      "ref_images.ref_image_0": ["16", 0],
+      "ref_videos.ref_video_0": ["17", 0]
+    }
+  },
+  "19": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 304792529092339
+    }
+  },
+  "20": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    }
+  },
+  "21": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": ["11", 0],
+      "scheduler": "simple",
+      "steps": 4,
+      "denoise": 1
+    }
+  },
+  "22": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": ["11", 0],
+      "conditioning": ["18", 0]
+    }
+  },
+  "23": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["19", 0],
+      "guider": ["22", 0],
+      "sampler": ["20", 0],
+      "sigmas": ["21", 0],
+      "latent_image": ["18", 1]
+    }
+  },
+  "24": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["23", 0],
+      "vae": ["13", 0]
+    }
+  },
+  "25": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": ["23", 0],
+      "vae": ["14", 0]
+    }
+  },
+  "26": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["24", 0],
+      "audio": ["25", 0],
+      "fps": 24,
+      "bit_depth": 8
+    }
+  },
+  "27": {
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "RESULT"
+    },
+    "inputs": {
+      "video": ["26", 0],
+      "filename_prefix": "video/act1_restyle",
+      "format": "auto",
+      "codec": "auto"
+    }
+  }
+}

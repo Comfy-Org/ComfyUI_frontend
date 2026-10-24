@@ -48,7 +48,7 @@ test('workflow launch groups lead to the existing shared form', async ({
     'Upscale & restore',
     'Edit & clean up photos'
   ])
-  await expect(catalogue.getByTestId('workshop-model-card')).toHaveCount(30)
+  await expect(catalogue.getByTestId('workshop-model-card')).toHaveCount(31)
   await expect(catalogue.getByTestId('workshop-sort')).toHaveText('Recommended')
   await expect(catalogue.getByRole('button', { name: /See all/ })).toHaveCount(
     0
@@ -76,13 +76,13 @@ test('workflow launch groups lead to the existing shared form', async ({
   )
   await page.getByTestId('browse-all-end').click()
   await expect(
-    page.getByRole('heading', { level: 2, name: 'All workflows 30' })
+    page.getByRole('heading', { level: 2, name: 'All workflows 31' })
   ).toBeVisible()
   await expect(
     page
       .getByTestId('workflow-search-results')
       .getByTestId('workshop-model-card')
-  ).toHaveCount(30)
+  ).toHaveCount(31)
   await expect(page.getByTestId('section-featured')).toHaveCount(0)
   await page.getByTestId('workshop-sort').click()
   await page.getByTestId('sort-name').click()
@@ -274,7 +274,7 @@ test('cold workflow filters focus their controls and respect dismissal while loa
   await page.keyboard.type('video')
   await expect(search).toHaveValue('video')
   await expect(
-    dialog.getByRole('button', { name: 'Create & edit videos 6' })
+    dialog.getByRole('button', { name: 'Create & edit videos 7' })
   ).toBeVisible()
   await expect(
     dialog.getByRole('button', { name: 'Upscale & restore 6' })
@@ -345,7 +345,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   const outcomes = page
     .getByTestId('workflow-catalogue')
     .getByTestId('workshop-model-card')
-  await expect(outcomes).toHaveCount(30)
+  await expect(outcomes).toHaveCount(31)
 
   await page.getByTestId('workshop-filter').click()
   await page.getByTestId('workshop-facet-model').click()
@@ -361,7 +361,7 @@ test('the workflows half narrows to the model it runs on, from the menu and from
   // Clearing gives the whole catalogue back, not just the badge.
   await page.getByTestId('workshop-filter-clear').click()
   await expect(page.getByTestId('workshop-filter-count')).toHaveCount(0)
-  await expect(outcomes).toHaveCount(30)
+  await expect(outcomes).toHaveCount(31)
 
   await page.goto('/hub/models/?type=workflows&model=LTX-2.3')
   await expect(page).toHaveURL('/hub/workflows/?model=LTX-2.3')
