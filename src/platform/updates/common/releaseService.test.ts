@@ -12,7 +12,8 @@ const mockAxiosInstance = vi.hoisted(() => ({
 vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
-    isAxiosError: vi.fn()
+    isAxiosError: vi.fn(),
+    isCancel: vi.fn(() => false)
   }
 }))
 

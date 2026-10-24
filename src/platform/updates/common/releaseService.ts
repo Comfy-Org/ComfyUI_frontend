@@ -1,10 +1,8 @@
-import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
-import { ref } from 'vue'
 
+import { useApiRequest } from '@/composables/useApiRequest'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
-import { isAbortError } from '@/utils/typeGuardUtil'
 
 // Use generated types from OpenAPI spec
 export type ReleaseNote = components['schemas']['ReleaseNote']
@@ -20,23 +18,18 @@ const releaseApiClient = axios.create({
 })
 
 export const useReleaseService = () => {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
-  const handleApiError = (
+  const mapError = (
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err))
+    if (!axios.isAxiosError<ErrorResponse>(err))
       return err instanceof Error
         ? `${context}: ${err.message}`
         : `${context}: Unknown error occurred`
 
-    const axiosError = err as AxiosError<ErrorResponse>
-
-    if (axiosError.response) {
-      const { status, data } = axiosError.response
+    if (err.response) {
+      const { status, data } = err.response
 
       if (routeSpecificErrors && routeSpecificErrors[status])
         return routeSpecificErrors[status]
@@ -53,33 +46,17 @@ export const useReleaseService = () => {
         case 500:
           return `Server error: ${data.message || 'Internal server error'}`
         default:
-          return `${context}: ${data.message || axiosError.message}`
+          return `${context}: ${data.message || err.message}`
       }
     }
 
-    return `${context}: ${axiosError.message}`
+    return `${context}: ${err.message}`
   }
 
-  const executeApiRequest = async <T>(
-    apiCall: () => Promise<AxiosResponse<T>>,
-    errorContext: string,
-    routeSpecificErrors?: Record<number, string>
-  ): Promise<T | null> => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await apiCall()
-      return response.data
-    } catch (err) {
-      if (isAbortError(err)) return null
-
-      error.value = handleApiError(err, errorContext, routeSpecificErrors)
-      return null
-    } finally {
-      isLoading.value = false
-    }
-  }
+  const { isLoading, error, executeRequest } = useApiRequest({
+    client: releaseApiClient,
+    mapError
+  })
 
   const getReleases = async (
     params: GetReleasesParams,
@@ -92,9 +69,9 @@ export const useReleaseService = () => {
       400: 'Invalid project or version parameter'
     }
 
-    const apiResponse = await executeApiRequest(
-      () =>
-        releaseApiClient.get<ReleaseNote[]>(endpoint, {
+    const apiResponse = await executeRequest(
+      (client) =>
+        client.get<ReleaseNote[]>(endpoint, {
           baseURL: getComfyApiBaseUrl(),
           params,
           signal,
@@ -102,8 +79,7 @@ export const useReleaseService = () => {
             ? { 'Comfy-Env': deployEnvironment }
             : undefined
         }),
-      errorContext,
-      routeSpecificErrors
+      { errorContext, routeSpecificErrors }
     )
 
     return apiResponse
