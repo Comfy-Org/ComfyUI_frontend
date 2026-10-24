@@ -2988,9 +2988,9 @@
       "defaultCardBlockedTitle": "Payment page didn't open",
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
-      "purchaseDisclosure": "Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.",
-      "planRequiredResubscribe": "Credits don't include a Cloud plan. Resubscribe to run workflows on Cloud.",
-      "planRequiredSubscribe": "Credits don't include a Cloud plan. Subscribe to run workflows on Cloud.",
+      "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3629,9 +3629,6 @@
         "planTooltip": "Credits included with your plan. They refill each billing period.",
         "rateInfo": "About credits",
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
-        "memberResubscribe": "Your workspace owner needs to resubscribe to run workflows on Cloud.",
-        "resubscribe": "Resubscribe to run workflows on Cloud.",
-        "subscribe": "Subscribe to run workflows on Cloud.",
         "title": "Credits",
         "topUp": "Top-up",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
@@ -4058,6 +4055,13 @@
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
     "failedToSwitch": "Could not switch",
+    "unsaved": {
+      "title": "Save your workflows before switching?",
+      "message": "Switching to {deployment} reloads the tab. These workflows have changes that aren't saved yet.",
+      "tabsReturn": "Your open tabs come back after the reload either way.",
+      "switchWithoutSaving": "Switch without saving",
+      "saveAndSwitch": "Save and switch"
+    },
     "workspaceDefault": "Workspace default",
     "membersStartOn": "Members without their own pick start on",
     "defaultDeleted": "Deleted",
@@ -4066,7 +4070,10 @@
     "linkRefused": "Couldn't open this deployment",
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
-    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again."
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked"
   },
   "selectionToolbox": {
     "executeButton": {
@@ -5025,7 +5032,10 @@
       "applyChanges": "Apply Changes",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
-      "expand": "Expand"
+      "expand": "Expand",
+      "runsOn": "Runs on:",
+      "andMore": "and {count} more",
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes."
     },
     "missingModels": {
       "import": "Import",
@@ -5060,6 +5070,9 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "runsOn": "Runs on {deployment}",
+    "switchDeployment": "Switch",
+    "moreDeployments": "{count} more",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
@@ -5849,8 +5862,8 @@
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
-      "lead": "This tool wants to run the workflow:",
-      "leadBound": "This tool wants to run this workflow.",
+      "lead": "Comfy Agent wants to run the workflow:",
+      "leadBound": "Comfy Agent wants to run this workflow.",
       "question": "Do you approve?",
       "thisWorkflow": "this workflow",
       "cancel": "Cancel",

@@ -112,6 +112,20 @@ export class AgentExecutionHelper {
     { nodeId, filename }: { nodeId: string; filename: string }
   ): Promise<void> {
     await this.recordCompletedJob(jobId, { nodeId, filename })
+    this.deliverOutput(jobId, { nodeId, filename })
+    this.hostSocket.sendExecution({
+      type: 'execution_success',
+      data: { prompt_id: jobId, timestamp: Date.now() }
+    })
+    this.status(0)
+  }
+
+  /** Sends one node's `executed` frame, its image fetchable from `/api/view`. */
+  deliverOutput(
+    jobId: string,
+    { nodeId, filename }: { nodeId: string; filename: string }
+  ): void {
+    this.viewFiles[filename] = {}
     this.hostSocket.sendExecution({
       type: 'executed',
       data: {
@@ -121,11 +135,6 @@ export class AgentExecutionHelper {
         output: { images: [{ filename, subfolder: '', type: 'output' }] }
       }
     })
-    this.hostSocket.sendExecution({
-      type: 'execution_success',
-      data: { prompt_id: jobId, timestamp: Date.now() }
-    })
-    this.status(0)
   }
 
   async recordCompletedJob(

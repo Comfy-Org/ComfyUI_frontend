@@ -8,7 +8,7 @@
       "role": "integration"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/extensions/core/webcamCapture.ts"],
   "allowedDependencies": [],
   "allowedConsumers": [],
   "characterizationScenarios": [
@@ -20,7 +20,8 @@
   "adrs": [],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for the webcam capture node.",
-    "Captured frames continue to upload through the shared temporary upload service."
+    "Captured frames continue to upload through the shared temporary upload service.",
+    "Consumers import the webcam capture capability through src/extensions/core/webcamCapture.ts; no internal deep-import paths are available."
   ],
-  "deepImports": "inventory"
+  "deepImports": "enforced"
 }
