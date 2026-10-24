@@ -22,12 +22,6 @@ const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
 const INTERRUPT_ROUTE = /\/api\/interrupt$/
 
-/**
- * A job id this client did not queue. The backend addresses `execution_start`
- * to the connection that submitted the prompt, so a run the Agent started
- * reaches the Agent's socket and never this one — the frontend-observable
- * signature reproduced below.
- */
 const AGENT_JOB_ID = 'agent-started-job-1'
 
 function jobsResponse(jobs: RawJobListItem[]): JobsListResponse {
@@ -56,12 +50,6 @@ async function mockJobsRoute(
   return () => count
 }
 
-/**
- * Put a run this client never queued into the backend's queue, then deliver the
- * one frame the backend *does* broadcast to every client (`status`), which is
- * what drives `queueStore.update()`. After this the toolbar is in exactly the
- * state PM-2219 reports: a run is active, and nothing told this client about it.
- */
 async function startRunOwnedByAnotherClient(
   comfyPage: ComfyPage,
   exec: ExecutionHelper
@@ -117,8 +105,6 @@ test.describe(
       )
       await cancel.click()
 
-      // Targeted rather than global: the id must name the run being stopped,
-      // so the click cannot cancel some other client's job.
       const request = await interrupted
       expect(request.postDataJSON()).toEqual({ prompt_id: AGENT_JOB_ID })
     })
