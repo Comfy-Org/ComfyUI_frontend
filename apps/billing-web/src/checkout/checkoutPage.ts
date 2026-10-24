@@ -142,7 +142,9 @@ type Attribution = 'started' | 'returned' | 'followed' | 'settled'
  * whose outcome the page could not learn, so it neither offers a form nor
  * claims a charge. `sibling` on either marks
  * money another tab sent while this one had its form open, whose verdict and
- * challenge belong to that tab. `unavailable` is a read that failed before
+ * challenge belong to that tab. `unanswered` on `waiting` marks money a
+ * Pay with no answer may have become, which it never claims as settled
+ * before it arrived. `unavailable` is a read that failed before
  * any form showed: the capabilities, the quote, or the re-read of what the
  * workspace is waiting on, after which the page cannot say whether money is
  * moving.
@@ -178,6 +180,7 @@ export type CheckoutPage =
       readonly kind: 'waiting'
       readonly operation: PendingBillingOperation
       readonly sibling?: true
+      readonly unanswered?: true
       readonly rail?: PaymentRail
       readonly cancel?: PaymentCancel
     }
@@ -1050,15 +1053,16 @@ function watchedWaiting(
 
 /**
  * A screen that promised to update on its own resolves to the success it
- * was waiting for, and so does money another tab sent while this one
- * watched. A first read that finds the money already through, which the
- * page only ever saw as verifying, was settled before it arrived.
+ * was waiting for, and so does money an unanswered Pay may have become. A
+ * first read that finds the money already through, which the page only ever
+ * saw as verifying, was settled before it arrived.
  */
 function attributionOf(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>
 ): Attribution {
-  if (page.sibling === true) return 'followed'
-  return page.kind === 'waiting' && waitingOn(page.operation) === 'verifying'
+  return page.kind === 'waiting' &&
+    page.unanswered !== true &&
+    waitingOn(page.operation) === 'verifying'
     ? 'settled'
     : 'followed'
 }
@@ -1102,7 +1106,13 @@ function waitingInCapture(
 ): CheckoutPage {
   if (!isInFlight(operation) || outcome !== undefined)
     return nothingPending(page)
-  return { kind: 'waiting', operation, sibling: true, rail: page.rail }
+  return {
+    kind: 'waiting',
+    operation,
+    sibling: true,
+    ...(awaitsUnansweredPay(page) ? { unanswered: true } : {}),
+    rail: page.rail
+  }
 }
 
 /**
