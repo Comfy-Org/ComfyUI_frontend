@@ -429,6 +429,29 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(2)
   })
 
+  it('allows an edited message to resubmit the same text', async () => {
+    const send = vi.fn()
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, { ref: composer, hasWorkflowTarget: true, onSend: send })
+    })
+    useAgentComposerStore().setText('make a fox')
+    render(Host, { global: { plugins: [i18n] } })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(send).toHaveBeenCalledTimes(1)
+
+    composer.value?.replaceDraft({
+      text: 'make a fox',
+      workflowReferences: []
+    })
+    await nextTick()
+    await userEvent.keyboard('{Enter}')
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps generated attachment previews out of retry identity', async () => {
     const store = useAgentComposerStore()
     store.replaceDraft({
@@ -443,6 +466,7 @@ describe('Composer', () => {
         }
       ]
     })
+    expect(store.referenceAttachment('video')).toBe(true)
     const { emitted } = mount()
     const box = screen.getByRole('textbox')
     await userEvent.click(box)

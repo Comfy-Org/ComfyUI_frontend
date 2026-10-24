@@ -27,6 +27,7 @@ import type {
   AttachmentValidationError,
   ComposerAttachment
 } from '@/workbench/extensions/agent/types/composerAttachment'
+import { composerReferenceKey } from '@/workbench/extensions/agent/types/composerPrompt'
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -102,18 +103,15 @@ const running = computed(() => streaming || submitting)
 let keyboardRetryFingerprint: string | null = null
 
 function submissionFingerprint(): string {
+  const { text, references } = composer.prompt.value
   return JSON.stringify({
-    prompt: composer.prompt.value,
-    attachments: composer.attachments.value.map(
-      ({ id, name, ref, sourceKey, mediaUrl, mediaKind }) => ({
-        id,
-        name,
-        ref,
-        sourceKey,
-        mediaUrl,
-        mediaKind
-      })
-    )
+    text,
+    references: references.map((reference) => ({
+      key: composerReferenceKey(reference),
+      textOffset: 'textOffset' in reference ? reference.textOffset : null,
+      scope: 'scope' in reference ? reference.scope : null
+    })),
+    attachments: composer.attachments.value.map(({ id }) => id)
   })
 }
 
@@ -298,7 +296,8 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
-  keyboardRetryFingerprint = null
+  if (keyboardRetryFingerprint !== submissionFingerprint())
+    keyboardRetryFingerprint = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }
@@ -541,11 +540,13 @@ function insert(
   text: string,
   starterPrompt?: AgentStarterPromptAttribution
 ): void {
+  keyboardRetryFingerprint = null
   composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 
 function replaceDraft(prompt: PromptSnapshot): void {
+  keyboardRetryFingerprint = null
   composer.replacePrompt(prompt)
   editorRef.value?.focus()
 }
