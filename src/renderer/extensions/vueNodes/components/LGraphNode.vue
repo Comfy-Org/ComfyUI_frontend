@@ -113,6 +113,7 @@
           :node-data
           :collapsed="isCollapsed"
           :price-badges="badges.pricing"
+          :last-press-dragged="lastPressDragged"
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -426,7 +427,9 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers, lastPressDragged } = useNodePointerInteractions(
+  () => nodeData
+)
 const badges = usePartitionedBadges(nodeData)
 
 // Handle right-click context menu
