@@ -310,6 +310,34 @@ describe('KeybindingPanel', () => {
     )
   })
 
+  it('does not open a touch long-press menu for the previously right-clicked row', async () => {
+    const user = userEvent.setup()
+    registerCommand('command-first', 'First command')
+    registerCommand('command-second', 'Second command')
+    renderPanel()
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('row', { name: /First command/ })
+    })
+    await screen.findByRole('menu')
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    await user.pointer({
+      keys: '[TouchA>]',
+      target: screen.getByRole('row', { name: /Second command/ })
+    })
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  })
+
   it('closes the reset-all confirmation when saving fails', async () => {
     const user = userEvent.setup()
     const saveError = new Error('offline')
