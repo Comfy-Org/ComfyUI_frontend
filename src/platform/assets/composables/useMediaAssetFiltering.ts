@@ -13,15 +13,20 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
-/**
- * Get timestamp from asset (either create_time or created_at)
- */
+const TIMESTAMP_WITHOUT_OFFSET = /T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/
+
+function parseAssetTimestamp(timestamp: string): number {
+  return new Date(
+    TIMESTAMP_WITHOUT_OFFSET.test(timestamp) ? `${timestamp}Z` : timestamp
+  ).getTime()
+}
+
 const getAssetTime = (asset: AssetItem): number => {
   const createTime = asset.user_metadata?.create_time
   return typeof createTime === 'number'
     ? createTime
     : asset.created_at
-      ? new Date(asset.created_at).getTime()
+      ? parseAssetTimestamp(asset.created_at)
       : 0
 }
 

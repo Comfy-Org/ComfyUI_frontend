@@ -2,14 +2,12 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { MEDIA_ASSET_VIEW_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetDateFilter } from '@/platform/assets/mediaAssetFilterOptions'
-
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const i18n = createI18n({
   legacy: false,
@@ -20,11 +18,15 @@ const i18n = createI18n({
 interface FilterState {
   mediaTypeFilters?: string[]
   dateFilter?: MediaAssetDateFilter
+  showFilters?: boolean
+  showSortOptions?: boolean
 }
 
 function renderFilterBar({
   mediaTypeFilters = [],
-  dateFilter = ''
+  dateFilter = '',
+  showFilters = true,
+  showSortOptions = true
 }: FilterState = {}) {
   const TestHost = defineComponent({
     components: { MediaAssetFilterBar },
@@ -34,7 +36,9 @@ function renderFilterBar({
         sortBy: ref('newest'),
         viewMode: ref(MEDIA_ASSET_VIEW_MODE.grid),
         dateFilter: ref(dateFilter),
-        mediaTypeFilters: ref(mediaTypeFilters)
+        mediaTypeFilters: ref(mediaTypeFilters),
+        showFilters,
+        showSortOptions
       }
     },
     template: `
@@ -44,6 +48,8 @@ function renderFilterBar({
         v-model:view-mode="viewMode"
         v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
+        :show-filters="showFilters"
+        :show-sort-options="showSortOptions"
       />
     `
   })
@@ -59,6 +65,30 @@ function renderFilterBar({
 }
 
 describe('MediaAssetFilterBar', () => {
+  it('shows filter and sort options when enabled', async () => {
+    const { user } = renderFilterBar()
+
+    expect(screen.getByRole('button', { name: 'Filter by' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'View settings' }))
+
+    expect(screen.getByText('Newest first')).toBeVisible()
+  })
+
+  it('hides filter and sort options when disabled', async () => {
+    const { user } = renderFilterBar({
+      showFilters: false,
+      showSortOptions: false
+    })
+
+    expect(screen.queryByRole('button', { name: 'Filter by' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'View settings' }))
+
+    expect(screen.getByText('List view')).toBeVisible()
+    expect(screen.queryByText('Newest first')).toBeNull()
+  })
+
   it('hides filter actions when no filters are active', () => {
     renderFilterBar()
 

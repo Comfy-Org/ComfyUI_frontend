@@ -7,8 +7,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -41,6 +39,7 @@ function renderMenu({
         view-mode="grid"
         :media-type-filters="mediaTypeFilters"
         :date-filter="dateFilter"
+        show-filters
         @update:media-type-filters="onMediaTypeUpdate"
         @update:date-filter="onDateUpdate"
       />

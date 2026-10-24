@@ -203,6 +203,27 @@ describe('useMediaAssetFiltering', () => {
 
       expect(ids(filtering.filteredAssets.value)).toEqual(['imported'])
     })
+
+    it('reads created_at without a UTC offset as UTC', () => {
+      const originalTimeZone = process.env.TZ
+      process.env.TZ = 'America/Los_Angeles'
+      try {
+        vi.setSystemTime(Date.UTC(2026, 9, 14, 10))
+        const previousDay = makeAsset({ id: 'previous-day', name: 'a.png' })
+        previousDay.created_at = '2026-10-14T05:00:00.123456'
+        const sameDay = makeAsset({ id: 'same-day', name: 'b.png' })
+        sameDay.created_at = '2026-10-14T08:00:00'
+        const assets = ref<AssetItem[]>([previousDay, sameDay])
+        const filtering = useMediaAssetFiltering(assets)
+
+        filtering.dateFilter.value = 'today'
+
+        expect(ids(filtering.filteredAssets.value)).toEqual(['same-day'])
+      } finally {
+        if (originalTimeZone === undefined) delete process.env.TZ
+        else process.env.TZ = originalTimeZone
+      }
+    })
   })
 
   describe('sort', () => {
