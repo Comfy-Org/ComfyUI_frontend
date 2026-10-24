@@ -38,7 +38,12 @@ test.describe(
       })
 
       await test.step('the user severs one connection on the canvas', async () => {
-        await comfyPage.canvasOps.disconnectEdge()
+        const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+        const targetInput = await targetNode.getInput(0)
+        await comfyPage.canvasOps.dragAndDrop(await targetInput.getPosition(), {
+          x: 800,
+          y: 100
+        })
         expect(await agentConversation.canvasLinkIds()).not.toContain(
           SEVERED_LINK_ID
         )
