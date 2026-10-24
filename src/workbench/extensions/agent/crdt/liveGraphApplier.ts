@@ -260,11 +260,109 @@ interface MalformedDocNode {
   }
 }
 
+const MAX_SHAPED_ELEMENTS = 16
+const MAX_DIAGNOSTIC_CHARS = 1024
+const OMISSION_MARKER_CHARS = 8
+
+interface DiagnosticString {
+  path: readonly (string | number)[]
+  value: string
+}
+
+function elementShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return 'array'
+  return typeof value
+}
+
 function valueShape(value: unknown): string {
   if (value === null) return 'null'
-  if (Array.isArray(value)) return `array:${value.length}`
+  if (Array.isArray(value)) {
+    const shaped = value.slice(0, MAX_SHAPED_ELEMENTS).map(elementShape)
+    const omitted = value.length - shaped.length
+    if (omitted > 0) shaped.push(`+${omitted}`)
+    return `array:${value.length}[${shaped.join(',')}]`
+  }
   if (typeof value === 'object') return `object:${Object.keys(value).length}`
   return typeof value
+}
+
+function diagnosticStrings(
+  value: unknown,
+  path: readonly (string | number)[] = []
+): DiagnosticString[] {
+  if (typeof value === 'string') return [{ path, value }]
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) =>
+      diagnosticStrings(entry, [...path, index])
+    )
+  }
+  if (!isPlainObject(value)) return []
+  return Object.entries(value).flatMap(([key, entry]) =>
+    diagnosticStrings(entry, [...path, key])
+  )
+}
+
+function diagnosticPath(path: readonly (string | number)[]): string {
+  return JSON.stringify(path)
+}
+
+function replaceDiagnosticValue(
+  value: unknown,
+  path: readonly (string | number)[],
+  replacements: ReadonlyMap<string, string>
+): unknown {
+  if (typeof value === 'string') {
+    return replacements.get(diagnosticPath(path)) ?? value
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry, index) =>
+      replaceDiagnosticValue(entry, [...path, index], replacements)
+    )
+  }
+  if (!isPlainObject(value)) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      key,
+      replaceDiagnosticValue(entry, [...path, key], replacements)
+    ])
+  )
+}
+
+function replaceDiagnosticStrings(
+  context: Record<string, unknown>,
+  replacements: ReadonlyMap<string, string>
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(context).map(([key, value]) => [
+      key,
+      replaceDiagnosticValue(value, [key], replacements)
+    ])
+  )
+}
+
+function boundedContext(
+  context: Record<string, unknown>
+): Record<string, unknown> {
+  const shortestFirst = diagnosticStrings(context).sort(
+    (left, right) => left.value.length - right.value.length
+  )
+  let remaining = MAX_DIAGNOSTIC_CHARS
+  const truncated = new Map<string, string>()
+  for (const { path, value } of shortestFirst) {
+    if (value.length <= remaining) {
+      remaining -= value.length
+      continue
+    }
+    const kept = value.slice(0, Math.max(0, remaining - OMISSION_MARKER_CHARS))
+    truncated.set(
+      diagnosticPath(path),
+      kept === '' ? '' : `${kept}+${value.length - kept.length}`
+    )
+    remaining = 0
+  }
+  if (truncated.size === 0) return context
+  return replaceDiagnosticStrings(context, truncated)
 }
 
 /** `absent` when the path's own key is missing, so it is not read as `undefined`. */
@@ -791,7 +889,7 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType,
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context
+        context: boundedContext(context)
       }
     )
   }

@@ -396,7 +396,7 @@ const clipboardAction = async (cb: () => void | Promise<void>) => {
   else localStorage.setItem('litegrapheditor_clipboard', old)
 }
 
-const ext: ComfyExtension = {
+export const nodeTemplatesExtension: ComfyExtension = {
   name: id,
 
   setup() {
@@ -473,5 +473,3 @@ const ext: ComfyExtension = {
     return items
   }
 }
-
-app.registerExtension(ext)

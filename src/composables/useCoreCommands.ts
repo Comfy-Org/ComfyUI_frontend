@@ -30,7 +30,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
@@ -80,7 +80,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
@@ -641,7 +641,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
       function: async () => {
-        await workflowService.loadNextOpenedWorkflow()
+        await workflowService.loadNextOpenedWorkflow({ initiator: 'user' })
       }
     },
     {
@@ -650,7 +650,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
       function: async () => {
-        await workflowService.loadPreviousOpenedWorkflow()
+        await workflowService.loadPreviousOpenedWorkflow({ initiator: 'user' })
       }
     },
     {
@@ -878,7 +878,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.7.3',
       function: async () => {
         if (workflowStore.activeWorkflow)
-          await workflowService.closeWorkflow(workflowStore.activeWorkflow)
+          await workflowService.closeWorkflows([workflowStore.activeWorkflow], {
+            warnIfUnsaved: true,
+            initiator: 'user'
+          })
       }
     },
     {

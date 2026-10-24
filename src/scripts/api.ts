@@ -1311,8 +1311,22 @@ export class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
+  private nodeDefsPrefetch?: Promise<Response>
+
+  /** Start fetching `/object_info` so the next `getNodeDefs()` can reuse it. */
+  prefetchNodeDefs(): void {
+    this.nodeDefsPrefetch ??= this.fetchApi('/object_info', {
+      cache: 'no-store'
+    })
+    this.nodeDefsPrefetch.catch(() => undefined)
+  }
+
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
-    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
+    const prefetched = this.nodeDefsPrefetch
+    this.nodeDefsPrefetch = undefined
+    const fetchFresh = () =>
+      this.fetchApi('/object_info', { cache: 'no-store' })
+    const resp = await (prefetched?.catch(fetchFresh) ?? fetchFresh())
     return await resp.json()
   }
 
