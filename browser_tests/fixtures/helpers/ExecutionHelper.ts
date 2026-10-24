@@ -4,7 +4,10 @@ import type {
   NodeError,
   PromptFailureResponse
 } from '@/platform/remote/comfyui/types'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type {
+  NodeExecutionOutput,
+  NodeProgressState
+} from '@/platform/remote/comfyui/execution/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -203,6 +206,19 @@ export class ExecutionHelper {
         }
       })
     )
+  }
+
+  completeWithOutput(
+    jobId: string,
+    nodeId: string,
+    output: NodeExecutionOutput
+  ): void {
+    this.executionStart(jobId)
+    this.executing(jobId, nodeId)
+    this.executed(jobId, nodeId, output)
+    this.executing(jobId, null)
+    this.executionSuccess(jobId)
+    this.status(0)
   }
 
   /** Send `execution_success` WS event. */
