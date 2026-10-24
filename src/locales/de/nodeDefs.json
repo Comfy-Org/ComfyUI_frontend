@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 und HDR ACEScct. LogC3 verwendet die EI-800-Kurve mit Rec.709-Primärfarben und auf [0, 1] begrenzten Werten. ACEScct verwendet AP1-Primärfarben und D60-Weißpunkt mit Bradford-Anpassung an D65. Konvertieren Sie LogC3 oder ACEScct zum Speichern als EXR in linear. Linear 1.0 verwendet dasselbe 203-Nit-Referenzweiß wie sRGB; HLG verwendet ein 1000-Nit-Referenzdisplay. Lineare und ACEScct-Outputs bewahren erweiterte Werte. Linear-zu-HDR-Konvertierungen bewahren Lichter ohne Tone Mapping; HLG- und PQ-Outputs clippen negative Kanäle. SDR-Output und die PQ-zu-HLG-Konvertierung führen Tone Mapping für übermäßige Luminanz über den Batch hinweg durch und komprimieren Farben außerhalb des Farbumfangs. Konvertierungen erfolgen in float32 und geben das Device und den dtype des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, lineares ACEScg und HDR ACEScct. LogC3 verwendet die EI-800-Kurve mit Rec.709-Primärfarben und auf [0, 1] begrenzten Codewerten. ACEScg ist szenenlineares AP1 mit D60-Weißpunkt. ACEScct ist die Log-Kodierung von ACEScg. Beide verwenden eine Bradford-Adaption auf D65. Konvertieren Sie LogC3 oder ACEScct vor dem Speichern von EXR in lineares ACEScg (AP1 szenenlinear) oder linear (Rec.709). Linear 1.0 und ACEScg 1.0 verwenden dasselbe 203-nit-Referenzweiß wie sRGB; HLG verwendet ein 1000-nit-Referenzdisplay. Lineare, ACEScg- und ACEScct-Ausgaben behalten erweiterte Werte bei. Linear-zu-HDR-Konvertierungen bewahren Highlights ohne Tone Mapping; HLG- und PQ-Ausgaben beschneiden negative Kanäle. SDR-Ausgabe und PQ-zu-HLG-Konvertierung führen über den gesamten Batch Tone Mapping für überschüssige Luminanz durch und komprimieren Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben das Zwischen-Device und den dtype zurück. Nicht vormultipliziertes Alpha wird nicht farbtransformiert.",
     "display_name": "Bildfarbraum konvertieren",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Save-Node auf denselben Farbraum ein. Konvertieren Sie LogC3 oder ACEScct vor dem Speichern als EXR in linear oder vor dem Speichern von Video in sRGB/HDR/HDR PQ."
+        "tooltip": "Farbraum der Ausgabepixel. Stellen Sie den Speicher-Node auf denselben Farbraum ein. Konvertieren Sie LogC3 oder ACEScct für ACEScg-EXR in lineares ACEScg beziehungsweise für Rec.709-EXR in linear. Konvertieren Sie vor dem Speichern eines Videos in sRGB/HDR/HDR PQ."
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Kodiert eine Bearbeitungsanweisung mit Referenzbildern für eine MOSS-Image-Edit-LoRA; verwenden Sie sie auch für den negativen Prompt. Die Referenzen werden in ihrer Eingangsgröße verwendet; skalieren Sie sie vorher.",
+    "description": "Kodiert eine Bearbeitungsanweisung mit Referenzbildern für eine MOSS-Image-Edit-LoRA; verwenden Sie sie auch für den negativen Prompt. Die Referenzen werden in der Größe verwendet, in der sie eingehen; skalieren Sie sie zuvor. Ohne VAE werden die Bilder nur an den Text-Encoder weitergegeben.",
     "display_name": "Textkodierung: MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "edit_format",
         "tooltip": "Das Layout, mit dem die Bearbeitungs-LoRA trainiert wurde: MOSS-Image Edit Training von ai-toolkit (mit aktivierter oder deaktivierter kv_cache-Option) oder Moss-Image-Edit. Bei deaktiviertem kv_cache beziehen sich die Referenzen auch auf das generierte Bild, sodass sie bei jedem Schritt neu berechnet werden."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Skaliert, wie stark das Modell die Bilder berücksichtigt, die der Text-Encoder sieht (ai-toolkit-Formate oder ohne VAE): 0 ignoriert sie, 1 lässt sie unverändert, Werte über 1 heben sie hervor."
+      },
       "images": {
         "name": "Bilder"
       },
@@ -25279,7 +25283,8 @@
         "name": "Prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Kodiert die Bilder als Referenz-Latents für die Edit-LoRA."
       }
     },
     "outputs": {

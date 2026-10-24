@@ -1259,6 +1259,9 @@
       "openCheckout": "チェックアウトを開く",
       "openPaymentPage": "支払いページを開く",
       "payAmount": "{amount} を支払う",
+      "planRequiredFreeRuns": "クレジットを購入してもCloudプランは開始されません。無料実行回数を使い切った後もワークフローを実行し続けるには、サブスクライブしてください。",
+      "planRequiredResubscribe": "クレジットを購入してもCloudプランは再開されません。Cloudでワークフローを実行するには、再登録してください。",
+      "planRequiredSubscribe": "クレジットを購入してもCloudプランは開始されません。Cloudでワークフローを実行するには、サブスクライブしてください。",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "このエディタがどのデプロイメントで実行されているか確認できませんでした。",
     "lookupUnavailableDetail": "表示されているモデルは Comfy Cloud のものです。再読み込みしてもう一度試してください。",
     "membersStartOn": "独自の選択がないメンバーの開始先",
+    "missingNodes": "{count} 個のノードが見つかりません | {count} 個のノードが見つかりません",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "このワークスペースにはまだデプロイメントがありません。",
+    "notChecked": "未確認",
     "notReadyTooltip": "{deployment} で実行中です。準備ができていないため、準備が整うまでジョブは実行されません。",
     "pickGone": "選択したデプロイメントはすでに存在しません。",
     "pickGoneDetail": "このブラウザは現在 Comfy Cloud で実行されています。使用するには、もう一度デプロイメントを選択してください。",
     "releaseChanged": "このデプロイメントは現在、別のリリースで実行されています。ノードを取得するには再読み込みしてください。",
     "reload": "再読み込み",
     "runOn": "実行先",
+    "runsThisWorkflow": "このワークフローを実行",
     "status": {
       "notReady": "準備未完了",
       "provisioning": "起動中",
@@ -5730,7 +5736,7 @@
         "title": "自動チャージに失敗しました"
       },
       "autoTopUpOff": {
-        "body": "カードが3回連続で拒否されました。支払い方法を更新してから、自動チャージを再度オンにしてください。",
+        "body": "お支払い方法が3回連続で拒否されました。お支払い方法を更新してから、自動チャージを再度オンにしてください。",
         "title": "自動チャージがオフになりました"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "プランに含まれるクレジットです。各請求期間に補充されます。",
         "rateInfo": "クレジットについて",
         "rateTooltip": "クレジットは実行に使用されます。{credits}クレジット = $1。",
-        "resubscribe": "Cloudでクレジットを使用するには、再登録してください。",
-        "subscribe": "Cloudでクレジットを使用するには、登録してください。",
         "title": "クレジット",
         "topUp": "チャージ",
         "topUpTooltip": "追加したクレジットです。プランのクレジットを使い切った後に使用されます。",

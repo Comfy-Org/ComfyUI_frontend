@@ -1259,6 +1259,9 @@
       "openCheckout": "開啟結帳頁面",
       "openPaymentPage": "開啟付款頁面",
       "payAmount": "支付 {amount}",
+      "planRequiredFreeRuns": "購買點數不會啟用 Cloud 方案。免費執行次數用完後，請訂閱以繼續執行工作流程。",
+      "planRequiredResubscribe": "購買點數不會重新啟用您的 Cloud 方案。請重新訂閱以在 Cloud 上執行工作流程。",
+      "planRequiredSubscribe": "購買點數不會啟用 Cloud 方案。請訂閱以在 Cloud 上執行工作流程。",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",
       "purchaseSuccess": "點數儲值成功！",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "無法檢查此編輯器執行所在的部署。",
     "lookupUnavailableDetail": "顯示的模型來自 Comfy Cloud。重新載入以再試一次。",
     "membersStartOn": "未自行選擇部署的成員將從此開始",
+    "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "此工作區尚無任何部署。",
+    "notChecked": "尚未檢查",
     "notReadyTooltip": "正在 {deployment} 上執行。它尚未就緒，因此工作不會執行，直到它就緒為止。",
     "pickGone": "您選擇的部署已不存在。",
     "pickGoneDetail": "此瀏覽器現在在 Comfy Cloud 上執行。請再次選擇一個部署以使用。",
     "releaseChanged": "此部署目前執行不同的版本。重新載入以取得其節點。",
     "reload": "重新載入",
     "runOn": "執行於",
+    "runsThisWorkflow": "執行此工作流程",
     "status": {
       "notReady": "尚未就緒",
       "provisioning": "正在啟動",
@@ -5730,7 +5736,7 @@
         "title": "自動儲值失敗"
       },
       "autoTopUpOff": {
-        "body": "您的卡片連續 3 次遭拒。請更新付款方式，然後重新開啟自動儲值。",
+        "body": "您的付款方式已連續 3 次遭拒。請更新付款方式，然後重新開啟自動加值。",
         "title": "自動儲值已關閉"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "您的方案包含的點數。每個帳單週期會補充。",
         "rateInfo": "關於點數",
         "rateTooltip": "點數用於支付執行費用。{credits} 點 = $1。",
-        "resubscribe": "重新訂閱即可在雲端使用點數。",
-        "subscribe": "訂閱即可在雲端使用點數。",
         "title": "點數",
         "topUp": "儲值",
         "topUpTooltip": "您加購的點數。方案點數用完後會使用這些點數。",

@@ -1259,6 +1259,9 @@
       "openCheckout": "打开结账页面",
       "openPaymentPage": "打开付款页面",
       "payAmount": "支付 {amount}",
+      "planRequiredFreeRuns": "购买积分不会启用 Cloud 套餐。免费运行次数用完后，请订阅以继续运行工作流。",
+      "planRequiredResubscribe": "购买积分不会重新启用你的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
+      "planRequiredSubscribe": "购买积分不会启用 Cloud 套餐。请订阅以在 Cloud 上运行工作流。",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",
       "purchaseSuccess": "积分添加成功！",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "无法检查此编辑器运行在哪个部署上。",
     "lookupUnavailableDetail": "显示的模型来自 Comfy Cloud。重新加载以重试。",
     "membersStartOn": "未自行选择的成员将从以下位置开始",
+    "missingNodes": "缺少 {count} 个节点 | 缺少 {count} 个节点",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "此工作区尚无部署。",
+    "notChecked": "未检查",
     "notReadyTooltip": "正在 {deployment} 上运行。它尚未就绪，因此作业不会运行，直到它就绪。",
     "pickGone": "你选择的部署已不存在。",
     "pickGoneDetail": "此浏览器现在在 Comfy Cloud 上运行。请再次选择一个部署以使用它。",
     "releaseChanged": "此部署现运行不同的版本。重新加载以获取其节点。",
     "reload": "重新加载",
     "runOn": "运行于",
+    "runsThisWorkflow": "运行此工作流",
     "status": {
       "notReady": "未就绪",
       "provisioning": "正在启动",
@@ -5730,7 +5736,7 @@
         "title": "自动充值失败"
       },
       "autoTopUpOff": {
-        "body": "你的卡连续 3 次被拒付。请更新付款方式，然后重新开启自动充值。",
+        "body": "你的付款方式已连续 3 次被拒绝。请更新付款方式，然后重新开启自动充值。",
         "title": "自动充值已关闭"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "套餐包含的积分。每个计费周期都会补充。",
         "rateInfo": "关于积分",
         "rateTooltip": "积分用于支付运行费用。{credits} 积分 = 1 美元。",
-        "resubscribe": "重新订阅以在云端使用积分。",
-        "subscribe": "订阅以在云端使用积分。",
         "title": "积分",
         "topUp": "充值",
         "topUpTooltip": "你添加的积分。套餐积分用完后将使用这些积分。",
