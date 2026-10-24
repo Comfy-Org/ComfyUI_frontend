@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Locale } from '@/i18n/translations'
 
+import { I18nT } from 'vue-i18n'
+
 import { externalLinks } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
 import CardArrow from '@/components/common/CardArrow.vue'
@@ -27,15 +29,18 @@ const cards = [
 
 <template>
   <section class="mx-auto max-w-9xl px-4 pt-24 lg:px-20 lg:pt-40">
-    <h2
+    <I18nT
+      keypath="cloud.audience.heading"
+      tag="h2"
+      :i18n="translationsFor(locale)"
       class="mx-auto max-w-3xl text-center text-3.5xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
-      {{ t('cloud.audience.headingBefore')
-      }}<span class="text-white">{{
-        t('cloud.audience.headingHighlight')
-      }}</span
-      >{{ t('cloud.audience.headingAfter') }}
-    </h2>
+      <template #highlight>
+        <span class="text-white">{{
+          t('cloud.audience.headingHighlight')
+        }}</span>
+      </template>
+    </I18nT>
 
     <GlassCard class="mt-12 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-2">
       <a
