@@ -1276,7 +1276,9 @@ describe('DeploymentSwitcher', () => {
       await openList(user)
 
       await waitFor(() =>
-        expect(rowsIn('Runs this workflow')).toEqual([`deployment-row-${D2}`])
+        expect(rowsIn('Compatible environments')).toEqual([
+          `deployment-row-${D2}`
+        ])
       )
       expect(
         mockWorkspaceApi.checkDeploymentCompatibility
@@ -1284,7 +1286,7 @@ describe('DeploymentSwitcher', () => {
         'KSampler',
         'Power Lora Loader (rgthree)'
       ])
-      expect(rowsIn('Other deployments')).toEqual([
+      expect(rowsIn('Incompatible environments')).toEqual([
         'deployment-row-cloud',
         `deployment-row-${D1}`,
         `deployment-row-${D9}`
@@ -1344,7 +1346,7 @@ describe('DeploymentSwitcher', () => {
 
         expect(rowsIn('Run on')).toHaveLength(4)
         expect(
-          screen.queryByRole('group', { name: 'Other deployments' })
+          screen.queryByRole('group', { name: 'Incompatible environments' })
         ).toBeNull()
       }
     )
@@ -1362,7 +1364,7 @@ describe('DeploymentSwitcher', () => {
 
       expect(rowsIn('Run on')).toHaveLength(4)
       expect(
-        screen.queryByRole('group', { name: 'Runs this workflow' })
+        screen.queryByRole('group', { name: 'Compatible environments' })
       ).toBeNull()
     })
   })

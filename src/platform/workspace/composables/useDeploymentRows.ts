@@ -26,7 +26,7 @@ interface DeploymentRow {
 }
 
 interface DeploymentSection {
-  key: 'all' | 'runs' | 'others'
+  key: 'all' | 'compatible' | 'incompatible'
   label: string
   rows: DeploymentRow[]
 }
@@ -94,23 +94,23 @@ export function useDeploymentRows() {
 
   const sections = computed<DeploymentSection[]>(() => {
     const rows = [cloudRow(), ...deployments.value.map(deploymentRow)]
-    const [runs, others] = partition(
+    const [compatible, incompatible] = partition(
       rows,
       (row) => markFor(row.deploymentId)?.kind === 'runs'
     )
-    if (runs.length === 0 || others.length === 0) {
+    if (compatible.length === 0 || incompatible.length === 0) {
       return [{ key: 'all', label: t('deploymentSwitcher.runOn'), rows }]
     }
     return [
       {
-        key: 'runs',
-        label: t('deploymentSwitcher.runsThisWorkflow'),
-        rows: runs
+        key: 'compatible',
+        label: t('deploymentSwitcher.compatibleEnvironments'),
+        rows: compatible
       },
       {
-        key: 'others',
-        label: t('deploymentSwitcher.otherDeployments'),
-        rows: others
+        key: 'incompatible',
+        label: t('deploymentSwitcher.incompatibleEnvironments'),
+        rows: incompatible
       }
     ]
   })
