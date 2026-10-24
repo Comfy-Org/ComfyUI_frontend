@@ -306,15 +306,16 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  it('delegates close to workflow service with the tab workflow', async () => {
+  it('delegates close to workflow service as a user action', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'test-key' }),
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [expect.objectContaining({ key: 'test-key' })],
+      expect.objectContaining({ initiator: 'user' })
     )
+    expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
 })
 
@@ -419,9 +420,9 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      workflowOption.workflow,
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [workflowOption.workflow],
+      expect.objectContaining({ initiator: 'user' })
     )
   })
 })
