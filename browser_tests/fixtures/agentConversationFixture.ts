@@ -9,7 +9,6 @@ import type { useWorkflowStore } from '@/platform/workflow/management/stores/wor
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
@@ -790,12 +789,6 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
-  /**
-   * Link ids the host document holds right now, as the library projects them —
-   * the agent's own read of which connections exist. Projected rather than read
-   * off `graph()` because the projection is what a catch-up, a resubscribe and
-   * an agent turn all carry.
-   */
   hostLinkIds(): number[] {
     return this.host
       .projection()
@@ -813,28 +806,14 @@ export class AgentConversationHarness {
     return widgets?.[widget]
   }
 
-  /**
-   * Link ids on the live canvas — the user's own view of which connections
-   * exist, read off the graph rather than the document, so a test can state
-   * which of the two views is wrong rather than only that they differ.
-   */
   async canvasLinkIds(): Promise<number[]> {
     return await this.page.evaluate(() =>
       [...window.app!.graph.links.keys()].map(Number)
     )
   }
 
-  /**
-   * Severs one link the way a user does: `LGraph.removeLink` is the command
-   * site the context-menu and the slot drag-off both reach, and the only place
-   * that emits the `disconnect` intent the op minter rides on (KEEP-ALIVE #14).
-   */
-  async severLink(linkId: number): Promise<void> {
-    await this.page.evaluate(
-      (id) => window.app!.graph.removeLink(id),
-      toLinkId(linkId)
-    )
-    await nextFrame(this.page)
+  async severLink(): Promise<void> {
+    await this.comfyPage.canvasOps.disconnectEdge()
   }
 
   /** How many minted human ops a `hold` host has not judged yet. */
