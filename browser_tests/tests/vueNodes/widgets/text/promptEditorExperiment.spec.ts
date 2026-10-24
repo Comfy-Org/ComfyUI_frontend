@@ -129,16 +129,16 @@ test.describe(
             .poll(() => promptEditorEvents(hostTelemetry))
             .toEqual([
               {
+                event: 'app:prompt_editor_exposure',
+                properties: { '$feature/prompt-editor-surface': 'panel' }
+              },
+              {
                 event: 'app:prompt_editor_opened',
                 properties: {
                   surface: 'panel',
                   trigger: 'expand_button',
                   '$feature/prompt-editor-surface': 'panel'
                 }
-              },
-              {
-                event: 'app:prompt_editor_exposure',
-                properties: { '$feature/prompt-editor-surface': 'panel' }
               },
               {
                 event: 'app:prompt_editor_closed',
