@@ -59,7 +59,7 @@ export function useKeybindingService() {
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
         target.tagName === 'INPUT' ||
-        target.contentEditable === 'true' ||
+        target.isContentEditable ||
         (target.tagName === 'SPAN' &&
           target.classList.contains('property_value')))
     ) {
