@@ -1,5 +1,7 @@
 import type { KnipConfig } from 'knip'
 
+import { COMFY_API_ENTRY_GLOBS } from './build/comfyAPISurface'
+
 const config: KnipConfig = {
   treatConfigHintsAsErrors: true,
   treatTagHintsAsErrors: true,
@@ -8,6 +10,7 @@ const config: KnipConfig = {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
+        ...COMFY_API_ENTRY_GLOBS,
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
