@@ -19,6 +19,15 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 // This test mimics that verbatim content pass-through (the shared fixture's
 // own GET mock does not carry tool_calls) and asserts the summary survives a
 // refresh.
+// Release note: upstream's TRACE interleaves thinking rows, which this
+// branch's trace does not carry (#21600). The row this fix changes is the
+// same one: the restored Add node call now reads as an unconfirmed canvas
+// write rather than a plain tool label.
+const TRACE = [
+  'Search nodes',
+  enMessages.agent.toolNotConfirmedOnCanvas.replace('{tool}', 'Add node')
+]
+
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
@@ -124,7 +133,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
+      name: enMessages.agent.workedNotConfirmedOnCanvas,
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
@@ -134,10 +143,7 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
-    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
-    ])
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText(TRACE)
     const restoredThreadId = promptHistory.historyRequestThreadIds.at(-1)
     expect(restoredThreadId).toBeTruthy()
     const historyRequestCount = promptHistory.historyRequestThreadIds.length
@@ -168,9 +174,6 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
-    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
-    ])
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText(TRACE)
   }
 )
