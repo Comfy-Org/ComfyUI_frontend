@@ -39,14 +39,17 @@ watch(
       start: element.selectionStart,
       end: element.selectionEnd,
       direction: element.selectionDirection ?? undefined,
-      scrollTop: element.scrollTop
+      scrollTop: element.scrollTop,
+      selectedThrough: draft.value.slice(0, element.selectionEnd)
     }
     draft.value = text
     if (!element || !view) return
     await nextTick()
+    const start = Math.min(view.start, text.length)
+    const isSelectionIntact = text.startsWith(view.selectedThrough)
     element.setSelectionRange(
-      Math.min(view.start, text.length),
-      Math.min(view.end, text.length),
+      start,
+      isSelectionIntact ? view.end : start,
       view.direction
     )
     element.scrollTop = view.scrollTop

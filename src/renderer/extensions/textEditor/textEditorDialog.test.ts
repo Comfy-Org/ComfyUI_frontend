@@ -136,6 +136,19 @@ describe('showTextEditor', () => {
     ]).toEqual([2, 10, 'backward'])
   })
 
+  it('collapses the selection when the text before its end changes elsewhere', async () => {
+    const source = ref('a portrait at dusk')
+    renderDialogHost()
+    openEditor({ readText: () => source.value })
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
+    editor.setSelectionRange(2, 10)
+
+    source.value = 'a landscape at dusk'
+
+    await waitFor(() => expect(editor).toHaveValue('a landscape at dusk'))
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 2])
+  })
+
   it.for([
     { browser: 'Chromium and Firefox', event: { isComposing: true } },
     { browser: 'Safari', event: { keyCode: 229 } }
