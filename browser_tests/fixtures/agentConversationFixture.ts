@@ -789,14 +789,6 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
-  hostLinkIds(): number[] {
-    return this.host
-      .projection()
-      .links.flatMap((link) =>
-        Array.isArray(link) && typeof link[0] === 'number' ? [link[0]] : []
-      )
-  }
-
   /** What the host document holds for one widget; undefined when it has none. */
   hostWidgetValue(nodeId: string, widget: string): unknown {
     const widgets = z
@@ -804,12 +796,6 @@ export class AgentConversationHarness {
       .optional()
       .parse(this.host.graph().nodes[nodeId]?.widgets)
     return widgets?.[widget]
-  }
-
-  async canvasLinkIds(): Promise<number[]> {
-    return await this.page.evaluate(() =>
-      [...window.app!.graph.links.keys()].map(Number)
-    )
   }
 
   /** How many minted human ops a `hold` host has not judged yet. */
