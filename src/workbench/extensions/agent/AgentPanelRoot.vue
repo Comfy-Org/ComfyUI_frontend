@@ -62,6 +62,10 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -810,7 +814,32 @@ function targetWorkflowTurnContext(
 function serializedCanvas(target: ComfyWorkflow) {
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  return target.activeState
+  return target.activeState ?? temporaryWorkflowContent(target) ?? null
+}
+
+function temporaryWorkflowContent(
+  workflow: ComfyWorkflow
+): Record<string, unknown> | undefined {
+  if (!workflow.isTemporary || workflow.content === null) return undefined
+  try {
+    const parsed: unknown = JSON.parse(workflow.content)
+    const schema = hasWorkflowV1Version(parsed)
+      ? zComfyWorkflow1
+      : zComfyWorkflow
+    const result = schema.safeParse(parsed)
+    return result.success ? (result.data as Record<string, unknown>) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function hasWorkflowV1Version(value: unknown): value is { version: 1 } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    value.version === 1
+  )
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
