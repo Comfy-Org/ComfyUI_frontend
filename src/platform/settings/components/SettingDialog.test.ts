@@ -10,6 +10,7 @@ import type { NavGroupData } from '@/types/navTypes'
 
 import {
   consumeSettingsPanelNavigation,
+  settingsPanelNavigation,
   showSettingsPanel
 } from '@/platform/settings/composables/useSettingsDialog'
 
@@ -279,15 +280,17 @@ it('navigates to a panel requested while it is already open', async () => {
   renderDialog()
   expect(await screen.findByText('workspace-allowlist panel')).toBeVisible()
 
+  let requestId: number | undefined
   try {
     // `defaultPanel` already landed, so only a live request can move this.
     showSettingsPanel('workspace')
+    requestId = settingsPanelNavigation.value?.requestId
 
     expect(await screen.findByText('workspace panel')).toBeVisible()
     expect(
       screen.queryByText('workspace-allowlist panel')
     ).not.toBeInTheDocument()
   } finally {
-    consumeSettingsPanelNavigation(1)
+    if (requestId !== undefined) consumeSettingsPanelNavigation(requestId)
   }
 })
