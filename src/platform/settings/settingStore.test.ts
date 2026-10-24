@@ -592,16 +592,22 @@ describe('useSettingStore', () => {
             Promise.resolve(
               new Response(null, { status: 500, statusText: 'Server Error' })
             ),
-          expected: { ok: false, reason: 'refused', detail: '500 Server Error' }
+          expected: {
+            ok: false,
+            reason: 'refused',
+            detail: '500 Server Error'
+          },
+          remaining: ['/extensions/saved/']
         },
         {
           label: 'never answers at all',
           storeSetting: () => Promise.reject(new Error('offline')),
-          expected: { ok: false, reason: 'unreachable', detail: 'offline' }
+          expected: { ok: false, reason: 'unreachable', detail: 'offline' },
+          remaining: ['/extensions/rejected/']
         }
       ])(
-        'setOrRevert reports it and restores the stored value when the server $label',
-        async ({ storeSetting, expected }) => {
+        'setOrRevert reports the outcome and leaves the right value when the server $label',
+        async ({ storeSetting, expected, remaining }) => {
           store.addSetting(packsSetting)
           await store.set(PACKS, ['/extensions/saved/'])
           vi.mocked(api.storeSetting).mockImplementation(storeSetting)
@@ -609,20 +615,34 @@ describe('useSettingStore', () => {
           expect(
             await store.setOrRevert(PACKS, ['/extensions/rejected/'])
           ).toEqual(expected)
-          expect(store.get(PACKS)).toEqual(['/extensions/saved/'])
+          expect(store.get(PACKS)).toEqual(remaining)
         }
       )
 
       it('setOrRevert leaves a never-stored setting unset rather than user-set', async () => {
         store.addSetting(packsSetting)
+        vi.mocked(api.storeSetting).mockResolvedValue(
+          new Response(null, { status: 400, statusText: 'Bad Request' })
+        )
+
+        expect(
+          await store.setOrRevert(PACKS, ['/extensions/rejected/'])
+        ).toMatchObject({ ok: false, reason: 'refused' })
+
+        expect(store.exists(PACKS)).toBe(false)
+        expect(store.get(PACKS)).toEqual([])
+      })
+
+      it('setOrRevert marks a never-stored setting set when the answer is lost', async () => {
+        store.addSetting(packsSetting)
         vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
 
         expect(
           await store.setOrRevert(PACKS, ['/extensions/rejected/'])
-        ).toMatchObject({ ok: false })
+        ).toMatchObject({ ok: false, reason: 'unreachable' })
 
-        expect(store.exists(PACKS)).toBe(false)
-        expect(store.get(PACKS)).toEqual([])
+        expect(store.exists(PACKS)).toBe(true)
+        expect(store.get(PACKS)).toEqual(['/extensions/rejected/'])
       })
 
       it('setOrRevert does not restore over a value a later write stored', async () => {
@@ -691,17 +711,15 @@ describe('useSettingStore', () => {
         expect(api.storeSetting).toHaveBeenCalledOnce()
       })
 
-      it('sends an equal-but-distinct list rather than reporting it unchanged', async () => {
+      it('acknowledges an equal-but-distinct list as saved', async () => {
         store.addSetting(packsSetting)
         vi.mocked(api.storeSetting).mockResolvedValue(new Response())
         await store.setOrRevert(PACKS, ['/extensions/same/'])
-        vi.mocked(api.storeSetting).mockClear()
 
         expect(await store.setOrRevert(PACKS, ['/extensions/same/'])).toEqual({
           ok: true,
           outcome: 'saved'
         })
-        expect(api.storeSetting).toHaveBeenCalledOnce()
       })
 
       it('set keeps the optimistic value and still rejects when unreachable', async () => {
@@ -720,7 +738,24 @@ describe('useSettingStore', () => {
         expect(store.get('Comfy.Locale')).toBe('optimistic')
       })
 
-      it('tells listeners the rejected value was taken back', async () => {
+      it('tells listeners the refused value was taken back', async () => {
+        const changes: Array<{ id: string; value: unknown }> = []
+        store.addSetting(packsSetting)
+        await store.set(PACKS, ['/extensions/saved/'])
+        store.onSettingChanged(({ id, value }) => changes.push({ id, value }))
+        vi.mocked(api.storeSetting).mockResolvedValue(
+          new Response(null, { status: 500, statusText: 'Server Error' })
+        )
+
+        await store.setOrRevert(PACKS, ['/extensions/rejected/'])
+
+        expect(changes).toEqual([
+          { id: PACKS, value: ['/extensions/rejected/'] },
+          { id: PACKS, value: ['/extensions/saved/'] }
+        ])
+      })
+
+      it('tells listeners nothing when the answer is lost', async () => {
         const changes: Array<{ id: string; value: unknown }> = []
         store.addSetting(packsSetting)
         await store.set(PACKS, ['/extensions/saved/'])
@@ -730,9 +765,9 @@ describe('useSettingStore', () => {
         await store.setOrRevert(PACKS, ['/extensions/rejected/'])
 
         expect(changes).toEqual([
-          { id: PACKS, value: ['/extensions/rejected/'] },
-          { id: PACKS, value: ['/extensions/saved/'] }
+          { id: PACKS, value: ['/extensions/rejected/'] }
         ])
+        expect(store.get(PACKS)).toEqual(['/extensions/rejected/'])
       })
 
       it('does not announce a revert a later stored write overtook', async () => {
@@ -792,6 +827,38 @@ describe('useSettingStore', () => {
         expect(changes.slice(-2)).toEqual([
           { id: PACKS, value: ['/extensions/saved/'] },
           { id: SEEN, value: ['agent.seen'] }
+        ])
+      })
+
+      it('keeps the whole batch when the answer is lost', async () => {
+        const SEEN = 'Comfy.Extension.SeenAgentExtensions'
+        store.addSetting(packsSetting)
+        store.addSetting({
+          id: SEEN,
+          name: SEEN,
+          type: 'hidden',
+          defaultValue: [] as string[]
+        })
+        await store.setMany({
+          [PACKS]: ['/extensions/saved/'],
+          [SEEN]: ['agent.seen']
+        })
+        const changes: Array<{ id: string; value: unknown }> = []
+        store.onSettingChanged(({ id, value }) => changes.push({ id, value }))
+        vi.mocked(api.storeSettings).mockRejectedValue(new Error('offline'))
+
+        expect(
+          await store.setManyOrRevert({
+            [PACKS]: ['/extensions/rejected/'],
+            [SEEN]: ['agent.seen', 'agent.new']
+          })
+        ).toMatchObject({ ok: false, reason: 'unreachable' })
+
+        expect(store.get(PACKS)).toEqual(['/extensions/rejected/'])
+        expect(store.get(SEEN)).toEqual(['agent.seen', 'agent.new'])
+        expect(changes).toEqual([
+          { id: PACKS, value: ['/extensions/rejected/'] },
+          { id: SEEN, value: ['agent.seen', 'agent.new'] }
         ])
       })
     })

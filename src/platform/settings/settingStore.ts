@@ -44,6 +44,17 @@ type LocalSettingWrite<TValue> =
 
 type SettingWriteFailure = Extract<SettingWriteResult, { ok: false }>
 
+/**
+ * Whether a failure is evidence the backend did not take the write. A rollback
+ * is a claim about the server, so it is only honest when a response arrived:
+ * `refused` is an answer, `unreachable` is no answer at all and the backend may
+ * hold the value either way. Reverting on `unreachable` undoes writes the server
+ * accepted, and the user watches the setting snap back for no reason.
+ */
+function provesNonCommit(failure: SettingWriteFailure) {
+  return failure.reason === 'refused'
+}
+
 interface SettingBatchWrite<K extends keyof Settings> {
   applied: Map<K, AppliedSetting<Settings[K]>>
   hadValue: Map<K, boolean>
@@ -259,7 +270,7 @@ export const useSettingStore = defineStore('setting', () => {
     await persistSetting(key, value, { revertOnFailure: false })
   }
 
-  /** Set a value, restoring the previous local value if the write fails. */
+  /** Set a value, restoring the one it replaced only if the backend refused it. */
   async function setOrRevert<K extends RevertibleSettingId>(
     key: K,
     value: Settings[K]
@@ -300,7 +311,7 @@ export const useSettingStore = defineStore('setting', () => {
     const local = await applySettingLocally(key, value)
     if (!local.written) return { ok: true, outcome: local.outcome }
 
-    let failure: SettingWriteResult | undefined
+    let failure: SettingWriteFailure | undefined
     try {
       const response = await api.storeSetting(key, local.newValue)
       if (!response.ok) {
@@ -320,7 +331,9 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     if (failure) {
-      if (revertOnFailure) await revertSettingLocally(key, hadValue, local)
+      if (revertOnFailure && provesNonCommit(failure)) {
+        await revertSettingLocally(key, hadValue, local)
+      }
       return failure
     }
 
@@ -363,7 +376,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const failure = await sendSettings(batch.updatedSettings)
     if (failure) {
-      await revertBatch(batch)
+      if (provesNonCommit(failure)) await revertBatch(batch)
       return failure
     }
 

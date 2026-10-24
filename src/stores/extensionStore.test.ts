@@ -192,13 +192,30 @@ describe('extensionStore', () => {
       expect(store.isSavingExtensionPacks).toBe(false)
     })
 
-    it('still runs a queued save after the one before it fails', async () => {
+    it('still runs a queued save after the one before it loses its answer', async () => {
       vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
 
       const first = store.setExtensionPackEnabled('/extensions/a/', false)
       const second = store.setExtensionPackEnabled('/extensions/b/', false)
 
       expect(await first).toMatchObject({ ok: false, reason: 'unreachable' })
+      expect(await second).toEqual({ ok: true, outcome: 'saved' })
+
+      expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
+        '/extensions/a/',
+        '/extensions/b/'
+      ])
+    })
+
+    it('still runs a queued save after the one before it is refused', async () => {
+      vi.mocked(api.storeSetting).mockResolvedValueOnce(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      const first = store.setExtensionPackEnabled('/extensions/a/', false)
+      const second = store.setExtensionPackEnabled('/extensions/b/', false)
+
+      expect(await first).toMatchObject({ ok: false, reason: 'refused' })
       expect(await second).toEqual({ ok: true, outcome: 'saved' })
 
       expect(settingStore.get('Comfy.Extension.DisabledPacks')).toEqual([
