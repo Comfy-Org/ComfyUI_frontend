@@ -94,6 +94,21 @@ describe('EmptyState', () => {
     ])
   })
 
+  it('keeps the treatment prompt in the same slot without a selection', () => {
+    distribution.isCloud = true
+    render(EmptyState, {
+      props: { assignment: 'test', attributeExperiment: true },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Explain how a ComfyUI workflow works'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+  })
+
   it('renders every local suggestion without truncating the inserted prompt', async () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
