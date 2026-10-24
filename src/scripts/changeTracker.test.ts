@@ -390,11 +390,12 @@ describe('ChangeTracker', () => {
       }
     )
 
-    it('skips the promptQueued capture while the text editor dialog is open', () => {
+    it('still records a queue-time change while the text editor dialog is open', () => {
       ChangeTracker.init()
       const initial = createState(1)
+      const changed = createState(2)
       const tracker = createTracker(initial)
-      mockCanvasState(createState(2))
+      mockCanvasState(changed)
       useDialogStore().showDialog({
         key: TEXT_EDITOR_DIALOG_KEY,
         component: {}
@@ -411,7 +412,7 @@ describe('ChangeTracker', () => {
         })
       )
 
-      expect(tracker.activeState).toEqual(initial)
+      expect(tracker.activeState).toEqual(changed)
     })
 
     it.for([

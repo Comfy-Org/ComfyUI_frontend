@@ -19,7 +19,8 @@
           :data-dialog-key="item.key"
           @escape-key-down="
             (e) =>
-              item.dialogComponentProps.closable === false && e.preventDefault()
+              (item.dialogComponentProps.closable === false || e.isComposing) &&
+              e.preventDefault()
           "
           @pointer-down-outside="
             (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)

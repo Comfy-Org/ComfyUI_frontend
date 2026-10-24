@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
@@ -130,6 +130,23 @@ describe('showTextEditor', () => {
 
     await waitFor(() => expect(editor).toHaveValue('a portrait at dawn'))
     expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 10])
+  })
+
+  it('stays open when Escape cancels an IME composition', async () => {
+    renderDialogHost()
+    openEditor()
+    const editor = await screen.findByRole('textbox')
+
+    editor.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true
+      })
+    )
+    await nextTick()
+
+    expect(screen.getByRole('dialog')).toBeVisible()
   })
 
   it('follows edits made to the text elsewhere while it is open', async () => {
