@@ -41,6 +41,7 @@ import {
   useWorkshopAuthFlag,
   useWorkshopTurnstileMode
 } from '@/scripts/posthog'
+import { wholeText } from '@/test/wholeText'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -740,7 +741,13 @@ describe('AuthSignIn', () => {
   it('advertises the free runs on the login page, as the cloud app does', () => {
     render(AuthSignIn)
 
-    expect(screen.getByText('to get 5 free runs.')).toBeTruthy()
+    const prompt = screen.getByText(
+      wholeText('New to Comfy? Sign up here to get 5 free runs.'),
+      { selector: 'p' }
+    )
+    expect(
+      within(prompt).getByRole('link', { name: 'Sign up here' })
+    ).toBeInTheDocument()
   })
 
   it('holds the form until Firebase has settled, then shows it to a signed-out visitor', async () => {

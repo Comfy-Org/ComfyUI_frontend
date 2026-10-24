@@ -26,7 +26,7 @@ const dynamicKeys: string[] = [
 const staticKeys: TranslationKey[] = [
   'cloudNodesLaunch.meta.title',
   'cloudNodesLaunch.meta.description',
-  'cloudNodesLaunch.hero.title',
+  'cloudNodesLaunch.hero.headline',
   'cloudNodesLaunch.hero.titleHighlight',
   'cloudNodesLaunch.hero.subtitle',
   'cloudNodesLaunch.hero.videoAlt',

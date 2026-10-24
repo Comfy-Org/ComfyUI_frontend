@@ -4,6 +4,7 @@ import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '@/config/routes'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
@@ -135,14 +136,17 @@ const copiedLabel = t('ui.copied')
     </div>
 
     <p class="mt-8 text-sm text-smoke-700">
-      {{ t('cli.skills.moreSkillsPrefix')
-      }}<a
-        :href="externalLinks.mcpSkills"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        >{{ t('cli.skills.moreSkillsLinkLabel') }}</a
-      >{{ t('cli.skills.moreSkillsSuffix') }}
+      <I18nT keypath="cli.skills.moreSkills" :i18n="translationsFor(locale)">
+        <template #link>
+          <a
+            :href="externalLinks.mcpSkills"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+            >{{ t('cli.skills.moreSkillsLinkLabel') }}</a
+          >
+        </template>
+      </I18nT>
     </p>
   </section>
 </template>

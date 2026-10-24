@@ -2,6 +2,7 @@
 import type { Locale } from '@/i18n/translations'
 
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import { externalLinks } from '@/config/routes.ts'
 
@@ -12,8 +13,6 @@ const { t } = translationsFor(locale)
 <template>
   <HeroSplit01
     :badge-text="t('affiliate.hero.label')"
-    :title-highlight="t('affiliate.hero.headingHighlight')"
-    :title="t('affiliate.hero.headingMuted')"
     :features="[
       t('affiliate.hero.feature1'),
       t('affiliate.hero.feature2'),
@@ -29,5 +28,15 @@ const { t } = translationsFor(locale)
     video-hide-controls
     video-src="https://media.comfy.org/website/affiliates/rainlit-ronin_compressed.mp4"
     :image-alt="t('affiliate.hero.imageAlt')"
-  />
+  >
+    <template #title>
+      <I18nT keypath="affiliate.hero.headline" :i18n="translationsFor(locale)">
+        <template #highlight>
+          <span class="text-primary-warm-white">{{
+            t('affiliate.hero.headingHighlight')
+          }}</span>
+        </template>
+      </I18nT>
+    </template>
+  </HeroSplit01>
 </template>

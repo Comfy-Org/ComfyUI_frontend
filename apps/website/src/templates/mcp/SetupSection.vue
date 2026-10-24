@@ -21,6 +21,7 @@ import {
 import { externalLinks, getRoutes } from '@/config/routes'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { I18nT } from 'vue-i18n'
 import {
   captureMcpClientTabClick,
   captureMcpConnectionTabClick
@@ -95,23 +96,34 @@ const copiedLabel = t('ui.copied')
           v-if="activeConnectionId === 'cloud'"
           class="mt-4 max-w-xl text-xs text-primary-warm-gray"
         >
-          {{ t('mcp.setup.requirementPrefix')
-          }}<a
-            :href="getRoutes(locale).pricing"
-            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('mcp.setup.requirementLinkLabel') }}</a
-          >{{ t('mcp.setup.requirementSuffix')
-          }}{{ t('mcp.setup.requirementFootnote') }}
+          <I18nT
+            keypath="mcp.setup.requirement"
+            :i18n="translationsFor(locale)"
+          >
+            <template #link>
+              <a
+                :href="getRoutes(locale).pricing"
+                class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                >{{ t('mcp.setup.requirementLinkLabel') }}</a
+              >
+            </template>
+          </I18nT>
         </p>
         <p v-else class="mt-4 max-w-xl text-xs text-primary-warm-gray">
-          {{ t('mcp.setup.local.requirementPrefix')
-          }}<a
-            :href="externalLinks.comfyMcpRepo"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-            >{{ t('mcp.setup.local.requirementLinkLabel') }}</a
-          >{{ t('mcp.setup.local.requirementSuffix') }}
+          <I18nT
+            keypath="mcp.setup.local.requirement"
+            :i18n="translationsFor(locale)"
+          >
+            <template #link>
+              <a
+                :href="externalLinks.comfyMcpRepo"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+                >{{ t('mcp.setup.local.requirementLinkLabel') }}</a
+              >
+            </template>
+          </I18nT>
         </p>
       </template>
     </SectionHeader>
