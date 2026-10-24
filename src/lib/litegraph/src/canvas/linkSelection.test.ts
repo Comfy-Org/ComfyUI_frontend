@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
@@ -20,8 +21,10 @@ import {
   hideSelectedLinks,
   selectLinksInMarquee,
   selectSlotLinks,
-  showSelectedLinks
+  showSelectedLinks,
+  toggleNodeLinks
 } from './linkSelection'
+import { getVisibleRerouteLink } from './linkVisibility'
 
 const ACROSS_BOTH_LINKS: ReadOnlyRect = [40, 0, 20, 40]
 
@@ -55,6 +58,13 @@ function selectLinks(
   anchorX = 60
 ) {
   selectLinksInMarquee({ graph, renderedPaths }, rect, anchorX)
+}
+
+function hide(graph: LGraph, links: LLink[]) {
+  for (const link of links)
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: true
+    })
 }
 
 function createHost(graph: LGraph, events: string[] = []) {
@@ -223,13 +233,6 @@ describe('slot link selection', () => {
     links_render_mode: number = LinkRenderType.SPLINE_LINK
   ) {
     return { graph, links_render_mode, deselectAll: vi.fn() }
-  }
-
-  function hide(graph: LGraph, links: LLink[]) {
-    for (const link of links)
-      useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
-        hidden: true
-      })
   }
 
   function selectSourceOutput(graph: LGraph) {
@@ -401,5 +404,105 @@ describe('slot link selection', () => {
     ).toEqual([undefined, undefined])
     expect(events).toEqual(['before', 'after'])
     expect(getSelectedLinkIds(graph)).toEqual([])
+  })
+})
+
+describe('node link toggle', () => {
+  function isHidden(graph: LGraph, link: LLink) {
+    return (
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.hidden === true
+    )
+  }
+
+  function connect(origin: LGraphNode, target: LGraphNode): LLink {
+    const link = origin.connect(0, target, 0)
+    if (!link) throw new Error('connect failed')
+    return link
+  }
+
+  it('hides every link on a node in one change while any is showing', () => {
+    const { graph, links } = createGraphWithLinks()
+    hide(graph, [links[1]])
+    const events: string[] = []
+
+    expect(toggleNodeLinks(createHost(graph, events), [graph.nodes[0]])).toBe(
+      true
+    )
+
+    expect(links.map((link) => isHidden(graph, link))).toEqual([true, true])
+    expect(events).toEqual(['before', 'after'])
+  })
+
+  it('shows every link on a node in one change once all are hidden', () => {
+    const { graph, links } = createGraphWithLinks()
+    hide(graph, links)
+    const events: string[] = []
+
+    expect(toggleNodeLinks(createHost(graph, events), [graph.nodes[0]])).toBe(
+      true
+    )
+
+    expect(links.map((link) => isHidden(graph, link))).toEqual([false, false])
+    expect(events).toEqual(['before', 'after'])
+  })
+
+  it('hides the links of every selected node, including a link between two of them', () => {
+    const graph = new LGraph()
+    const first = createTestNode(graph, [], ['number'])
+    const second = createTestNode(graph, ['number'], ['number'])
+    const downstream = createTestNode(graph, ['number'])
+    const between = connect(first, second)
+    const leaving = connect(second, downstream)
+    const unrelated = connect(
+      createTestNode(graph, [], ['number']),
+      createTestNode(graph, ['number'])
+    )
+
+    toggleNodeLinks(createHost(graph), [first, second])
+
+    expect(
+      [between, leaving, unrelated].map((link) => isHidden(graph, link))
+    ).toEqual([true, true, false])
+  })
+
+  it('hides a link through a reroute along its whole length', () => {
+    const { graph, links } = createGraphWithLinks()
+    const reroute = graph.createReroute([50, 10], links[0])
+    if (!reroute) throw new Error('createReroute failed')
+
+    toggleNodeLinks(createHost(graph), [graph.nodes[1]])
+
+    expect(isHidden(graph, links[0])).toBe(true)
+    expect(getVisibleRerouteLink(graph, reroute)).toBeUndefined()
+  })
+
+  it('hides the link from a subgraph input in the open subgraph', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const node = createTestNode(subgraph, ['number'])
+    const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+    if (!link) throw new Error('connect failed')
+
+    toggleNodeLinks(createHost(subgraph), [node])
+
+    expect(isHidden(subgraph, link)).toBe(true)
+  })
+
+  it.for<{ name: string; nodes: (graph: LGraph) => LGraphNode[] }>([
+    { name: 'no node is selected', nodes: () => [] },
+    {
+      name: 'the selected node has no links',
+      nodes: (graph) => [createTestNode(graph, ['number'])]
+    }
+  ])('changes nothing when $name', ({ nodes }) => {
+    const { graph, links } = createGraphWithLinks()
+    const events: string[] = []
+
+    expect(toggleNodeLinks(createHost(graph, events), nodes(graph))).toBe(false)
+
+    expect(links.map((link) => isHidden(graph, link))).toEqual([false, false])
+    expect(events).toEqual([])
   })
 })

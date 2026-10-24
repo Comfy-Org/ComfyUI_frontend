@@ -16,7 +16,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
+import {
+  inputLinkId,
+  nodeLinkIds,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
@@ -245,6 +249,41 @@ export function showSelectedLinks(host: LinkSelectionHost): boolean {
     hidden.map((link) => link.id)
   )
   clearLinkSelection()
+  return true
+}
+
+function linksOfNodes(graph: LGraph, nodes: readonly LGraphNode[]): LLink[] {
+  const linkIds = new Set(nodes.flatMap((node) => nodeLinkIds(graph, node)))
+  return [...linkIds].flatMap((linkId) => {
+    const link = graph.getLink(linkId)
+    return link ? [link] : []
+  })
+}
+
+export function toggleNodeLinks(
+  host: LinkSelectionHost,
+  nodes: readonly LGraphNode[]
+): boolean {
+  const { graph } = host
+  if (!graph) return false
+  const [visible, hidden] = partition(linksOfNodes(graph, nodes), (link) =>
+    isLinkVisible(graph, link)
+  )
+  const scope = graphScopeOf(graph)
+  if (visible.length) {
+    hideLinks(
+      host,
+      scope,
+      visible.map((link) => link.id)
+    )
+    return true
+  }
+  if (!hidden.length) return false
+  showLinks(
+    host,
+    scope,
+    hidden.map((link) => link.id)
+  )
   return true
 }
 

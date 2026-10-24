@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "選択したノードの折りたたみ/展開"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "選択したノードのリンクを非表示/表示"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "選択したノードのミュート/ミュート解除"
   },

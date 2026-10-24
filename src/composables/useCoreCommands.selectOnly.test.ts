@@ -24,6 +24,7 @@ const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.ToggleSelected.Pin',
   'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   'Comfy.Canvas.ToggleSelectedNodes.Collapse',
+  'Comfy.Canvas.ToggleSelectedNodes.Links',
   'Comfy.Canvas.ToggleSelectedNodes.Mute',
   'Comfy.Canvas.ToggleSelectedNodes.Pin',
   'Comfy.ClearWorkflow',

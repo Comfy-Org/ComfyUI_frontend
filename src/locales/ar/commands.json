@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "طي/توسيع العقد المحددة"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "إخفاء/إظهار روابط العقد المحددة"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "كتم/إلغاء كتم العقد المحددة"
   },
