@@ -1168,6 +1168,7 @@
     "eventType": "Tipo di evento",
     "eventTypes": {
       "accountCreated": "Account creato",
+      "agentUsage": "Utilizzo dell'agente",
       "apiNodeUsage": "Utilizzo nodo partner",
       "apiUsage": "Utilizzo API",
       "creditAdded": "Crediti aggiunti",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} di {maxSeats} membri totali.",
       "totalMembersUnlimited": "{count} membro in totale. | {count} membri in totale.",
       "upgradeToTeam": "Aggiorna a Team",
-      "upsellBanner": "Per aggiungere membri, aggiorna il tuo piano.",
-      "upsellBannerEnterpriseEnded": "Contatta il reparto vendite per riattivare il tuo piano Enterprise.",
-      "upsellBannerPlanEnded": "Contatta il reparto vendite per riattivare il tuo piano.",
-      "upsellBannerReactivate": "Per aggiungere altri membri, riattiva il tuo piano."
+      "upsellBanner": "Per aggiungere membri, aggiorna il tuo piano."
     },
     "menu": {
       "creatorCannotLeave": "Il creatore del workspace non può lasciare il workspace che ha creato",

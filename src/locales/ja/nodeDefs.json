@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "名前で接続された入力から選択します。入力はダブルクリックして名前を変更できます。",
+    "display_name": "分岐",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria を使用して、プレーンテキストで説明したオブジェクトを画像に挿入します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
     "display_name": "Bria オブジェクトを追加",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image編集lora用に、参照画像とともに編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先に拡大・縮小してください。",
+    "description": "MOSS-Image編集LoRA用に、参照画像とともに編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先にスケールしてください。VAEがない場合、画像はテキストエンコーダーにのみ渡されます。",
     "display_name": "MOSS-Image Edit テキストエンコード",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "編集loraの学習に使用されたレイアウト: ai-toolkitのMOSS-Image Edit Training（kv_cacheオプションのオンまたはオフ）またはMoss-Image-Edit。kv_cacheがオフの場合、参照画像も生成中の画像にattentionするため、各ステップで再計算されます。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "テキストエンコーダーが見る画像にモデルがどの程度注意を向けるかを調整します（ai-toolkit形式、またはVAEなしの場合）：0では無視され、1では変更されず、1を超えると強調されます。"
+      },
       "images": {
         "name": "画像"
       },
@@ -25265,7 +25290,8 @@
         "name": "プロンプト"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "画像を編集LoRA用の参照latentとしてエンコードします。"
       }
     },
     "outputs": {
