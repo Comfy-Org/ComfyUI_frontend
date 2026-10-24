@@ -6,7 +6,7 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
@@ -15,6 +15,7 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
@@ -28,6 +29,11 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
+vi.mock(import('@/platform/telemetry'))
+
+const telemetry = vi.mocked(useTelemetry)()
+assert.exists(telemetry)
+
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: mockCopyToClipboard
@@ -496,6 +502,37 @@ describe('WidgetTextarea expand to editor', () => {
     await openEditor()
 
     expect(expose).toHaveBeenCalledWith('control')
+  })
+
+  describe('with the dialog arm served', () => {
+    beforeEach(() => {
+      remoteConfig.value = { 'prompt-editor-surface': 'control' }
+      authenticatedRemoteConfigState.value = 'authenticated'
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      authenticatedRemoteConfigState.value = 'unloaded'
+    })
+
+    it.for([
+      { context: 'app mode', inSidePanel: false, appMode: true },
+      { context: 'the side panel', inSidePanel: true, appMode: false }
+    ])(
+      'leaves the session out of the experiment in $context, where the panel could not open',
+      async ({ inSidePanel, appMode }) => {
+        useCanvasStore().linearMode = appMode
+        renderWithDialogHost({}, { inSidePanel })
+
+        await openEditor()
+
+        expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+        expect(telemetry.trackPromptEditorOpened).toHaveBeenCalledWith({
+          surface: 'dialog',
+          trigger: 'expand_button'
+        })
+      }
+    )
   })
 
   describe('with the panel arm served', () => {

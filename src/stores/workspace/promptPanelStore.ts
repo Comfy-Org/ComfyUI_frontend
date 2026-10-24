@@ -132,16 +132,18 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     session = undefined
   }
 
-  function close() {
+  function close(
+    endReason: PromptEditorClosedMetadata['end_reason'] = 'close'
+  ) {
     releaseTarget?.()
     releaseTarget = undefined
     target.value = null
     isPromptViewShown.value = false
     isEditorFocused.value = false
-    reportSessionEnd('close')
+    reportSessionEnd(endReason)
   }
 
-  useEventListener(window, 'pagehide', () => reportSessionEnd('pagehide'))
+  useEventListener(window, 'pagehide', () => close('pagehide'))
 
   watch(
     () => rightSidePanelStore.isOpen,
@@ -149,7 +151,10 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
       if (!isOpen) close()
     }
   )
-  watch(() => workflowStore.activeWorkflow, close)
+  watch(
+    () => workflowStore.activeWorkflow,
+    () => close()
+  )
   rightSidePanelStore.$onAction(({ name, args }) => {
     const requestsView =
       name === 'focusSection' || (name === 'openPanel' && args[0] !== undefined)

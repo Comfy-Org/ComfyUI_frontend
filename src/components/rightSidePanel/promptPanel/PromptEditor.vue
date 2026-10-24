@@ -17,7 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import {
   getWidgetState,
@@ -59,14 +65,17 @@ function endEditSession() {
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
 }
 
-onMounted(() => {
+function takeRequestedFocus() {
   if (!promptPanelStore.autofocus) return
   promptPanelStore.autofocus = false
   const element: unknown = textareaRef.value?.$el
   if (!(element instanceof HTMLTextAreaElement)) return
   element.setSelectionRange(0, 0)
   element.focus()
-})
+}
+
+onMounted(takeRequestedFocus)
+watch(() => promptPanelStore.autofocus, takeRequestedFocus, { flush: 'post' })
 
 onBeforeUnmount(endEditSession)
 </script>
