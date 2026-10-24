@@ -553,15 +553,27 @@ describe('WidgetTextarea expand to editor', () => {
       })
     })
 
-    it('falls back to the dialog in app mode without reporting exposure', async () => {
-      useCanvasStore().linearMode = true
-      renderWithDialogHost()
+    it.for([
+      {
+        state: 'app mode',
+        hidePanel: () => (useCanvasStore().linearMode = true)
+      },
+      {
+        state: 'focus mode',
+        hidePanel: () => (usePromptPanelStore().isPanelHidden = true)
+      }
+    ])(
+      'falls back to the dialog in $state without reporting exposure',
+      async ({ hidePanel }) => {
+        hidePanel()
+        renderWithDialogHost()
 
-      await openEditor()
+        await openEditor()
 
-      expect(usePromptPanelStore().isActive).toBe(false)
-      expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
-    })
+        expect(usePromptPanelStore().isActive).toBe(false)
+        expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it.for([

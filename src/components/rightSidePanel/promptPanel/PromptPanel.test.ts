@@ -75,6 +75,30 @@ describe('PromptPanel', () => {
     expect(promptPanelStore.target?.node).toBe(negative.node)
   })
 
+  it('skips a prompt whose input is linked to another node', async () => {
+    const { graph, promptPanelStore } = renderOpenPanel()
+    const linked = addNode(graph, 'Linked', 'from upstream')
+    linked.node.addInput('text', 'STRING', { widget: { name: 'text' } })
+    const source = addNode(graph, 'Source')
+    source.node.addOutput('STRING', 'STRING')
+    source.node.connect(0, linked.node, 0)
+
+    setCanvasSelection([linked.node])
+
+    expect(await screen.findByText('Linked has no prompt.')).toBeVisible()
+    expect(promptPanelStore.target?.node).not.toBe(linked.node)
+  })
+
+  it('returns to its prompt when the selection is cleared', async () => {
+    const { graph } = renderOpenPanel()
+    setCanvasSelection([addNode(graph, 'KSampler').node])
+    await screen.findByText('KSampler has no prompt.')
+
+    setCanvasSelection([])
+
+    expect(await screen.findByText('text · Positive')).toBeVisible()
+  })
+
   it('shows an empty state for a selected node without a prompt', async () => {
     const { graph, node, promptPanelStore } = renderOpenPanel()
     const sampler = addNode(graph, 'KSampler')

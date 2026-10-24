@@ -306,6 +306,10 @@ const sidebarPanelVisible = computed(
 )
 
 const promptPanelStore = usePromptPanelStore()
+watchEffect(() => {
+  promptPanelStore.isPanelHidden =
+    focusMode.value || agentNodeSelectionActive.value
+})
 const floatPropertiesPanel = computed(
   () => promptPanelStore.isActive && !isBuilderMode.value
 )

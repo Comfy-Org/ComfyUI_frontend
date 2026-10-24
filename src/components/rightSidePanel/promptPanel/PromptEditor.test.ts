@@ -121,6 +121,16 @@ describe('PromptEditor', () => {
     expect(widget.value).toBe('a portrait')
   })
 
+  it('opens a disabled widget read-only', () => {
+    const target = createTarget()
+    target.widget.disabled = true
+    render(PromptEditor, { props: { target }, global: { plugins: [i18n] } })
+
+    expect(screen.getByRole('textbox', { name: 'text' })).toHaveAttribute(
+      'readonly'
+    )
+  })
+
   it.for([
     { typed: 'x', captures: 1 },
     { typed: '', captures: 0 }

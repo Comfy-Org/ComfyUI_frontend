@@ -40,7 +40,12 @@ const widgetLabel = computed(
 )
 const isReadOnly = computed(() => {
   const options = widgetState.value?.options ?? target.widget.options
-  return Boolean(options?.read_only || options?.disabled)
+  return Boolean(
+    options?.read_only ||
+    options?.disabled ||
+    widgetState.value?.disabled ||
+    target.widget.disabled
+  )
 })
 
 let isEdited = false
