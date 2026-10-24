@@ -2362,6 +2362,7 @@ describe('useAgentSession (v1 composition root)', () => {
       async ([, otherText, superseded]) => {
         const { session } = await parkedOnQuestion({
           status: 'answered',
+          selected: [],
           other_text: otherText
         })
 
