@@ -38,6 +38,7 @@ watch(
     const view = element && {
       start: element.selectionStart,
       end: element.selectionEnd,
+      direction: element.selectionDirection ?? undefined,
       scrollTop: element.scrollTop
     }
     draft.value = text
@@ -45,7 +46,8 @@ watch(
     await nextTick()
     element.setSelectionRange(
       Math.min(view.start, text.length),
-      Math.min(view.end, text.length)
+      Math.min(view.end, text.length),
+      view.direction
     )
     element.scrollTop = view.scrollTop
   }
