@@ -812,10 +812,6 @@ export class AgentConversationHarness {
     )
   }
 
-  async severLink(): Promise<void> {
-    await this.comfyPage.canvasOps.disconnectEdge()
-  }
-
   /** How many minted human ops a `hold` host has not judged yet. */
   heldHumanOpCount(): number {
     return this.hostSocket.heldClientOps().length

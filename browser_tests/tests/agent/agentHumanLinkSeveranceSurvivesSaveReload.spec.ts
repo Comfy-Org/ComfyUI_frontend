@@ -17,6 +17,7 @@ test.describe(
 
     test('keeps the severed connection out of the document the agent reads after a save and reload', async ({
       agentConversation,
+      comfyPage,
       page
     }, testInfo) => {
       test.setTimeout(120_000)
@@ -37,7 +38,7 @@ test.describe(
       })
 
       await test.step('the user severs one connection on the canvas', async () => {
-        await agentConversation.severLink()
+        await comfyPage.canvasOps.disconnectEdge()
         expect(await agentConversation.canvasLinkIds()).not.toContain(
           SEVERED_LINK_ID
         )
