@@ -109,16 +109,15 @@ describe('recording template', () => {
     expect(() => cleanupRecordingTemplate(browserTestsDir)).not.toThrow()
   })
 
-  // Recording-by-default captured sign-in keystrokes (including passwords)
-  // and pre-test exploration; standby captures nothing until the human
-  // presses Record.
-  it('starts the recorder in standby, not recording', () => {
-    for (const target of ['local', 'cloud'] as const) {
+  it.for(['local', 'cloud'] as const)(
+    'starts the %s recorder inspecting, not recording',
+    (target) => {
       const { code } = generate({ testName: 'demo', target })
-      expect(code).toContain("mode: 'standby'")
+      expect(code).toContain("mode: 'inspecting'")
+      expect(code).not.toContain("mode: 'standby'")
       expect(code).not.toContain("mode: 'recording'")
     }
-  })
+  )
 
   it('enables the recorder to auto-save generated code, before pausing', () => {
     const { code } = generate({ testName: 'demo' })
