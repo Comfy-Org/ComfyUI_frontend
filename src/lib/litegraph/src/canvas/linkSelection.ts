@@ -305,9 +305,13 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
   const destinations = [...linksByNode].flatMap(([nodeId, links]) => {
     const end = linkEndNode(graph, nodeId)
     if (!end) return []
-    const arriving = links.filter((link) =>
-      isSlotIndex(end, arrivalType, farEnd(link, socketType).slot)
-    )
+    const arriving = links.filter((link) => {
+      const { slot } = farEnd(link, socketType)
+      return (
+        isSlotIndex(end, arrivalType, slot) &&
+        slotLinkIds(graph, nodeId, arrivalType, slot).includes(link.id)
+      )
+    })
     return arriving.length ? [{ ...end, nodeId, links: arriving }] : []
   })
   return sortBy(destinations, [
@@ -348,8 +352,9 @@ function selectArrivalSocket(
   destination: LinkDestination
 ): Point | undefined {
   const arrivalType = oppositeSlotType(departureType)
-  const arrivalSlot = Math.min(
-    ...destination.links.map((link) => farEnd(link, departureType).slot)
+  const arrivalSlot = destination.links.reduce(
+    (lowest, link) => Math.min(lowest, farEnd(link, departureType).slot),
+    Infinity
   )
   const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
   if (!links.length) return undefined
