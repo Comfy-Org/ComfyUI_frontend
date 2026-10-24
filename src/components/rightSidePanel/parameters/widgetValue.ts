@@ -26,6 +26,11 @@ export function getWidgetState(
     : undefined
 }
 
+/** Whether the node still holds the widget, so a write to it reaches the graph. */
+export function isWidgetAttached(node: LGraphNode, widget: IBaseWidget) {
+  return node.widgets?.includes(widget) ?? false
+}
+
 /** Whether a widget shown in the properties panel can only be read. */
 export function isWidgetReadOnly(
   node: LGraphNode,

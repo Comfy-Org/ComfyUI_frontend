@@ -184,6 +184,22 @@ describe('PromptPanel', () => {
     )
   })
 
+  it('ends the session instead of writing from the focus view to a widget its node dropped', async () => {
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const { node, promptPanelStore } = renderOpenPanel()
+    const [widget] = node.widgets ?? []
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Expand to focus view' })
+    )
+    const dialog = await screen.findByRole('dialog')
+    node.widgets?.splice(0, 1)
+
+    await userEvent.type(within(dialog).getByRole('textbox'), 'x')
+
+    expect(widget.value).toBe('a portrait')
+    expect(promptPanelStore.isActive).toBe(false)
+  })
+
   it('opens a disabled prompt read-only in the focus view', async () => {
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const { promptPanelStore } = renderOpenPanel()

@@ -27,6 +27,7 @@ import {
 
 import {
   getWidgetState,
+  isWidgetAttached,
   isWidgetReadOnly,
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
@@ -52,7 +53,7 @@ let isEdited = false
 const text = computed({
   get: () => String(widgetState.value?.value ?? target.widget.value ?? ''),
   set: (value: string) => {
-    if (!target.node.widgets?.includes(target.widget)) {
+    if (!isWidgetAttached(target.node, target.widget)) {
       promptPanelStore.close()
       return
     }

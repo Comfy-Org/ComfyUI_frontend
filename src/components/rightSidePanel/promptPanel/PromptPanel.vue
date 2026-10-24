@@ -70,6 +70,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import {
   getWidgetState,
+  isWidgetAttached,
   isWidgetReadOnly,
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
@@ -148,7 +149,13 @@ function openFocusView({ node, widget }: PromptPanelTarget) {
     readOnly: () => isWidgetReadOnly(node, widget),
     maximized: true,
     trigger: 'focus_view',
-    onEdit: (text) => setWidgetValue(node, widget, text)
+    onEdit: (text) => {
+      if (!isWidgetAttached(node, widget)) {
+        promptPanelStore.close()
+        return
+      }
+      setWidgetValue(node, widget, text)
+    }
   })
 }
 
