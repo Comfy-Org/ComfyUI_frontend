@@ -1,5 +1,6 @@
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type {
   AgentPaywallCta,
   AgentPaywallReason
@@ -17,11 +18,12 @@ export type AgentPaywallPresentation =
   | { kind: 'unavailable' }
 
 interface AgentPaywallPresentationInput {
-  distribution: 'cloud' | 'local'
+  isCloud: boolean
   role: WorkspaceRole | undefined
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+  hasResolvedCapabilities: boolean
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
@@ -54,23 +56,34 @@ export function toAgentPaywallCta(action: AgentPaywallAction): AgentPaywallCta {
 }
 
 export function resolveAgentPaywallPresentation({
-  distribution,
+  isCloud,
   role,
   tier,
   canTopUp,
-  canSubscribeSelfServe
+  canSubscribeSelfServe,
+  hasResolvedCapabilities
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
-  if (distribution === 'local') return { kind: 'local' }
-  if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
-  if (role === 'member' && !canTopUp) return { kind: 'member' }
-  if (!canTopUp) {
-    return canSubscribeSelfServe
-      ? { kind: 'subscriptionRequired' }
-      : { kind: 'salesManaged' }
-  }
-  return {
-    kind: 'subscribed',
-    showUpgrade:
-      canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
-  }
+  return pendingServerFact(
+    'BE-20402',
+    ((): AgentPaywallPresentation => {
+      if (!isCloud) return { kind: 'local' }
+      if (!hasResolvedCapabilities && !canTopUp)
+        return DEFAULT_AGENT_PAYWALL_PRESENTATION
+      if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
+      if (canTopUp) {
+        return {
+          kind: 'subscribed',
+          showUpgrade:
+            canSubscribeSelfServe &&
+            ['STANDARD', 'CREATOR'].some(
+              (upgradeableTier) => upgradeableTier === tier
+            )
+        }
+      }
+      if (role === 'member') return { kind: 'member' }
+      return canSubscribeSelfServe
+        ? { kind: 'subscriptionRequired' }
+        : { kind: 'salesManaged' }
+    })()
+  )
 }
