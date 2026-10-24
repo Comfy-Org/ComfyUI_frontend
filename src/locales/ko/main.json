@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "JSON 파일 업로드"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "{node}(으)로 이동",
+      "goToLinkedNode": "연결된 노드로 이동",
+      "subgraphInputs": "서브그래프 입력",
+      "subgraphOutputs": "서브그래프 출력"
+    },
     "Bypass Group Nodes": "그룹 노드 우회",
     "Set Group Nodes to Always": "그룹 노드를 항상 실행으로 설정",
     "Set Group Nodes to Never": "그룹 노드를 절대 실행 안함으로 설정",

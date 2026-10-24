@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "Загрузить JSON-файл"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "Перейти к {node}",
+      "goToLinkedNode": "Перейти к связанной ноде",
+      "subgraphInputs": "Входы подграфа",
+      "subgraphOutputs": "Выходы подграфа"
+    },
     "Bypass Group Nodes": "Обойти групповые узлы",
     "Set Group Nodes to Always": "Всегда использовать групповые узлы",
     "Set Group Nodes to Never": "Никогда не использовать групповые узлы",

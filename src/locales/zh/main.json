@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "上传JSON文件"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "转到 {node}",
+      "goToLinkedNode": "转到相连的节点",
+      "subgraphInputs": "子图输入",
+      "subgraphOutputs": "子图输出"
+    },
     "Bypass Group Nodes": "绕过分组节点",
     "Set Group Nodes to Always": "将分组节点设置为始终",
     "Set Group Nodes to Never": "将分组节点设置为从不",
