@@ -317,6 +317,10 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       getWorkspaceToken: mint.getWorkspaceToken
     })
     releaseRequests = provideWebSessionRequests({
+      refreshSession: async () => {
+        await session.refresh()
+        await whenDecided()
+      },
       scope: requestScope,
       workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),

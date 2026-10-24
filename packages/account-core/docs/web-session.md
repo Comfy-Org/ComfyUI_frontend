@@ -94,6 +94,14 @@ workspace. `httpStatus` (404) and `serverCode` still tell it from a 403.
 
 ## Per app
 
+Cloud rereads the session when a WebSocket closes before opening, including in
+hidden tabs. It waits for remembered-login recovery before reconnecting, or
+stops reconnecting when the session reports sign-out. Failed opens back off
+from one second to one minute; a successful open resets the delay. An established
+connection still reconnects after 300 ms. Session connection failures do not
+start queue polling, and a temporary session-read outage does not sign the user
+out.
+
 | App         | Use                                                                                                                                                                            |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | cloud       | `cloudWebSessionStore.start()` builds the identity, the mint and the authorizer. Ingest calls go through `fetchOnWebSession`; comfy-api calls take `webSessionResourceHeader`. |
