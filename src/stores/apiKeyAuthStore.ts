@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 
@@ -13,6 +14,12 @@ type ComfyApiUser =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
 const STORAGE_KEY = 'comfy_api_key'
+
+const isRejectedApiKey = (error: unknown) =>
+  error instanceof Error &&
+  error.name === 'AuthStoreError' &&
+  'status' in error &&
+  (error.status === 401 || error.status === 403)
 
 export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
@@ -26,9 +33,15 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const initializeUserFromApiKey = async (watchedApiKey: string) => {
     const createCustomerResponse = await authStore
       .createCustomer()
-      .catch((err) => {
-        console.error(err)
-        return
+      .catch((err: unknown) => {
+        if (isRejectedApiKey(err)) {
+          console.warn(err)
+          return
+        }
+        reportError(err, {
+          errorType: 'api_key_customer_creation_failure',
+          surface: 'auth'
+        })
       })
     if (apiKey.value !== watchedApiKey) return
     if (!createCustomerResponse) {
@@ -54,7 +67,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     { immediate: true }
   )
 
-  const reportError = (error: unknown) => {
+  const showErrorToast = (error: unknown) => {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
       toast.error(t('auth.apiKey.storageFailed'), {
         description: t('auth.apiKey.storageFailedDetail')
@@ -71,7 +84,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       duration: 5000
     })
     return true
-  }, reportError)
+  }, showErrorToast)
 
   const clearStoredApiKey = wrapWithErrorHandlingAsync(async () => {
     apiKey.value = null
@@ -80,7 +93,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
       duration: 5000
     })
     return true
-  }, reportError)
+  }, showErrorToast)
 
   const getApiKey = () => apiKey.value
 

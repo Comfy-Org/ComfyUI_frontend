@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, reactive, toRaw } from 'vue'
 import type { ComputedRef } from 'vue'
 
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { useLinkStore } from '@/stores/linkStore'
 import type {
   GraphScope,
@@ -131,6 +132,11 @@ export const useRerouteStore = defineStore('reroute', () => {
       console.error(
         `[rerouteStore] Reroute ${chain.id} belongs to graph ${existing.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
+      reportAssertFailure('Reroute store ownership conflict', {
+        rerouteId: chain.id,
+        incumbentGraphId: existing.graphId,
+        owningGraphId: scope.owningGraphId
+      })
       return undefined
     }
     const bucket = existingBucket ?? rootBucket(scope.rootGraphId)

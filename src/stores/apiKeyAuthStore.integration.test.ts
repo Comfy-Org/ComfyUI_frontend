@@ -3,8 +3,9 @@ import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 const CUSTOMERS_URL = /\/customers$/
 
@@ -23,6 +24,8 @@ vi.mock(
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/telemetry'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -145,5 +148,52 @@ describe('API key authentication initialization', () => {
     expect(apiKeyStore.currentUser).toBeNull()
     expect(apiKeyStore.getApiKey()).toBeNull()
     expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  describe('customer creation failure telemetry', () => {
+    const failCustomerLookup = async (error: Error) => {
+      localStorage.setItem('comfy_api_key', 'key-a')
+      const authStore = useAuthStore()
+      let rejectLookup!: (reason: Error) => void
+      vi.spyOn(authStore, 'createCustomer').mockReturnValue(
+        new Promise((_, reject) => {
+          rejectLookup = reject
+        })
+      )
+      const apiKeyStore = useApiKeyAuthStore()
+      await vi.waitFor(() =>
+        expect(authStore.createCustomer).toHaveBeenCalledOnce()
+      )
+
+      rejectLookup(error)
+      void apiKeyStore.clearStoredApiKey()
+    }
+
+    it.for([
+      { status: 401, error: new AuthStoreError('Unauthorized', 401) },
+      { status: 403, error: new AuthStoreError('Forbidden', 403) }
+    ])(
+      'warns without reporting when the key is rejected with $status',
+      async ({ error }) => {
+        await failCustomerLookup(error)
+
+        await vi.waitFor(() => expect(console.warn).toHaveBeenCalledWith(error))
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { name: 'a 500 response', error: new AuthStoreError('Server', 500) },
+      { name: 'a plain Error', error: new Error('network down') }
+    ])('reports $name', async ({ error }) => {
+      await failCustomerLookup(error)
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          errorType: 'api_key_customer_creation_failure',
+          surface: 'auth'
+        })
+      )
+    })
   })
 })
