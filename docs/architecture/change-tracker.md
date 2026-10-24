@@ -22,8 +22,8 @@ returns early, preventing cross-workflow data corruption.
 workflow's own `LGraph`, not whichever graph `app.rootGraph` currently shows.
 Until the workflow has adopted a graph (`adoptGraph()` runs at the end of its
 first load) there is nothing to serialize and both return without capturing.
-The node-history helpers still read `app.rootGraph.id` to scope widget
-histories to the active root.
+The node-history helpers read `app.rootGraph`, so they assume the tracker's
+workflow is the one on screen.
 
 ## Automatic Triggers
 
