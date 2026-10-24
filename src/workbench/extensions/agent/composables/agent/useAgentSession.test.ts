@@ -192,7 +192,9 @@ const pathFor = (
   origin: TurnOrigin | undefined,
   activePath: string | undefined
 ): string | undefined =>
-  origin === null ? undefined : (origin?.tabPath ?? activePath)
+  origin === null
+    ? undefined
+    : (origin?.instanceId.replace(/^instance-/, '') ?? activePath)
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
@@ -5217,7 +5219,11 @@ describe('useAgentSession (v1 composition root)', () => {
       rest,
       events: source,
       workflow: {
-        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        current: () => ({
+          tabPath: 'workflows/scratch.json',
+          instanceId: 'instance-scratch',
+          isTemporary: true
+        }),
         adopted: vi.fn(),
         draft: () => draftSnapshot
       }
@@ -5231,6 +5237,35 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body).not.toHaveProperty('workflowId')
     expect(body.currentTabUnbound).toBe(true)
     expect(body.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h9b) a saved tab whose cloud id did not resolve is not flagged unbound', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({
+          tabPath: 'workflows/saved.json',
+          instanceId: 'instance-saved',
+          isTemporary: false
+        }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+    useAgentConversationStore().setThreadId('th-9')
+
+    await session.sendMessage('add a text input node')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body).not.toHaveProperty('workflowId')
+    expect(body).not.toHaveProperty('currentTabUnbound')
+    expect(body).not.toHaveProperty('draft')
   })
 
   // Once a workflow has been bound this session (turn 1's ack), a still-
@@ -5256,7 +5291,11 @@ describe('useAgentSession (v1 composition root)', () => {
       rest,
       events: source,
       workflow: {
-        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        current: () => ({
+          tabPath: 'workflows/scratch.json',
+          instanceId: 'instance-scratch',
+          isTemporary: true
+        }),
         adopted: vi.fn(),
         draft: () => ({ content: { nodes: [], links: [] } })
       }
@@ -5287,7 +5326,12 @@ describe('useAgentSession (v1 composition root)', () => {
         rest,
         events: source,
         workflow: {
-          current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+          current: () => ({
+            id: 'wf-a',
+            tabPath: 'tab-a',
+            instanceId: 'instance-a',
+            isTemporary: false
+          }),
           prepare,
           adopted
         }
@@ -5339,7 +5383,12 @@ describe('useAgentSession (v1 composition root)', () => {
           const path = pathFor(origin, activePath)
           return path === undefined
             ? undefined
-            : { id: idForPath(path), tabPath: path }
+            : {
+                id: idForPath(path),
+                tabPath: path,
+                instanceId: `instance-${path}`,
+                isTemporary: false
+              }
         },
         adopted,
         prepare,
@@ -5364,7 +5413,9 @@ describe('useAgentSession (v1 composition root)', () => {
       'wf-1',
       {
         id: 'wf-a',
-        tabPath: 'tab-a'
+        tabPath: 'tab-a',
+        instanceId: 'instance-tab-a',
+        isTemporary: false
       },
       null
     )
@@ -5372,6 +5423,43 @@ describe('useAgentSession (v1 composition root)', () => {
       workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
     })
+  })
+
+  it('(h7b) a tab replaced at the same path during prepare() cancels the send', async () => {
+    const rest = fakeRest()
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let instanceId = 'instance-a'
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({
+          tabPath: 'tab-a',
+          instanceId,
+          isTemporary: true
+        }),
+        adopted,
+        prepare
+      }
+    })
+    session.start()
+
+    const sending = session.sendMessage('build a graph')
+    instanceId = 'instance-b'
+    releasePrepare()
+
+    expect(await sending).toBe(false)
+    expect(rest.postMessage).not.toHaveBeenCalled()
+    expect(adopted).not.toHaveBeenCalled()
+    session.stop()
   })
 
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
@@ -5399,7 +5487,12 @@ describe('useAgentSession (v1 composition root)', () => {
           const path = pathFor(origin, activePath)
           return path === undefined
             ? undefined
-            : { id: idForPath(path), tabPath: path }
+            : {
+                id: idForPath(path),
+                tabPath: path,
+                instanceId: `instance-${path}`,
+                isTemporary: false
+              }
         },
         adopted: vi.fn(),
         prepare,
@@ -5456,7 +5549,14 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: (origin) => {
           const path = resolve(origin)
-          return path === undefined ? undefined : { id: 'wf-b', tabPath: path }
+          return path === undefined
+            ? undefined
+            : {
+                id: 'wf-b',
+                tabPath: path,
+                instanceId: `instance-${path}`,
+                isTemporary: false
+              }
         },
         adopted,
         prepare,
@@ -5532,7 +5632,12 @@ describe('useAgentSession (v1 composition root)', () => {
           const path = pathFor(origin, activePath)
           return path === undefined
             ? undefined
-            : { id: idForPath(path), tabPath: path }
+            : {
+                id: idForPath(path),
+                tabPath: path,
+                instanceId: `instance-${path}`,
+                isTemporary: false
+              }
         },
         adopted: vi.fn(),
         prepare
@@ -5633,7 +5738,11 @@ describe('useAgentSession (v1 composition root)', () => {
       rest: fakeRest({ postMessage, getMessages }),
       events: fakeEvents().source,
       workflow: {
-        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        current: () => ({
+          tabPath: 'workflows/scratch.json',
+          instanceId: 'instance-scratch',
+          isTemporary: true
+        }),
         adopted
       }
     })
@@ -5689,7 +5798,12 @@ describe('useAgentSession (v1 composition root)', () => {
       rest: fakeRest({ postMessage }),
       events: fakeEvents().source,
       workflow: {
-        current: () => ({ id: 'wf-dead', tabPath }),
+        current: () => ({
+          id: 'wf-dead',
+          tabPath,
+          instanceId: 'instance-portrait',
+          isTemporary: false
+        }),
         adopted: vi.fn()
       }
     })
@@ -5734,7 +5848,12 @@ describe('useAgentSession (v1 composition root)', () => {
       rest: fakeRest({ postMessage }),
       events: fakeEvents().source,
       workflow: {
-        current: () => ({ id: 'wf-dead', tabPath }),
+        current: () => ({
+          id: 'wf-dead',
+          tabPath,
+          instanceId: 'instance-portrait',
+          isTemporary: false
+        }),
         adopted: vi.fn()
       }
     })
@@ -5767,7 +5886,12 @@ describe('useAgentSession (v1 composition root)', () => {
       rest: fakeRest({ postMessage }),
       events: fakeEvents().source,
       workflow: {
-        current: () => ({ id: 'wf-dead', tabPath }),
+        current: () => ({
+          id: 'wf-dead',
+          tabPath,
+          instanceId: 'instance-portrait',
+          isTemporary: false
+        }),
         adopted: vi.fn(),
         disowned
       }
