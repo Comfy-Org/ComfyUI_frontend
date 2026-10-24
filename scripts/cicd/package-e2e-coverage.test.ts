@@ -356,6 +356,16 @@ describe('completeness gate wiring', () => {
     )
   })
 
+  it('packages coverage against the revision exercised by the workflow', () => {
+    const job = field(
+      readWorkflow('.github/workflows/ci-tests-e2e.yaml'),
+      'jobs',
+      'upload-e2e-coverage'
+    )
+
+    expect(field(job, 'with', 'source_sha')).toBe('${{ github.sha }}')
+  })
+
   it('gates the saved E2E baseline on a whole merge', () => {
     const steps = jobSteps(
       readWorkflow('.github/workflows/coverage-slack-notify.yaml')
