@@ -650,7 +650,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
       function: async () => {
-        await workflowService.loadNextOpenedWorkflow()
+        await workflowService.loadNextOpenedWorkflow({ initiator: 'user' })
       }
     },
     {
@@ -659,7 +659,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
       function: async () => {
-        await workflowService.loadPreviousOpenedWorkflow()
+        await workflowService.loadPreviousOpenedWorkflow({ initiator: 'user' })
       }
     },
     {
@@ -887,7 +887,10 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.7.3',
       function: async () => {
         if (workflowStore.activeWorkflow)
-          await workflowService.closeWorkflow(workflowStore.activeWorkflow)
+          await workflowService.closeWorkflows([workflowStore.activeWorkflow], {
+            warnIfUnsaved: true,
+            initiator: 'user'
+          })
       }
     },
     {

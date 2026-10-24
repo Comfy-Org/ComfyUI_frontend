@@ -67,7 +67,7 @@ export function useWorkflowActionsMenu(
   /** Switch to the target workflow tab if it's not already active */
   const ensureWorkflowActive = async (wf: ComfyWorkflow | null) => {
     if (!wf || wf === workflowStore.activeWorkflow) return true
-    return await workflowService.openWorkflow(wf)
+    return await workflowService.openWorkflow(wf, { initiator: 'user' })
   }
 
   const menuItems = computed<WorkflowMenuItem[]>(() => {

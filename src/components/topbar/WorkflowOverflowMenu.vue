@@ -51,7 +51,7 @@ const menuItems = computed(() =>
     icon:
       props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
     command: () => {
-      void workflowService.openWorkflow(workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
     }
   }))
 )

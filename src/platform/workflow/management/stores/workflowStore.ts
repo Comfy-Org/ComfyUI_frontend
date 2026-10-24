@@ -1,5 +1,5 @@
 import { union } from 'es-toolkit/compat'
-import { until, useAsyncState } from '@vueuse/core'
+import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
@@ -16,6 +16,7 @@ import {
 } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import { reportError } from '@/platform/telemetry/reportError'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
@@ -69,6 +70,10 @@ interface WorkflowStore {
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
+  onUserActivation: (listener: (workflow: ComfyWorkflow) => unknown) => {
+    off: () => void
+  }
+  reportUserActivation: (workflow: ComfyWorkflow) => void
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
 
@@ -494,6 +499,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
   const isBusy = ref<boolean>(false)
+  const userActivation = createEventHook<ComfyWorkflow>()
+  function reportActivationError(error: unknown) {
+    return reportError(error, {
+      surface: 'graph',
+      errorType: 'user_activation_listener_failure',
+      level: 'warning'
+    })
+  }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
@@ -747,6 +760,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     createNewTemporary,
     renameWorkflow,
+    onUserActivation: (listener: (workflow: ComfyWorkflow) => unknown) =>
+      userActivation.on(async (workflow) => {
+        try {
+          await listener(workflow)
+        } catch (error) {
+          reportActivationError(error)
+        }
+      }),
+    reportUserActivation: (workflow: ComfyWorkflow) =>
+      void userActivation.trigger(workflow),
     deleteWorkflow,
     saveAs,
     saveWorkflow,
