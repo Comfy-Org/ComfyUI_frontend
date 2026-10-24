@@ -20,6 +20,9 @@ export function projectBillingCapabilities(
     },
     revision: snapshot.revision,
     rollout_defaults_applied: snapshot.rolloutDefaultsApplied,
+    ...(snapshot.hasParkedBillingOperation === undefined
+      ? {}
+      : { has_parked_billing_operation: snapshot.hasParkedBillingOperation }),
     ...(snapshot.paymentRecoveryAvailable === undefined
       ? {}
       : { payment_recovery_available: snapshot.paymentRecoveryAvailable })
