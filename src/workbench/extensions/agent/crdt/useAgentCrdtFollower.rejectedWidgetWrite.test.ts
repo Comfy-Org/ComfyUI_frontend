@@ -226,6 +226,41 @@ describe('a human edit the doc host rejects', () => {
     }
   )
 
+  // PM-2067: a thin Sentry relay of this exact rejection had no stack frame
+  // to say whether the id in the message was a node class or a subgraph
+  // definition, and no way to tell whether the same node recurs across
+  // events. The rejected op already carries both answers once resolved.
+  it('reports the rejected node id on the telemetry context', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ nodeId: WIDGET_EDIT.node_id })
+      })
+    )
+  })
+
+  it('reports the rejected node id and class on the telemetry context when the rejected op added a node', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(
+      rejection(await submit(NODE_ADD), 'uncatalogued_widget_write')
+    )
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          nodeId: NODE_ADD.node_id,
+          classType: NODE_ADD.class_type
+        })
+      })
+    )
+  })
+
   // `op_id` is optional on the wire — the relay omits it when it cannot map
   // the failing index. Resolving by index is the only path left, and a first-
   // or last-position implementation would misclassify this as generic.
