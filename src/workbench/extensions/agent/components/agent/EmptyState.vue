@@ -48,7 +48,9 @@ const suggestions = computed(() =>
       text,
       index,
       icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
-      requiresSelection: index === SELECTED_NODE_PROMPT_INDEX
+      requiresSelection:
+        selectedPromptKey.value !== treatmentPromptKey &&
+        index === SELECTED_NODE_PROMPT_INDEX
     }))
     .filter(({ requiresSelection }) => !requiresSelection || hasSelection)
 )
