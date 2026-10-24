@@ -24,7 +24,7 @@
     </template>
     <template #item="{ item }">
       <span class="min-w-0 flex-1 truncate">
-        {{ item.key && destinationNames.get(item.key) }}
+        {{ destinationNames.get(item.key ?? '') }}
       </span>
       <span v-if="item.badge" class="ml-4 text-xs text-muted-foreground">
         {{ item.badge }}
