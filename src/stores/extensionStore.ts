@@ -61,15 +61,6 @@ export const useExtensionStore = defineStore('extension', () => {
   const bootDisabledExtensionPackPaths = ref<Set<string>>(new Set())
   const bootDisabledExtensionNames = ref<Set<string>>(new Set())
 
-  const storedDisabledExtensionNames = computed(
-    () => new Set(useSettingStore().get('Comfy.Extension.Disabled'))
-  )
-
-  const inactiveDisabledExtensionNames = computed(() => {
-    return Array.from(storedDisabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
-    )
-  })
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
   const isExtensionEnabled = (name: string) => {
@@ -240,7 +231,6 @@ export const useExtensionStore = defineStore('extension', () => {
     agentExtensions,
     enabledExtensions,
     extensionPackPaths,
-    inactiveDisabledExtensionNames,
     isExtensionInstalled,
     isExtensionEnabled,
     isExtensionReadOnly,

@@ -68,17 +68,17 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
       name: 'Plans & Credits',
       initialUrl: '/?settings=plan-credits',
       capturedQuery: { settings: 'plan-credits' },
-      panel: 'workspace' as const,
+      panel: 'workspace',
       extensionFilter: undefined
     },
     {
       name: 'Agent-created extensions',
       initialUrl: '/?settings=extension&filter=agent',
       capturedQuery: { settings: 'extension', filter: 'agent' },
-      panel: 'extension' as const,
-      extensionFilter: 'agentCreated' as const
+      panel: 'extension',
+      extensionFilter: 'agentCreated'
     }
-  ])(
+  ] as const)(
     'restores $name through a query-dropping login redirect',
     async ({ initialUrl, capturedQuery, panel, extensionFilter }) => {
       await testRouter.push(initialUrl)

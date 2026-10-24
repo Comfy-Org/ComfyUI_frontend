@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -9,7 +9,8 @@ vi.mock(import('@/scripts/api'))
 
 const DISABLED_NAMES_SETTING = CORE_SETTINGS.find(
   (setting) => setting.id === 'Comfy.Extension.Disabled'
-)!
+)
+assert.exists(DISABLED_NAMES_SETTING)
 
 describe('extensionStore', () => {
   describe('registerExtension', () => {
@@ -454,23 +455,6 @@ describe('extensionStore', () => {
     it('returns false for normal extensions', () => {
       const store = useExtensionStore()
       expect(store.isExtensionReadOnly('some.custom.ext')).toBe(false)
-    })
-  })
-
-  describe('inactiveDisabledExtensionNames', () => {
-    it('returns disabled names not currently installed', () => {
-      const store = useExtensionStore()
-      useSettingStore().$patch({
-        settingValues: {
-          'Comfy.Extension.Disabled': ['ghost.ext', 'installed.ext']
-        }
-      })
-      store.registerExtension({ name: 'installed.ext' })
-
-      expect(store.inactiveDisabledExtensionNames).toContain('ghost.ext')
-      expect(store.inactiveDisabledExtensionNames).not.toContain(
-        'installed.ext'
-      )
     })
   })
 

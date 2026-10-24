@@ -78,41 +78,46 @@ test.describe(
 
       try {
         const dialog = comfyPage.settingDialog
-        await dialog.open()
-        await dialog.category('Extension').click()
 
-        await dialog.openExtensionActions()
-        await comfyPage.contextMenu
-          .menuItem('Disable all agent-created')
-          .click()
-        await expect.poll(() => batchRequest).toBeDefined()
-
-        await dialog.root
-          .getByRole('switch', { name: 'Manual.Toolbar' })
-          .click()
-        acceptBatch()
-        await expect.poll(() => nameRequest).toBeDefined()
-
-        expect(batchRequest!.postDataJSON()).toEqual({
-          'Comfy.Extension.Disabled': ['agent.standalone.toolbar'],
-          'Comfy.Extension.DisabledPacks': []
+        await test.step('Start disabling every agent-created extension', async () => {
+          await dialog.open()
+          await dialog.openExtensionActions()
+          await comfyPage.contextMenu
+            .menuItem('Disable all agent-created')
+            .click()
+          await expect.poll(() => batchRequest).toBeDefined()
         })
-        expect(nameRequest!.postDataJSON()).toEqual([
-          'agent.standalone.toolbar',
-          'Manual.Toolbar'
-        ])
-        await expect(
-          dialog.root.getByRole('button', {
-            name: 'Reload to apply changes'
-          })
-        ).toBeDisabled()
 
-        acceptName()
-        await expect(
-          dialog.root.getByRole('button', {
-            name: 'Reload to apply changes'
+        await test.step('Disable another extension before the batch settles', async () => {
+          await dialog.root
+            .getByRole('switch', { name: 'Manual.Toolbar' })
+            .click()
+          acceptBatch()
+          await expect.poll(() => nameRequest).toBeDefined()
+        })
+
+        await test.step('Preserve both disables through save settlement', async () => {
+          expect(batchRequest!.postDataJSON()).toEqual({
+            'Comfy.Extension.Disabled': ['agent.standalone.toolbar'],
+            'Comfy.Extension.DisabledPacks': []
           })
-        ).toBeEnabled()
+          expect(nameRequest!.postDataJSON()).toEqual([
+            'agent.standalone.toolbar',
+            'Manual.Toolbar'
+          ])
+          await expect(
+            dialog.root.getByRole('button', {
+              name: 'Reload to apply changes'
+            })
+          ).toBeDisabled()
+
+          acceptName()
+          await expect(
+            dialog.root.getByRole('button', {
+              name: 'Reload to apply changes'
+            })
+          ).toBeEnabled()
+        })
       } finally {
         acceptBatch()
         acceptName()

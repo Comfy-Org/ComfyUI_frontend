@@ -517,7 +517,7 @@ describe('agent extension discovery', () => {
     settingStore.$patch({
       settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
     })
-    vi.spyOn(settingStore, 'set').mockResolvedValue()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
     useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
 
