@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { graphToPrompt } from '@/utils/executionUtil'
+
+import { customWidgetsExtension } from './customWidgets'
+
 describe('PrimitiveFloat widget type bridging', () => {
   function createMockNodeAndWidget() {
     const properties: Record<string, unknown> = {}
@@ -118,5 +128,54 @@ describe('PrimitiveFloat widget type bridging', () => {
 
     properties.display = 'gradientslider'
     expect(widget.type).toBe('gradientslider')
+  })
+})
+
+describe('Branch node', () => {
+  it('offers only executable routes while branch_names keeps every connected ordinal', async () => {
+    const widgets = await customWidgetsExtension.getCustomWidgets?.(app)
+    const graph = new LGraph()
+    const branch = new LGraphNode('BranchNode')
+    branch.comfyClass = 'BranchNode'
+    graph.add(branch)
+    for (const name of ['branch0', 'branch1', 'branch2'])
+      branch.addInput(`autogrow.${name}`, 'IMAGE')
+    widgets?.COMFY_BRANCH_INPUT_NAMES(
+      branch,
+      'branch_names',
+      ['COMFY_BRANCH_INPUT_NAMES', {}],
+      app
+    )
+    widgets?.COMFY_BRANCH_SELECTOR(
+      branch,
+      'branch',
+      ['COMFY_BRANCH_SELECTOR', {}],
+      app
+    )
+
+    for (const slot of [0, 1, 2]) {
+      const source = new LGraphNode('Source')
+      source.comfyClass = 'Source'
+      source.addOutput('IMAGE', 'IMAGE')
+      graph.add(source)
+      source.connect(0, branch, slot)
+      if (slot === 0) source.mode = LGraphEventMode.NEVER
+    }
+
+    const { output } = await graphToPrompt(graph)
+    const { inputs } = output[String(branch.id)]
+
+    const selector = branch.widgets?.find((w) => w.name === 'branch')
+    const options = selector?.options.values
+    expect(typeof options === 'function' && options()).toEqual([
+      'autogrow.branch1',
+      'autogrow.branch2'
+    ])
+    expect(inputs.branch_names).toEqual({
+      __value__: ['autogrow.branch0', 'autogrow.branch1', 'autogrow.branch2']
+    })
+    expect(
+      Object.keys(inputs).filter((k) => k.startsWith('autogrow.'))
+    ).toEqual(['autogrow.branch1', 'autogrow.branch2'])
   })
 })
