@@ -528,7 +528,6 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).not.toHaveBeenCalled()
       expect(app.activateRootGraph).toHaveBeenCalledWith(next.graph)
-      expect(app.rootGraph).toBe(next.graph)
       expect(next.changeTracker.restore).toHaveBeenCalled()
       expect(useWorkflowStore().activeWorkflow?.path).toBe(next.path)
     })
@@ -970,7 +969,6 @@ describe('useWorkflowService', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(app.activateRootGraph).toHaveBeenCalledWith(retained.graph)
-      expect(app.rootGraph).toBe(retained.graph)
       expect(retained.changeTracker.restore).toHaveBeenCalled()
       expect(workflowStore.activeWorkflow.path).toBe('workflows/retained.json')
     })

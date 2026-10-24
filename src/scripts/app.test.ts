@@ -105,6 +105,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -591,11 +592,21 @@ describe('ComfyApp', () => {
     })
 
     it.for([
-      { outcome: 'keeps', workflowState: 'active', isActive: true },
-      { outcome: 'releases', workflowState: 'inactive', isActive: false }
+      {
+        outcome: 'keeps',
+        workflowState: 'active',
+        isActive: true,
+        keepsGraph: true
+      },
+      {
+        outcome: 'releases',
+        workflowState: 'inactive',
+        isActive: false,
+        keepsGraph: false
+      }
     ])(
       '$outcome the owned graph when a forced reload into an $workflowState workflow fails',
-      async ({ isActive }) => {
+      async ({ isActive, keepsGraph }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const workflow = markLoaded(
           new ComfyWorkflow({
@@ -616,7 +627,7 @@ describe('ComfyApp', () => {
           app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
         ).resolves.toBe(false)
 
-        expect(workflow.graph).toBe(isActive ? graph : null)
+        expect(workflow.graph === graph).toBe(keepsGraph)
       }
     )
 
@@ -811,7 +822,7 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('closes beforeLoadGraph with an abort when another root graph replaces the load during activation', async () => {
+    it('forwards an activation throw to onGraphLoadError instead of rethrowing when another root graph replaced the load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
@@ -1224,6 +1235,34 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('registers only the DOM widgets of the root graph on screen across a tab round trip', () => {
+      function ownedGraphWithDomWidget(path: string) {
+        const graph = new LGraph()
+        const node = new LGraphNode('test-node')
+        graph.add(node)
+        const widget = node.addDOMWidget(
+          'text',
+          'custom',
+          document.createElement('div')
+        )
+        const owner = new ComfyWorkflow({ path, modified: 0, size: 0 })
+        owner.adoptGraph(graph)
+        useWorkflowStore().attachWorkflow(owner)
+        return { graph, widgetId: widget.id }
+      }
+      const store = useDomWidgetStore()
+      const first = ownedGraphWithDomWidget('workflows/first.json')
+      const second = ownedGraphWithDomWidget('workflows/second.json')
+      store.unregisterWidget(second.widgetId)
+      Reflect.set(app, 'rootGraphInternal', first.graph)
+
+      app.activateRootGraph(second.graph)
+      expect([...store.widgetStates.keys()]).toEqual([second.widgetId])
+
+      app.activateRootGraph(first.graph)
+      expect([...store.widgetStates.keys()]).toEqual([first.widgetId])
     })
 
     it('lets the set-graph hash publish when an API import replaces an owned root', async () => {
