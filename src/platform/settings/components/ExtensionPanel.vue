@@ -86,7 +86,8 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ExtensionFilterType,
-  SettingWriteResult
+  SettingWriteResult,
+  Settings
 } from '@/platform/settings/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
@@ -217,6 +218,13 @@ const hasChanges = computed(() => {
   )
 })
 
+/**
+ * Persists the switches through the same queue the agent bulk disable uses, so
+ * the two writers cannot each submit a whole list computed before the other's
+ * landed. The switches are then reconciled from what the backend actually
+ * holds, so a refused write returns them to the stored state rather than
+ * leaving them showing an edit that was never saved.
+ */
 const updateExtensionStatus = async () => {
   const editingDisabledExtensionNames = Object.entries(
     editingEnabledExtensions.value
@@ -224,10 +232,32 @@ const updateExtensionStatus = async () => {
     .filter(([_, enabled]) => !enabled)
     .map(([name]) => name)
 
-  await settingStore.set('Comfy.Extension.Disabled', [
-    ...extensionStore.inactiveDisabledExtensionNames,
-    ...editingDisabledExtensionNames
-  ])
+  const result = await extensionStore.setDisabledExtensionNames(
+    editingDisabledExtensionNames
+  )
+  if (!result.ok) {
+    reportSaveFailure(result, 'Comfy.Extension.Disabled', {
+      errorType: 'failure_saving_disabled_extensions',
+      context: {
+        disabled_extension_count: editingDisabledExtensionNames.length
+      }
+    })
+  }
+  reconcileSwitchesWithStoredNames()
+}
+
+/**
+ * Returns every switch the user can move to the disabled-name list the backend
+ * now holds. Read-only extensions are skipped: their state comes from the
+ * always-enabled and always-disabled lists rather than from the setting, so
+ * reading it back would flip them to whatever the setting happens to omit.
+ */
+function reconcileSwitchesWithStoredNames() {
+  const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
+  for (const name of Object.keys(editingEnabledExtensions.value)) {
+    if (extensionStore.isExtensionReadOnly(name)) continue
+    editingEnabledExtensions.value[name] = !disabledNames.has(name)
+  }
 }
 
 async function setExtensionEnabled(name: string, enabled: boolean) {
@@ -235,21 +265,33 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
   await updateExtensionStatus()
 }
 
+/** Names the setting the user's change failed to reach, then records why. */
+function reportSaveFailure(
+  result: Extract<SettingWriteResult, { ok: false }>,
+  id: keyof Settings,
+  {
+    errorType,
+    context
+  }: { errorType: string; context: Record<string, unknown> }
+) {
+  useToast().warning(
+    t('toastMessages.errorSaveSetting', { id, err: result.detail })
+  )
+  reportError(result.detail, {
+    errorType,
+    surface: 'platform',
+    level: 'warning',
+    tags: { reason: result.reason },
+    context
+  })
+}
+
 function reportPackSaveFailure(
   result: Extract<SettingWriteResult, { ok: false }>,
   context: Record<string, unknown>
 ) {
-  useToast().warning(
-    t('toastMessages.errorSaveSetting', {
-      id: 'Comfy.Extension.DisabledPacks',
-      err: result.detail
-    })
-  )
-  reportError(result.detail, {
+  reportSaveFailure(result, 'Comfy.Extension.DisabledPacks', {
     errorType: 'failure_saving_extension_pack',
-    surface: 'platform',
-    level: 'warning',
-    tags: { reason: result.reason },
     context
   })
 }

@@ -22,6 +22,13 @@ function registerExtensions(...names: string[]) {
   for (const name of names) extensionStore.registerExtension({ name })
 }
 
+/** The disabled-name write is revertible, so its declaration must be present. */
+function registerDisabledSetting() {
+  useSettingStore().addSetting(
+    CORE_SETTINGS.find((setting) => setting.id === 'Comfy.Extension.Disabled')!
+  )
+}
+
 function renderPanel() {
   return render(ExtensionPanel, { global: { plugins: [testI18n] } })
 }
@@ -118,7 +125,10 @@ describe('ExtensionPanel', () => {
   it('replaces the selection with the visible rows on select all and clears it on unselect', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha', 'Zebra')
-    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    registerDisabledSetting()
+    const storeSetting = vi
+      .spyOn(api, 'storeSetting')
+      .mockResolvedValue(new Response())
     renderPanel()
     const search = screen.getByRole('combobox')
     const selectAll = () => screen.getByRole('checkbox', { name: 'Select All' })
@@ -137,9 +147,12 @@ describe('ExtensionPanel', () => {
     await user.click(
       await screen.findByRole('menuitem', { name: 'Disable Selected' })
     )
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
-      'Zebra'
-    ])
+    await vi.waitFor(() =>
+      expect(storeSetting).toHaveBeenLastCalledWith(
+        'Comfy.Extension.Disabled',
+        ['Zebra']
+      )
+    )
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
     await user.type(search, 'Zebra')
@@ -157,7 +170,10 @@ describe('ExtensionPanel', () => {
   it('toggles only the selected extensions and offers a reload while they differ', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha', 'Zebra')
-    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    registerDisabledSetting()
+    const storeSetting = vi
+      .spyOn(api, 'storeSetting')
+      .mockResolvedValue(new Response())
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
 
     renderPanel()
@@ -169,11 +185,14 @@ describe('ExtensionPanel', () => {
       await screen.findByRole('menuitem', { name: 'Disable Selected' })
     )
 
+    await vi.waitFor(() =>
+      expect(storeSetting).toHaveBeenLastCalledWith(
+        'Comfy.Extension.Disabled',
+        ['Alpha']
+      )
+    )
     expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
     expect(screen.getByRole('switch', { name: 'Zebra' })).toBeChecked()
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
-      'Alpha'
-    ])
     await user.click(
       screen.getByRole('button', { name: 'Reload to apply changes' })
     )
@@ -184,8 +203,13 @@ describe('ExtensionPanel', () => {
       await screen.findByRole('menuitem', { name: 'Enable Selected' })
     )
 
+    await vi.waitFor(() =>
+      expect(storeSetting).toHaveBeenLastCalledWith(
+        'Comfy.Extension.Disabled',
+        []
+      )
+    )
     expect(screen.getByRole('switch', { name: 'Alpha' })).toBeChecked()
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [])
     expect(
       screen.queryByRole('button', { name: 'Reload to apply changes' })
     ).not.toBeInTheDocument()

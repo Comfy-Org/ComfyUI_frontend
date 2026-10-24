@@ -199,6 +199,26 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   /**
+   * Persist which installed extensions are disabled by name, serialized behind
+   * any save still in flight. The names of extensions that are disabled but
+   * not installed are read when the write runs, so a save that was requested
+   * before a concurrent agent disable landed cannot drop it.
+   */
+  async function setDisabledExtensionNames(
+    editingDisabledNames: readonly string[]
+  ): Promise<SettingWriteResult> {
+    const settingStore = useSettingStore()
+    return queuePackSave(() =>
+      settingStore.setOrRevert('Comfy.Extension.Disabled', [
+        ...new Set([
+          ...inactiveDisabledExtensionNames.value,
+          ...editingDisabledNames
+        ])
+      ])
+    )
+  }
+
+  /**
    * Disable agent-created extensions in one atomic two-list write, serialized
    * behind any pack save still in flight. The plan is computed when the write
    * runs, not when it is requested.
@@ -245,6 +265,7 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionPackEnabled,
     isSavingExtensionPacks,
     setExtensionPackEnabled,
+    setDisabledExtensionNames,
     disableAgentExtensions,
     captureCoreExtensions,
     isCoreExtension,

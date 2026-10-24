@@ -75,7 +75,8 @@ async function sendSettings(
 /** Settings with no `onChange` to undo, so a failed write can be reverted. */
 export const REVERTIBLE_SETTING_IDS = [
   'Comfy.Extension.Disabled',
-  'Comfy.Extension.DisabledPacks'
+  'Comfy.Extension.DisabledPacks',
+  'Comfy.Extension.SeenAgentExtensions'
 ] as const satisfies readonly (keyof Settings)[]
 
 type RevertibleSettingId = (typeof REVERTIBLE_SETTING_IDS)[number]

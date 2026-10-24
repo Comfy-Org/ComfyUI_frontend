@@ -161,12 +161,28 @@ export async function notifyNewAgentExtensions() {
     ]
   })
 
-  await settingStore.set('Comfy.Extension.SeenAgentExtensions', [
-    ...new Set([
-      ...seenNames,
-      ...extensionStore.agentExtensions.map((x) => x.name)
-    ])
-  ])
+  // Marking these as seen is what stops the notice repeating, so it may only
+  // be recorded once the backend has accepted it. `setOrRevert` restores the
+  // previous list when it has not, leaving the notice to appear again rather
+  // than silently swallowing it for good.
+  const result = await settingStore.setOrRevert(
+    'Comfy.Extension.SeenAgentExtensions',
+    [
+      ...new Set([
+        ...seenNames,
+        ...extensionStore.agentExtensions.map((x) => x.name)
+      ])
+    ]
+  )
+  if (!result.ok) {
+    reportError(result.detail, {
+      errorType: 'failure_recording_seen_agent_extensions',
+      surface: 'platform',
+      level: 'warning',
+      tags: { reason: result.reason },
+      context: { unseen_extension_count: unseen.length }
+    })
+  }
 }
 
 /**

@@ -361,12 +361,12 @@ describe('extension loading', () => {
       }
     })
 
-    it('finishes loading when recording seen agent extensions fails', async () => {
+    it('restores the seen list and finishes loading when recording it fails', async () => {
       const settingStore = useSettingStore()
       settingStore.$patch({
         settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
       })
-      vi.spyOn(settingStore, 'set').mockRejectedValue(
+      vi.spyOn(api, 'storeSetting').mockRejectedValue(
         new Error('settings unavailable')
       )
       vi.spyOn(api, 'getExtensions').mockResolvedValue([])
@@ -374,13 +374,18 @@ describe('extension loading', () => {
 
       await expect(loadExtensions()).resolves.toBeUndefined()
       await vi.waitFor(() =>
-        expect(reportError).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'settings unavailable' }),
-          {
-            errorType: 'failure_recording_seen_agent_extensions',
-            surface: 'platform'
-          }
-        )
+        expect(reportError).toHaveBeenCalledWith('settings unavailable', {
+          errorType: 'failure_recording_seen_agent_extensions',
+          surface: 'platform',
+          level: 'warning',
+          tags: { reason: 'unreachable' },
+          context: { unseen_extension_count: 1 }
+        })
+      )
+      // Recording the name is what stops the notice repeating, so a refused
+      // write must leave the list empty for the notice to appear again.
+      expect(settingStore.get('Comfy.Extension.SeenAgentExtensions')).toEqual(
+        []
       )
     })
 
@@ -441,7 +446,9 @@ describe('agent extension discovery', () => {
         'Comfy.Extension.SeenAgentExtensions': ['agent.lights.toolbar']
       }
     })
-    const setSetting = vi.spyOn(settingStore, 'set').mockResolvedValue()
+    const storeSetting = vi
+      .spyOn(api, 'storeSetting')
+      .mockResolvedValue(new Response())
     useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
     useExtensionStore().registerExtension({
       name: 'agent.cushions.toolbar',
@@ -463,7 +470,7 @@ describe('agent extension discovery', () => {
         ]
       })
     ])
-    expect(setSetting).toHaveBeenCalledWith(
+    expect(storeSetting).toHaveBeenCalledWith(
       'Comfy.Extension.SeenAgentExtensions',
       ['agent.lights.toolbar', 'agent.cushions.toolbar']
     )

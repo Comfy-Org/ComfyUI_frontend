@@ -200,6 +200,73 @@ describe('extensionStore', () => {
       ])
     })
 
+    it('serializes a disabled-name save with an agent batch so neither drops the other', async () => {
+      const payloads: unknown[] = []
+      const acknowledge: Array<() => void> = []
+      const respond = (value: unknown) =>
+        new Promise<Response>((resolve) => {
+          payloads.push(value)
+          acknowledge.push(() => resolve(new Response()))
+        })
+      vi.mocked(api.storeSetting).mockImplementation((_id, value) =>
+        respond(value)
+      )
+      vi.mocked(api.storeSettings).mockImplementation((settings) =>
+        respond(settings)
+      )
+      settingStore.addSetting({
+        id: 'Comfy.Extension.Disabled',
+        name: 'Disabled extension names',
+        type: 'hidden',
+        defaultValue: [] as string[]
+      })
+
+      const individual = store.setDisabledExtensionNames(['Manual.Toolbar'])
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
+      const batch = store.disableAgentExtensions([
+        { name: 'agent-made.standalone' }
+      ])
+
+      // Give the batch every chance to be sent early. Asserting only that it
+      // has not been sent *yet* would pass without the queue, because both
+      // writes apply locally before either request settles.
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(payloads).toEqual([['Manual.Toolbar']])
+
+      acknowledge[0]()
+      expect(await individual).toEqual({ ok: true, outcome: 'saved' })
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
+
+      // The batch read the list on its own turn, after the panel's save had
+      // landed, so the name the panel disabled survives rather than being
+      // overwritten by a whole list computed before it.
+      expect(payloads[1]).toEqual({
+        'Comfy.Extension.Disabled': ['Manual.Toolbar', 'agent-made.standalone'],
+        'Comfy.Extension.DisabledPacks': []
+      })
+
+      acknowledge[1]()
+      expect(await batch).toEqual({ ok: true, outcome: 'saved' })
+      expect(store.isSavingExtensionPacks).toBe(false)
+    })
+
+    it('leaves the stored names alone when the server refuses the write', async () => {
+      settingStore.addSetting({
+        id: 'Comfy.Extension.Disabled',
+        name: 'Disabled extension names',
+        type: 'hidden',
+        defaultValue: [] as string[]
+      })
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      const result = await store.setDisabledExtensionNames(['Manual.Toolbar'])
+
+      expect(result).toMatchObject({ ok: false, reason: 'refused' })
+      expect(settingStore.get('Comfy.Extension.Disabled')).toEqual([])
+    })
+
     it('serializes an agent batch behind an individual pack save', async () => {
       const payloads: unknown[] = []
       const acknowledge: Array<() => void> = []
