@@ -76,6 +76,7 @@ export interface RunApprovalPart {
   askId: string
   workflowId?: string
   workflowName?: string
+  dismissed?: boolean
 }
 
 export type AskUserResolution =
@@ -128,6 +129,7 @@ export interface AskUserPart {
   maxSelections: number
   allowOther: boolean
   resolution?: AskUserResolution
+  dismissed?: boolean
 }
 
 interface DeleteTarget {
@@ -143,6 +145,7 @@ export interface DeleteApprovalPart {
   nodes: DeleteTarget[]
   hiddenNodeCount: number
   resolution?: AskUserResolution
+  dismissed?: boolean
 }
 
 export type AskPart = RunApprovalPart | AskUserPart | DeleteApprovalPart
@@ -156,10 +159,8 @@ function isAskPart(part: MessagePart): part is AskPart {
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
-  return (
-    part.type === 'runApproval' ||
-    (isAskPart(part) && part.resolution === undefined)
-  )
+  if (!isAskPart(part) || part.dismissed) return false
+  return part.type === 'runApproval' || part.resolution === undefined
 }
 
 export function isOpenAskPart(part: MessagePart): boolean {
@@ -177,7 +178,8 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (!isAskPart(part) || part.type === 'runApproval') return []
+    if (part.type === 'runApproval') return part.dismissed ? [part] : []
+    if (!isAskPart(part)) return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -187,6 +189,30 @@ export function retireAskParts(
     next.every((part, index) => part === parts[index])
     ? parts
     : next
+}
+
+export function isDismissibleAskPart(
+  part: MessagePart,
+  answering: ReadonlySet<string>
+): part is AskPart {
+  return isPendingAskPart(part) && !answering.has(part.askId)
+}
+
+export interface AskMark {
+  askIds: readonly string[]
+  dismissed: boolean
+}
+
+export function markAskParts(
+  parts: MessagePart[],
+  { askIds, dismissed }: AskMark
+): MessagePart[] {
+  const marks = (part: MessagePart): part is AskPart =>
+    isAskPart(part) &&
+    askIds.includes(part.askId) &&
+    (part.dismissed ?? false) !== dismissed
+  if (!parts.some(marks)) return parts
+  return parts.map((part) => (marks(part) ? { ...part, dismissed } : part))
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>

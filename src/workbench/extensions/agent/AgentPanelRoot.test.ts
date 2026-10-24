@@ -8032,6 +8032,149 @@ describe('AgentPanelRoot run approval telemetry', () => {
   })
 })
 
+describe('AgentPanelRoot sending while a run card waits', () => {
+  function showRunCard(): void {
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-approval' as TurnId
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+  }
+
+  async function typeInComposer(text: string): Promise<void> {
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste(text)
+  }
+
+  it('sends over the card and greys it out', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'turn-2' })
+    )
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Dismissed: you sent a new message instead.')
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Run' })
+    ).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(fetchRequests({ method: 'POST', url: /\/messages/ })).toHaveLength(
+        1
+      )
+    )
+  })
+
+  it('keeps Stop over a running turn with no card', async () => {
+    respondToFetch({}, () => json(200, {}))
+    workflowStore.activeWorkflow = addTab('workflows/Portrait workflow.json')
+    renderWithSelectedTarget()
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    store.recordUser('turn-running' as TurnId, 'make it')
+    store.startTurn('turn-running' as TurnId)
+
+    await userEvent.click(await screen.findByRole('textbox'))
+    await userEvent.paste('make it red instead')
+
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Send' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('reopens the card with a hint and keeps Stop when the agent refuses the send', async () => {
+    respondToFetch({}, () => json(200, {}))
+    respondToFetch({ method: 'POST', url: /\/messages/ }, () =>
+      json(409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'turn-approval'
+      })
+    )
+    respondToFetch({ method: 'GET', url: /\/messages/ }, () =>
+      json(200, [
+        {
+          id: 'row-1',
+          thread_id: 'th-1',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'turn-approval',
+          content: { text: 'run it' }
+        },
+        {
+          id: 'turn-approval',
+          thread_id: 'th-1',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-approval',
+          content: {},
+          pending_ask: {
+            message_id: 'turn-approval',
+            ask_id: 'turn-approval:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])
+    )
+    showRunCard()
+    await typeInComposer('make it red instead')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText('Answer the card or press Stop first.')
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Run' })).toBeVisible()
+    expect(
+      screen.queryByText('Dismissed: you sent a new message instead.')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox')).toHaveTextContent('make it red instead')
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Send' })
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('AgentPanelRoot ask_user answer telemetry', () => {
   it('never reports an ask_user answer as a run approval, even one named run', async () => {
     respondToFetch({}, () => json(200, {}))

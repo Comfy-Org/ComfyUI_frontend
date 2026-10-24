@@ -5866,6 +5866,8 @@
     "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
     "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
+    "askDismissed": "Dismissed: you sent a new message instead.",
+    "askSendRefused": "Answer the card or press Stop first.",
     "runApproval": {
       "lead": "Comfy Agent wants to run the workflow:",
       "leadBound": "Comfy Agent wants to run this workflow.",

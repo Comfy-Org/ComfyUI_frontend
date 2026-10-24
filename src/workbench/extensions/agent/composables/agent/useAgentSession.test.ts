@@ -301,6 +301,32 @@ const historyRow = (
   content: { text }
 })
 
+const pendingApprovalRow = (
+  seq: number,
+  turnId: string,
+  id: string,
+  askId?: string
+): AgentMessages[number] => ({
+  ...historyRow(seq, 'assistant', turnId, '', id),
+  status: 'streaming',
+  ...(askId !== undefined && {
+    pending_ask: {
+      message_id: id,
+      ask_id: askId,
+      kind: 'run_approval',
+      context: { workflow_id: 'wf-1' },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+})
+
 type AgentAdmissionReason = AgentAdmissionError['error']['reason']
 
 function admissionError(
@@ -407,6 +433,22 @@ async function restoredTurnStaysStreaming(
   successor.stop()
   conversation.abortActiveTurn()
   return streaming
+}
+
+function sendOverCard(
+  session: ReturnType<typeof useAgentSession>,
+  text: string
+): Promise<boolean> {
+  return session.sendMessage(
+    text,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    true
+  )
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -2811,7 +2853,16 @@ describe('useAgentSession (v1 composition root)', () => {
           selected: ['run']
         })
       )
-      const rest = fakeRest({ answerAsk })
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockResolvedValue({ thread_id: 'th-1', message_id: 'msg-2' })
+      const rest = fakeRest({ answerAsk, postMessage })
       const events = fakeEvents()
       const session = useAgentSession({ rest, events: events.source })
       session.start()
@@ -2820,6 +2871,11 @@ describe('useAgentSession (v1 composition root)', () => {
       events.emit(runApproval('msg-1'))
       return { session, answerAsk, ...events }
     }
+
+    const runCard = () =>
+      useAgentConversationStore()
+        .messages.flatMap((message) => message.parts)
+        .find((part) => part.type === 'runApproval')
 
     const cardOnScreen = () =>
       useAgentConversationStore().messages.some((message) =>
@@ -2861,6 +2917,27 @@ describe('useAgentSession (v1 composition root)', () => {
       // No transport survives a settled turn, so no resolution frame can land
       // — the card has to retire on the response instead of waiting for one.
       expect(cardOnScreen()).toBe(false)
+    })
+
+    it('stays answerable across a normal send after its turn completed', async () => {
+      const { session, answerAsk, emit } = await parkedOnApproval()
+      emit(done('msg-1'))
+
+      await session.sendMessage('something else')
+      expect(runCard()).not.toHaveProperty('dismissed')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+
+      expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
+        selected: ['run']
+      })
+    })
+
+    it('is not dismissed by a plain send while its turn is still running', async () => {
+      const { session } = await parkedOnApproval()
+
+      await session.sendMessage('something else')
+
+      expect(runCard()).not.toHaveProperty('dismissed')
     })
 
     it('dismisses itself once answered, since no resolution frame can reach it', async () => {
@@ -2931,10 +3008,8 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
-    // startTurn aborts whatever turn preceded it, so a card left over from the
-    // dropped turn is detached by the NEW turn too — and an ask_resolved frame
-    // routed to the new turn's transport lands on a message with no such card.
-    it('dismisses itself when a newer turn has taken over the transport', async () => {
+    it('greys out as dismissed when a newer turn is sent', async () => {
+      const { source, emit, status } = fakeEvents()
       const postMessage = vi
         .fn<
           (
@@ -2943,8 +3018,10 @@ describe('useAgentSession (v1 composition root)', () => {
           ) => Promise<AgentTurnAccepted>
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
-      const { source, emit, status } = fakeEvents()
+        .mockImplementationOnce(async () => {
+          emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
+          return { thread_id: 'th-1', message_id: 'msg-2' }
+        })
       const session = useAgentSession({
         rest: fakeRest({ postMessage }),
         events: source
@@ -2953,15 +3030,404 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
-      status(false)
-      await session.sendMessage('actually, do this instead')
+      await sendOverCard(session, 'actually, do this instead')
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
-      expect(cardOnScreen()).toBe(true)
+      expect(
+        useAgentConversationStore().messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toEqual([expect.objectContaining({ dismissed: true })])
+    })
 
-      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    it('keeps the card dismissed and the old turn running when the replacement send fails', async () => {
+      const { source, emit, status } = fakeEvents()
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
 
-      expect(cardOnScreen()).toBe(false)
-      expect(session.answeringAskIds.value.size).toBe(0)
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(rest.cancelMessage).not.toHaveBeenCalled()
+      const store = useAgentConversationStore()
+      expect(store.activeTurnId).toBe('msg-1')
+      expect(session.sendDismissesAsk.value).toBe(false)
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toEqual([expect.objectContaining({ dismissed: true })])
+      emit(runApproval('msg-1', 'turn-1:call-2'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+    })
+
+    const turnInProgress = () =>
+      new AgentApiError('a turn is already in progress', 409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-1'
+      })
+
+    function refusedSend(refusal: Error = turnInProgress()) {
+      return vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockRejectedValueOnce(refusal)
+    }
+
+    function waitingTurn(pendingAskId?: string) {
+      return vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'build it and run it'),
+          pendingApprovalRow(2, 'turn-1', 'msg-1', pendingAskId)
+        ]
+      )
+    }
+
+    function lastNotice(session: ReturnType<typeof useAgentSession>) {
+      const last = session.entries.value.at(-1)
+      const parts = last && 'parts' in last ? last.parts : []
+      const notice = parts.find((part) => part.type === 'notice')
+      return notice?.type === 'notice' ? notice.text : undefined
+    }
+
+    it('reopens the card and stops offering Send over cards when the agent refuses the message', async () => {
+      const { source, emit, status } = fakeEvents()
+      const rest = fakeRest({
+        postMessage: refusedSend(),
+        getMessages: waitingTurn('turn-1:call-1')
+      })
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(runCard()).toBeDefined()
+      expect(runCard()).not.toMatchObject({ dismissed: true })
+      expect(session.sendDismissesAsk.value).toBe(false)
+      expect(lastNotice(session)).toBe('Answer the card or press Stop first.')
+      await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+      expect(rest.answerAsk).toHaveBeenCalledWith(
+        'th-1',
+        'turn-1:call-1',
+        expect.objectContaining({ selected: ['cancel'] })
+      )
+      emit(askResolved('msg-1', 'turn-1:call-1', ['cancel']))
+      emit(runApproval('msg-1', 'turn-1:call-2'))
+      expect(session.sendDismissesAsk.value).toBe(false)
+    })
+
+    it('keeps offering Send over cards when the reload shows a different card', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn('turn-1:call-2')
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(session.sendDismissesAsk.value).toBe(true)
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
+    })
+
+    it('keeps the card dismissed and Send over cards on when the refusal reload fails', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: vi.fn(async (): Promise<AgentMessages> => {
+            throw new TypeError('Failed to fetch')
+          })
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(runCard()).toMatchObject({ dismissed: true })
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
+      emit(runApproval('msg-1', 'turn-1:call-2'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+    })
+
+    it.for([
+      {
+        name: 'it is out of credits',
+        refusal: () => admissionError('no_funds', 'Out of credits')
+      },
+      {
+        name: 'it answers with a conflict that is not a turn in progress',
+        refusal: () => new AgentApiError('conflict', 409, { error: 'conflict' })
+      },
+      {
+        name: 'its credits are unavailable',
+        refusal: () =>
+          admissionError('funds_unavailable', 'Credits are unavailable', 30)
+      },
+      {
+        name: 'it rejects an attachment',
+        refusal: () =>
+          new AgentApiError('a.pdf is not a file type the agent accepts', 422, {
+            type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+            rejected: ['a.pdf'],
+            rejected_count: 1
+          })
+      }
+    ])(
+      'reopens the card and keeps Send over cards on when $name',
+      async ({ refusal }) => {
+        const { source, emit, status } = fakeEvents()
+        const session = useAgentSession({
+          rest: fakeRest({ postMessage: refusedSend(refusal()) }),
+          events: source
+        })
+        session.start()
+        status(true)
+        await session.sendMessage('build it and run it')
+        emit(runApproval('msg-1'))
+
+        expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+          false
+        )
+
+        expect(runCard()).toMatchObject({ dismissed: false })
+        expect(session.sendDismissesAsk.value).toBe(true)
+      }
+    )
+
+    it('keeps the card dismissed when the send fails with a server error', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(
+            new AgentApiError('Bad Gateway', 502, { error: 'Bad Gateway' })
+          )
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(runCard()).toMatchObject({ dismissed: true })
+    })
+
+    function heldSend() {
+      let refuse = (_error: Error) => {}
+      const held = new Promise<AgentTurnAccepted>((_resolve, reject) => {
+        refuse = reject
+      })
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockReturnValueOnce(held)
+      return { postMessage, refuse: (error: Error) => refuse(error) }
+    }
+
+    it('drops a run card another tab answered while the send was in flight', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      const sent = sendOverCard(session, 'actually, do this instead')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+      emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
+      refuse(
+        new AgentApiError('a.pdf is not a file type the agent accepts', 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['a.pdf'],
+          rejected_count: 1
+        })
+      )
+
+      expect(await sent).toBe(false)
+      expect(runCard()).toBeUndefined()
+    })
+
+    it('records nothing in a new chat when the send over a card is refused after leaving', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      const sent = sendOverCard(session, 'actually, do this instead')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+      session.newChat()
+      refuse(
+        new AgentApiError('a.pdf is not a file type the agent accepts', 422, {
+          type: 'ATTACHMENT_TYPE_NOT_ACCEPTED',
+          rejected: ['a.pdf'],
+          rejected_count: 1
+        })
+      )
+
+      expect(await sent).toBe(false)
+      expect(session.entries.value).toEqual([])
+    })
+
+    it('keeps Send over cards on when a card is back open but the send fails for another reason', async () => {
+      const { source, emit, status } = fakeEvents()
+      const { postMessage, refuse } = heldSend()
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      const sent = sendOverCard(session, 'actually, do this instead')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+      useAgentConversationStore().restoreActiveAsks(['turn-1:call-1'])
+      refuse(new AgentApiError('conflict', 409, { error: 'conflict' }))
+
+      expect(await sent).toBe(false)
+      expect(session.sendDismissesAsk.value).toBe(true)
+    })
+
+    it('keeps offering Send over cards when the refusal comes after the agent closed the card', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn()
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(runCard()).toBeUndefined()
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
+      emit(runApproval('msg-1', 'turn-1:call-2'))
+      expect(session.sendDismissesAsk.value).toBe(true)
+    })
+
+    it('keeps offering Send over cards after an ordinary send is refused', async () => {
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: refusedSend(),
+          getMessages: waitingTurn('turn-1:call-1')
+        }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await session.sendMessage('and make it red')).toBe(false)
+
+      expect(session.sendDismissesAsk.value).toBe(true)
+      expect(lastNotice(session)).toBe(
+        'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      )
+    })
+
+    it('stops the waiting turn when Stop lands while the replacement is posting', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+        .mockImplementationOnce(async () => {
+          await stopDuringPost()
+          return { thread_id: 'th-1', message_id: 'msg-2' }
+        })
+      const rest = fakeRest({ postMessage })
+      const session = useAgentSession({ rest, events: source })
+      stopDuringPost.mockImplementation(() => session.stopTurn())
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      await sendOverCard(session, 'actually, do this instead')
+
+      expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
+        ['th-1', 'msg-1']
+      ])
     })
 
     // `asks.go` documents 5xx here as the retryable status and re-drives the
@@ -3896,30 +4362,12 @@ describe('useAgentSession (v1 composition root)', () => {
     async (method) => {
       const history: AgentMessages = [
         historyRow(1, 'user', 'restored-turn', 'Run it'),
-        {
-          ...historyRow(
-            2,
-            'assistant',
-            'restored-turn',
-            '',
-            'restored-approval'
-          ),
-          status: 'streaming',
-          pending_ask: {
-            message_id: 'restored-approval',
-            ask_id: 'restored-turn:call-1',
-            kind: 'run_approval',
-            context: { workflow_id: 'wf-1' },
-            prompt: 'Run it?',
-            options: [
-              { id: 'run', label: 'Run' },
-              { id: 'cancel', label: 'Cancel' }
-            ],
-            min_selections: 1,
-            max_selections: 1,
-            allow_other: false
-          }
-        }
+        pendingApprovalRow(
+          2,
+          'restored-turn',
+          'restored-approval',
+          'restored-turn:call-1'
+        )
       ]
       const rest = fakeRest({ getMessages: vi.fn(async () => history) })
       const session = useAgentSession({ rest, events: fakeEvents().source })

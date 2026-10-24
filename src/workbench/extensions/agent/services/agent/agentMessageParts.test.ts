@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
+  markAskParts,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart,
@@ -336,6 +337,59 @@ describe('toAskOrNoticePart', () => {
   })
 })
 
+describe('markAskParts', () => {
+  it('dismisses the named cards and leaves the others alone', () => {
+    const question = toAskPart(askUser({ ask_id: 'q' }))
+    const deletion = toAskPart(
+      askUser({
+        ask_id: 'd',
+        kind: 'delete_approval',
+        options: [
+          { id: 'delete', label: 'Delete' },
+          { id: 'keep', label: 'Keep' }
+        ],
+        context: {
+          action: 'delete_nodes',
+          nodes: [{ id: '12', type: 'KSampler', title: 'Hero sampler' }]
+        }
+      })
+    )
+    assert(question?.type === 'askUser' && deletion?.type === 'deleteApproval')
+    const answered: MessagePart = {
+      ...question,
+      askId: 'a',
+      resolution: { status: 'answered', selected: ['flux'] }
+    }
+    const inFlight: MessagePart = { ...question, askId: 'f' }
+
+    expect(
+      markAskParts([question, deletion, answered, inFlight], {
+        askIds: ['q', 'd'],
+        dismissed: true
+      })
+    ).toEqual([
+      { ...question, dismissed: true },
+      { ...deletion, dismissed: true },
+      answered,
+      inFlight
+    ])
+  })
+
+  it('reopens only the matching dismissed cards, and leaves the parts alone when none match', () => {
+    const question = toAskPart(askUser({ ask_id: 'q' }))
+    assert(question)
+    const other: MessagePart = { ...question, askId: 'o', dismissed: true }
+    const parts = [{ ...question, dismissed: true }, other]
+
+    expect(markAskParts(parts, { askIds: ['q'], dismissed: false })).toEqual([
+      { ...question, dismissed: false },
+      other
+    ])
+    expect(markAskParts(parts, { askIds: [], dismissed: false })).toBe(parts)
+    expect(markAskParts(parts, { askIds: ['o'], dismissed: true })).toBe(parts)
+  })
+})
+
 describe('retireAskParts', () => {
   const question = toAskPart(askUser({ ask_id: 'q' }))
   assert(question)
@@ -358,6 +412,56 @@ describe('retireAskParts', () => {
       parts[0],
       parts[1],
       question
+    ])
+  })
+
+  const dismissedRun: MessagePart = {
+    type: 'runApproval',
+    askId: 'x',
+    dismissed: true
+  }
+  const dismissedQuestion: MessagePart = {
+    ...question,
+    askId: 'x',
+    dismissed: true
+  }
+  const dismissedDeletion: MessagePart = {
+    type: 'deleteApproval',
+    askId: 'x',
+    prompt: 'Delete 1 node?',
+    nodes: [{ id: '12', name: 'Hero sampler' }],
+    hiddenNodeCount: 0,
+    dismissed: true
+  }
+  const closed: AskUserResolution = { status: 'closed' }
+  const answered: AskUserResolution = { status: 'answered', selected: ['run'] }
+
+  it.for<{ name: string; part: MessagePart; resolution: AskUserResolution }>([
+    { name: 'run approval, closed', part: dismissedRun, resolution: closed },
+    {
+      name: 'run approval, answered',
+      part: dismissedRun,
+      resolution: answered
+    },
+    { name: 'question, closed', part: dismissedQuestion, resolution: closed },
+    {
+      name: 'question, answered',
+      part: dismissedQuestion,
+      resolution: answered
+    },
+    {
+      name: 'delete approval, closed',
+      part: dismissedDeletion,
+      resolution: closed
+    },
+    {
+      name: 'delete approval, answered',
+      part: dismissedDeletion,
+      resolution: answered
+    }
+  ])('keeps a dismissed card dismissed: $name', ({ part, resolution }) => {
+    expect(retireAskParts([part], 'x', resolution)).toEqual([
+      expect.objectContaining({ type: part.type, dismissed: true })
     ])
   })
 
