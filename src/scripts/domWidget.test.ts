@@ -1,16 +1,24 @@
-import { describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   addWidget,
   ComponentWidgetImpl,
-  DOMWidgetImpl
+  DOMWidgetImpl,
+  registerDomWidgets,
+  unregisterDomWidgets
 } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { generateUUID } from '@/utils/formatUtil'
 
 vi.mock(import('@/utils/formatUtil'), () => ({
-  generateUUID: () => 'test-uuid'
+  generateUUID: vi.fn(() => 'test-uuid')
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -152,6 +160,46 @@ describe('addWidget on a node that refuses the widget', () => {
 
     expect(node.widgets).not.toContain(widget)
     expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+})
+
+describe('root graph DOM widget registration', () => {
+  let widgetSequence = 0
+  beforeEach(() => {
+    vi.mocked(generateUUID).mockImplementation(
+      () => `widget-${++widgetSequence}`
+    )
+  })
+  afterEach(() => {
+    vi.mocked(generateUUID).mockImplementation(() => 'test-uuid')
+  })
+
+  function domWidgetOn(graph: LGraph | Subgraph) {
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    return node.addDOMWidget('text', 'custom', document.createElement('div'))
+  }
+
+  function registeredIds() {
+    return [...useDomWidgetStore().widgetStates.keys()].sort()
+  }
+
+  test('swaps the widgets of a whole graph tree when the root graph changes', () => {
+    const shown = new LGraph()
+    const shownWidget = domWidgetOn(shown)
+    const subgraph = createTestSubgraph({ rootGraph: shown })
+    shown.add(createTestSubgraphNode(subgraph))
+    const nestedWidget = domWidgetOn(subgraph)
+    const hidden = new LGraph()
+    const hiddenWidget = domWidgetOn(hidden)
+    const shownIds = [shownWidget.id, nestedWidget.id].sort()
+
+    unregisterDomWidgets(shown)
+    expect(registeredIds()).toEqual([hiddenWidget.id])
+
+    unregisterDomWidgets(hidden)
+    registerDomWidgets(shown)
+    expect(registeredIds()).toEqual(shownIds)
   })
 })
 

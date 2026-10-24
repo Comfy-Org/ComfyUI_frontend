@@ -7,6 +7,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
@@ -20,6 +21,7 @@ import type {
   DOMWidgetOptions
 } from '@/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 function readDomWidgetValue<V extends object | string>(
   options: DOMWidgetOptions<V>
@@ -277,6 +279,28 @@ export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.onResize = useChainCallback(node.onResize, () => {
     widget.options.beforeResize?.call(widget, node)
     widget.options.afterResize?.call(widget, node)
+  })
+}
+
+function domWidgetsOf(node: LGraphNode): BaseDOMWidget[] {
+  return (node.widgets ?? []).filter(
+    (w) => w instanceof DOMWidgetImpl || w instanceof ComponentWidgetImpl
+  )
+}
+
+/** Register the DOM widgets of every node in `graph`, including nested subgraphs. */
+export function registerDomWidgets(graph: LGraph): void {
+  const store = useDomWidgetStore()
+  forEachNode(graph, (node) => {
+    for (const widget of domWidgetsOf(node)) store.registerWidget(widget)
+  })
+}
+
+/** Unregister the DOM widgets of every node in `graph`, including nested subgraphs. */
+export function unregisterDomWidgets(graph: LGraph): void {
+  const store = useDomWidgetStore()
+  forEachNode(graph, (node) => {
+    for (const widget of domWidgetsOf(node)) store.unregisterWidget(widget.id)
   })
 }
 

@@ -266,6 +266,9 @@ export function createMockLoadedWorkflow(
 ): LoadedComfyWorkflow {
   return fromPartial<LoadedComfyWorkflow>({
     changeTracker: createMockChangeTracker(),
+    graph: null,
+    adoptGraph: vi.fn(),
+    releaseGraph: vi.fn(),
     ...overrides
   })
 }
