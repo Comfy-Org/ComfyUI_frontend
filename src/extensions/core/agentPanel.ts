@@ -237,7 +237,6 @@ export function registerAgentPanelExtension(): void {
       }
 
       const consentCardSeenIn = new Set<string>()
-      let lockedStartupOpened = false
       let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
@@ -278,22 +277,6 @@ export function registerAgentPanelExtension(): void {
           : !userId
             ? 'account_unresolved'
             : 'workspace_unresolved'
-
-      function prepareConsentCard(
-        candidateUserId: string | undefined,
-        offeredWorkspaceId: string | null
-      ): boolean {
-        const held = screenHolder()
-        if (held) {
-          holdOffer(held, candidateUserId, offeredWorkspaceId ?? undefined)
-          return false
-        }
-        if (agentPanelStore.onboarding.startup !== 'lockedUntilConsent')
-          return true
-        if (!agentPanelStore.enabled) return false
-        if (!agentPanelStore.isOpen) agentPanelStore.open('automatic_consent')
-        return true
-      }
 
       function claimOneShotOffer(
         candidateUserId: string | undefined,
@@ -357,7 +340,7 @@ export function registerAgentPanelExtension(): void {
 
         const candidateUserId = resolvedUserInfo.value?.id
         const offeredWorkspaceId = workspaceStore.activeWorkspaceId
-        const { offerMemory, startup } = agentPanelStore.onboarding
+        const { offerMemory } = agentPanelStore.onboarding
         const key =
           offerMemory === 'shown'
             ? claimOneShotOffer(candidateUserId, offeredWorkspaceId)
@@ -367,15 +350,13 @@ export function registerAgentPanelExtension(): void {
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
         dropHold()
-        if (startup === 'activationVisits')
-          agentPanelStore.suppressRestoredOpen()
+        agentPanelStore.suppressRestoredOpen()
         void withConsent(
           'first_load',
           () => {
             if (
               !agentPanelStore.enabled ||
-              (startup === 'activationVisits' &&
-                automaticActivationVisitsComplete()) ||
+              automaticActivationVisitsComplete() ||
               agentPanelStore.isOpen
             )
               return
@@ -385,34 +366,21 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               if (key) writeAutoShown(key, true)
             },
-            canShow: () =>
-              prepareConsentCard(candidateUserId, offeredWorkspaceId)
+            canShow: () => {
+              const held = screenHolder()
+              if (held)
+                holdOffer(
+                  held,
+                  candidateUserId,
+                  offeredWorkspaceId ?? undefined
+                )
+              return held === null && agentPanelStore.enabled
+            }
           }
         ).finally(() => finishAutomaticOffer(offeredIdentity))
       }
 
-      function prepareLockedStartup(): boolean {
-        if (
-          !agentPanelStore.enabled ||
-          !isAuthInitialized.value ||
-          consentStore.isChecking ||
-          consentStore.accepted
-        )
-          return false
-        const held = screenHolder()
-        if (held) {
-          holdOffer(held)
-          return false
-        }
-        if (lockedStartupOpened) return true
-        lockedStartupOpened = true
-        if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
-        return true
-      }
-
       function prepareStartupPanel(): boolean {
-        if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
-          return prepareLockedStartup()
         if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
           return true
         reportOfferExit('activation_window_complete', 'startup')
@@ -454,12 +422,7 @@ export function registerAgentPanelExtension(): void {
       let activationPending = false
       let activationOffered = false
       const openWhenStartupDecided = (): void => {
-        if (
-          agentPanelStore.onboarding.startup !== 'activationVisits' ||
-          !agentPanelStore.enabled ||
-          activationPending ||
-          activationOffered
-        )
+        if (!agentPanelStore.enabled || activationPending || activationOffered)
           return
         activationPending = true
         whenStartupDecided()

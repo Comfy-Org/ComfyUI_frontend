@@ -20,19 +20,20 @@ account/workspace consent setting. Only Agree or Skip sets this marker; display
 and dismissal do not. The marker controls automatic startup offers, never Agent
 access. It lives in renderer storage, keyed by scope like Cloud's one-shot offer
 key: `signed-out`, or the account and workspace. Signed-out users can respond,
-the response survives restarts, and a scope that has not answered still gets
-one card.
+the response survives restarts, and a scope that has not answered can still
+get a card under the startup rules below.
 
-For eligible, ready Desktop installations, unfinished consent opens the locked
-panel on each startup after authentication and onboarding settle, independently
-of Cloud's activation visit limit. The response marker suppresses only the
-startup introduction for its scope, so signing in or switching to an
-unanswered account or workspace queues a card after the screen clears. The Local entry button only
-toggles the panel; Send owns the consent request.
+For eligible, ready Desktop installations, the panel opens automatically on
+startup for Cloud's activation visits, whether or not the user skipped consent or
+closed the panel, and then stops. The response marker suppresses only the
+startup introduction for its scope. While visits remain, or while the panel is
+open, signing in or switching to an unanswered account or workspace queues a
+card after the screen clears. The Local entry button only toggles the panel;
+Send owns the consent request.
 
 Cloud's account-wide explicit-refusal preference remains separate. Desktop Skip
 does not write that preference, and an existing Cloud refusal does not suppress
-the Desktop introduction or recurring locked panel. Neither preference records
+the Desktop introduction or the startup panel. Neither preference records
 audited server consent.
 
 `agentPanelStore` selects one onboarding policy for the whole frontend, and no
