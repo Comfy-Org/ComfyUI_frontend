@@ -1,35 +1,20 @@
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
+import { once } from 'es-toolkit'
 
 import { COMFY_RUM_APPLICATION } from '@comfyorg/shared-frontend-utils/telemetry'
-import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { rumBeforeSend } from './datadogRumBeforeSend'
 import { trackUserManualRefresh } from './manualRefreshTracker'
+import {
+  installDatadogRum,
+  resolveDeployEnv,
+  setFrontendBucket
+} from './rumContext'
+import type { FrontendBucket } from './rumContext'
 
-const DATADOG_ENV_BY_HOSTNAME = new Map<string, DeployEnv>([
-  ['cloud.comfy.org', 'prod-v2'],
-  ['stagingcloud.comfy.org', 'stg-v2'],
-  ['testcloud.comfy.org', 'test-v2']
-])
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
-type FrontendBucket = 'canary' | 'stable'
 const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']
-let initializationPromise: Promise<void> | undefined
-let resolvedBucket: FrontendBucket | undefined
-
-/**
- * The canary/stable split, resolved once from the deploy's own
- * `X-Frontend-Bucket` response header rather than inferred from a release or
- * version string (D25) — other telemetry sinks that want the same fact
- * should read this instead of re-fetching it. `undefined` means the split
- * isn't known yet (probe still pending, failed, or off a tracked version),
- * not 'stable' — collapsing that into a default would mistag reports and
- * corrupt the canary/stable RUM comparison this header exists to support.
- */
-export function getFrontendBucket(): FrontendBucket | undefined {
-  return resolvedBucket
-}
 
 function parseFrontendBucket(value: string | null): FrontendBucket {
   return FRONTEND_BUCKETS.includes(value as FrontendBucket)
@@ -48,10 +33,9 @@ async function setFrontendContext(): Promise<void> {
   const frontendVersion = response.headers.get('X-Frontend-Version')
   if (frontendVersion !== __COMFYUI_FRONTEND_COMMIT__) return
 
-  resolvedBucket = parseFrontendBucket(
-    response.headers.get('X-Frontend-Bucket')
-  )
-  datadogRum.setGlobalContextProperty('bucket', resolvedBucket)
+  const bucket = parseFrontendBucket(response.headers.get('X-Frontend-Bucket'))
+  setFrontendBucket(bucket)
+  datadogRum.setGlobalContextProperty('bucket', bucket)
   datadogRum.setGlobalContextProperty('version', frontendVersion)
 }
 
@@ -77,30 +61,11 @@ async function initializeDatadogRum(env: string): Promise<void> {
   trackUserManualRefresh()
 }
 
-/**
- * Maps a hostname to the deploy environment name Datadog/backend engineers
- * already use to distinguish prod from testcloud/staging — shared here so a
- * caller identifying "which backend is this" (e.g. a bug-report payload)
- * reads the same classification RUM does, instead of a second hostname list
- * that can drift from this one.
- */
-export function resolveDeployEnv(
-  hostname = window.location.hostname
-): DeployEnv | undefined {
-  return (
-    DATADOG_ENV_BY_HOSTNAME.get(hostname) ??
-    (hostname.endsWith('.testenvs.comfy.org') ? 'test-v2' : undefined)
-  )
-}
-
-export function initDatadogRum(
-  hostname = window.location.hostname
-): Promise<void> {
-  const env = resolveDeployEnv(hostname)
-  if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
-
-  initializationPromise ??= initializeDatadogRum(env).finally(() => {
-    initializationPromise = undefined
-  })
-  return initializationPromise
-}
+export const initDatadogRum = once(
+  (hostname = window.location.hostname): Promise<void> => {
+    installDatadogRum(datadogRum)
+    const env = resolveDeployEnv(hostname)
+    if (!env || datadogRum.getInitConfiguration()) return Promise.resolve()
+    return initializeDatadogRum(env)
+  }
+)

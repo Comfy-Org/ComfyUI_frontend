@@ -258,7 +258,21 @@ const zAgentToolCallData = zGeneratedAgentToolCallData
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
     doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
     doc_lineage_seq:
-      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
+    job_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .refine(
+        (value) =>
+          !value.includes('\u0000') &&
+          !value.includes('\n') &&
+          !value.includes('\r') &&
+          !value.includes('\t')
+      )
+      .optional()
+      .catch(undefined),
+    job_workflow_id: z.string().min(1).optional().catch(undefined)
   })
   .passthrough()
 

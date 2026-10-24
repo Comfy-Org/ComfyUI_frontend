@@ -1,6 +1,5 @@
 import { nextTick } from 'vue'
 
-import Load3D from '@/extensions/core/load3d/components/Load3D.vue'
 import { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
@@ -11,24 +10,15 @@ import type {
   NodeOutputWith,
   ResultItem
 } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
-import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-
-const inputSpec: CustomInputSpec = {
-  name: 'image',
-  type: 'Preview3D',
-  isPreview: true
-}
 
 function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
   const filePath = (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
@@ -60,17 +50,6 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
 export const saveMeshExtension: ComfyExtension = {
   name: 'Comfy.SaveGLB',
 
-  async beforeRegisterNodeDef(
-    _nodeType: typeof LGraphNode,
-    nodeData: ComfyNodeDef
-  ) {
-    if ('SaveGLB' === nodeData.name) {
-      const input = (nodeData.input ??= {})
-      const required = (input.required ??= {})
-      required.image = ['PREVIEW_3D']
-    }
-  },
-
   onNodeOutputsUpdated(
     nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) {
@@ -82,26 +61,6 @@ export const saveMeshExtension: ComfyExtension = {
       if (!node || node.constructor.comfyClass !== 'SaveGLB') continue
 
       applySaveGLBOutput(node, fileInfo)
-    }
-  },
-
-  getCustomWidgets() {
-    return {
-      PREVIEW_3D(node) {
-        const widget = new ComponentWidgetImpl({
-          node,
-          name: inputSpec.name,
-          component: Load3D,
-          inputSpec,
-          options: { hideInPanel: true }
-        })
-
-        widget.type = 'load3D'
-
-        addWidget(node, widget)
-
-        return { widget }
-      }
     }
   },
 
