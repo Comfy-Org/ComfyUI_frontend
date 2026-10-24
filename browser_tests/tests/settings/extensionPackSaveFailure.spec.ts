@@ -29,21 +29,25 @@ test.describe(
       )
 
       const dialog = comfyPage.settingDialog
-      await dialog.open()
-      await dialog.category('Extension').click()
-
       const packSwitch = dialog.root.getByRole('switch', { name: PACK_SWITCH })
-      await expect(packSwitch).toBeChecked()
 
-      await packSwitch.click()
+      await test.step('Open extension pack settings', async () => {
+        await dialog.open()
+        await dialog.category('Extension').click()
+        await expect(packSwitch).toBeChecked()
+      })
 
-      await expect(
-        comfyPage.toast.withText(/Comfy\.Extension\.DisabledPacks/)
-      ).toBeVisible()
-      await expect(packSwitch).toBeChecked()
-      await expect(
-        dialog.root.getByRole('button', { name: 'Reload to apply changes' })
-      ).toBeHidden()
+      await test.step('Reject the save and retain pack enablement', async () => {
+        await packSwitch.click()
+
+        await expect(
+          comfyPage.toast.withText(/Comfy\.Extension\.DisabledPacks/)
+        ).toBeVisible()
+        await expect(packSwitch).toBeChecked()
+        await expect(
+          dialog.root.getByRole('button', { name: 'Reload to apply changes' })
+        ).toBeHidden()
+      })
     })
 
     test('tells the user and keeps the switch off when the save answer is lost', async ({
@@ -57,21 +61,25 @@ test.describe(
       )
 
       const dialog = comfyPage.settingDialog
-      await dialog.open()
-      await dialog.category('Extension').click()
-
       const packSwitch = dialog.root.getByRole('switch', { name: PACK_SWITCH })
-      await expect(packSwitch).toBeChecked()
 
-      await packSwitch.click()
+      await test.step('Open extension pack settings', async () => {
+        await dialog.open()
+        await dialog.category('Extension').click()
+        await expect(packSwitch).toBeChecked()
+      })
 
-      await expect(
-        comfyPage.toast.withText(/Comfy\.Extension\.DisabledPacks/)
-      ).toBeVisible()
-      await expect(packSwitch).not.toBeChecked()
-      await expect(
-        dialog.root.getByRole('button', { name: 'Reload to apply changes' })
-      ).toBeVisible()
+      await test.step('Lose the save answer and keep the pack disabled', async () => {
+        await packSwitch.click()
+
+        await expect(
+          comfyPage.toast.withText(/Comfy\.Extension\.DisabledPacks/)
+        ).toBeVisible()
+        await expect(packSwitch).not.toBeChecked()
+        await expect(
+          dialog.root.getByRole('button', { name: 'Reload to apply changes' })
+        ).toBeVisible()
+      })
     })
   }
 )
