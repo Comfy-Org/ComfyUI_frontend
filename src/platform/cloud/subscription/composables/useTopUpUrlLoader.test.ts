@@ -115,7 +115,7 @@ describe('useTopUpUrlLoader', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('opens the subscription path without top-up telemetry', async () => {
+  it('stays a no-op when only self-serve subscribe is allowed', async () => {
     setRouteQuery({ topup: '1' })
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
@@ -123,7 +123,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(
       useTelemetry()?.trackAddApiCreditButtonClicked
     ).not.toHaveBeenCalled()

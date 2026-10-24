@@ -90,7 +90,7 @@
         <i class="icon-[lucide--circle-help]" />
       </Button>
       <Button
-        v-if="showAddCredits"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -226,10 +226,7 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const showAddCredits = computed(
-  () => canTopUp.value || canSubscribeSelfServe.value
-)
+const { canTopUp } = useBillingCapabilities()
 
 const subscriptionTierName = computed(() =>
   formatTierName(tier.value, subscription.value?.duration === 'ANNUAL')
@@ -254,8 +251,6 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
-  // hidden from the settings menu and only reachable by key.
   settingsDialog.show('workspace')
   emit('close')
 }
