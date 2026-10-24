@@ -2238,7 +2238,6 @@ export class ComfyApp implements IComfyApp {
         let graph = this.rootGraph
         const outcome = await importA1111(graph, parameters, async () => {
           try {
-            // false: final destination; no later load republishes the hash.
             useWorkflowService().beforeLoadNewGraph(false)
             await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
           } finally {
@@ -2425,7 +2424,6 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
-    // false: no workflow load follows to republish the hash.
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     const graph = this.rootGraphForLoad(null)
