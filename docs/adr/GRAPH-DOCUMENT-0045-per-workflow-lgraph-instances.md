@@ -103,9 +103,14 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   ADR-GRAPH-DOCUMENT-0026 Phase 5 remains future work.
 - An `app.graph` reference captured in an extension's `setup`, or a callback
   patched onto that instance there (`onNodeAdded`, `onConfigure`, `add`),
-  reaches only the boot graph. Those extensions must read `app.graph` at use
-  time or patch `LGraph.prototype`; a census of the custom node ecosystem for
-  this pattern is a prerequisite for leaving draft.
+  reaches only the first workflow loaded after startup. Those extensions must
+  read `app.graph` at use time, use the load hooks, or patch
+  `LGraph.prototype` at module top level: `createRootGraph` wraps
+  `onConfigure` per instance before extension `setup` runs, so a prototype
+  patch applied in `setup` misses the boot graph, and a patch re-applied per
+  graph in `afterLoadGraph` must be idempotent because graphs are reused
+  across switches. A census of the custom node ecosystem for this pattern is
+  a prerequisite for leaving draft.
 - Activation does not touch the `LGraph.start()` step loop. `setup` starts the
   boot graph and the first `clear()` stops it, as before; no graph runs the
   loop after its first load, whether it is on screen or in the background.

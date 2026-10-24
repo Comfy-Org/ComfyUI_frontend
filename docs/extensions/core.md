@@ -211,11 +211,18 @@ is already loaded shows that instance without rebuilding its nodes. The
 per-graph DOM or Vue state when the visible graph changes should do so in
 `afterLoadGraph`, which runs on both the first load and every later switch.
 
-Because each workflow owns a separate `LGraph`, patching `app.graph` in
-`setup` (for example, replacing `app.graph.onNodeAdded` or wrapping
-`app.graph.add`) only affects the graph of the first tab. Patch
-`LGraph.prototype` instead, or re-apply the patch to the current `app.graph`
-in `afterLoadGraph`.
+Because each workflow owns a separate `LGraph`, an `app.graph` reference
+captured in `setup` points at the first workflow loaded after startup. Read
+`app.graph` when you need it instead of caching it. A callback patched onto
+one instance (`onNodeAdded`, `onConfigure`, `add`) reaches only that
+instance, and the app wraps `onConfigure` per instance when it creates the
+graph, so an `LGraph.prototype.onConfigure` patch applied in `setup` misses
+the boot graph. Prefer the `afterConfigureGraph` and `afterLoadGraph` hooks
+or the graph's `events` target. If you must patch `LGraph.prototype`, do it
+at module top level; the patch then applies to every root graph and every
+subgraph. If you re-apply an instance patch in `afterLoadGraph`, track the
+instances you have already patched in a `WeakSet`: graphs are reused across
+tab switches, so the hook runs more than once per instance.
 
 #### Adding New Node
 
