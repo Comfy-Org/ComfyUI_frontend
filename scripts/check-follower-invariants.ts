@@ -35,6 +35,7 @@ export function findFollowerFiles(repositoryRoot: string): string[] {
   return globSync([...FOLLOWER_SCOPE_PATTERNS], {
     cwd: repositoryRoot
   })
+    .map((file) => file.replaceAll('\\', '/'))
     .filter(isFollowerSeamFile)
     .sort()
 }
@@ -145,6 +146,25 @@ function isFreshOpId(
   )
 }
 
+function isFreshOpIdAssignment(
+  node: ts.Node,
+  mintedIdentifiers: ReadonlySet<string>
+): boolean {
+  if (ts.isPropertyAssignment(node))
+    return (
+      propertyName(node.name) === 'op_id' &&
+      isFreshOpId(node.initializer, mintedIdentifiers)
+    )
+  if (ts.isShorthandPropertyAssignment(node))
+    return node.name.text === 'op_id' && mintedIdentifiers.has(node.name.text)
+  return (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    memberName(node.left) === 'op_id' &&
+    isFreshOpId(node.right, mintedIdentifiers)
+  )
+}
+
 function parse(file: string, source: string) {
   const sourceFile = ts.createSourceFile(
     file,
@@ -245,16 +265,7 @@ function noOpIdRegeneration(
   const violations: Violation[] = []
   const mintedIdentifiers = mintedOpIdIdentifiers(sourceFile)
   visit(sourceFile, (node) => {
-    const objectAssignment =
-      ts.isPropertyAssignment(node) &&
-      propertyName(node.name) === 'op_id' &&
-      isFreshOpId(node.initializer, mintedIdentifiers)
-    const fieldAssignment =
-      ts.isBinaryExpression(node) &&
-      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      memberName(node.left) === 'op_id' &&
-      isFreshOpId(node.right, mintedIdentifiers)
-    if (!objectAssignment && !fieldAssignment) return
+    if (!isFreshOpIdAssignment(node, mintedIdentifiers)) return
     violations.push(
       violation(
         file,

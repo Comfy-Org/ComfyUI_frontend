@@ -133,7 +133,8 @@ describe('checkNoOpIdRegeneration', () => {
     'const retry = { op_id: globalThis.crypto.randomUUID() }',
     'const retry = { op_id: String(uuid()) }',
     "operation['op_id'] = mintOpId()",
-    'const fresh = mintOpId(); const retry = { op_id: fresh }'
+    'const fresh = mintOpId(); const retry = { op_id: fresh }',
+    'const op_id = mintOpId(); const retry = { op_id }'
   ])('fails nested, indirect, or bracketed minting: %s', (fixture) => {
     expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(1)
   })
