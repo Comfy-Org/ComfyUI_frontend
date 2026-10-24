@@ -276,6 +276,16 @@ function parseErrorBody(text: string): unknown {
   }
 }
 
+function getBackendErrorMessage(body: unknown): string | undefined {
+  const plain = zAgentError.safeParse(body)
+  if (plain.success) {
+    return typeof plain.data.error === 'string'
+      ? plain.data.error
+      : plain.data.error.message
+  }
+  return isIngestErrorBody(body) ? body.error.message : undefined
+}
+
 function getErrorMessage(
   body: unknown,
   status: number,
@@ -289,14 +299,9 @@ function getErrorMessage(
     )
   }
 
-  const plain = zAgentError.safeParse(body)
-  if (plain.success) {
-    return typeof plain.data.error === 'string'
-      ? plain.data.error
-      : plain.data.error.message
-  }
-  return isIngestErrorBody(body)
-    ? body.error.message
+  const backendMessage = getBackendErrorMessage(body)
+  return backendMessage?.trim()
+    ? backendMessage
     : `Agent request failed (HTTP ${status}, ${operation})`
 }
 
@@ -522,6 +527,7 @@ export function createAgentRestClient() {
     credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
+    const backendMessage = getBackendErrorMessage(body)
     const message = getErrorMessage(body, response.status, operation)
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
@@ -545,7 +551,7 @@ export function createAgentRestClient() {
         authScheme,
         credential,
         body,
-        message
+        message: backendMessage ?? ''
       })
     ) {
       // Callers still receive the backend text for the UI, but their generic

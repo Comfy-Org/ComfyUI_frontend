@@ -943,6 +943,19 @@ describe('error mapping', () => {
     )
   })
 
+  it('uses the bounded fallback when a structured error message is blank', async () => {
+    respond(jsonResponse(503, { error: '   ' }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 503, get_thread_messages)'
+    )
+  })
+
   it('carries its operation so a non-auth status can still be tagged downstream (PM-2103)', async () => {
     respond(new Response('', { status: 503 }))
 
@@ -1043,6 +1056,21 @@ describe('error mapping', () => {
       authScheme: 'unreported',
       credential: 'unreported',
       backendReason: 'other'
+    })
+  })
+
+  it('does not classify the client fallback as backend refusal text', async () => {
+    respondWithAuthScheme(new Response('', { status: 401 }), 'web-session')
+
+    await makeClient()
+      .getMessages('t-1')
+      .catch((e: unknown) => e)
+
+    expect(reportedTags()).toEqual({
+      operation: 'get_thread_messages',
+      status: 401,
+      authScheme: 'web-session',
+      credential: 'unreported'
     })
   })
 
