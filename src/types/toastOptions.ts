@@ -7,6 +7,7 @@ export interface ToastAction {
 
 export interface ToastOptions {
   action?: ToastAction
+  actions?: ToastAction[]
   closable?: boolean
   description?: string
   duration?: number

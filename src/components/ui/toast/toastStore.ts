@@ -14,8 +14,26 @@ export interface Toast {
   instance: symbol
   kind: ToastKind
   title: string
-  action?: ToastAction
+  actions: ToastAction[]
   description?: string
+}
+
+const isAction = (candidate: unknown): candidate is ToastAction =>
+  typeof candidate === 'object' &&
+  candidate !== null &&
+  typeof (candidate as ToastAction).label === 'string' &&
+  typeof (candidate as ToastAction).onClick === 'function'
+
+/**
+ * `toast` is part of the public `ExtensionManager` surface, so `action` and
+ * `actions` arrive from untyped callers. Every stored action is rendered and
+ * read out unconditionally, so one malformed entry would break the whole
+ * Toaster render rather than just its own toast.
+ */
+function toActions(options: ToastOptions): ToastAction[] {
+  const supplied: unknown[] = [options.action]
+  if (Array.isArray(options.actions)) supplied.push(...options.actions)
+  return supplied.filter(isAction)
 }
 
 export const useToast = defineStore('toast', () => {
@@ -27,7 +45,7 @@ export const useToast = defineStore('toast', () => {
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        action: options.action,
+        actions: toActions(options),
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
