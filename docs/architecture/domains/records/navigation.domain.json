@@ -8,6 +8,10 @@
       "role": "domain"
     },
     {
+      "path": "src/platform/navigation/composables/**",
+      "role": "application"
+    },
+    {
       "path": "src/platform/navigation/preservedQueryManager.test.ts",
       "role": "infrastructure"
     },
@@ -32,9 +36,11 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/platform/navigation/composables/usePreservedQueryDeepLink.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["workflow-sharing", "workspace"],
   "characterizationScenarios": [
     {
       "name": "Preserved query parameters survive redirects and are merged back by namespace",
@@ -47,6 +53,12 @@
     {
       "name": "Unmatched routes redirect to root and report a bounded path",
       "checks": ["src/platform/navigation/unmatchedRoute.test.ts"]
+    },
+    {
+      "name": "Deep-link loaders restore a preserved query parameter after login and strip it once consumed",
+      "checks": [
+        "src/platform/navigation/composables/usePreservedQueryDeepLink.test.ts"
+      ]
     }
   ],
   "adrs": [],

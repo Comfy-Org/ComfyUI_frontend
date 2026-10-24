@@ -43,7 +43,7 @@ const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
 const mockRouterReplace = vi.hoisted(() =>
-  vi.fn(({ query }: { query: Record<string, string> }) => {
+  vi.fn(async ({ query }: { query: Record<string, string> }) => {
     mockRouteQuery.value = query
   })
 )
