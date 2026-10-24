@@ -2923,6 +2923,22 @@ describe('useAgentConversationStore', () => {
       }
     )
 
+    it('stops awaiting approval while Send has dismissed the run card', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), false)
+      store.ingest(runApproval('t1', 'ask-1'))
+
+      const askIds = store.dismissActiveAsks()
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: false }
+      ])
+
+      store.restoreActiveAsks(askIds)
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/a.json', awaitingApproval: true }
+      ])
+    })
+
     it.for([false, true])(
       'follows the tab of a live turn through a move, a rename and a close (stashed: %s)',
       async (stashed) => {
