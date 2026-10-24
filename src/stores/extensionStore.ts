@@ -5,7 +5,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingWriteResult } from '@/platform/settings/types'
 import type { ComfyExtension } from '@/types/comfy'
 
-/** Display name for an extension pack path. */
 export function extensionPackName(path: string) {
   const name = path.split('/').filter(Boolean).at(-1) ?? path
   try {
