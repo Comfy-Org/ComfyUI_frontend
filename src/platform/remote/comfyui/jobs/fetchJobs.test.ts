@@ -137,23 +137,22 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
+    it('rejects on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('returns empty array on non-ok response', async () => {
+    it('rejects on non-ok response without logging', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500
       })
 
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
+      await expect(fetchHistory(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 500'
+      )
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -270,20 +269,18 @@ describe('fetchJobs', () => {
       )
     })
 
-    it('returns empty arrays on error', async () => {
+    it('rejects on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchQueue(mockFetch)
-
-      expect(result).toEqual({ Running: [], Pending: [] })
+      await expect(fetchQueue(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('propagates errors when requested', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    it('rejects on non-ok response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 })
 
-      await expect(
-        fetchQueue(mockFetch, { throwOnError: true })
-      ).rejects.toThrow('Failed to fetch jobs: 500')
+      await expect(fetchQueue(mockFetch)).rejects.toThrow(
+        '[Jobs API] Failed to fetch jobs: 503'
+      )
     })
   })
 
