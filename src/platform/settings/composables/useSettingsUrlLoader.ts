@@ -33,6 +33,30 @@ const EXTENSION_FILTER_PARAMS: Record<string, ExtensionFilterType> = {
   agent: 'agentCreated'
 }
 
+/**
+ * The filter a `?filter=` value selects, or `undefined` when it names none.
+ * `Object.hasOwn` is what keeps an inherited key out: without it `constructor`
+ * and `toString` resolve to functions off the prototype and `__proto__` to an
+ * object, none of which is an `ExtensionFilterType`.
+ */
+function resolveExtensionFilter(
+  panel: unknown,
+  filter: unknown
+): ExtensionFilterType | undefined {
+  if (panel !== 'extension' || typeof filter !== 'string') return undefined
+  if (!Object.hasOwn(EXTENSION_FILTER_PARAMS, filter)) return undefined
+  return EXTENSION_FILTER_PARAMS[filter]
+}
+
+/** Whether `param` names a panel a `?settings=` link may open. */
+function resolveDeepLinkablePanel(
+  param: unknown
+): SettingPanelType | undefined {
+  if (typeof param !== 'string' || !param) return undefined
+  if (!Object.hasOwn(DEEP_LINKABLE_PANELS, param)) return undefined
+  return DEEP_LINKABLE_PANELS[param]
+}
+
 export function useSettingsUrlLoader() {
   const route = useRoute()
   const router = useRouter()
@@ -44,13 +68,7 @@ export function useSettingsUrlLoader() {
     const param = query.settings
     if (param === undefined) return
 
-    const filter = query.filter
-    const extensionFilter =
-      param === 'extension' &&
-      typeof filter === 'string' &&
-      Object.hasOwn(EXTENSION_FILTER_PARAMS, filter)
-        ? EXTENSION_FILTER_PARAMS[filter]
-        : undefined
+    const extensionFilter = resolveExtensionFilter(param, query.filter)
 
     const cleanQuery = { ...query }
     delete cleanQuery.settings
@@ -60,13 +78,8 @@ export function useSettingsUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    if (
-      typeof param === 'string' &&
-      param &&
-      Object.hasOwn(DEEP_LINKABLE_PANELS, param)
-    ) {
-      showSettingsPanel(DEEP_LINKABLE_PANELS[param], { extensionFilter })
-    }
+    const panel = resolveDeepLinkablePanel(param)
+    if (panel) showSettingsPanel(panel, { extensionFilter })
 
     await stripped
   }
