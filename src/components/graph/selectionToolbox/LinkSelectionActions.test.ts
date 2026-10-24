@@ -94,6 +94,18 @@ describe('LinkSelectionActions', () => {
     ).toBeInTheDocument()
   })
 
+  it('names a node without a title by its type', () => {
+    const { graph, source, targets } = createWorkflow()
+    source.title = ''
+    clickSocket(graph, targets[0], 'input')
+
+    renderActions()
+
+    expect(
+      screen.getByRole('button', { name: `Go to ${source.type}` })
+    ).toBeInTheDocument()
+  })
+
   it('moves the view to the source, then offers every node its output leads to', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     clickSocket(graph, targets[0], 'input')

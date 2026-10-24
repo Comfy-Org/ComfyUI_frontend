@@ -138,7 +138,7 @@ function destinationName(destination: LinkDestination): string {
     case 'subgraphOutputs':
       return t('selectionToolbox.linkDestinations.subgraphOutputs')
     case 'node':
-      return destination.node.title
+      return destination.node.getTitle() || destination.node.type || ''
   }
 }
 
