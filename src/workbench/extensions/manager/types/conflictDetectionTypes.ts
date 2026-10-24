@@ -32,6 +32,11 @@ export interface NodeRequirements extends Node {
   is_enabled: boolean
   is_banned: boolean
   is_pending: boolean
+  /**
+   * True when the Registry lookup for this pack failed, so `is_banned` /
+   * `is_pending` are unknown rather than verified false.
+   */
+  registry_status_unknown?: boolean
   // Aliases for backwards compatibility with existing code
   version_status?: string
 }
@@ -58,6 +63,11 @@ export interface ConflictDetectionResult {
   has_conflict: boolean
   conflicts: ConflictDetail[]
   is_compatible: boolean
+  /**
+   * True when the Registry lookup for this pack failed, so the absence of a
+   * banned/pending conflict means "not verified", not "verified compatible".
+   */
+  registry_status_unknown?: boolean
 }
 
 /**

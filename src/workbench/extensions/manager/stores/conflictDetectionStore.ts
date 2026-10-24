@@ -10,6 +10,11 @@ export const useConflictDetectionStore = defineStore(
     const conflictedPackages = ref<ConflictDetectionResult[]>([])
     const isDetecting = ref(false)
     const lastDetectionTime = ref<string | null>(null)
+    /**
+     * Packs whose Registry lookup failed during the last detection run, so
+     * their banned/pending status could not be verified either way.
+     */
+    const registryUnknownPackIds = ref<Set<string>>(new Set())
 
     // Getters
     const hasConflicts = computed(() =>
@@ -40,6 +45,11 @@ export const useConflictDetectionStore = defineStore(
 
     function clearConflicts() {
       conflictedPackages.value = []
+      registryUnknownPackIds.value = new Set()
+    }
+
+    function setRegistryUnknownPackIds(packIds: Set<string>) {
+      registryUnknownPackIds.value = new Set(packIds)
     }
 
     function setDetecting(detecting: boolean) {
@@ -55,6 +65,7 @@ export const useConflictDetectionStore = defineStore(
       conflictedPackages,
       isDetecting,
       lastDetectionTime,
+      registryUnknownPackIds,
       // Getters
       hasConflicts,
       getConflictsForPackageByID,
@@ -63,6 +74,7 @@ export const useConflictDetectionStore = defineStore(
       // Actions
       setConflictedPackages,
       clearConflicts,
+      setRegistryUnknownPackIds,
       setDetecting,
       setLastDetectionTime
     }
