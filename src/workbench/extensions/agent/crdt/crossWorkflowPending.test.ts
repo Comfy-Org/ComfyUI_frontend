@@ -8,6 +8,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
   class FakeBridge extends EventTarget {

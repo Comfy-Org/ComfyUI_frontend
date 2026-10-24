@@ -8,6 +8,8 @@ import type {
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function completedListing(id: string): ThreadListing {
   return {
     status: 'complete',

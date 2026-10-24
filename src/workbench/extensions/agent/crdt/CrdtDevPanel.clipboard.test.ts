@@ -7,6 +7,8 @@ import { useClipboard } from '@vueuse/core'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const { reportError, writeText } = vi.hoisted(() => ({
   reportError: vi.fn(),
   writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>

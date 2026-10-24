@@ -75,21 +75,50 @@ export const StorageKeys = {
     return `Comfy.Workflow.OpenPaths:${clientId}`
   },
 
-  agentThread(workspaceId: string): string {
-    return `Comfy.Agent.ThreadId:${workspaceId}`
+  agentThread(scope: string): string {
+    return `Comfy.Agent.ThreadId:${scope}`
   },
 
-  agentWorkflowTabBindings(workspaceId: string): string {
-    return `Comfy.Agent.WorkflowTabBindings:${workspaceId}`
+  agentWorkflowTabBindings(scope: string): string {
+    return `Comfy.Agent.WorkflowTabBindings:${scope}`
   },
 
-  agentChatTitles(workspaceId: string): string {
-    return `Comfy.Agent.ChatTitles:${workspaceId}`
+  agentChatTitles(scope: string): string {
+    return `Comfy.Agent.ChatTitles:${scope}`
   },
 
-  agentDeletedThreads(workspaceId: string): string {
-    return `Comfy.Agent.DeletedThreads:${workspaceId}`
+  agentDeletedThreads(scope: string): string {
+    return `Comfy.Agent.DeletedThreads:${scope}`
   },
+
+  agentOnboarded(scope: string): string {
+    return `Comfy.AgentPanel.onboarded:${scope}`
+  },
+
+  agentRunModePreference(scope: string): string {
+    return `Comfy.Agent.RunModePreference:${scope}`
+  },
+
+  agentPanelDiscovered(scope: string): string {
+    return `Comfy.AgentPanel.discovered:${scope}`
+  },
+
+  agentRunNoticeDismissed(scope: string): string {
+    return `Comfy.AgentPanel.runNoticeDismissed:${scope}`
+  },
+
+  agentFreeUseNoticeDismissed(scope: string): string {
+    return `Comfy.AgentPanel.freeUseNoticeDismissed:${scope}`
+  },
+
+  agentCrdtNote(scope: string): string {
+    return `Comfy.Agent.CrdtDevPanel.note:${scope}`
+  },
+
+  agentPanelOpen: 'Comfy.AgentPanel.open',
+  agentCrdtPanelOpen: 'Comfy.Agent.CrdtDevPanel.open',
+  agentCrdtPanelHidden: 'Comfy.Agent.CrdtDevPanel.hidden',
+  agentCrdtDocId: 'Comfy.Agent.CrdtDocId',
 
   /**
    * localStorage copies of tab pointers for cross-session restore.

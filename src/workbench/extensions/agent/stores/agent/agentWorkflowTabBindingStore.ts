@@ -1,15 +1,14 @@
-import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { toRaw, watch } from 'vue'
 
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  useAccountScope,
+  useAccountStorage
+} from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -73,16 +72,28 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
-    clearLegacyAgentStorage()
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(
-      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
-      {}
+    const scope = useAccountScope()
+    const tabByWorkflow = useAccountStorage<PersistedBindings>(
+      StorageKeys.agentWorkflowTabBindings,
+      {},
+      {},
+      scope
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
 
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
+
+    watch(
+      scope,
+      () => {
+        boundInstances.clear()
+        refusedInstances.clear()
+        tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
+      },
+      { flush: 'sync' }
+    )
 
     function recordFor(workflowId: string): PersistedBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)

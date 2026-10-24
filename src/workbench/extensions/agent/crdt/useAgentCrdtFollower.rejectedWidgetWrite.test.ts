@@ -14,6 +14,7 @@ import type { GraphOperation } from './graphOperations'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'

@@ -12,6 +12,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const openWorkflow = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(

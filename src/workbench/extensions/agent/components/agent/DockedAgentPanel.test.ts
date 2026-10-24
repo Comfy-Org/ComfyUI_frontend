@@ -17,6 +17,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()

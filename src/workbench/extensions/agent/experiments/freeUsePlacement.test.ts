@@ -16,6 +16,7 @@ import {
   useFreeUsePlacement as useFreeUsePlacementImpl
 } from './freeUsePlacement'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))

@@ -7,6 +7,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
   const agentSocket = createFakeAgentSocket()
   const { send } = agentSocket
