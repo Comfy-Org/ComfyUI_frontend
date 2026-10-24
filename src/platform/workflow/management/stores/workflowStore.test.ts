@@ -2,7 +2,8 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, reactive } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -729,6 +730,18 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+    it('releases the graph a closed temporary workflow owned', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const clear = vi.spyOn(graph, 'clear')
+      workflow.adoptGraph(graph)
+
+      await store.closeWorkflow(workflow)
+
+      expect(workflow.graph).toBeNull()
+      expect(clear).toHaveBeenCalledOnce()
     })
     it('forgets the node histories of the closed workflow only', async () => {
       const workflow = store.createTemporary('test.json')
