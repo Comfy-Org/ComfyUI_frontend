@@ -28,6 +28,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -64,6 +65,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -105,7 +107,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { AgentActiveTabData } from './schemas/agentApiSchema'
+import type { AgentActiveTabData, AgentWsEvent } from './schemas/agentApiSchema'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
@@ -865,6 +867,21 @@ function onWorkflowAdopted(
   }
 }
 
+async function onWorkflowRestoredAndBound(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const { ready, committedWorkflowId } = await onWorkflowRestored(
+    workflowId,
+    isCurrent
+  )
+  if (committedWorkflowId === null || !isCurrent()) return ready
+  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
+  if (boundWorkflowId.value !== committedWorkflowId)
+    bindWorkflow(committedWorkflowId)
+  return ready
+}
+
 function warnWorkflowUnavailable(): void {
   toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
@@ -915,6 +932,21 @@ function reportPendingSend(): void {
   })
 }
 
+function registerAgentRunJobOwner(event: AgentWsEvent): void {
+  if (event.type !== 'agent_tool_call') return
+  const { job_id: jobId, job_workflow_id: workflowId } = event.data
+  if (!jobId || !workflowId) return
+  const workflow = boundOrOpenWorkflowFor(workflowId)
+  if (workflow) useExecutionStore().registerJobOwner(jobId, workflow)
+}
+
+const agentNodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
+
+function observeAgentEvent(event: AgentWsEvent): void {
+  agentNodeDefinitionRefresh.observeAgentEvent(event)
+  registerAgentRunJobOwner(event)
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -940,7 +972,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
-  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
+  onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
@@ -948,7 +980,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: onWorkflowRestoredAndBound,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()
@@ -1002,6 +1034,7 @@ const {
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
   docInputNames,
+  docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
   docHasSubgraphDefinition,
@@ -1069,6 +1102,7 @@ const docOpMinter = attachDocOpMinter({
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
   docInputNames,
+  docWidgetValue,
   docPromotedWidgets,
   mayWritePromotedHost,
   docHasSubgraphDefinition,

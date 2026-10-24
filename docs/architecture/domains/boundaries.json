@@ -14,6 +14,10 @@
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
       {
+        "name": "webcam-capture/integration/public",
+        "patterns": ["src/extensions/core/webcamCapture.ts"]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -2388,6 +2392,8 @@
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+          "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
+          "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",
@@ -3992,6 +3998,14 @@
           "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "webcam-capture/integration/public",
+        "allow": [
+          "webcam-capture/integration/public",
+          "webcam-capture/integration",
           "unclassified"
         ]
       },
@@ -6431,7 +6445,11 @@
       },
       {
         "from": "webcam-capture/integration",
-        "allow": ["webcam-capture/integration", "unclassified"]
+        "allow": [
+          "webcam-capture/integration/public",
+          "webcam-capture/integration",
+          "unclassified"
+        ]
       },
       {
         "from": "workbench-shell/domain",
@@ -7669,6 +7687,7 @@
           "comfyui-api/domain/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
+          "webcam-capture/integration/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7924,7 +7943,6 @@
           "vue-node-widgets/application",
           "vue-node-widgets/presentation",
           "vue-node-widgets/integration",
-          "webcam-capture/integration",
           "workbench-shell/domain",
           "workbench-shell/application",
           "workbench-shell/infrastructure",
