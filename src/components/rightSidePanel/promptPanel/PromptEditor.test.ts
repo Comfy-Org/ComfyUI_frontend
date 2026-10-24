@@ -48,7 +48,7 @@ async function mountEditorAfterRender() {
   )
   isShown.value = true
   await nextTick()
-  return target
+  return isShown
 }
 
 beforeEach(() => {
@@ -73,6 +73,21 @@ describe('PromptEditor', () => {
     })
     await waitFor(() => expect(editor).toHaveFocus())
     expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 0])
+  })
+
+  it('does not take focus again when it remounts later in the session', async () => {
+    usePromptPanelStore().autofocus = true
+    const isShown = await mountEditorAfterRender()
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'text' })).toHaveFocus()
+    )
+
+    isShown.value = false
+    await nextTick()
+    isShown.value = true
+    await nextTick()
+
+    expect(screen.getByRole('textbox', { name: 'text' })).not.toHaveFocus()
   })
 
   it('leaves focus on the canvas when it follows the selection', async () => {
@@ -121,15 +136,18 @@ describe('PromptEditor', () => {
     expect(widget.value).toBe('a portrait')
   })
 
-  it('opens a disabled widget read-only', () => {
-    const target = createTarget()
-    target.widget.disabled = true
-    render(PromptEditor, { props: { target }, global: { plugins: [i18n] } })
+  it.for(['disabled', 'computedDisabled'] as const)(
+    'opens a widget with %s set read-only',
+    (flag) => {
+      const target = createTarget()
+      target.widget[flag] = true
+      render(PromptEditor, { props: { target }, global: { plugins: [i18n] } })
 
-    expect(screen.getByRole('textbox', { name: 'text' })).toHaveAttribute(
-      'readonly'
-    )
-  })
+      expect(screen.getByRole('textbox', { name: 'text' })).toHaveAttribute(
+        'readonly'
+      )
+    }
+  )
 
   it.for([
     { typed: 'x', captures: 1 },

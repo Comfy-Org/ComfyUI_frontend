@@ -78,6 +78,7 @@ test.describe(
                 surface: 'dialog',
                 trigger: 'expand_button',
                 '$feature/prompt-editor-surface': 'control',
+                end_reason: 'close',
                 duration_ms: expect.any(Number),
                 input_count: 4,
                 node_switch_count: 0
@@ -146,6 +147,7 @@ test.describe(
                   surface: 'panel',
                   trigger: 'expand_button',
                   '$feature/prompt-editor-surface': 'panel',
+                  end_reason: 'close',
                   duration_ms: expect.any(Number),
                   input_count: 4,
                   node_switch_count: 1

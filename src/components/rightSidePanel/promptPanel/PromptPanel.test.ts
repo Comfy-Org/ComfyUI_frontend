@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import PromptPanel from '@/components/rightSidePanel/promptPanel/PromptPanel.vue'
@@ -73,6 +74,17 @@ describe('PromptPanel', () => {
     expect(await screen.findByText('text · Negative')).toBeVisible()
     expect(screen.getByRole('textbox', { name: 'text' })).toHaveValue('blurry')
     expect(promptPanelStore.target?.node).toBe(negative.node)
+  })
+
+  it('keeps its prompt while the workspace hides the panel', async () => {
+    const { graph, node, promptPanelStore } = renderOpenPanel()
+    const negative = addNode(graph, 'Negative', 'blurry')
+    promptPanelStore.isPanelHidden = true
+
+    setCanvasSelection([negative.node])
+    await nextTick()
+
+    expect(promptPanelStore.target?.node).toBe(node)
   })
 
   it('skips a prompt whose input is linked to another node', async () => {

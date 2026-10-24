@@ -21,6 +21,7 @@ import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -418,7 +419,8 @@ describe('WidgetTextarea contextmenu', () => {
 
 describe('WidgetTextarea expand to editor', () => {
   function renderWithDialogHost(
-    widgetOverrides: Partial<SimplifiedWidget<string>> = {}
+    widgetOverrides: Partial<SimplifiedWidget<string>> = {},
+    { inSidePanel = false }: { inSidePanel?: boolean } = {}
   ) {
     const graph = createTestRootGraph()
     const node = new LGraphNode('CLIP Text Encode')
@@ -439,7 +441,11 @@ describe('WidgetTextarea expand to editor', () => {
         modelValue: 'a portrait',
         'onUpdate:modelValue': onUpdateModelValue
       },
-      global: { plugins: [i18n], mocks: { $t: (msg: string) => msg } }
+      global: {
+        plugins: [i18n],
+        mocks: { $t: (msg: string) => msg },
+        provide: { [HideLayoutFieldKey]: inSidePanel }
+      }
     })
     return { node, onUpdateModelValue, view }
   }
@@ -538,6 +544,14 @@ describe('WidgetTextarea expand to editor', () => {
         expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
       }
     )
+
+    it('opens the dialog from the side panel, which also lists widgets of nodes inside subgraphs', async () => {
+      renderWithDialogHost({}, { inSidePanel: true })
+
+      await openEditor()
+
+      expect(usePromptPanelStore().isActive).toBe(false)
+    })
   })
 
   it.for([

@@ -313,6 +313,9 @@ watchEffect(() => {
 const floatPropertiesPanel = computed(
   () => promptPanelStore.isActive && !isBuilderMode.value
 )
+const showsPromptPanel = computed(
+  () => promptPanelStore.isPromptViewShown && !isBuilderMode.value
+)
 
 watchEffect(() => {
   agentPanelStore.setReservedWorkspaceWidth(
@@ -448,12 +451,12 @@ const sidebarWidthKey = computed(() => {
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
 const propertiesPanelWidthKey = computed(() =>
-  promptPanelStore.isPromptViewShown
+  showsPromptPanel.value
     ? 'Comfy.RightSidePanel.PromptPanelWidth'
     : 'Comfy.RightSidePanel.Width'
 )
 function defaultPanelWidth(isSidebarPanel: boolean) {
-  if (!isSidebarPanel && promptPanelStore.isPromptViewShown) {
+  if (!isSidebarPanel && showsPromptPanel.value) {
     return PROMPT_PANEL_WIDTH
   }
   const plainStateKey =
