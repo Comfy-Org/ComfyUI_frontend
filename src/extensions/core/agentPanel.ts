@@ -278,18 +278,6 @@ export function registerAgentPanelExtension(): void {
             ? 'account_unresolved'
             : 'workspace_unresolved'
 
-      function prepareConsentCard(
-        candidateUserId: string | undefined,
-        offeredWorkspaceId: string | null
-      ): boolean {
-        const held = screenHolder()
-        if (held) {
-          holdOffer(held, candidateUserId, offeredWorkspaceId ?? undefined)
-          return false
-        }
-        return true
-      }
-
       function claimOneShotOffer(
         candidateUserId: string | undefined,
         offeredWorkspaceId: string | null
@@ -378,8 +366,16 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               if (key) writeAutoShown(key, true)
             },
-            canShow: () =>
-              prepareConsentCard(candidateUserId, offeredWorkspaceId)
+            canShow: () => {
+              const held = screenHolder()
+              if (held)
+                holdOffer(
+                  held,
+                  candidateUserId,
+                  offeredWorkspaceId ?? undefined
+                )
+              return held === null
+            }
           }
         ).finally(() => finishAutomaticOffer(offeredIdentity))
       }
