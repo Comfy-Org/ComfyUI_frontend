@@ -536,6 +536,14 @@ export const useWorkflowService = () => {
       }
     }
 
+    const loadDefaultAsReplacement = async (): Promise<boolean> => {
+      if ((await loadDefaultWorkflow()) === false) return false
+      const opened = workflowStore.activeWorkflow
+      if (opened) options.onReplacementOpened?.(opened)
+      return true
+    }
+
+    // Captured once: a mid-close rename mutates workflow.path in place.
     const closingPath = workflow.path
     const closing = closingKey(workflow)
     closingWorkflowCounts.set(
@@ -578,7 +586,7 @@ export const useWorkflowService = () => {
           if (!(await openWorkflow(replacementWorkflow))) return false
           options.onReplacementOpened?.(replacementWorkflow)
         } else {
-          if ((await loadDefaultWorkflow()) === false) return false
+          if (!(await loadDefaultAsReplacement())) return false
         }
       } else if (
         workflowStore.openWorkflows.length > 0 &&
@@ -586,7 +594,7 @@ export const useWorkflowService = () => {
           closingWorkflowCounts.has(closingKey(open))
         )
       ) {
-        if ((await loadDefaultWorkflow()) === false) return false
+        if (!(await loadDefaultAsReplacement())) return false
       }
 
       await workflowStore.closeWorkflow(workflow)
@@ -636,10 +644,11 @@ export const useWorkflowService = () => {
     }
 
     if (workflowStore.isOpen(workflow)) {
-      const closed = await closeWorkflow(workflow, {
-        warnIfUnsaved: !confirmed
+      await closeWorkflows([workflow], {
+        warnIfUnsaved: !confirmed,
+        initiator: silent ? undefined : 'user'
       })
-      if (!closed) return false
+      if (workflowStore.isOpen(workflow)) return false
     }
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {

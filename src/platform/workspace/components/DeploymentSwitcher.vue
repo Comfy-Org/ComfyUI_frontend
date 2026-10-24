@@ -53,14 +53,12 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
@@ -71,6 +69,8 @@ import {
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
@@ -81,18 +81,24 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 const { t } = useI18n()
 const store = useDeploymentPickStore()
 const {
-  deployments,
   pickedDeployment,
   isVisible,
   isSwitching,
-  listingRefused
+  listingRefused,
+  switcherOpenAsks
 } = storeToRefs(store)
-const { isApiKeyLogin } = useCurrentUser()
-const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
-const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
+const isOffered = useDeploymentSwitcherOffered()
+const { currentLabel } = useDeploymentLabels()
+const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
+
+watch(switcherOpenAsks, () => {
+  if (!isOffered.value || !isVisible.value) return
+  isOpen.value = true
+  void store.load()
+})
 
 let pendingRetry: Promise<void> | undefined
 let lastFocusRetryAt = -Infinity
@@ -160,26 +166,9 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-function targetLabel(deploymentId: string | null): string {
-  return deploymentFullLabel(
-    deployments.value.find(
-      (deployment) => deployment.deployment_id === deploymentId
-    ) ?? null
-  )
-}
-
 async function confirmSwitchTo(deployment: string): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
   return confirmUnsavedWorkBeforeSwitch(deployment)
-}
-
-async function withoutLeavePrompt(
-  start: () => Promise<string | null>
-): Promise<string | null> {
-  const keepLeavePrompt = skipLeavePromptOnce()
-  const refusal = await start()
-  if (!isSwitching.value) keepLeavePrompt()
-  return refusal
 }
 
 async function choose(deploymentId: string | null) {

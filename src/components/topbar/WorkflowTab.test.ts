@@ -380,6 +380,7 @@ describe('WorkflowTab - close button', () => {
       [expect.objectContaining({ key: 'test-key' })],
       expect.objectContaining({ initiator: 'user' })
     )
+    expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
 })
 
