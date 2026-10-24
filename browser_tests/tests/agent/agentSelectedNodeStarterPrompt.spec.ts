@@ -25,6 +25,12 @@ test.describe(
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
+      await expect(
+        agentPanel.root.getByRole('button', {
+          name: enMessages.agent.suggestedPrompts.cloud[0],
+          exact: true
+        })
+      ).toBeVisible()
       await expect(selectedNodePrompt).toHaveCount(0)
 
       await agentPanel.enterNodeSelectionMode()
