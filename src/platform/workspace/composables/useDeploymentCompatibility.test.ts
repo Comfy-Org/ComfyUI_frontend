@@ -617,7 +617,10 @@ describe('useDeploymentCompatibility', () => {
     await nextTick()
     expect(markFor('dep-rgthree')).toBeNull()
 
-    const failure = Promise.reject(new Error('503'))
+    let fail: (error: Error) => void = () => {}
+    const failure = new Promise<DeploymentCompatibility>((_, reject) => {
+      fail = reject
+    })
     vi.mocked(workspaceApi.checkDeploymentCompatibility).mockReturnValueOnce(
       failure
     )
@@ -627,6 +630,10 @@ describe('useDeploymentCompatibility', () => {
     })
     await nextTick()
     expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+    expect(markFor('dep-rgthree')).toBeNull()
+    expect(markFor(null)).toBeNull()
+
+    fail(new Error('503'))
     await failure.catch(() => {})
 
     expect(markFor('dep-rgthree')).toBeNull()
