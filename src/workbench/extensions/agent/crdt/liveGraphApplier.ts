@@ -11,6 +11,7 @@ import { z } from 'zod'
 
 import {
   applyRemoteDynamicGroupRowCount,
+  dynamicGroupRowAllocationBound,
   isDynamicGroupController,
   reachesDynamicGroupRowCount,
   reportRemoteDynamicGroupRowMismatch
@@ -603,17 +604,6 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
-/** Rows the document carries values for under the DynamicGroup `name`. */
-function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
-  if (widgets === undefined || Array.isArray(widgets)) return 0
-  const prefix = `${name}.`
-  const rows = new Set<string>()
-  for (const key of Object.keys(widgets)) {
-    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
-  }
-  return rows.size
-}
-
 function deferredRowCounts(
   node: LGraphNode,
   constructed: readonly IBaseWidget[],
@@ -712,6 +702,17 @@ function floorSizeToContent(node: LGraphNode): void {
   const [width, height] = node.size
   if (width >= minWidth && height >= minHeight) return
   node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
+}
+
+function configureRemoteNode(node: LGraphNode, info: ISerialisedNode): void {
+  applyRemoteDynamicGroupRowCount(node, () => node.configure(info))
+}
+
+function widgetAcceptedValue(widget: IBaseWidget, value: WidgetValue): boolean {
+  return (
+    !isDynamicGroupController(widget) ||
+    reachesDynamicGroupRowCount(widget, value)
+  )
 }
 
 export class LiveGraphApplier {
@@ -971,11 +972,11 @@ export class LiveGraphApplier {
     }
     if (node.has_errors) {
       node.last_serialization = info
-      node.configure(info)
+      configureRemoteNode(node, info)
     } else {
       if (node.isSubgraphNode()) {
         const beforeConfigurePromotedIds = promotedWidgetIds(node)
-        node.configure(info)
+        configureRemoteNode(node, info)
         this.applyConfiguredHostWidgets(
           node,
           docNode.widgets,
@@ -988,7 +989,7 @@ export class LiveGraphApplier {
           node.widgets?.map((widget) => widget.name)
         )
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
-        node.configure({
+        configureRemoteNode(node, {
           ...info,
           widgets_values:
             docNode.widgetRecord === undefined
@@ -1264,7 +1265,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
+        this.applyDynamicGroupRowCount(node, widget, value)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1396,25 +1397,31 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue,
-    documentWidgets: DocNode['widgets']
+    value: WidgetValue
   ) {
-    const { max } = widget.options
-    const growsAboveMax =
-      typeof value === 'number' &&
-      max !== undefined &&
-      Math.trunc(value) >
-        Math.max(
-          max,
-          Number(widget.value),
-          documentedRowCount(widget.name, documentWidgets)
-        )
-    if (!growsAboveMax) {
-      applyRemoteDynamicGroupRowCount(node, () =>
-        this.setWidgetValue(node, widget, value)
-      )
-      if (reachesDynamicGroupRowCount(widget, value)) return
+    const requested =
+      typeof value === 'number' && Number.isFinite(value)
+        ? Math.max(widget.options.min ?? 0, Math.trunc(value))
+        : null
+    if (
+      requested !== null &&
+      requested > dynamicGroupRowAllocationBound(widget)
+    ) {
+      this.reportDynamicGroupRowMismatch(node, widget, value)
+      return
     }
+    const applied = applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (applied && reachesDynamicGroupRowCount(widget, value)) return
+    this.reportDynamicGroupRowMismatch(node, widget, value)
+  }
+
+  private reportDynamicGroupRowMismatch(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
@@ -1426,10 +1433,15 @@ export class LiveGraphApplier {
     node: LGraphNode,
     widget: IBaseWidget,
     value: WidgetValue
-  ) {
-    if (widget.type === 'button' || Object.is(widget.value, value)) return
+  ): boolean {
+    if (widget.type === 'button') return false
+    if (Object.is(widget.value, value)) return true
     const previous = widget.value
     const rollback = writeWidgetValue(node, widget, value)
+    if (!widgetAcceptedValue(widget, value)) {
+      rollback()
+      return false
+    }
     try {
       widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
@@ -1438,6 +1450,7 @@ export class LiveGraphApplier {
       throw error
     }
     node.graph?.incrementVersion()
+    return true
   }
 
   private setPromotedWidgetValue(
@@ -1635,7 +1648,7 @@ function restoreWidgetRecord(
     if (snapshot) node.last_serialization = { ...snapshot, widgets_values }
     return
   }
-  node.configure({
+  configureRemoteNode(node, {
     ...omit(node.serialize(), ['widgets_values_named']),
     widgets_values
   })
