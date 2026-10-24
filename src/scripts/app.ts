@@ -1436,8 +1436,8 @@ export class ComfyApp implements IComfyApp {
       // suppression/loading-state a `beforeLoadGraph` listener opened for
       // this load, since nothing ever notifies it the load ended.
       try {
-        if (clean) this.disownFailedLoadGraph(workflow)
         await this.reportGraphLoadFailure(error)
+        if (clean) this.disownFailedLoadGraph(workflow)
       } finally {
         ChangeTracker.isLoadingGraph = false
       }
@@ -1533,8 +1533,8 @@ export class ComfyApp implements IComfyApp {
           }
         }
       } catch (error) {
-        if (clean) this.disownFailedLoadGraph(workflow)
         await this.reportGraphLoadFailure(error)
+        if (clean) this.disownFailedLoadGraph(workflow)
         return false
       }
       const snapTo = LiteGraph.alwaysSnapToGrid ? graph.getSnapToGridSize() : 0
