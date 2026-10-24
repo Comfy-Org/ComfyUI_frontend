@@ -94,7 +94,6 @@ LiteGraphGlobal {
   "NORMAL_TITLE": 0,
   "NO_TITLE": 1,
   "Nodes": {},
-  "ON_EVENT": 1,
   "ON_TRIGGER": 3,
   "OUTPUT": 2,
   "RIGHT": 4,
