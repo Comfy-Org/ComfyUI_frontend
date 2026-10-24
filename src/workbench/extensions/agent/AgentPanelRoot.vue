@@ -958,12 +958,10 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow,
-    onSyncError: (message, code) => {
-      canvasFollowerTerminal.value = true
+    onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
-    }
   },
   {
     getCanvas: () => app.canvas,
@@ -1019,28 +1017,6 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
-/**
- * Release note: upstream reads a typed `terminal` state off the follower's
- * own status (`null | 'refused' | 'schema_error'`), which this branch's
- * follower does not expose. `onSyncError` fires on exactly those two
- * conditions -- a subscribe refusal the lifecycle has classified as
- * permanent, and an unreadable schema -- so it is latched here instead, and
- * released whenever the follower gets a live subscription back.
- *
- * The distinction this preserves is the load-bearing one: a follower that is
- * merely not connected yet must read `'none'` (say nothing about the write),
- * while one that has permanently given up must read `'unavailable'` (say the
- * write cannot be confirmed). Collapsing the two would deny every write in
- * any environment where the follower never subscribes.
- */
-const canvasFollowerTerminal = ref(false)
-watch(
-  () => crdtStatus.value.connected,
-  (connected) => {
-    if (connected) canvasFollowerTerminal.value = false
-  }
-)
-
 function canvasConfirmationState(workflowId?: string): CanvasConfirmation {
   const bound = boundWorkflowId.value ?? undefined
   if (bound === undefined) return 'none'
@@ -1053,7 +1029,7 @@ function canvasConfirmationState(workflowId?: string): CanvasConfirmation {
   const status = crdtStatus.value
   if (!status.enabled) return 'none'
   if (status.connected) return 'awaiting'
-  return canvasFollowerTerminal.value ? 'unavailable' : 'none'
+  return status.terminal === null ? 'none' : 'unavailable'
 }
 conversationStore.setCanvasSyncGate(
   canvasConfirmationState,
