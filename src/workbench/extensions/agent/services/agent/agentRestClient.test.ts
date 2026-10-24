@@ -948,6 +948,20 @@ describe('error mapping', () => {
     )
   })
 
+  it('bounds status text included in the fallback', async () => {
+    const statusText = 'x'.repeat(200)
+    respond(new Response('gateway boom', { status: 502, statusText }))
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      `Agent request failed (HTTP 502 ${'x'.repeat(80)}, get_thread_messages)`
+    )
+  })
+
   it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 

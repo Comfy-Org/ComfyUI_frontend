@@ -301,7 +301,7 @@ function getErrorMessage(
   }
 
   const backendMessage = getBackendErrorMessage(body)
-  const normalizedStatusText = statusText.trim()
+  const normalizedStatusText = statusText.trim().slice(0, 80)
   const statusTextSuffix =
     !normalizedStatusText ||
     normalizedStatusText.toLowerCase() === 'no error message'
