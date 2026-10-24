@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "פועל על {deployment}. הוא אינו מוכן, ולכן משימות לא יפעלו עד שיהיה מוכן.",
     "pickGone": "הפריסה שבחרת כבר אינה קיימת.",
     "pickGoneDetail": "דפדפן זה פועל כעת על Comfy Cloud. בחר שוב פריסה כדי להשתמש בה.",
+    "pickStopped": "{deployment} מופסק, ולכן משימות לא יפעלו. הפעל אותו, או בחר פריסה מוכנה.",
     "reason": {
+      "failed": "{deployment} נכשל. הפעל אותו שוב כדי להריץ עליו משימות.",
+      "notAllowed": "{deployment} מופסק. בקש מבעלים של סביבת העבודה להפעיל אותו.",
       "notReady": "{deployment} אינו מוכן. בחר בו כשיהיה מוכן.",
       "startElsewhere": "{deployment} אינו פועל. הפעל אותו בפלטפורמת המפתחים, ואז בחר בו.",
-      "starting": "{deployment} מתחיל. בחר בו כשיהיה מוכן."
+      "starting": "{deployment} מתחיל. בחר בו כשיהיה מוכן.",
+      "stopped": "{deployment} מופסק. הפעל אותו כדי להריץ עליו משימות."
     },
     "releaseChanged": "פריסה זו פועלת כעת עם מהדורה אחרת. טען מחדש כדי לקבל את הצמתים שלה.",
     "reload": "טען מחדש",
+    "retry": "נסה שוב",
+    "retryLabel": "נסה שוב להפעיל את {deployment}",
     "runOn": "הפעל ב-",
+    "start": "הפעל",
+    "startFailed": "{deployment} לא הופעל.",
+    "startFix": {
+      "failed": "נסה שוב, או בדוק אותו בפלטפורמת המפתחים.",
+      "noCredits": "הוסף קרדיטים ואז נסה שוב.",
+      "notAllowed": "בקש מבעלים של סביבת העבודה להפעיל אותו.",
+      "tooManyRunning": "עצור פריסה אחרת ואז נסה שוב.",
+      "unavailable": "בינתיים, הפעל אותו בפלטפורמת המפתחים."
+    },
+    "startLabel": "הפעל את {deployment}",
     "status": {
       "failed": "נכשל",
       "notReady": "לא מוכן",
@@ -1478,6 +1494,7 @@
       "stopped": "הופסק",
       "stopping": "בעצירה"
     },
+    "stoppedStartTooltip": "פועל על {deployment}. הוא מופסק, ולכן משימות לא יפעלו. פתח את התפריט הזה כדי להפעיל אותו.",
     "stoppedTooltip": "פועל על {deployment}. הוא מופסק, ולכן משימות לא יפעלו עד שיופעל בפלטפורמת המפתחים.",
     "switching": "מחליף",
     "switchingNote": "ההחלפה טוענת מחדש את העורך. הלשוניות שלך נשארות פתוחות.",

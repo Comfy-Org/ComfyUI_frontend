@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
     "pickGone": "La implementación que elegiste ya no existe.",
     "pickGoneDetail": "Este navegador ahora se ejecuta en Comfy Cloud. Vuelve a elegir una implementación para usar una.",
+    "pickStopped": "{deployment} está detenido, por lo que los trabajos no se ejecutarán. Inícialo o elige un despliegue listo.",
     "reason": {
+      "failed": "{deployment} falló. Inícialo de nuevo para ejecutar trabajos en él.",
+      "notAllowed": "{deployment} está detenido. Pide a un propietario del espacio de trabajo que lo inicie.",
       "notReady": "{deployment} no está listo. Elígelo cuando esté listo.",
       "startElsewhere": "{deployment} no se está ejecutando. Inícialo en la Plataforma para desarrolladores y luego elígelo.",
-      "starting": "{deployment} se está iniciando. Elígelo cuando esté listo."
+      "starting": "{deployment} se está iniciando. Elígelo cuando esté listo.",
+      "stopped": "{deployment} está detenido. Inícialo para ejecutar trabajos en él."
     },
     "releaseChanged": "Esta implementación ahora ejecuta una versión diferente. Recarga para obtener sus nodos.",
     "reload": "Recargar",
+    "retry": "Reintentar",
+    "retryLabel": "Reintentar el inicio de {deployment}",
     "runOn": "Ejecutar en",
+    "start": "Iniciar",
+    "startFailed": "{deployment} no se inició.",
+    "startFix": {
+      "failed": "Vuelve a intentarlo o revísalo en la Plataforma para desarrolladores.",
+      "noCredits": "Agrega créditos y vuelve a intentarlo.",
+      "notAllowed": "Pide a un propietario del espacio de trabajo que lo inicie.",
+      "tooManyRunning": "Detén otro despliegue y vuelve a intentarlo.",
+      "unavailable": "Por ahora, inícialo en la Plataforma para desarrolladores."
+    },
+    "startLabel": "Iniciar {deployment}",
     "status": {
       "failed": "Falló",
       "notReady": "No está listo",
@@ -1478,6 +1494,7 @@
       "stopped": "Detenido",
       "stopping": "Deteniéndose"
     },
+    "stoppedStartTooltip": "Ejecutándose en {deployment}. Está detenido, por lo que los trabajos no se ejecutarán. Abre este menú para iniciarlo.",
     "stoppedTooltip": "Ejecutándose en {deployment}. Está detenido, por lo que los trabajos no se ejecutarán hasta que se inicie en la Plataforma para desarrolladores.",
     "switching": "Cambiando",
     "switchingNote": "Al cambiar, se recarga el editor. Tus pestañas permanecen abiertas.",

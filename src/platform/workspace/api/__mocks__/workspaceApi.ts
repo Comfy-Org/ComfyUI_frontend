@@ -42,6 +42,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     listDeployments: async () => ({ items: [], builds_visible: true }),
     pickDeployment: async () => {},
     clearDeployment: async () => {},
+    startDeployment: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
     checkDeploymentCompatibility: async () => ({

@@ -374,6 +374,29 @@ export const workspaceApi = {
   },
 
   /**
+   * Start a stopped or failed deployment of the workspace. Ingest does not
+   * serve this route yet; the DES-1279 PR proposes it.
+   * POST /api/workspaces/:id/deployments/:deploymentId/start
+   */
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.post(
+        workspaceApiUrl(
+          `/workspaces/${workspaceId}/deployments/${deploymentId}/start`
+        ),
+        undefined,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
+    }
+  },
+
+  /**
    * Clear the pick: this browser runs on Comfy Cloud, or with
    * `follow: 'workspace'` on whatever the workspace says (its default
    * deployment, or Comfy Cloud when it has none).

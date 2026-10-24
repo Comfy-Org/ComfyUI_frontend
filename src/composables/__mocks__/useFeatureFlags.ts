@@ -20,6 +20,7 @@ const defaultFlags: FeatureFlags = {
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
   partnerNodeTokenEnabled: false,
+  deploymentStartEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
   deployToCloud: false,

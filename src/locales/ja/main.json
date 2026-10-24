@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "{deployment} で実行中です。準備ができていないため、準備が整うまでジョブは実行されません。",
     "pickGone": "選択したデプロイメントはすでに存在しません。",
     "pickGoneDetail": "このブラウザは現在 Comfy Cloud で実行されています。使用するには、もう一度デプロイメントを選択してください。",
+    "pickStopped": "{deployment} は停止中のため、ジョブは実行されません。起動するか、準備ができているデプロイメントを選択してください。",
     "reason": {
+      "failed": "{deployment} は失敗しました。ジョブを実行するにはもう一度起動してください。",
+      "notAllowed": "{deployment} は停止中です。ワークスペースのオーナーに起動を依頼してください。",
       "notReady": "{deployment} は準備ができていません。準備ができたら選択してください。",
       "startElsewhere": "{deployment} は実行されていません。Developer Platform で起動してから選択してください。",
-      "starting": "{deployment} は起動中です。準備ができたら選択してください。"
+      "starting": "{deployment} は起動中です。準備ができたら選択してください。",
+      "stopped": "{deployment} は停止中です。ジョブを実行するには起動してください。"
     },
     "releaseChanged": "このデプロイメントは現在、別のリリースで実行されています。ノードを取得するには再読み込みしてください。",
     "reload": "再読み込み",
+    "retry": "再試行",
+    "retryLabel": "{deployment} の起動を再試行",
     "runOn": "実行先",
+    "start": "起動",
+    "startFailed": "{deployment} は起動しませんでした。",
+    "startFix": {
+      "failed": "再試行するか、Developer Platform で確認してください。",
+      "noCredits": "クレジットを追加してから再試行してください。",
+      "notAllowed": "ワークスペースのオーナーに起動を依頼してください。",
+      "tooManyRunning": "別のデプロイメントを停止してから再試行してください。",
+      "unavailable": "当面は Developer Platform で起動してください。"
+    },
+    "startLabel": "{deployment} を起動",
     "status": {
       "failed": "失敗",
       "notReady": "準備未完了",
@@ -1478,6 +1494,7 @@
       "stopped": "停止中",
       "stopping": "停止処理中"
     },
+    "stoppedStartTooltip": "{deployment} で実行中です。停止中のため、ジョブは実行されません。起動するにはこのメニューを開いてください。",
     "stoppedTooltip": "{deployment} で実行中です。停止中のため、Developer Platform で起動するまでジョブは実行されません。",
     "switching": "切り替え中",
     "switchingNote": "切り替えるとエディタが再読み込みされます。タブは開いたままです。",

@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "In esecuzione su {deployment}. Non è pronta, quindi i processi non verranno eseguiti finché non lo sarà.",
     "pickGone": "La distribuzione selezionata non esiste più.",
     "pickGoneDetail": "Questo browser ora è in esecuzione su Comfy Cloud. Seleziona di nuovo una distribuzione per usarne una.",
+    "pickStopped": "{deployment} è arrestata, quindi i processi non verranno eseguiti. Avviala o scegli una distribuzione pronta.",
     "reason": {
+      "failed": "{deployment} non è riuscita. Avviala di nuovo per eseguirvi i processi.",
+      "notAllowed": "{deployment} è arrestata. Chiedi a un proprietario del workspace di avviarla.",
       "notReady": "{deployment} non è pronta. Sceglila quando è pronta.",
       "startElsewhere": "{deployment} non è in esecuzione. Avviala sulla Developer Platform, poi sceglila.",
-      "starting": "{deployment} è in avvio. Sceglila quando è pronta."
+      "starting": "{deployment} è in avvio. Sceglila quando è pronta.",
+      "stopped": "{deployment} è arrestata. Avviala per eseguirvi i processi."
     },
     "releaseChanged": "Questa distribuzione ora esegue una Release diversa. Ricarica per ottenere i relativi nodi.",
     "reload": "Ricarica",
+    "retry": "Riprova",
+    "retryLabel": "Riprova ad avviare {deployment}",
     "runOn": "Esegui su",
+    "start": "Avvia",
+    "startFailed": "{deployment} non si è avviata.",
+    "startFix": {
+      "failed": "Riprova, oppure controllala sulla Developer Platform.",
+      "noCredits": "Aggiungi crediti, poi riprova.",
+      "notAllowed": "Chiedi a un proprietario del workspace di avviarla.",
+      "tooManyRunning": "Arresta un’altra distribuzione, poi riprova.",
+      "unavailable": "Per ora, avviala sulla Developer Platform."
+    },
+    "startLabel": "Avvia {deployment}",
     "status": {
       "failed": "Non riuscito",
       "notReady": "Non pronto",
@@ -1478,6 +1494,7 @@
       "stopped": "Interrotto",
       "stopping": "Arresto in corso"
     },
+    "stoppedStartTooltip": "In esecuzione su {deployment}. È arrestata, quindi i processi non verranno eseguiti. Apri questo menu per avviarla.",
     "stoppedTooltip": "In esecuzione su {deployment}. È arrestata, quindi i processi non verranno eseguiti finché non verrà avviata sulla Developer Platform.",
     "switching": "Passaggio in corso",
     "switchingNote": "Il passaggio ricarica l'editor. Le tue schede rimangono aperte.",

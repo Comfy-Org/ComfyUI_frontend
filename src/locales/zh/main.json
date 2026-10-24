@@ -1462,14 +1462,30 @@
     "notReadyTooltip": "正在 {deployment} 上运行。它尚未就绪，因此作业不会运行，直到它就绪。",
     "pickGone": "你选择的部署已不存在。",
     "pickGoneDetail": "此浏览器现在在 Comfy Cloud 上运行。请再次选择一个部署以使用它。",
+    "pickStopped": "{deployment} 已停止，因此作业不会运行。请启动它，或选择一个已就绪的部署。",
     "reason": {
+      "failed": "{deployment} 失败。再次启动它以在其上运行作业。",
+      "notAllowed": "{deployment} 已停止。请让工作区所有者启动它。",
       "notReady": "{deployment} 尚未就绪。就绪后再选择它。",
       "startElsewhere": "{deployment} 未在运行。请在开发者平台上启动它，然后选择它。",
-      "starting": "{deployment} 正在启动。就绪后再选择它。"
+      "starting": "{deployment} 正在启动。就绪后再选择它。",
+      "stopped": "{deployment} 已停止。启动它以在其上运行作业。"
     },
     "releaseChanged": "此部署现运行不同的版本。重新加载以获取其节点。",
     "reload": "重新加载",
+    "retry": "重试",
+    "retryLabel": "重试启动 {deployment}",
     "runOn": "运行于",
+    "start": "启动",
+    "startFailed": "{deployment} 未能启动。",
+    "startFix": {
+      "failed": "请重试，或在开发者平台上检查它。",
+      "noCredits": "请添加积分，然后重试。",
+      "notAllowed": "请让工作区所有者启动它。",
+      "tooManyRunning": "请停止另一个部署，然后重试。",
+      "unavailable": "目前请在开发者平台上启动它。"
+    },
+    "startLabel": "启动 {deployment}",
     "status": {
       "failed": "失败",
       "notReady": "未就绪",
@@ -1478,6 +1494,7 @@
       "stopped": "已停止",
       "stopping": "正在停止"
     },
+    "stoppedStartTooltip": "正在 {deployment} 上运行。它已停止，因此作业不会运行。打开此菜单即可启动它。",
     "stoppedTooltip": "正在 {deployment} 上运行。它已停止，因此作业不会运行，直到你在开发者平台上将其启动。",
     "switching": "正在切换",
     "switchingNote": "切换会重新加载编辑器。你的标签页将保持打开。",
