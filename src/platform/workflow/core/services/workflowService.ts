@@ -401,38 +401,39 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
-  const switchToWorkflowGraph = async (
+  const switchToWorkflowGraph = (
     workflow: ComfyWorkflow,
     graph: NonNullable<ComfyWorkflow['graph']>,
     navigationIntentId?: number
-  ): Promise<void> => {
-    beforeLoadNewGraph(true)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    const app = useApp()
-    useSubgraphNavigationStore().suppressRootGraphHash(graph)
-    app.activateRootGraph(graph)
-    useMissingModelStore().createVerificationAbortController().abort()
-    useMissingMediaStore().createVerificationAbortController().abort()
-    useMissingModelStore().setMissingModels([])
-    useMissingMediaStore().setMissingMedia([])
-    missingNodesErrorStore.setMissingNodeTypes([])
-    try {
-      const loaded = await workflowStore.openWorkflow(workflow)
-      useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)
-      useAppModeStore().loadSelections(loaded.activeState.extra?.linearData)
-      loaded.changeTracker.restore()
-      useNodeOutputStore().restorePreviewsForWorkflow(loaded.path)
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      requestAnimationFrame(() => {
-        app.canvas.setDirty(true, true)
-      })
-    } finally {
-      void useSubgraphNavigationStore().updateHash(
-        'workflow-load',
-        navigationIntentId
-      )
-    }
-  }
+  ): Promise<void> =>
+    useApp().enqueueGraphLoad(async () => {
+      beforeLoadNewGraph(true)
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      const app = useApp()
+      useSubgraphNavigationStore().suppressRootGraphHash(graph)
+      app.activateRootGraph(graph)
+      useMissingModelStore().createVerificationAbortController().abort()
+      useMissingMediaStore().createVerificationAbortController().abort()
+      useMissingModelStore().setMissingModels([])
+      useMissingMediaStore().setMissingMedia([])
+      missingNodesErrorStore.setMissingNodeTypes([])
+      try {
+        const loaded = await workflowStore.openWorkflow(workflow)
+        useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)
+        useAppModeStore().loadSelections(loaded.activeState.extra?.linearData)
+        loaded.changeTracker.restore()
+        useNodeOutputStore().restorePreviewsForWorkflow(loaded.path)
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        requestAnimationFrame(() => {
+          app.canvas.setDirty(true, true)
+        })
+      } finally {
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          navigationIntentId
+        )
+      }
+    })
 
   /**
    * Open a workflow in the current workspace

@@ -1223,7 +1223,8 @@ export class ComfyApp implements IComfyApp {
     await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
   }
 
-  private enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
+  /** Run `operation` after every earlier graph load or root graph switch has settled. */
+  enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.graphLoadQueue.then(operation)
     this.graphLoadQueue = result.then(
       () => undefined,
