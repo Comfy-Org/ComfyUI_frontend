@@ -13,6 +13,7 @@ const NODE_HISTORY_WIDGET_TYPES: ReadonlySet<string> = new Set([
   'curve',
   'imagecrop',
   'lightinfo',
+  'painter',
   'range',
   'videoedit'
 ])
@@ -37,6 +38,10 @@ interface HistoryStep {
   readonly value: unknown
 }
 
+function snapshot<T>(value: T): T {
+  return Object.isFrozen(value) ? value : cloneDeep(value)
+}
+
 const EMPTY_HISTORY: WidgetHistory = { past: [], future: [] }
 
 function recordStep(
@@ -53,7 +58,7 @@ function recordStep(
   }
   return {
     ...history,
-    past: [...history.past, cloneDeep(previous)].slice(-WIDGET_HISTORY_LIMIT),
+    past: [...history.past, snapshot(previous)].slice(-WIDGET_HISTORY_LIMIT),
     future: [],
     mergeKey
   }
@@ -97,9 +102,9 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
       ...history,
       mergeKey: undefined,
       past: past.slice(0, -1),
-      future: [...future, cloneDeep(current)]
+      future: [...future, snapshot(current)]
     })
-    return { value: cloneDeep(value) }
+    return { value: snapshot(value) }
   }
 
   function redo(
@@ -113,10 +118,10 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     save(scope, {
       ...history,
       mergeKey: undefined,
-      past: [...past, cloneDeep(current)],
+      past: [...past, snapshot(current)],
       future: future.slice(0, -1)
     })
-    return { value: cloneDeep(value) }
+    return { value: snapshot(value) }
   }
 
   function baselineOf(scope: WidgetHistoryScope): HistoryStep | undefined {
@@ -124,7 +129,16 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
   }
 
   function setBaseline(scope: WidgetHistoryScope, value: unknown): void {
-    save(scope, { ...historyOf(scope), baseline: { value: cloneDeep(value) } })
+    save(scope, { ...historyOf(scope), baseline: { value: snapshot(value) } })
+  }
+
+  function peek(
+    scope: WidgetHistoryScope,
+    direction: 'undo' | 'redo'
+  ): HistoryStep | undefined {
+    const { past, future } = historyOf(scope)
+    const steps = direction === 'undo' ? past : future
+    return steps.length ? { value: snapshot(steps.at(-1)) } : undefined
   }
 
   function canUndo(scope: WidgetHistoryScope): boolean {
@@ -162,16 +176,39 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     workflows.delete(rootGraphId)
   }
 
+  function storedSteps(): { scope: WidgetHistoryScope; value: unknown }[] {
+    return [...workflows].flatMap(([rootGraphId, histories]) =>
+      [...histories].flatMap(([widgetId, { past, future }]) =>
+        [...past, ...future].map((value) => ({
+          scope: { rootGraphId, widgetId },
+          value
+        }))
+      )
+    )
+  }
+
+  function dropStep(scope: WidgetHistoryScope, value: unknown): void {
+    const history = historyOf(scope)
+    save(scope, {
+      ...history,
+      past: history.past.filter((step) => step !== value),
+      future: history.future.filter((step) => step !== value)
+    })
+  }
+
   return {
     record,
     undo,
     redo,
     baselineOf,
     setBaseline,
+    peek,
     canUndo,
     canRedo,
     retainLive,
     forget,
-    clearWorkflow
+    clearWorkflow,
+    storedSteps,
+    dropStep
   }
 })

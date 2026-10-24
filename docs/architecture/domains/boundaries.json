@@ -5896,18 +5896,51 @@
       },
       {
         "from": "painter/application",
-        "allow": ["painter/application", "unclassified"]
+        "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "painter/application",
+          "graph-model/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "painter/presentation",
-        "allow": ["painter/application", "painter/presentation", "unclassified"]
+        "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/presentation",
+          "painter/application",
+          "painter/presentation",
+          "graph-model/domain/outer-1",
+          "node-widgets/presentation/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "painter/integration",
         "allow": [
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "node-widgets/presentation",
+          "node-widgets/integration",
           "painter/application",
           "painter/presentation",
           "painter/integration",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
+          "node-widgets/presentation/outer-1",
           "unclassified"
         ]
       },

@@ -9,6 +9,12 @@ import {
   getEffectiveHardness
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
+import {
+  captureCanvasRegion,
+  clampCanvasRect,
+  usePainterHistory
+} from '@/renderer/extensions/painter/composables/usePainterHistory'
+import type { CanvasRect } from '@/renderer/extensions/painter/composables/usePainterHistory'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@comfyorg/mask-editor/types'
@@ -17,6 +23,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -33,10 +40,11 @@ interface UsePainterOptions {
   canvasEl: Ref<HTMLCanvasElement | null>
   cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
+  historyScope?: () => WidgetHistoryScope | null
 }
 
 export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
-  const { canvasEl, cursorEl, modelValue } = options
+  const { canvasEl, cursorEl, modelValue, historyScope = () => null } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
   const toast = useToast()
@@ -68,6 +76,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   let dirtyX1 = 0
   let dirtyY1 = 0
   let hasDirtyRect = false
+  let strokeBounds: CanvasRect | null = null
 
   let strokeBrush: {
     radius: number
@@ -190,6 +199,15 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     return effectiveDiameter * (canvasDisplayWidth.value / canvasWidth.value)
   })
 
+  const history = usePainterHistory({
+    scope: historyScope,
+    context: getCtx,
+    canRestore: () => !isDrawing,
+    onRestore: () => {
+      isDirty.value = true
+    }
+  })
+
   function getCtx() {
     if (!mainCtx && canvasEl.value) {
       mainCtx = canvasEl.value.getContext('2d') ?? null
@@ -212,11 +230,28 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
   }
 
+  function expandStrokeBounds(x0: number, y0: number, x1: number, y1: number) {
+    const bounds = strokeBounds
+    if (!bounds) {
+      strokeBounds = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
+      return
+    }
+    const left = Math.min(bounds.x, x0)
+    const top = Math.min(bounds.y, y0)
+    strokeBounds = {
+      x: left,
+      y: top,
+      width: Math.max(bounds.x + bounds.width, x1) - left,
+      height: Math.max(bounds.y + bounds.height, y1) - top
+    }
+  }
+
   function expandDirtyRect(cx: number, cy: number, r: number) {
     const x0 = cx - r
     const y0 = cy - r
     const x1 = cx + r
     const y1 = cy + r
+    expandStrokeBounds(x0, y0, x1, y1)
     if (!hasDirtyRect) {
       dirtyX0 = x0
       dirtyY0 = y0
@@ -398,7 +433,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function startStroke(e: PointerEvent) {
     const point = getCanvasPoint(e)
-    if (!point) return
+    if (!point || history.isRestoring()) return
 
     const el = canvasEl.value
     if (!el) return
@@ -412,6 +447,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
+    strokeBounds = null
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -471,11 +507,21 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
 
     compositeStrokeToMain()
+    recordStroke()
 
     isDrawing = false
     strokeProcessor = null
     strokeBrush = null
     lastPoint = null
+  }
+
+  function recordStroke() {
+    const el = canvasEl.value
+    const rect = el && strokeBounds && clampCanvasRect(strokeBounds, el)
+    strokeBounds = null
+    const before = baseCanvas
+    if (!rect || !before) return
+    history.record(() => captureCanvasRegion(before, rect))
   }
 
   function resizeCanvas() {
@@ -509,6 +555,11 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const el = canvasEl.value
     const ctx = getCtx()
     if (!el || !ctx) return
+    const rect = clampCanvasRect(
+      { x: 0, y: 0, width: el.width, height: el.height },
+      el
+    )
+    if (rect) history.record(() => captureCanvasRegion(el, rect))
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
     modelValue.value = ''
@@ -715,7 +766,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   watch(() => nodeOutputStore.nodePreviewImages, updateInputImageUrl, {
     deep: true
   })
-  watch([canvasWidth, canvasHeight], resizeCanvas)
+  watch([canvasWidth, canvasHeight], () => {
+    resizeCanvas()
+    history.discard()
+  })
 
   watch(
     [tool, brushSize, brushColor, brushOpacity, brushHardness],
@@ -763,6 +817,11 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     handlePointerLeave,
 
     handleInputImageLoad,
-    handleClear
+    handleClear,
+
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
+    undo: history.undo,
+    redo: history.redo
   }
 }
