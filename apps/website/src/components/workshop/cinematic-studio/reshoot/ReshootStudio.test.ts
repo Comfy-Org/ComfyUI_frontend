@@ -146,6 +146,25 @@ describe('Re-shoot on one screen', () => {
     expect(leave()).toBe(false)
   })
 
+  it('names the take under the picture and says nothing back on Aim', async () => {
+    const user = setup()
+    await pickExample(user)
+    await user.click(screen.getByTestId('reshoot-action'))
+    await vi.advanceTimersByTimeAsync(6500)
+    const caption = screen.getByTestId('reshoot-take-caption')
+
+    await user.click(
+      screen.getByRole('button', { name: 'Take 1 · az -30° el 15°' })
+    )
+
+    expect(caption).toHaveTextContent('Take 1 · az -30° el 15°')
+
+    await user.click(screen.getByRole('button', { name: 'Aim' }))
+
+    // Aiming is not standing on a take, so the caption has nothing to name.
+    expect(caption).toHaveTextContent(/^$/)
+  })
+
   it("aims again from a finished take's angle", async () => {
     const user = setup()
     await pickExample(user)
