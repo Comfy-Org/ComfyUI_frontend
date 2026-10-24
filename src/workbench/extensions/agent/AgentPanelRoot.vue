@@ -126,6 +126,10 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  agentRequestFailureFingerprint,
+  describeAgentRequestFailure
+} from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import {
@@ -1603,11 +1607,24 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       failure.status === 'failed'
         ? failure.cause
         : new Error('Agent thread list ended before its last page')
+    const diagnostics =
+      failure.status === 'failed'
+        ? describeAgentRequestFailure(error)
+        : undefined
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed',
       tags:
-        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
+        diagnostics ??
+        (failure.status === 'incomplete'
+          ? { reason: failure.reason }
+          : undefined),
+      fingerprint: diagnostics
+        ? agentRequestFailureFingerprint(
+            'agent_thread_list_load_failed',
+            diagnostics
+          )
+        : undefined
     })
     surfaceAgentError(
       'agent_api_failed',
@@ -1619,7 +1636,9 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
       'error_overlay',
       {
         retryable:
-          failure.status === 'failed' && isRetryableRequestFailure(error, false)
+          failure.status === 'failed' &&
+          isRetryableRequestFailure(error, false),
+        diagnostics
       }
     )
   }

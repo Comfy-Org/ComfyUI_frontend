@@ -1166,6 +1166,26 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+
+export type AgentRequestPath =
+  | '/agent/threads'
+  | '/agent/threads/{threadId}/messages'
+  | '/agent/threads/{threadId}/messages/{messageId}/cancel'
+  | '/agent/threads/{threadId}/asks/{askId}/answer'
+  | '/agent/run-mode'
+  | '/workflows'
+  | '/upload/image'
+  | '/other'
+
+export type AgentRequestErrorName =
+  | 'AgentApiError'
+  | 'AgentResponseUnreadableError'
+  | 'ZodError'
+  | 'TimeoutError'
+  | 'AbortError'
+  | 'TypeError'
+  | 'other'
+
 export interface AgentErrorMetadata extends Record<string, unknown> {
   error_class: AgentErrorClass
   failure_stage: 'pre_acceptance' | 'post_acceptance'
@@ -1173,6 +1193,22 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   turn_accepted: boolean
   /** `none` is a failure the user was never shown. */
   ui_treatment: 'inline_notice' | 'error_overlay' | 'toast' | 'none'
+  /**
+   * FE-3200: which request failed, how, and with what status.
+   *
+   * Absent on the failure classes that are not a single REST request — a
+   * malformed stream event has no status, and a stage that pre-dates this
+   * carrier emits nothing rather than a placeholder, so an absent value in
+   * the data means "not instrumented here", never "no status".
+   *
+   * `request_path` is a route template from a closed set and `request_error`
+   * an error identity from a closed set, both defined in
+   * `services/agent/agentRequestFailure.ts`. Neither can carry a thread id,
+   * a workflow id, a message, or a user.
+   */
+  request_path?: AgentRequestPath
+  request_status?: number
+  request_error?: AgentRequestErrorName
 }
 
 /**

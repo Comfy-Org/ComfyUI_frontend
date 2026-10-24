@@ -75,6 +75,23 @@ function reportedError(): Error {
   return cause
 }
 
+function agentApiDiagnostics(requestPath: string, requestStatus: number) {
+  return {
+    request_path: requestPath,
+    request_status: requestStatus,
+    request_error: 'AgentApiError'
+  }
+}
+
+function agentApiFingerprint(requestPath: string) {
+  return [
+    'agent-request-failure',
+    'agent_api_auth_rejected',
+    requestPath,
+    'AgentApiError'
+  ]
+}
+
 function contentType(init: RequestInit): string | undefined {
   return (init.headers as Record<string, string> | undefined)?.['Content-Type']
 }
@@ -966,8 +983,10 @@ describe('error mapping', () => {
         status: 401,
         authScheme: 'web-session',
         credential: 'unreported',
-        backendReason: 'auth_method_not_allowed'
+        backendReason: 'auth_method_not_allowed',
+        ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
       },
+      fingerprint: agentApiFingerprint('/agent/threads/{threadId}/messages'),
       level: 'warning'
     })
   })
@@ -987,7 +1006,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 403)
     })
   })
 
@@ -1003,7 +1023,8 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'none',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1019,7 +1040,8 @@ describe('error mapping', () => {
       status: 401,
       authScheme: 'unreported',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/threads/{threadId}/messages', 401)
     })
   })
 
@@ -1051,8 +1073,10 @@ describe('error mapping', () => {
         credential: 'session-cookie',
         backendReason: 'auth_method_not_allowed',
         backendErrorType: 'auth_type_not_allowed',
-        acceptedMethods: 'bearer_jwt,x_api_key'
+        acceptedMethods: 'bearer_jwt,x_api_key',
+        ...agentApiDiagnostics('/agent/run-mode', 403)
       },
+      fingerprint: agentApiFingerprint('/agent/run-mode'),
       level: 'warning'
     })
     expect(reportedError().message).toBe(
@@ -1108,7 +1132,8 @@ describe('error mapping', () => {
       authScheme: 'web-session',
       credential: 'session-cookie',
       backendReason: 'auth_method_not_allowed',
-      backendErrorCode: 'UNAUTHORIZED'
+      backendErrorCode: 'UNAUTHORIZED',
+      ...agentApiDiagnostics('/agent/run-mode', 401)
     })
   })
 
@@ -1134,7 +1159,8 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'bearer',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
     expect(vi.mocked(reportError).mock.calls.at(-1)?.[1].context).toBe(
       undefined
@@ -1185,7 +1211,8 @@ describe('error mapping', () => {
       operation: 'get_run_mode',
       status: 403,
       authScheme: 'cloud-auth-header',
-      credential: 'bearer'
+      credential: 'bearer',
+      ...agentApiDiagnostics('/agent/run-mode', 403)
     })
   })
 
@@ -1204,7 +1231,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/asks/{askId}/answer',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1230,7 +1261,11 @@ describe('error mapping', () => {
       status: 403,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics(
+        '/agent/threads/{threadId}/messages/{messageId}/cancel',
+        403
+      )
     })
     const serialized = JSON.stringify([
       reportedError().message,
@@ -1265,15 +1300,14 @@ describe('error mapping', () => {
       .listCloudWorkflows()
       .catch((e: unknown) => e)
 
-    // The second page's route is `/workflows?limit=100&after=cursor-secret`;
-    // only the operation name may reach telemetry.
     expect(lastCall().route).toContain('cursor-secret')
     expect(reportedTags()).toEqual({
       operation: 'list_cloud_workflows',
       status: 401,
       authScheme: 'cloud-auth-header',
       credential: 'unreported',
-      backendReason: 'other'
+      backendReason: 'other',
+      ...agentApiDiagnostics('/workflows', 401)
     })
   })
 
