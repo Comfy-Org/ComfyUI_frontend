@@ -81,7 +81,7 @@ const workflowsEntries = computed(() => {
     icon: w.activeState?.extra?.linearMode
       ? 'icon-[lucide--panels-top-left] bg-primary-background'
       : undefined,
-    command: () => workflowService.openWorkflow(w),
+    command: () => workflowService.openWorkflow(w, { initiator: 'user' }),
     checked: workflowStore.activeWorkflow === w
   }))
 })

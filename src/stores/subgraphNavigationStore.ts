@@ -212,7 +212,7 @@ export const useSubgraphNavigationStore = defineStore(
     type GraphNavigationIntent = {
       id: number
       hash: string
-      source: 'graph' | 'route'
+      source: 'graph' | 'route' | 'restore'
     }
     type NavigationIntent =
       | GraphNavigationIntent
@@ -293,7 +293,11 @@ export const useSubgraphNavigationStore = defineStore(
       }
     }
 
-    async function navigateToHash(newHash: string, navigationId: number) {
+    async function navigateToHash(
+      newHash: string,
+      navigationId: number,
+      initiator?: 'user'
+    ) {
       const root = app.rootGraph
       const locatorId = newHash.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
@@ -326,7 +330,8 @@ export const useSubgraphNavigationStore = defineStore(
             await withNavBlocked(
               () =>
                 useWorkflowService().openWorkflow(workflow, {
-                  navigationIntentId: navigationId
+                  navigationIntentId: navigationId,
+                  initiator
                 }),
               newHash
             )
@@ -415,7 +420,11 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function applyNavigationIntent(intent: GraphNavigationIntent) {
-      await navigateToHash(intent.hash, intent.id)
+      await navigateToHash(
+        intent.hash,
+        intent.id,
+        intent.source === 'route' ? 'user' : undefined
+      )
       if (blockNavDepth > 0) return
 
       const deferredIntent = deferredNavigationIntent
@@ -507,7 +516,7 @@ export const useSubgraphNavigationStore = defineStore(
         initialLoad = false
         if (!routeHash.value) return Promise.resolve()
         return applyNavigationIntent(
-          createNavigationIntent(routeHash.value, 'route')
+          createNavigationIntent(routeHash.value, 'restore')
         ).then(() => {
           const activeGraph = canvasStore.getCanvas().graph
           if (isSubgraph(activeGraph)) {
