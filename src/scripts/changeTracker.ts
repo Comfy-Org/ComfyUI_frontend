@@ -720,7 +720,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
     })
 
     api.addEventListener('promptQueued', () => {
-      if (isTextEditorOpen()) return
       captureState()
     })
 
