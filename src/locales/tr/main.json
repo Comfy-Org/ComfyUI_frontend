@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count} karakter | {count} karakter",
     "expand": "Genişlet",
+    "focusView": "Odak görünümüne genişlet",
+    "noPrompt": "{node} düğümünün istemi yok.",
+    "noPromptHint": "İstemini burada düzenlemek için metin girişi olan bir düğüm seçin.",
+    "nodeSettings": "Düğüm ayarları",
+    "prompt": "İstem",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

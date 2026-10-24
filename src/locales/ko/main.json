@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count}자",
     "expand": "크게 보기",
+    "focusView": "포커스 보기로 확대",
+    "noPrompt": "{node}에는 프롬프트가 없습니다.",
+    "noPromptHint": "텍스트 입력이 있는 노드를 선택하면 여기에서 프롬프트를 편집할 수 있습니다.",
+    "nodeSettings": "노드 설정",
+    "prompt": "프롬프트",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

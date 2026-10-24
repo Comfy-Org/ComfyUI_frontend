@@ -26,6 +26,8 @@ interface TextEditorOptions {
   nodeTitle?: string
   readOnly: () => boolean
   trigger?: PromptEditorOpenedMetadata['trigger']
+  maximized?: boolean
+  isInExperiment?: boolean
   onEdit: (text: string) => void
 }
 
@@ -41,6 +43,8 @@ export function showTextEditor({
   nodeTitle,
   readOnly,
   trigger = 'expand_button',
+  maximized = false,
+  isInExperiment = true,
   onEdit
 }: TextEditorOptions): () => void {
   const dialogStore = useDialogStore()
@@ -53,9 +57,10 @@ export function showTextEditor({
   const openedMetadata: PromptEditorOpenedMetadata = {
     surface: 'dialog',
     trigger,
-    ...usePromptEditorExperimentStore().experimentPropertiesFor(
-      experimentArmOf(trigger)
-    )
+    ...(isInExperiment &&
+      usePromptEditorExperimentStore().experimentPropertiesFor(
+        experimentArmOf(trigger)
+      ))
   }
   useTelemetry()?.trackPromptEditorOpened(openedMetadata)
 
@@ -96,6 +101,7 @@ export function showTextEditor({
       size: 'lg',
       flush: true,
       maximizable: true,
+      maximized,
       onRemoved: () => {
         isOpen = false
         stopPageHideReport()

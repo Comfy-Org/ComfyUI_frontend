@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count} символов | {count} символ | {count} символов",
     "expand": "Развернуть",
+    "focusView": "Развернуть в режим фокуса",
+    "noPrompt": "У {node} нет промпта.",
+    "noPromptHint": "Выберите узел с текстовым полем, чтобы редактировать его промпт здесь.",
+    "nodeSettings": "Настройки узла",
+    "prompt": "Промпт",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

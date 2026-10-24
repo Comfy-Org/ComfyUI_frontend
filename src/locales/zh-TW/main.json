@@ -5433,6 +5433,11 @@
   "textEditor": {
     "characterCount": "{count} 個字元",
     "expand": "放大",
+    "focusView": "展開為專注檢視",
+    "noPrompt": "{node} 沒有提示詞。",
+    "noPromptHint": "選取具有文字輸入的節點，即可在此編輯其提示詞。",
+    "nodeSettings": "節點設定",
+    "prompt": "提示詞",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
