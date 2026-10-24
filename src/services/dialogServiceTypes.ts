@@ -39,11 +39,14 @@ export type ConfirmOptions = BaseConfirmOptions &
         type: 'dirtyClose'
         /** Override the deny button label. Defaults to `g.no`. */
         denyLabel?: string
+        /** Override the save button label. Defaults to `g.save`. */
+        confirmLabel?: string
       }
     | {
         /** Pre-configured dialog type */
         type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
         denyLabel?: never
+        confirmLabel?: never
       }
   )
 

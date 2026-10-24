@@ -200,7 +200,7 @@ CI runs everything.
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 4. PrimeVue has been removed. Its imports are permanently banned; use components from `src/components/ui`.
-5. Write tests for all changes, especially bug fixes to catch future regressions
+5. Add tests for changed behavioral contracts or reproduced bugs when existing tests do not cover them. Behavior-preserving refactors need no new tests. Follow `docs/guidance/testing-principles.md` before proposing or writing tests.
 6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 8. Avoid mutable state, prefer immutability and assignment at point of declaration
@@ -218,7 +218,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
+- Principles: Read `docs/guidance/testing-principles.md` before proposing, reviewing, or writing tests, not only when editing a test file. Start with caller or user expectations and reachable scenarios, then choose the smallest suite that protects them. Use Beck's Test Desiderata to judge behavioral value and refactor resistance.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records

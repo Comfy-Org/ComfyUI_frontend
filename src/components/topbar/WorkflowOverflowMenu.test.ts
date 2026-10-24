@@ -64,5 +64,5 @@ it('marks the agent target separately from the active overflow workflow', async 
   ).toBeNull()
 
   await user.click(targetItem)
-  expect(openWorkflow).toHaveBeenCalledWith(target)
+  expect(openWorkflow).toHaveBeenCalledWith(target, { initiator: 'user' })
 })

@@ -123,6 +123,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   new_free_tier_subscriptions?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  /** The deployment switcher's marks of which deployments can run the open workflow; its own off switch, per workspace. */
+  deployment_compatibility_marks_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string

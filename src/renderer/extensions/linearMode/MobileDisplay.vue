@@ -89,7 +89,8 @@ const activeWorkflowPath = computed({
   get: () => workflowStore.activeWorkflow?.path ?? '',
   set: (path: string) => {
     const workflow = workflowStore.getWorkflowByPath(path)
-    if (workflow) void workflowService.openWorkflow(workflow)
+    if (workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
   }
 })
 

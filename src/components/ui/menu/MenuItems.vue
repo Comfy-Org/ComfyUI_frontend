@@ -19,10 +19,9 @@ type MenuItemSlotProps = {
 const [DefineItemContent, ReuseItemContent] =
   createReusableTemplate<MenuItemSlotProps>()
 
-const { itemContent, items, ownerId } = defineProps<{
+const { itemContent, items } = defineProps<{
   items: MenuItem[]
   itemContent?: Slot<MenuItemSlotProps>
-  ownerId?: string
 }>()
 
 const emit = defineEmits<{
@@ -51,13 +50,12 @@ const visibleItems = computed(() =>
     :key="item.key ?? toValue(item.label) ?? index"
   >
     <MenuSeparator v-if="item.separator" />
-    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item :owner-id>
+    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item>
       <ReuseItemContent :item :has-submenu="true" />
       <template #content="{ items: childItems }">
         <MenuItems
           :items="childItems"
           :item-content="itemContent ?? $slots.item"
-          :owner-id
           @select="emit('select')"
           @activate="emit('activate', $event)"
         />

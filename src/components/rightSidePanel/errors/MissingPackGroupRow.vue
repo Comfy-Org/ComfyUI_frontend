@@ -234,7 +234,7 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, showInfoButton, highlighted } = defineProps<{

@@ -1,0 +1,42 @@
+{
+  "name": "@comfyorg/mask-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/mask-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@alloc/quick-lru": "catalog:",
+    "@vueuse/core": "catalog:",
+    "es-toolkit": "catalog:",
+    "pinia": "catalog:",
+    "typegpu": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@pinia/testing": "catalog:",
+    "@total-typescript/shoehorn": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@webgpu/types": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

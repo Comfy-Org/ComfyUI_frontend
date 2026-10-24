@@ -4,8 +4,9 @@ import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
@@ -508,10 +509,31 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) return
+    if (!belongsToActiveWorkflow(jobId)) {
+      reportAmbiguousExecutionStartRejection(jobId)
+      return
+    }
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+  }
+
+  function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
+    if (jobIdToWorkflowInstanceId.get(jobId)) return
+    reportError(
+      new Error('execution_start rejected for a job with no known owner'),
+      {
+        surface: 'graph',
+        errorType: 'warning_rejecting_unowned_execution_start',
+        level: 'warning',
+        context: {
+          jobId,
+          activeJobId: activeJobId.value,
+          hasOwnWorkflowRecord: !!queuedJobs.value[jobId]?.workflow,
+          activeWorkflowInstanceId: workflowStore.activeWorkflow?.instanceId
+        }
+      }
+    )
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
@@ -1009,11 +1031,18 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.submissionAcceptedAt = submissionAcceptedAt
     queuedJob.workflowContext = workflowContext
     queuedJob.workflowExecutionIntent = workflowExecutionIntent
-    queuedJob.workflow = workflow
-    jobIdToWorkflow.set(id, workflow)
     queuedJob.shareId = workflow.shareId
     queuedJob.viewMode = mode
     queuedJob.isAppMode = isAppModeValue(mode)
+    registerJobOwner(id, workflow)
+  }
+
+  /** Routes a job's frames and outputs to `workflow`, including jobs queued elsewhere. */
+  function registerJobOwner(id: JobId, workflow: ComfyWorkflow) {
+    queuedJobs.value[id] ??= { nodes: {} }
+    const queuedJob = queuedJobs.value[id]
+    queuedJob.workflow = workflow
+    jobIdToWorkflow.set(id, workflow)
     const wid = workflow.activeState?.id ?? workflow.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
@@ -1191,6 +1220,7 @@ export const useExecutionStore = defineStore('execution', () => {
     unbindExecutionEvents,
     onJobReset: jobReset.on,
     storeJob,
+    registerJobOwner,
     registerJobWorkflowIdMapping,
     uniqueExecutingNodeIdStrings,
     // Raw executing progress data for backward compatibility in ComfyApp.

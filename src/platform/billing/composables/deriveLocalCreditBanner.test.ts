@@ -5,6 +5,8 @@ import { deriveLocalCreditBanner } from './deriveLocalCreditBanner'
 
 const open: LocalCreditBannerInput = {
   unifiedBillingSettingsEnabled: true,
+  isCloud: false,
+  isActive: false,
   hasFunds: true,
   lowBalance: undefined,
   outOfCreditsDismissed: false,
@@ -17,6 +19,35 @@ function derive(overrides: Partial<LocalCreditBannerInput>) {
 }
 
 describe('deriveLocalCreditBanner', () => {
+  it('stays hidden on cloud until the served plan is active', () => {
+    expect(
+      derive({
+        isCloud: true,
+        isActive: false,
+        hasFunds: false,
+        lowBalance: true
+      })
+    ).toBeNull()
+  })
+
+  it.for([
+    {
+      name: 'out of credits',
+      input: { isCloud: true, isActive: true, hasFunds: false },
+      expected: 'outOfCredits' as const
+    },
+    {
+      name: 'low credits',
+      input: { isCloud: true, isActive: true, lowBalance: true },
+      expected: 'lowCredits' as const
+    }
+  ])(
+    'shows the $name cloud banner when the served plan is active',
+    ({ input, expected }) => {
+      expect(derive(input)).toBe(expected)
+    }
+  )
+
   it('stays hidden when unified billing settings is off', () => {
     expect(
       derive({
@@ -25,6 +56,12 @@ describe('deriveLocalCreditBanner', () => {
         lowBalance: true
       })
     ).toBeNull()
+  })
+
+  it('keeps local credit banners when the plan is not active', () => {
+    expect(derive({ isCloud: false, isActive: false, hasFunds: false })).toBe(
+      'outOfCredits'
+    )
   })
 
   it.for([

@@ -3,7 +3,10 @@ import type { Page } from '@playwright/test'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type {
+  AgentFollowerHostSocket,
+  ExecutionHostFrame
+} from '@e2e/fixtures/agentFollowerHostSocket'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
@@ -22,7 +25,11 @@ export class AgentExecutionHelper {
   > = {}
   private readonly assets: AssetsHelper
   private readonly submitted: unknown[] = []
+  private readonly addressedJobs = new Set<string>()
+  private readonly registeredJobs = new Set<string>()
   private jobCounter = 0
+
+  private addressedToThisTab: (jobId: string) => boolean = () => true
 
   constructor(
     private readonly page: Page,
@@ -38,6 +45,7 @@ export class AgentExecutionHelper {
       if (route.request().method() !== 'POST') return route.fallback()
       this.submitted.push(route.request().postDataJSON())
       const jobId = `agent-exec-job-${++this.jobCounter}`
+      this.recordAddressing(jobId)
       await this.upsertJob({
         id: jobId,
         status: 'pending',
@@ -59,6 +67,28 @@ export class AgentExecutionHelper {
     })
   }
 
+  /** Sends execution frames only for runs `predicate` accepts at submit. */
+  addressFramesWhen(predicate: (jobId: string) => boolean): void {
+    this.addressedToThisTab = predicate
+  }
+
+  private unicast(jobId: string, frame: ExecutionHostFrame): void {
+    if (!this.registeredJobs.has(jobId)) {
+      throw new Error(
+        `No run registered for "${jobId}", so its ${frame.type} frame ` +
+          `would be dropped unobserved. Submit it through the /prompt ` +
+          `route or enqueueServerRun() before sending execution frames.`
+      )
+    }
+    if (!this.addressedJobs.has(jobId)) return
+    this.hostSocket.sendExecution(frame)
+  }
+
+  private recordAddressing(jobId: string): void {
+    this.registeredJobs.add(jobId)
+    if (this.addressedToThisTab(jobId)) this.addressedJobs.add(jobId)
+  }
+
   submittedPrompts(): readonly unknown[] {
     return this.submitted
   }
@@ -74,6 +104,7 @@ export class AgentExecutionHelper {
    * queue surface.
    */
   async enqueueServerRun(jobId: string): Promise<void> {
+    this.recordAddressing(jobId)
     await this.upsertJob({
       id: jobId,
       status: 'pending',
@@ -93,7 +124,7 @@ export class AgentExecutionHelper {
       execution_start_time: Date.now(),
       execution_end_time: null
     })
-    this.hostSocket.sendExecution({
+    this.unicast(jobId, {
       type: 'execution_start',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
@@ -112,7 +143,7 @@ export class AgentExecutionHelper {
     { nodeId, filename }: { nodeId: string; filename: string }
   ): Promise<void> {
     await this.recordCompletedJob(jobId, { nodeId, filename })
-    this.hostSocket.sendExecution({
+    this.unicast(jobId, {
       type: 'executed',
       data: {
         prompt_id: jobId,
@@ -121,11 +152,28 @@ export class AgentExecutionHelper {
         output: { images: [{ filename, subfolder: '', type: 'output' }] }
       }
     })
-    this.hostSocket.sendExecution({
+    this.unicast(jobId, {
       type: 'execution_success',
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
     this.status(0)
+  }
+
+  /** Sends one node's `executed` frame, its image fetchable from `/api/view`. */
+  deliverOutput(
+    jobId: string,
+    { nodeId, filename }: { nodeId: string; filename: string }
+  ): void {
+    this.viewFiles[filename] = {}
+    this.unicast(jobId, {
+      type: 'executed',
+      data: {
+        prompt_id: jobId,
+        node: nodeId,
+        display_node: nodeId,
+        output: { images: [{ filename, subfolder: '', type: 'output' }] }
+      }
+    })
   }
 
   async recordCompletedJob(
@@ -174,7 +222,7 @@ export class AgentExecutionHelper {
       execution_end_time: Date.now(),
       execution_error: error
     })
-    this.hostSocket.sendExecution({ type: 'execution_error', data: error })
+    this.unicast(jobId, { type: 'execution_error', data: error })
     this.status(0)
   }
 
@@ -192,7 +240,7 @@ export class AgentExecutionHelper {
     }: { nodeId: string; value?: number; max?: number }
   ): Promise<void> {
     await this.startJob(jobId)
-    this.hostSocket.sendExecution({
+    this.unicast(jobId, {
       type: 'progress_state',
       data: {
         prompt_id: jobId,

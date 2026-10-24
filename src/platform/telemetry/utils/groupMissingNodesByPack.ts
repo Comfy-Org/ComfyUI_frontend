@@ -1,4 +1,4 @@
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import type { MissingNodePack } from '@/platform/telemetry/types'
 

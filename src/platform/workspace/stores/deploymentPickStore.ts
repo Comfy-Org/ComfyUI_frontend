@@ -12,7 +12,12 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
+import {
+  hasDeploymentLink,
+  readDeploymentHint,
+  setDeploymentHint,
+  setUnconfirmedCloudHint
+} from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
   DeploymentPickSource,
@@ -151,6 +156,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (boot === undefined || !isVisible.value) return null
     return changeBetween(boot, pickedDeployment.value)
   })
+  const switcherOpenAsks = shallowRef(0)
+
+  function requestSwitcherOpen() {
+    switcherOpenAsks.value++
+  }
 
   /**
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
@@ -165,6 +175,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   let latestRequest = 0
   let lastApplied = 0
+  let reportedLoadFailure = false
 
   function load(): Promise<void> {
     return loadListing([])
@@ -181,9 +192,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const event = await listingEvent(
       id,
       retryDelaysMs,
-      () => workspaceStore.workspaceId === id
+      () => workspaceStore.workspaceId === id,
+      (err) => noteLoadFailure(id, err)
     )
-    if (workspaceStore.workspaceId !== id) return
+    const workspaceChangedMeanwhile = workspaceStore.workspaceId !== id
+    if (workspaceChangedMeanwhile) return
     applyAnswer(id, request, event)
   }
 
@@ -208,6 +221,23 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       bootDeployment.value = null
     }
     rememberBootTarget(workspaceId)
+  }
+
+  function noteLoadFailure(workspaceId: string, err: unknown) {
+    if (
+      isTransient(err) &&
+      readDeploymentHint(workspaceId) === 'unknown' &&
+      !hasDeploymentLink()
+    ) {
+      setUnconfirmedCloudHint(workspaceId)
+    }
+    if (reportedLoadFailure || workspaceStore.workspaceId !== workspaceId)
+      return
+    reportedLoadFailure = true
+    reportError(err, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
   }
 
   function rememberBootTarget(workspaceId: string) {
@@ -415,6 +445,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return null
   }
 
+  /** True when this default would change what this browser runs on. */
   function defaultMovesThisBrowser(deploymentId: string | null): boolean {
     return followsWorkspace.value && deploymentId !== pickedDeploymentId.value
   }
@@ -477,20 +508,24 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     listingRefused,
     bootDeployment,
     changeSinceBoot,
+    switcherOpenAsks,
     load,
     loadOnce,
     bootOnComfyCloud,
     pick,
     pickFromLink,
     followWorkspace,
-    setDefault
+    setDefault,
+    defaultMovesThisBrowser,
+    requestSwitcherOpen
   }
 })
 
 async function listingEvent(
   workspaceId: string,
   retryDelaysMs: readonly number[],
-  stillWanted: () => boolean
+  stillWanted: () => boolean,
+  onFailure: (err: unknown) => void
 ): Promise<DeploymentPickEvent> {
   for (let attempt = 0; ; attempt++) {
     try {
@@ -498,7 +533,7 @@ async function listingEvent(
     } catch (err) {
       const retriesLeft = attempt < retryDelaysMs.length
       if (!retriesLeft || !isTransient(err) || !stillWanted()) {
-        return loadFailure(err)
+        return loadFailure(err, onFailure)
       }
       await new Promise((resolve) =>
         setTimeout(resolve, retryDelaysMs[attempt])
@@ -522,24 +557,17 @@ function isTransient(err: unknown): boolean {
   )
 }
 
-/**
- * A 403 means the account is outside the rollout, and a 404 that this
- * ingest has no deployment routes (or no such workspace): either way the
- * browser runs on Comfy Cloud, as it would without this feature, so neither
- * is reported. Any other failure is reported and hides the switcher unless
- * a listing is already shown.
- */
-function loadFailure(err: unknown): DeploymentPickEvent {
+function loadFailure(
+  err: unknown,
+  onFailure: (err: unknown) => void
+): DeploymentPickEvent {
   if (
     err instanceof WorkspaceApiError &&
     (err.status === 403 || err.status === 404)
   ) {
     return { type: 'loadRefused' }
   }
-  reportError(err, {
-    surface: 'workspace',
-    errorType: 'error_loading_deployment_listing'
-  })
+  onFailure(err)
   return { type: 'loadFailed' }
 }
 

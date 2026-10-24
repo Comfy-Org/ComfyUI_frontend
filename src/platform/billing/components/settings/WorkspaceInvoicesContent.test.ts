@@ -140,12 +140,14 @@ describe('WorkspaceInvoicesContent', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 32000,
-            price_cents: 30400
+            price_cents: 30400,
+            period_charge_cents: 30400
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 32000,
-            price_cents: 28800
+            price_cents: 28800,
+            period_charge_cents: 345600
           }
         }
       ]

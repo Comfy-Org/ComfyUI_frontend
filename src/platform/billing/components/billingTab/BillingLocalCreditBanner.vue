@@ -124,10 +124,12 @@ const { href, track } = usePlatformHandoff('/profile/billing', {
 
 const kind = computed(() => {
   if (suppressed) return null
-  if (isCloud) return autoTopUp.value
+  if (isCloud && autoTopUp.value) return autoTopUp.value
   return deriveLocalCreditBanner({
     autoTopUp: autoTopUp.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
+    isCloud,
+    isActive: subscription.value?.isActive === true,
     hasFunds: subscription.value?.hasFunds ?? null,
     lowBalance: balance.value?.lowBalance,
     outOfCreditsDismissed: outOfCreditsDismissed.value,

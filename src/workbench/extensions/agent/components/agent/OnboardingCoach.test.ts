@@ -287,6 +287,35 @@ describe('OnboardingCoach', () => {
     })
   })
 
+  it.for([
+    {
+      label: 'shows and announces the hold notice when one is set',
+      holdNotice: 'Held',
+      description: 'Build and run workflows. Held'
+    },
+    {
+      label: 'shows no hold notice by default',
+      holdNotice: undefined,
+      description: 'Build and run workflows.'
+    }
+  ])('$label', async ({ holdNotice, description }) => {
+    render(
+      {
+        components: { OnboardingCoach },
+        setup: () => ({ steps: STEPS, holdNotice }),
+        template:
+          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
+      },
+      { global: { plugins: [i18n] } }
+    )
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    expect(
+      screen.queryByTestId('agent-coach-hold-notice')?.textContent.trim()
+    ).toBe(holdNotice)
+    expect(dialog).toHaveAccessibleDescription(description)
+  })
+
   it('neither completes the tour nor signals the overlay while its target is absent', async () => {
     const overlay = useOnboardingOverlayStore()
     render(OnboardingCoach, {
@@ -504,6 +533,40 @@ describe('OnboardingCoach', () => {
       await vi.advanceTimersByTimeAsync(10_000)
 
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('signals a stall once without completing the tour', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const onStalled = vi.fn()
+      const onFinished = vi.fn()
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#late-g' },
+            { ...STEPS[1], target: '#never-g' }
+          ],
+          storageKey: 'coach-stalled',
+          onStalled,
+          onFinished
+        },
+        global: { plugins: [i18n] }
+      })
+
+      await vi.advanceTimersByTimeAsync(7_000)
+      expect(onStalled).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(onStalled).toHaveBeenCalledOnce()
+
+      const late = document.createElement('div')
+      late.id = 'late-g'
+      document.body.appendChild(late)
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(onStalled).toHaveBeenCalledOnce()
+      expect(onFinished).not.toHaveBeenCalled()
+      expect(localStorage.getItem('coach-stalled')).toBe('false')
     })
 
     it('stays quiet when the panel closes before the grace period ends', async () => {

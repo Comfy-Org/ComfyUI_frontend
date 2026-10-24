@@ -33,7 +33,12 @@
         :open
         :side-offset="2"
         :align-offset="-5"
-        :class="cn('max-w-100 min-w-56', switcherMenuMotionClass)"
+        :class="
+          cn(
+            'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
+            switcherMenuMotionClass
+          )
+        "
       >
         <DropdownMenuLabel
           class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground"

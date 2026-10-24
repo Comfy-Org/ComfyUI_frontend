@@ -1,4 +1,4 @@
-import type { ResolvedErrorMessage } from '@/platform/errorCatalog/types'
+import type { ResolvedErrorMessage } from '@/platform/workflowErrors/errorCatalog/types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export interface ErrorItem extends ResolvedErrorMessage {

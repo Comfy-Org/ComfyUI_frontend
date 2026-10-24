@@ -427,6 +427,15 @@ describe('LGraphCanvas selection', () => {
       expect(canvas.selected_nodes).toEqual({})
     })
 
+    it('node removal clears the selection without reporting it', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      graph.remove(a)
+
+      expect(onSelectionChange).not.toHaveBeenCalled()
+    })
+
     it('node removal clears legacy selection before a deselection hook throws', () => {
       canvas.select(a)
       a.onDeselected = () => {
@@ -449,6 +458,79 @@ describe('LGraphCanvas selection', () => {
       canvas.deselect(a)
 
       expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('a replacing click with a selecting hook reports one final selection', () => {
+      canvas.select(a)
+      canvas.onNodeSelected = (node) => {
+        if (node === b) canvas.select(a)
+      }
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.processSelect(b, undefined)
+
+      expect(onSelectionChange).toHaveBeenCalledOnce()
+      expect(selectedTitles(canvas)).toEqual(['A', 'B'])
+    })
+
+    it('ghost placement reports one change holding the placed node', () => {
+      canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.startGhostPlacement(b)
+
+      try {
+        expect(
+          vi
+            .mocked(onSelectionChange)
+            .mock.calls.map(([selected]) => Object.keys(selected))
+        ).toEqual([[String(b.id)]])
+      } finally {
+        // Leaves document listeners behind otherwise, failing later tests.
+        canvas.finalizeGhostPlacement(true)
+      }
+    })
+
+    it('a nested deselectAll() inside a deselection hook adds no change', () => {
+      canvas.selectItems([a, b])
+      a.onDeselected = () => {
+        canvas.select(b)
+        canvas.deselectAll()
+      }
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.deselectAll()
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('a nested selectItems() inside a deselection hook adds no change', () => {
+      canvas.select(a)
+      a.onDeselected = () => canvas.selectItems([b])
+      vi.mocked(onSelectionChange).mockClear()
+
+      canvas.deselectAll()
+
+      expect(
+        vi
+          .mocked(onSelectionChange)
+          .mock.calls.map(([selected]) => Object.keys(selected))
+      ).toEqual([[String(b.id)]])
+    })
+
+    it('alt aux-clicking a selected reroute reports one change', () => {
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      canvas._visibleReroutes.add(reroute)
+      canvas.visible_nodes = [...graph.nodes]
+      canvas.select(reroute)
+      vi.mocked(onSelectionChange).mockClear()
+
+      const options = { altKey: true, button: 2 }
+      canvas.processMouseDown(pointerEvent('pointerdown', 500, 500, options))
+      canvas.processMouseUp(pointerEvent('pointerup', 500, 500, options))
+
+      expect(graph.reroutes.has(reroute.id)).toBe(false)
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
     })
 
     it('deleteSelected() empties the selection and reports one change', () => {
@@ -746,10 +828,12 @@ describe('LGraphCanvas selection', () => {
 
     it('reports when a deselection hook selects a replacement item', () => {
       canvas.select(a)
+      vi.mocked(onSelectionChange).mockClear()
       a.onDeselected = () => canvas.select(b)
 
       canvas.deselectAll()
 
+      expect(onSelectionChange).toHaveBeenCalledOnce()
       expect(onSelectionChange).toHaveBeenLastCalledWith({ [b.id]: b })
       expect(selectedTitles(canvas)).toEqual(['B'])
     })
@@ -827,6 +911,15 @@ describe('LGraphCanvas selection', () => {
       expect(selectedTitles(canvas)).toEqual(['B'])
       expect(a.selected).toBe(false)
       expect(b.selected).toBe(true)
+    })
+
+    it('deselectAll(keepSelected) retains an item with an option property', () => {
+      Object.assign(a, { notify: true })
+      canvas.selectItems([a, b])
+
+      canvas.deselectAll(a)
+
+      expect([...canvas.selectedItems]).toEqual([a])
     })
 
     it('assignment with only foreign items clears the selection', () => {

@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { DropdownMenuItem } from 'reka-ui'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
+import type { MenuItem } from './types'
 
 describe('Menu', () => {
   it('renders item badges in nested menus', async () => {
@@ -438,19 +440,13 @@ describe('Menu', () => {
   })
 
   it('does not poll geometry while a pointer-anchored context menu is idle', async () => {
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        setup: () => () =>
-          h(ContextMenu, {
-            model: [{ label: 'Inspect' }],
-            ref: menu
-          })
-      })
-    )
-    menu.value?.show(
-      new MouseEvent('contextmenu', { clientX: 100, clientY: 120 })
-    )
+    renderContextMenu()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
     await screen.findByRole('menu')
     await vi.advanceTimersByTimeAsync(100)
     const measure = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
@@ -461,18 +457,11 @@ describe('Menu', () => {
     expect(screen.getByRole('menu')).toBeVisible()
   })
 
-  it('dismisses a context menu before an outside pointer event is stopped', async () => {
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup() {
-          const menu = ref<InstanceType<typeof ContextMenu>>()
-          return { menu }
-        },
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
+  it.for([
+    { name: 'an outside element', target: 'Outside' },
+    { name: 'the element it opened from', target: 'Target' }
+  ])('dismisses a context menu when $name is pressed', async ({ target }) => {
+    renderContextMenu({ outside: '<button>Outside</button>' })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.pointer({
@@ -485,104 +474,19 @@ describe('Menu', () => {
 
     await user.pointer({
       keys: '[MouseLeft>]',
-      target: screen.getByRole('button', { name: 'Outside', hidden: true })
+      target: screen.getByRole('button', { name: target, hidden: true })
     })
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    )
   })
 
-  it('dismisses a context menu when the element it opened from is pressed', async () => {
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup() {
-          const menu = ref<InstanceType<typeof ContextMenu>>()
-          return { menu }
-        },
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)" @pointerdown.stop>Canvas</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-    const canvas = screen.getByRole('button', { name: 'Canvas' })
-
-    await user.pointer({ keys: '[MouseRight]', target: canvas })
-    await screen.findByRole('menu')
-    await user.pointer({ keys: '[MouseLeft>]', target: canvas })
-
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-  })
-
-  it('keeps a context menu open when focus moves outside', async () => {
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup() {
-          const menu = ref<InstanceType<typeof ContextMenu>>()
-          return { menu }
-        },
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-
-    await user.pointer({
-      keys: '[MouseRight]',
-      target: screen.getByRole('button', { name: 'Target' })
-    })
-    await screen.findByRole('menu')
-    const outside = screen.getByRole('button', {
-      name: 'Outside',
-      hidden: true
-    })
-    const focusOutside = vi.fn()
-    outside.addEventListener('dismissableLayer.focusOutside', focusOutside)
-    outside.focus()
-    await waitFor(() => expect(focusOutside).toHaveBeenCalled())
-    await nextTick()
-
-    expect(screen.getByRole('menu')).toBeVisible()
-  })
-
-  it('opens from a stopped pointer context-menu event', async () => {
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    const selected = ref(false)
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu, selected }),
-        template:
-          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
-    screen.getByRole('button', { name: 'Widget' }).dispatchEvent(
-      new PointerEvent('contextmenu', {
-        bubbles: true,
-        button: 2,
-        clientX: 100,
-        clientY: 120
-      })
-    )
-
-    expect(menu.value?.visible).toBe(true)
-    expect(
-      await screen.findByRole('menuitem', { name: 'Inspect' })
-    ).toBeVisible()
-  })
-
-  it('closes a context menu without dispatching Escape', async () => {
+  it('closes a context menu without dispatching Escape when its owner closes it', async () => {
     const onKeydown = vi.fn()
     document.addEventListener('keydown', onKeydown)
     onTestFinished(() => document.removeEventListener('keydown', onKeydown))
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu }),
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
+    const open = ref(false)
+    renderContextMenu({ open })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.pointer({
@@ -590,7 +494,8 @@ describe('Menu', () => {
       target: screen.getByRole('button', { name: 'Target' })
     })
     await screen.findByRole('menu')
-    menu.value?.hide()
+    expect(open.value).toBe(true)
+    open.value = false
 
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
@@ -599,14 +504,7 @@ describe('Menu', () => {
   })
 
   it('dismisses a context menu with Escape', async () => {
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu: ref<InstanceType<typeof ContextMenu>>() }),
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
+    renderContextMenu()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.pointer({
@@ -621,69 +519,36 @@ describe('Menu', () => {
     )
   })
 
-  it('stays closed when its open trigger is clicked', async () => {
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu }),
-        template:
-          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
-      })
-    )
+  it('keeps the page interactive while a context menu is open', async () => {
+    renderContextMenu()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
-    const trigger = screen.getByRole('button', { name: 'Target' })
 
-    await user.pointer({ keys: '[MouseRight]', target: trigger })
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('button', { name: 'Target' })
+    })
     await screen.findByRole('menu')
-    await user.click(trigger)
 
-    await waitFor(() =>
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    )
+    expect(document.body.style.pointerEvents).not.toBe('none')
   })
 
-  it('dismisses only the context menu that owns the clicked content', async () => {
-    const first = ref<InstanceType<typeof ContextMenu>>()
-    const second = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ first, second }),
-        template:
-          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" :model="[{ label: \'Second action\' }]" />'
-      })
-    )
+  it('does not open a context menu without visible items', async () => {
+    renderContextMenu({ model: [{ label: 'Inspect', visible: false }] })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.pointer({
       keys: '[MouseRight]',
-      target: screen.getByRole('button', { name: 'First' })
+      target: screen.getByRole('button', { name: 'Target' })
     })
-    await screen.findByRole('menuitem', { name: 'First action' })
-    await user.pointer({
-      keys: '[MouseRight]',
-      target: screen.getByRole('button', { name: 'Second' })
-    })
+    await nextTick()
 
-    expect(
-      await screen.findByRole('menuitem', { name: 'Second action' })
-    ).toBeVisible()
-    expect(
-      screen.queryByRole('menuitem', { name: 'First action' })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
   it('keeps a context menu open when its own submenu is clicked', async () => {
-    const menu = ref<InstanceType<typeof ContextMenu>>()
-    render(
-      defineComponent({
-        components: { ContextMenu },
-        setup: () => ({ menu }),
-        template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
-      })
-    )
+    renderContextMenu({
+      model: [{ label: 'More', items: [{ label: 'Child' }] }]
+    })
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     await user.pointer({
@@ -698,3 +563,21 @@ describe('Menu', () => {
     expect(screen.getByRole('menuitem', { name: 'More' })).toBeVisible()
   })
 })
+
+function renderContextMenu({
+  model = [{ label: 'Inspect' }],
+  open = ref(false),
+  outside = ''
+}: {
+  model?: MenuItem[]
+  open?: Ref<boolean>
+  outside?: string
+} = {}) {
+  return render(
+    defineComponent({
+      components: { ContextMenu },
+      setup: () => ({ model, open }),
+      template: `<ContextMenu v-model:open="open" :model><button>Target</button></ContextMenu>${outside}`
+    })
+  )
+}

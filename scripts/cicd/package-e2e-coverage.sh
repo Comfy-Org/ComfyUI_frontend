@@ -64,7 +64,14 @@ ADD_ARGS=()
 for file in "${COVERAGE_FILES[@]}"; do
   ADD_ARGS+=(-a "$file")
 done
-lcov "${ADD_ARGS[@]}" -o "$COVERAGE_DIR/coverage.lcov"
+# Istanbul can emit the same nested function name at different source lines in
+# one tracefile (for example LiteGraph's inner_clicked callbacks). Function
+# coverage is not published below, so retain the valid line data instead of
+# failing the whole coverage package on lcov's function-metadata consistency
+# check. `corrupt` is paired with `inconsistent` because lcov reports both for
+# this single condition.
+lcov "${ADD_ARGS[@]}" -o "$COVERAGE_DIR/coverage.lcov" \
+  --ignore-errors inconsistent,corrupt
 
 MERGED_SF=$(grep -c '^SF:' "$COVERAGE_DIR/coverage.lcov" || true)
 MERGED_LH=$(awk -F: '/^LH:/{s+=$2}END{print s+0}' "$COVERAGE_DIR/coverage.lcov")

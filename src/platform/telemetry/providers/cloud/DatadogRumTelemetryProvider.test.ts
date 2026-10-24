@@ -7,7 +7,10 @@ import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -52,6 +55,67 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it.for([
+    { paletteId: 'dark', expectedScheme: 'dark' },
+    { paletteId: 'light', expectedScheme: 'light' },
+    { paletteId: 'nord', expectedScheme: 'dark' }
+  ])(
+    'reports the active $paletteId theme after startup',
+    ({ paletteId, expectedScheme }) => {
+      useColorPaletteStore().activePaletteId = paletteId
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+
+      registry.trackBootstrapComplete({
+        outcome: 'completed',
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+        theme: paletteId,
+        color_scheme: expectedScheme
+      })
+    }
+  )
+
+  it('reports custom themes without sending their user-defined IDs', () => {
+    useColorPaletteStore().addCustomPalette({
+      ...DEFAULT_LIGHT_COLOR_PALETTE,
+      id: 'private-palette-name'
+    })
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      outcome: 'completed',
+      total_ms: 123,
+      phase_count: 0,
+      untraced_ms: 123,
+      phases: {}
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+      theme: 'custom',
+      color_scheme: 'light'
+    })
+  })
+
+  it.for(['failed', 'timed_out'] as const)(
+    'does not report a loaded theme for %s startup',
+    (outcome) => {
+      new DatadogRumTelemetryProvider().trackBootstrapComplete({
+        outcome,
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).not.toHaveBeenCalled()
+    }
+  )
+
   it('identifies restored sessions and replaces identity on account changes', () => {
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()

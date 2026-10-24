@@ -40,6 +40,25 @@ describe('CheckoutSuccess', () => {
       { plan: teamPlan, billingCycle: 'yearly' },
       ['$15960', 'USD / year', '1,772,400 / year']
     ],
+    [
+      'a team stop at the yearly charge the server bills',
+      {
+        plan: { ...teamPlan, yearlyChargeUsd: 7560.01 },
+        billingCycle: 'yearly'
+      },
+      ['$7560.01', 'USD / year']
+    ],
+    [
+      'a team preview at the yearly charge the server bills',
+      {
+        plan: teamPlan,
+        billingCycle: 'yearly',
+        previewData: exactPreview({
+          new_plan: plan('TEAM', 'ANNUAL', 756001)
+        })
+      },
+      ['$7560.01', 'USD / year']
+    ],
     ['a zero price for a tier plan with no quote', {}, ['$0']]
   ] as const)('shows %s', ([, props, texts]) => {
     renderSuccess(props)

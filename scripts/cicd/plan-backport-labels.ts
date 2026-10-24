@@ -1,18 +1,10 @@
 #!/usr/bin/env tsx
-import { appendFileSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
+import { setOutput } from './actions-output'
 import type { PullRequestSummary } from './backport-label'
 import { planBackportLabels } from './backport-label'
-
-function setOutput(name: string, value: string) {
-  const file = process.env.GITHUB_OUTPUT
-  if (!file) {
-    process.stdout.write(`${name}=${value}\n`)
-    return
-  }
-  appendFileSync(file, `${name}=${value}\n`)
-}
 
 function main() {
   const { values } = parseArgs({

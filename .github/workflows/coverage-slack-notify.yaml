@@ -7,6 +7,16 @@ on:
     types:
       - completed
 
+# The E2E baseline is a rolling artifact read and rewritten by every run, so
+# overlapping runs would lose an update, and per-commit measurement makes
+# overlap normal. `queue: max` holds the waiting runs where the default
+# `single` cancels all but the newest and drops its report. Unit needs none of
+# this: it reads its ancestor's own artifact, never a shared one.
+concurrency:
+  group: coverage-slack-notify-baseline
+  cancel-in-progress: false
+  queue: max
+
 permissions:
   contents: read
   actions: read
@@ -14,31 +24,84 @@ permissions:
 
 jobs:
   notify:
+    # failure as well as success: coverage floors fail the run, so reporting
+    # only successes would skip exactly the regressions. A failed run can
+    # still upload coverage; absence is tolerated below.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      github.event.workflow_run.conclusion == 'success' &&
+      contains(fromJSON('["success", "failure"]'), github.event.workflow_run.conclusion) &&
       github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
+    # Runs are serialised, so one hung download would otherwise hold every
+    # later report behind it until the 6h default expires.
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Resolve merged PR metadata
+        id: pr-meta
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.workflow_run.head_sha,
+            });
+            const subject = (commit.commit.message ?? '').split('\n')[0];
+            const match = subject.match(/\(#(\d+)\)\s*$/);
+            if (!match) {
+              core.setOutput('skip', 'true');
+              core.info('No PR number found in commit message — skipping.');
+              return;
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(match[1]),
+            });
+            core.setOutput('skip', 'false');
+            core.setOutput('number', match[1]);
+            core.setOutput('url', pr.html_url);
+            core.setOutput('author', pr.user.login);
+
+      # An ancestor's own measurement, not a rolling baseline artifact. A
+      # rolling one is a read-modify-write shared by every run, so once merges
+      # are measured in parallel it is read and written out of merge order and
+      # reports deltas the named PR did not cause. An ancestor's artifact is
+      # immutable and carries no state between runs.
+      - name: Resolve the unit coverage baseline
+        id: unit-baseline
+        if: steps.pr-meta.outputs.skip != 'true'
+        run: pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts
+
+      # warn: a run whose shards failed uploads nothing, and that has to leave
+      # unit out of the report rather than turn the notifier red.
       - name: Download current unit coverage
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: unit-coverage
           path: coverage
+          if_no_artifact_found: warn
 
-      - name: Download previous unit coverage baseline
+      # By run id, not by commit: resolving from the commit again here would
+      # re-pick the newest run for that sha regardless of how it concluded,
+      # discarding the verdict check that chose this one.
+      - name: Download ancestor unit coverage
+        if: steps.unit-baseline.outputs.run-id != ''
         continue-on-error: true
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          branch: main
-          workflow: coverage-slack-notify.yaml
-          name: unit-coverage-baseline
+          run_id: ${{ steps.unit-baseline.outputs.run-id }}
+          name: unit-coverage
           path: temp/coverage-baseline
           if_no_artifact_found: warn
 
@@ -65,6 +128,10 @@ jobs:
           path: temp/e2e-coverage-baseline
           if_no_artifact_found: warn
 
+      - name: Order E2E coverage against this commit
+        id: e2e-order
+        run: pnpm exec tsx scripts/cicd/coverage-e2e-order.ts
+
       # An incomplete shard merge is not comparable with a whole one, so it
       # must neither be reported nor stored as the baseline the next run
       # compares against.
@@ -73,6 +140,7 @@ jobs:
       # behaviour of publishing non-comparable numbers.
       - name: Resolve E2E coverage completeness
         id: e2e-meta
+        if: steps.e2e-order.outputs.usable == 'true'
         run: |
           META=temp/e2e-coverage/coverage-metadata.json
           COMPLETE=$(pnpm exec tsx scripts/coverage-metadata.ts "$META")
@@ -81,36 +149,6 @@ jobs:
             echo "::warning::E2E coverage is not a verified whole shard merge; skipping E2E trend reporting. Metadata: $(cat "$META" 2>/dev/null || echo absent)"
           fi
 
-      - name: Resolve merged PR metadata
-        id: pr-meta
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const sha = context.payload.workflow_run.head_sha;
-            const { data: commit } = await github.rest.repos.getCommit({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: sha,
-            });
-            const message = commit.commit.message ?? '';
-            const firstLine = message.split('\n')[0];
-            const match = firstLine.match(/\(#(\d+)\)\s*$/);
-            if (!match) {
-              core.setOutput('skip', 'true');
-              core.info('No PR number found in commit message — skipping.');
-              return;
-            }
-            const prNumber = match[1];
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: Number(prNumber),
-            });
-            core.setOutput('skip', 'false');
-            core.setOutput('number', prNumber);
-            core.setOutput('url', pr.html_url);
-            core.setOutput('author', pr.user.login);
-
       - name: Generate Slack notification
         if: steps.pr-meta.outputs.skip != 'true'
         id: slack-payload
@@ -118,11 +156,17 @@ jobs:
           PR_URL: ${{ steps.pr-meta.outputs.url }}
           PR_NUMBER: ${{ steps.pr-meta.outputs.number }}
           PR_AUTHOR: ${{ steps.pr-meta.outputs.author }}
+          # Only when the comparison reaches past the direct parent: the note
+          # is keyed on this, so staying quiet otherwise keeps it meaningful
+          # instead of hedging every single report.
+          UNIT_SPAN_FROM: ${{ steps.unit-baseline.outputs.spanned == 'true' && steps.unit-baseline.outputs.ancestor || '' }}
         run: |
           PAYLOAD=$(pnpm exec tsx scripts/coverage-slack-notify.ts \
             --pr-url="$PR_URL" \
             --pr-number="$PR_NUMBER" \
-            --author="$PR_AUTHOR")
+            --author="$PR_AUTHOR" \
+            --unit-span-from="$UNIT_SPAN_FROM" \
+            --unit-span-to="$HEAD_SHA")
           if [ -n "$PAYLOAD" ]; then
             echo "has_payload=true" >> "$GITHUB_OUTPUT"
             DELIM="SLACK_PAYLOAD_$(date +%s)"
@@ -134,36 +178,24 @@ jobs:
           fi
 
       - name: Post to Slack
+        id: slack-post
         if: steps.slack-payload.outputs.has_payload == 'true'
-        continue-on-error: true
         env:
           SLACK_PAYLOAD: ${{ steps.slack-payload.outputs.payload }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        run: |
-          # Channel: #p-deprecated-frontend-automated-testing
-          BODY=$(echo "$SLACK_PAYLOAD" | jq --arg ch "C0AP09LKRDZ" '. + {channel: $ch}')
-          curl -sf -X POST \
-            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$BODY" \
-            -o /dev/null \
-            https://slack.com/api/chat.postMessage
-
-      - name: Save unit coverage baseline
-        if: always() && hashFiles('coverage/lcov.info') != ''
-        uses: actions/upload-artifact@v6
-        with:
-          name: unit-coverage-baseline
-          path: coverage/lcov.info
-          retention-days: 90
-          if-no-files-found: warn
+          SLACK_CHANNEL_ID: ${{ vars.COVERAGE_SLACK_CHANNEL_ID }}
+        run: scripts/cicd/post-slack-coverage-report.sh
 
       # success(), not always(): the download above defaults to
       # workflow_conclusion=success, so a baseline saved by a failing run can
-      # never be read back. Storing one would only add a dead artifact.
+      # never be read back. A rejected Slack post fails the job, which also
+      # keeps the baseline from advancing past a report nobody saw — and, when
+      # Slack accepted a post whose response was lost, means the next merge
+      # reposts that delta under its own PR rather than dropping it.
       - name: Save E2E coverage baseline
         if: >
           success() && steps.e2e-meta.outputs.complete == 'true' &&
+          steps.e2e-order.outputs.usable == 'true' &&
           hashFiles('temp/e2e-coverage/coverage.lcov') != ''
         uses: actions/upload-artifact@v6
         with:

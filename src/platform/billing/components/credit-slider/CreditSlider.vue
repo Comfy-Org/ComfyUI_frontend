@@ -106,10 +106,9 @@ const animatedOriginal = useTransition(() => current.value.usd, priceTween)
 
 const displayMonthly = computed(() => Math.round(animatedMonthly.value))
 const displayOriginal = computed(() => Math.round(animatedOriginal.value))
-// Derive the yearly total from the displayed monthly so it always reads as
-// exactly 12× the price shown — even mid-count — rather than drifting as a
-// second, independently-phased tween would.
-const displayBilledYearly = computed(() => displayMonthly.value * 12)
+const displayBilledYearly = computed(
+  () => current.value.periodChargeUsd?.yearly ?? displayMonthly.value * 12
+)
 
 /**
  * Bridge the discrete stop index (0..n-1) to the reka-ui slider's `number[]`

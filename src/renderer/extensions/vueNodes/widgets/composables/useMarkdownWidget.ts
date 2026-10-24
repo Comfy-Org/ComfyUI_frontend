@@ -1,16 +1,9 @@
-import { Editor as TiptapEditor } from '@tiptap/core'
-import {
-  Table as TiptapTable,
-  TableCell as TiptapTableCell,
-  TableHeader as TiptapTableHeader,
-  TableRow as TiptapTableRow
-} from '@tiptap/extension-table'
-import TiptapStarterKit from '@tiptap/starter-kit'
-import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
+import type { Editor as TiptapEditor } from '@tiptap/core'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
+import { reportError } from '@/platform/telemetry/reportError'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
@@ -18,37 +11,23 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
-// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
-// Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
 function addMarkdownWidget(
   node: LGraphNode,
   name: string,
   opts: { defaultVal: string }
 ) {
-  TiptapMarkdown.configure({
-    html: false,
-    breaks: true,
-    transformPastedText: true
-  })
-  const editor = new TiptapEditor({
-    extensions: [
-      TiptapStarterKit,
-      TiptapMarkdown,
-      TiptapTable,
-      TiptapTableCell,
-      TiptapTableHeader,
-      TiptapTableRow
-    ],
-    content: opts.defaultVal,
-    editable: false
-  })
-
   const widgetStore = useWidgetValueStore()
 
-  const inputEl = editor.options.element as HTMLElement
+  const inputEl = document.createElement('div')
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
   inputEl.append(textarea)
+  let editor: TiptapEditor | undefined
+  let markdown = opts.defaultVal
+  function render(value: string) {
+    markdown = value
+    editor?.commands.setContent(value)
+  }
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
@@ -60,7 +39,7 @@ function addMarkdownWidget(
     },
     setValue(v: string) {
       textarea.value = v
-      editor.commands.setContent(v)
+      render(v)
       const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
       const widgetState = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
@@ -101,7 +80,7 @@ function addMarkdownWidget(
   textarea.addEventListener(
     'change',
     () => {
-      editor.commands.setContent(textarea.value)
+      render(textarea.value)
       widget.callback?.(widget.value)
     },
     { signal }
@@ -115,8 +94,20 @@ function addMarkdownWidget(
 
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()
-    if (!editor.isDestroyed) editor.destroy()
+    if (editor && !editor.isDestroyed) editor.destroy()
   })
+
+  void import('./markdownEditor')
+    .then(({ createMarkdownEditor }) => {
+      if (signal.aborted) return
+      editor = createMarkdownEditor(inputEl, markdown)
+    })
+    .catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_loading_markdown_editor',
+        surface: 'platform'
+      })
+    )
 
   return widget
 }

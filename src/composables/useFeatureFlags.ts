@@ -232,6 +232,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
+        false
+      )
+    },
     get hostedBillingDestination() {
       return hostedBillingDestination()
     },

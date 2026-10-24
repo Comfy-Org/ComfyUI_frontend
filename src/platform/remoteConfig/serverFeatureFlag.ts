@@ -19,6 +19,7 @@ export enum ServerFeatureFlag {
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED = 'deployment_compatibility_marks_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',

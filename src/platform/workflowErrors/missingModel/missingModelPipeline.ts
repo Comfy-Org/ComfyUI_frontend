@@ -1,0 +1,285 @@
+import { st } from '@/i18n'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  enrichWithEmbeddedMetadata,
+  hasPendingVerification,
+  scanAllModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/workflowErrors/missingModel/missingModelScan'
+import type { MissingModelWorkflowData } from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { cloudReleaseModelOptions } from '@/platform/workflowErrors/missingModel/releaseModelOptions'
+import type {
+  MissingModelCandidate,
+  MissingModelPipelineResult
+} from '@/platform/workflowErrors/missingModel/types'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import {
+  getNodeByExecutionId,
+  isCandidateScopeActive,
+  isMissingCandidateActive
+} from '@/utils/graphTraversalUtil'
+
+interface MissingModelPipelineStore {
+  missingModelCandidates: MissingModelCandidate[] | null
+  createVerificationAbortController: () => AbortController
+  setFolderPaths: (paths: Record<string, string[]>) => void
+  setFileSize: (url: string, size: number) => void
+  setGatedRepoUrl: (url: string, repoUrl: string) => void
+}
+
+interface RunMissingModelPipelineOptions {
+  graph: LGraph
+  graphData: MissingModelWorkflowData
+  missingModelStore: MissingModelPipelineStore
+  missingNodeTypes?: MissingNodeType[]
+  onVerified?: (candidates: MissingModelCandidate[]) => void
+  silent?: boolean
+}
+
+interface RefreshMissingModelPipelineOptions {
+  graph: LGraph
+  reloadNodeDefs?: () => Promise<void>
+  missingModelStore: MissingModelPipelineStore
+  silent?: boolean
+}
+
+type MissingModelCandidateWithDownloadMetadata = MissingModelCandidate & {
+  url: string
+  directory: string
+}
+
+function cacheModelCandidates(
+  wf: Pick<ComfyWorkflow, 'pendingWarnings'> | null | undefined,
+  confirmed: MissingModelCandidate[]
+) {
+  if (!wf) return
+  updatePendingWarnings(wf, {
+    missingModelCandidates: confirmed
+  })
+}
+
+function clearMissingModels(
+  wf: Pick<ComfyWorkflow, 'pendingWarnings'> | null | undefined,
+  silent: boolean
+) {
+  useExecutionErrorStore().surfaceMissingModels([], { silent })
+  cacheModelCandidates(wf, [])
+}
+
+function hasDownloadMetadata(
+  candidate: MissingModelCandidate
+): candidate is MissingModelCandidateWithDownloadMetadata {
+  return !!candidate.url && !!candidate.directory
+}
+
+function toModelFile(candidate: MissingModelCandidateWithDownloadMetadata) {
+  return {
+    name: candidate.name,
+    url: candidate.url,
+    directory: candidate.directory,
+    hash: candidate.hash,
+    hash_type: candidate.hashType
+  }
+}
+
+function getCurrentMissingModelMetadata(
+  missingModelStore: MissingModelPipelineStore
+): ModelFile[] {
+  return (
+    missingModelStore.missingModelCandidates
+      ?.filter(hasDownloadMetadata)
+      .map(toModelFile) ?? []
+  )
+}
+
+export async function runMissingModelPipeline({
+  graph,
+  graphData,
+  missingModelStore,
+  missingNodeTypes,
+  silent = false,
+  onVerified
+}: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
+  const controller = missingModelStore.createVerificationAbortController()
+
+  const getDirectory = (nodeType: string) =>
+    useModelToNodeStore().getCategoryForNodeType(nodeType)
+  const isAssetBrowserWidget = assetService.shouldUseWidgetAssetPicker
+
+  const candidates = scanAllModelCandidates(
+    graph,
+    isAssetBrowserWidget,
+    getDirectory,
+    cloudReleaseModelOptions()
+  )
+
+  const enrichedAll = enrichWithEmbeddedMetadata(candidates, graphData)
+
+  // Drop candidates whose active scope is muted/bypassed. Normal candidates
+  // use nodeId; promoted host candidates use sourceExecutionId so host-keyed
+  // errors still respect inactive interior subgraph containers.
+  // Asymmetric on purpose: a candidate dropped here is not resurrected if
+  // the user un-bypasses the container mid-verification. The realtime
+  // mode-change path (handleNodeModeChange → scanAndAddNodeErrors) is
+  // responsible for surfacing errors after an un-bypass.
+  const enrichedCandidates = enrichedAll.filter((c) =>
+    isCandidateScopeActive(graph, c)
+  )
+
+  const confirmedCandidates = enrichedCandidates.filter(
+    (c) => c.isMissing === true
+  )
+  const hasDeferredCandidates = enrichedCandidates.some(hasPendingVerification)
+  const downloadableCandidates = confirmedCandidates.filter(hasDownloadMetadata)
+
+  const missingModels: ModelFile[] = downloadableCandidates.map(toModelFile)
+
+  const activeWf = useWorkspaceStore().workflow.activeWorkflow
+  updatePendingWarnings(activeWf, {
+    ...(missingNodeTypes ? { missingNodeTypes } : {}),
+    missingModelCandidates: confirmedCandidates
+  })
+
+  if (!enrichedCandidates.length) {
+    clearMissingModels(activeWf, silent)
+    onVerified?.([])
+    return { missingModels, confirmedCandidates }
+  }
+
+  // Re-check at surface time: the user may have bypassed a container or
+  // changed the selection while verification or folder paths were in flight.
+  const isStillSelected = (candidate: MissingModelCandidate) => {
+    if (candidate.nodeId == null) return true
+    const node = getNodeByExecutionId(graph, String(candidate.nodeId))
+    const widget = node?.widgets?.find((w) => w.name === candidate.widgetName)
+    return widget?.value === candidate.name
+  }
+  const surfaceActiveCandidates = () => {
+    const confirmed = enrichedCandidates.filter(
+      (c) => isMissingCandidateActive(graph, c) && isStillSelected(c)
+    )
+    useExecutionErrorStore().surfaceMissingModels(confirmed, { silent })
+    cacheModelCandidates(activeWf, confirmed)
+    onVerified?.(
+      enrichedCandidates.filter(
+        (c) => isCandidateScopeActive(graph, c) && isStillSelected(c)
+      )
+    )
+  }
+  const reportVerificationFailure = (err: unknown) => {
+    if (controller.signal.aborted) return
+    console.warn(
+      '[Missing Model Pipeline] Missing model verification failed:',
+      err
+    )
+    reportError(err, {
+      surface: 'assets',
+      errorType: 'missing_model_verification_failed'
+    })
+    useToast().warning(
+      st(
+        'toastMessages.missingModelVerificationFailed',
+        'Failed to verify missing models. Some models may not be shown in the Issues tab.'
+      ),
+      { duration: 5000 }
+    )
+  }
+
+  if (isCloud) {
+    void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+      .then(() => {
+        if (controller.signal.aborted) return
+        surfaceActiveCandidates()
+      })
+      .catch(reportVerificationFailure)
+    return { missingModels, confirmedCandidates }
+  }
+
+  if (!confirmedCandidates.length && !hasDeferredCandidates) {
+    surfaceActiveCandidates()
+    return { missingModels, confirmedCandidates }
+  }
+
+  const verification = hasDeferredCandidates
+    ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+    : Promise.resolve()
+  void verification
+    .then(async () => {
+      if (controller.signal.aborted) return
+      const hasActiveMissing = enrichedCandidates.some((c) =>
+        isMissingCandidateActive(graph, c)
+      )
+      if (!hasActiveMissing) {
+        surfaceActiveCandidates()
+        return
+      }
+      const verifiedDownloadableCandidates = enrichedCandidates
+        .filter((c) => c.isMissing === true)
+        .filter(hasDownloadMetadata)
+      const missingModelMetadata =
+        import('@/platform/workflowErrors/missingModel/missingModelMetadata')
+      void Promise.allSettled(
+        verifiedDownloadableCandidates.map(async (c) => {
+          const { fetchAndStoreModelMetadata } = await missingModelMetadata
+          await fetchAndStoreModelMetadata(
+            c.url,
+            missingModelStore,
+            controller.signal
+          )
+        })
+      )
+      await api
+        .getFolderPaths()
+        .then((paths) => {
+          if (controller.signal.aborted) return
+          missingModelStore.setFolderPaths(paths)
+        })
+        .catch((err) => {
+          console.warn(
+            '[Missing Model Pipeline] Failed to fetch folder paths:',
+            err
+          )
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return
+          surfaceActiveCandidates()
+        })
+    })
+    .catch(reportVerificationFailure)
+
+  return { missingModels, confirmedCandidates }
+}
+
+export async function refreshMissingModelPipeline({
+  graph,
+  reloadNodeDefs,
+  missingModelStore,
+  silent = true
+}: RefreshMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
+  await reloadNodeDefs?.()
+  const graphData: MissingModelWorkflowData = graph.serialize()
+  const activeWorkflowState =
+    useWorkspaceStore().workflow.activeWorkflow?.activeState
+  const currentModelMetadata = getCurrentMissingModelMetadata(missingModelStore)
+  const models = activeWorkflowState?.models?.length
+    ? activeWorkflowState.models
+    : currentModelMetadata
+
+  return runMissingModelPipeline({
+    graph,
+    graphData: models.length ? { ...graphData, models } : graphData,
+    missingModelStore,
+    silent
+  })
+}

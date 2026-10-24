@@ -32,12 +32,14 @@ const DECODED: BillingPlansData = {
         monthly: {
           action: 'subscribe',
           list_price_cents: 20_000n,
-          price_cents: 18_000n
+          price_cents: 18_000n,
+          period_charge_cents: 18_000n
         },
         yearly: {
           action: 'subscribe',
           list_price_cents: 200_000n,
-          price_cents: 170_000n
+          price_cents: 170_000n,
+          period_charge_cents: 2_040_001n
         }
       }
     ]
@@ -74,12 +76,14 @@ describe('projectBillingPlans', () => {
           monthly: {
             action: 'subscribe',
             list_price_cents: 20_000,
-            price_cents: 18_000
+            price_cents: 18_000,
+            period_charge_cents: 18_000
           },
           yearly: {
             action: 'subscribe',
             list_price_cents: 200_000,
-            price_cents: 170_000
+            price_cents: 170_000,
+            period_charge_cents: 2_040_001
           }
         }
       ]

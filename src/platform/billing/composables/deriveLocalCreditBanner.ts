@@ -7,6 +7,8 @@ export type LocalCreditBannerKind =
 
 export interface LocalCreditBannerInput {
   unifiedBillingSettingsEnabled: boolean
+  isCloud: boolean
+  isActive: boolean
   hasFunds: boolean | null
   lowBalance: boolean | undefined
   outOfCreditsDismissed: boolean
@@ -19,6 +21,7 @@ export function deriveLocalCreditBanner(
 ): LocalCreditBannerKind | null {
   if (!input.unifiedBillingSettingsEnabled) return null
   if (input.autoTopUp) return input.autoTopUp
+  if (input.isCloud && !input.isActive) return null
   if (input.hasFunds === false && !input.outOfCreditsDismissed) {
     return 'outOfCredits'
   }

@@ -16,9 +16,12 @@ import type {
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import type {
   AuthMetadata,
+  BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
@@ -84,6 +87,18 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackBootstrapComplete({ outcome }: BootstrapCompleteMetadata): void {
+    if (outcome !== 'completed') return
+
+    const { completedActivePalette, colorScheme } = useColorPaletteStore()
+    datadogRum.addAction(TelemetryEvents.THEME_LOADED, {
+      theme: Object.hasOwn(CORE_COLOR_PALETTES, completedActivePalette.id)
+        ? completedActivePalette.id
+        : 'custom',
+      color_scheme: colorScheme
+    })
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {

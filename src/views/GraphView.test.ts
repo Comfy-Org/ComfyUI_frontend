@@ -126,14 +126,17 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock<unknown>(
-  import('@/platform/missingMedia/missingMediaPipeline'),
+  import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'),
   () => ({
     runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
   })
 )
-vi.mock<unknown>(import('@/platform/missingMedia/missingMediaScan'), () => ({
-  scanAllMediaCandidates: templateInputMock.scanCandidates
-}))
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaScan'),
+  () => ({
+    scanAllMediaCandidates: templateInputMock.scanCandidates
+  })
+)
 vi.mock<unknown>(
   import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
   () => ({

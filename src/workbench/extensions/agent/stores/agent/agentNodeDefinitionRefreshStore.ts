@@ -16,7 +16,21 @@ function isSuccessfulRestart(event: AgentWsEvent): boolean {
   )
 }
 
-async function refreshNodeDefinitions(): Promise<boolean> {
+function isSuccessfulCatalogRefresh(event: AgentWsEvent): boolean {
+  return (
+    event.type === 'agent_tool_call' &&
+    event.data.tool_name === 'refresh_catalog' &&
+    event.data.status === 'success'
+  )
+}
+
+type NodeDefinitionRefreshErrorType =
+  | 'failure_refreshing_node_definitions_after_agent_restart'
+  | 'failure_refreshing_node_definitions_after_agent_catalog_refresh'
+
+async function refreshNodeDefinitions(
+  errorType: NodeDefinitionRefreshErrorType
+): Promise<boolean> {
   try {
     await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
       errorHandler: (error) => {
@@ -27,7 +41,7 @@ async function refreshNodeDefinitions(): Promise<boolean> {
   } catch (error) {
     reportError(error, {
       surface: 'agent',
-      errorType: 'failure_refreshing_node_definitions_after_agent_restart',
+      errorType,
       level: 'warning'
     })
     return false
@@ -63,17 +77,42 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     let restartedAt = -Infinity
     let reconnectedAt = -Infinity
     let refreshQueued = false
+    let catalogRefreshQueued = false
     let queue = Promise.resolve()
 
     async function refresh(): Promise<void> {
       refreshQueued = false
-      if (await refreshNodeDefinitions()) await reloadWorkflowWithoutRejecting()
+      if (
+        await refreshNodeDefinitions(
+          'failure_refreshing_node_definitions_after_agent_restart'
+        )
+      ) {
+        await reloadWorkflowWithoutRejecting()
+      }
+    }
+
+    async function refreshCatalog(): Promise<void> {
+      catalogRefreshQueued = false
+      await refreshNodeDefinitions(
+        'failure_refreshing_node_definitions_after_agent_catalog_refresh'
+      )
     }
 
     function enqueueRefresh(): void {
       if (refreshQueued) return
       refreshQueued = true
       queue = queue.then(refresh).catch((error: unknown) => {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_running_agent_node_definition_refresh'
+        })
+      })
+    }
+
+    function enqueueCatalogRefresh(): void {
+      if (catalogRefreshQueued) return
+      catalogRefreshQueued = true
+      queue = queue.then(refreshCatalog).catch((error: unknown) => {
         reportError(error, {
           surface: 'agent',
           errorType: 'failure_running_agent_node_definition_refresh'
@@ -88,6 +127,10 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     }
 
     function observeAgentEvent(event: AgentWsEvent): void {
+      if (isSuccessfulCatalogRefresh(event)) {
+        enqueueCatalogRefresh()
+        return
+      }
       if (!isSuccessfulRestart(event)) return
       restartedAt = Date.now()
       refreshIfRestartNearby()

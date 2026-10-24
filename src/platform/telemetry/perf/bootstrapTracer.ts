@@ -57,11 +57,8 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
-import { datadogRum } from '@datadog/browser-rum'
-
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getDatadogRum } from '@/platform/telemetry/rumContext'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
 
@@ -140,6 +137,7 @@ export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
 
@@ -212,7 +210,7 @@ export class BootstrapTracer {
   }
 
   private _publishRumTiming(name: string): void {
-    if (isCloud) datadogRum.addTiming(toRumTimingName(name))
+    getDatadogRum()?.addTiming(toRumTimingName(name))
   }
 
   /**
@@ -226,6 +224,10 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
+  get outcome(): 'completed' | 'failed' | 'pending' {
+    return this._outcome ?? 'pending'
+  }
+
   /**
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
@@ -234,6 +236,7 @@ export class BootstrapTracer {
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
     this._completed = true
+    this._outcome = outcome
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
@@ -281,11 +284,9 @@ export class BootstrapTracer {
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      if (isCloud) {
-        datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-      }
+      getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
-      if (isCloud && outcome === 'completed') datadogRum.setViewLoadingTime()
+      if (outcome === 'completed') getDatadogRum()?.setViewLoadingTime()
       this._logSummary(rows, totalMs)
     } catch {
       return

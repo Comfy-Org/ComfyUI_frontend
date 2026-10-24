@@ -21,6 +21,7 @@ export function reportLostEdit(
     workflowId?: string
     graphId?: string
     nodeId?: string | number
+    classType?: string
     message?: string
     failedIndex?: number
   },

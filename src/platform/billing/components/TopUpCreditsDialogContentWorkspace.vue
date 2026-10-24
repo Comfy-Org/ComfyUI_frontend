@@ -42,16 +42,9 @@
     </div>
     <p
       v-if="isInsufficientCredits && step === 'amount'"
-      class="m-0 px-8 text-sm text-muted-foreground"
-    >
-      {{ $t('credits.topUp.insufficientWorkflowMessage') }}
-    </p>
-
-    <p
-      v-if="step === 'amount' || step === 'confirm'"
       class="m-0 px-8 pb-4 text-sm text-muted-foreground"
     >
-      {{ $t('credits.topUp.purchaseDisclosure') }}
+      {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
     <template v-if="step === 'confirm'">
@@ -168,6 +161,13 @@
           ${{ amount }}
         </Button>
       </div>
+      <p
+        v-if="planCreditCopy"
+        class="m-0 pt-3 text-sm text-muted-foreground"
+        data-testid="top-up-plan-credit-line"
+      >
+        {{ planCreditCopy }}
+      </p>
     </div>
     <!-- Amount (USD) / Credits -->
     <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
@@ -430,6 +430,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
@@ -482,6 +483,7 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
+const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 

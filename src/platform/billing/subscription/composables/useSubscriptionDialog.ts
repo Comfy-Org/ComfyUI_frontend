@@ -264,7 +264,11 @@ export const useSubscriptionDialog = () => {
         id: stop.id,
         usd: stop.usd,
         credits: stop.credits,
-        discountedUsd: getStopDiscountedMonthlyUsd(stop, selection.billingCycle)
+        discountedUsd: getStopDiscountedMonthlyUsd(
+          stop,
+          selection.billingCycle
+        ),
+        periodChargeUsd: stop.periodChargeUsd
       },
       billingCycle: selection.billingCycle,
       isChange:

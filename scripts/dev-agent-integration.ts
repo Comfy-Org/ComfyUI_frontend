@@ -4,7 +4,7 @@ import { access, mkdtemp, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
-import { smokeCommand } from './dev-agent-commands'
+import { smokeCommand, standaloneEnv } from './dev-agent-commands'
 import type { Options } from './dev-agent-options'
 import { PROJECT_ROOT, USAGE, parseOptions } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
@@ -30,36 +30,6 @@ async function assertWorkspacePackage(): Promise<void> {
     console.warn(
       '[dev-agent-integration] @comfyorg/comfy-multi-player is the published package; edits to it will not hot-reload until it is an in-workspace dependency'
     )
-  }
-}
-
-function standaloneEnv(
-  options: Options,
-  dataDir: string,
-  token: string
-): NodeJS.ProcessEnv {
-  const env = { ...process.env }
-  for (const key of [
-    'AGENT_M2M_SECRET',
-    'AGENT_RUNNER_ENDPOINT',
-    'DB_CONNECTION_STRING',
-    'DOC_HOST_ENDPOINT',
-    'REDIS_URL'
-  ]) {
-    delete env[key]
-  }
-  return {
-    ...env,
-    AGENT_BIND_ADDR: '127.0.0.1',
-    AGENT_COMFY_URL: options.comfyUrl,
-    AGENT_CRDT_MODE: 'off',
-    AGENT_DATA_DIR: dataDir,
-    AGENT_ENGINE: 'inline',
-    AGENT_SESSION_TOKEN: token,
-    AGENT_STANDALONE: 'true',
-    AGENT_TARGET: 'local',
-    HEALTH_PORT: String(options.healthPort),
-    PORT: String(options.agentPort)
   }
 }
 

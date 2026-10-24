@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   nodeError,
   runtimeError,

@@ -1659,6 +1659,7 @@ export const TelemetryEvents = {
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
+  THEME_LOADED: 'app:theme_loaded',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',

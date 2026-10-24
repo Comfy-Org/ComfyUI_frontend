@@ -2927,18 +2927,32 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/user-select')
       })
 
-      it('sends a session-only tab holding a desktop login code to sign in, not into the app', async () => {
-        await install({ userId: 'user-a' })
-        identity.resolve(null)
-        await router.push('/cloud/login')
+      it.for(['/user-select', '/cloud/login', '/cloud/user-check'])(
+        'sends a session-only tab holding a desktop login code at %s to sign in without looping',
+        async (path) => {
+          await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await router.push('/cloud/forgot-password')
+          const visited = new Set<string>()
+          onTestFinished(
+            router.beforeEach((to) => {
+              expect(visited.has(to.fullPath)).toBe(false)
+              visited.add(to.fullPath)
+            })
+          )
 
-        await router.push(
-          `/user-select?desktop_login_code=dlc_${'A'.repeat(43)}`
-        )
+          await router.push(`${path}?desktop_login_code=dlc_${'A'.repeat(43)}`)
 
-        expect(router.currentRoute.value.path).toBe('/cloud/login')
-        expect(router.currentRoute.value.query.switchAccount).toBeDefined()
-      })
+          expect(router.currentRoute.value.path).toBe('/cloud/login')
+          expect(router.currentRoute.value.query.switchAccount).toBe('true')
+          expect(
+            getPreservedQueryParam(
+              PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+              'desktop_login_code'
+            )
+          ).toBe(`dlc_${'A'.repeat(43)}`)
+        }
+      )
 
       it('sends a revoked session to the login page', async () => {
         await install('revoked')

@@ -106,6 +106,11 @@ export class ComfyNodeDefImpl
    * Migrate default input options to forceInput.
    */
   private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+    const usesDefaultInput = [
+      ...Object.values(nodeDef.input?.required ?? {}),
+      ...Object.values(nodeDef.input?.optional ?? {})
+    ].some((spec) => spec[1]?.defaultInput)
+    if (!usesDefaultInput) return { ...nodeDef, input: nodeDef.input ?? {} }
     const def = cloneDeep(nodeDef)
     def.input ??= {}
     // For required inputs, now we have the input socket always present. Specifying

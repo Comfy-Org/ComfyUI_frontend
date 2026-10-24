@@ -7,9 +7,8 @@ import MenuSubContent from './MenuSubContent.vue'
 import MenuSubTrigger from './MenuSubTrigger.vue'
 import type { MenuItemRadioGroup, MenuItemSubmenu } from './types'
 
-const { item, ownerId } = defineProps<{
+const { item } = defineProps<{
   item: MenuItemSubmenu | MenuItemRadioGroup
-  ownerId?: string
 }>()
 
 const disabled = computed(
@@ -29,11 +28,7 @@ const disabled = computed(
       <slot />
     </MenuSubTrigger>
     <DropdownMenuPortal :key="Number(open)">
-      <MenuSubContent
-        :data-menu-owner="ownerId"
-        :side-offset="2"
-        :align-offset="-5"
-      >
+      <MenuSubContent :side-offset="2" :align-offset="-5">
         <slot v-if="item.items" name="content" :items="item.items" />
         <MenuRadioGroup
           v-else

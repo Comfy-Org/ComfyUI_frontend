@@ -44,6 +44,10 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     clearDeployment: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
+    checkDeploymentCompatibility: async () => ({
+      deployments: [],
+      cloud: { missing_node_types: [] }
+    }),
     delete: async () => {},
     leave: async () => {},
     listMembers: async () => ({

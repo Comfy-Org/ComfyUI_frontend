@@ -1,0 +1,148 @@
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
+import { st } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  dedupeMissingNodeTypes,
+  removePendingMissingNodeTypesByExecutionIdPrefix,
+  removePendingMissingNodeTypesByNodeId,
+  removePendingMissingNodeTypesByType
+} from '@/platform/workflow/core/utils/pendingWarnings'
+import { useApp } from '@/scripts/appInstance'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { getAncestorExecutionIds } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+
+interface MissingNodesError {
+  message: string
+  nodeTypes: MissingNodeType[]
+}
+
+export const useMissingNodesErrorStore = defineStore(
+  'missingNodesError',
+  () => {
+    const missingNodesError = ref<MissingNodesError | null>(null)
+
+    /** Error to display; `null` while the missing nodes warning is off. */
+    const visibleMissingNodesError = computed(() =>
+      isMissingWarningVisible('nodes') ? missingNodesError.value : null
+    )
+
+    function setMissingNodeTypes(types: MissingNodeType[]) {
+      if (!types.length) {
+        missingNodesError.value = null
+        return
+      }
+      const uniqueTypes = dedupeMissingNodeTypes(types)
+      missingNodesError.value = {
+        message: isCloud
+          ? st(
+              'rightSidePanel.missingNodePacks.unsupportedTitle',
+              'Unsupported Node Packs'
+            )
+          : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
+        nodeTypes: uniqueTypes
+      }
+    }
+
+    /** Set missing node types. Returns true if the Errors tab and the missing nodes warning are enabled and types were set. */
+    function surfaceMissingNodes(types: MissingNodeType[]): boolean {
+      setMissingNodeTypes(types)
+      return (
+        hasMissingNodes.value &&
+        useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+      )
+    }
+
+    function removeMissingNodesByNodeId(nodeId: string) {
+      if (!missingNodesError.value) return
+      const remaining = removePendingMissingNodeTypesByNodeId(
+        missingNodesError.value.nodeTypes,
+        nodeId
+      )
+      setMissingNodeTypes(remaining)
+    }
+
+    /**
+     * Remove all object-type entries whose nodeId starts with `prefix`.
+     * String entries (group nodes) have no nodeId and are preserved.
+     *
+     * Intended for clearing all interior errors when a subgraph container
+     * is removed. Callers are expected to pass `${execId}:` (with trailing
+     * colon) so that sibling IDs sharing a numeric prefix are not matched.
+     */
+    function removeMissingNodesByPrefix(prefix: string) {
+      if (!missingNodesError.value) return
+      const remaining = removePendingMissingNodeTypesByExecutionIdPrefix(
+        missingNodesError.value.nodeTypes,
+        prefix
+      )
+      setMissingNodeTypes(remaining)
+    }
+
+    /** Remove specific node types from the missing nodes list (e.g. after replacement). */
+    function removeMissingNodesByType(typesToRemove: string[]) {
+      if (!missingNodesError.value) return
+      const remaining = removePendingMissingNodeTypesByType(
+        missingNodesError.value.nodeTypes,
+        typesToRemove
+      )
+      setMissingNodeTypes(remaining)
+    }
+
+    const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)
+
+    const missingNodeCount = computed(
+      () => visibleMissingNodesError.value?.nodeTypes.length ?? 0
+    )
+
+    /**
+     * Set of all execution ID prefixes derived from missing node execution IDs,
+     * including the missing nodes themselves.
+     *
+     * Example: missing node at "65:70:63" → Set { "65", "65:70", "65:70:63" }
+     */
+    const missingAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
+      const ids = new Set<NodeExecutionId>()
+      const error = visibleMissingNodesError.value
+      if (!error) return ids
+
+      for (const nodeType of error.nodeTypes) {
+        if (typeof nodeType === 'string') continue
+        if (nodeType.nodeId == null) continue
+        for (const id of getAncestorExecutionIds(String(nodeType.nodeId))) {
+          ids.add(id)
+        }
+      }
+
+      return ids
+    })
+
+    /** True if the node has a missing node inside it at any nesting depth. */
+    function isContainerWithMissingNode(node: LGraphNode): boolean {
+      if (!useApp().isGraphReady) return false
+      const execId = getExecutionIdByNode(useApp().rootGraph, node)
+      if (!execId) return false
+      return missingAncestorExecutionIds.value.has(execId)
+    }
+
+    return {
+      missingNodesError,
+      visibleMissingNodesError,
+      setMissingNodeTypes,
+      surfaceMissingNodes,
+      removeMissingNodesByNodeId,
+      removeMissingNodesByPrefix,
+      removeMissingNodesByType,
+      hasMissingNodes,
+      missingNodeCount,
+      missingAncestorExecutionIds,
+      isContainerWithMissingNode
+    }
+  }
+)

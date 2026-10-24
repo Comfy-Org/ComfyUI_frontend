@@ -15,7 +15,14 @@ async function namesRegisteredByImporting(loaders: (() => Promise<unknown>)[]) {
 }
 
 const namesRegisteredOnImport = await namesRegisteredByImporting(
-  Object.values(import.meta.glob(['./*.ts', '!./*.test.ts']))
+  Object.values(
+    import.meta.glob([
+      './*.ts',
+      './load3d/*.ts',
+      '!./*.test.ts',
+      '!./load3d/*.test.ts'
+    ])
+  )
 )
 const { registerCoreExtensions } = await import('./index')
 

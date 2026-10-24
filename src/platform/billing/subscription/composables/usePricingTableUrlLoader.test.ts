@@ -50,12 +50,14 @@ const TEAM_CREDIT_STOPS = {
     monthly: {
       action: 'subscribe',
       list_price_cents: usd * 100,
-      price_cents: usd * 100 - index * 500
+      price_cents: usd * 100 - index * 500,
+      period_charge_cents: usd * 100 - index * 500
     },
     yearly: {
       action: 'subscribe',
       list_price_cents: usd * 100,
-      price_cents: usd * 100 - index * 1000
+      price_cents: usd * 100 - index * 1000,
+      period_charge_cents: (usd * 100 - index * 1000) * 12 + 1
     }
   }))
 } satisfies TeamCreditStops
@@ -247,7 +249,8 @@ describe('usePricingTableUrlLoader', () => {
           id: 'team_700',
           credits: 147700,
           usd: 700,
-          discountedUsd: 680
+          discountedUsd: 680,
+          periodChargeUsd: { monthly: 690, yearly: 8160.01 }
         },
         billingCycle: 'yearly'
       }
@@ -367,7 +370,11 @@ describe('usePricingTableUrlLoader', () => {
             id: catalogStop.id,
             credits: catalogStop.credits,
             usd: catalogStop[billingCycle].list_price_cents / 100,
-            discountedUsd: catalogStop[billingCycle].price_cents / 100
+            discountedUsd: catalogStop[billingCycle].price_cents / 100,
+            periodChargeUsd: {
+              monthly: catalogStop.monthly.period_charge_cents / 100,
+              yearly: catalogStop.yearly.period_charge_cents / 100
+            }
           },
           billingCycle
         }

@@ -192,6 +192,14 @@
       "role": "infrastructure"
     },
     {
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/lib/litegraph/src/utils/widget.test.ts",
       "role": "application"
     },

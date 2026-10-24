@@ -42,6 +42,8 @@ export interface BillingBannerInputs {
   hasScheduledChange: boolean
   topUpDeniedPastDue: boolean
   runDeniedPastDue: boolean
+  unifiedBillingSettingsEnabled: boolean
+  isActive: boolean
 }
 
 // An Enterprise cancel_at is an agreed end date — an operator pilot term or
@@ -108,14 +110,24 @@ function showsPastDueOutOfCredits(inputs: BillingBannerInputs): boolean {
   )
 }
 
+function cloudCreditBannersOpen(inputs: BillingBannerInputs): boolean {
+  if (!inputs.unifiedBillingSettingsEnabled) return true
+  return inputs.isActive
+}
+
 function deriveNoticeBanner(
   inputs: BillingBannerInputs,
   audience: BillingBannerAudience
 ): BillingBannerKind | null {
   if (!inputs.billingControlEnabled) return null
-  if (showsPastDueOutOfCredits(inputs)) return 'outOfCredits'
+  const creditsOpen = cloudCreditBannersOpen(inputs)
+  if (creditsOpen && showsPastDueOutOfCredits(inputs)) return 'outOfCredits'
   if (!inputs.canAccessSubscriptionFeatures) return null
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+  if (
+    creditsOpen &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  ) {
     return 'outOfCredits'
   }
   return deriveLifecycleNotice(inputs, audience)
@@ -208,6 +220,8 @@ function useBillingBannerInternal() {
     planChangeDismissed: planChangeDismissed.value,
     topUpDeniedPastDue: isTopUpDeniedPastDue(topUpDenial.value),
     runDeniedPastDue: runDeniedPaymentPastDue.value,
+    unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
+    isActive: subscription.value?.isActive === true,
     ...readSubscriptionInputs(subscription.value)
   }))
 

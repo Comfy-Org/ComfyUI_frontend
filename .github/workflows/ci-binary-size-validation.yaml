@@ -1,5 +1,7 @@
 # Description: Blocks PRs that add or replace a binary file above the size
 # limit. Bypass at your peril by adding the 'allow-large-binaries' label to the PR.
+# Also blocks PRs that add images, video, or audio under apps/website/, which
+# belong on media.comfy.org. That check has no label bypass.
 name: 'CI: Binary Size Validation'
 
 on:
@@ -41,3 +43,21 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.sha }}
           MAX_BINARY_BYTES: '1048576'
+
+  website-media:
+    if: >-
+      ${{
+        !contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) ||
+        github.event.label.name == 'allow-large-binaries'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Block images, video, and audio in the website
+        run: ./scripts/cicd/check-website-media.sh
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.sha }}

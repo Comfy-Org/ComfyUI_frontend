@@ -16,8 +16,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
-import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -179,7 +179,9 @@ vi.mock(import('@/platform/assets/utils/clearDeletedAssetWidgetValues'), {
 })
 const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
 
-vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
+vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaScan'), {
+  spy: true
+})
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
 vi.mock(import('@/platform/assets/utils/markDeletedAssetsAsMissingMedia'), {

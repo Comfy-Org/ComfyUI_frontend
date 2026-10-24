@@ -15,15 +15,39 @@
     "addFromAssets": "גררו נכס מלוח הנכסים",
     "addNodesFromGraph": "אזכור צמתים מהגרף",
     "addToPrompt": "הוסף לפרומפט",
+    "askUnavailable": "הסוכן ממתין לשלב שלוח זה אינו יכול להציג.",
+    "askUser": {
+      "answerRejected": "הסוכן לא הצליח לקבל את התשובה הזו. שנו את הבחירות שלכם או עצרו את התור.",
+      "answered": "נענה",
+      "card": "שאלה מהסוכן",
+      "chooseAny": "בחרו את כל האפשרויות המתאימות",
+      "chooseAtLeast": "בחרו לפחות {min}",
+      "chooseBetween": "בחרו בין {min} ל-{max}",
+      "chooseExactly": "בחרו {min}",
+      "chooseOneOrNone": "בחרו אחת, או אף אחת",
+      "chooseUpTo": "בחרו עד {max}",
+      "closed": "שאלה זו נסגרה ללא תשובה.",
+      "other": "אחר",
+      "otherAnswer": "אחר: {text}",
+      "otherPlaceholder": "הקלידו תשובה משלכם",
+      "retired": "שאלה זו אינה פתוחה כאן עוד.",
+      "unconfirmed": "לא הצלחנו לאשר שתשובתכם הגיעה לסוכן."
+    },
+    "assetFetchFailed": "לא ניתן היה לאחזר את {name}",
     "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
+    "attachmentCountExceeded": "ניתן לצרף רק {count} קבצים להודעה אחת",
     "attachmentInvalidVideo": "{name} אינו קובץ וידאו תקין. הסר אותו ונסה קובץ אחר.",
+    "attachmentNamesOverflow": "{names} ועוד {count}",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
+    "attachmentTypeNotAccepted": "{name} אינו מסוג קובץ שהסוכן מקבל | {name} אינם מסוגי קבצים שהסוכן מקבל",
+    "attachmentUnsupportedType": "{name} אינו מסוג קובץ שהסוכן מקבל. הסירו אותו ונסו קובץ אחר.",
     "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
     "attachmentsAlreadyAdded": "{name} כבר נמצא במגש הנכסים | דולגו על {count} נכסים כפולים",
     "backToPreviousChat": "חזרה לצ'אט הקודם",
     "beta": "בטא",
+    "canvasIsEmptyAfterTurn": "קנבס זה ריק — לא נוסף אליו דבר. עדיין אין כאן מה להפעיל, לשמור או לייצא.",
     "changeWorkflowForChat": "שנו את תהליך העבודה שהסוכן יכול לערוך",
     "chatOptions": "אפשרויות צ'אט",
     "chooseWorkflow": "בחר תהליך עבודה",
@@ -40,13 +64,16 @@
     "coachWorkflowTitle": "הסוכן שלך עורך את תהליך העבודה שבו אתה צופה",
     "consent": {
       "accept": "התחלת השימוש ב-Comfy Agent",
+      "agreeAndContinue": "הסכימו והמשיכו",
       "body1": "Comfy Agent מסייע לכם לתכנן, לבנות, להריץ ולשפר תהליכי עבודה. תארו מה ברצונכם ליצור, ו-Comfy Agent יעבוד כעמית רב-עוצמה שלכם.",
       "body2": "כדי לבנות את תהליכי העבודה שלכם, Comfy Agent מעבד חלק מהנתונים שלכם. היו סמוכים ובטוחים, הנתונים שלכם לעולם אינם משמשים לאימון מודלי AI. בלחיצה על \"התחל\", אתם מסכימים לשימוש זה.",
+      "body2BeforeSignIn": "כדי לבנות את תהליכי העבודה שלכם, Comfy Agent מעבד חלק מהנתונים שלכם. היו בטוחים שהנתונים שלכם לעולם אינם משמשים לאימון מודלי AI. בלחיצה על \"הסכימו והמשיכו\", אתם מסכימים לשימוש זה.",
       "loadError": "לא ניתן לטעון את העדפתכם עבור Agent. נסו שוב.",
       "readDocs": "קריאת התיעוד",
       "reject": "דילוג לעת עתה",
       "saveError": "לא ניתן לשמור את העדפתכם. נסו שוב.",
       "signInError": "לא ניתן לפתוח את ההתחברות. נסו שוב.",
+      "signInNext": "תתחברו בהמשך.",
       "title": "הכירו את Comfy Agent",
       "videoPlaceholder": "הסרטון אינו זמין"
     },
@@ -57,6 +84,19 @@
     "creditTransitionNotice": "ניצלת את הקרדיטים החינמיים של הסוכן. פעילות נוספת של הסוכן משתמשת בקרדיטים של סביבת העבודה שלך, שעשויים לכלול קרדיטים בתשלום.",
     "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
+    "deleteApproval": {
+      "answered": "נענה",
+      "card": "בקשת מחיקה מהסוכן",
+      "closed": "בקשה זו נסגרה ללא מענה.",
+      "delete": "מחיקה",
+      "deleted": "תשובה: מחק אותו | תשובה: מחק אותם",
+      "keep": "השארה",
+      "kept": "תשובה: השאר אותו | תשובה: השאר אותם",
+      "moreNodes": "{count} צומת נוסף שאינו מופיע ברשימה | {count} צמתים נוספים שאינם מופיעים ברשימה",
+      "nodes": "צמתים שהסוכן ביקש למחוק",
+      "retired": "בקשה זו אינה פתוחה כאן עוד.",
+      "unconfirmed": "לא הצלחנו לאשר את תשובתכם. בדקו את הקנבס לפני שתנסו שוב."
+    },
     "diagnosticReport": {
       "clipboardFailed": "הגישה ללוח הגזירים נכשלה. בחרו והעתיקו את הדוח שלהלן, או נסו שוב.",
       "collectionFailed": "לא ניתן לאסוף את הדוח. נסו שוב, או כבו מקורות אופציונליים ונסו שוב.",
@@ -68,13 +108,26 @@
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
     "editRejected": {
-      "generic": "העריכה שלך נדחתה ולא נשמרה. ייתכן שתהליך העבודה אינו תואם עוד לקנבס שלו — טען מחדש את תהליך העבודה כדי לראות מה נשמר.",
-      "genericPartial": "העריכה שלך נדחתה ולא נשמרה, אף שכמה עריכות קודמות נשמרו. ייתכן שתהליך העבודה אינו תואם עוד לקנבס שלו — טען מחדש את תהליך העבודה כדי לראות מה נשמר.",
-      "widgetWrite": "עריכת הפקד נדחתה ולא נשמרה. הערך שהקלדת קיים בקנבס בלבד — טען מחדש את תהליך העבודה כדי לראות את הערך שנשמר.",
-      "widgetWritePartial": "עריכת הפקד נדחתה ולא נשמרה, אף שכמה עריכות קודמות נשמרו. הערך שהקלדת קיים בקנבס בלבד — טען מחדש את תהליך העבודה כדי לראות את הערכים שנשמרו."
+      "generic": "העריכה שלכם נדחתה ולא נשמרה. טענו מחדש את תהליך העבודה אם הקנבס עדיין מציג אותה.",
+      "genericPartial": "העריכה שלכם נדחתה ולא נשמרה, אף שכמה עריכות קודמות נשמרו. טענו מחדש את תהליך העבודה אם הקנבס עדיין מציג את החלק שנדחה.",
+      "targets": {
+        "clear": "ניקוי תהליך העבודה",
+        "link": "קישור {id}",
+        "node": "צומת {id}",
+        "nodeField": "צומת {id} {field}"
+      },
+      "widgetWrite": "עריכת הפקד נדחתה ולא נשמרה. תהליך העבודה שומר על הערך הקודם; טענו מחדש את תהליך העבודה אם הקנבס עדיין מציג את הערך שהקלדתם.",
+      "widgetWritePartial": "עריכת הפקד נדחתה ולא נשמרה, אף שכמה עריכות קודמות נשמרו. תהליך העבודה שומר על הערך הקודם; טענו מחדש את תהליך העבודה אם הקנבס עדיין מציג את הערך שהקלדתם.",
+      "withReason": "{notice} נדחה: {target} ({code})",
+      "withReasonCode": "{notice} סיבה: {code}",
+      "withReasonTarget": "{notice} נדחה: {target}"
     },
     "editWhileWorking": "אפשר להמשיך לערוך בזמן שהוא פועל",
     "entryButton": "סוכן",
+    "entryFailed": "הסוכן אינו זמין",
+    "entryFailedReason": "ComfyUI לא הצליח להפעיל את הסוכן: {reason}",
+    "entryStarting": "הסוכן מתחיל לפעול…",
+    "entryStartingReason": "ComfyUI מפעיל את הסוכן: {reason}",
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
@@ -129,8 +182,8 @@
       "title": "אין קרדיטים",
       "upgradePlan": "שדרוג התוכנית"
     },
-    "placeholder": "תאר רעיונות, / השתמש במיומנויות, {'@'} הוסף הפניות, גרור נכסים",
-    "placeholderWithoutSkills": "תאר רעיונות, {'@'} הוסף הפניות, גרור נכסים",
+    "placeholder": "תארו מה ברצונכם ליצור",
+    "placeholderWithoutSkills": "תארו מה ברצונכם ליצור",
     "previewAsset": "תצוגה מקדימה של {name}",
     "recoveredTurnFailed": "הסוכן לא הצליח להשלים את התגובה הזו.",
     "reference": "הפניה",
@@ -142,7 +195,7 @@
     "retryAfterSeconds": "ניתן לנסות שוב בעוד {seconds} שניות.",
     "runApproval": {
       "answerFailed": "לא ניתן היה לשלוח את תשובתכם. טענו מחדש את הדף ונסו שוב.",
-      "answerSuperseded": "בקשה זו כבר נענתה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
+      "answerSuperseded": "כבר ניתנה תשובה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
       "answerUncertain": "לא ניתן היה לאשר שתשובתכם הגיעה לסוכן. ייתכן שהיא עדיין הוחלה — טענו מחדש את הדף כדי לראות מה המצב.",
       "cancel": "ביטול",
       "lead": "כלי זה מבקש להפעיל את תהליך העבודה:",
@@ -164,8 +217,8 @@
     "runModeTriggerAutoLimit": "אוטומטי (מוגבל)",
     "runModeTriggerAutoLimitTooltip": "שאל כאשר מגיעים למגבלת הקרדיט",
     "runModeTriggerAutoTooltip": "הפעל תהליך עבודה ללא הרשאה",
-    "runNotice": "הסוכן יכול לשנות את הגרף. בדוק את הרשאות ההפעלה לפני שתאפשר לו לבצע את תהליך העבודה.",
-    "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלך. בדוק את הרשאות ההפעלה לפני שתאפשר לו לבצע אותו.",
+    "runNotice": "הסוכן יכול לשנות את הגרף. השתמשו בהרשאות הפעלה בסרגל הכלים של העורך כדי לקבוע אם עליו לבקש אישור לפני הביצוע.",
+    "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלכם. השתמשו בהרשאות הפעלה בסרגל הכלים של העורך כדי לקבוע אם עליו לבקש אישור לפני הביצוע.",
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
     "savingWorkflow": "שומר תהליך עבודה",
@@ -174,7 +227,9 @@
     "selectWorkflowForNodes": "יש לבחור תחילה תהליך עבודה",
     "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
     "send": "שלח",
-    "sendBlockedByInvalidVideo": "{name} אינו סרטון וידאו תקין. הסר אותו כדי לשלוח. | {count} קבצים אינם סרטוני וידאו תקינים. הסר אותם כדי לשלוח.",
+    "sendBlockedByInvalidAttachments": "לא ניתן לשלוח {count} קבצים. הסירו אותם כדי לשלוח.",
+    "sendBlockedByInvalidVideo": "{name} אינו סרטון תקין. הסירו אותו כדי לשלוח.",
+    "sendBlockedByUnsupportedType": "{name} אינו מסוג קובץ שהסוכן מקבל. הסירו אותו כדי לשלוח.",
     "sendBusy": "הודעה כבר נשלחת",
     "sendFailed": "שליחת ההודעה נכשלה",
     "sendTurnInProgress": "בצ'אט זה עדיין פועלת תגובה. המתן לסיומה, או עצור אותה, ולאחר מכן שלח שוב.",
@@ -230,6 +285,7 @@
     "toolForgotPreference": "נשכחה העדפה",
     "toolLoadedSkill": "נטען {skill}",
     "toolLoadingSkill": "טוען את {skill}",
+    "toolNotConfirmedOnCanvas": "{tool} — לא אושר בקנבס שלכם",
     "toolOpenedNewTab": "נפתחה לשונית חדשה",
     "toolOpeningNewTab": "פתיחת לשונית חדשה",
     "toolSavedPreference": "נשמרה העדפה",
@@ -248,10 +304,12 @@
     "worked": "בוצע",
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
+    "workedNotConfirmedOnCanvas": "השינויים לא אושרו בקנבס שלכם",
     "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם, וניתן להחליף תהליכי עבודה במהלך השיחה.",
     "workflowReferenceUnavailableReason": "תהליך העבודה שאליו בוצעה ההפניה אינו זמין עוד או שאין לך גישה אליו.",
     "workflowSyncFailedDetail": "תהליך עבודה זה נוצר באמצעות גרסת מסמך שאינה תואמת. הקנבס שלך נותר ללא שינוי.",
-    "workflowSyncFailedDetailCatalogMismatch": "תהליך עבודה זה משתמש בקטלוג צמתים שאינו תואם לסביבת עבודה זו. הקנבס שלך נותר ללא שינוי.",
+    "workflowSyncFailedDetailCatalogMismatch": "צומת בתהליך עבודה זה השתנה מאז שהסוכן ראה אותו לאחרונה. הקנבס שלכם נותר ללא שינוי. ההודעה הבאה שלכם תשלח את הקנבס שלכם כדי שהסוכן יוכל לבנות מחדש את העותק שלו של תהליך העבודה.",
+    "workflowSyncFailedDetailStaleClient": "דף זה אינו מעודכן, ולכן לא ניתן להציג את השינויים של הסוכן. טענו מחדש את הדף כדי לראות אותם.",
     "workflowSyncFailedTitle": "לא ניתן לסנכרן את תהליך העבודה הזה",
     "workflows": "תהליכי עבודה",
     "working": "מעבד..."
@@ -659,7 +717,6 @@
     "authenticatePaymentBlockedDetail": "הבנק שלכם לא אישר תשלום זה. פנו לבנק לפני שתנסו רכישה נוספת.",
     "authenticatePaymentDetail": "הבנק שלכם צריך לאשר תשלום זה. נסו שוב ואשרו את התשלום מול הבנק כשתתבקשו.",
     "authenticationFailedDetail": "לא הצלחנו להשלים את אימות התשלום. נא לנסות שוב.",
-    "authenticationUnavailable": "אימות תשלום מאובטח אינו זמין. נא לרענן ולנסות שוב.",
     "cancelFailed": "ביטול המנוי נכשל",
     "cancelPaymentFailed": "לא הצלחנו לבטל תשלום זה. נסה שוב.",
     "cancelPaymentInFlight": "תשלום זה כבר בעיבוד ואי אפשר לבטל אותו.",
@@ -681,6 +738,7 @@
     "subscriptionSuccess": "המנוי עודכן בהצלחה",
     "subscriptionTimeout": "תם הזמן הקצוב לאימות המנוי",
     "topupActionRequired": "אמת את התשלום שלך כדי להוסיף קרדיטים",
+    "topupAlreadyPendingDetail": "טעינה קודמת שהתחלת עדיין נמצאת בעיבוד. יש להשלים את האימות שלה או להמתין לסיומה לפני הוספת קרדיטים נוספים.",
     "topupFailed": "הטעינה נכשלה",
     "topupProcessing": "מעבד תשלום — מוסיף קרדיטים...",
     "topupSuccess": "הקרדיטים נוספו בהצלחה",
@@ -696,9 +754,13 @@
     "clearAll": "נקה הכל",
     "clickRegionToEdit": "לחץ על אזור כדי לערוך אותו.",
     "colors": "פלטת צבעים",
+    "deleteRegion": "מחק אזור {tag}",
     "descLabel": "תיאור",
     "descPlaceholder": "תיאור האזור הזה",
+    "drawRegionHint": "גררו על הקנבס כדי להוסיף אזור.",
+    "editorTitle": "תיבות תוחמות",
     "grid": "רשת",
+    "openFullscreen": "פתח עורך במסך מלא",
     "textLabel": "טקסט",
     "textPlaceholder": "טקסט להצגה (מילולי)",
     "typeObj": "אובייקט",
@@ -1114,6 +1176,7 @@
     "Shape": "צורה",
     "Shapes": "צורות",
     "Show Link": "הצג קישור",
+    "Show Links": "הצג קישורים",
     "Title": "כותרת",
     "Top": "למעלה",
     "UnfavoriteWidget": "הסרת הפקד מהמועדפים",
@@ -1130,12 +1193,14 @@
     "additionalInfo": "מידע נוסף",
     "api": "API",
     "apiPricing": "תמחור API",
+    "charge": "חיוב",
     "credits": "קרדיטים",
     "creditsAvailable": "קרדיטים זמינים",
     "details": "פרטים",
     "eventType": "סוג האירוע",
     "eventTypes": {
       "accountCreated": "חשבון נוצר",
+      "agentUsage": "שימוש בסוכן",
       "apiNodeUsage": "שימוש בצומת שותף",
       "apiUsage": "שימוש ב-API",
       "creditAdded": "קרדיטים נוספו",
@@ -1165,12 +1230,20 @@
       "buyCredits": "המשך לתשלום",
       "buyNow": "קנה עכשיו",
       "changeInProgressError": "רכישת קרדיטים אחרת עדיין פתוחה. המתינו להשלמתה או לפקיעתה לפני התחלת רכישה חדשה.",
+      "checkoutBlockedBody": "הדפדפן חסם את הכרטיסייה החדשה. פתחו את דף התשלום כדי להשלים את התשלום.",
+      "checkoutBlockedTitle": "דף התשלום לא נפתח",
+      "checkoutOpenFailed": "לא ניתן היה לפתוח את דף התשלום. לא בוצע חיוב. נסו שוב.",
+      "checkoutOpenedBody": "הקרדיטים מתווספים למרחב עבודה זה מיד לאחר שהתשלום שלכם עובר.",
+      "checkoutOpenedTitle": "דף התשלום נפתח בכרטיסייה חדשה",
       "confirmSubtitle": "קרדיטים מתווספים לסביבת עבודה זו מיד עם סיום התשלום.",
       "confirmTitle": "אישור",
       "contactUs": "צור קשר",
+      "continueToCheckout": "המשך לתשלום",
       "creditsDescription": "קרדיטים משמשים להרצת תהליכי עבודה או צמתי שותפים.",
       "creditsPerDollar": "קרדיטים לדולר",
       "creditsToReceiveLabel": "קרדיטים שיתקבלו",
+      "defaultCardBlockedBody": "הדפדפן חסם את הכרטיסייה החדשה. פתחו את דף התשלום כדי להגדיר כרטיס ברירת מחדל.",
+      "defaultCardBlockedTitle": "דף התשלום לא נפתח",
       "howManyCredits": "כמה קרדיטים תרצה להוסיף?",
       "insufficientMessage": "אין לך מספיק קרדיטים כדי להריץ תהליך עבודה זה.",
       "insufficientTitle": "אין מספיק קרדיטים",
@@ -1181,14 +1254,20 @@
       "minRequired": "{credits} קרדיטים מינימום",
       "minimumPurchase": "{amount}$ מינימום ({credits} קרדיטים)",
       "needMore": "צריך עוד?",
-      "noPaymentMethodError": "לא נשמר אמצעי תשלום עבור סביבת עבודה זו. הוסיפו אמצעי תשלום דרך הגדרות → תוכנית וקרדיטים → ניהול חיוב, ולאחר מכן נסו שוב לבצע את ההטענה.",
+      "negativeBalanceNotice": "היתרה שלך היא ‎−{credits} קרדיט. טעינה זו מכסה זאת תחילה. | היתרה שלך היא ‎−{credits} קרדיטים. טעינה זו מכסה זאת תחילה.",
+      "noPaymentMethodCheckoutHint": "לא נשמר כרטיס במרחב עבודה זה לטעינות בלחיצה אחת. שלמו בדף התשלום במקום זאת, או הגדירו כרטיס ברירת מחדל כך שהטעינות הבאות יחויבו ישירות בו.",
+      "openCheckout": "פתח את דף התשלום",
+      "openPaymentPage": "פתח את דף התשלום",
       "payAmount": "שלם {amount}",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",
       "purchaseSuccess": "הקרדיטים נוספו בהצלחה!",
       "quickPurchase": "רכישה מהירה",
+      "reopenCheckout": "פתח מחדש את דף התשלום",
       "seeDetails": "ראה פרטים",
       "selectAmount": "בחר סכום",
+      "setDefaultCard": "הגדר כרטיס ברירת מחדל",
+      "setDefaultCardError": "לא ניתן היה לפתוח את הגדרות הכרטיס",
       "startOver": "התחלה מחדש",
       "templateNote": "*נוצר באמצעות תבנית Wan 2.2 Image-to-Video",
       "topUp": "טעינה",
@@ -1334,15 +1413,66 @@
   "deployToComfyApi": {
     "body": "פרסו את תהליך העבודה הזה כ-API לסביבת ייצור בתוך דקות. ארזו את הצמתים המותאמים אישית, המודלים ותלויות ה-Python שלכם בבנייה ניתנת לשחזור, ו-Comfy API יריץ אותה כנקודת קצה בעלת התאמת קנה מידה אוטומטית.",
     "briefFailed": "לא ניתן היה להכין את התקציר עבור הסוכן שלך. נסה שוב.",
+    "bundleBusy": "Comfy עסוק. נסה שוב בעוד רגע.",
+    "bundleRejected": "Comfy דחה את ההעלאה. הבעיה דווחה.",
+    "bundleTooLarge": "התקנה זו גדולה מדי להעלאה.",
+    "bundleTooMany": "יש לך יותר מדי העלאות ממתינות. נסה שוב מאוחר יותר; תוקפן פג לאחר 24 שעות.",
+    "bundleUnauthorized": "התחבר שוב לחשבון Comfy שלך ולאחר מכן נסה פעם נוספת.",
+    "bundleUnavailable": "לא ניתן היה להתחבר אל Comfy. נסה שוב מאוחר יותר.",
     "buttonLabel": "פריסה ל-Comfy API",
     "copied": "הועתק",
     "deployOnPlatform": "פריסה בפלטפורמה",
     "deployWithAgent": "בנה באמצעות הסוכן שלך",
+    "openBuilder": "פתח את אשף הבנייה",
     "readDocs": "קראו את התיעוד",
     "summaryClasses": "{count} מחלקת צומת | {count} מחלקות צמתים",
     "summaryModels": "{count} מודל | {count} מודלים",
     "summaryPacks": "{count} חבילת צמתים | {count} חבילות צמתים",
     "title": "פריסה ל-Comfy API"
+  },
+  "deploymentSwitcher": {
+    "comfyCloud": "Comfy Cloud",
+    "createCustomDeployment": "צור פריסה מותאמת אישית",
+    "createCustomDeploymentTooltip": "הפעל את העורך עם הצמתים והמודלים המותאמים אישית שלך. הגדר זאת בפלטפורמת המפתחים.",
+    "currentTooltip": "פועל על {deployment}",
+    "defaultDeleted": "נמחקה",
+    "defaultGone": "ברירת המחדל של סביבת העבודה נמחקה, ולכן חברים מתחילים ב-Comfy Cloud.",
+    "defaultGoneOwner": "ברירת המחדל של סביבת העבודה נמחקה, ולכן חברים מתחילים ב-Comfy Cloud. בחר ברירת מחדל חדשה תחת ״ברירת מחדל של סביבת העבודה״.",
+    "deployment": "{build} v{version}",
+    "deploymentChanged": "דפדפן זה פועל כעת על {deployment}. טען מחדש כדי לקבל את הצמתים שלו.",
+    "failedToSetDefault": "לא ניתן היה לשנות את ברירת המחדל של סביבת העבודה",
+    "failedToSwitch": "לא ניתן היה להחליף",
+    "fullLabel": "{build} · {deployment}",
+    "landed": "פועל על {deployment}",
+    "linkRefused": "לא ניתן היה לפתוח פריסה זו",
+    "linkTimedOut": "לפריסה זו לקח זמן רב מדי להיפתח. נסה שוב את הקישור.",
+    "linkWorkspaceRefused": "לא ניתן היה לעבור לאותה סביבת עבודה. אתה עדיין ב־{workspaceName}.",
+    "lookupUnavailable": "לא ניתן היה לבדוק על איזו פריסה עורך זה פועל.",
+    "lookupUnavailableDetail": "המודלים המוצגים הם של Comfy Cloud. טען מחדש כדי לנסות שוב.",
+    "membersStartOn": "חברים ללא בחירה משלהם מתחילים ב־",
+    "nameWithVersion": "{name} · v{version}",
+    "namedDeployment": "{name}",
+    "noDeployments": "לסביבת עבודה זו עדיין אין פריסות.",
+    "notReadyTooltip": "פועל על {deployment}. הוא אינו מוכן, ולכן משימות לא יפעלו עד שיהיה מוכן.",
+    "pickGone": "הפריסה שבחרת כבר אינה קיימת.",
+    "pickGoneDetail": "דפדפן זה פועל כעת על Comfy Cloud. בחר שוב פריסה כדי להשתמש בה.",
+    "releaseChanged": "פריסה זו פועלת כעת עם מהדורה אחרת. טען מחדש כדי לקבל את הצמתים שלה.",
+    "reload": "טען מחדש",
+    "runOn": "הפעל ב-",
+    "status": {
+      "notReady": "לא מוכן",
+      "provisioning": "מתחיל",
+      "starting": "מתחיל",
+      "stopped": "הופסק"
+    },
+    "stoppedTooltip": "פועל על {deployment}. הוא מופסק, ולכן משימות לא יפעלו עד שיופעל בפלטפורמת המפתחים.",
+    "switching": "מחליף",
+    "switchingNote": "ההחלפה טוענת מחדש את העורך. הלשוניות שלך נשארות פתוחות.",
+    "switchingNoteWithoutDrafts": "ההחלפה טוענת מחדש את העורך.",
+    "triggerLabel": "פועל ב-{deployment}. בחר היכן עורך זה יפעל",
+    "triggerLabelNotReady": "{status} בחר היכן עורך זה יפעל",
+    "unnamedDeployment": "פריסה {id}",
+    "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
   "desktopLogin": {
     "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
@@ -1412,26 +1542,36 @@
       },
       "missing_model": {
         "displayMessageCloud": "ייבא מודל, או פתח את הצומת כדי להחליפו.",
+        "displayMessageDeployment": "מודלים אלה אינם נמצאים ב־{deployment}. פתח את הצומת כדי לבחור מודל שנמצא בה.",
         "displayMessageOss": "הורד מודל, או פתח את הצומת כדי להחליפו.",
         "toastMessageManyCloud": "חלק מהמודלים אינם נתמכים. בחר אחרים.",
+        "toastMessageManyDeployment": "בחרו מודלים אחרים, או בחרו פריסה שבה הם נמצאים.",
         "toastMessageManyOss": "חסרים {count} קובצי מודל.",
         "toastMessageOneCloud": "מודל זה אינו נתמך. בחר אחר.",
+        "toastMessageOneDeployment": "בחרו מודל אחר, או בחרו פריסה שבה הוא נמצא.",
         "toastMessageOneOss": "ל-{nodeName} חסר קובץ מודל נדרש.",
         "toastTitleMany": "מודלים חסרים",
         "toastTitleManyCloud": "מודלים אינם זמינים בענן",
+        "toastTitleManyDeployment": "המודלים אינם נמצאים בפריסה {deployment}",
         "toastTitleOneCloud": "{modelName} אינו זמין בענן",
+        "toastTitleOneDeployment": "{modelName} אינו נמצא בפריסה {deployment}",
         "toastTitleOneOss": "{modelName} חסר"
       },
       "missing_node": {
         "displayMessageCloud": "צמתים מותאמים נדרשים אינם נתמכים בענן. החלף אותם בצמתים נתמכים.",
+        "displayMessageDeployment": "צמתים אלה אינם נמצאים ב־{deployment}. החלף אותם, או בחר פריסה שבה הם נמצאים.",
         "displayMessageOss": "התקן את החבילות החסרות כדי להשתמש בתהליך עבודה זה.",
         "toastMessageManyCloud": "תהליך עבודה זה משתמש בצמתים שאינם נתמכים בענן.",
+        "toastMessageManyDeployment": "החלף צמתים אלה, או בחר פריסה שבה הם נמצאים.",
         "toastMessageManyOss": "{count} צמתים דורשים חבילות צמתים חסרות.",
         "toastMessageOneCloud": "צומת זה אינו נתמך בענן.",
+        "toastMessageOneDeployment": "החלף צומת זה, או בחר פריסה שבה הוא נמצא.",
         "toastMessageOneOss": "תהליך עבודה זה משתמש בצומת מותאם שאינו מותקן. התקן אותו מהרישום (Registry) או החלף את הצומת.",
         "toastTitleManyCloud": "צמתים אינם זמינים בענן",
+        "toastTitleManyDeployment": "הצמתים אינם נמצאים ב־{deployment}",
         "toastTitleManyOss": "צמתים חסרים",
         "toastTitleOneCloud": "{nodeType} אינו זמין בענן",
+        "toastTitleOneDeployment": "{nodeType} אינו נמצא ב־{deployment}",
         "toastTitleOneOss": "צומת חסר: {nodeType}"
       },
       "swap_nodes": {
@@ -1808,6 +1948,7 @@
     "accessRestrictedMessage": "החשבון שלך אינו מורשה לתכונה זו.",
     "accessRestrictedTitle": "הגישה מוגבלת",
     "defaultTitle": "אירעה שגיאה",
+    "executionFailedWhileDisconnected": "המשימה נכשלה בזמן שהחיבור החי לא היה זמין.",
     "extensionFileHint": "ייתכן שהדבר נובע מהסקריפט הבא",
     "loadWorkflowTitle": "הטעינה בוטלה עקב שגיאה בטעינה מחדש של נתוני תהליך העבודה",
     "noStackTrace": "אין מעקב מחסנית (stacktrace) זמין",
@@ -1932,7 +2073,6 @@
     "collapseAll": "כיווץ הכול",
     "color": "צבע",
     "comfy": "Comfy",
-    "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "הלוגו של ComfyOrg",
     "comfyPackageOutdated": "הגרסה המותקנת {installedVersion} של {name} נמוכה מהגרסה הנדרשת {requiredVersion}.",
     "comingSoon": "בקרוב",
@@ -2992,6 +3132,7 @@
     "legacyManagerUIDescription": "כדי להשתמש בממשק המנהל הישן, הפעל את ComfyUI עם --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "תפריט המנהל הישן אינו זמין, עובר לתפריט המנהל החדש.",
     "license": "רישיון",
+    "loadMoreFailed": "לא ניתן היה לטעון תוצאות נוספות.",
     "loadingVersions": "טוען גרסאות...",
     "mixedSelectionMessage": "לא ניתן לבצע פעולה מרובה על בחירה מעורבת",
     "nav": {
@@ -3084,6 +3225,8 @@
     "black": "שחור",
     "brushSettings": "הגדרות מברשת",
     "brushShape": "צורת המברשת",
+    "brushShapeCircle": "מברשת עגולה",
+    "brushShapeSquare": "מברשת מרובעת",
     "clear": "ניקוי",
     "clickToResetZoom": "לחץ לאיפוס הזום",
     "colorSelectSettings": "הגדרות בחירת צבע",
@@ -3249,6 +3392,7 @@
     "Custom Nodes Manager": "מנהל הצמתים המותאמים",
     "Decrease Brush Size in MaskEditor": "הקטנת גודל המברשת בעורך המסכות",
     "Delete Selected Items": "מחיקת הפריטים הנבחרים",
+    "Delete Selected Links": "מחק קישורים נבחרים",
     "Desktop User Guide": "מדריך למשתמש בגרסת שולחן העבודה",
     "Duplicate Current Workflow": "שכפול תהליך העבודה הנוכחי",
     "Edit": "עריכה",
@@ -3264,6 +3408,7 @@
     "Group Selected Nodes": "קיבוץ הצמתים הנבחרים",
     "Help": "עזרה",
     "Help Center": "מרכז העזרה",
+    "Hide Selected Links": "הסתר קישורים נבחרים",
     "Increase Brush Size in MaskEditor": "הגדלת גודל המברשת בעורך המסכות",
     "Install Missing Custom Nodes": "התקנת צמתים מותאמים חסרים",
     "Interrupt": "הפסקה",
@@ -3325,6 +3470,7 @@
     "Set Subgraph Search Aliases": "הגדרת כינויי חיפוש לתת-הגרף",
     "Show Keybindings Dialog": "הצגת חלון מקשי הקיצור",
     "Show Model Selector (Dev)": "הצגת בורר המודלים (פיתוח)",
+    "Show Selected Links": "הצג קישורים נבחרים",
     "Show Settings Dialog": "הצגת חלון ההגדרות",
     "Sign Out": "התנתקות",
     "Toggle App Mode": "החלפת מצב התצוגה של היישום",
@@ -3428,6 +3574,7 @@
     "Meshy": "Meshy",
     "Meta": "מטא",
     "MiniMax": "MiniMax",
+    "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
@@ -3442,6 +3589,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
@@ -3476,6 +3624,7 @@
     "debug": "debug",
     "detection": "detection",
     "experimental": "experimental",
+    "fibo": "fibo",
     "filters": "filters",
     "flux": "flux",
     "fun control": "fun control",
@@ -3512,6 +3661,7 @@
     "mochi": "mochi",
     "model": "model",
     "model specific": "מותאם למודל",
+    "moss_image": "moss_image",
     "move": "move",
     "multigpu": "multigpu",
     "noise": "noise",
@@ -3548,6 +3698,7 @@
     "stable zero123": "stable zero123",
     "supir": "supir",
     "sync_so": "sync.so",
+    "testing": "בדיקות",
     "text": "text",
     "texturing": "טקסטוריזציה",
     "training": "training",
@@ -3621,6 +3772,7 @@
   },
   "nodeTemplates": {
     "enterName": "הזן שם",
+    "notLoaded": "לא ניתן היה לטעון את התבניות השמורות, ולכן השינויים לא נשמרו כדי להימנע מדריסתן. רעננו את הדף ונסו שוב.",
     "saveAsTemplate": "שמירה כתבנית"
   },
   "notSupported": {
@@ -3658,6 +3810,9 @@
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "title": "{client} מבקש גישה",
+      "unverifiedBadge": "השם לא אומת",
+      "unverifiedNotice": "שם זה סופק על ידי מי שרשם יישום זה. לאחר שתמשיכו, הדפדפן שלכם יישלח אל {host} — ודאו שאתם מזהים אותו.",
+      "unverifiedNoticeNoHost": "שם זה סופק על ידי מי שרשם יישום זה ולא אומת על ידי Comfy.",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -4266,6 +4421,7 @@
     "About": "אודות",
     "Allowlist": "רשימת מורשים",
     "Appearance": "מראה",
+    "Billing": "חיוב",
     "BrushAdjustment": "כוונון המברשת",
     "Camera": "מצלמה",
     "Canvas": "קנבס",
@@ -4661,6 +4817,7 @@
       "message": "חיוב צוותי יגיע בקרוב. תוכל להירשם למסלול עבור סביבת העבודה שלך עם תמחור לפי מושב. הישאר מעודכן.",
       "title": "בקרוב"
     },
+    "billingPortalUnavailable": "לא ניתן היה לפתוח את החיוב. נסו שוב.",
     "billingTabBlocked": "לא ניתן לפתוח את דף החיוב. אפשר חלונות קופצים עבור אתר זה ונסה שוב.",
     "cancelDialog": {
       "endOfBillingPeriod": "סוף תקופת החיוב שלך",
@@ -4851,6 +5008,21 @@
       "personal": "לשימוש אישי",
       "team": "לצוותים"
     },
+    "planUnavailable": {
+      "annualToMonthlyUnsupported": "לא תוכלו לעבור לתוכנית חודשית ברמה גבוהה יותר עד לסיום התוכנית השנתית שלכם.",
+      "billingOperationInProgress": "שינוי בחיוב נמצא בתהליך. תוכנית זו תהיה זמינה שוב בקרוב.",
+      "billingOperationParked": "שינוי חיוב שבוצע לאחרונה דורש תיקון מצד הצוות שלנו. פנו לתמיכה כדי לשנות את התוכנית שלכם.",
+      "billingStateUnknown": "לא הצלחנו לאמת את פרטי החיוב שלכם. נסו שוב בעוד רגע.",
+      "exceedsMaxSeats": "במרחב העבודה שלכם יש יותר חברים מכפי שתוכנית זו מאפשרת.",
+      "generic": "תוכנית זו אינה זמינה עבור מרחב העבודה שלכם.",
+      "incompatibleTransition": "לא ניתן לבחור תוכנית זו מתוך התוכנית הנוכחית שלכם.",
+      "notAMember": "אינכם עוד חברים במרחב עבודה זה, ולכן אינכם יכולים לשנות את התוכנית שלו.",
+      "notOriginalOwner": "רק האדם שיצר את מרחב העבודה הזה יכול לבצע את שינוי התוכנית הזה.",
+      "notWorkspaceOwner": "רק הבעלים של מרחב העבודה יכולים לשנות את התוכנית.",
+      "salesManaged": "התוכנית שלכם מנוהלת על ידי צוות המכירות שלנו. פנו לצוות המכירות כדי לשנות אותה.",
+      "subscriptionChangeInProgress": "כבר מתוזמן עבורכם שינוי תוכנית. תוכלו לבחור תוכנית אחרת לאחר שהוא ייכנס לתוקף.",
+      "subscriptionChangeScheduled": "שינוי התוכנית המתוזמן שלכם ייכנס לתוקף ב-{date}. תוכלו לבחור תוכנית אחרת לאחר מכן."
+    },
     "plansAndCredits": "תוכניות וקרדיטים",
     "plansAndPricing": "מסלולים ותמחור",
     "plansForWorkspace": "מסלולים עבור {workspace}",
@@ -4864,7 +5036,6 @@
       "alipay": "Alipay",
       "alipayRenewalNote": "ההרשאה של Alipay תשמש גם לחידושים אוטומטיים ולרכישות עתידיות.",
       "applyPromoCode": "החל",
-      "applyQuoteBeforeContinuing": "החל את קוד הקידום כדי לרענן את הצעת המחיר לפני ההמשך.",
       "backToAllPlans": "חזרה לכל המסלולים",
       "billedEachMonth": "{amount} מחויב כל חודש. ניתן לבטל בכל עת.",
       "billingAddress": "כתובת לחיוב",
@@ -4907,8 +5078,6 @@
       "promoCodePlaceholder": "קוד קידום",
       "proratedCharge": "חיוב יחסי עבור {plan}",
       "proratedRefund": "החזר יחסי עבור {plan}",
-      "quoteRefreshFailed": "תוקף הצעת המחיר שלך פג ולא ניתן היה לרענן אותה. בחר שוב את התוכנית שלך.",
-      "quoteStale": "הצעת המחיר שלך השתנתה. בדוק את הסכום המעודכן ונסה שוב.",
       "quoteUnavailable": "לא זמין",
       "reactivation": {
         "amountChanged": "סכום החיוב השתנה מאז האישור — נא בדוק ונסה שוב",
@@ -4976,6 +5145,7 @@
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
     "resubscribeTo": "חידוש {plan}",
+    "resubscribeToUseCredits": "הירשמו מחדש כדי להשתמש בקרדיטים ב-Cloud.",
     "retentionOffer": {
       "accept": "השאר עם {plan} וחסוך {percent}%",
       "appliedBadge": "הוחל",
@@ -5017,7 +5187,6 @@
     "saveYearly": "חסוך 20%",
     "saveYearlyUpTo": "חסוך עד 20%",
     "scheduledChangeNotice": "התוכנית שלך משתנה ל-{plan} בתאריך {date}.",
-    "scheduledForDate": "מתוזמן לתאריך {date}",
     "soloUseOnly": "לשימוש יחיד בלבד",
     "subscribe": "הירשם",
     "subscribeFailed": "ההרשמה נכשלה",
@@ -5027,6 +5196,7 @@
     "subscribeToComfyCloud": "הירשם ל-Comfy Cloud",
     "subscribeToRun": "הרשמה",
     "subscribeToRunFull": "הירשם כדי להריץ",
+    "subscribeToUseCredits": "הירשמו כדי להשתמש בקרדיטים ב-Cloud.",
     "subscriptionRequiredMessage": "נדרש מנוי כדי שחברים יוכלו להריץ תהליכי עבודה בענן ולהזמין חברים",
     "success": {
       "allSet": "הכל מוכן",
@@ -5099,7 +5269,6 @@
     "upgrade": "שדרוג",
     "upgradePlan": "שדרוג המסלול",
     "upgradeTo": "שדרג ל-{plan}",
-    "upgradeToAddCredits": "שדרג כדי להוסיף קרדיטים",
     "usdPerMonth": "USD / חודש",
     "usdPerMonthPerMember": "USD / חודש / חבר",
     "usdPerYear": "USD / שנה",
@@ -5280,7 +5449,6 @@
     "failedToApplyTexture": "החלת המרקם נכשלה",
     "failedToConvertToSubgraph": "המרת הפריטים לתת-גרף נכשלה",
     "failedToCreateCustomer": "יצירת הלקוח נכשלה: {error}",
-    "failedToDownloadFile": "הורדת הקובץ נכשלה",
     "failedToExportModel": "ייצוא המודל כ-{format} נכשל",
     "failedToFetchBalance": "אחזור היתרה נכשל: {error}",
     "failedToFetchLogs": "אחזור יומני השרת נכשל",
@@ -5461,6 +5629,10 @@
     "browseFiles": "עיון בקבצים",
     "dropPrompt": "גרור לכאן את הקובץ או"
   },
+  "widgetHistory": {
+    "redo": "בצע שוב",
+    "undo": "בטל"
+  },
   "widgets": {
     "boolean": {
       "false": "שקר",
@@ -5525,6 +5697,9 @@
     "inviteDirectoryManaged": "מנהל המערכת של הארגון שלך מנהל את החברות",
     "inviteDirectoryManagedDetail": "החברים בסביבת עבודה זו מנוהלים דרך ספריית הארגון שלך, ולכן לא ניתן להשתמש בקישורי הזמנה כדי להצטרף אליה. בקש ממנהל המערכת של הארגון שלך להוסיף אותך.",
     "inviteFailed": "קבלת ההזמנה נכשלה",
+    "inviteNeedsSignIn": "יש להיכנס כדי לקבל הזמנה זו",
+    "inviteNeedsSignInDetail": "דפדפן זה מחובר, אך כדי לקבל הזמנה יש להיכנס כאן פעם אחת.",
+    "inviteSignIn": "כניסה",
     "inviteSsoUnavailable": "בקש ממנהל המערכת שלך להוסיף אותך",
     "inviteSsoUnavailableDetail": "עדיין לא ניתן לקבל קישורי הזמנה מחשבון SSO. בקש ממנהל סביבת עבודה להוסיף אותך ישירות לסביבת העבודה.",
     "switchFailed": "המעבר לסביבת העבודה נכשל. אנא נסה שוב.",
@@ -5550,6 +5725,14 @@
   },
   "workspacePanel": {
     "billingStatus": {
+      "autoTopUpFailed": {
+        "body": "החיוב עבור הטעינה האוטומטית לא עבר. עדכן את אמצעי התשלום או הוסף קרדיטים באופן ידני.",
+        "title": "הטעינה האוטומטית נכשלה"
+      },
+      "autoTopUpOff": {
+        "body": "הכרטיס שלך נדחה 3 פעמים ברצף. עדכן את אמצעי התשלום ולאחר מכן הפעל מחדש את הטעינה האוטומטית.",
+        "title": "הטעינה האוטומטית כובתה"
+      },
       "ending": {
         "body": "לא תחויב שוב. לחברים תישמר גישה מלאה עד אז. חדש את התוכנית שלך כדי לשמור על הקרדיטים המשותפים של הצוות.",
         "contactSales": "יצירת קשר עם מחלקת המכירות",
@@ -5561,6 +5744,10 @@
         "reactivate": "חידוש התוכנית",
         "title": "תוכנית Team שלך מסתיימת ב־{date}"
       },
+      "lowCredits": {
+        "localBody": "נותרו לך {credits} קרדיטים. הוסף קרדיטים כדי להמשיך להפעיל צמתי שותפים.",
+        "title": "יתרת הקרדיטים נמוכה"
+      },
       "outOfCredits": {
         "addCredits": "הוסף קרדיטים",
         "body": "הצוות שלך ניצל את כל הקרדיטים שלו. הוסיפו קרדיטים נוספים או המתינו עד שהקרדיטים יתמלאו מחדש ב־{date}.",
@@ -5568,19 +5755,31 @@
         "dismiss": "סגור",
         "memberBody": "הצוות שלך ניצל את כל הקרדיטים שלו. בקשו מבעל סביבת העבודה להוסיף קרדיטים נוספים או המתינו עד שהקרדיטים יתמלאו מחדש ב־{date}.",
         "memberBodyNoDate": "הצוות שלך ניצל את כל הקרדיטים שלו. בקשו מבעל סביבת העבודה להוסיף קרדיטים נוספים.",
+        "pastDueBody": "הצוות שלך ניצל את כל הקרדיטים שלו. עדכן את אמצעי התשלום כדי להוסיף עוד.",
+        "pastDueMemberBody": "הצוות שלך ניצל את כל הקרדיטים שלו. בקש מבעל סביבת העבודה לעדכן את אמצעי התשלום.",
+        "pastDuePersonalBody": "ניצלת את כל הקרדיטים שלך. עדכן את אמצעי התשלום כדי להוסיף עוד.",
         "personalBody": "ניצלת את כל הקרדיטים שלך. הוסף קרדיטים נוספים או המתן עד שהקרדיטים יתחדשו ב-{date}.",
         "personalBodyNoDate": "ניצלת את כל הקרדיטים שלך. הוסף קרדיטים נוספים.",
         "title": "אזלו הקרדיטים"
       },
       "paused": {
-        "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך.",
-        "memberBody": "המנוי של סביבת עבודה זו מושהה. מנהלי סביבת העבודה צריכים לעדכן את אמצעי התשלום.",
-        "title": "המנוי מושהה"
+        "body": "המנוי של סביבת עבודה זו מושהה. עדכן את התשלום כדי להמשיך."
       },
-      "payInvoice": "תשלום חשבונית",
       "planChange": {
         "body": "התוכנית הנוכחית שלך נשארת פעילה עד אז.",
         "title": "התוכנית שלך משתנה ל־{plan} ב־{date}."
+      },
+      "planCheckout": {
+        "dismiss": "סגור",
+        "paymentReceived": {
+          "body": "התוכנית שלך מופעלת. לא תחויב שוב.",
+          "title": "התשלום התקבל"
+        },
+        "verifyPayment": {
+          "action": "אמת את התשלום שלך",
+          "body": "הבנק שלך דורש אימות נוסף כדי להשלים תשלום זה.",
+          "title": "אמת את התשלום שלך"
+        }
       },
       "planEnded": {
         "enterpriseBody": "צרו קשר עם מחלקת המכירות כדי להתחיל תוכנית Enterprise חדשה.",
@@ -5596,6 +5795,100 @@
         "teamTitle": "תוכנית Team שלך הסתיימה ב־{date}"
       },
       "updatePayment": "עדכן תשלום"
+    },
+    "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "ניהול",
+          "turnOn": "הפעלה",
+          "updatePayment": "עדכון אמצעי תשלום"
+        },
+        "failed": "החיוב שלכם לא עבר. עדכנו את אמצעי התשלום או הוסיפו קרדיטים ידנית.",
+        "limit": "מגבלה חודשית: נעשה שימוש ב-{spent} מתוך {limit}",
+        "limitTooltip": "נספרים רק חיובים של טעינה אוטומטית. מתאפס ב-{date}.",
+        "limitTooltipNoDate": "נספרים רק חיובים של טעינה אוטומטית.",
+        "off": "ממלא קרדיטים מחדש כשהיתרה שלכם נמוכה",
+        "onHold": "אין אמצעי תשלום ברירת מחדל. הגדירו אמצעי כדי לחדש את הטעינה האוטומטית.",
+        "paused": "המגבלה החודשית הושגה. יתחדש ב-{date}.",
+        "pausedNoDate": "המגבלה החודשית הושגה.",
+        "rule": "מוסיף {amount} ({credits} קרדיטים) כאשר היתרה נמוכה מ-{threshold} קרדיטים.",
+        "status": {
+          "failed": "נכשל",
+          "off": "כבוי",
+          "on": "פעיל",
+          "onHold": "מושהה",
+          "paused": "מושהה זמנית",
+          "turnedOff": "כבוי"
+        },
+        "title": "טעינה אוטומטית",
+        "turnedOff": "כובה לאחר 3 חיובים שנדחו. עדכנו את אמצעי התשלום ולאחר מכן הפעילו אותו מחדש.",
+        "unavailable": "לא ניתן היה לטעון את הטעינה האוטומטית."
+      },
+      "credits": {
+        "addCredits": "הוספת קרדיטים",
+        "available": "זמין",
+        "inUse": "בשימוש כעת",
+        "overdrawn": "ההרצות שלך השתמשו בקרדיט אחד יותר מכפי שהיה לך. | ההרצות שלך השתמשו ב־{count} קרדיטים יותר מכפי שהיה לך.",
+        "plan": "תוכנית",
+        "planOfPool": "{remaining} מתוך {total}",
+        "planTooltip": "קרדיטים הכלולים בתוכנית שלך. הם מתמלאים מחדש בכל תקופת חיוב.",
+        "rateInfo": "מידע על קרדיטים",
+        "rateTooltip": "קרדיטים משמשים לתשלום עבור הרצות. {credits} קרדיטים = $1.",
+        "resubscribe": "הירשם מחדש כדי להשתמש בקרדיטים ב־Cloud.",
+        "subscribe": "הירשם כדי להשתמש בקרדיטים ב־Cloud.",
+        "title": "קרדיטים",
+        "topUp": "טעינה נוספת",
+        "topUpTooltip": "קרדיטים שהוספת. הם משמשים לאחר שנגמרים הקרדיטים של התוכנית.",
+        "unavailable": "לא ניתן היה לטעון את היתרה שלך."
+      },
+      "handoff": {
+        "member": {
+          "action": "הצגת שימוש",
+          "label": "שימוש"
+        },
+        "owner": {
+          "action": "פתיחת חיוב",
+          "label": "אמצעי תשלום, חשבוניות ושימוש"
+        }
+      },
+      "loadError": "לא הצלחנו לטעון את התוכנית שלך.",
+      "plan": {
+        "actions": {
+          "choosePlan": "בחירת תוכנית",
+          "manage": "ניהול",
+          "resume": "חידוש התוכנית",
+          "stay": "להישאר עם {plan}",
+          "subscribe": "הרשמה"
+        },
+        "activating": "מפעילים את תוכנית {plan} שלך…",
+        "active": {
+          "monthly": "חיוב חודשי. החשבונית הבאה: {date}.",
+          "yearly": "חיוב שנתי. החשבונית הבאה: {date}."
+        },
+        "ended": "הסתיימה ב־{date}.",
+        "ending": "תסתיים ב־{date}. לא תחויב שוב.",
+        "lifecycleRefused": "לא הצלחנו לבצע את השינוי הזה. נסה שוב.",
+        "managedByOwner": "מנוהל על ידי הבעלים של סביבת העבודה.",
+        "noPlan": {
+          "freeRunsLeft": "נותרו לך {remaining} מתוך {total} הרצות חינמיות. הירשם כדי להמשיך להריץ תהליכי עבודה לאחר מכן.",
+          "freeRunsUsed": "ניצלת את כל {total} ההרצות החינמיות. הירשם כדי להמשיך להריץ תהליכי עבודה.",
+          "line": "הירשם כדי להריץ תהליכי עבודה ב־Cloud.",
+          "title": "לסביבת העבודה הזו אין תוכנית פעילה"
+        },
+        "resumeConfirm": {
+          "body": "התוכנית שלך תחודש ב־{date}. אפשר לבטל שוב בכל עת.",
+          "title": "לחדש את תוכנית {plan} שלך?"
+        },
+        "scheduledChange": "ישתנה ל־{plan} ב־{date}.",
+        "stayConfirm": {
+          "body": "התוכנית שלך לא תשתנה ל־{plan} ב־{date}. אפשר לתזמן שינוי שוב בכל עת.",
+          "title": "לבטל את השינוי שלך ל-{plan}?"
+        },
+        "unknown": {
+          "title": "התוכנית שלך"
+        }
+      },
+      "tryAgain": "נסה שוב"
     },
     "changeRoleDialog": {
       "demoteConfirm": "הורד לחבר רגיל",
@@ -5726,18 +6019,23 @@
       "totalMembersCount": "{count} מתוך {maxSeats} חברים בסך הכול.",
       "totalMembersUnlimited": "{count} חבר בסך הכול. | {count} חברים בסך הכול.",
       "upgradeToTeam": "שדרג ל-Team",
-      "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך.",
-      "upsellBannerEnterpriseEnded": "צור קשר עם מחלקת המכירות כדי להפעיל מחדש את תוכנית ה־Enterprise שלך.",
-      "upsellBannerPlanEnded": "צור קשר עם מחלקת המכירות כדי להפעיל מחדש את התוכנית שלך.",
-      "upsellBannerReactivate": "להוספת חברי צוות נוספים, הפעל מחדש את התוכנית שלך."
+      "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך."
     },
     "menu": {
       "creatorCannotLeave": "יוצר סביבת העבודה לא יכול לעזוב את סביבת העבודה שיצר",
       "deleteWorkspace": "מחיקת סביבת העבודה",
-      "deleteWorkspaceAfterPlanEndsTooltip": "אפשר למחוק סביבת עבודה זו לאחר שהתוכנית שלך תסתיים ב־{date}",
+      "deleteWorkspaceAfterPlanEndsTooltip": "באפשרותך למחוק סביבת עבודה זו לאחר שהתוכנית שלך תסתיים ב-{date}.",
+      "deleteWorkspaceBillingInProgressTooltip": "שינוי בחיוב נמצא בתהליך. נסה שוב בעוד רגע.",
+      "deleteWorkspaceBillingParkedTooltip": "תשלום שבוצע לאחרונה דורש טיפול מצד הצוות שלנו. צור קשר עם התמיכה.",
       "deleteWorkspaceDisabledTooltip": "בטל תחילה את המנוי הפעיל של סביבת העבודה שלך",
+      "deleteWorkspacePlanNotEndedTooltip": "באפשרותך למחוק סביבת עבודה זו לאחר שהתוכנית שלה תסתיים. בטל אותה דרך ניהול תוכנית.",
+      "deleteWorkspaceUnavailableTooltip": "לא ניתן למחוק סביבת עבודה זו כעת.",
       "editWorkspace": "עריכת פרטי סביבת העבודה",
-      "leaveWorkspace": "עזיבת סביבת העבודה"
+      "leaveWorkspace": "עזיבת סביבת העבודה",
+      "leaveWorkspaceCreatorTooltip": "יצרת סביבת עבודה זו, ולכן אין באפשרותך לעזוב אותה.",
+      "leaveWorkspaceDirectoryTooltip": "הארגון שלך מנהל את החברות הזו, ולכן אין באפשרותך לעזוב את סביבת העבודה הזו.",
+      "leaveWorkspaceOnlyOwnerTooltip": "הפוך חבר אחר לבעלים לפני שתעזוב את סביבת העבודה הזו.",
+      "leaveWorkspaceUnavailableTooltip": "אין באפשרותך לעזוב את סביבת העבודה הזו כעת."
     },
     "partnerNodes": {
       "accessMode": "מצב גישה לצמתים שותפים",

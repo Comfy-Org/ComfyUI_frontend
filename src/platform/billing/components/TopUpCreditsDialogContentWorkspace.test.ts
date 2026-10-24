@@ -585,22 +585,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('shows the purchase disclosure before confirming without charging', async () => {
+  it('shows the plan-required line under the presets and drops it on Confirm without charging', async () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
     renderDialog()
 
+    const line = screen.getByTestId('top-up-plan-credit-line')
+    expect(line).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    )
     expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+      screen.getByRole('button', { name: '$100' }).compareDocumentPosition(line)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     await clickAddCredits()
 
-    expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()
@@ -611,6 +612,33 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  it('says Subscribe keeps runs going while the served free runs remain', () => {
+    remoteConfig.value = {
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    }
+    onTestFinished(() => {
+      remoteConfig.value = {}
+    })
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
+    renderDialog()
+
+    expect(screen.getByTestId('top-up-plan-credit-line')).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    )
+  })
+
+  it('shows no plan line for an active plan', () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'active')
+    renderDialog()
+
+    expect(screen.getByRole('button', { name: '$50' })).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
   })
 
   function renderWithBalance(overrides: Partial<BalanceInfo>) {

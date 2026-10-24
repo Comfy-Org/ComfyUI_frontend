@@ -1,4 +1,4 @@
-import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type {
   TemplateModelMetadataBatchResult,
   TemplateModelMetadataEntry

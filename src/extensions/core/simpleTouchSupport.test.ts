@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { shallowRef } from 'vue'
 
 import type { DragAndScale } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -13,11 +14,11 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container } = vi.hoisted(() => {
+const { canvasEl, container, canvasAvailability } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  return { container, canvasEl }
+  return { container, canvasEl, canvasAvailability: { missing: false } }
 })
 
 const processMouseDown = vi.fn()
@@ -30,14 +31,18 @@ vi.mock(import('@/scripts/app'), () => {
     min_scale: 0.1,
     max_scale: 10
   }
+  const canvas = fromPartial<LGraphCanvas>({
+    ds,
+    pointer: { isDown: false },
+    setDirty: vi.fn()
+  })
   return {
     app: fromPartial<typeof comfyApp>({
       canvasEl,
-      canvas: fromPartial({
-        ds,
-        pointer: { isDown: false },
-        setDirty: vi.fn()
-      })
+      canvasElRef: shallowRef(canvasEl),
+      get canvasOrUndefined() {
+        return canvasAvailability.missing ? undefined : canvas
+      }
     })
   }
 })
@@ -82,10 +87,19 @@ function dispatchTouch(
 }
 
 function pressPointer(init: PointerEventInit) {
+  const canvas = fromPartial<LGraphCanvas>({ pointer: { isDown: true } })
   LGraphCanvas.prototype.processMouseDown.call(
-    fromPartial<LGraphCanvas>({}),
+    canvas,
     new PointerEvent('pointerdown', { pointerType: 'touch', ...init })
   )
+  return canvas
+}
+
+function withoutCanvas() {
+  canvasAvailability.missing = true
+  onTestFinished(() => {
+    canvasAvailability.missing = false
+  })
 }
 
 /**
@@ -138,6 +152,26 @@ describe('Comfy.SimpleTouchSupport', () => {
       expect(processMouseDown).not.toHaveBeenCalled()
     }
   )
+
+  it('presses through to the original when no canvas exists', () => {
+    withoutCanvas()
+
+    const canvas = pressPointer({ isPrimary: true })
+
+    expect(processMouseDown).toHaveBeenCalledOnce()
+    expect(canvas.pointer.isDown).toBe(false)
+  })
+
+  it('ignores a pinch when no canvas exists', () => {
+    withoutCanvas()
+    const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+
+    dispatchTouch('touchstart', twoFingers)
+    dispatchTouch('touchmove', twoFingers)
+    pressPointer({ isPrimary: true })
+
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
 })
 
 describe('touch pointer guards', () => {

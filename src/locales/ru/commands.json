@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Удалить выбранные элементы"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Удалить выбранные связи"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Подогнать вид к выбранным нодам"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Скрыть выбранные связи"
   },
   "Comfy_Canvas_Lock": {
     "label": "Заблокировать холст"
@@ -82,6 +88,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "Выбрать все"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Показать выбранные связи"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Переключить видимость ссылки"

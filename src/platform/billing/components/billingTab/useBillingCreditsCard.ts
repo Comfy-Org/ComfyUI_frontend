@@ -3,7 +3,6 @@ import type { Ref } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
-import { isCloud } from '@/platform/distribution/types'
 import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
 import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
 
@@ -31,7 +30,6 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       planKind: planRow.value.kind,
       billingStatus: billingStatus.value,
       planPoolCredits: planPoolCredits.value,
-      isCloud,
       renewalDate: renewalDate.value
     })
   )

@@ -8,7 +8,12 @@
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
-      :class="cn('max-w-100 min-w-56', switcherMenuMotionClass)"
+      :class="
+        cn(
+          'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
+          switcherMenuMotionClass
+        )
+      "
       @update:open="onOpenChange"
     >
       <template #trigger>
@@ -48,14 +53,14 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { isCloud } from '@/platform/distribution/types'
+import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
+import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import DeploymentStatusIcon from '@/platform/workspace/components/DeploymentStatusIcon.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
@@ -64,21 +69,39 @@ import {
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import {
+  confirmUnsavedWorkBeforeSwitch,
+  unsavedWorkflows
+} from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()
-const { pickedDeployment, isVisible, isSwitching, listingRefused } =
-  storeToRefs(store)
-const { isApiKeyLogin } = useCurrentUser()
-const isOffered = computed(() => isCloud && !isApiKeyLogin.value)
+const {
+  pickedDeployment,
+  isVisible,
+  isSwitching,
+  listingRefused,
+  switcherOpenAsks
+} = storeToRefs(store)
+const isOffered = useDeploymentSwitcherOffered()
 const { currentLabel } = useDeploymentLabels()
+const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
 
+watch(switcherOpenAsks, () => {
+  if (!isOffered.value || !isVisible.value) return
+  isOpen.value = true
+  void store.load()
+})
+
 let pendingRetry: Promise<void> | undefined
+let lastFocusRetryAt = -Infinity
 
 onMounted(() => {
   if (!isOffered.value) return
@@ -90,6 +113,8 @@ onMounted(() => {
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
   if (isVisible.value || listingRefused.value) return
+  if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
+  lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
     pendingRetry = undefined
   })
@@ -141,26 +166,44 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
+async function confirmSwitchTo(deployment: string): Promise<boolean> {
+  if (unsavedWorkflows().length > 0) isOpen.value = false
+  return confirmUnsavedWorkBeforeSwitch(deployment)
+}
+
 async function choose(deploymentId: string | null) {
+  if (!(await confirmSwitchTo(targetLabel(deploymentId)))) return
   switchingTo.value = deploymentId ?? COMFY_CLOUD_ROW
-  report(t('deploymentSwitcher.failedToSwitch'), await store.pick(deploymentId))
-}
-
-async function follow(deploymentId: string) {
-  switchingTo.value = deploymentId
-  report(t('deploymentSwitcher.failedToSwitch'), await store.followWorkspace())
-}
-
-async function changeDefault(deploymentId: string | null) {
-  switchingTo.value = null
   report(
-    t('deploymentSwitcher.failedToSetDefault'),
-    await store.setDefault(deploymentId)
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.pick(deploymentId))
   )
 }
 
-function reload() {
+async function follow(deploymentId: string) {
+  const reloads = deploymentId !== pickedDeployment.value?.deployment_id
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = deploymentId
+  report(
+    t('deploymentSwitcher.failedToSwitch'),
+    await withoutLeavePrompt(() => store.followWorkspace())
+  )
+}
+
+async function changeDefault(deploymentId: string | null) {
+  const reloads = store.defaultMovesThisBrowser(deploymentId)
+  if (reloads && !(await confirmSwitchTo(targetLabel(deploymentId)))) return
+  switchingTo.value = null
+  report(
+    t('deploymentSwitcher.failedToSetDefault'),
+    await withoutLeavePrompt(() => store.setDefault(deploymentId))
+  )
+}
+
+async function reload() {
   if (isSwitching.value) return
+  if (!(await confirmSwitchTo(currentLabel.value)) || isSwitching.value) return
+  skipLeavePromptOnce()
   reloadForDeploymentSwitch(() => void store.load())
 }
 </script>

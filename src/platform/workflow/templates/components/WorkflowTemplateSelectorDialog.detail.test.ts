@@ -178,14 +178,20 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
-  isModelDownloadable: mocks.isModelDownloadable,
-  modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    isModelDownloadable: mocks.isModelDownloadable,
+    modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
+  })
+)
 
-vi.mock(import('@/platform/missingModel/folderPathCache'), () => ({
-  loadFolderPathsOnce: mocks.loadFolderPathsOnce
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/folderPathCache'),
+  () => ({
+    loadFolderPathsOnce: mocks.loadFolderPathsOnce
+  })
+)
 
 vi.mock(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),

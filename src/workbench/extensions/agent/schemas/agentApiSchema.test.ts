@@ -151,6 +151,8 @@ describe('agentApiSchema contract subtleties', () => {
         op_ids: [],
         doc_seq: -1,
         doc_lineage_seq: null,
+        job_id: 123,
+        job_workflow_id: null,
         message_id: 'm1',
         thread_id: 't1'
       }
@@ -165,6 +167,25 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.op_ids).toBeUndefined()
     expect(parsed.data.doc_seq).toBeUndefined()
     expect(parsed.data.doc_lineage_seq).toBeUndefined()
+    expect(parsed.data.job_id).toBeUndefined()
+    expect(parsed.data.job_workflow_id).toBeUndefined()
+
+    const controlCharacterParsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-2',
+        tool_name: 'run',
+        status: 'success',
+        job_id: 'job\n2',
+        job_workflow_id: 'wf-1',
+        message_id: 'm2',
+        thread_id: 't1'
+      }
+    })
+
+    assert(controlCharacterParsed.type === 'agent_tool_call')
+    expect(controlCharacterParsed.data.job_id).toBeUndefined()
+    expect(controlCharacterParsed.data.job_workflow_id).toBe('wf-1')
   })
 
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {

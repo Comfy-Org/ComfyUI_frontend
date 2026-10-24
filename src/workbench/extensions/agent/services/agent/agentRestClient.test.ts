@@ -410,6 +410,24 @@ describe('listThreads pagination', () => {
     })
   })
 
+  it('filters every page by workflow id', async () => {
+    respond(
+      threadPage(['th-new'], { has_more: true, next_cursor: 'older page' })
+    )
+    respond(threadPage(['th-old'], { has_more: false }))
+
+    const result = await makeClient().listThreads({ workflowId: 'wf/one' })
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?workflow_id=wf%2Fone&limit=100',
+      '/agent/threads?workflow_id=wf%2Fone&limit=100&after=older%20page'
+    ])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-new' }, { id: 'th-old' }]
+    })
+  })
+
   it.for([
     {
       reason: 'missing_cursor',

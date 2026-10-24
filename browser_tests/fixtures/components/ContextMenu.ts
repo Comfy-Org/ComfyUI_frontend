@@ -219,7 +219,7 @@ export class ContextMenu {
   }
 
   async dispatchFor(locator: Locator): Promise<{ defaultPrevented: boolean }> {
-    const defaultPrevented = await locator.evaluate((element) => {
+    const defaultPrevented = await locator.evaluate(async (element) => {
       const { x, y, width, height } = element.getBoundingClientRect()
       const event = new MouseEvent('contextmenu', {
         bubbles: true,
@@ -229,6 +229,7 @@ export class ContextMenu {
         clientY: y + height / 2
       })
       element.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve))
       return event.defaultPrevented
     })
     await expect(this.anyMenu).toBeVisible()

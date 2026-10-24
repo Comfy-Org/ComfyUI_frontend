@@ -40,6 +40,10 @@ function splitSlotTypes(type: unknown): string[] {
 export function createInputSpecInterpreter(
   warnSpecDrift: InputSpecDiagnosticSink
 ) {
+  const parsedOptionCache = new WeakMap<
+    object,
+    ReturnType<typeof zDynamicComboOption.safeParse>
+  >()
   function parseDynamicComboOptions(
     spec: InputSpecV2
   ): { key: string; inputs: ComfyInputsSpec }[] {
@@ -50,7 +54,13 @@ export function createInputSpecInterpreter(
     }
 
     return parsed.data.options.flatMap((option, index) => {
-      const parsedOption = zDynamicComboOption.safeParse(option)
+      const cached =
+        typeof option === 'object' && option !== null
+          ? parsedOptionCache.get(option)
+          : undefined
+      const parsedOption = cached ?? zDynamicComboOption.safeParse(option)
+      if (!cached && typeof option === 'object' && option !== null)
+        parsedOptionCache.set(option, parsedOption)
       if (!parsedOption.success) {
         warnSpecDrift(spec, parsedOption.error, index)
         return []

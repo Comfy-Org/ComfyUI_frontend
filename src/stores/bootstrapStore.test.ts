@@ -43,6 +43,7 @@ function requestFailure(status: number) {
 describe('bootstrapStore', () => {
   beforeEach(() => {
     vi.spyOn(api, 'getCustomNodesI18n').mockResolvedValue({})
+    vi.spyOn(api, 'prefetchNodeDefs').mockImplementation(() => {})
     vi.spyOn(i18nModule, 'mergeCustomNodesI18n').mockImplementation(() => {})
     useSettingStore().isReady = false
     useAuthStore().isInitialized = false
@@ -65,7 +66,7 @@ describe('bootstrapStore', () => {
     expect(store.isI18nReady).toBe(false)
   })
 
-  it('starts store bootstrap (settings, i18n)', async () => {
+  it('starts store bootstrap (settings, i18n, node defs prefetch)', async () => {
     const store = useBootstrapStore()
     const settingStore = useSettingStore()
     void store.startStoreBootstrap()
@@ -74,6 +75,7 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
+    expect(api.prefetchNodeDefs).toHaveBeenCalledOnce()
   })
 
   it('records both store phases when their loads reject', async () => {
@@ -160,7 +162,7 @@ describe('bootstrapStore', () => {
       expect(settingStore.isReady).toBe(true)
     })
 
-    it('boots the web session before waiting for a sign-in and loads stores for a session-only user', async () => {
+    it('boots the web session before waiting for a sign-in and loads stores for a session-only user without prefetching node defs', async () => {
       const boot = vi.mocked(bootCloudIdentity)
       const store = useBootstrapStore()
       const bootstrapPromise = store.startStoreBootstrap()
@@ -180,6 +182,7 @@ describe('bootstrapStore', () => {
       await bootstrapPromise
 
       expect(useSettingStore().isReady).toBe(true)
+      expect(api.prefetchNodeDefs).not.toHaveBeenCalled()
     })
 
     it('retries once and keeps authenticated stores gated if Firebase resolves signed out', async () => {

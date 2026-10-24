@@ -42,10 +42,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -98,11 +94,7 @@
     @dispose="onLinkOverlayDispose"
   />
 
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -240,7 +232,6 @@ const vueNodeDropTarget = computed(() => {
   const element: unknown = transformPaneRef.value?.$el
   return element instanceof HTMLElement ? element : null
 })
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)

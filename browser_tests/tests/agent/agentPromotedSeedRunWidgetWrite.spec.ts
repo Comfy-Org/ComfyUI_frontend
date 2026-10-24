@@ -20,7 +20,7 @@ import {
   AGENT_SUBGRAPH_HOST_ID,
   AGENT_SUBGRAPH_INITIAL_SEED,
   agentSubgraphNodeDefs
-} from '@e2e/fixtures/data/agentSubgraphFollower'
+} from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 
 const WORKFLOW_ID = 'c2003000-0000-4000-8000-000000000001'

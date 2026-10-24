@@ -120,7 +120,8 @@ function renderCard(
       ...props
     },
     global: {
-      plugins: [i18n]
+      plugins: [i18n],
+      stubs: { MissingNodeDeploymentOffer: true }
     }
   })
   return { ...result, user }

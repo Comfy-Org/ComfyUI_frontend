@@ -20,7 +20,11 @@ const answers = computed(() => {
   return resolution.otherText
     ? [
         ...chosen,
-        t('agent.askUser.otherAnswer', { text: resolution.otherText })
+        t(
+          'agent.askUser.otherAnswer',
+          { text: resolution.otherText },
+          { escapeParameter: false }
+        )
       ]
     : chosen
 })

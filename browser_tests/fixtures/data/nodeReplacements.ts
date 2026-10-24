@@ -1,4 +1,4 @@
-import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
+import type { NodeReplacementResponse } from '@/platform/workflowErrors/nodeReplacement/types'
 
 /**
  * Mock node replacement mappings for e2e tests.

@@ -42,34 +42,35 @@
         >
           <i class="icon-[lucide--x] size-4" />
         </Button>
-        <Button
-          :tooltip="queueToggleLabel"
-          tooltip-side="bottom"
-          variant="secondary"
-          size="md"
-          :aria-pressed="
-            isQueuePanelV2Enabled
-              ? activeSidebarTabId === 'job-history'
-              : queueOverlayExpanded
-          "
-          class="px-3"
-          data-testid="queue-overlay-toggle"
-          @click="toggleQueueOverlay"
-          @contextmenu.stop.prevent="showQueueContextMenu"
-        >
-          <span class="text-sm font-normal tabular-nums">
-            {{ activeJobsLabel }}
-          </span>
-          <Badge
-            v-if="activeJobsCount > 0"
-            data-testid="active-jobs-indicator"
-            variant="dot"
-            severity="default"
-            class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
-          />
-          <span class="sr-only">{{ queueToggleLabel }}</span>
-        </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <ContextMenu :model="queueContextMenuItems">
+          <Button
+            :tooltip="queueToggleLabel"
+            tooltip-side="bottom"
+            variant="secondary"
+            size="md"
+            :aria-pressed="
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'job-history'
+                : queueOverlayExpanded
+            "
+            class="px-3"
+            data-testid="queue-overlay-toggle"
+            @click="toggleQueueOverlay"
+            @contextmenu.stop
+          >
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
+            </span>
+            <Badge
+              v-if="activeJobsCount > 0"
+              data-testid="active-jobs-indicator"
+              variant="dot"
+              severity="default"
+              class="pointer-events-none absolute -top-0.5 -right-0.5 animate-pulse"
+            />
+            <span class="sr-only">{{ queueToggleLabel }}</span>
+          </Button>
+        </ContextMenu>
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
@@ -393,7 +394,6 @@ const activeJobsLabel = computed(() => {
     count
   )
 })
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
@@ -416,9 +416,6 @@ const toggleQueueOverlay = () => {
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
 }
 const handleClearQueue = async () => {
   const pendingJobIds = queueStore.pendingTasks

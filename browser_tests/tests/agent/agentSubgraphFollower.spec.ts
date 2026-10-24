@@ -11,6 +11,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
+  AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
   AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID,
   AGENT_SUBGRAPH_EDITED_SEED,
@@ -21,12 +22,14 @@ import {
   AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
+  agentOutOfOrderSubgraphFrames,
   agentSubgraphNodeDefs,
   agentSubgraphFrames,
   agentSubgraphInteriorFrames,
   agentSubgraphWidgetDriftFrames
-} from '@e2e/fixtures/data/agentSubgraphFollower'
+} from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -386,6 +389,70 @@ test.describe(
         expect(outboundFrames.some((frame) => frame.includes('doc_ops'))).toBe(
           false
         )
+      })
+    })
+
+    test('keeps dependency-inverted subgraph definitions navigable', async ({
+      page,
+      getAgentSocket
+    }) => {
+      const nodes = new VueNodeHelpers(page)
+      const outerHost = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+
+      await test.step('open the agent-enabled workflow', async () => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          settings: { 'Comfy.VueNodes.Enabled': true },
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: 'fc35d783-3592-447b-ae39-849074a353cf',
+              thread_id: '3aa821e0-933e-45eb-a3b5-63e45b875daa',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
+        })
+      })
+
+      const outboundFrames: string[] = []
+
+      const socket = await test.step('open the agent panel', async () => {
+        await loadSeedIntoActiveTab(page, { nodes: [], links: [] })
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        const opened = await getAgentSocket()
+        opened.onMessage((message) => outboundFrames.push(String(message)))
+        return opened
+      })
+
+      await test.step('select the workflow and subscribe the follower', async () => {
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build the nested subgraph')
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(expect.stringContaining(AGENT_SUBGRAPH_WORKFLOW_ID))
+      })
+
+      await test.step('deliver definitions in reverse dependency order', async () => {
+        for (const frame of agentOutOfOrderSubgraphFrames()) {
+          socket.send(JSON.stringify(frame))
+        }
+        await expect(outerHost).toBeVisible()
+        await expect(outerHost).toContainText('Outer Agent Subgraph')
+      })
+
+      await test.step('navigate into the nested definition', async () => {
+        await nodes.enterSubgraph(String(AGENT_SUBGRAPH_HOST_ID))
+        await nextFrame(page)
+
+        const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
+        await expect(innerHost).toBeVisible()
+        await expect(innerHost).toContainText('New Subgraph')
+        await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+        await expect(page.getByText('New Subgraph')).toBeVisible()
       })
     })
 

@@ -8,8 +8,8 @@ import type {
   LGraphNode,
   Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/types'
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type {
   ComfyApiWorkflow,

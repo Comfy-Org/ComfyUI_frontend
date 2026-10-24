@@ -10,7 +10,8 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import {
   readDeploymentHint,
-  setDeploymentHint
+  setDeploymentHint,
+  setUnconfirmedCloudHint
 } from '@/platform/workspace/deploymentHint'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -94,6 +95,51 @@ describe('useDeploymentPickStore', () => {
     await boot
 
     expect(store.bootDeployment).toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it('reports failed lookups once per page, however often they fail', async () => {
+    const error = new WorkspaceApiError('Service unavailable', 503)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    await store.load()
+    await store.load()
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(5)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it('saves the one report for the active workspace when a left workspace fails', async () => {
+    const staleError = new WorkspaceApiError('Service unavailable', 503)
+    let reject: (err: unknown) => void = () => {}
+    mockWorkspaceApi.listDeployments.mockReturnValueOnce(
+      new Promise<WorkspaceDeploymentList>((_, r) => {
+        reject = r
+      })
+    )
+    const store = useDeploymentPickStore()
+    const stale = store.load()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    reject(staleError)
+    await stale
+
+    expect(reportError).not.toHaveBeenCalled()
+
+    const error = new WorkspaceApiError('Bad gateway', 502)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    await store.load()
+    await store.load()
+
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing'
@@ -1469,6 +1515,7 @@ describe('useDeploymentPickStore', () => {
     function seedHint(hint: HintState) {
       if (hint === 'deployment') setDeploymentHint('ws-1', 'dep-1')
       else if (hint === 'cloud') setDeploymentHint('ws-1', null)
+      else if (hint === 'unconfirmed') setUnconfirmedCloudHint('ws-1')
     }
 
     beforeEach(() => {
@@ -1528,7 +1575,16 @@ describe('useDeploymentPickStore', () => {
           ),
         hintAfter: 'cloud'
       },
-      ...(['deployment', 'cloud', 'unknown'] as const).map((hint) => ({
+      {
+        answer: 'a 403, after a failure left Comfy Cloud unconfirmed',
+        hintBefore: 'unconfirmed',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        hintAfter: 'cloud'
+      },
+      ...(['deployment', 'cloud', 'unconfirmed'] as const).map((hint) => ({
         answer: `a transient failure, with the hint at ${hint}`,
         hintBefore: hint,
         respond: () =>
@@ -1536,7 +1592,25 @@ describe('useDeploymentPickStore', () => {
             new WorkspaceApiError('Service unavailable', 503)
           ),
         hintAfter: hint
-      }))
+      })),
+      {
+        answer: 'a transient failure, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        hintAfter: 'unconfirmed'
+      },
+      {
+        answer: 'a failure that is not transient, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Bad request', 400)
+          ),
+        hintAfter: 'unknown'
+      }
     ])(
       'keeps the hint in step with the boot listing: $answer',
       async ({ hintBefore, respond, hintAfter }) => {
@@ -1549,6 +1623,128 @@ describe('useDeploymentPickStore', () => {
         await boot
 
         expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+      }
+    )
+
+    it.for<{ why: string; arrange: () => void; hintAfter: HintState }>([
+      {
+        why: 'this browser last booted on a deployment',
+        arrange: () => seedHint('deployment'),
+        hintAfter: 'deployment'
+      },
+      {
+        why: 'the page opened from a deployment link',
+        arrange: () =>
+          Object.defineProperty(window, 'location', {
+            value: {
+              reload,
+              origin: 'http://localhost',
+              search: '?deployment=dep-1'
+            },
+            writable: true,
+            configurable: true
+          }),
+        hintAfter: 'unknown'
+      }
+    ])(
+      'leaves the hint alone and still reports a transient failure when $why',
+      async ({ arrange, hintAfter }) => {
+        arrange()
+        const error = new WorkspaceApiError('Service unavailable', 503)
+        mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+
+        const boot = store.loadOnce()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+        await boot
+
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_deployment_listing'
+        })
+      }
+    )
+
+    it('never writes the unconfirmed Comfy Cloud hint where an older frontend would read a deployment id', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('Service unavailable', 503)
+      )
+
+      await useDeploymentPickStore().load()
+
+      expect(readDeploymentHint('ws-1')).toBe('unconfirmed')
+      expect(localStorage.getItem('Comfy.Workspace.DeploymentHint.ws-1')).toBe(
+        null
+      )
+    })
+
+    it.for<{
+      answer: string
+      respond: () => void
+      legacyHint: string
+      hintAfter: HintState
+    }>([
+      {
+        answer: 'a deployment',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing),
+        legacyHint: 'dep-2',
+        hintAfter: 'deployment'
+      },
+      {
+        answer: 'Comfy Cloud',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce({
+            ...listing,
+            picked_deployment_id: null,
+            pick_source: null
+          }),
+        legacyHint: 'cloud',
+        hintAfter: 'cloud'
+      },
+      {
+        answer: 'a 403',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        legacyHint: 'cloud',
+        hintAfter: 'cloud'
+      }
+    ])(
+      'replaces the unconfirmed Comfy Cloud hint a failure left once a listing answers with $answer',
+      async ({ respond, legacyHint, hintAfter }) => {
+        mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+          new WorkspaceApiError('Service unavailable', 503)
+        )
+        const store = useDeploymentPickStore()
+
+        await store.load()
+        expect(readDeploymentHint('ws-1')).toBe('unconfirmed')
+        respond()
+        await store.load()
+
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(
+          localStorage.getItem('Comfy.Workspace.DeploymentHint.ws-1')
+        ).toBe(legacyHint)
+        expect(
+          localStorage.getItem('Comfy.Workspace.UnconfirmedCloudHint.ws-1')
+        ).toBeNull()
+      }
+    )
+
+    it.for([
+      { legacyHint: 'dep-1', hint: 'deployment' },
+      { legacyHint: 'cloud', hint: 'cloud' }
+    ])(
+      'reads the hint an older frontend wrote over an unconfirmed Comfy Cloud hint: $legacyHint',
+      ({ legacyHint, hint }) => {
+        setUnconfirmedCloudHint('ws-1')
+        localStorage.setItem('Comfy.Workspace.DeploymentHint.ws-1', legacyHint)
+
+        expect(readDeploymentHint('ws-1')).toBe(hint)
       }
     )
 

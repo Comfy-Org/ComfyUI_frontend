@@ -24,6 +24,13 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
+
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
@@ -45,7 +52,8 @@ const i18n = createI18n({
       g: { close: 'Close', increment: 'Increment', decrement: 'Decrement' },
       credits: {
         topUp: {
-          purchaseDisclosure: enMessages.credits.topUp.purchaseDisclosure,
+          planRequiredResubscribe:
+            enMessages.credits.topUp.planRequiredResubscribe,
           addMoreCredits: 'Add more credits',
           addMoreCreditsToRun: 'Add more credits to run',
           selectAmount: 'Select amount',
@@ -99,15 +107,20 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     vi.spyOn(window, 'open').mockImplementation(() => window)
   })
 
-  it('shows the purchase disclosure before navigating to settings when subscription features are unavailable', async () => {
-    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+  it('shows the plan-required line under the presets before navigating to settings when subscription features are unavailable', async () => {
+    const billing = useBillingContext()
+    billing.canAccessSubscriptionFeatures = computed(() => false)
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'ended')
     renderDialog({ source: 'deep_link' })
 
+    const line = screen.getByTestId('top-up-plan-credit-line')
+    expect(line).toHaveTextContent(
+      "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud."
+    )
     expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+      screen.getByRole('button', { name: '$100' }).compareDocumentPosition(line)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(
       screen.getByRole('button', { name: 'Continue to payment' })
     ).toBeEnabled()

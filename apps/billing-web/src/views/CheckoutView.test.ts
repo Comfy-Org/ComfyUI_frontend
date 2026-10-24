@@ -262,12 +262,14 @@ describe('CheckoutView', () => {
                 monthly: {
                   action: 'subscribe',
                   list_price_cents: 70_000n,
-                  price_cents: 66_500n
+                  price_cents: 66_500n,
+                  period_charge_cents: 66_500n
                 },
                 yearly: {
                   action: 'subscribe',
                   list_price_cents: 70_000n,
-                  price_cents: 63_000n
+                  price_cents: 63_000n,
+                  period_charge_cents: 756_000n
                 }
               }
             ]

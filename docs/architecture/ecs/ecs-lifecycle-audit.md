@@ -151,7 +151,7 @@ do not run, but structural teardown completes before the error escapes.
 - `src/lib/litegraph/src/widgets/BaseWidget.ts`: `setNodeId`, `value`
 - `src/renderer/core/layout/operations/graphLayoutAttachment.ts`: all entity
   attach, transfer, detach, and bulk-detach operations
-- `src/platform/nodeReplacement/useNodeReplacement.ts`: `replaceWithMapping`
+- `src/platform/workflowErrors/nodeReplacement/useNodeReplacement.ts`: `replaceWithMapping`
 - Tests: `LGraph.test.ts`, `LGraphNode.nodeState.test.ts`, `LLink.store.test.ts`,
   `Reroute.store.test.ts`, `widgetValueStore.test.ts`, and
   `layoutStore.test.ts`

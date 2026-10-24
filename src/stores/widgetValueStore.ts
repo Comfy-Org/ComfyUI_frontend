@@ -21,7 +21,11 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
+import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean
@@ -137,22 +141,28 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  /** Returns the saved value for `widget`, converted to its value type. */
   function getRestoredWidgetValue(
     graphId: UUID,
     nodeId: NodeId,
-    name: string,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
     positionalIndex: number
   ): { value: WidgetValue } | undefined {
     const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
     if (!restoration) return
     if (restoration.restoreNamed && restoration.named) {
-      return Object.hasOwn(restoration.named, name)
-        ? { value: restoration.named[name] }
-        : undefined
+      if (!Object.hasOwn(restoration.named, widget.name)) return
+      return {
+        value: coerceRestoredWidgetValue(widget, restoration.named[widget.name])
+      }
     }
-    return positionalIndex < restoration.positional.length
-      ? { value: restoration.positional[positionalIndex] }
-      : undefined
+    if (positionalIndex >= restoration.positional.length) return
+    return {
+      value: coerceRestoredWidgetValue(
+        widget,
+        restoration.positional[positionalIndex]
+      )
+    }
   }
 
   function getRestoredWidgetValueCount(
@@ -328,6 +338,14 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const state = getWidget(widgetId)
     if (!state) return false
     state.value = value
+    return true
+  }
+
+  /** Sets a widget to a saved value, converted to the widget's value type. */
+  function restoreValue(widgetId: WidgetId, saved: WidgetValue): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.value = coerceRestoredWidgetValue(state, saved)
     return true
   }
 
@@ -565,6 +583,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetRenderState,
     getWidgetVisibility,
     setValue,
+    restoreValue,
     announceValue,
     setLabel,
     setOptions,

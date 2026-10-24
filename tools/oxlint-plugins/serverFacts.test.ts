@@ -654,7 +654,8 @@ const ended = subscriptionStatus.value === 'ended' ? true : isCancelled.value
     },
     {
       name: 'a server error message matched as text',
-      filename: 'src/platform/errorCatalog/runtimeErrorMatcher.ts',
+      filename:
+        'src/platform/workflowErrors/errorCatalog/runtimeErrorMatcher.ts',
       code: `
 const oom = error.message.includes('CUDA')
 const blocked = (message: string) => message.includes('content policy')

@@ -31,7 +31,7 @@ import type { DeployEnv } from '@comfyorg/shared-frontend-utils/telemetry'
 import type { HostedBillingDestination } from '@/platform/billing/billingWeb'
 import { getBillingWebUrl } from '@/platform/billing/billingWeb'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
+import { resolveDeployEnv } from '@/platform/telemetry/rumContext'
 
 export type HostedBillingRoute =
   | { readonly kind: 'billing_web'; readonly url: URL }

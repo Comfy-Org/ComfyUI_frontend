@@ -7,9 +7,9 @@
       @click="emit('activate')"
       @dblclick="emit('rowDblclick')"
       @contextmenu="emit('rowContextmenu', $event)"
-      @keydown.context-menu.self.prevent="emit('rowContextmenu', $event)"
+      @keydown.context-menu.self.prevent="dispatchKeyboardContextMenu"
       @keydown.enter.self.prevent="emit('activate')"
-      @keydown.shift.f10.self.prevent="emit('rowContextmenu', $event)"
+      @keydown.shift.f10.self.prevent="dispatchKeyboardContextMenu"
       @keydown.space.self.prevent="emit('activate')"
     >
       <TableCell class="p-1">
@@ -185,4 +185,17 @@ const emit = defineEmits<{
   rowContextmenu: [event: Event]
   rowDblclick: []
 }>()
+
+function dispatchKeyboardContextMenu(event: KeyboardEvent) {
+  if (!(event.currentTarget instanceof HTMLElement)) return
+  const { left, bottom } = event.currentTarget.getBoundingClientRect()
+  event.currentTarget.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: left,
+      clientY: bottom
+    })
+  )
+}
 </script>
