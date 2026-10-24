@@ -631,36 +631,60 @@ describe('ComfyApp', () => {
       }
     )
 
-    it('reports a failed forced reload before releasing the inactive workflow graph', async () => {
-      app.canvasElRef.value = document.createElement('canvas')
-      const workflow = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/owned.json',
-          modified: 0,
-          size: 0
+    it.for([
+      {
+        failingStep: 'configure',
+        failWith: (graph: LGraph, error: Error) => {
+          vi.spyOn(graph, 'configure').mockImplementation(() => {
+            throw error
+          })
+        }
+      },
+      {
+        failingStep: 'beforeConfigureGraph',
+        failWith: (_graph: LGraph, error: Error) => {
+          vi.when(mockExtensionService.invokeExtensionsAsync)
+            .calledWith(
+              'beforeConfigureGraph',
+              expect.anything(),
+              expect.anything()
+            )
+            .thenRejectOnce(error)
+        }
+      }
+    ])(
+      'reports a forced reload that fails in $failingStep before releasing the inactive workflow graph',
+      async ({ failWith }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/owned.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const graph = new LGraph()
+        workflow.adoptGraph(graph)
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        vi.mocked(useWorkflowStore().isActive).mockReturnValue(false)
+        const error = new Error('bad workflow json')
+        failWith(graph, error)
+        let reportedBeforeRelease: boolean | undefined
+        vi.spyOn(workflow, 'releaseGraph').mockImplementation(() => {
+          reportedBeforeRelease =
+            mockExtensionService.invokeExtensionsAsync.mock.calls.some(
+              ([hook, reported]) =>
+                hook === 'onGraphLoadError' && reported === error
+            )
         })
-      )
-      const graph = new LGraph()
-      workflow.adoptGraph(graph)
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
-      vi.mocked(useWorkflowStore().isActive).mockReturnValue(false)
-      const configureError = new Error('bad workflow json')
-      vi.spyOn(graph, 'configure').mockImplementation(() => {
-        throw configureError
-      })
-      vi.spyOn(workflow, 'releaseGraph').mockImplementation(() => {
-        throw new Error('release failed')
-      })
 
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
-      ).rejects.toThrow('release failed')
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        ).resolves.toBe(false)
 
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-        'onGraphLoadError',
-        configureError
-      )
-    })
+        expect(reportedBeforeRelease).toBe(true)
+      }
+    )
 
     it('configures the given workflow graph on a non-clean load even when another graph is active', async () => {
       app.canvasElRef.value = document.createElement('canvas')
