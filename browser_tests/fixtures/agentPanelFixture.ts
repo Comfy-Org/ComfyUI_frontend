@@ -2,7 +2,6 @@ import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentRunMode,
-  AgentThreadListResponse,
   Asset,
   BillingStatusResponse,
   GlobalSetting,
