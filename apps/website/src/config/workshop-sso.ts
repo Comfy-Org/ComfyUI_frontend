@@ -1,12 +1,16 @@
 /**
  * Enterprise SSO for comfy.org's email sign-in and sign-up. Behind Cloud's
  * global `sso_enabled` (anonymous `/api/features`, read once per page load),
- * an email whose domain signs in through its organization is sent to Cloud's
- * SSO start instead of Firebase. Every failure, of the flag read or of
+ * an email whose organization requires SSO is sent to Cloud's SSO start
+ * instead of Firebase; one in optional mode keeps the Firebase sign-in. Every failure, of the flag read or of
  * discover, leaves the visitor on the Firebase sign-in.
  */
 import { readAnonymousFeatureFlag } from '@comfyorg/account-core/webSessionFlag'
-import { discoverSso, ssoStartUrl } from '@comfyorg/account-core/sso'
+import {
+  discoverSso,
+  sendsToSso,
+  ssoStartUrl
+} from '@comfyorg/account-core/sso'
 
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
@@ -42,7 +46,7 @@ export function createSsoStartResolver({
       fetchImpl,
       baseUrl: cloudBaseUrl
     })
-    return discovery.kind === 'sso'
+    return sendsToSso(discovery, 'email-sign-in')
       ? ssoStartUrl({
           email,
           returnTo: CLOUD_RETURN_PATH,
