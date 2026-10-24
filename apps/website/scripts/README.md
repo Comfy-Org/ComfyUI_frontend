@@ -1,5 +1,18 @@
 # Website Scripts
 
+## `check-workshop-media.ts`
+
+Checks every local thumbnail, poster and sample URL from the committed
+`workshop-display.json` against files in `apps/website/public/`. This catches
+broken local paths before deployment and does not make network requests.
+
+```sh
+pnpm --filter @comfyorg/website check:workshop-media
+```
+
+Remote CDN URLs are intentionally out of scope and require a separate
+network-dependent audit.
+
 ## `router-provider-drift.ts`
 
 Compares the checked-in Router provider coverage with the published schemas and
