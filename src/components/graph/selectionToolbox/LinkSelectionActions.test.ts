@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -106,6 +106,19 @@ describe('LinkSelectionActions', () => {
     ).toBeInTheDocument()
   })
 
+  it('names a node without a title or type by its id', () => {
+    const { graph, source, targets } = createWorkflow()
+    source.title = ''
+    source.type = ''
+    clickSocket(graph, targets[0], 'input')
+
+    renderActions()
+
+    expect(
+      screen.getByRole('button', { name: `Go to #${source.id}` })
+    ).toBeInTheDocument()
+  })
+
   it('moves the view to the source, then offers every node its output leads to', async () => {
     const { graph, source, targets, canvas } = createWorkflow()
     clickSocket(graph, targets[0], 'input')
@@ -119,9 +132,10 @@ describe('LinkSelectionActions', () => {
       zoom: 0,
       viewport: [0, 0, 800, 600]
     })
-    expect(
-      await screen.findByRole('button', { name: 'Go to a linked node' })
-    ).toBeInTheDocument()
+    const menuButton = await screen.findByRole('button', {
+      name: 'Go to a linked node'
+    })
+    await waitFor(() => expect(menuButton).toHaveFocus())
   })
 
   it('lets the user pick one of the nodes an output socket leads to', async () => {
@@ -142,9 +156,10 @@ describe('LinkSelectionActions', () => {
       targets[1].boundingRect,
       expect.anything()
     )
-    expect(
-      await screen.findByRole('button', { name: 'Go to Load Checkpoint' })
-    ).toBeInTheDocument()
+    const backButton = await screen.findByRole('button', {
+      name: 'Go to Load Checkpoint'
+    })
+    await waitFor(() => expect(backButton).toHaveFocus())
   })
 
   it('moves the view in one step when animations are turned off', async () => {

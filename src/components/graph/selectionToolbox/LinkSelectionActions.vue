@@ -1,36 +1,38 @@
 <template>
-  <Button
-    v-if="singleDestination"
-    :tooltip="goToLabel(singleDestination)"
-    variant="muted-textonly"
-    :aria-label="goToLabel(singleDestination)"
-    data-testid="go-to-link-destination-button"
-    @click="goTo(singleDestination.nodeId)"
-  >
-    <i class="icon-[lucide--locate]" />
-  </Button>
-  <Menu v-else-if="destinations.length" :items="destinationItems">
-    <template #trigger="{ open }">
-      <Button
-        :tooltip="$t('selectionToolbox.linkDestinations.goToLinkedNode')"
-        variant="muted-textonly"
-        :aria-label="$t('selectionToolbox.linkDestinations.goToLinkedNode')"
-        data-testid="go-to-link-destination-menu-button"
-        :class="cn('gap-0.5', open && 'bg-accent')"
-      >
-        <i class="icon-[lucide--locate]" />
-        <i class="icon-[lucide--chevron-down] size-2.5" />
-      </Button>
-    </template>
-    <template #item="{ item }">
-      <span class="min-w-0 flex-1 truncate">
-        {{ destinationNames.get(item.key ?? '') }}
-      </span>
-      <span v-if="item.badge" class="ml-4 text-xs text-muted-foreground">
-        {{ item.badge }}
-      </span>
-    </template>
-  </Menu>
+  <span ref="goToControl" class="contents">
+    <Button
+      v-if="singleDestination"
+      :tooltip="goToLabel(singleDestination)"
+      variant="muted-textonly"
+      :aria-label="goToLabel(singleDestination)"
+      data-testid="go-to-link-destination-button"
+      @click="goTo(singleDestination.nodeId)"
+    >
+      <i class="icon-[lucide--locate]" />
+    </Button>
+    <Menu v-else-if="destinations.length" :items="destinationItems">
+      <template #trigger="{ open }">
+        <Button
+          :tooltip="$t('selectionToolbox.linkDestinations.goToLinkedNode')"
+          variant="muted-textonly"
+          :aria-label="$t('selectionToolbox.linkDestinations.goToLinkedNode')"
+          data-testid="go-to-link-destination-menu-button"
+          :class="cn('gap-0.5', open && 'bg-accent')"
+        >
+          <i class="icon-[lucide--locate]" />
+          <i class="icon-[lucide--chevron-down] size-2.5" />
+        </Button>
+      </template>
+      <template #item="{ item }">
+        <span class="min-w-0 flex-1 truncate">
+          {{ destinationNames.get(item.key ?? '') }}
+        </span>
+        <span v-if="item.badge" class="ml-4 text-xs text-muted-foreground">
+          {{ item.badge }}
+        </span>
+      </template>
+    </Menu>
+  </span>
   <Button
     v-if="linksHidden"
     :tooltip="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
@@ -65,7 +67,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { usePreferredReducedMotion } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -90,6 +92,7 @@ const linkSelectionStore = useLinkSelectionStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const motionPreference = usePreferredReducedMotion()
+const goToControl = useTemplateRef<HTMLSpanElement>('goToControl')
 
 const linksHidden = computed(() => {
   if (!linkSelectionStore.selection) return false
@@ -138,7 +141,11 @@ function destinationName(destination: LinkDestination): string {
     case 'subgraphOutputs':
       return t('selectionToolbox.linkDestinations.subgraphOutputs')
     case 'node':
-      return destination.node.getTitle() || destination.node.type || ''
+      return (
+        destination.node.getTitle() ||
+        destination.node.type ||
+        `#${destination.nodeId}`
+      )
   }
 }
 
@@ -148,14 +155,17 @@ function goToLabel(destination: LinkDestination): string {
   })
 }
 
-function goTo(nodeId: NodeId) {
+async function goTo(nodeId: NodeId) {
   const canvas = canvasStore.canvas
   if (!canvas) return
-  goToLinkDestination(canvas, nodeId, {
+  const moved = goToLinkDestination(canvas, nodeId, {
     viewport: visibleCanvasViewport(canvas),
     reducedMotion:
       motionPreference.value === 'reduce' ||
       settingStore.get('Comfy.Appearance.DisableAnimations')
   })
+  if (!moved) return
+  await nextTick()
+  goToControl.value?.querySelector('button')?.focus()
 }
 </script>
