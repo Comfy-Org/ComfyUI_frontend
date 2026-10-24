@@ -1456,6 +1456,42 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures prompt editor experiment events with the arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const opened = {
+        surface: 'panel' as const,
+        trigger: 'expand_button' as const,
+        '$feature/prompt-editor-surface': 'panel' as const
+      }
+      const closed = {
+        ...opened,
+        end_reason: 'close' as const,
+        duration_ms: 1200,
+        input_count: 4,
+        node_switch_count: 2
+      }
+
+      provider.trackPromptEditorExposure({
+        '$feature/prompt-editor-surface': 'panel'
+      })
+      provider.trackPromptEditorOpened(opened)
+      provider.trackPromptEditorClosed(closed)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_EXPOSURE,
+        { '$feature/prompt-editor-surface': 'panel' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_OPENED,
+        opened
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_CLOSED,
+        closed
+      )
+    })
+
     it('captures begin_checkout with intent metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -1693,6 +1729,27 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.AGENT_PANEL_CLOSED,
         { source: 'pagehide', open_duration_ms: 5000 },
+        { transport: 'sendBeacon', send_instantly: true }
+      )
+    })
+
+    it('captures a pagehide prompt editor close with an immediate sendBeacon send', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const closed = {
+        surface: 'panel',
+        trigger: 'expand_button',
+        end_reason: 'pagehide',
+        duration_ms: 5000,
+        input_count: 2,
+        node_switch_count: 1
+      } as const
+
+      provider.trackPromptEditorClosed(closed)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_CLOSED,
+        closed,
         { transport: 'sendBeacon', send_instantly: true }
       )
     })
