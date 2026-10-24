@@ -33,9 +33,16 @@ describe('Comfy.SlotDefaults', () => {
     )
     const defs = await app.getNodeDefs()
 
-    for (const def of Object.values(defs)) {
-      await slotDefaultsExtension.beforeRegisterNodeDef?.(LGraphNode, def, app)
-    }
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.BrokenNode,
+      app
+    )
+    await slotDefaultsExtension.beforeRegisterNodeDef?.(
+      LGraphNode,
+      defs.PreviewImage,
+      app
+    )
 
     expect(LiteGraph.slot_types_default_out.IMAGE).toEqual([
       'Reroute',
