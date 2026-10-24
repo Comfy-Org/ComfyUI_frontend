@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converta entre sRGB, Rec.709 linear, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 e HDR ACEScct. LogC3 usa a curva EI 800 com primárias Rec.709 e códigos limitados a [0, 1]. ACEScct usa primárias AP1 e branco D60, com adaptação Bradford para D65. Converta LogC3 ou ACEScct para linear ao salvar em EXR. O valor 1.0 linear usa o mesmo branco de referência de 203 nits do sRGB; HLG usa uma tela de referência de 1000 nits. As saídas linear e ACEScct preservam valores estendidos. Conversões de linear para HDR preservam os realces sem mapeamento de tons; saídas HLG e PQ recortam canais negativos. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons à luminância excedente em todo o lote e comprimem cores fora da gama. As conversões são calculadas em float32 e retornam o dispositivo e dtype intermediários. Alfa não pré-multiplicado não passa por transformação de cor.",
+    "description": "Converte sRGB, Rec.709 linear, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, ACEScg linear e HDR ACEScct. LogC3 usa a curva EI 800 com primárias Rec.709 e códigos limitados a [0, 1]. ACEScg é AP1 linear de cena com ponto branco D60. ACEScct é a codificação logarítmica de ACEScg. Ambos usam adaptação de Bradford para D65. Converta LogC3 ou ACEScct para ACEScg linear (AP1 linear de cena) ou linear (Rec.709) antes de salvar EXR. Linear 1.0 e ACEScg 1.0 usam o mesmo branco de referência de 203 nits que sRGB; HLG usa uma tela de referência de 1000 nits. Saídas linear, ACEScg e ACEScct preservam valores estendidos. Conversões de linear para HDR preservam realces sem mapeamento de tons; saídas HLG e PQ cortam canais negativos. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons à luminância excessiva em todo o lote e comprimem cores fora da gama. As conversões são calculadas em float32 e retornam o dispositivo e o dtype intermediários. O alfa direto não passa por transformação de cor.",
     "display_name": "Converter Espaço de Cor da Imagem",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Espaço de cor dos pixels de saída. Configure o nó de salvamento para esse mesmo espaço de cor. Converta LogC3 ou ACEScct para linear antes de salvar EXR, ou para sRGB/HDR/HDR PQ antes de salvar vídeo."
+        "tooltip": "Espaço de cores dos pixels de saída. Defina o nó de salvamento para esse mesmo espaço de cores. Converta LogC3 ou ACEScct para ACEScg linear para EXR ACEScg, ou para linear para EXR Rec.709. Converta para sRGB/HDR/HDR PQ antes de salvar vídeo."
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Codifica uma instrução de edição com imagens de referência para uma LoRA de edição MOSS-Image; use-a também para o prompt negativo. As referências são usadas no tamanho em que são fornecidas; redimensione-as antes.",
+    "description": "Codifica uma instrução de edição com imagens de referência para um LoRA de edição MOSS-Image; use-a também para o prompt negativo. As referências são usadas no tamanho em que chegam; redimensione-as primeiro. Sem um VAE, as imagens vão apenas para o codificador de texto.",
     "display_name": "Codificação de Texto para Edição MOSS-Image",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "edit_format",
         "tooltip": "O layout com o qual a LoRA de edição foi treinada: MOSS-Image Edit Training do ai-toolkit (com sua opção kv_cache ativada ou desativada) ou Moss-Image-Edit. Com kv_cache desativado, as referências também atendem à imagem que está sendo gerada, portanto são recalculadas a cada etapa."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Ajusta o quanto o modelo dá atenção às imagens que o codificador de texto vê (formatos ai-toolkit ou sem VAE): 0 as ignora, 1 não as altera, acima de 1 as enfatiza."
+      },
       "images": {
         "name": "imagens"
       },
@@ -25279,7 +25283,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Codifica as imagens como latentes de referência para o LoRA de edição."
       }
     },
     "outputs": {

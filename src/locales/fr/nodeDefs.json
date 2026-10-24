@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Convertit sRGB, Rec.709 linéaire, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 et HDR ACEScct. LogC3 utilise la courbe EI 800 avec les primaires Rec.709 et des codes limités à [0, 1]. ACEScct utilise les primaires AP1 et le point blanc D60, avec une adaptation de Bradford vers D65. Convertissez LogC3 ou ACEScct en linéaire pour l’enregistrement EXR. Le linéaire 1.0 utilise le même blanc de référence de 203 nits que sRGB ; HLG utilise un écran de référence de 1000 nits. Les sorties linéaires et ACEScct préservent les valeurs étendues. Les conversions du linéaire vers HDR préservent les hautes lumières sans mappage de tons ; les sorties HLG et PQ écrêtent les canaux négatifs. La sortie SDR et la conversion de PQ vers HLG appliquent un mappage de tons à l’excès de luminance sur l’ensemble du lot et compressent les couleurs hors gamut. Les conversions sont calculées en float32 et renvoient l’appareil intermédiaire et le dtype. L’alpha droit n’est pas transformé chromatiquement.",
+    "description": "Convertit entre sRGB, Rec.709 linéaire, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, ACEScg linéaire et HDR ACEScct. LogC3 utilise la courbe EI 800 avec les primaires Rec.709 et des valeurs de code limitées à [0, 1]. ACEScg est AP1 linéaire de scène avec un point blanc D60. ACEScct est l’encodage logarithmique d’ACEScg. Les deux utilisent une adaptation de Bradford vers D65. Convertissez LogC3 ou ACEScct en ACEScg linéaire (AP1 linéaire de scène) ou en linéaire (Rec.709) avant d’enregistrer en EXR. Le linéaire 1.0 et ACEScg 1.0 utilisent le même blanc de référence à 203 nits que sRGB ; HLG utilise un écran de référence à 1000 nits. Les sorties linéaire, ACEScg et ACEScct préservent les valeurs étendues. Les conversions de linéaire vers HDR préservent les hautes lumières sans mappage tonal ; les sorties HLG et PQ écrêtent les canaux négatifs. La sortie SDR et la conversion de PQ vers HLG appliquent un mappage tonal à la luminance excédentaire sur l’ensemble du lot et compressent les couleurs hors gamut. Les conversions sont calculées en float32 et renvoient le périphérique et le dtype intermédiaires. L’alpha non prémultiplié n’est pas transformé en couleur.",
     "display_name": "Convertir l’espace colorimétrique de l’image",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Espace colorimétrique des pixels de sortie. Réglez le nœud d’enregistrement sur ce même espace colorimétrique. Convertissez LogC3 ou ACEScct en linéaire avant d’enregistrer au format EXR, ou en sRGB/HDR/HDR PQ avant d’enregistrer une vidéo."
+        "tooltip": "Espace colorimétrique des pixels de sortie. Réglez le nœud d’enregistrement sur ce même espace colorimétrique. Convertissez LogC3 ou ACEScct en ACEScg linéaire pour un EXR ACEScg, ou en linéaire pour un EXR Rec.709. Convertissez en sRGB/HDR/HDR PQ avant d’enregistrer une vidéo."
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Encode une instruction d’édition avec des images de référence pour un LoRA d’édition MOSS-Image ; utilisez-le également pour le prompt négatif. Les références sont utilisées à leur taille d’origine, redimensionnez-les d’abord.",
+    "description": "Encode une instruction d’édition avec des images de référence pour un LoRA d’édition MOSS-Image ; utilisez-le aussi pour le prompt négatif. Les références sont utilisées à leur taille d’entrée, redimensionnez-les d’abord. Sans VAE, les images sont uniquement envoyées à l’encodeur de texte.",
     "display_name": "Encodage de texte MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "edit_format",
         "tooltip": "La disposition avec laquelle le LoRA d’édition a été entraîné : MOSS-Image Edit Training d’ai-toolkit (avec son option kv_cache activée ou désactivée) ou Moss-Image-Edit. Lorsque kv_cache est désactivé, les références prêtent également attention à l’image en cours de génération ; elles sont donc recalculées à chaque étape."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Détermine dans quelle mesure le modèle prête attention aux images que voit l’encodeur de texte (formats ai-toolkit, ou sans VAE) : 0 les ignore, 1 ne les modifie pas, et une valeur supérieure à 1 les accentue."
+      },
       "images": {
         "name": "images"
       },
@@ -25279,7 +25283,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Encode les images en tant que latents de référence pour le LoRA d’édition."
       }
     },
     "outputs": {

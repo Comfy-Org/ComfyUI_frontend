@@ -1259,6 +1259,9 @@
       "openCheckout": "Ödeme sayfasını aç",
       "openPaymentPage": "Ödeme sayfasını aç",
       "payAmount": "{amount} öde",
+      "planRequiredFreeRuns": "Kredi satın almak bir Cloud planı başlatmaz. Ücretsiz çalıştırmalarınız tükendiğinde iş akışlarını çalıştırmaya devam etmek için abone olun.",
+      "planRequiredResubscribe": "Kredi satın almak Cloud planınızı yeniden başlatmaz. Cloud üzerinde iş akışlarını çalıştırmak için yeniden abone olun.",
+      "planRequiredSubscribe": "Kredi satın almak bir Cloud planı başlatmaz. Cloud üzerinde iş akışlarını çalıştırmak için abone olun.",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",
       "purchaseSuccess": "Krediler başarıyla eklendi!",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "Bu düzenleyicinin hangi dağıtımda çalıştığı kontrol edilemedi.",
     "lookupUnavailableDetail": "Gösterilen modeller Comfy Cloud'a ait. Yeniden denemek için yeniden yükleyin.",
     "membersStartOn": "Kendi seçimi olmayan üyeler şununla başlar:",
+    "missingNodes": "Eksik {count} düğüm | Eksik {count} düğüm",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Bu çalışma alanında henüz dağıtım yok.",
+    "notChecked": "Kontrol edilmedi",
     "notReadyTooltip": "{deployment} üzerinde çalışıyor. Hazır olmadığı için hazır olana kadar işler çalışmaz.",
     "pickGone": "Seçtiğiniz dağıtım artık mevcut değil.",
     "pickGoneDetail": "Bu tarayıcı artık Comfy Cloud üzerinde çalışıyor. Bir dağıtım kullanmak için yeniden seçin.",
     "releaseChanged": "Bu dağıtım artık farklı bir Release çalıştırıyor. Node'larını almak için yeniden yükleyin.",
     "reload": "Yeniden yükle",
     "runOn": "Şurada çalıştır",
+    "runsThisWorkflow": "Bu iş akışını çalıştırır",
     "status": {
       "notReady": "Hazır değil",
       "provisioning": "Başlatılıyor",
@@ -5730,7 +5736,7 @@
         "title": "Otomatik kredi yükleme başarısız oldu"
       },
       "autoTopUpOff": {
-        "body": "Kartınız art arda 3 kez reddedildi. Ödeme yönteminizi güncelleyin, ardından otomatik kredi yüklemeyi yeniden açın.",
+        "body": "Ödeme yönteminiz art arda 3 kez reddedildi. Ödeme yönteminizi güncelleyin, ardından otomatik kredi yüklemeyi yeniden açın.",
         "title": "Otomatik kredi yükleme kapatıldı"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "Planınıza dahil olan krediler. Her faturalandırma döneminde yenilenirler.",
         "rateInfo": "Krediler hakkında",
         "rateTooltip": "Krediler çalıştırmalar için ödeme yapar. {credits} kredi = $1.",
-        "resubscribe": "Cloud'da kredi kullanmak için yeniden abone olun.",
-        "subscribe": "Cloud'da kredi kullanmak için abone olun.",
         "title": "Krediler",
         "topUp": "Bakiye yükle",
         "topUpTooltip": "Eklediğiniz krediler. Plan kredileri tükendiğinde kullanılırlar.",

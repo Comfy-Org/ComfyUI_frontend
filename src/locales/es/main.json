@@ -1259,6 +1259,9 @@
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
       "payAmount": "Pagar {amount}",
+      "planRequiredFreeRuns": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo una vez que hayas usado tus ejecuciones gratuitas.",
+      "planRequiredResubscribe": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "planRequiredSubscribe": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "No se pudo comprobar en qué implementación se ejecuta este editor.",
     "lookupUnavailableDetail": "Los modelos mostrados son los de Comfy Cloud. Recarga para intentarlo de nuevo.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
+    "missingNodes": "Falta {count} nodo | Faltan {count} nodos",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Este espacio de trabajo aún no tiene implementaciones.",
+    "notChecked": "No comprobado",
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
     "pickGone": "La implementación que elegiste ya no existe.",
     "pickGoneDetail": "Este navegador ahora se ejecuta en Comfy Cloud. Vuelve a elegir una implementación para usar una.",
     "releaseChanged": "Esta implementación ahora ejecuta una versión diferente. Recarga para obtener sus nodos.",
     "reload": "Recargar",
     "runOn": "Ejecutar en",
+    "runsThisWorkflow": "Ejecuta este flujo de trabajo",
     "status": {
       "notReady": "No está listo",
       "provisioning": "Iniciando",
@@ -5730,7 +5736,7 @@
         "title": "La recarga automática falló"
       },
       "autoTopUpOff": {
-        "body": "Tu tarjeta fue rechazada 3 veces seguidas. Actualiza tu método de pago y luego vuelve a activar la recarga automática.",
+        "body": "Tu método de pago fue rechazado 3 veces seguidas. Actualiza tu método de pago y vuelve a activar la recarga automática.",
         "title": "Recarga automática desactivada"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "Créditos incluidos con tu plan. Se reponen en cada período de facturación.",
         "rateInfo": "Acerca de los créditos",
         "rateTooltip": "Los créditos pagan las ejecuciones. {credits} créditos = $1.",
-        "resubscribe": "Vuelve a suscribirte para usar créditos en Cloud.",
-        "subscribe": "Suscríbete para usar créditos en Cloud.",
         "title": "Créditos",
         "topUp": "Recarga",
         "topUpTooltip": "Créditos que añadiste. Se usan una vez que se agotan los créditos del plan.",

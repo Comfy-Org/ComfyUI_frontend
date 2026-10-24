@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini kullanır ve kodlar [0, 1] aralığına sınırlandırılır. ACEScct, AP1 ana renklerini ve D60 beyaz noktasını, D65'e Bradford uyarlamasıyla kullanır. EXR olarak kaydetmek için LogC3 veya ACEScct'yi doğrusala dönüştürün. Doğrusal 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusal-HDR dönüşümleri, ton eşleme olmadan parlak vurguları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, grup genelindeki fazla parlaklığı ton eşler ve renk gamı dışındaki renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3, doğrusal ACEScg ve HDR ACEScct arasında dönüştürür. LogC3, Rec.709 ana renkleriyle EI 800 eğrisini kullanır ve kod değerleri [0, 1] aralığına kırpılır. ACEScg, D60 beyaz noktalı sahne-doğrusal AP1'dir. ACEScct, ACEScg log kodlamasıdır. Her ikisi de D65'e Bradford uyarlaması kullanır. EXR kaydetmeden önce LogC3 veya ACEScct'yi doğrusal ACEScg'ye (AP1 sahne-doğrusal) ya da doğrusal Rec.709'a dönüştürün. Doğrusal 1.0 ve ACEScg 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal, ACEScg ve ACEScct çıktıları genişletilmiş değerleri korur. Doğrusal-HDR dönüşümleri, ton eşleme olmadan parlak alanları korur; HLG ve PQ çıktıları negatif kanalları kırpar. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü aynı renk uzayına ayarlayın. EXR kaydetmeden önce LogC3 veya ACEScct’yi doğrusal alana, video kaydetmeden önce ise sRGB/HDR/HDR PQ’ya dönüştürün."
+        "tooltip": "Çıktı piksellerinin renk uzayı. Kaydetme düğümünü bu aynı renk uzayına ayarlayın. ACEScg EXR için LogC3 veya ACEScct'yi doğrusal ACEScg'ye ya da Rec.709 EXR için doğrusal Rec.709'a dönüştürün. Video kaydetmeden önce sRGB/HDR/HDR PQ'ya dönüştürün."
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Bir MOSS-Image düzenleme LoRA'sı için referans görüntülerle bir düzenleme talimatını kodlar; negatif istem için de kullanın. Referanslar geldikleri boyutta kullanılır, önce onları ölçeklendirin.",
+    "description": "Bir MOSS-Image düzenleme LoRA'sı için referans görüntülerle bir düzenleme talimatını kodlar; bunu negatif prompt için de kullanın. Referanslar geldikleri boyutta kullanılır, önce ölçeklendirin. VAE olmadan görüntüler yalnızca metin kodlayıcıya gider.",
     "display_name": "MOSS-Image Düzenleme Metin Kodlama",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "düzenleme_biçimi",
         "tooltip": "Düzenleme LoRA'sının eğitildiği düzen: ai-toolkit'in MOSS-Image Edit Training'i (kv_cache seçeneği açık veya kapalı) ya da Moss-Image-Edit. kv_cache kapalıyken referanslar üretilen görüntüye de dikkat uygular, dolayısıyla her adımda yeniden hesaplanırlar."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Metin kodlayıcının gördüğü görüntülere modelin ne ölçüde dikkat verdiğini ölçekler (ai-toolkit biçimleri veya VAE yokken): 0 bunları yok sayar, 1 değişmez, 1'in üzeri onları vurgular."
+      },
       "images": {
         "name": "görüntüler"
       },
@@ -25279,7 +25283,8 @@
         "name": "istem"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Görüntüleri düzenleme LoRA'sı için referans latentler olarak kodlar."
       }
     },
     "outputs": {

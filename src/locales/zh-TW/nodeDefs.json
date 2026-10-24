@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "在 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 與 HDR ACEScct 之間轉換。LogC3 使用 EI 800 曲線、Rec.709 原色，且編碼值會限制於 [0, 1]。ACEScct 使用 AP1 原色與 D60 白點，並透過 Bradford 適應轉換至 D65。儲存 EXR 時，請將 LogC3 或 ACEScct 轉換為線性。線性 1.0 使用與 sRGB 相同的 203 尼特參考白點；HLG 使用 1000 尼特參考顯示器。線性和 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留高光；HLG 和 PQ 輸出會裁切負值色彩通道。SDR 輸出及 PQ 轉 HLG 會針對整個批次對超出範圍的亮度進行色調映射，並壓縮色域外色彩。轉換會以 float32 計算，並回傳中間結果的裝置與 dtype。未預乘 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、線性 ACEScg 與 HDR ACEScct。LogC3 使用 EI 800 曲線、Rec.709 原色，且碼值限制於 [0, 1]。ACEScg 是採用 D60 白點的場景線性 AP1。ACEScct 是 ACEScg 的對數編碼。兩者皆使用 Bradford 適應至 D65。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性 ACEScg（AP1 場景線性）或線性（Rec.709）。線性 1.0 與 ACEScg 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性、ACEScg 與 ACEScct 輸出會保留延伸範圍值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留亮部；HLG 與 PQ 輸出會裁切負值通道。SDR 輸出與 PQ 轉 HLG 會在整個批次中對超出部分的亮度進行色調映射，並壓縮色域外色彩。轉換會以 float32 計算，並回傳中間裝置與 dtype。未預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性；在儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。若要儲存 ACEScg EXR，請將 LogC3 或 ACEScct 轉換為線性 ACEScg；若要儲存 Rec.709 EXR，則轉換為線性。儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "使用參考圖像為 MOSS-Image 編輯 LoRA 編碼編輯指令；負向提示詞也請使用此節點。參考圖像會依其原始尺寸使用，請先進行縮放。",
+    "description": "為 MOSS-Image 編輯 LoRA 編碼包含參考影像的編輯指令，負面提示也請使用它。參考影像會以輸入時的尺寸使用，請先縮放。沒有 VAE 時，影像只會傳送至文字編碼器。",
     "display_name": "文字編碼 MOSS-Image 編輯",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "編輯格式",
         "tooltip": "編輯 LoRA 訓練時使用的版面配置：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 選項開啟或關閉），或 Moss-Image-Edit。kv_cache 關閉時，參考圖像也會關注正在生成的圖像，因此每一步都會重新計算。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "調整模型對文字編碼器所見影像的關注程度（ai-toolkit 格式，或未使用 VAE 時）：0 會忽略影像，1 維持不變，大於 1 則會強調影像。"
+      },
       "images": {
         "name": "圖像"
       },
@@ -25279,7 +25283,8 @@
         "name": "提示詞"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "將影像編碼為供編輯 LoRA 使用的參考潛在空間資料。"
       }
     },
     "outputs": {

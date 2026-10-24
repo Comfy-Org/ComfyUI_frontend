@@ -1259,6 +1259,9 @@
       "openCheckout": "Apri il checkout",
       "openPaymentPage": "Apri la pagina di pagamento",
       "payAmount": "Paga {amount}",
+      "planRequiredFreeRuns": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per continuare a eseguire i workflow dopo aver esaurito le esecuzioni gratuite.",
+      "planRequiredResubscribe": "L'acquisto di crediti non riavvia il tuo piano Cloud. Rinnova l'abbonamento per eseguire workflow su Cloud.",
+      "planRequiredSubscribe": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire workflow su Cloud.",
       "purchaseError": "Acquisto fallito",
       "purchaseErrorDetail": "Impossibile acquistare crediti: {error}",
       "purchaseSuccess": "Crediti aggiunti con successo!",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "Impossibile verificare su quale distribuzione è in esecuzione questo editor.",
     "lookupUnavailableDetail": "I modelli mostrati sono quelli di Comfy Cloud. Ricarica per riprovare.",
     "membersStartOn": "I membri senza una propria selezione iniziano su",
+    "missingNodes": "Manca {count} nodo | Mancano {count} nodi",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Questa area di lavoro non ha ancora distribuzioni.",
+    "notChecked": "Non verificato",
     "notReadyTooltip": "In esecuzione su {deployment}. Non è pronta, quindi i processi non verranno eseguiti finché non lo sarà.",
     "pickGone": "La distribuzione selezionata non esiste più.",
     "pickGoneDetail": "Questo browser ora è in esecuzione su Comfy Cloud. Seleziona di nuovo una distribuzione per usarne una.",
     "releaseChanged": "Questa distribuzione ora esegue una Release diversa. Ricarica per ottenere i relativi nodi.",
     "reload": "Ricarica",
     "runOn": "Esegui su",
+    "runsThisWorkflow": "Esegue questo workflow",
     "status": {
       "notReady": "Non pronto",
       "provisioning": "Avvio in corso",
@@ -5730,7 +5736,7 @@
         "title": "Ricarica automatica non riuscita"
       },
       "autoTopUpOff": {
-        "body": "La tua carta è stata rifiutata 3 volte di seguito. Aggiorna il metodo di pagamento, quindi riattiva la ricarica automatica.",
+        "body": "Il tuo metodo di pagamento è stato rifiutato 3 volte di seguito. Aggiorna il metodo di pagamento, quindi riattiva la ricarica automatica.",
         "title": "Ricarica automatica disattivata"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "Crediti inclusi nel tuo piano. Si rinnovano a ogni periodo di fatturazione.",
         "rateInfo": "Informazioni sui crediti",
         "rateTooltip": "I crediti servono a pagare le esecuzioni. {credits} crediti = $1.",
-        "resubscribe": "Riattiva l'abbonamento per usare i crediti su Cloud.",
-        "subscribe": "Abbonati per usare i crediti su Cloud.",
         "title": "Crediti",
         "topUp": "Ricarica",
         "topUpTooltip": "Crediti che hai aggiunto. Vengono usati quando i crediti del piano si esauriscono.",

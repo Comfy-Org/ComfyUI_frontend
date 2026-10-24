@@ -9289,12 +9289,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 和 HDR ACEScct。LogC3 使用 EI 800 曲线、Rec.709 原色，并将编码值限制在 [0, 1]。ACEScct 使用 AP1 原色和 D60 白点，并通过 Bradford 适应转换到 D65。保存 EXR 时，请将 LogC3 或 ACEScct 转换为线性。线性 1.0 与 sRGB 使用相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性和 ACEScct 输出会保留扩展值。线性转 HDR 的转换会保留高光，不进行色调映射；HLG 和 PQ 输出会裁剪负值通道。SDR 输出以及 PQ 转 HLG 的转换会在整个批次中对过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间设备和 dtype。直通 alpha 不进行颜色转换。",
+    "description": "转换 sRGB、线性 Rec.709、HDR (Rec.2020 HLG)、HDR PQ (Rec.2020 PQ)、HDR LogC3、线性 ACEScg 和 HDR ACEScct。LogC3 使用 EI 800 曲线、Rec.709 原色，并将编码值限制在 [0, 1]。ACEScg 是采用 D60 白点的场景线性 AP1。ACEScct 是 ACEScg 的对数编码。两者均使用 Bradford 适配至 D65。保存 EXR 前，请将 LogC3 或 ACEScct 转换为线性 ACEScg（AP1 场景线性）或线性（Rec.709）。线性 1.0 和 ACEScg 1.0 与 sRGB 使用相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性、ACEScg 和 ACEScct 输出会保留扩展值。线性到 HDR 的转换会在不进行色调映射的情况下保留高光；HLG 和 PQ 输出会裁剪负值通道。SDR 输出以及 PQ 到 HLG 的转换会对整个批次中的超额亮度进行色调映射，并压缩超出色域的颜色。转换使用 float32 计算，并返回中间 device 和 dtype。直 alpha 不进行颜色转换。",
     "display_name": "转换图像色彩空间",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "输出像素的色彩空间。将保存节点设置为相同的色彩空间。保存 EXR 前，将 LogC3 或 ACEScct 转换为线性；保存视频前，将其转换为 sRGB/HDR/HDR PQ。"
+        "tooltip": "输出像素的色彩空间。将保存节点设为相同的色彩空间。对于 ACEScg EXR，请将 LogC3 或 ACEScct 转换为线性 ACEScg；对于 Rec.709 EXR，请转换为线性。保存视频前，请转换为 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -25262,7 +25262,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "使用参考图像为 MOSS-Image 编辑 LoRA 编码编辑指令，负面提示词也应使用它。参考图像会按其输入时的尺寸使用，请先缩放。",
+    "description": "使用参考图像为 MOSS-Image 编辑 LoRA 编码编辑指令；也请将其用于负面提示词。参考图像会按输入时的尺寸使用，请先缩放它们。没有 VAE 时，图像只会传递给文本编码器。",
     "display_name": "文本编码 MOSS-Image 编辑",
     "inputs": {
       "clip": {
@@ -25272,6 +25272,10 @@
         "name": "编辑格式",
         "tooltip": "编辑 LoRA 训练所用的布局：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 选项开启或关闭），或 Moss-Image-Edit。关闭 kv_cache 时，参考图像也会关注正在生成的图像，因此会在每一步重新计算。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "缩放模型对文本编码器所见图像的关注程度（ai-toolkit 格式，或无 VAE 时）：0 会忽略图像，1 保持不变，大于 1 会强调图像。"
+      },
       "images": {
         "name": "图像"
       },
@@ -25279,7 +25283,8 @@
         "name": "提示词"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "将图像编码为用于编辑 LoRA 的参考潜空间表示。"
       }
     },
     "outputs": {

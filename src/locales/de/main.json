@@ -1259,6 +1259,9 @@
       "openCheckout": "Checkout öffnen",
       "openPaymentPage": "Zahlungsseite öffnen",
       "payAmount": "{amount} bezahlen",
+      "planRequiredFreeRuns": "Der Kauf von Credits startet kein Cloud-Abo. Abonnieren Sie, um weiterhin Workflows auszuführen, sobald Ihre kostenlosen Ausführungen aufgebraucht sind.",
+      "planRequiredResubscribe": "Der Kauf von Credits startet Ihr Cloud-Abo nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
+      "planRequiredSubscribe": "Der Kauf von Credits startet kein Cloud-Abo. Abonnieren Sie, um Workflows in der Cloud auszuführen.",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",
       "purchaseSuccess": "Credits wurden erfolgreich hinzugefügt!",
@@ -1450,15 +1453,18 @@
     "lookupUnavailable": "Es konnte nicht geprüft werden, auf welchem Deployment dieser Editor ausgeführt wird.",
     "lookupUnavailableDetail": "Die angezeigten Modelle stammen von Comfy Cloud. Laden Sie neu, um es erneut zu versuchen.",
     "membersStartOn": "Mitglieder ohne eigene Auswahl starten auf",
+    "missingNodes": "Es fehlt {count} Node | Es fehlen {count} Nodes",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Dieser Workspace hat noch keine Deployments.",
+    "notChecked": "Nicht überprüft",
     "notReadyTooltip": "Wird auf {deployment} ausgeführt. Es ist nicht bereit, daher werden Jobs erst ausgeführt, wenn es bereit ist.",
     "pickGone": "Das von Ihnen ausgewählte Deployment existiert nicht mehr.",
     "pickGoneDetail": "Dieser Browser wird jetzt auf Comfy Cloud ausgeführt. Wählen Sie erneut ein Deployment aus, um eines zu verwenden.",
     "releaseChanged": "Dieses Deployment führt jetzt ein anderes Release aus. Laden Sie neu, um dessen Nodes zu erhalten.",
     "reload": "Neu laden",
     "runOn": "Ausführen auf",
+    "runsThisWorkflow": "Führt diesen Workflow aus",
     "status": {
       "notReady": "Nicht bereit",
       "provisioning": "Wird gestartet",
@@ -5730,7 +5736,7 @@
         "title": "Automatisches Aufladen fehlgeschlagen"
       },
       "autoTopUpOff": {
-        "body": "Ihre Karte wurde dreimal hintereinander abgelehnt. Aktualisieren Sie Ihre Zahlungsmethode und aktivieren Sie anschließend das automatische Aufladen wieder.",
+        "body": "Ihre Zahlungsmethode wurde dreimal hintereinander abgelehnt. Aktualisieren Sie Ihre Zahlungsmethode und aktivieren Sie dann die automatische Aufladung wieder.",
         "title": "Automatisches Aufladen deaktiviert"
       },
       "ending": {
@@ -5834,8 +5840,6 @@
         "planTooltip": "In Ihrem Plan enthaltenes Guthaben. Es wird in jedem Abrechnungszeitraum aufgefüllt.",
         "rateInfo": "Über Guthaben",
         "rateTooltip": "Guthaben bezahlt Ausführungen. {credits} Guthaben = 1 $.",
-        "resubscribe": "Abonnieren Sie erneut, um Guthaben in Cloud zu verwenden.",
-        "subscribe": "Abonnieren Sie, um Guthaben in Cloud zu verwenden.",
         "title": "Guthaben",
         "topUp": "Aufladen",
         "topUpTooltip": "Von Ihnen hinzugefügtes Guthaben. Es wird verwendet, sobald das Planguthaben aufgebraucht ist.",
