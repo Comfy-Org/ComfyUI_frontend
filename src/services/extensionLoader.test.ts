@@ -344,20 +344,23 @@ describe('extension loading', () => {
       settingStore.$patch({
         settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
       })
-      const pending = createDeferred<void>()
-      vi.spyOn(settingStore, 'set').mockReturnValue(pending.promise)
+      const pending = createDeferred<Response>()
+      vi.spyOn(api, 'storeSetting').mockReturnValue(pending.promise)
       vi.spyOn(api, 'getExtensions').mockResolvedValue([])
       useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
 
-      let loaded = false
-      const loading = loadExtensions().then(() => {
-        loaded = true
-      })
+      const loading = loadExtensions()
       try {
-        await vi.waitFor(() => expect(loaded).toBe(true))
+        await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+        await expect(loading).resolves.toBeUndefined()
       } finally {
-        pending.resolve()
+        pending.resolve(new Response())
         await loading
+        await vi.waitFor(() =>
+          expect(
+            settingStore.get('Comfy.Extension.SeenAgentExtensions')
+          ).toEqual(['agent.cushions.toolbar'])
+        )
       }
     })
 
@@ -382,8 +385,6 @@ describe('extension loading', () => {
           context: { unseen_extension_count: 1 }
         })
       )
-      // Recording the name is what stops the notice repeating, so a refused
-      // write must leave the list empty for the notice to appear again.
       expect(settingStore.get('Comfy.Extension.SeenAgentExtensions')).toEqual(
         []
       )
@@ -487,7 +488,6 @@ describe('agent extension discovery', () => {
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
     disable.onClick()
 
-    // Only the extension this toast announced, not every installed one.
     await vi.waitFor(() =>
       expect(storeSettings).toHaveBeenCalledExactlyOnceWith({
         'Comfy.Extension.Disabled': ['agent.cushions.toolbar'],

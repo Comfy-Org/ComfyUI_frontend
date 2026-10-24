@@ -27,8 +27,6 @@ export const useToast = defineStore('toast', () => {
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        // `ToastOptions.action` stays part of the public extension API; the
-        // renderer only ever sees the one ordered list.
         actions: [
           ...(options.action ? [options.action] : []),
           ...(options.actions ?? [])

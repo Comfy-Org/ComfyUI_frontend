@@ -22,7 +22,6 @@ function registerExtensions(...names: string[]) {
   for (const name of names) extensionStore.registerExtension({ name })
 }
 
-/** The disabled-name write is revertible, so its declaration must be present. */
 function registerDisabledSetting() {
   useSettingStore().addSetting(
     CORE_SETTINGS.find((setting) => setting.id === 'Comfy.Extension.Disabled')!
@@ -379,8 +378,6 @@ describe('ExtensionPanel', () => {
       'Comfy.Extension.Disabled': ['agent-made.standalone'],
       'Comfy.Extension.DisabledPacks': ['/extensions/cushions/']
     })
-    // The pack-sourced extension keeps its own switch: its pack carries the
-    // disable, and the pack switch is what records it.
     await vi.waitFor(() =>
       expect(
         screen.getByRole('switch', { name: 'agent-made.standalone' })

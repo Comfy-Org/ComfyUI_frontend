@@ -223,7 +223,7 @@ describe('load3dLazy', () => {
   it('registers but does not replay lazy extensions that are disabled', async () => {
     const { extensionStore, registeredNames, registerNodeDef } =
       await loadLazyExtensionFresh()
-    extensionStore.loadDisabledExtensionNames(['Comfy.Preview3D'])
+    extensionStore.loadBootDisabledExtensionNames(['Comfy.Preview3D'])
 
     await registerNodeDef(nodeTypeWithId(1), makeNodeDef('Load3D'))
 

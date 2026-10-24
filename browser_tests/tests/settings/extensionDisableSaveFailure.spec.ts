@@ -40,8 +40,6 @@ test.describe(
       await test.step('Disabling it is reported, not silently dropped', async () => {
         await extensionSwitch.click()
 
-        // `\b` keeps this off Comfy.Extension.DisabledPacks, whose own
-        // refusal is covered by extensionPackSaveFailure.spec.ts.
         await expect(
           comfyPage.toast.withText(/Comfy\.Extension\.Disabled\b/)
         ).toBeVisible()

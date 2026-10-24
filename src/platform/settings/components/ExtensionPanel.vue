@@ -110,8 +110,6 @@ const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
-// Immediate, so a request made before this panel mounted still selects its
-// filter rather than leaving a freshly opened panel on All.
 watch(
   settingsPanelNavigation,
   (request) => {
@@ -218,40 +216,24 @@ const hasChanges = computed(() => {
   )
 })
 
-/**
- * Persists the switches through the same queue the agent bulk disable uses, so
- * the two writers cannot each submit a whole list computed before the other's
- * landed. The switches are then reconciled from what the backend actually
- * holds, so a refused write returns them to the stored state rather than
- * leaving them showing an edit that was never saved.
- */
-const updateExtensionStatus = async () => {
-  const editingDisabledExtensionNames = Object.entries(
-    editingEnabledExtensions.value
-  )
-    .filter(([_, enabled]) => !enabled)
-    .map(([name]) => name)
-
-  const result = await extensionStore.setDisabledExtensionNames(
-    editingDisabledExtensionNames
-  )
+const updateExtensionStatus = async (
+  enabledByName: Readonly<Record<string, boolean>>
+) => {
+  Object.assign(editingEnabledExtensions.value, enabledByName)
+  const result = await extensionStore.setExtensionEnabledStates(enabledByName)
   if (!result.ok) {
     reportSaveFailure(result, 'Comfy.Extension.Disabled', {
       errorType: 'failure_saving_disabled_extensions',
       context: {
-        disabled_extension_count: editingDisabledExtensionNames.length
+        disabled_extension_count: Object.values(enabledByName).filter(
+          (enabled) => !enabled
+        ).length
       }
     })
   }
   reconcileSwitchesWithStoredNames()
 }
 
-/**
- * Returns every switch the user can move to the disabled-name list the backend
- * now holds. Read-only extensions are skipped: their state comes from the
- * always-enabled and always-disabled lists rather than from the setting, so
- * reading it back would flip them to whatever the setting happens to omit.
- */
 function reconcileSwitchesWithStoredNames() {
   const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
   for (const name of Object.keys(editingEnabledExtensions.value)) {
@@ -261,11 +243,9 @@ function reconcileSwitchesWithStoredNames() {
 }
 
 async function setExtensionEnabled(name: string, enabled: boolean) {
-  editingEnabledExtensions.value[name] = enabled
-  await updateExtensionStatus()
+  await updateExtensionStatus({ [name]: enabled })
 }
 
-/** Names the setting the user's change failed to reach, then records why. */
 function reportSaveFailure(
   result: Extract<SettingWriteResult, { ok: false }>,
   id: keyof Settings,
@@ -302,38 +282,35 @@ async function setExtensionPackEnabled(path: string, enabled: boolean) {
 }
 
 const enableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
-
-    editingEnabledExtensions.value[ext.name] = true
-  })
-  await updateExtensionStatus()
+  await updateExtensionStatus(
+    Object.fromEntries(
+      extensionStore.extensions
+        .filter((ext) => !extensionStore.isExtensionReadOnly(ext.name))
+        .map((ext) => [ext.name, true])
+    )
+  )
 }
 
 const disableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
-
-    editingEnabledExtensions.value[ext.name] = false
-  })
-  await updateExtensionStatus()
+  await updateExtensionStatus(
+    Object.fromEntries(
+      extensionStore.extensions
+        .filter((ext) => !extensionStore.isExtensionReadOnly(ext.name))
+        .map((ext) => [ext.name, false])
+    )
+  )
 }
 
 const disableThirdPartyExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isCoreExtension(ext.name)) return
-
-    editingEnabledExtensions.value[ext.name] = false
-  })
-  await updateExtensionStatus()
+  await updateExtensionStatus(
+    Object.fromEntries(
+      extensionStore.extensions
+        .filter((ext) => !extensionStore.isCoreExtension(ext.name))
+        .map((ext) => [ext.name, false])
+    )
+  )
 }
 
-/**
- * Unlike the toast and sidebar entry points, this one does not reload: the
- * panel collects changes and the user applies them from the banner. The
- * switches are reconciled from what the accepted write actually stored, so a
- * refused write leaves every control showing the state the backend still holds.
- */
 const disableAgentExtensions = async () => {
   const result = await extensionStore.disableAgentExtensions(
     extensionStore.agentExtensions
@@ -343,10 +320,7 @@ const disableAgentExtensions = async () => {
     return
   }
 
-  const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
-  for (const name of Object.keys(editingEnabledExtensions.value)) {
-    if (disabledNames.has(name)) editingEnabledExtensions.value[name] = false
-  }
+  reconcileSwitchesWithStoredNames()
 }
 
 const applyChanges = () => {
@@ -359,24 +333,26 @@ const extensionActions = computed<MenuItem[]>(() => [
     label: t('g.enableSelected'),
     icon: 'pi pi-check',
     command: async () => {
-      selectedExtensionNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
-          editingEnabledExtensions.value[name] = true
-        }
-      })
-      await updateExtensionStatus()
+      await updateExtensionStatus(
+        Object.fromEntries(
+          [...selectedExtensionNames.value]
+            .filter((name) => !extensionStore.isExtensionReadOnly(name))
+            .map((name) => [name, true])
+        )
+      )
     }
   },
   {
     label: t('g.disableSelected'),
     icon: 'pi pi-times',
     command: async () => {
-      selectedExtensionNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
-          editingEnabledExtensions.value[name] = false
-        }
-      })
-      await updateExtensionStatus()
+      await updateExtensionStatus(
+        Object.fromEntries(
+          [...selectedExtensionNames.value]
+            .filter((name) => !extensionStore.isExtensionReadOnly(name))
+            .map((name) => [name, false])
+        )
+      )
     }
   },
   {

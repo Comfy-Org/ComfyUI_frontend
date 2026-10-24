@@ -201,8 +201,6 @@ describe('SideToolbar', () => {
 
     expect(screen.getAllByText('AI')).toHaveLength(2)
 
-    // The second tab, so a Disable that always picks the first installed
-    // agent extension cannot pass.
     await fireEvent.contextMenu(
       screen.getByRole('button', { name: 'Workflows' })
     )

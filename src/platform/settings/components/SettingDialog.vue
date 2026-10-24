@@ -199,8 +199,6 @@ watch(navItems, (items) => {
   activeCategoryKey.value = items[0]?.id ?? null
 })
 
-// `defaultPanel` is read once, when this dialog is created. A request that
-// arrives while it is already open navigates here instead.
 watch(settingsPanelNavigation, (request) => {
   if (!request || !findPanelByKey(request.panel)) return
   searchQuery.value = ''

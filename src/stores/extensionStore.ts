@@ -57,19 +57,26 @@ export const useExtensionStore = defineStore('extension', () => {
       (path) => extensionPackName(path) === packName
     )
   }
-  const disabledExtensionNames = ref<Set<string>>(new Set())
   const extensionPackPaths = ref<string[]>([])
   const bootDisabledExtensionPackPaths = ref<Set<string>>(new Set())
+  const bootDisabledExtensionNames = ref<Set<string>>(new Set())
+
+  const storedDisabledExtensionNames = computed(
+    () => new Set(useSettingStore().get('Comfy.Extension.Disabled'))
+  )
 
   const inactiveDisabledExtensionNames = computed(() => {
-    return Array.from(disabledExtensionNames.value).filter(
+    return Array.from(storedDisabledExtensionNames.value).filter(
       (name) => !(name in extensionByName.value)
     )
   })
   const isExtensionInstalled = (name: string) => name in extensionByName.value
 
-  const isExtensionEnabled = (name: string) =>
-    !disabledExtensionNames.value.has(name)
+  const isExtensionEnabled = (name: string) => {
+    if (ALWAYS_ENABLED_EXTENSIONS.includes(name)) return true
+    if (ALWAYS_DISABLED_EXTENSIONS.includes(name)) return false
+    return !bootDisabledExtensionNames.value.has(name)
+  }
   const enabledExtensions = computed(() => {
     return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
   })
@@ -90,7 +97,7 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error(`Extension named '${extension.name}' already registered.`)
     }
 
-    if (disabledExtensionNames.value.has(extension.name)) {
+    if (!isExtensionEnabled(extension.name)) {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
@@ -101,14 +108,8 @@ export const useExtensionStore = defineStore('extension', () => {
     delete extensionByName.value[name]
   }
 
-  function loadDisabledExtensionNames(names: string[]) {
-    disabledExtensionNames.value = new Set(names)
-    for (const name of ALWAYS_DISABLED_EXTENSIONS) {
-      disabledExtensionNames.value.add(name)
-    }
-    for (const name of ALWAYS_ENABLED_EXTENSIONS) {
-      disabledExtensionNames.value.delete(name)
-    }
+  function loadBootDisabledExtensionNames(names: string[]) {
+    bootDisabledExtensionNames.value = new Set(names)
   }
 
   function loadExtensionPackPaths(paths: string[], disabledPaths: string[]) {
@@ -133,13 +134,6 @@ export const useExtensionStore = defineStore('extension', () => {
 
   let packSaveChain: Promise<unknown> = Promise.resolve()
 
-  /**
-   * Runs `write` after every pack save already queued, and counts it as
-   * unacknowledged until it settles. Every writer of the disabled-pack and
-   * disabled-name lists goes through here: each reads the current lists when
-   * its own turn arrives, so two writers cannot each submit a full array
-   * computed before the other's landed.
-   */
   async function queuePackSave(
     write: () => Promise<SettingWriteResult>
   ): Promise<SettingWriteResult> {
@@ -151,6 +145,14 @@ export const useExtensionStore = defineStore('extension', () => {
     } finally {
       unacknowledgedPackSaves.value--
     }
+  }
+
+  async function waitForExtensionSaves() {
+    let pending: Promise<unknown>
+    do {
+      pending = packSaveChain
+      await pending
+    } while (pending !== packSaveChain)
   }
 
   /** Enable or disable a whole pack, serialized behind any save still in flight. */
@@ -171,12 +173,6 @@ export const useExtensionStore = defineStore('extension', () => {
     })
   }
 
-  /**
-   * Which names and pack paths disabling `extensions` adds, read against the
-   * lists as they stand now. Read-only extensions are skipped, and an
-   * extension is disabled by its pack when one is attributable and by its name
-   * otherwise, never by both.
-   */
   function planAgentExtensionDisable(extensions: readonly ComfyExtension[]) {
     const settingStore = useSettingStore()
     const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
@@ -197,31 +193,25 @@ export const useExtensionStore = defineStore('extension', () => {
     }
   }
 
-  /**
-   * Persist which installed extensions are disabled by name, serialized behind
-   * any save still in flight. The names of extensions that are disabled but
-   * not installed are read when the write runs, so a save that was requested
-   * before a concurrent agent disable landed cannot drop it.
-   */
-  async function setDisabledExtensionNames(
-    editingDisabledNames: readonly string[]
+  async function setExtensionEnabledStates(
+    enabledByName: Readonly<Record<string, boolean>>
   ): Promise<SettingWriteResult> {
     const settingStore = useSettingStore()
-    return queuePackSave(() =>
-      settingStore.setOrRevert('Comfy.Extension.Disabled', [
-        ...new Set([
-          ...inactiveDisabledExtensionNames.value,
-          ...editingDisabledNames
-        ])
+    return queuePackSave(() => {
+      const disabledNames = new Set(
+        settingStore.get('Comfy.Extension.Disabled')
+      )
+      for (const [name, enabled] of Object.entries(enabledByName)) {
+        if (isExtensionReadOnly(name)) continue
+        if (enabled) disabledNames.delete(name)
+        else disabledNames.add(name)
+      }
+      return settingStore.setOrRevert('Comfy.Extension.Disabled', [
+        ...disabledNames
       ])
-    )
+    })
   }
 
-  /**
-   * Disable agent-created extensions in one atomic two-list write, serialized
-   * behind any pack save still in flight. The plan is computed when the write
-   * runs, not when it is requested.
-   */
   async function disableAgentExtensions(
     extensions: readonly ComfyExtension[]
   ): Promise<SettingWriteResult> {
@@ -258,13 +248,14 @@ export const useExtensionStore = defineStore('extension', () => {
     getAgentExtensionPackPath,
     registerExtension,
     unregisterExtension,
-    loadDisabledExtensionNames,
+    loadBootDisabledExtensionNames,
     loadExtensionPackPaths,
     wasExtensionPackEnabledAtBoot,
     isExtensionPackEnabled,
     isSavingExtensionPacks,
+    waitForExtensionSaves,
     setExtensionPackEnabled,
-    setDisabledExtensionNames,
+    setExtensionEnabledStates,
     disableAgentExtensions,
     captureCoreExtensions,
     isCoreExtension,

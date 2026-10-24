@@ -161,10 +161,6 @@ export async function notifyNewAgentExtensions() {
     ]
   })
 
-  // Marking these as seen is what stops the notice repeating, so it may only
-  // be recorded once the backend has accepted it. `setOrRevert` restores the
-  // previous list when it has not, leaving the notice to appear again rather
-  // than silently swallowing it for good.
   const result = await settingStore.setOrRevert(
     'Comfy.Extension.SeenAgentExtensions',
     [
@@ -193,7 +189,7 @@ export async function notifyNewAgentExtensions() {
 export async function loadExtensions() {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
-  extensionStore.loadDisabledExtensionNames(
+  extensionStore.loadBootDisabledExtensionNames(
     settingStore.get('Comfy.Extension.Disabled')
   )
   const disabledPackPaths = settingStore.get('Comfy.Extension.DisabledPacks')

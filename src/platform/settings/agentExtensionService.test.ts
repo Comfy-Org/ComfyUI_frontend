@@ -53,23 +53,59 @@ describe('disableAgentExtensions', () => {
     const disabling = disableAgentExtensions([
       packed,
       standalone,
-      // Read-only extensions are left out of the plan entirely.
       { name: 'pysssss.Locking', provenance: { createdBy: 'comfy-agent' } }
     ])
-    await vi.waitFor(() => expect(api.storeSettings).toHaveBeenCalledOnce())
-    expect(reload).not.toHaveBeenCalled()
+    try {
+      await vi.waitFor(() => expect(api.storeSettings).toHaveBeenCalledOnce())
+      expect(reload).not.toHaveBeenCalled()
 
-    pending.resolve(new Response())
-    expect(await disabling).toBe(true)
+      pending.resolve(new Response())
+      expect(await disabling).toBe(true)
 
-    expect(api.storeSettings).toHaveBeenCalledExactlyOnceWith({
-      'Comfy.Extension.Disabled': ['previous.toolbar', 'manual.toolbar'],
-      'Comfy.Extension.DisabledPacks': [
-        '/extensions/missing/',
-        '/extensions/cushions/'
-      ]
-    })
-    expect(reload).toHaveBeenCalledOnce()
+      expect(api.storeSettings).toHaveBeenCalledExactlyOnceWith({
+        'Comfy.Extension.Disabled': ['previous.toolbar', 'manual.toolbar'],
+        'Comfy.Extension.DisabledPacks': [
+          '/extensions/missing/',
+          '/extensions/cushions/'
+        ]
+      })
+      expect(reload).toHaveBeenCalledOnce()
+    } finally {
+      pending.resolve(new Response())
+      await disabling
+    }
+  })
+
+  it('waits for a later queued name edit before reloading', async () => {
+    const batchResponse = createDeferred<Response>()
+    const nameResponse = createDeferred<Response>()
+    vi.mocked(api.storeSettings).mockReturnValue(batchResponse.promise)
+    vi.mocked(api.storeSetting).mockReturnValue(nameResponse.promise)
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+
+    const disabling = disableAgentExtensions([standalone])
+    let nameEdit: ReturnType<
+      typeof extensionStore.setExtensionEnabledStates
+    > | null = null
+    try {
+      await vi.waitFor(() => expect(api.storeSettings).toHaveBeenCalledOnce())
+      nameEdit = extensionStore.setExtensionEnabledStates({
+        'Manual.Toolbar': false
+      })
+
+      batchResponse.resolve(new Response())
+      await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+      expect(reload).not.toHaveBeenCalled()
+
+      nameResponse.resolve(new Response())
+      await expect(nameEdit).resolves.toEqual({ ok: true, outcome: 'saved' })
+      await expect(disabling).resolves.toBe(true)
+      expect(reload).toHaveBeenCalledOnce()
+    } finally {
+      batchResponse.resolve(new Response())
+      nameResponse.resolve(new Response())
+      await Promise.allSettled([disabling, ...(nameEdit ? [nameEdit] : [])])
+    }
   })
 
   it('reports an unreachable disable once and does not reload', async () => {

@@ -50,11 +50,6 @@ interface SettingBatchWrite<K extends keyof Settings> {
   updatedSettings: Partial<Settings>
 }
 
-/**
- * Sends a batch and names why the backend did not take it, or `undefined` when
- * it did. A resolved response is not an accepted one, so the status is read
- * rather than assumed.
- */
 async function sendSettings(
   settings: Partial<Settings>
 ): Promise<SettingWriteFailure | undefined> {
@@ -313,12 +308,6 @@ export const useSettingStore = defineStore('setting', () => {
     return { ok: true, outcome: 'saved' }
   }
 
-  /**
-   * Set several values in one request, restoring the ones they replaced if the
-   * backend never took them. A resolved request is not an accepted one, so the
-   * caller is told which of the three outcomes happened rather than inferring
-   * success from the absence of a rejection.
-   */
   async function applyBatchLocally<K extends keyof Settings>(
     settings: Pick<Settings, K>
   ): Promise<SettingBatchWrite<K>> {

@@ -79,11 +79,6 @@ describe('useSettingsUrlLoader', () => {
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
-  // `constructor` and `toString` resolve to functions off the prototype and
-  // `__proto__` to an object, so an unguarded lookup hands the panel a value
-  // that is not an `ExtensionFilterType` at all. The plain unknown string is
-  // the control that tells an own-key defect apart from a merely absent key:
-  // without it, a lookup that rejected everything would pass too.
   it.for(['constructor', 'toString', '__proto__', 'nonsense'] as const)(
     'rejects ?filter=%s and keeps the param',
     async (filter) => {

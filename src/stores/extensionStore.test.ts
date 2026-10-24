@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
 
 vi.mock(import('@/scripts/api'))
+
+const DISABLED_NAMES_SETTING = CORE_SETTINGS.find(
+  (setting) => setting.id === 'Comfy.Extension.Disabled'
+)!
 
 describe('extensionStore', () => {
   describe('registerExtension', () => {
@@ -32,7 +37,7 @@ describe('extensionStore', () => {
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       try {
-        store.loadDisabledExtensionNames(['disabled.ext'])
+        store.loadBootDisabledExtensionNames(['disabled.ext'])
         store.registerExtension({ name: 'disabled.ext' })
         expect(console.warn).toHaveBeenCalledWith(
           'Extension disabled.ext is disabled.'
@@ -214,32 +219,23 @@ describe('extensionStore', () => {
       vi.mocked(api.storeSettings).mockImplementation((settings) =>
         respond(settings)
       )
-      settingStore.addSetting({
-        id: 'Comfy.Extension.Disabled',
-        name: 'Disabled extension names',
-        type: 'hidden',
-        defaultValue: [] as string[]
-      })
+      settingStore.addSetting(DISABLED_NAMES_SETTING)
 
-      const individual = store.setDisabledExtensionNames(['Manual.Toolbar'])
+      const individual = store.setExtensionEnabledStates({
+        'Manual.Toolbar': false
+      })
       await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
       const batch = store.disableAgentExtensions([
         { name: 'agent-made.standalone' }
       ])
 
-      // Give the batch every chance to be sent early. Asserting only that it
-      // has not been sent *yet* would pass without the queue, because both
-      // writes apply locally before either request settles.
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
       expect(payloads).toEqual([['Manual.Toolbar']])
 
       acknowledge[0]()
       expect(await individual).toEqual({ ok: true, outcome: 'saved' })
       await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
 
-      // The batch read the list on its own turn, after the panel's save had
-      // landed, so the name the panel disabled survives rather than being
-      // overwritten by a whole list computed before it.
       expect(payloads[1]).toEqual({
         'Comfy.Extension.Disabled': ['Manual.Toolbar', 'agent-made.standalone'],
         'Comfy.Extension.DisabledPacks': []
@@ -250,18 +246,56 @@ describe('extensionStore', () => {
       expect(store.isSavingExtensionPacks).toBe(false)
     })
 
-    it('leaves the stored names alone when the server refuses the write', async () => {
-      settingStore.addSetting({
-        id: 'Comfy.Extension.Disabled',
-        name: 'Disabled extension names',
-        type: 'hidden',
-        defaultValue: [] as string[]
+    it('preserves an agent disable when a later name edit reaches the queue', async () => {
+      const payloads: unknown[] = []
+      const acknowledge: Array<() => void> = []
+      const respond = (value: unknown) =>
+        new Promise<Response>((resolve) => {
+          payloads.push(value)
+          acknowledge.push(() => resolve(new Response()))
+        })
+      vi.mocked(api.storeSetting).mockImplementation((_id, value) =>
+        respond(value)
+      )
+      vi.mocked(api.storeSettings).mockImplementation((settings) =>
+        respond(settings)
+      )
+      settingStore.addSetting(DISABLED_NAMES_SETTING)
+
+      const batch = store.disableAgentExtensions([
+        { name: 'agent-made.standalone' }
+      ])
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
+      const individual = store.setExtensionEnabledStates({
+        'Manual.Toolbar': false
       })
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect(payloads).toEqual([
+        {
+          'Comfy.Extension.Disabled': ['agent-made.standalone'],
+          'Comfy.Extension.DisabledPacks': []
+        }
+      ])
+
+      acknowledge[0]()
+      expect(await batch).toEqual({ ok: true, outcome: 'saved' })
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
+      expect(payloads[1]).toEqual(['agent-made.standalone', 'Manual.Toolbar'])
+
+      acknowledge[1]()
+      expect(await individual).toEqual({ ok: true, outcome: 'saved' })
+    })
+
+    it('leaves the stored names alone when the server refuses the write', async () => {
+      settingStore.addSetting(DISABLED_NAMES_SETTING)
       vi.mocked(api.storeSetting).mockResolvedValue(
         new Response(null, { status: 500, statusText: 'Server Error' })
       )
 
-      const result = await store.setDisabledExtensionNames(['Manual.Toolbar'])
+      const result = await store.setExtensionEnabledStates({
+        'Manual.Toolbar': false
+      })
 
       expect(result).toMatchObject({ ok: false, reason: 'refused' })
       expect(settingStore.get('Comfy.Extension.Disabled')).toEqual([])
@@ -281,12 +315,7 @@ describe('extensionStore', () => {
       vi.mocked(api.storeSettings).mockImplementation((settings) =>
         respond(settings)
       )
-      settingStore.addSetting({
-        id: 'Comfy.Extension.Disabled',
-        name: 'Disabled extension names',
-        type: 'hidden',
-        defaultValue: [] as string[]
-      })
+      settingStore.addSetting(DISABLED_NAMES_SETTING)
       store.loadExtensionPackPaths(['/extensions/cushions/'], [])
 
       const individual = store.setExtensionPackEnabled('/extensions/a/', false)
@@ -321,12 +350,7 @@ describe('extensionStore', () => {
             acknowledge = () => resolve(new Response())
           })
       )
-      settingStore.addSetting({
-        id: 'Comfy.Extension.Disabled',
-        name: 'Disabled extension names',
-        type: 'hidden',
-        defaultValue: [] as string[]
-      })
+      settingStore.addSetting(DISABLED_NAMES_SETTING)
       store.loadExtensionPackPaths(['/extensions/cushions/'], [])
 
       const batch = store.disableAgentExtensions([
@@ -381,7 +405,7 @@ describe('extensionStore', () => {
     })
   })
 
-  describe('isExtensionEnabled / loadDisabledExtensionNames', () => {
+  describe('isExtensionEnabled / loadBootDisabledExtensionNames', () => {
     it('all extensions are enabled by default', () => {
       const store = useExtensionStore()
       store.registerExtension({ name: 'fresh' })
@@ -390,14 +414,13 @@ describe('extensionStore', () => {
 
     it('disables extensions from provided list', () => {
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['off.ext'])
+      store.loadBootDisabledExtensionNames(['off.ext'])
       store.registerExtension({ name: 'off.ext' })
       expect(store.isExtensionEnabled('off.ext')).toBe(false)
     })
 
     it('always disables hardcoded extensions', () => {
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames([])
       store.registerExtension({ name: 'pysssss.Locking' })
       store.registerExtension({ name: 'regular.ext' })
 
@@ -412,7 +435,7 @@ describe('extensionStore', () => {
   describe('enabledExtensions', () => {
     it('filters out disabled extensions', () => {
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['ext.off'])
+      store.loadBootDisabledExtensionNames(['ext.off'])
       store.registerExtension({ name: 'ext.on' })
       store.registerExtension({ name: 'ext.off' })
 
@@ -437,7 +460,11 @@ describe('extensionStore', () => {
   describe('inactiveDisabledExtensionNames', () => {
     it('returns disabled names not currently installed', () => {
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['ghost.ext', 'installed.ext'])
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.Extension.Disabled': ['ghost.ext', 'installed.ext']
+        }
+      })
       store.registerExtension({ name: 'installed.ext' })
 
       expect(store.inactiveDisabledExtensionNames).toContain('ghost.ext')

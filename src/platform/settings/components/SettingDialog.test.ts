@@ -282,7 +282,6 @@ it('navigates to a panel requested while it is already open', async () => {
 
   let requestId: number | undefined
   try {
-    // `defaultPanel` already landed, so only a live request can move this.
     showSettingsPanel('workspace')
     requestId = settingsPanelNavigation.value?.requestId
 

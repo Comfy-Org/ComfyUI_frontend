@@ -33,12 +33,6 @@ const EXTENSION_FILTER_PARAMS: Record<string, ExtensionFilterType> = {
   agent: 'agentCreated'
 }
 
-/**
- * The filter a `?filter=` value selects, or `undefined` when it names none.
- * `Object.hasOwn` is what keeps an inherited key out: without it `constructor`
- * and `toString` resolve to functions off the prototype and `__proto__` to an
- * object, none of which is an `ExtensionFilterType`.
- */
 function resolveExtensionFilter(
   panel: unknown,
   filter: unknown
@@ -48,7 +42,6 @@ function resolveExtensionFilter(
   return EXTENSION_FILTER_PARAMS[filter]
 }
 
-/** Whether `param` names a panel a `?settings=` link may open. */
 function resolveDeepLinkablePanel(
   param: unknown
 ): SettingPanelType | undefined {
