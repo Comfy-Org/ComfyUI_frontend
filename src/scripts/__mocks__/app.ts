@@ -259,6 +259,7 @@ export const app = {
     return state().rootGraph.value !== undefined
   },
   createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
   activateRootGraph: vi.fn((graph: LGraph) => {
     state().rootGraph.value = graph
     state().canvas.setGraph(graph)

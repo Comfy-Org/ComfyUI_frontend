@@ -1113,6 +1113,86 @@ describe('ComfyApp', () => {
       }
     )
 
+    it('keeps the switched-to tab active when a live tab switch follows an undo paused in beforeLoadGraph', async () => {
+      const undoneGraph = new LGraph()
+      const switchedGraph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      const previousCanvas = singletonApp.canvas
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        singletonApp.canvas = previousCanvas
+      })
+      Reflect.set(singletonApp, 'rootGraphInternal', undoneGraph)
+      singletonApp.canvas = mockCanvas
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      const workflowService = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const undone = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/undone.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      undone.adoptGraph(undoneGraph)
+      const undoneTracker = markRaw(new ChangeTracker(undone, saved))
+      undoneTracker.activeState = changed
+      undoneTracker._restoringState = true
+      undone.changeTracker = undoneTracker
+      const switched = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/switched.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      switched.adoptGraph(switchedGraph)
+      switched.changeTracker = markRaw(
+        new ChangeTracker(switched, createWorkflowGraphData())
+      )
+      workflowStore.attachWorkflow(undone, 0)
+      workflowStore.attachWorkflow(switched, 1)
+      workflowStore.activeWorkflow = undone
+      let releasePause!: () => void
+      const pause = new Promise<void>((resolve) => {
+        releasePause = resolve
+      })
+      let reachedPause = false
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph' && !reachedPause) {
+            reachedPause = true
+            await pause
+          }
+        }
+      )
+
+      const undoLoad = singletonApp.loadGraphData(saved, false, false, undone, {
+        skipAssetScans: true
+      })
+      await vi.waitFor(() => expect(reachedPause).toBe(true))
+      const tabSwitch = workflowService.openWorkflow(switched)
+      releasePause()
+      await expect(undoLoad).resolves.toBeTruthy()
+      await expect(tabSwitch).resolves.toBe(true)
+
+      expect(workflowStore.activeWorkflow).toMatchObject({
+        path: switched.path
+      })
+      expect(singletonApp.rootGraph).toBe(switchedGraph)
+      expect(undoneGraph.extra).toMatchObject({ marker: 'saved' })
+      expect(undoneTracker.activeState.extra).toMatchObject({
+        marker: 'saved'
+      })
+    })
+
     it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()

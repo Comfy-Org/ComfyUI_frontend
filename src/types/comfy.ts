@@ -170,6 +170,8 @@ export interface ComfyApp {
   createRootGraph(): LGraph
   /** Make `graph` the root graph shown on the canvas. */
   activateRootGraph(graph: LGraph): void
+  /** Run `operation` after every earlier graph load or root graph switch has settled. */
+  enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T>
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean
