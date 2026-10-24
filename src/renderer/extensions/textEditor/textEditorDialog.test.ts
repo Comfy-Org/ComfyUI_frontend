@@ -119,31 +119,41 @@ describe('showTextEditor', () => {
     await waitFor(() => expect(editor).toHaveAttribute('readonly'))
   })
 
-  it('keeps the selection when the text changes elsewhere', async () => {
+  it('keeps the selection and its direction when the text changes elsewhere', async () => {
     const source = ref('a portrait at dusk')
     renderDialogHost()
     openEditor({ readText: () => source.value })
     const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
-    editor.setSelectionRange(2, 10)
+    editor.setSelectionRange(2, 10, 'backward')
 
     source.value = 'a portrait at dawn'
 
     await waitFor(() => expect(editor).toHaveValue('a portrait at dawn'))
-    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 10])
+    expect([
+      editor.selectionStart,
+      editor.selectionEnd,
+      editor.selectionDirection
+    ]).toEqual([2, 10, 'backward'])
   })
 
-  it('stays open when Escape cancels an IME composition', async () => {
-    renderDialogHost()
-    openEditor()
-    const editor = await screen.findByRole('textbox')
+  it.for([
+    { browser: 'Chromium and Firefox', event: { isComposing: true } },
+    { browser: 'Safari', event: { keyCode: 229 } }
+  ])(
+    'stays open when Escape cancels an IME composition in $browser',
+    async ({ event }) => {
+      renderDialogHost()
+      openEditor()
+      const editor = await screen.findByRole('textbox')
 
-    editor.dispatchEvent(
-      createEvent.keyDown(editor, { key: 'Escape', isComposing: true })
-    )
-    await nextTick()
+      editor.dispatchEvent(
+        createEvent.keyDown(editor, { key: 'Escape', ...event })
+      )
+      await nextTick()
 
-    expect(screen.getByRole('dialog')).toBeVisible()
-  })
+      expect(screen.getByRole('dialog')).toBeVisible()
+    }
+  )
 
   it('follows edits made to the text elsewhere while it is open', async () => {
     const source = ref('a portrait')
