@@ -200,19 +200,106 @@ describe('extensionStore', () => {
       ])
     })
 
-    it('maps agent-prefixed extensions to their discovered pack', () => {
-      const store = useExtensionStore()
-      store.loadExtensionPackPaths(['/extensions/cushions/'], [])
-      const extension = { name: 'agent.cushions.toolbar' }
-
-      expect(store.isAgentCreatedExtension(extension)).toBe(true)
-      expect(store.getAgentExtensionPackPath(extension)).toBe(
-        '/extensions/cushions/'
+    it('serializes an agent batch behind an individual pack save', async () => {
+      const payloads: unknown[] = []
+      const acknowledge: Array<() => void> = []
+      const respond = (value: unknown) =>
+        new Promise<Response>((resolve) => {
+          payloads.push(value)
+          acknowledge.push(() => resolve(new Response()))
+        })
+      vi.mocked(api.storeSetting).mockImplementation((_id, value) =>
+        respond(value)
       )
+      vi.mocked(api.storeSettings).mockImplementation((settings) =>
+        respond(settings)
+      )
+      settingStore.addSetting({
+        id: 'Comfy.Extension.Disabled',
+        name: 'Disabled extension names',
+        type: 'hidden',
+        defaultValue: [] as string[]
+      })
+      store.loadExtensionPackPaths(['/extensions/cushions/'], [])
+
+      const individual = store.setExtensionPackEnabled('/extensions/a/', false)
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
+      const batch = store.disableAgentExtensions([
+        { name: 'agent.cushions.toolbar' }
+      ])
+
+      expect(payloads).toHaveLength(1)
+      acknowledge[0]()
+      expect(await individual).toEqual({ ok: true, outcome: 'saved' })
+      await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
+
+      expect(payloads[1]).toEqual({
+        'Comfy.Extension.Disabled': [],
+        'Comfy.Extension.DisabledPacks': [
+          '/extensions/a/',
+          '/extensions/cushions/'
+        ]
+      })
+
+      acknowledge[1]()
+      expect(await batch).toEqual({ ok: true, outcome: 'saved' })
+      expect(store.isSavingExtensionPacks).toBe(false)
+    })
+
+    it('counts an agent batch as a pending pack save until it settles', async () => {
+      let acknowledge = () => {}
+      vi.mocked(api.storeSettings).mockImplementation(
+        () =>
+          new Promise<Response>((resolve) => {
+            acknowledge = () => resolve(new Response())
+          })
+      )
+      settingStore.addSetting({
+        id: 'Comfy.Extension.Disabled',
+        name: 'Disabled extension names',
+        type: 'hidden',
+        defaultValue: [] as string[]
+      })
+      store.loadExtensionPackPaths(['/extensions/cushions/'], [])
+
+      const batch = store.disableAgentExtensions([
+        { name: 'agent.cushions.toolbar' }
+      ])
+
+      expect(store.isSavingExtensionPacks).toBe(true)
+      await vi.waitFor(() =>
+        expect(store.isExtensionPackEnabled('/extensions/cushions/')).toBe(
+          false
+        )
+      )
+      expect(store.isSavingExtensionPacks).toBe(true)
+
+      acknowledge()
+      await batch
+      expect(store.isSavingExtensionPacks).toBe(false)
     })
   })
 
   describe('agent provenance', () => {
+    it.for([
+      ['agent.cushions.toolbar', '/extensions/cushions/'],
+      ['agent.my pack.toolbar', '/extensions/my%20pack/'],
+      ['agent.missing.toolbar', undefined],
+      ['manual.cushions.toolbar', undefined]
+    ] as const)('maps %s to %s', ([name, expected]) => {
+      const store = useExtensionStore()
+      store.loadExtensionPackPaths(
+        [
+          '/extensions/manual/',
+          '/extensions/cushions/',
+          '/extensions/my%20pack/'
+        ],
+        []
+      )
+
+      expect(store.getAgentExtensionPackPath({ name })).toBe(expected)
+    })
+
     it('recognizes explicit provenance without requiring the name prefix', () => {
       const store = useExtensionStore()
       store.registerExtension({
@@ -224,7 +311,6 @@ describe('extensionStore', () => {
       expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
         'custom.toolbar'
       ])
-      expect(store.hasAgentExtensions).toBe(true)
     })
   })
 

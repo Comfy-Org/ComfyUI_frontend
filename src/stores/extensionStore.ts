@@ -15,6 +15,12 @@ export function extensionPackName(path: string) {
   }
 }
 
+/** The pack an `agent.<pack>.<rest>` name claims, if it follows the convention. */
+export function agentExtensionPackName(extensionName: string) {
+  if (!extensionName.startsWith('agent.')) return undefined
+  return extensionName.split('.')[1] || undefined
+}
+
 /**
  * These extensions are always active, even if they are disabled in the setting.
  */
@@ -46,21 +52,16 @@ export const useExtensionStore = defineStore('extension', () => {
     extensions.value.filter(isAgentCreatedExtension)
   )
   const getAgentExtensionPackPath = (extension: ComfyExtension) => {
-    if (!extension.name.startsWith('agent.')) return undefined
-    const packName = extension.name.split('.')[1]
+    const packName = agentExtensionPackName(extension.name)
+    if (!packName) return undefined
     return extensionPackPaths.value.find(
-      (path) => path.split('/').filter(Boolean).at(-1) === packName
+      (path) => extensionPackName(path) === packName
     )
   }
-  // Not using computed because disable extension requires reloading of the page.
-  // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
   const extensionPackPaths = ref<string[]>([])
   const bootDisabledExtensionPackPaths = ref<Set<string>>(new Set())
 
-  // Disabled extension names that are currently not in the extension list.
-  // If a node pack is disabled in the backend, we shouldn't remove the configuration
-  // of the frontend extension disable list, in case the node pack is re-enabled.
   const inactiveDisabledExtensionNames = computed(() => {
     return Array.from(disabledExtensionNames.value).filter(
       (name) => !(name in extensionByName.value)
@@ -133,23 +134,16 @@ export const useExtensionStore = defineStore('extension', () => {
 
   let packSaveChain: Promise<unknown> = Promise.resolve()
 
-  /** Enable or disable a whole pack, serialized behind any save still in flight. */
-  async function setExtensionPackEnabled(
-    path: string,
-    enabled: boolean
+  /**
+   * Runs `write` after every pack save already queued, and counts it as
+   * unacknowledged until it settles. Every writer of the disabled-pack and
+   * disabled-name lists goes through here: each reads the current lists when
+   * its own turn arrives, so two writers cannot each submit a full array
+   * computed before the other's landed.
+   */
+  async function queuePackSave(
+    write: () => Promise<SettingWriteResult>
   ): Promise<SettingWriteResult> {
-    const settingStore = useSettingStore()
-    const write = () => {
-      const disabled = new Set(
-        settingStore.get('Comfy.Extension.DisabledPacks')
-      )
-      if (enabled) disabled.delete(path)
-      else disabled.add(path)
-      return settingStore.setOrRevert('Comfy.Extension.DisabledPacks', [
-        ...disabled
-      ])
-    }
-
     const run = packSaveChain.then(write)
     packSaveChain = run.catch(() => {})
     unacknowledgedPackSaves.value++
@@ -160,10 +154,64 @@ export const useExtensionStore = defineStore('extension', () => {
     }
   }
 
+  /** Enable or disable a whole pack, serialized behind any save still in flight. */
+  async function setExtensionPackEnabled(
+    path: string,
+    enabled: boolean
+  ): Promise<SettingWriteResult> {
+    const settingStore = useSettingStore()
+    return queuePackSave(() => {
+      const disabled = new Set(
+        settingStore.get('Comfy.Extension.DisabledPacks')
+      )
+      if (enabled) disabled.delete(path)
+      else disabled.add(path)
+      return settingStore.setOrRevert('Comfy.Extension.DisabledPacks', [
+        ...disabled
+      ])
+    })
+  }
+
   /**
-   * Core extensions are extensions that are defined in the core package.
-   * See /extensions/core/index.ts for the list.
+   * Which names and pack paths disabling `extensions` adds, read against the
+   * lists as they stand now. Read-only extensions are skipped, and an
+   * extension is disabled by its pack when one is attributable and by its name
+   * otherwise, never by both.
    */
+  function planAgentExtensionDisable(extensions: readonly ComfyExtension[]) {
+    const settingStore = useSettingStore()
+    const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
+    const disabledPackPaths = new Set(
+      settingStore.get('Comfy.Extension.DisabledPacks')
+    )
+
+    for (const extension of extensions) {
+      if (isExtensionReadOnly(extension.name)) continue
+      const packPath = getAgentExtensionPackPath(extension)
+      if (packPath) disabledPackPaths.add(packPath)
+      else disabledNames.add(extension.name)
+    }
+
+    return {
+      'Comfy.Extension.Disabled': [...disabledNames],
+      'Comfy.Extension.DisabledPacks': [...disabledPackPaths]
+    }
+  }
+
+  /**
+   * Disable agent-created extensions in one atomic two-list write, serialized
+   * behind any pack save still in flight. The plan is computed when the write
+   * runs, not when it is requested.
+   */
+  async function disableAgentExtensions(
+    extensions: readonly ComfyExtension[]
+  ): Promise<SettingWriteResult> {
+    const settingStore = useSettingStore()
+    return queuePackSave(() =>
+      settingStore.setManyOrRevert(planAgentExtensionDisable(extensions))
+    )
+  }
+
   const coreExtensionNames = ref<string[]>([])
   function captureCoreExtensions() {
     coreExtensionNames.value = extensions.value.map((ext) => ext.name)
@@ -197,6 +245,8 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionPackEnabled,
     isSavingExtensionPacks,
     setExtensionPackEnabled,
+    planAgentExtensionDisable,
+    disableAgentExtensions,
     captureCoreExtensions,
     isCoreExtension,
     hasThirdPartyExtensions,

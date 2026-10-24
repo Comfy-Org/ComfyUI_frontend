@@ -44,6 +44,7 @@ type LocalSettingWrite<TValue> =
 
 /** Settings with no `onChange` to undo, so a failed write can be reverted. */
 export const REVERTIBLE_SETTING_IDS = [
+  'Comfy.Extension.Disabled',
   'Comfy.Extension.DisabledPacks'
 ] as const satisfies readonly (keyof Settings)[]
 
@@ -282,6 +283,63 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
+   * Set several values in one request, restoring the ones they replaced if the
+   * backend never took them. A resolved request is not an accepted one, so the
+   * caller is told which of the three outcomes happened rather than inferring
+   * success from the absence of a rejection.
+   */
+  async function setManyOrRevert<K extends RevertibleSettingId>(
+    settings: Pick<Settings, K>
+  ): Promise<SettingWriteResult> {
+    const keys = Object.keys(settings) as K[]
+    const hadValue = new Map(keys.map((key) => [key, exists(key)]))
+    const applied = new Map<K, AppliedSetting<Settings[K]>>()
+    const updatedSettings: Partial<Settings> = {}
+
+    for (const key of keys) {
+      const local = await applySettingLocally(key, settings[key])
+      if (!local.written) continue
+      applied.set(key, local)
+      Object.assign(updatedSettings, { [key]: local.newValue })
+    }
+    if (!applied.size) return { ok: true, outcome: 'unchanged' }
+
+    let failure: SettingWriteResult | undefined
+    try {
+      const response = await api.storeSettings(updatedSettings)
+      if (!response.ok) {
+        failure = {
+          ok: false,
+          reason: 'refused',
+          detail: `${response.status} ${response.statusText}`
+        }
+      }
+    } catch (cause) {
+      failure = {
+        ok: false,
+        reason: 'unreachable',
+        detail: toError(cause).message
+      }
+    }
+
+    if (failure) {
+      for (const [key, local] of applied) {
+        if (latestWrite.get(key) !== local.writeToken) continue
+        if (hadValue.get(key)) settingValues.value[key] = local.previousValue
+        else delete settingValues.value[key]
+      }
+      return failure
+    }
+
+    const telemetry = useTelemetry()
+    for (const [key, local] of applied) {
+      const event = settingChangedEvent(settingsById.value[key], key, local)
+      if (event) telemetry?.trackSettingChanged(event)
+    }
+    return { ok: true, outcome: 'saved' }
+  }
+
+  /**
    * Set multiple setting values in a single API call.
    * @param settings - A partial settings object with key-value pairs to set.
    */
@@ -494,6 +552,7 @@ export const useSettingStore = defineStore('setting', () => {
     set,
     setOrRevert,
     setMany,
+    setManyOrRevert,
     get,
     exists,
     getDefaultValue,
