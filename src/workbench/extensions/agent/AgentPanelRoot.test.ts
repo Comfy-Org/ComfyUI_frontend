@@ -9373,9 +9373,9 @@ describe('AgentPanelRoot workflow binding', () => {
         {
           prompt_id: 'slot_2',
           prompt_index: 1,
-          prompt_count: 5,
+          prompt_count: 4,
           // Nothing is hidden at this width, so both counts agree here.
-          visible_prompt_count: 5,
+          visible_prompt_count: 4,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
           locale: 'en',
           click_id: 'client-message-1',
