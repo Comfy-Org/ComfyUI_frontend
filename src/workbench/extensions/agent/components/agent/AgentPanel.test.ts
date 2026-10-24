@@ -290,6 +290,47 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
+  it('locks immediately but only shows the conversation veil for a slow opening', async () => {
+    vi.useFakeTimers()
+    const { rerender } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        openingWorkflowName: 'portrait'
+      },
+      global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+    })
+
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(100)
+    await rerender({ openingWorkflowName: undefined })
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+
+    await rerender({ openingWorkflowName: 'portrait' })
+    await vi.advanceTimersByTimeAsync(119)
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'portrait'
+        })
+      })
+    ).toBeVisible()
+
+    await rerender({ openingWorkflowName: undefined })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+  })
+
   it('renders and forwards the treatment starter prompt exposure', () => {
     distribution.isCloud = true
     const { emitted } = render(AgentPanel, {

@@ -640,9 +640,10 @@ export function createAgentRestClient() {
     const seenCursors = new Set<string>()
     do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const separator = path.includes('?') ? '&' : '?'
       const result = await requestResult(
         operation,
-        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        `${path}${separator}limit=${LIST_PAGE_SIZE}${after}`,
         { method: 'GET', signal },
         schema
       )
@@ -706,12 +707,19 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(
-    options: { signal?: AbortSignal } = {}
+    options: {
+      signal?: AbortSignal
+      workflowId?: string
+    } = {}
   ): Promise<ThreadListing> {
     if (options.signal?.aborted) return { status: 'aborted' }
+    const workflowQuery =
+      options.workflowId === undefined
+        ? ''
+        : `?workflow_id=${encodeURIComponent(options.workflowId)}`
     const result = await listAllPages(
       'list_threads',
-      '/agent/threads',
+      `/agent/threads${workflowQuery}`,
       zAgentThreads,
       (page) => page.threads,
       options.signal
