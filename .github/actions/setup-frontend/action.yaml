@@ -33,6 +33,6 @@ runs:
     - name: Build ComfyUI_frontend
       if: ${{ inputs.include_build_step == 'true' }}
       shell: bash
-      run: pnpm build
+      run: pnpm build:dist
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'

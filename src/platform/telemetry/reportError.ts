@@ -1,5 +1,4 @@
-// oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
-import { datadogRum } from '@datadog/browser-rum'
+import type { DatadogRum } from '@datadog/browser-rum'
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
@@ -8,7 +7,13 @@ import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry
 
 import { isCloud } from '@/platform/distribution/types'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
+import {
+  getDatadogRum,
+  getFrontendBucket
+} from '@/platform/telemetry/rumContext'
 import { toError } from '@/utils/errorUtil'
+
+import { redactTelemetryValues } from './redactTelemetryUrls'
 
 export type Surface =
   | 'agent'
@@ -28,6 +33,7 @@ export interface ReportErrorOptions {
   errorType: string
   /** Product surface responsible for acting on this failure. */
   surface: Surface
+  fingerprint?: string[]
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
@@ -74,7 +80,10 @@ export function markErrorReported(error: Error): void {
   reportedErrors.add(error)
 }
 
-const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
+function liveDatadogRum(): DatadogRum | undefined {
+  const rum = getDatadogRum()
+  return rum?.getInitConfiguration() ? rum : undefined
+}
 
 const definedEntriesOf = <V>(
   values: Record<string, V> | undefined
@@ -87,7 +96,7 @@ const definedEntriesOf = <V>(
   )
 
 /** Written from `options`, so a caller tag of the same name never lands. */
-const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface', 'bucket'])
 
 let dispatching = false
 
@@ -162,6 +171,67 @@ function dispatchToDesktop(
   }
 }
 
+function dispatchToSentry(
+  error: Error,
+  errorType: string,
+  surface: Surface,
+  tags: Record<string, string | number | boolean>,
+  context: Record<string, unknown>,
+  level: ReportErrorOptions['level'],
+  fingerprint: ReportErrorOptions['fingerprint']
+): boolean {
+  try {
+    captureException(error, {
+      tags: { ...tags, error_type: errorType, surface },
+      extra: context,
+      level,
+      ...(fingerprint ? { fingerprint } : {})
+    })
+    return true
+  } catch (reporterFailure) {
+    console.error(
+      '[reportError] Sentry delivery failed',
+      reporterFailure,
+      error
+    )
+    return false
+  }
+}
+
+function dispatchToDatadog(
+  datadogRum: DatadogRum,
+  error: Error,
+  errorType: string,
+  surface: Surface,
+  tags: Record<string, string | number | boolean>,
+  context: Record<string, unknown>,
+  level: ReportErrorOptions['level']
+): boolean {
+  try {
+    const redactedCause = redactTelemetryValues({ cause: error.cause })?.cause
+    const datadogError = Object.assign(new Error(error.message), error, {
+      name: errorType,
+      stack: error.stack,
+      cause: redactedCause
+    })
+    datadogRum.addError(datadogError, {
+      ...context,
+      ...tags,
+      error_type: errorType,
+      surface,
+      ...(level ? { level } : {})
+    })
+    return true
+  } catch (reporterFailure) {
+    console.error(
+      '[reportError] Datadog delivery failed',
+      reporterFailure,
+      error
+    )
+    return false
+  }
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -169,60 +239,47 @@ function dispatch(
 ): DeliveryState {
   const { errorType, surface, level } = options
   const context = definedEntriesOf(options.context)
-  const tags = definedTagsOf(options.tags)
+  const bucket = getFrontendBucket()
+  const tags = {
+    ...definedTagsOf(options.tags),
+    ...(bucket ? { bucket } : {})
+  }
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
-  const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
+  const datadogRum = alreadyDelivered.datadog ? undefined : liveDatadogRum()
   let sentryDelivered = alreadyDelivered.sentry
   let datadogDelivered = alreadyDelivered.datadog
-  let desktopDelivered = alreadyDelivered.desktop
 
   dispatching = true
   try {
     if (sentryLive) {
-      try {
-        captureException(error, {
-          tags: { ...tags, error_type: errorType, surface },
-          extra: context,
-          level
-        })
-        sentryDelivered = true
-      } catch (reporterFailure) {
-        console.error(
-          '[reportError] Sentry delivery failed',
-          reporterFailure,
-          error
-        )
-      }
+      sentryDelivered = dispatchToSentry(
+        error,
+        errorType,
+        surface,
+        tags,
+        context,
+        level,
+        options.fingerprint
+      )
     }
-    if (datadogLive) {
-      try {
-        const datadogError = Object.assign(
-          new Error(error.message, { cause: error.cause }),
-          error,
-          { name: errorType, stack: error.stack }
-        )
-        datadogRum.addError(datadogError, {
-          ...context,
-          ...tags,
-          error_type: errorType,
-          surface,
-          ...(level ? { level } : {})
-        })
-        datadogDelivered = true
-      } catch (reporterFailure) {
-        console.error(
-          '[reportError] Datadog delivery failed',
-          reporterFailure,
-          error
-        )
-      }
+    if (datadogRum) {
+      datadogDelivered = dispatchToDatadog(
+        datadogRum,
+        error,
+        errorType,
+        surface,
+        tags,
+        context,
+        level
+      )
     }
   } finally {
     dispatching = false
   }
-  if (!desktopDelivered) {
-    desktopDelivered = dispatchToDesktop(error, errorType, surface, tags, level)
-  }
+
+  const desktopDelivered =
+    alreadyDelivered.desktop ||
+    dispatchToDesktop(error, errorType, surface, tags, level)
 
   return {
     sentry: sentryDelivered,
@@ -259,7 +316,7 @@ function isPending(delivered: DeliveryState): boolean {
  */
 function hasLiveSink(): boolean {
   try {
-    return isSentryEnabled() || isDatadogRumLive() || !!desktopExceptionSink()
+    return isSentryEnabled() || !!liveDatadogRum() || !!desktopExceptionSink()
   } catch (probeFailure) {
     console.error('[reportError] sink probe failed', probeFailure)
     return false

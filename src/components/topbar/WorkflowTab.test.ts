@@ -40,17 +40,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
-  default: {
-    render: () => null,
-    methods: {
-      showPopover: () => {},
-      hidePopover: () => {},
-      togglePopover: () => {}
-    }
-  }
-}))
-
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
@@ -150,6 +139,47 @@ describe('WorkflowTab - workflow status indicator', () => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
+  it('delays hover preview without moving focus and dismisses after leaving', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+    const trigger = screen.getByRole('tab')
+    trigger.focus()
+
+    await user.hover(tab)
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+
+    await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(99)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not reopen a click-dismissed preview when the hover delay expires', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderTab()
+    const tab = screen.getByTestId('workflow-tab')
+
+    await user.hover(tab)
+    await user.click(tab)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.click(tab)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it.for(['running', 'completed', 'failed'] as const)(
     'labels the %s indicator with a translated status name',
     (status) => {
@@ -176,7 +206,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -188,7 +218,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     })
 
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -249,7 +279,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
       'size-2',
-      'bg-primary-background'
+      'bg-primary'
     )
     expect(
       screen.queryByRole('img', { name: statusAriaLabels.running })
@@ -306,15 +336,16 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  it('delegates close to workflow service with the tab workflow', async () => {
+  it('delegates close to workflow service as a user action', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'test-key' }),
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [expect.objectContaining({ key: 'test-key' })],
+      expect.objectContaining({ initiator: 'user' })
     )
+    expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
 })
 
@@ -419,9 +450,9 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
-      workflowOption.workflow,
-      expect.anything()
+    expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
+      [workflowOption.workflow],
+      expect.objectContaining({ initiator: 'user' })
     )
   })
 })

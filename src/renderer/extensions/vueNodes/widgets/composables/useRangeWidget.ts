@@ -17,7 +17,8 @@ export const useRangeWidget = (): ComfyWidgetConstructorV2 => {
       show_midpoint: spec.show_midpoint,
       midpoint_scale: spec.midpoint_scale,
       value_min: spec.value_min,
-      value_max: spec.value_max
+      value_max: spec.value_max,
+      hideInPanel: true
     }
 
     const rawWidget = node.addWidget(

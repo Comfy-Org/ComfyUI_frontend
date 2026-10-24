@@ -47,9 +47,10 @@ test.describe('Flux 3 page @smoke', () => {
   })
 
   test('footer links back to this page', async ({ page }) => {
-    const footerLink = page
-      .locator('footer')
-      .getByRole('link', { name: t('footer.flux3', {}, { locale: 'en' }) })
+    const footerLink = page.locator('footer').getByRole('link', {
+      name: t('footer.flux3', {}, { locale: 'en' }),
+      exact: true
+    })
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').flux3)
   })
 

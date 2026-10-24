@@ -12,7 +12,7 @@
     <!-- Main toolbar -->
     <nav
       data-testid="builder-footer-nav"
-      class="flex items-center gap-2 rounded-2xl border border-border-default bg-base-background p-2 shadow-interface"
+      class="flex items-center gap-2 rounded-2xl border bg-background p-2 shadow-md"
     >
       <Button variant="textonly" size="lg" @click="onExitBuilder">
         {{ t('builderMenu.exitAppBuilder') }}
@@ -39,9 +39,9 @@
           so the container's intrinsic width equals the wider label.
           height:0 + overflow:hidden keeps them invisible without affecting height.
         -->
-        <div class="max-h-0 overflow-y-hidden" aria-hidden="true">
-          <div class="px-4 py-2 text-sm">{{ t('g.save') }}</div>
-          <div class="px-4 py-2 text-sm">{{ t('builderToolbar.saveAs') }}</div>
+        <div class="max-h-0 overflow-y-hidden text-sm" aria-hidden="true">
+          <div class="px-4 py-2">{{ t('g.save') }}</div>
+          <div class="px-4 py-2">{{ t('builderToolbar.saveAs') }}</div>
         </div>
         <ConnectOutputPopover
           v-if="!hasOutputs"
@@ -61,7 +61,7 @@
         <ButtonGroup
           v-else-if="isSaved"
           data-testid="builder-save-group"
-          class="w-full rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
+          class="w-full rounded-lg bg-secondary has-[[data-save-chevron]:hover]:bg-secondary/80"
         >
           <Button
             size="lg"
@@ -85,7 +85,7 @@
                 :aria-label="t('builderToolbar.saveAs')"
                 data-save-chevron
                 data-testid="builder-save-as-chevron"
-                class="w-6 rounded-l-none border-l border-border-default px-0"
+                class="w-6 rounded-l-none border-l px-0"
               >
                 <i
                   class="icon-[lucide--chevron-down] size-4"
@@ -155,10 +155,9 @@ const isSaved = computed(
   () => workflowStore.activeWorkflow?.isTemporary === false
 )
 
-const activeSaveClasses =
-  'bg-interface-builder-mode-button-background text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/80'
+const activeSaveClasses = 'bg-ocean-600 text-white hover:bg-ocean-600/80'
 const disabledSaveClasses =
-  'bg-secondary-background text-muted-foreground/50 disabled:opacity-100'
+  'bg-secondary text-muted-foreground/50 disabled:opacity-100'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

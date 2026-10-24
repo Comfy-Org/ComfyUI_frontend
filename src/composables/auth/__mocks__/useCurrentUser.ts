@@ -1,7 +1,8 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type { useCurrentUser as realUseCurrentUser } from '../useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
+import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
 
 function createWatchHandle(): ReturnType<
   ReturnType<typeof realUseCurrentUser>['onUserResolved']
@@ -27,7 +28,7 @@ const defaults: ReturnType<typeof realUseCurrentUser> = {
   handleSignIn: vi.fn(async () => {}),
   onUserResolved: vi.fn(createWatchHandle),
   onTokenRefreshed: vi.fn(createWatchHandle),
-  onUserLogout: vi.fn()
+  onUserLogout: vi.fn(createWatchHandle)
 }
 
 const currentUser = { ...defaults }
@@ -38,3 +39,5 @@ export const useCurrentUser = vi.fn(() => {
   })
   return currentUser
 })
+
+provideCurrentUser(useCurrentUser)

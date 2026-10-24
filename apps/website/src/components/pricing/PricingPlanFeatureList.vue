@@ -76,7 +76,7 @@ const { t } = translationsFor(locale)
                 : statusTextClass[feature.status ?? 'included']
             "
           >
-            {{ t(feature.text) }}
+            {{ t(feature.text, feature.params ?? {}) }}
           </span>
         </li>
       </ul>

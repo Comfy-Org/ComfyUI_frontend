@@ -16,7 +16,7 @@ import MenuSubTrigger from '@/components/ui/menu/MenuSubTrigger.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import type { WorkflowReferenceOption } from '../../../types/workflowReference'
+import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 
 const {
   canAttach,
@@ -62,7 +62,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         <span class="icon-[lucide--plus] size-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(addMenuOpen)">
       <MenuContent
         side="top"
         align="start"
@@ -70,6 +70,16 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         width="compact"
         class="agent-scope"
       >
+        <MenuItem
+          v-if="canOpenAssets"
+          class="mb-0.5"
+          @select="emit('openAssets')"
+        >
+          <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
+          <span class="whitespace-nowrap">
+            {{ t('agent.addFromAssets') }}
+          </span>
+        </MenuItem>
         <Tooltip :disabled="!nodeReferenceDisabledReason">
           <TooltipTrigger as-child>
             <MenuItem
@@ -96,9 +106,8 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             </span>
             <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
           </MenuSubTrigger>
-          <DropdownMenuPortal>
+          <DropdownMenuPortal :key="Number(workflowSubmenuOpen)">
             <MenuSubContent
-              :open="workflowSubmenuOpen"
               :side-offset="4"
               width="compact"
               max-height="compact"
@@ -131,16 +140,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             </MenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
-        <MenuItem v-if="canOpenAssets" @select="emit('openAssets')">
-          <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
-          <span class="whitespace-nowrap">
-            {{ t('agent.addFromAssets') }}
-          </span>
-        </MenuItem>
-        <MenuSeparator
-          v-if="canAttach && canOpenAssets"
-          class="mt-0 mb-px h-px bg-border-subtle"
-        />
+        <MenuSeparator v-if="canAttach" class="mt-0 mb-px" />
         <MenuItem v-if="canAttach" @select="emit('attach')">
           <i-lucide:paperclip class="size-4 shrink-0" />
           <span class="whitespace-nowrap">{{ t('agent.attachFiles') }}</span>

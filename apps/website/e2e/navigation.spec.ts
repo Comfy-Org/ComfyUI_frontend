@@ -1,7 +1,17 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '@/config/routes'
 import { test } from './fixtures/workshopVisibility'
+
+const socialChannels = [
+  ['GitHub', externalLinks.github],
+  ['Discord', externalLinks.discord],
+  ['X', externalLinks.x],
+  ['YouTube', externalLinks.youtube],
+  ['LinkedIn', externalLinks.linkedin],
+  ['Instagram', externalLinks.instagram]
+] as const
 
 function settleAnimations(root: Locator) {
   return root.evaluate((el) =>
@@ -46,7 +56,7 @@ const RETIRED_BADGE_PANELS = [
     ],
     bare: [
       { label: 'Comfy CLI', href: '/cli/' },
-      { label: 'Managed Builds', href: '/enterprise/managed-builds/' }
+      { label: 'Builds', href: '/platform/builder/' }
     ]
   },
   {
@@ -154,7 +164,6 @@ test.describe('Desktop dropdown @interaction', () => {
       'Comfy Cloud',
       'Comfy Agent',
       'Developer Platform',
-      'Managed Builds',
       'Docs'
     ]) {
       await expect(dropdown.getByText(item)).toBeVisible()
@@ -403,6 +412,41 @@ test.describe('Footer @smoke', () => {
         footer.getByRole('heading', { name: heading }).first()
       ).toBeVisible()
     }
+  })
+
+  test('social channels are icon links that open in a new tab', async ({
+    page
+  }) => {
+    const footer = page.locator('footer')
+    const social = footer.getByRole('navigation', { name: 'Follow Comfy' })
+    await social.scrollIntoViewIfNeeded()
+    await expect(social).toBeVisible()
+
+    const links = social.getByRole('link')
+    await expect(links).toHaveText(
+      socialChannels.map(([label]) => `${label} (opens in new tab)`)
+    )
+    expect(
+      await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => [
+          anchor.getAttribute('href'),
+          anchor.target,
+          anchor.rel
+        ])
+      )
+    ).toEqual(socialChannels.map(([, href]) => [href, '_blank', 'noopener']))
+    const socialHrefs: readonly string[] = socialChannels.map(
+      ([, href]) => href
+    )
+    const resourceHrefs = await footer
+      .getByRole('navigation', { name: 'Resources' })
+      .getByRole('link')
+      .evaluateAll((anchors: HTMLAnchorElement[]) =>
+        anchors.map((anchor) => anchor.getAttribute('href') ?? '')
+      )
+    expect(resourceHrefs.filter((href) => socialHrefs.includes(href))).toEqual(
+      []
+    )
   })
 
   test('copyright text is visible', async ({ page }) => {

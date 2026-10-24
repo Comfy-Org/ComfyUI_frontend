@@ -5,25 +5,26 @@ import { truncate } from 'es-toolkit/compat'
  * meant to replace the reassurance the localized copy gives the person. */
 const SYNC_ERROR_RAW_MESSAGE_MAX_LENGTH = 200
 
-/**
- * PM-1604 / BE-11437: the permanent-desync toast's `detail` always leads with
- * the localized copy (so the person keeps the "canvas unchanged" reassurance
- * even when the doc-host's raw `message` is untranslated developer text or
- * absent), appending that raw message, clamped, as extra context only when
- * present. `code` picks which localized copy leads: `catalog_mismatch`
- * names an incompatible node catalog, not an incompatible document version,
- * so it gets its own key rather than reusing `schema_version_mismatch`'s.
- */
+/** Returns localized sync guidance with safe raw context when applicable. */
 export function formatWorkflowSyncErrorDetail(
   translate: (key: string) => string,
   message: string | undefined,
   code?: string
 ): string {
-  const detail = translate(
-    code === 'catalog_mismatch'
-      ? 'agent.workflowSyncFailedDetailCatalogMismatch'
-      : 'agent.workflowSyncFailedDetail'
-  )
-  if (!message) return detail
+  const detail = translate(detailKey(code))
+  if (!message || code === 'catalog_mismatch') return detail
   return `${detail} (${truncate(message, { length: SYNC_ERROR_RAW_MESSAGE_MAX_LENGTH })})`
+}
+
+function detailKey(code: string | undefined): string {
+  switch (code) {
+    case 'catalog_mismatch':
+      return 'agent.workflowSyncFailedDetailCatalogMismatch'
+    case 'stale_client_schema':
+      return 'agent.workflowSyncFailedDetailStaleClient'
+    case 'stale_host_schema':
+      return 'agent.workflowSyncFailedDetailStaleHost'
+    default:
+      return 'agent.workflowSyncFailedDetail'
+  }
 }

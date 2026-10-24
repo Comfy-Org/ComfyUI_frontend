@@ -35,7 +35,7 @@
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2] bg-destructive-background" />
+          <i class="icon-[lucide--trash-2] bg-destructive" />
         </Button>
         <Button
           v-if="isUserBlueprint"
@@ -109,7 +109,7 @@ import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import Button from '@/components/ui/button/Button.vue'
 import { treeItemClass, treeItemIndent } from '@/components/ui/tree/treeStyles'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'

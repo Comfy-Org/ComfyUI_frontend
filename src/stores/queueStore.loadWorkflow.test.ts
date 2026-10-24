@@ -7,6 +7,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
+import { provideExtensionService } from '@/services/extensionServiceAccess'
 import * as jobOutputCache from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
 
@@ -17,6 +18,8 @@ vi.mock<unknown>(import('@/services/extensionService'), () => ({
 }))
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+
+provideExtensionService(() => ({ invokeExtensions: vi.fn() }))
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,

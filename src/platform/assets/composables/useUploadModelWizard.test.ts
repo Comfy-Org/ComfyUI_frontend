@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -54,6 +54,14 @@ vi.mock<unknown>(import('@/i18n'), () => ({
   te: () => false,
   d: (date: Date) => date.toISOString()
 }))
+
+function assetDownloadListener() {
+  const listener = vi
+    .mocked(api.addEventListener)
+    .mock.calls.findLast(([type]) => type === 'asset_download')?.[1]
+  if (typeof listener !== 'function') throw new Error('no listener')
+  return listener
+}
 
 describe('useUploadModelWizard', () => {
   const modelTypes = ref([{ name: 'Checkpoint', value: 'checkpoints' }])
@@ -354,10 +362,7 @@ describe('useUploadModelWizard', () => {
       status: 'completed' as const
     }
     const event = new CustomEvent('asset_download', { detail })
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    const handler = assetDownloadListener()
     handler(event)
 
     await nextTick()
@@ -387,9 +392,7 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadStatus.value).toBe('processing')
 
     // Simulate WebSocket: download fails
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
+    const handler = assetDownloadListener()
 
     const failEvent = new CustomEvent('asset_download', {
       detail: {
@@ -404,7 +407,6 @@ describe('useUploadModelWizard', () => {
       }
     })
 
-    assert.exists(handler)
     handler(failEvent)
 
     await nextTick()
@@ -452,10 +454,7 @@ describe('useUploadModelWizard', () => {
     wizard.selectedModelType.value = 'checkpoints'
     await wizard.uploadModel()
 
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    const handler = assetDownloadListener()
     handler(
       new CustomEvent('asset_download', {
         detail: {
@@ -528,10 +527,7 @@ describe('useUploadModelWizard', () => {
     wizard.selectedModelType.value = 'checkpoints'
     await wizard.uploadModel()
 
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    const handler = assetDownloadListener()
 
     await useAssetDownloadStore().cancelDownload('task-cancelled')
     await nextTick()
@@ -586,16 +582,13 @@ describe('useUploadModelWizard', () => {
       wizard.selectedModelType.value = 'checkpoints'
       await wizard.uploadModel()
 
-      const handler = vi
-        .mocked(api.addEventListener)
-        .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-      assert.exists(handler)
+      const handler = assetDownloadListener()
 
-      function dispatchDownload(
+      const dispatchDownload = (
         detail: Partial<AssetDownloadWsMessage> &
           Pick<AssetDownloadWsMessage, 'status'>
-      ) {
-        handler!(
+      ) =>
+        handler(
           new CustomEvent('asset_download', {
             detail: {
               task_id: taskId,
@@ -608,7 +601,6 @@ describe('useUploadModelWizard', () => {
             }
           })
         )
-      }
 
       dispatchDownload({ status, error })
       await nextTick()

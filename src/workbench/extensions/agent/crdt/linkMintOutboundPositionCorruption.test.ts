@@ -30,7 +30,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -191,8 +191,14 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       boundRootGraphId: () => ROOT_GRAPH_ID,
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
+      docWidgetValue: (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName),
+
       docPromotedWidgets: (nodeId) =>
-        readDocPromotedWidgets(doc, String(nodeId))
+        readDocPromotedWidgets(doc, String(nodeId)),
+      mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
+      onWidgetWriteRefused: () => {}
     })
     onTestFinished(() => port.detach())
 
