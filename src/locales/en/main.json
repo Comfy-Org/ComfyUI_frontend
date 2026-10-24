@@ -4078,7 +4078,13 @@
     "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
     "compatibleEnvironments": "Compatible environments",
     "incompatibleEnvironments": "Incompatible environments",
-    "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}."
+    "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}.",
+    "reason": {
+      "starting": "{deployment} is starting. Pick it once it's ready.",
+      "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
+      "notReady": "{deployment} isn't ready. Pick it once it's ready."
+    },
+    "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}."
   },
   "selectionToolbox": {
     "executeButton": {

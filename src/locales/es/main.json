@@ -1455,12 +1455,18 @@
     "manageDeployments": "Administrar despliegues",
     "manageDeploymentsTooltip": "Administra tus Builds y sus despliegues en la Plataforma para desarrolladores.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
+    "missingNodesAfterReason": "Además, no puede ejecutar este flujo de trabajo. Le falta: {nodes}.",
     "missingNodesNamed": "{deployment} no puede ejecutar este flujo de trabajo. Le falta: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Este espacio de trabajo aún no tiene implementaciones.",
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
     "pickGone": "La implementación que elegiste ya no existe.",
     "pickGoneDetail": "Este navegador ahora se ejecuta en Comfy Cloud. Vuelve a elegir una implementación para usar una.",
+    "reason": {
+      "notReady": "{deployment} no está listo. Elígelo cuando esté listo.",
+      "startElsewhere": "{deployment} no se está ejecutando. Inícialo en la Plataforma para desarrolladores y luego elígelo.",
+      "starting": "{deployment} se está iniciando. Elígelo cuando esté listo."
+    },
     "releaseChanged": "Esta implementación ahora ejecuta una versión diferente. Recarga para obtener sus nodos.",
     "reload": "Recargar",
     "runOn": "Ejecutar en",

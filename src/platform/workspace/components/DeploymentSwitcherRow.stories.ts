@@ -21,7 +21,8 @@ const meta: Meta<typeof DeploymentSwitcherRow> = {
     detail: 'v2',
     tooltip: 'Studio Build · production · v2',
     tone: 'ready',
-    missingNodes: null
+    note: null,
+    muted: false
   },
   decorators: [
     (story, { args, parameters }) => ({
@@ -58,8 +59,7 @@ export const LongBuildName: Story = {
 /** A deployment that cannot run the open workflow; hovering names the nodes. */
 export const MissingNodes: Story = {
   args: {
-    missingNodes:
-      'Studio Build · production cannot run this workflow. It is missing Power Lora Loader (rgthree) and Image Saver.'
+    note: 'Studio Build · production cannot run this workflow. It is missing Power Lora Loader (rgthree) and Image Saver.'
   }
 }
 

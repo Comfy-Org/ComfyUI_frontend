@@ -1455,12 +1455,18 @@
     "manageDeployments": "Dağıtımları yönet",
     "manageDeploymentsTooltip": "Build'lerinizi ve dağıtımlarını Developer Platform'da yönetin.",
     "membersStartOn": "Kendi seçimi olmayan üyeler şununla başlar:",
+    "missingNodesAfterReason": "Ayrıca bu iş akışını çalıştıramaz. Eksik olanlar: {nodes}.",
     "missingNodesNamed": "{deployment} bu iş akışını çalıştıramaz. Eksik olanlar: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Bu çalışma alanında henüz dağıtım yok.",
     "notReadyTooltip": "{deployment} üzerinde çalışıyor. Hazır olmadığı için hazır olana kadar işler çalışmaz.",
     "pickGone": "Seçtiğiniz dağıtım artık mevcut değil.",
     "pickGoneDetail": "Bu tarayıcı artık Comfy Cloud üzerinde çalışıyor. Bir dağıtım kullanmak için yeniden seçin.",
+    "reason": {
+      "notReady": "{deployment} hazır değil. Hazır olduğunda seçin.",
+      "startElsewhere": "{deployment} çalışmıyor. Developer Platform'da başlatın, ardından seçin.",
+      "starting": "{deployment} başlatılıyor. Hazır olduğunda seçin."
+    },
     "releaseChanged": "Bu dağıtım artık farklı bir Release çalıştırıyor. Node'larını almak için yeniden yükleyin.",
     "reload": "Yeniden yükle",
     "runOn": "Şurada çalıştır",

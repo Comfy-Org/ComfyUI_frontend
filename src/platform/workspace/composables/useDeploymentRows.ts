@@ -22,7 +22,8 @@ interface DeploymentRow {
   detail: string | null
   tooltip: string
   tone?: DeploymentStatusTone
-  missingNodes: string | null
+  note: string | null
+  pickable: boolean
 }
 
 interface DeploymentSection {
@@ -31,8 +32,20 @@ interface DeploymentSection {
   rows: DeploymentRow[]
 }
 
+const STOPPED_STATUSES = new Set(['stopped', 'failed'])
+
+function reasonKey(deployment: WorkspaceDeployment): string | null {
+  const tone = deploymentStatusTone(deployment.status)
+  if (tone === 'ready') return null
+  if (tone === 'pending') return 'deploymentSwitcher.reason.starting'
+  return STOPPED_STATUSES.has(deployment.status)
+    ? 'deploymentSwitcher.reason.startElsewhere'
+    : 'deploymentSwitcher.reason.notReady'
+}
+
 /**
- * The Run on menu's rows, Comfy Cloud first. Once a compatibility check
+ * The Run on menu's rows, Comfy Cloud first. Only a ready deployment can be
+ * picked, and a row that is not says why. Once a compatibility check
  * answers, rows that run the open workflow come first under their own label.
  */
 export function useDeploymentRows() {
@@ -47,20 +60,32 @@ export function useDeploymentRows() {
   } = useDeploymentLabels()
   const { markFor } = useDeploymentCompatibility()
 
-  function missingNodesText(
-    deploymentId: string | null,
-    label: string
-  ): string | null {
+  function missingNodeNames(deploymentId: string | null): string | null {
     const mark = markFor(deploymentId)
     if (mark?.kind !== 'missing') return null
-    return t(
-      'deploymentSwitcher.missingNodesNamed',
-      {
-        deployment: label,
-        nodes: new Intl.ListFormat(locale.value).format(mark.nodeTypes)
-      },
+    return new Intl.ListFormat(locale.value).format(mark.nodeTypes)
+  }
+
+  function noteFor(
+    deploymentId: string | null,
+    label: string,
+    reason: string | null
+  ): string | null {
+    const nodes = missingNodeNames(deploymentId)
+    if (nodes === null) return reason
+    if (reason === null) {
+      return t(
+        'deploymentSwitcher.missingNodesNamed',
+        { deployment: label, nodes },
+        { escapeParameter: false }
+      )
+    }
+    const missing = t(
+      'deploymentSwitcher.missingNodesAfterReason',
+      { nodes },
       { escapeParameter: false }
     )
+    return `${reason} ${missing}`
   }
 
   function cloudRow(): DeploymentRow {
@@ -72,11 +97,18 @@ export function useDeploymentRows() {
       name: null,
       detail: null,
       tooltip: title,
-      missingNodes: missingNodesText(null, title)
+      note: noteFor(null, title, null),
+      pickable: true
     }
   }
 
   function deploymentRow(deployment: WorkspaceDeployment): DeploymentRow {
+    const label = deploymentFullLabel(deployment)
+    const key = reasonKey(deployment)
+    const reason =
+      key === null
+        ? null
+        : t(key, { deployment: label }, { escapeParameter: false })
     return {
       value: deployment.deployment_id,
       deploymentId: deployment.deployment_id,
@@ -85,10 +117,8 @@ export function useDeploymentRows() {
       detail: deploymentDetail(deployment),
       tooltip: deploymentTooltip(deployment),
       tone: deploymentStatusTone(deployment.status),
-      missingNodes: missingNodesText(
-        deployment.deployment_id,
-        deploymentFullLabel(deployment)
-      )
+      note: noteFor(deployment.deployment_id, label, reason),
+      pickable: deployment.status === 'ready'
     }
   }
 

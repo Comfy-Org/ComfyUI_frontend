@@ -1455,12 +1455,18 @@
     "manageDeployments": "Gérer les déploiements",
     "manageDeploymentsTooltip": "Gérez vos Builds et leurs déploiements sur la plateforme développeur.",
     "membersStartOn": "Les membres sans sélection propre démarrent sur",
+    "missingNodesAfterReason": "De plus, il ne peut pas exécuter ce flux de travail. Il manque : {nodes}.",
     "missingNodesNamed": "{deployment} ne peut pas exécuter ce flux de travail. Il manque : {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Cet espace de travail n’a pas encore de déploiement.",
     "notReadyTooltip": "Exécuté sur {deployment}. Il n’est pas prêt, les tâches ne s’exécuteront donc pas tant qu’il ne le sera pas.",
     "pickGone": "Le déploiement que vous avez sélectionné n’existe plus.",
     "pickGoneDetail": "Ce navigateur s’exécute maintenant sur Comfy Cloud. Sélectionnez à nouveau un déploiement pour en utiliser un.",
+    "reason": {
+      "notReady": "{deployment} n’est pas prêt. Choisissez-le dès qu’il est prêt.",
+      "startElsewhere": "{deployment} ne s’exécute pas. Démarrez-le sur la plateforme développeur, puis choisissez-le.",
+      "starting": "{deployment} est en cours de démarrage. Choisissez-le dès qu’il est prêt."
+    },
     "releaseChanged": "Ce déploiement exécute désormais une autre version. Rechargez pour obtenir ses nœuds.",
     "reload": "Recharger",
     "runOn": "Exécuter sur",

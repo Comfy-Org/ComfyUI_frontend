@@ -334,7 +334,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher')).toBeNull()
   })
 
-  it('says Comfy Cloud when nothing is picked, and lists every deployment as pickable', async () => {
+  it('says Comfy Cloud when nothing is picked, and lists every deployment with only a ready one pickable', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
 
@@ -352,12 +352,66 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D9}`)).toHaveTextContent(
       'Deployment dep-b9b9b9b9'
     )
-    expect(screen.getByTestId(`deployment-row-${D1}`)).not.toHaveAttribute(
+    expect(screen.getByTestId(`deployment-row-${D2}`)).not.toHaveAttribute(
+      'aria-disabled'
+    )
+    expect(screen.getByTestId(`deployment-row-${D1}`)).toHaveAttribute(
       'aria-disabled',
       'true'
     )
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
+
+  it('switches only to a ready deployment, and a row that is not does nothing when chosen', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(screen.getByTestId(`deployment-row-${D1}`))
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+
+    await user.click(screen.getByTestId(`deployment-row-${D2}`))
+    expect(mockWorkspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+      deployment_id: D2
+    })
+  })
+
+  it.for([
+    {
+      status: 'stopped',
+      reason:
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
+    },
+    {
+      status: 'failed',
+      reason:
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it."
+    },
+    {
+      status: 'provisioning',
+      reason: "Studio Build · staging is starting. Pick it once it's ready."
+    },
+    {
+      status: 'stopping',
+      reason: "Studio Build · staging isn't ready. Pick it once it's ready."
+    }
+  ])(
+    'says beside a $status row why it cannot be picked',
+    async ({ status, reason }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [listing.items[0], { ...listing.items[1], status }]
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.hover(screen.getByTestId(`deployment-row-${D1}`))
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    }
+  )
 
   it('refreshes the listing each time the list opens', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
@@ -529,8 +583,10 @@ describe('DeploymentSwitcher', () => {
   )
 
   it('disables the Reload item while a switch is in flight', async () => {
+    const readyStaging = { ...listing.items[1], status: 'ready' }
     const boot = {
       ...listing,
+      items: [listing.items[0], readyStaging],
       picked_deployment_id: D2,
       pick_source: 'browser'
     }
@@ -540,7 +596,7 @@ describe('DeploymentSwitcher', () => {
         ...boot,
         items: [
           { ...listing.items[0], release_id: 'r-3', release_version: 3 },
-          ...listing.items.slice(1)
+          readyStaging
         ]
       })
     mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise<void>(() => {}))
@@ -1278,17 +1334,21 @@ describe('DeploymentSwitcher', () => {
         'Comfy Cloud cannot run this workflow. It is missing Power Lora Loader (rgthree) and Image Saver.'
       )
       expect(
-        screen.getByTestId(`deployment-row-${D9}`)
+        screen.getByTestId(`deployment-row-${D2}`)
       ).not.toHaveAccessibleDescription()
+      expect(
+        screen.getByTestId(`deployment-row-${D9}`)
+      ).toHaveAccessibleDescription(
+        "Deployment dep-b9b9b9b9 isn't running. Start it on the Developer Platform, then pick it."
+      )
 
       const staging = screen.getByTestId(`deployment-row-${D1}`)
-      expect(staging).toHaveAccessibleDescription(
-        'Studio Build · staging cannot run this workflow. It is missing Power Lora Loader (rgthree).'
-      )
-      staging.focus()
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
-        'Studio Build · staging cannot run this workflow. It is missing Power Lora Loader (rgthree).'
-      )
+      const stagingNote =
+        "Studio Build · staging isn't running. Start it on the Developer Platform, then pick it. It cannot run this workflow. It is missing Power Lora Loader (rgthree)."
+      expect(staging).toHaveAccessibleDescription(stagingNote)
+      await user.hover(staging)
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(stagingNote)
     })
 
     it.for([

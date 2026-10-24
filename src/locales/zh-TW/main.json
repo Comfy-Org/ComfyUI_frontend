@@ -1455,12 +1455,18 @@
     "manageDeployments": "管理部署",
     "manageDeploymentsTooltip": "在開發者平台上管理您的 Build 及其部署。",
     "membersStartOn": "未自行選擇部署的成員將從此開始",
+    "missingNodesAfterReason": "此外，它無法執行此工作流程。缺少：{nodes}",
     "missingNodesNamed": "{deployment} 無法執行此工作流程。缺少：{nodes}",
     "namedDeployment": "{name}",
     "noDeployments": "此工作區尚無任何部署。",
     "notReadyTooltip": "正在 {deployment} 上執行。它尚未就緒，因此工作不會執行，直到它就緒為止。",
     "pickGone": "您選擇的部署已不存在。",
     "pickGoneDetail": "此瀏覽器現在在 Comfy Cloud 上執行。請再次選擇一個部署以使用。",
+    "reason": {
+      "notReady": "{deployment} 尚未就緒。就緒後再選擇它。",
+      "startElsewhere": "{deployment} 未在執行。請在開發者平台上啟動它，然後選擇它。",
+      "starting": "{deployment} 正在啟動。就緒後再選擇它。"
+    },
     "releaseChanged": "此部署目前執行不同的版本。重新載入以取得其節點。",
     "reload": "重新載入",
     "runOn": "執行於",
