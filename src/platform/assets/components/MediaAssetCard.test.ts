@@ -392,6 +392,11 @@ describe('MediaAssetCard', () => {
   describe('audio player strip', () => {
     const audioAsset: AssetItem = { ...asset, name: 'track.mp3' }
     const waveformWidth = 100
+    const selectionModifiers = [
+      { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
+      { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
+      { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+    ]
 
     async function renderAudioCard() {
       const rendered = renderCard({ loading: false, asset: audioAsset })
@@ -413,11 +418,7 @@ describe('MediaAssetCard', () => {
       }
     }
 
-    it.for([
-      { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
-      { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
-      { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
-    ])(
+    it.for(selectionModifiers)(
       '$modifier-clicks the waveform to select without seeking',
       async ({ keyDown, keyUp }) => {
         const user = userEvent.setup()
@@ -463,17 +464,20 @@ describe('MediaAssetCard', () => {
       expect(emitted().select).toBeUndefined()
     })
 
-    it('selects without toggling playback from a modifier click on play', async () => {
-      const user = userEvent.setup()
-      const { emitted, playButton, playSpy } = await renderAudioCard()
+    it.for(selectionModifiers)(
+      '$modifier-clicks play to select without toggling playback',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { emitted, playButton, playSpy } = await renderAudioCard()
 
-      await user.keyboard('{Shift>}')
-      await user.click(playButton)
-      await user.keyboard('{/Shift}')
+        await user.keyboard(keyDown)
+        await user.click(playButton)
+        await user.keyboard(keyUp)
 
-      expect(emitted().select).toHaveLength(1)
-      expect(playSpy).not.toHaveBeenCalled()
-    })
+        expect(emitted().select).toHaveLength(1)
+        expect(playSpy).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('disables native controls for compact video cards', async () => {
