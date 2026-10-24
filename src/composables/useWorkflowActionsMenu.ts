@@ -66,6 +66,7 @@ export function useWorkflowActionsMenu(
     () => workflow?.value ?? workflowStore.activeWorkflow
   )
 
+  /** Switch to the target workflow tab if it's not already active */
   const ensureWorkflowActive = async (wf: ComfyWorkflow | null) => {
     if (!wf || wf === workflowStore.activeWorkflow) return true
     return await workflowService.openWorkflow(wf, { initiator: 'user' })
