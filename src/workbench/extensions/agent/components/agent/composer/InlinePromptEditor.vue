@@ -377,7 +377,7 @@ onMounted(() => {
       role: 'textbox',
       'aria-label': label,
       'aria-multiline': 'true',
-      'aria-haspopup': 'menu',
+      ...(referenceMenuId ? { 'aria-haspopup': 'menu' } : {}),
       ...(expanded && referenceMenuId
         ? { 'aria-controls': referenceMenuId }
         : {}),
