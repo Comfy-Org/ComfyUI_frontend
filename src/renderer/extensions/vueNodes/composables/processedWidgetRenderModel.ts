@@ -6,8 +6,8 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   WidgetGridItem,
   WidgetSlotMetadata
@@ -407,9 +407,7 @@ function processWidget(
     name: widgetState.name,
     type,
     value,
-    borderStyle: advanced
-      ? 'ring ring-component-node-widget-advanced'
-      : undefined,
+    borderStyle: advanced ? 'ring ring-primary' : undefined,
     callback: updateHandler,
     controlWidget,
     label: widgetState.label,

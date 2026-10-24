@@ -56,16 +56,19 @@ const mocks = await vi.hoisted(async () => {
   }
 })
 
-vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({
-    nudgeArmed: mocks.nudgeArmed,
-    tourWasCompleted: mocks.tourWasCompleted,
-    dismissNudge: mocks.dismissNudge
+vi.mock<unknown>(
+  import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
+  () => ({
+    useFirstRunTourController: () => ({
+      nudgeArmed: mocks.nudgeArmed,
+      tourWasCompleted: mocks.tourWasCompleted,
+      dismissNudge: mocks.dismissNudge
+    })
   })
-}))
+)
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
   })

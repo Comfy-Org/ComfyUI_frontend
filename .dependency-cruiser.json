@@ -3,9 +3,15 @@
   "forbidden": [
     {
       "name": "no-circular",
-      "severity": "warn",
+      "severity": "error",
       "from": {},
       "to": { "circular": true }
+    },
+    {
+      "name": "agent-feedback-through-platform-support",
+      "severity": "error",
+      "from": { "path": "^src/workbench/extensions/agent/" },
+      "to": { "path": "^src/platform/surveys/openTypeformDialog\\.ts$" }
     }
   ],
   "options": {

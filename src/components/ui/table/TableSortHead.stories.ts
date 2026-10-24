@@ -45,7 +45,7 @@ function renderTable(initialDirection: TableSortDirection | null) {
       return { direction, sortedRows }
     },
     template: `
-      <Table class="w-96 rounded-lg border border-border-default">
+      <Table class="w-96 rounded-lg border border-border">
         <TableHeader>
           <TableRow>
             <TableSortHead v-model:direction="direction">Name</TableSortHead>

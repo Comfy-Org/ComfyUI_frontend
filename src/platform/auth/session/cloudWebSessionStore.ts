@@ -150,10 +150,9 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   })
 }
 
-function teamWorkspaceId(): string | undefined {
+function selectedWorkspaceId(): string | undefined {
   const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
-  if (currentWorkspace?.type === 'team') return currentWorkspace.id
-  return deniedWorkspaceId ?? undefined
+  return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -222,7 +221,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   watch(
     () =>
       signedInUser.value?.id &&
-      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
+      JSON.stringify([signedInUser.value.id, selectedWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
@@ -319,7 +318,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
     releaseRequests = provideWebSessionRequests({
       scope: requestScope,
-      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
@@ -462,7 +461,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspaceId = teamWorkspaceId()
+    const workspaceId = selectedWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),

@@ -51,6 +51,21 @@ describe('API Feature Flags', () => {
   })
 
   describe('Feature flags negotiation', () => {
+    it("drops the previous account's agent feature when resetting the socket identity", async () => {
+      const resettingApi = new ComfyApi()
+      resettingApi.serverFeatureFlags.value = {
+        account_a_feature: true,
+        agent: { state: 'ready' }
+      }
+
+      const resetPromise = resettingApi.resetSocket()
+
+      expect(resettingApi.serverFeatureFlags.value).toEqual({
+        account_a_feature: true
+      })
+      await resetPromise
+    })
+
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
       const resettingApi = new ComfyApi()
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
@@ -120,6 +135,49 @@ describe('API Feature Flags', () => {
         api_version: '1.0.0',
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
+      })
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
+    it("folds ComfyUI's agent_status pushes into the agent feature", () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'starting', reason: null }
+      })
+      const onStatus = vi.fn()
+      api.addEventListener('agent_status', onStatus)
+      onTestFinished(() => api.removeEventListener('agent_status', onStatus))
+      send('agent_status', { state: 'ready', reason: null })
+
+      expect(onStatus).toHaveBeenCalledOnce()
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        reason: null
+      })
+      expect(api.getServerFeature('api_version')).toBe('1.0.0')
+    })
+
+    it('takes the agent feature from a handshake reply that follows an earlier agent_status push', () => {
+      void api.init()
+      const send = (type: string, data: unknown) =>
+        wsEventHandlers['message']({ data: JSON.stringify({ type, data }) })
+
+      send('agent_status', { state: 'starting', reason: null })
+      expect(api.serverFeatureFlagsSettled.value).toBe(false)
+
+      send('feature_flags', {
+        api_version: '1.0.0',
+        agent: { state: 'ready', reason: null }
+      })
+
+      expect(api.getServerFeature('agent')).toEqual({
+        state: 'ready',
+        reason: null
       })
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })

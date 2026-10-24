@@ -36,7 +36,12 @@ describe('ComfyUI file input', () => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = new Error('import failed')
     vi.mocked(app.handleFile).mockRejectedValue(error)
-    new ComfyUI(app)
+    new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement

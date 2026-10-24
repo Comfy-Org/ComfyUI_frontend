@@ -17,7 +17,8 @@ export const useCompositorWidget = (): ComfyWidgetConstructorV2 => {
       'compositor',
       inputSpec.name,
       defaultValue,
-      null
+      null,
+      { hideInPanel: true }
     )
 
     if (rawWidget.type !== 'compositor') {

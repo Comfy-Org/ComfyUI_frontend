@@ -6,6 +6,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const FLAG = 'agent-free-use-message-placement'
 const PLACEMENT = 'near-composer'
@@ -80,14 +81,15 @@ test.describe(
             }
           })
 
-        await expect(notice).toHaveScreenshot('agent-free-use-notice.png')
+        await expectElementScreenshot(notice, 'agent-free-use-notice.png')
       }
     )
 
-    test('still reports exposure without the notice once the grant is spent', async ({
+    test('says nothing about free turns once the grant is spent', async ({
       hostTelemetry,
       page
     }) => {
+      const billingRead = page.waitForResponse('**/api/billing/status')
       await bootAgentApp(page, true, {
         features: { [FLAG]: PLACEMENT, enable_telemetry: true },
         billingStatus: billingStatus({ grantHeld: false })
@@ -95,6 +97,7 @@ test.describe(
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
+      await billingRead
       await expect
         .poll(
           () =>
@@ -103,7 +106,6 @@ test.describe(
             ).length
         )
         .toBe(1)
-
       await expect(
         agentPanel.root.getByRole('note', { name: 'Free use notice' })
       ).toBeHidden()

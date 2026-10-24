@@ -1,25 +1,13 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="
         !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        isInPersonalWorkspace &&
+        (maxSeats === 1 || isPlanEnded) &&
         permissions.canManageSubscription
       "
-      :variant="
-        showsEndedUpsell
-          ? isSalesManagedPlan
-            ? 'contactSales'
-            : 'reactivate'
-          : 'upgrade'
-      "
-      :enterprise="isEnterprisePlan"
-      @action="
-        showsEndedUpsell && isSalesManagedPlan
-          ? handleContactSales()
-          : showTeamPlans()
-      "
+      @action="showTeamPlans()"
     />
     <!-- Controls row: tabs, search, invite (outside the table frame). Once the
          panel scrolls it moves into the dialog header, left of the close
@@ -64,20 +52,18 @@
           <SearchInput
             v-if="showSearch"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
           />
           <Tooltip v-if="showInviteButton">
             <TooltipTrigger as-child>
-              <span
-                :tabindex="isInviteDisabled ? 0 : undefined"
-                class="inline-flex"
-              >
+              <span class="inline-flex">
                 <Button
                   variant="secondary"
                   size="lg"
-                  :disabled="isInviteDisabled"
                   :aria-label="$t('workspacePanel.inviteMember')"
                   @click="handleInviteMember"
                 >
@@ -87,15 +73,15 @@
               </span>
             </TooltipTrigger>
             <TooltipContent>{{
-              inviteTooltip || $t('workspacePanel.inviteMember')
+              $t('workspacePanel.inviteMember')
             }}</TooltipContent>
           </Tooltip>
-          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
+          <WorkspaceMenuButton v-if="showWorkspaceMenu" />
         </div>
       </div>
     </Teleport>
     <div
-      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border p-6"
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
@@ -103,12 +89,11 @@
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
             v-if="
-              uiConfig.showMembersList &&
-              (showViewTabs || (isCloud && hasMultipleMembers))
+              uiConfig.showMembersList && (showViewTabs || hasMultipleMembers)
             "
             :class="
               cn(
-                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
+                'sticky -top-px z-10 grid w-full items-center bg-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
                 activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
@@ -234,7 +219,7 @@
         v-if="permissions.canManageSubscription"
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
       >
         {{
@@ -267,7 +252,7 @@
       <Button
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}
@@ -289,11 +274,10 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
-import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
+import MemberUpsellBanner from '@/platform/billing/components/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
-import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -309,15 +293,13 @@ const {
   isInPersonalWorkspace,
   isPlanEnded,
   isSalesManagedPlan,
-  isEnterprisePlan,
   hasMemberSeats,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,
   showViewTabs,
   showInviteButton,
-  isInviteDisabled,
-  inviteTooltip,
+  showWorkspaceMenu,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,
@@ -352,12 +334,6 @@ watch(isHeaderCollapsed, async () => {
 
 const { t } = useI18n()
 
-// A personal workspace always pitches the Team plan here; its own plan
-// lifecycle lives on the Plan & Credits tab.
-const showsEndedUpsell = computed(
-  () => isPlanEnded.value && !isInPersonalWorkspace.value
-)
-
 const emptyStateMessage = computed(() => {
   if (!uiConfig.value.showMembersList) return null
   if (!membersLoaded.value) return null
@@ -384,8 +360,6 @@ function handleContactUs() {
   window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
 }
 
-// The ended banner and footer action: a sales-managed plan's route back is the
-// enterprise page, not the team-plan request form the Contact us link uses.
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }

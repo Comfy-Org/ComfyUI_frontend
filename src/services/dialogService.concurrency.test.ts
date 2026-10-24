@@ -19,7 +19,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 /**
  * Macrotask flush: releasing the FIFO queue takes several promise hops inside

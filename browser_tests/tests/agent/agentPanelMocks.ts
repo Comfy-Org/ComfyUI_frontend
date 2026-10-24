@@ -1,19 +1,25 @@
-import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
+import {
+  zAgentPostMessageRequest,
+  zGlobalSettingValue
+} from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
-  AgentThreadListResponse,
   BillingStatusResponse,
+  DocSubscribedFrame,
   GlobalSetting,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { PermanentDocSubscribeRefusalCode } from '@/workbench/extensions/agent/crdt/docFrameCodes'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -21,15 +27,23 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+const AGENT_AUTO_SHOWN_KEY =
+  'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+export const AGENT_COACH_SEEN_KEY =
+  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+/** The cloud workflow id a turn ack binds the posting tab to. */
+export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
@@ -41,6 +55,24 @@ const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
 export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
+}
+
+export function refuseDocSubscribePermanently(
+  ws: WebSocketRoute,
+  code: PermanentDocSubscribeRefusalCode = 'schema_version_mismatch',
+  message?: string
+): void {
+  const frame = {
+    type: 'doc_subscribed',
+    data: {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code,
+      message
+    }
+  } satisfies DocSubscribedFrame
+  ws.send(JSON.stringify(frame))
 }
 
 const FUNDED_BILLING_STATUS = {
@@ -257,12 +289,12 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
 const MESSAGE_DELTA_TEXT =
   'The graph is **fully ready** to go — prompt set to the red fox in the snow.'
 
-export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: MESSAGE_DELTA_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export const MESSAGE_DELTA_EVENT = agentMessageDeltaEvent(MESSAGE_DELTA_TEXT)
+
+export function agentMessageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
 
@@ -325,11 +357,10 @@ async function mockAgentBoot(
       initiallyOpen,
       onboardingCompleted,
       debugEnabled,
-      autoShownReadProbe
+      autoShownReadProbe,
+      autoShownKey
     }) => {
       if (autoShownReadProbe) {
-        const autoShownKey =
-          'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
         const originalGetItem = Storage.prototype.getItem
         window.__autoShownReads = 0
         Storage.prototype.getItem = function (candidate: string) {
@@ -356,11 +387,13 @@ async function mockAgentBoot(
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
       debugEnabled: crdtDebugEnabled,
-      autoShownReadProbe: agentAutoShownReadProbe
+      autoShownReadProbe: agentAutoShownReadProbe,
+      autoShownKey: AGENT_AUTO_SHOWN_KEY
     }
   )
 
   await mockBilling(page)
+  await mockAgentIdentity(page)
   await page.route('**/api/billing/status', (route) =>
     agentBilling.fulfillStatus(route)
   )
@@ -383,6 +416,13 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
+  const storedSettings: Record<string, unknown> = {
+    'Comfy.TutorialCompleted': true,
+    'Comfy.RightSidePanel.ShowErrorsTab': false,
+    ...DEPLOY_ACTION_SEEN_SETTINGS,
+    ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
+    ...initialSettings
+  }
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
@@ -392,14 +432,30 @@ async function mockAgentBoot(
       ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags
     },
-    settings: {
-      'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...DEPLOY_ACTION_SEEN_SETTINGS,
-      ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
-      ...initialSettings
-    },
+    settings: storedSettings,
     objectInfo
+  })
+  await page.route('**/api/settings', (route) => {
+    const request = route.request()
+    if (request.method() === 'POST')
+      Object.assign(storedSettings, request.postDataJSON())
+    return route.fulfill(jsonRoute(storedSettings))
+  })
+  await page.route('**/api/settings/*', (route) => {
+    const request = route.request()
+    const id = decodeURIComponent(
+      new URL(request.url()).pathname.split('/settings/')[1] ?? ''
+    )
+    if (request.method() === 'POST') {
+      const value: unknown = request.postDataJSON()
+      if (value === null) delete storedSettings[id]
+      else storedSettings[id] = value
+    } else if (!(id in storedSettings))
+      return route.fulfill({
+        ...jsonRoute({ code: 'NOT_FOUND', message: 'Setting is not set' }),
+        status: 404
+      })
+    return route.fulfill(jsonRoute(storedSettings[id]))
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
@@ -459,11 +515,8 @@ async function mockAgentBoot(
     }
     return route.fulfill(jsonRoute(workflows))
   })
-  const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-  }
-  await page.route('**/api/agent/threads', (route) =>
+  const threads = emptyAgentThreadList()
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   const storedConsent: GlobalSetting = {
@@ -548,6 +601,7 @@ async function mockAgentBoot(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: '2100-01-01T00:00:00.000Z',
+        user_id: 'uid-1',
         workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
         role: 'owner',
         permissions: ['owner:*']
@@ -706,3 +760,25 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   }
 })
+
+/**
+ * A single node on an otherwise empty canvas, placed left of the floating
+ * Agent panel so its title stays clickable.
+ */
+export async function addNodeBesideAgentPanel(
+  comfyPage: ComfyPage,
+  type: string
+): Promise<NodeReference> {
+  await comfyPage.nodeOps.clearGraph()
+  const node = await comfyPage.nodeOps.addNode(type, undefined, {
+    x: 100,
+    y: 150
+  })
+  await comfyPage.nextFrame()
+  return node
+}
+
+/** The parsed turn body the composer posted, in send order. */
+export function sentTurn(postedMessages: string[], index = 0) {
+  return zAgentPostMessageRequest.parse(JSON.parse(postedMessages[index]))
+}

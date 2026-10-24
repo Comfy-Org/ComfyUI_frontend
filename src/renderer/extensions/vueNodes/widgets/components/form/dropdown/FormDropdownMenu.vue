@@ -106,18 +106,6 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
   }))
 )
 
-/**
- * The dropdown content is teleported to `document.body` by PrimeVue Popover,
- * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
- * Pinch-zoom (`ctrl/meta + wheel`) would otherwise trigger page-level zoom and
- * push fixed UI off-screen, so it must be suppressed locally. Horizontal
- * swipe-to-navigate is already blocked at the page boundary by
- * `overscroll-behavior: none` on `html, body`, so we deliberately do NOT
- * preventDefault on horizontal-dominant wheels here — doing so cancels the
- * trackpad's native momentum on slow vertical scrolls (where stray horizontal
- * jitter frames satisfy `|deltaX| > |deltaY|`), starving the VirtualGrid's
- * `useScroll` and leaving rows blank until a fast scroll re-pumps samples.
- */
 const onWheel = (event: WheelEvent) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault()
 }
@@ -125,7 +113,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"

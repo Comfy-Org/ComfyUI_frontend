@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-comfy-menu-bg px-1',
+        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-background px-1',
         isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
       )
     "
@@ -10,7 +10,7 @@
     <div
       ref="tabStripRef"
       data-testid="workflow-tab-strip"
-      class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
+      class="no-drag scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
       @transitionend="handleTabResize"
     >
@@ -50,7 +50,7 @@
     />
     <Button
       :tooltip="$t('sideToolbar.newBlankWorkflow')"
-      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
+      class="new-blank-workflow-button no-drag shrink-0 self-center"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -70,7 +70,7 @@
       <div
         v-if="topbarBadgeStore.badges.length"
         data-testid="environment-badge-separator"
-        class="h-5 w-px shrink-0 bg-border-subtle"
+        class="h-5 w-px shrink-0 bg-border/50"
       />
       <Button
         v-if="isCloud || isNightly"
@@ -88,11 +88,12 @@
       <template v-if="showAgentEntry">
         <div
           data-testid="agent-entry-separator"
-          class="h-5 w-px shrink-0 bg-border-subtle"
+          class="h-5 w-px shrink-0 bg-border/50"
         />
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
           :inviting="!agentPanelStore.hasEverOpened"
+          :comfy-agent="comfyAgentNotReady"
           @click="onAgentEntryClick"
         />
       </template>
@@ -117,7 +118,7 @@ import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -161,18 +162,28 @@ const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
+const comfyAgentNotReady = computed(() =>
+  agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
+    ? undefined
+    : agentPanelStore.comfyAgent
+)
 const showAgentEntry = computed(
-  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+  () =>
+    (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
+    !(agentPanelStore.isOpen && isChecking.value)
 )
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isOpeningAgent.value) return
+  if (isOpeningAgent.value || comfyAgentNotReady.value) return
   isOpeningAgent.value = true
 
   try {
-    if (agentPanelStore.isVisible) {
+    if (
+      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
+      agentPanelStore.isVisible
+    ) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: 'closed'
+        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
       })
       agentPanelStore.toggle()
       return
@@ -215,21 +226,14 @@ const options = computed<WorkflowOption[]>(() =>
 async function openWorkflowByPath(path: string | number) {
   const option = options.value.find(({ value }) => value === path)
   if (!option) return
-  await workflowService.openWorkflow(option.workflow)
+  await workflowService.openWorkflow(option.workflow, { initiator: 'user' })
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await workflowService.closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown
-      }))
-    ) {
-      // User cancelled, or the replacement load failed
-      break
-    }
-  }
-}
+const closeWorkflows = (options: WorkflowOption[]) =>
+  workflowService.closeWorkflows(
+    options.map(({ workflow }) => workflow),
+    { warnIfUnsaved: !workspaceStore.shiftDown, initiator: 'user' }
+  )
 
 const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
