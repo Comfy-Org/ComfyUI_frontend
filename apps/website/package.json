@@ -7,6 +7,7 @@
     "./translation-config": "./src/config/translation.ts"
   },
   "scripts": {
+    "campaign-links": "node scripts/campaign-links.ts",
     "dev": "astro dev",
     "dev:no-toolbar": "cross-env NO_TOOLBAR=1 astro dev",
     "dev:crossview-proxy": "tsx scripts/crossview-dev-proxy.ts",
