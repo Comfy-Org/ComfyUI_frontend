@@ -190,7 +190,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       () => workspaceStore.workspaceId === id,
       (err) => noteLoadFailure(id, err)
     )
-    if (workspaceStore.workspaceId !== id) return
+    const workspaceChangedMeanwhile = workspaceStore.workspaceId !== id
+    if (workspaceChangedMeanwhile) return
     applyAnswer(id, request, event)
   }
 
