@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "Совместимые среды",
     "createCustomDeployment": "Создать пользовательское развёртывание",
     "createCustomDeploymentTooltip": "Запустите редактор с собственными пользовательскими узлами и моделями. Настройте его на платформе для разработчиков.",
     "currentTooltip": "Работает на {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "Не удалось изменить развёртывание по умолчанию для рабочего пространства",
     "failedToSwitch": "Не удалось переключиться",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "Несовместимые среды",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "Работает на {deployment}",
     "linkRefused": "Не удалось открыть это развёртывание",
     "linkTimedOut": "Для открытия этого развёртывания потребовалось слишком много времени. Попробуйте перейти по ссылке снова.",
     "linkWorkspaceRefused": "Не удалось переключиться на то рабочее пространство. Вы всё ещё находитесь в {workspaceName}.",
     "lookupUnavailable": "Не удалось проверить, на каком развёртывании работает этот редактор.",
     "lookupUnavailableDetail": "Отображаются модели Comfy Cloud. Перезагрузите страницу, чтобы повторить попытку.",
+    "manageDeployments": "Управлять развёртываниями",
+    "manageDeploymentsTooltip": "Управляйте своими Build и их развёртываниями на платформе для разработчиков.",
     "membersStartOn": "Участники без собственного выбора начинают работу на",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} не может запустить этот рабочий процесс. Отсутствует: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "В этом рабочем пространстве пока нет развёртываний.",
     "notReadyTooltip": "Работает на {deployment}. Оно ещё не готово, поэтому задачи не будут выполняться, пока не будет готово.",
@@ -1460,10 +1465,12 @@
     "reload": "Перезагрузить",
     "runOn": "Запустить на",
     "status": {
+      "failed": "Сбой",
       "notReady": "Не готово",
       "provisioning": "Запускается",
       "starting": "Запускается",
-      "stopped": "Остановлено"
+      "stopped": "Остановлено",
+      "stopping": "Останавливается"
     },
     "stoppedTooltip": "Работает на {deployment}. Оно остановлено, поэтому задачи не будут выполняться, пока вы не запустите его на платформе для разработчиков.",
     "switching": "Переключение",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "Работает на {deployment}. Выберите, где будет работать этот редактор",
     "triggerLabelNotReady": "{status} Выберите, где будет работать этот редактор",
     "unnamedDeployment": "Развёртывание {id}",
+    "version": "v{version}",
     "workspaceDefault": "По умолчанию для рабочего пространства"
   },
   "desktopLogin": {

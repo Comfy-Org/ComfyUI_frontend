@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "סביבות תואמות",
     "createCustomDeployment": "צור פריסה מותאמת אישית",
     "createCustomDeploymentTooltip": "הפעל את העורך עם הצמתים והמודלים המותאמים אישית שלך. הגדר זאת בפלטפורמת המפתחים.",
     "currentTooltip": "פועל על {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "לא ניתן היה לשנות את ברירת המחדל של סביבת העבודה",
     "failedToSwitch": "לא ניתן היה להחליף",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "סביבות לא תואמות",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "פועל על {deployment}",
     "linkRefused": "לא ניתן היה לפתוח פריסה זו",
     "linkTimedOut": "לפריסה זו לקח זמן רב מדי להיפתח. נסה שוב את הקישור.",
     "linkWorkspaceRefused": "לא ניתן היה לעבור לאותה סביבת עבודה. אתה עדיין ב־{workspaceName}.",
     "lookupUnavailable": "לא ניתן היה לבדוק על איזו פריסה עורך זה פועל.",
     "lookupUnavailableDetail": "המודלים המוצגים הם של Comfy Cloud. טען מחדש כדי לנסות שוב.",
+    "manageDeployments": "ניהול פריסות",
+    "manageDeploymentsTooltip": "נהל את ה-Builds שלך ואת הפריסות שלהם בפלטפורמת המפתחים.",
     "membersStartOn": "חברים ללא בחירה משלהם מתחילים ב־",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} לא יכול להריץ את תהליך העבודה הזה. חסר בו: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "לסביבת עבודה זו עדיין אין פריסות.",
     "notReadyTooltip": "פועל על {deployment}. הוא אינו מוכן, ולכן משימות לא יפעלו עד שיהיה מוכן.",
@@ -1460,10 +1465,12 @@
     "reload": "טען מחדש",
     "runOn": "הפעל ב-",
     "status": {
+      "failed": "נכשל",
       "notReady": "לא מוכן",
       "provisioning": "מתחיל",
       "starting": "מתחיל",
-      "stopped": "הופסק"
+      "stopped": "הופסק",
+      "stopping": "בעצירה"
     },
     "stoppedTooltip": "פועל על {deployment}. הוא מופסק, ולכן משימות לא יפעלו עד שיופעל בפלטפורמת המפתחים.",
     "switching": "מחליף",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "פועל ב-{deployment}. בחר היכן עורך זה יפעל",
     "triggerLabelNotReady": "{status} בחר היכן עורך זה יפעל",
     "unnamedDeployment": "פריסה {id}",
+    "version": "v{version}",
     "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
   "desktopLogin": {

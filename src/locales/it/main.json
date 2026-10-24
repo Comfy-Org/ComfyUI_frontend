@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "Ambienti compatibili",
     "createCustomDeployment": "Crea una distribuzione personalizzata",
     "createCustomDeploymentTooltip": "Esegui l'editor con i tuoi nodi e modelli personalizzati. Configuralo sulla Developer Platform.",
     "currentTooltip": "In esecuzione su {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "Impossibile modificare l'impostazione predefinita dell'area di lavoro",
     "failedToSwitch": "Impossibile effettuare il passaggio",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "Ambienti incompatibili",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "In esecuzione su {deployment}",
     "linkRefused": "Impossibile aprire questa distribuzione",
     "linkTimedOut": "L'apertura di questa distribuzione ha richiesto troppo tempo. Riprova il link.",
     "linkWorkspaceRefused": "Impossibile passare a quell'area di lavoro. Sei ancora in {workspaceName}.",
     "lookupUnavailable": "Impossibile verificare su quale distribuzione è in esecuzione questo editor.",
     "lookupUnavailableDetail": "I modelli mostrati sono quelli di Comfy Cloud. Ricarica per riprovare.",
+    "manageDeployments": "Gestisci distribuzioni",
+    "manageDeploymentsTooltip": "Gestisci le tue Build e le relative distribuzioni sulla Developer Platform.",
     "membersStartOn": "I membri senza una propria selezione iniziano su",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} non può eseguire questo workflow. Manca: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Questa area di lavoro non ha ancora distribuzioni.",
     "notReadyTooltip": "In esecuzione su {deployment}. Non è pronta, quindi i processi non verranno eseguiti finché non lo sarà.",
@@ -1460,10 +1465,12 @@
     "reload": "Ricarica",
     "runOn": "Esegui su",
     "status": {
+      "failed": "Non riuscito",
       "notReady": "Non pronto",
       "provisioning": "Avvio in corso",
       "starting": "Avvio in corso",
-      "stopped": "Interrotto"
+      "stopped": "Interrotto",
+      "stopping": "Arresto in corso"
     },
     "stoppedTooltip": "In esecuzione su {deployment}. È arrestata, quindi i processi non verranno eseguiti finché non verrà avviata sulla Developer Platform.",
     "switching": "Passaggio in corso",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "In esecuzione su {deployment}. Scegli dove viene eseguito questo editor",
     "triggerLabelNotReady": "{status} Scegli dove viene eseguito questo editor",
     "unnamedDeployment": "Deployment {id}",
+    "version": "v{version}",
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
   "desktopLogin": {

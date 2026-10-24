@@ -33,12 +33,7 @@
         :open
         :side-offset="2"
         :align-offset="-5"
-        :class="
-          cn(
-            'max-w-[min(25rem,calc(100vw-1rem))] min-w-56',
-            switcherMenuMotionClass
-          )
-        "
+        :class="cn('w-84 max-w-[calc(100vw-1rem)]', switcherMenuMotionClass)"
       >
         <DropdownMenuLabel
           class="px-2 pt-1.5 pb-1 text-xs text-muted-foreground"
@@ -57,7 +52,9 @@
             :key="deployment.deployment_id"
             :value="deployment.deployment_id"
             :title="deploymentTitle(deployment)"
-            :subtitle="deploymentRowSubtitle(deployment)"
+            :deployment="deploymentName(deployment)"
+            :detail="deploymentDetail(deployment)"
+            :tooltip="deploymentTooltip(deployment)"
             :tone="deploymentStatusTone(deployment.status)"
             :data-testid="`default-row-${deployment.deployment_id}`"
             @select="choose(deployment.deployment_id)"
@@ -106,8 +103,13 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { deployments, defaultDeploymentId, goneDefaultDeploymentId } =
   storeToRefs(useDeploymentPickStore())
-const { deploymentTitle, deploymentRowSubtitle, defaultTitle } =
-  useDeploymentLabels()
+const {
+  deploymentTitle,
+  deploymentName,
+  deploymentDetail,
+  deploymentTooltip,
+  defaultTitle
+} = useDeploymentLabels()
 
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
 const checkedValue = computed(() => {

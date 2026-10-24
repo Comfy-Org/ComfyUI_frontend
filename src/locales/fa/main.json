@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "محیط‌های سازگار",
     "createCustomDeployment": "ایجاد deployment سفارشی",
     "createCustomDeploymentTooltip": "ویرایشگر را با nodeها و مدل‌های سفارشی خود اجرا کنید. آن را در پلتفرم توسعه‌دهندگان تنظیم کنید.",
     "currentTooltip": "در حال اجرا روی {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "تغییر پیش‌فرض workspace ممکن نشد",
     "failedToSwitch": "تغییر ممکن نشد",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "محیط‌های ناسازگار",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "در حال اجرا روی {deployment}",
     "linkRefused": "باز کردن این deployment ممکن نشد",
     "linkTimedOut": "باز شدن این deployment بیش از حد طول کشید. دوباره پیوند را امتحان کنید.",
     "linkWorkspaceRefused": "تغییر به آن workspace ممکن نشد. همچنان در {workspaceName} هستید.",
     "lookupUnavailable": "بررسی اینکه این ویرایشگر روی کدام deployment اجرا می‌شود ممکن نشد.",
     "lookupUnavailableDetail": "مدل‌های نمایش‌داده‌شده متعلق به Comfy Cloud هستند. برای تلاش دوباره، صفحه را بارگذاری مجدد کنید.",
+    "manageDeployments": "مدیریت استقرارها",
+    "manageDeploymentsTooltip": "Buildها و استقرارهای آن‌ها را در پلتفرم توسعه‌دهندگان مدیریت کنید.",
     "membersStartOn": "اعضایی که انتخاب شخصی ندارند، با این مورد شروع می‌کنند",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} نمی‌تواند این workflow را اجرا کند. این موارد را ندارد: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "این workspace هنوز هیچ deploymentی ندارد.",
     "notReadyTooltip": "در حال اجرا روی {deployment}. آماده نیست، بنابراین تا زمانی که آماده نشود، jobها اجرا نخواهند شد.",
@@ -1460,10 +1465,12 @@
     "reload": "بارگذاری مجدد",
     "runOn": "اجرا در",
     "status": {
+      "failed": "ناموفق",
       "notReady": "آماده نیست",
       "provisioning": "در حال شروع",
       "starting": "در حال شروع",
-      "stopped": "متوقف‌شده"
+      "stopped": "متوقف‌شده",
+      "stopping": "در حال توقف"
     },
     "stoppedTooltip": "در حال اجرا روی {deployment}. متوقف است، بنابراین تا زمانی که در پلتفرم توسعه‌دهندگان راه‌اندازی نشود، jobها اجرا نخواهند شد.",
     "switching": "در حال تغییر",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "در حال اجرا در {deployment}. محل اجرای این ویرایشگر را انتخاب کنید",
     "triggerLabelNotReady": "{status} محل اجرای این ویرایشگر را انتخاب کنید",
     "unnamedDeployment": "استقرار {id}",
+    "version": "v{version}",
     "workspaceDefault": "پیش‌فرض workspace"
   },
   "desktopLogin": {

@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "兼容的环境",
     "createCustomDeployment": "创建自定义部署",
     "createCustomDeploymentTooltip": "使用你自己的自定义节点和模型运行编辑器。在开发者平台上进行设置。",
     "currentTooltip": "正在 {deployment} 上运行",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "无法更改工作区默认部署",
     "failedToSwitch": "无法切换",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "不兼容的环境",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "正在 {deployment} 上运行",
     "linkRefused": "无法打开此部署",
     "linkTimedOut": "此部署打开时间过长。请再次尝试该链接。",
     "linkWorkspaceRefused": "无法切换到该工作区。你仍在 {workspaceName} 中。",
     "lookupUnavailable": "无法检查此编辑器运行在哪个部署上。",
     "lookupUnavailableDetail": "显示的模型来自 Comfy Cloud。重新加载以重试。",
+    "manageDeployments": "管理部署",
+    "manageDeploymentsTooltip": "在开发者平台上管理你的 Build 及其部署。",
     "membersStartOn": "未自行选择的成员将从以下位置开始",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} 无法运行此工作流。缺少：{nodes}",
     "namedDeployment": "{name}",
     "noDeployments": "此工作区尚无部署。",
     "notReadyTooltip": "正在 {deployment} 上运行。它尚未就绪，因此作业不会运行，直到它就绪。",
@@ -1460,10 +1465,12 @@
     "reload": "重新加载",
     "runOn": "运行于",
     "status": {
+      "failed": "失败",
       "notReady": "未就绪",
       "provisioning": "正在启动",
       "starting": "正在启动",
-      "stopped": "已停止"
+      "stopped": "已停止",
+      "stopping": "正在停止"
     },
     "stoppedTooltip": "正在 {deployment} 上运行。它已停止，因此作业不会运行，直到你在开发者平台上将其启动。",
     "switching": "正在切换",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "正在 {deployment} 上运行。选择此编辑器的运行位置",
     "triggerLabelNotReady": "{status} 选择此编辑器的运行位置",
     "unnamedDeployment": "部署 {id}",
+    "version": "v{version}",
     "workspaceDefault": "工作区默认"
   },
   "desktopLogin": {

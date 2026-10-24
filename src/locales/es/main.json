@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "Entornos compatibles",
     "createCustomDeployment": "Crear una implementación personalizada",
     "createCustomDeploymentTooltip": "Ejecuta el editor con tus propios nodos y modelos personalizados. Configúralo en la Plataforma para desarrolladores.",
     "currentTooltip": "Ejecutándose en {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "No se pudo cambiar el valor predeterminado del espacio de trabajo",
     "failedToSwitch": "No se pudo cambiar",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "Entornos incompatibles",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "Ejecutándose en {deployment}",
     "linkRefused": "No se pudo abrir esta implementación",
     "linkTimedOut": "Esta implementación tardó demasiado en abrirse. Vuelve a intentar el enlace.",
     "linkWorkspaceRefused": "No se pudo cambiar a ese espacio de trabajo. Aún estás en {workspaceName}.",
     "lookupUnavailable": "No se pudo comprobar en qué implementación se ejecuta este editor.",
     "lookupUnavailableDetail": "Los modelos mostrados son los de Comfy Cloud. Recarga para intentarlo de nuevo.",
+    "manageDeployments": "Administrar despliegues",
+    "manageDeploymentsTooltip": "Administra tus Builds y sus despliegues en la Plataforma para desarrolladores.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} no puede ejecutar este flujo de trabajo. Le falta: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Este espacio de trabajo aún no tiene implementaciones.",
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
@@ -1460,10 +1465,12 @@
     "reload": "Recargar",
     "runOn": "Ejecutar en",
     "status": {
+      "failed": "Falló",
       "notReady": "No está listo",
       "provisioning": "Iniciando",
       "starting": "Iniciando",
-      "stopped": "Detenido"
+      "stopped": "Detenido",
+      "stopping": "Deteniéndose"
     },
     "stoppedTooltip": "Ejecutándose en {deployment}. Está detenido, por lo que los trabajos no se ejecutarán hasta que se inicie en la Plataforma para desarrolladores.",
     "switching": "Cambiando",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "Se está ejecutando en {deployment}. Elige dónde se ejecuta este editor",
     "triggerLabelNotReady": "{status} Elige dónde se ejecuta este editor",
     "unnamedDeployment": "Implementación {id}",
+    "version": "v{version}",
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
   "desktopLogin": {

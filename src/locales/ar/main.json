@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "بيئات متوافقة",
     "createCustomDeployment": "إنشاء بيئة نشر مخصصة",
     "createCustomDeploymentTooltip": "شغّل المحرر باستخدام عُقدك ونماذجك المخصصة. أعدّها على منصة المطورين.",
     "currentTooltip": "يعمل على {deployment}",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "تعذر تغيير الإعداد الافتراضي لمساحة العمل",
     "failedToSwitch": "تعذر التبديل",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "بيئات غير متوافقة",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "يعمل على {deployment}",
     "linkRefused": "تعذر فتح بيئة النشر هذه",
     "linkTimedOut": "استغرقت بيئة النشر هذه وقتًا طويلًا جدًا للفتح. جرّب الرابط مرة أخرى.",
     "linkWorkspaceRefused": "تعذر التبديل إلى مساحة العمل تلك. ما زلت في {workspaceName}.",
     "lookupUnavailable": "تعذر التحقق من بيئة النشر التي يعمل عليها هذا المحرر.",
     "lookupUnavailableDetail": "النماذج المعروضة هي نماذج Comfy Cloud. أعد التحميل للمحاولة مرة أخرى.",
+    "manageDeployments": "إدارة عمليات النشر",
+    "manageDeploymentsTooltip": "أدِر عمليات البناء (Builds) وعمليات نشرها على منصة المطورين.",
     "membersStartOn": "يبدأ الأعضاء الذين ليس لديهم اختيار خاص بهم على",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "لا يمكن لـ {deployment} تشغيل سير العمل هذا. ينقصه: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "لا تحتوي مساحة العمل هذه على أي بيئات نشر بعد.",
     "notReadyTooltip": "يعمل على {deployment}. إنه غير جاهز، لذا لن تعمل المهام حتى يصبح جاهزًا.",
@@ -1460,10 +1465,12 @@
     "reload": "إعادة التحميل",
     "runOn": "تشغيل على",
     "status": {
+      "failed": "فشل",
       "notReady": "غير جاهز",
       "provisioning": "جارٍ البدء",
       "starting": "جارٍ البدء",
-      "stopped": "متوقف"
+      "stopped": "متوقف",
+      "stopping": "جارٍ الإيقاف"
     },
     "stoppedTooltip": "يعمل على {deployment}. إنه متوقف، لذا لن تعمل المهام حتى يتم تشغيله على منصة المطورين.",
     "switching": "جارٍ التبديل",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "يعمل على {deployment}. اختر مكان تشغيل هذا المحرر",
     "triggerLabelNotReady": "{status} اختر مكان تشغيل هذا المحرر",
     "unnamedDeployment": "النشر {id}",
+    "version": "v{version}",
     "workspaceDefault": "الإعداد الافتراضي لمساحة العمل"
   },
   "desktopLogin": {

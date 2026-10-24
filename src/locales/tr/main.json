@@ -1432,6 +1432,7 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "Uyumlu ortamlar",
     "createCustomDeployment": "Özel dağıtım oluştur",
     "createCustomDeploymentTooltip": "Düzenleyiciyi kendi özel node'larınız ve modellerinizle çalıştırın. Bunu Developer Platform'da ayarlayın.",
     "currentTooltip": "{deployment} üzerinde çalışıyor",
@@ -1443,14 +1444,18 @@
     "failedToSetDefault": "Çalışma alanı varsayılanı değiştirilemedi",
     "failedToSwitch": "Geçiş yapılamadı",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "Uyumsuz ortamlar",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "{deployment} üzerinde çalışıyor",
     "linkRefused": "Bu dağıtım açılamadı",
     "linkTimedOut": "Bu dağıtımın açılması çok uzun sürdü. Bağlantıyı tekrar deneyin.",
     "linkWorkspaceRefused": "O çalışma alanına geçilemedi. Hâlâ {workspaceName} içindesiniz.",
     "lookupUnavailable": "Bu düzenleyicinin hangi dağıtımda çalıştığı kontrol edilemedi.",
     "lookupUnavailableDetail": "Gösterilen modeller Comfy Cloud'a ait. Yeniden denemek için yeniden yükleyin.",
+    "manageDeployments": "Dağıtımları yönet",
+    "manageDeploymentsTooltip": "Build'lerinizi ve dağıtımlarını Developer Platform'da yönetin.",
     "membersStartOn": "Kendi seçimi olmayan üyeler şununla başlar:",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesNamed": "{deployment} bu iş akışını çalıştıramaz. Eksik olanlar: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "Bu çalışma alanında henüz dağıtım yok.",
     "notReadyTooltip": "{deployment} üzerinde çalışıyor. Hazır olmadığı için hazır olana kadar işler çalışmaz.",
@@ -1460,10 +1465,12 @@
     "reload": "Yeniden yükle",
     "runOn": "Şurada çalıştır",
     "status": {
+      "failed": "Başarısız",
       "notReady": "Hazır değil",
       "provisioning": "Başlatılıyor",
       "starting": "Başlatılıyor",
-      "stopped": "Durduruldu"
+      "stopped": "Durduruldu",
+      "stopping": "Durduruluyor"
     },
     "stoppedTooltip": "{deployment} üzerinde çalışıyor. Durdurulduğu için Developer Platform'da başlatılana kadar işler çalışmaz.",
     "switching": "Geçiş yapılıyor",
@@ -1472,6 +1479,7 @@
     "triggerLabel": "{deployment} üzerinde çalışıyor. Bu düzenleyicinin nerede çalışacağını seçin",
     "triggerLabelNotReady": "{status} Bu düzenleyicinin nerede çalışacağını seçin",
     "unnamedDeployment": "Dağıtım {id}",
+    "version": "v{version}",
     "workspaceDefault": "Çalışma alanı varsayılanı"
   },
   "desktopLogin": {
