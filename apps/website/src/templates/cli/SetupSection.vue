@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { ref } from 'vue'
+import { cliSetupFor, INSTALL_COMMAND } from './cliSetup'
+import type { ConnectionId } from './cliSetup'
 
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import SurfaceToggle from '@/components/common/SurfaceToggle.vue'
@@ -17,100 +19,7 @@ import {
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
-type ConnectionId = 'cloud' | 'local'
-
-// Commands are verbatim from docs.comfy.org/agent-tools/cli and
-// docs.comfy.org/comfy-cli/getting-started.
-const INSTALL_COMMAND = 'pip install comfy-cli'
-
-interface ShellCard {
-  title: string
-  step: Record<ConnectionId, string>
-  commands: Record<ConnectionId, string[]>
-  showKeyLink: boolean
-}
-
-interface CliClient {
-  name: string
-  kind: 'agent' | 'shell'
-  shell?: ShellCard
-}
-
-const clients: Record<CliClientId, CliClient> = {
-  'claude-code': { name: 'Claude Code', kind: 'agent' },
-  codex: { name: 'Codex', kind: 'agent' },
-  cursor: { name: 'Cursor', kind: 'agent' },
-  'gemini-cli': { name: 'Gemini CLI', kind: 'agent' },
-  openclaw: { name: 'OpenClaw', kind: 'agent' },
-  hermes: { name: 'Hermes', kind: 'agent' },
-  terminal: {
-    name: t('cli.setup.clients.terminal.name'),
-    kind: 'shell',
-    shell: {
-      title: t('cli.setup.shell.terminal.title'),
-      step: {
-        cloud: t('cli.setup.shell.terminal.stepCloud'),
-        local: t('cli.setup.shell.terminal.stepLocal')
-      },
-      commands: {
-        cloud: [
-          'comfy setup --where cloud',
-          'comfy generate nano-banana --prompt "a watercolor of a sleeping fox" --download fox.png'
-        ],
-        local: ['comfy setup', 'comfy launch']
-      },
-      showKeyLink: false
-    }
-  },
-  ci: {
-    name: 'CI / Headless',
-    kind: 'shell',
-    shell: {
-      title: t('cli.setup.shell.ci.title'),
-      step: {
-        cloud: t('cli.setup.shell.ci.stepCloud'),
-        local: t('cli.setup.shell.ci.stepLocal')
-      },
-      commands: {
-        cloud: [
-          'comfy setup --where cloud --api-key comfyui-... --non-interactive',
-          'comfy run --workflow my_workflow.json --wait | comfy download'
-        ],
-        local: ['comfy setup -y']
-      },
-      showKeyLink: true
-    }
-  }
-}
-
-interface CliConnection {
-  name: string
-  tagline: string
-  installDescription: string
-  manualCommand: string
-  agentCommand: string
-}
-
-const connections: Record<ConnectionId, CliConnection> = {
-  cloud: {
-    name: t('cli.setup.connections.cloud.name'),
-    tagline: t('cli.setup.connections.cloud.tagline'),
-    installDescription: t('cli.setup.install.cloudDescription'),
-    manualCommand: 'comfy setup --where cloud\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandCloud', {
-      url: externalLinks.docsCliMd
-    })
-  },
-  local: {
-    name: t('cli.setup.connections.local.name'),
-    tagline: t('cli.setup.connections.local.tagline'),
-    installDescription: t('cli.setup.install.localDescription'),
-    manualCommand: 'comfy setup\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandLocal', {
-      url: externalLinks.docsCliMd
-    })
-  }
-}
+const { clients, connections } = cliSetupFor(locale)
 
 const DEFAULT_CLIENT_ID = 'claude-code'
 
@@ -120,7 +29,7 @@ const activeClientIds = ref<Record<ConnectionId, CliClientId>>({
   local: DEFAULT_CLIENT_ID
 })
 
-function activeClientFor(connId: ConnectionId): CliClient {
+function activeClientFor(connId: ConnectionId) {
   return clients[activeClientIds.value[connId]] ?? clients[DEFAULT_CLIENT_ID]
 }
 
@@ -144,8 +53,6 @@ function isCliClientId(value: unknown): value is CliClientId {
   return typeof value === 'string' && Object.hasOwn(clients, value)
 }
 
-// reka-ui re-emits update:modelValue even when the value is unchanged
-// (re-clicking the active tab), so dedupe before capturing.
 let lastTrackedConnectionId: ConnectionId | undefined
 function onConnectionTabChange(value: string | number | undefined) {
   if (!isConnectionId(value) || value === lastTrackedConnectionId) return

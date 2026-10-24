@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import SectionHeader from '@/components/common/SectionHeader.vue'
+import { ArrowUpRight } from '@lucide/vue'
+import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
+import FeatureRows01 from '@/components/blocks/FeatureRows01.vue'
+import type { FeatureRow } from '@/components/blocks/FeatureRows01.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import Accordion from '@/components/ui/accordion/Accordion.vue'
+import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
+import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '@/config/routes'
 import type { Locale, TranslationKey } from '@/i18n/translations'
@@ -8,8 +16,6 @@ import { translationsFor } from '@/i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
-// Bundled skills installed by `comfy skills install`
-// (docs.comfy.org/agent-tools/cli).
 const bundledSkills: { name: string; descriptionKey: TranslationKey }[] = [
   { name: 'comfy', descriptionKey: 'cli.skills.bundled.comfy' },
   {
@@ -26,123 +32,148 @@ const cards: {
   titleKey: TranslationKey
   promptKey: TranslationKey
   skill: string
+  src: string
+  fit: 'cover' | 'contain'
 }[] = [
   {
     id: 'packshots',
+    src: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
+    fit: 'cover',
     titleKey: 'cli.skills.card.packshots.title',
     promptKey: 'cli.skills.card.packshots.prompt',
     skill: 'comfy-fragments'
   },
   {
     id: 'keyframes',
+    src: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
+    fit: 'contain',
     titleKey: 'cli.skills.card.keyframes.title',
     promptKey: 'cli.skills.card.keyframes.prompt',
     skill: 'comfy-director'
   },
   {
     id: 'character-sheets',
+    src: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
+    fit: 'contain',
     titleKey: 'cli.skills.card.characterSheets.title',
     promptKey: 'cli.skills.card.characterSheets.prompt',
     skill: 'comfy'
   },
   {
     id: 'set-extension',
+    src: 'https://media.comfy.org/website/mcp/hero-demo/set-extension.webp',
+    fit: 'cover',
     titleKey: 'cli.skills.card.setExtension.title',
     promptKey: 'cli.skills.card.setExtension.prompt',
     skill: 'comfy'
   },
   {
     id: 'hero-props',
+    src: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
+    fit: 'cover',
     titleKey: 'cli.skills.card.heroProps.title',
     promptKey: 'cli.skills.card.heroProps.prompt',
     skill: 'comfy'
   },
   {
     id: 'key-art',
+    src: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
+    fit: 'cover',
     titleKey: 'cli.skills.card.keyArt.title',
     promptKey: 'cli.skills.card.keyArt.prompt',
     skill: 'comfy'
   }
 ]
 
+const skillsById = Object.fromEntries(
+  cards.map((card) => [card.id, card.skill])
+)
+const rows: FeatureRow[] = cards.map((card) => ({
+  id: card.id,
+  title: t(card.titleKey),
+  description: t(card.promptKey),
+  media: {
+    type: 'image',
+    src: card.src,
+    alt: t(card.titleKey),
+    fit: card.fit
+  }
+}))
+
+const exampleLabel = t('cli.skills.exampleLabel')
+const promptCopyLabel = t('cli.skills.promptCopyLabel')
 const copyLabel = t('ui.copy')
 const copiedLabel = t('ui.copied')
 </script>
 
 <template>
-  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader max-width="xl" :label="t('cli.skills.label')" align="start">
-      {{ t('cli.skills.heading') }}
-      <template #subtitle>
-        <p class="mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
-          {{ t('cli.skills.subtitle') }}
-        </p>
-        <div class="mt-6 max-w-md">
-          <CopyableField
-            value="comfy skills install"
-            :copy-label="copyLabel"
-            :copied-label="copiedLabel"
-          />
-        </div>
-      </template>
-    </SectionHeader>
-
-    <div class="mt-10 flex flex-col gap-3 lg:mt-14">
-      <p
-        class="text-xs font-bold tracking-widest text-primary-comfy-canvas uppercase"
-      >
-        {{ t('cli.skills.bundledLabel') }}
+  <FeatureRows01
+    class="[&_img.object-contain]:bg-white [&_img.object-contain]:p-4 [&_img[src$='set-extension.webp']]:object-scale-down"
+    :heading="t('cli.skills.heading')"
+    :eyebrow="t('cli.skills.label')"
+    :locale="locale"
+    :rows="rows"
+  >
+    <template #subtitle>
+      <p class="mx-auto mt-4 max-w-xl text-sm text-smoke-700 lg:text-base">
+        {{ t('cli.skills.subtitle') }}
       </p>
-      <ul class="flex flex-wrap gap-2.5">
-        <li
-          v-for="skill in bundledSkills"
-          :key="skill.name"
-          class="flex items-baseline gap-2 rounded-xl border border-white/15 bg-white/4 px-3.5 py-2"
-        >
-          <span class="font-mono text-xs text-primary-comfy-yellow">
-            {{ skill.name }}
-          </span>
-          <span class="text-xs text-smoke-700">
-            {{ t(skill.descriptionKey) }}
-          </span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-      <article
-        v-for="card in cards"
-        :key="card.id"
-        class="flex flex-col gap-4 rounded-3xl bg-transparency-white-t4 p-6"
-      >
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3
-            class="font-formula text-sm font-extrabold tracking-[0.7px] text-primary-comfy-yellow uppercase"
-          >
-            {{ t(card.titleKey) }}
-          </h3>
-          <span class="font-mono text-xs text-white/40">{{ card.skill }}</span>
-        </div>
-        <p class="flex-1 text-sm text-primary-comfy-canvas/80">
-          {{ t(card.promptKey) }}
-        </p>
+      <div class="mx-auto mt-6 max-w-md">
         <CopyableField
-          :value="t(card.promptKey)"
+          variant="cli"
+          value="comfy skills install"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"
         />
-      </article>
-    </div>
-
-    <p class="mt-8 text-sm text-smoke-700">
-      {{ t('cli.skills.moreSkillsPrefix')
-      }}<a
-        :href="externalLinks.mcpSkills"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="rounded-sm text-primary-comfy-canvas underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
-        >{{ t('cli.skills.moreSkillsLinkLabel') }}</a
-      >{{ t('cli.skills.moreSkillsSuffix') }}
-    </p>
-  </section>
+      </div>
+      <p class="mt-6 text-xs text-smoke-700">{{ exampleLabel }}</p>
+    </template>
+    <template #row-actions="{ row }">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span
+          class="font-mono text-2xs/relaxed whitespace-nowrap text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
+          >{{ skillsById[row.id] }}</span
+        >
+        <CopyTextButton
+          class="uppercase"
+          :value="row.description"
+          :label="`${promptCopyLabel}: ${row.title}`"
+          :copied-label="copiedLabel"
+          >{{ promptCopyLabel }}</CopyTextButton
+        >
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex flex-col items-center gap-8">
+        <BrandButton
+          :href="externalLinks.mcpSkills"
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="outline"
+          class="uppercase"
+          >{{ t('cli.skills.moreSkillsLinkLabel')
+          }}<ArrowUpRight class="size-4" aria-hidden="true"
+        /></BrandButton>
+        <Accordion type="single" collapsible class="w-full">
+          <AccordionItem value="bundled-skills">
+            <AccordionTrigger>
+              {{ t('cli.skills.bundledLabel') }}
+            </AccordionTrigger>
+            <AccordionContent>
+              <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-for="skill in bundledSkills" :key="skill.name">
+                  <dt
+                    class="font-mono text-2xs/relaxed whitespace-nowrap text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
+                  >
+                    {{ skill.name }}
+                  </dt>
+                  <dd class="mt-1 text-xs">{{ t(skill.descriptionKey) }}</dd>
+                </div>
+              </dl>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </template>
+  </FeatureRows01>
 </template>

@@ -45,6 +45,9 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
     <span v-if="copied" class="text-sm whitespace-nowrap">
       {{ copiedLabel }}
     </span>
+    <span v-else-if="$slots.default" class="text-sm whitespace-nowrap"
+      ><slot
+    /></span>
     <span class="sr-only" aria-live="polite">
       {{ copied ? copiedLabel : '' }}
     </span>

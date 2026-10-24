@@ -7,6 +7,7 @@ import {
   captureCliConnectionTabClick,
   captureCliClientTabClick
 } from '@/scripts/posthog'
+import { translationsFor } from '@/i18n/translations'
 import SetupSection from './SetupSection.vue'
 
 vi.mock(import('@/scripts/posthog'))
@@ -71,3 +72,30 @@ describe('SetupSection', () => {
     expect(captureCliClientTabClick).toHaveBeenCalledTimes(2)
   })
 })
+
+it.for(['en', 'zh-CN'] as const)(
+  'offers explicit local non-interactive setup in %s',
+  async (locale) => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { t } = translationsFor(locale)
+    render(SetupSection, { props: { locale } })
+    await user.click(
+      screen.getByRole('tab', {
+        name: new RegExp(t('cli.setup.connections.local.name'))
+      })
+    )
+    await user.click(
+      screen.getByRole('tab', { name: t('cli.setup.clients.ci.name') })
+    )
+    expect(
+      screen.getByText('comfy setup --where local --non-interactive', {
+        exact: true
+      })
+    ).toBeVisible()
+    expect(
+      screen.getByText('comfy setup --where local comfy skills install', {
+        exact: true
+      })
+    ).toBeVisible()
+  }
+)
