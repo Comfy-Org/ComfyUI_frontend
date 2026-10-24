@@ -160,6 +160,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { installNodeOutputClearingHooks } from '@/composables/graph/useNodeOutputClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
@@ -290,11 +291,16 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
+let cleanupNodeOutputHooks: (() => void) | null = null
 watch(
   () => canvasStore.currentGraph,
   (graph) => {
     cleanupErrorHooks?.()
     cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+    cleanupNodeOutputHooks?.()
+    cleanupNodeOutputHooks = graph
+      ? installNodeOutputClearingHooks(graph)
+      : null
   }
 )
 
@@ -626,6 +632,9 @@ onMounted(async () => {
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+      cleanupNodeOutputHooks = installNodeOutputClearingHooks(
+        comfyApp.canvas.graph
+      )
     }
 
     // Load color palette
@@ -683,6 +692,8 @@ onUnmounted(() => {
   })
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
+  cleanupNodeOutputHooks?.()
+  cleanupNodeOutputHooks = null
 })
 
 useEventListener(
