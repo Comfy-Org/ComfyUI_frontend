@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "删除所选连接"
+  },
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "隐藏所选连接"
   },
   "Comfy_Canvas_Lock": {
     "label": "锁定画布"

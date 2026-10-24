@@ -2585,6 +2585,24 @@
       }
     }
   },
+  "ClarityCrystalVideoUpscaleNode": {
+    "display_name": "Clarity AI Crystal Video Upscale",
+    "description": "Upscale a video with Clarity AI's Crystal Video Upscaler, a high-fidelity upscaler that stays faithful to the source. Output is limited to 9 megapixels per frame (for example 4000x2250), and long clips come back at a lower resolution. Clips above 30 fps cost 2x, above 60 fps 3x, and so on.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ClaudeNode": {
     "display_name": "Anthropic Claude",
     "description": "Generate text responses with Anthropic's Claude models. Provide a text prompt and optionally one or more images for multimodal context.",
@@ -2652,7 +2670,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ",
+    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -5702,7 +5720,7 @@
   },
   "FishAudioTextToSpeech": {
     "display_name": "Fish Audio Text to Speech",
-    "description": "Convert text to speech. Supports emotion cues in the text ([happy], [whispering] on s2.1-pro; (happy) on s1) and multi-speaker dialogue via {'@'}Voice1/{'@'}Voice2 tags with multiple connected voices.",
+    "description": "Convert text to speech. Supports emotion cues in the text ([happy], [whispering] on s2.1-pro; (happy) on s1), plain-language [directions] and `<whisper>...</whisper>` word tags on drama-3, and multi-speaker dialogue via {'@'}Voice1/{'@'}Voice2 tags with multiple connected voices.",
     "inputs": {
       "text": {
         "name": "text",
@@ -5893,8 +5911,8 @@
     }
   },
   "Flux3ImageNode": {
-    "display_name": "Flux 3 Image",
-    "description": "Generates an image with FLUX 3 from a prompt, or edits and combines up to 10 reference images. Refer to the references in the prompt as image 1, image 2, and so on.",
+    "display_name": "FLUX 3 Image",
+    "description": "Generates an image with FLUX 3 Image from a prompt, or edits and combines up to 10 reference images. Refer to the references in the prompt as image 1, image 2, and so on.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -5988,6 +6006,26 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "display_name": "FLUX 3 Image Layout Prompt",
+    "description": "Appends the boxes from Create Bounding Boxes to a FLUX 3 Image prompt as its layout table.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The prompt text. Cite box N as <obj_N> to tie words to it."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "Prompt elements from the node Create Bounding Boxes. Colour palettes are not used, describe colours in the description."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "display_name": "Flux 3 Text to Video",
     "description": "Generates a video with synchronized audio from a text prompt via FLUX 3.",
@@ -6036,7 +6074,7 @@
     "inputs": {
       "video": {
         "name": "video",
-        "tooltip": "The clip to continue."
+        "tooltip": "The clip to continue. Clips over 3840x2160 pixels in area are downscaled to fit."
       },
       "prompt": {
         "name": "prompt",
@@ -7115,6 +7153,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "display_name": "Get Audio Latent Size",
+    "description": "Returns the length, audio channel count, and batch size of an audio latent.",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "The audio or audio/video latent to inspect."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "The audio latent length."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "The number of audio channels. Latents without an audio channel dimension have one channel."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "The number of latents in the batch."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "display_name": "Get IC-LoRA Parameters",
     "description": "Extracts IC-LoRA parameters from the safetensors metadata of a LoRA-loaded model and outputs them for LTXVAddGuide (eg. reference_downscale_factor).",
@@ -7167,6 +7229,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "display_name": "Get Image/Video Latent Size",
+    "description": "Returns the width, height, frame count, and batch size of an image or video latent.",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "The image or video latent to inspect."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "The latent width."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "The latent height."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "The latent frame count. Image latents have one frame."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "The number of latents in the batch."
       }
     }
   },
@@ -8046,6 +8136,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "display_name": "HeyGen Voice 1.0 Instant Clone",
+    "description": "Clone a voice from a recording of one speaker with HeyGen Voice 1.0. Connect the voice_id to HeyGen Voice 1.0 Text to Speech, or to custom_voice_id in HeyGen Avatar Video and HeyGen Talking Photo.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Recording of one speaker. Use at least 10 seconds of clear speech; only the first 3 minutes are used."
+      },
+      "language": {
+        "name": "language",
+        "tooltip": "Language spoken in the recording."
+      },
+      "similarity": {
+        "name": "similarity",
+        "tooltip": "How closely the voice follows the recording."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Change the seed to clone the recording again; each clone is a slightly different voice."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "display_name": "HeyGen Voice 1.0 Text to Speech",
+    "description": "Speak text in a voice cloned with HeyGen Voice 1.0 Instant Clone.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo is faster and costs half as much."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "display_name": "HiDream-O1 Patch Seam Smoothing",
     "description": "Average the model output across multiple shifted patch-grid positions during the late portion of sampling. Cancels seams.",
@@ -8106,6 +8257,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "display_name": "Higgsfield Genjutsu Motion Transfer",
+    "description": "Recast a video with new characters, locations or styles from reference images while keeping its motion, camera movement and timing.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9346,6 +9524,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "display_name": "Convert SDR to HDR",
+    "description": "Expand sRGB brightness into Rec.2020 HLG HDR. Save the result with the HDR color space selected. Alpha is preserved.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "SDR image(s) in sRGB."
+      },
+      "algorithm": {
+        "name": "algorithm",
+        "tooltip": "Lottes-style rational expansion blended with a calibrated monotonic log-gain curve."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageSharpen": {
     "display_name": "Sharpen Image",
     "inputs": {
@@ -10449,6 +10649,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "display_name": "Krea 3 Image",
+    "description": "Edit images with Krea 3, or generate a new image from text when no image is connected.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17263,6 +17498,83 @@
       }
     }
   },
+  "MOSSImageControl": {
+    "display_name": "MOSS-Image Color/Depth Control",
+    "description": "Adds the color region and depth maps for a MOSS-Image color/depth control adapter loaded with a LoRA loader.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Scales the maps' contribution to the image tokens. 0.0 is the same as no maps, 1.0 is the trained strength."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Sampling percent at which the control starts."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Sampling percent at which the control ends. Ending early keeps the layout and depth while the rest of the steps loosen the shapes."
+      },
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "One flat color per region, at the output size. The colors are only region IDs."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "Depth map at the output size, near is white."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "display_name": "MOSS-Image Layout Prompt",
+    "description": "Builds a MOSS-Image layout prompt from the prompt and the boxes from Create Bounding Boxes.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description of the whole image."
+      },
+      "element": {
+        "name": "element",
+        "tooltip": "Prompt elements from the node Create Bounding Boxes. The description is the box's caption, text boxes also render their text."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Width of the generated image; the boxes are placed in its pixels."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Height of the generated image; the boxes are placed in its pixels."
+      },
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Numbers of the object boxes to label as characters instead of objects, as tagged in the Create Bounding Boxes preview, e.g. \"1, 3\"."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "MultiGPU_WorkUnits": {
     "display_name": "MultiGPU CFG Split",
     "description": "Prepares model to have sampling accelerated via splitting work units.\n\nShould be placed after nodes that modify the model object itself, such as compile or attention-switch nodes.\n\nOther than those exceptions, this node can be placed in any order.",
@@ -18878,7 +19190,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "How much reasoning the model spends before drawing. Higher levels improve detail and cost more tokens. Only used by the Arrow 2 models."
+        "tooltip": "How much reasoning the model spends before drawing. Higher levels improve detail and cost more tokens."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -18973,7 +19285,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "How much reasoning the model spends before drawing. Higher levels improve detail and cost more tokens. Only used by the Arrow 2 models."
+        "tooltip": "How much reasoning the model spends before drawing. Higher levels improve detail and cost more tokens."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -19808,6 +20120,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "display_name": "Set Reference Multi Latent",
+    "description": "Encodes reference images and appends their latents to positive and optional negative conditioning for edit models.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Reference images are ignored when no VAE is connected."
+      },
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Returns the positive output when negative conditioning is not connected."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "First reference latent multiplied by 0.0, or a square empty latent at the selected resolution."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "display_name": "Set Reference Audio",
     "description": "This node sets the reference audio for ace step 1.5",
@@ -19929,11 +20277,11 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding."
+        "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding. solid: one watertight solid from messy input: a global inside/outside graph cut (CelloCut) removes double shells and closes small holes. Slower."
       },
       "band": {
         "name": "band",
-        "tooltip": "Narrow-band width in voxel units. In UDF mode also offsets the surface."
+        "tooltip": "Narrow-band width in voxel units. In udf mode also offsets the surface; in solid mode it is the closing radius: creases are filleted and gaps bridged at this size, the surface sits half a voxel out."
       },
       "project_back": {
         "name": "project_back",

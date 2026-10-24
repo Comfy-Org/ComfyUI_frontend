@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Excluir itens selecionados"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Excluir Conexões Selecionadas"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ajustar visualização aos nós selecionados"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Ocultar Conexões Selecionadas"
   },
   "Comfy_Canvas_Lock": {
     "label": "Travar tela"

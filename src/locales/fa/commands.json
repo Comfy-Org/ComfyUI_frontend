@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف آیتم‌های انتخاب‌شده"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "پیوندهای انتخاب‌شده را حذف کنید"
+  },
   "Comfy_Canvas_FitView": {
     "label": "تنظیم نما بر اساس nodeهای انتخاب‌شده"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "پیوندهای انتخاب‌شده را پنهان کنید"
   },
   "Comfy_Canvas_Lock": {
     "label": "قفل کردن بوم"
