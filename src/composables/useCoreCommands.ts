@@ -3,7 +3,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
-import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -54,6 +53,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { ComfyCommand } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -111,7 +111,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const authActions = useAuthActions()
   const toast = useToast()
   const canvasStore = useCanvasStore()
-  const { interruptibleJobId } = useInterruptibleJob()
+  const executionStore = useExecutionStore()
   const modelStore = useModelStore()
   const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
@@ -351,7 +351,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Interrupt',
       category: 'essentials' as const,
       function: async () => {
-        await api.interrupt(interruptibleJobId.value)
+        await api.interrupt(executionStore.activeJobId)
         toast.info(t('g.interrupted'), {
           description: t('toastMessages.interrupted'),
           duration: 1000

@@ -106,7 +106,41 @@ test.describe(
       await cancel.click()
 
       const request = await interrupted
-      expect(request.postDataJSON()).toEqual({ prompt_id: AGENT_JOB_ID })
+      expect(request.postData()).toBeNull()
+    })
+
+    test('stays disabled when several runs from other clients are active', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const cancel = comfyPage.actionbar.cancelButton
+
+      await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+      const queueFetches = await mockJobsRoute(
+        comfyPage,
+        QUEUE_ROUTE,
+        JSON.stringify(
+          jobsResponse([
+            {
+              id: AGENT_JOB_ID,
+              status: 'in_progress',
+              create_time: Date.now()
+            },
+            {
+              id: 'other-client-job-2',
+              status: 'in_progress',
+              create_time: Date.now() - 1
+            }
+          ])
+        )
+      )
+      exec.status(2)
+      await expect.poll(queueFetches).toBeGreaterThanOrEqual(1)
+
+      await expect(cancel).toBeDisabled()
+      await expect(cancel).toHaveAttribute('data-variant', 'secondary')
     })
 
     test('stays disabled when the backend has nothing running', async ({
@@ -144,6 +178,15 @@ test.describe(
       exec.executionStart(jobId)
 
       await expect(cancel).toBeEnabled()
+
+      const interrupted = comfyPage.page.waitForRequest(
+        (request) =>
+          request.method() === 'POST' && INTERRUPT_ROUTE.test(request.url())
+      )
+      await cancel.click()
+
+      const request = await interrupted
+      expect(request.postDataJSON()).toEqual({ prompt_id: jobId })
     })
   }
 )
