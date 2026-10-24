@@ -1631,7 +1631,6 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
-  // Prompt editor experiment events
   trackPromptEditorExposure?(metadata: PromptEditorExposureMetadata): void
   trackPromptEditorOpened?(metadata: PromptEditorOpenedMetadata): void
   trackPromptEditorClosed?(metadata: PromptEditorClosedMetadata): void
@@ -1822,7 +1821,6 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
-  // Prompt editor experiment
   PROMPT_EDITOR_EXPOSURE: 'app:prompt_editor_exposure',
   PROMPT_EDITOR_OPENED: 'app:prompt_editor_opened',
   PROMPT_EDITOR_CLOSED: 'app:prompt_editor_closed',
