@@ -15,7 +15,6 @@ import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
   SubgraphDefinition,
-  WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
@@ -32,7 +31,6 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
@@ -40,7 +38,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
 import {
   findNodeInHierarchy,
   findSubgraphByUuid,
@@ -55,6 +52,11 @@ import {
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 import { reportLostEdit } from './reportLostEdit'
+import {
+  isValueWidget,
+  provenWidgetValuesForm,
+  valueWidgetsOnly
+} from './widgetValuesForm'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
@@ -204,67 +206,13 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isVirtualNode) return snapshot
   const values = valueWidgetsOnly(node, named)
-  const form = nodeLocalWidgetForm(node, values)
+  // The form is proven against the POST-HOOK serialization, not derived from
+  // the live widget list alone: `serialize()` above already ran the extension
+  // serialize hook, which may have replaced either widget-values field.
+  const form = provenWidgetValuesForm(node, values, serialized)
   return form
     ? { ...snapshot, widgets_values: values, widgets_values_form: form }
     : { ...snapshot, widgets_values: values }
-}
-
-const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
-  'COMFY_AUTOGROW_V3',
-  'COMFY_DYNAMICCOMBO_V3',
-  'COMFY_DYNAMICGROUP_V3'
-])
-
-function nodeLocalWidgetForm(
-  node: LGraphNode,
-  values: Record<string, unknown>
-): WidgetValuesForm | undefined {
-  const definition = useNodeDefStore().fromLGraphNode(node)
-  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
-    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
-  )
-  if (layoutDependsOnValues) return undefined
-  const order = (node.widgets ?? [])
-    .map((widget) => widget.name)
-    .filter((name) => Object.hasOwn(values, name))
-  const isClosed =
-    order.length > 0 &&
-    order.length === Object.keys(values).length &&
-    order.every((name) => name.length > 0) &&
-    new Set(order).size === order.length
-  return isClosed ? { order } : undefined
-}
-
-function valueWidgetsOnly(
-  node: LGraphNode,
-  named: object
-): Record<string, unknown> {
-  const filtered: Record<string, unknown> = {}
-  const rootGraphId = node.graph?.rootGraph.id
-  const widgetValueStore = useWidgetValueStore()
-  for (const [name, value] of Object.entries(named)) {
-    const widget = node.widgets?.find((candidate) => candidate.name === name)
-    const stored = rootGraphId
-      ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
-      : undefined
-    if (isValueWidget(widget, stored)) filtered[name] = value
-  }
-  return filtered
-}
-
-function isValueWidget(
-  widget: IBaseWidget | undefined,
-  stored?: WidgetState
-): boolean {
-  if (!widget && !stored) return false
-  // A destructuring default fires on absent AND present-but-undefined alike,
-  // which is what `IBaseWidget`'s own optional fields mean: the live widget
-  // did not state this, so the registration the intent was keyed by answers.
-  // One construct for both fields, so the two halves of the guard cannot
-  // drift apart again.
-  const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
-  return type !== 'button' && serialize !== false
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {

@@ -10,8 +10,11 @@ on:
         required: false
   workflow_dispatch:
 
+# main pushes get their own group so every merge is measured; other refs
+# still supersede. The ref stays in the key so a release-branch push of the
+# same commit cannot cancel main's run.
 concurrency:
-  group: ${{ github.workflow }}-unit-${{ github.ref }}
+  group: ${{ github.workflow }}-unit-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}
   cancel-in-progress: true
 
 jobs:
