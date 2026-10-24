@@ -18,7 +18,7 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad, endGraphLoad } from '@/core/graph/graphLoadState'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -1259,13 +1259,13 @@ export class ComfyApp implements IComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     const graph = this.rootGraphForLoad(
       workflow instanceof ComfyWorkflow ? workflow : null,
       clean
     )
+    beginGraphLoad(graph)
     try {
       useExecutionErrorStore().setActiveGraph(null)
 
@@ -1418,7 +1418,7 @@ export class ComfyApp implements IComfyApp {
         await this.reportGraphLoadFailure(error)
         if (clean) this.disownFailedLoadGraph(workflow)
       } finally {
-        ChangeTracker.isLoadingGraph = false
+        endGraphLoad(graph)
       }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1609,9 +1609,7 @@ export class ComfyApp implements IComfyApp {
         return undefined
       }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-      ChangeTracker.isLoadingGraph = false
-      // Capture the workflow this load activated before the asset-scan awaits
-      // below can hand control back and let the user switch to another one.
+      endGraphLoad(graph)
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
       // Drop missing-node entries whose enclosing subgraph is
@@ -1677,8 +1675,7 @@ export class ComfyApp implements IComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
+      endGraphLoad(graph)
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
     }

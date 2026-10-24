@@ -31,6 +31,7 @@ import { z } from 'zod'
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -413,6 +414,7 @@ beforeEach(() => {
     })
   )
   workflowStore = useWorkflowStore()
+  workflowStore.provideChangeTracker(ChangeTracker)
   canvasStore = useCanvasStore()
   vi.mocked(useWorkflowService()).saveWorkflow.mockImplementation(
     async (tab) => {

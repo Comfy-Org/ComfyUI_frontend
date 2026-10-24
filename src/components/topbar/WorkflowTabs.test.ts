@@ -8,6 +8,7 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -171,6 +172,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false

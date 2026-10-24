@@ -27,7 +27,9 @@ workflow is the one on screen.
 
 ## Automatic Triggers
 
-These are set up once in `ChangeTracker.init()`:
+`ChangeTracker.init()` runs once at startup. It hands the class to the workflow
+store (`provideChangeTracker`), which constructs a tracker for each workflow it
+loads, and installs these triggers:
 
 | Trigger                             | Event / Hook                                       | What It Catches                                     |
 | ----------------------------------- | -------------------------------------------------- | --------------------------------------------------- |
@@ -115,8 +117,9 @@ The `litegraph:canvas` custom event also supports this with `before-change` /
 
 - `captureCanvasState()` asserts it is called on the active workflow's tracker;
   inactive trackers get an early return (and a warning log)
-- `captureCanvasState()` is a no-op during `loadGraphData` (guarded by
-  `isLoadingGraph`) to prevent cross-workflow corruption
+- `captureCanvasState()` is a no-op while `loadGraphData` is configuring the
+  tracker's graph (guarded by `isGraphLoading`) to prevent cross-workflow
+  corruption
 - `captureCanvasState()` is a no-op during undo/redo (guarded by
   `_restoringState`) to prevent undo history corruption
 - `captureCanvasState()` is a no-op when `changeCount > 0` (inside a transaction)

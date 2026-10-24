@@ -18,7 +18,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -102,6 +102,7 @@ describe('useWorkflowStore', () => {
 
   beforeEach(() => {
     store = useWorkflowStore()
+    store.provideChangeTracker(ChangeTracker)
     bookmarkStore = useWorkflowBookmarkStore()
 
     // Add default mock implementations
