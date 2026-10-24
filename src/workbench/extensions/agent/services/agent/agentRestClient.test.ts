@@ -213,7 +213,9 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', {
+      selected: ['run']
+    })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
@@ -394,7 +396,10 @@ describe('listThreads pagination', () => {
 
   it('follows next_cursor at the maximum page size until has_more is false', async () => {
     respond(
-      threadPage(['th-1', 'th-2'], { has_more: true, next_cursor: 'next page' })
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'next page'
+      })
     )
     respond(threadPage(['th-3'], { has_more: false }))
 
@@ -413,26 +418,48 @@ describe('listThreads pagination', () => {
   it.for([
     {
       reason: 'missing_cursor',
+      ids: ['th-1'],
       pages: () => [threadPage(['th-1'], { has_more: true })]
     },
     {
       reason: 'repeated_cursor',
+      ids: ['th-1', 'th-2'],
       pages: () => [
         threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
         threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
       ]
     }
   ])(
-    'returns $reason without partial threads when paging stops before the last page',
-    async ({ reason, pages }) => {
+    'returns $reason with the threads it did fetch when paging stops before the last page',
+    async ({ reason, ids, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).resolves.toEqual({
+      await expect(makeClient().listThreads()).resolves.toMatchObject({
         status: 'incomplete',
-        reason
+        reason,
+        threads: ids.map((id) => ({ id }))
       })
     }
   )
+
+  it('lists a repeated page once when every cursor answers with page 1', async () => {
+    const page1 = () =>
+      threadPage(['th-1', 'th-2'], {
+        has_more: true,
+        next_cursor: 'a'
+      })
+    respond(page1())
+    respond(page1())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'incomplete',
+      reason: 'repeated_cursor',
+      threads: [
+        expect.objectContaining({ id: 'th-1' }),
+        expect.objectContaining({ id: 'th-2' })
+      ]
+    })
+  })
 
   it('passes the caller abort signal to every page request', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
@@ -446,13 +473,14 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('returns a failure without partial threads when a later page fails', async () => {
+  it('returns the threads already fetched when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
     await expect(makeClient().listThreads()).resolves.toEqual({
-      status: 'failed',
-      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+      status: 'incomplete',
+      reason: 'request_failed',
+      threads: [expect.objectContaining({ id: 'th-1' })]
     })
   })
   it.for([

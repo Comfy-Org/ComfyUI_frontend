@@ -2362,7 +2362,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         name: i18n.global.t('agent.showChatHistory')
       })
     )
-    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+    await screen.findByRole('heading', {
+      name: i18n.global.t('agent.history')
+    })
 
     paywallHasFunds.value = false
     await nextTick()
@@ -2402,7 +2404,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         name: i18n.global.t('agent.showChatHistory')
       })
     )
-    await screen.findByRole('heading', { name: i18n.global.t('agent.history') })
+    await screen.findByRole('heading', {
+      name: i18n.global.t('agent.history')
+    })
     accountId.value = 'account-b'
     await nextTick()
 
@@ -5494,7 +5498,9 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
     // The fresh chat has no thread yet, so the menu disappears with it.
     expect(
-      screen.queryByRole('button', { name: i18n.global.t('agent.chatOptions') })
+      screen.queryByRole('button', {
+        name: i18n.global.t('agent.chatOptions')
+      })
     ).toBeNull()
 
     // The server has no delete endpoint yet, so the tombstone must hold the
@@ -5646,7 +5652,7 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
-  it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
+  it('shows the chats a truncated refresh did fetch and warns without the error overlay', async () => {
     respondToFetch(threadListRoute, () =>
       json(
         200,
@@ -5683,12 +5689,19 @@ describe('AgentPanelRoot history', () => {
     await openHistory()
 
     await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: i18n.global.t('agent.historyIncomplete')
+        })
+      )
     )
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(telemetry.trackAgentError).toHaveBeenCalledWith(
       expect.objectContaining({
         error_class: 'thread_list_load_failed',
-        retryable: false
+        retryable: false,
+        ui_treatment: 'toast'
       })
     )
     expect(reportError).toHaveBeenCalledWith(
@@ -5697,7 +5710,69 @@ describe('AgentPanelRoot history', () => {
       }),
       expect.objectContaining({ tags: { reason: 'missing_cursor' } })
     )
-    expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+    expect(history.sessions.map(({ id }) => id)).toEqual([
+      'th-partial',
+      'th-kept'
+    ])
+  })
+
+  it('warns once when every refresh ends truncated', async () => {
+    const incompleteWarning = i18n.global.t('agent.historyIncomplete')
+    const warnings = () =>
+      useToast().toasts.filter(({ title }) => title === incompleteWarning)
+    const truncationReports = () =>
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([error]) =>
+            error instanceof Error &&
+            error.message === 'Agent thread list ended before its last page'
+        )
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat',
+                last_message_at: '2026-07-07T11:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(warnings()).toHaveLength(1))
+
+    respondToFetch(
+      threadListRoute,
+      () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-partial',
+                title: 'Partial chat refreshed',
+                last_message_at: '2026-07-07T12:00:00Z'
+              })
+            ],
+            { has_more: true }
+          )
+        ),
+      { times: 1 }
+    )
+    await openHistory()
+    await screen.findByRole('button', { name: 'Partial chat refreshed' })
+
+    expect(warnings()).toHaveLength(1)
+    expect(truncationReports()).toHaveLength(1)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
   const staleRefreshOutcomes = [
@@ -6808,7 +6883,9 @@ describe('AgentPanelRoot workflow binding', () => {
     useAuthStore().currentUser = null
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
     Object.assign(useAgentConsentStore(), { accepted: undefined })
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
     localStorage.setItem(
       'Comfy.AgentPanel.onboarded.account-a.workspace-a',
       'true'
@@ -6887,7 +6964,9 @@ describe('AgentPanelRoot workflow binding', () => {
     distribution.isCloud = false
     distribution.isDesktop = true
     makeTab('wf-42')
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
     localStorage.removeItem('Comfy.AgentPanel.onboarded.account-a.workspace-a')
     Object.assign(useAgentConsentStore(), { accepted: false })
@@ -6905,7 +6984,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentComposerStore().submission?.phase).toBe('pending')
 
     Object.assign(useAgentConsentStore(), { accepted: false })
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-b'
+    })
     await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
 
     expect(useAgentComposerStore().draft).toBe(
@@ -8476,7 +8557,9 @@ describe('AgentPanelRoot workflow binding', () => {
         })[1]
       )
       await userEvent.click(
-        await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+        await screen.findByRole('menuitem', {
+          name: i18n.global.t('g.delete')
+        })
       )
       expect(useAgentChatHistoryStore().activeId).toBe('th-current')
       expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
@@ -12237,10 +12320,16 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Send' })
     expect(posted[0]).toMatchObject({
       threadId: 'new',
-      body: { workflow_id: 'wf-42', draft: { content: { nodes: [{ id: 1 }] } } }
+      body: {
+        workflow_id: 'wf-42',
+        draft: { content: { nodes: [{ id: 1 }] } }
+      }
     })
 
-    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42', nodes: [] })
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: []
+    })
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
     )
@@ -12669,7 +12758,9 @@ describe('AgentPanelRoot workflow binding', () => {
         expectedDraft: '',
         act: async () => {
           await userEvent.click(
-            screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.newChat')
+            })
           )
         }
       },

@@ -178,13 +178,37 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
-type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+type PaginationStopReason =
+  | 'missing_cursor'
+  | 'repeated_cursor'
+  | 'request_failed'
 
 type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
 
+function paginationFailure<Item>(
+  failure: Extract<RequestResult<never>, { ok: false }>,
+  items: Item[],
+  retainItems: boolean
+): RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }> {
+  return retainItems && items.length > 0
+    ? { ok: true, value: { items, stopReason: 'request_failed' } }
+    : failure
+}
+
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
-  | { status: 'incomplete'; reason: PaginationStopReason }
+  /**
+   * Pagination stopped before the last page. The threads it did reach are
+   * carried here rather than dropped, because a truncated listing is partial
+   * data, not a failed request. They are a subset of the real list, not
+   * necessarily a prefix of it: a server that repeats a page serves the same
+   * threads more than once, so they are deduplicated on the way out.
+   */
+  | {
+      status: 'incomplete'
+      reason: PaginationStopReason
+      threads: AgentThreadSummary[]
+    }
   | { status: 'failed'; cause: unknown }
   | { status: 'aborted' }
 
@@ -499,6 +523,20 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+/**
+ * Keeps the first thread seen per id. A server that serves the same page for
+ * every cursor -- the paging bug this guards against -- would otherwise have
+ * its threads listed once per repeat, which renders as duplicate chat rows.
+ */
+function uniqueById(threads: AgentThreadSummary[]): AgentThreadSummary[] {
+  const seen = new Set<string>()
+  return threads.filter(({ id }) => {
+    if (seen.has(id)) return false
+    seen.add(id)
+    return true
+  })
+}
+
 function getNextPageCursor(
   cursor: PaginationInfo['next_cursor'],
   seenCursors: ReadonlySet<string>
@@ -630,7 +668,8 @@ export function createAgentRestClient() {
     path: string,
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    retainItemsOnFailure = false
   ): Promise<
     RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }>
   > {
@@ -647,7 +686,8 @@ export function createAgentRestClient() {
         schema
       )
       if (signal?.aborted) return { ok: false, cause: signal.reason }
-      if (!result.ok) return result
+      if (!result.ok)
+        return paginationFailure(result, items, retainItemsOnFailure)
       const page = result.value
       items.push(...itemsOf(page))
       hasMore = page.pagination.has_more
@@ -714,13 +754,14 @@ export function createAgentRestClient() {
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads,
-      options.signal
+      options.signal,
+      true
     )
     if (options.signal?.aborted) return { status: 'aborted' }
     if (!result.ok) return { status: 'failed', cause: result.cause }
     const { items, stopReason } = result.value
     return stopReason
-      ? { status: 'incomplete', reason: stopReason }
+      ? { status: 'incomplete', reason: stopReason, threads: uniqueById(items) }
       : { status: 'complete', threads: items }
   }
 
