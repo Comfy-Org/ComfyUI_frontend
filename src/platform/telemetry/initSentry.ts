@@ -5,7 +5,7 @@ import {
   init as sentryInit
 } from '@sentry/vue'
 
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import { sentryBeforeSend } from './sentryBeforeSend'
 
 export function initSentry({
   app,
@@ -27,7 +27,7 @@ export function initSentry({
     tracesSampleRate: isCloud ? 1.0 : 0,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
-    beforeSend: sentryThirdPartyErrorFilter,
+    beforeSend: sentryBeforeSend,
     denyUrls: [/^(?:chrome|moz|safari(?:-web)?|ms-browser)-extension:\/\//],
     // Only set these for non-cloud builds
     ...(isCloud
