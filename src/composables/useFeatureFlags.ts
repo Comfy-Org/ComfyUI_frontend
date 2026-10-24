@@ -2,7 +2,7 @@ import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { normalizeHostedBillingDestination } from '@/config/billingWeb'
+import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
@@ -229,6 +229,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
+        false
+      )
+    },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
         false
       )
     },

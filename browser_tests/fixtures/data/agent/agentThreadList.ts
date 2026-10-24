@@ -39,11 +39,11 @@ export function emptyAgentThreadList(): AgentThreadListResponse {
   return agentThreadPage([])
 }
 
-export const firstAgentThreadPage = agentThreadPage(
-  [agentThreadSummary('thread-first-page', 'Chat on the first page')],
-  'thread-page-2'
+const thirtyAgentThreads = Array.from({ length: 30 }, (_, index) =>
+  agentThreadSummary(`thread-${index + 1}`, `Chat ${index + 1}`)
 )
 
-export const secondAgentThreadPage = agentThreadPage([
-  agentThreadSummary('thread-second-page', 'Chat on the second page')
-])
+export const thirtyAgentThreadPages = {
+  first: agentThreadPage(thirtyAgentThreads.slice(0, 20), 'thread-page-2'),
+  second: agentThreadPage(thirtyAgentThreads.slice(20))
+}

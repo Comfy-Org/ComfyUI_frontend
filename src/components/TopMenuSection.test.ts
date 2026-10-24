@@ -148,7 +148,7 @@ function createWrapper({
           name: 'ContextMenu',
           props: ['model'],
           template:
-            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
+            '<div data-testid="context-menu" :data-model="JSON.stringify(model)"><slot /></div>'
         },
         ...stubs
       }

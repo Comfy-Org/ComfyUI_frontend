@@ -42,10 +42,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <div
-        ref="canvasPanelBoundsRef"
-        class="pointer-events-none absolute inset-0"
-      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
@@ -98,11 +94,7 @@
     @dispose="onLinkOverlayDispose"
   />
 
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
+  <SelectionRectangle v-if="comfyAppReady" />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -240,7 +232,6 @@ const vueNodeDropTarget = computed(() => {
   const element: unknown = transformPaneRef.value?.$el
   return element instanceof HTMLElement ? element : null
 })
-const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -600,7 +591,9 @@ onMounted(async () => {
 
     await Promise.all([
       until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-      useNewUserService().initializeIfNewUser()
+      bootstrapTracer.settle('bootstrap/new-user', () =>
+        useNewUserService().initializeIfNewUser()
+      )
     ])
     if (i18nError.value) {
       console.warn(
@@ -614,7 +607,10 @@ onMounted(async () => {
     const canvas = canvasRef.value
     if (!canvas) throw new TypeError('GraphCanvas mounted without a canvas')
     const deploymentConfirmed =
-      !isCloud || (await waitForDeploymentPick(showDeploymentLookupToast))
+      !isCloud ||
+      (await bootstrapTracer.settle('bootstrap/deployment-pick', () =>
+        waitForDeploymentPick(showDeploymentLookupToast)
+      ))
     if (disposed) return
     if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
@@ -638,10 +634,12 @@ onMounted(async () => {
     )
 
     // Restore saved workflow and workflow tabs state
-    startupOutcome = await workflowPersistence.initializeWorkflow()
-    await workflowPersistence.restoreWorkflowTabsState()
-    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
-    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
+      startupOutcome = await workflowPersistence.initializeWorkflow()
+      await workflowPersistence.restoreWorkflowTabsState()
+      urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    })
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {

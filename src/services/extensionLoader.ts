@@ -121,10 +121,10 @@ export async function loadExtensions() {
 
   installErrorNodeWidgets()
   installTouchPointerGuards()
-  await bootstrapTracer.settle(
-    'bootstrap/extensions-load-core',
-    () => import('@/extensions/core/index')
-  )
+  await bootstrapTracer.settle('bootstrap/extensions-load-core', async () => {
+    const { registerCoreExtensions } = await import('@/extensions/core/index')
+    await registerCoreExtensions()
+  })
   extensionStore.captureCoreExtensions()
   const outcomes = await bootstrapTracer.settle(
     'bootstrap/extensions-load-custom',
