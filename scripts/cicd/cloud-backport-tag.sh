@@ -18,6 +18,7 @@ MINOR="${BASH_REMATCH[2]}"
 
 GH_API_MAX_ATTEMPTS="${GH_API_MAX_ATTEMPTS:-4}"
 GH_API_RETRY_BUDGET_SECONDS="${GH_API_RETRY_BUDGET_SECONDS:-300}"
+# gh api hides Retry-After unless --include mixes headers into the output, so use GitHub's documented 60s fallback.
 GH_API_SECONDARY_RATE_LIMIT_WAIT_SECONDS=60
 GH_API_WAITED_FILE=$(mktemp)
 trap 'rm -f "$GH_API_WAITED_FILE"' EXIT
@@ -63,9 +64,13 @@ gh_api() {
         rm -f "$error_file"
         return "$status"
       fi
-    elif grep -Eq 'HTTP 5[0-9]{2}' "$error_file" \
-      && [[ "$attempt" -lt "$GH_API_MAX_ATTEMPTS" ]] \
-      && ((elapsed + backoff <= GH_API_RETRY_BUDGET_SECONDS)); then
+    elif grep -Eq 'HTTP 5[0-9]{2}' "$error_file"; then
+      if [[ "$attempt" -ge "$GH_API_MAX_ATTEMPTS" ]] \
+        || ((elapsed + backoff > GH_API_RETRY_BUDGET_SECONDS)); then
+        echo "::error::GitHub API ${endpoint} failed after ${attempt} attempt(s) and ${elapsed}s" >&2
+        rm -f "$error_file"
+        return "$status"
+      fi
       wait="$backoff"
     else
       rm -f "$error_file"
@@ -125,6 +130,7 @@ read_tag_object() {
     return 0
   fi
   if grep -Eq 'HTTP 404' "$error_file"; then
+    grep -v 'HTTP 404' "$error_file" >&2 || true
     rm -f "$error_file"
     return 1
   fi
