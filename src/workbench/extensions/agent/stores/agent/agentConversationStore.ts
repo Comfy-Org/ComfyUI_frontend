@@ -111,7 +111,7 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
 
 function runApprovalAskIds(message: AssistantMessage): string[] {
   return message.parts.flatMap((part) =>
-    part.type === 'runApproval' ? [part.askId] : []
+    part.type === 'runApproval' && !part.dismissed ? [part.askId] : []
   )
 }
 
