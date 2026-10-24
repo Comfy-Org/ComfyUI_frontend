@@ -482,6 +482,7 @@ describe('AgentPanel extension flag gate', () => {
         await relaunch()
         expect(agentStore.isVisible).toBe(true)
         expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
 
         await relaunch()
         expect(agentStore.isVisible).toBe(false)

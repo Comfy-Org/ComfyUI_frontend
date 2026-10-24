@@ -23,16 +23,17 @@ key: `signed-out`, or the account and workspace. Signed-out users can respond,
 the response survives restarts, and a scope that has not answered still gets
 one card.
 
-For eligible, ready Desktop installations, unfinished consent opens the locked
-panel on each startup after authentication and onboarding settle, independently
-of Cloud's activation visit limit. The response marker suppresses only the
-startup introduction for its scope, so signing in or switching to an
-unanswered account or workspace queues a card after the screen clears. The Local entry button only
-toggles the panel; Send owns the consent request.
+For eligible, ready Desktop installations, the panel opens automatically on
+startup for Cloud's activation visits, whether or not the user skipped consent or
+closed the panel, and then stops. The response marker suppresses only the
+startup introduction for its scope. While visits remain, or while the panel is
+open, signing in or switching to an unanswered account or workspace queues a
+card after the screen clears. The Local entry button only toggles the panel;
+Send owns the consent request.
 
 Cloud's account-wide explicit-refusal preference remains separate. Desktop Skip
 does not write that preference, and an existing Cloud refusal does not suppress
-the Desktop introduction or recurring locked panel. Neither preference records
+the Desktop introduction or the startup panel. Neither preference records
 audited server consent.
 
 `agentPanelStore` selects one onboarding policy for the whole frontend, and no
