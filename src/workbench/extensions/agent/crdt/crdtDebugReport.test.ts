@@ -47,6 +47,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   status: {
     enabled: true,
     connected: true,
+    canvasMayBeStale: false,
     terminal: null,
     workflowId: 'doc-1',
     updatesApplied: 3,
@@ -136,6 +137,7 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc-1')
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
+    expect(report).toContain('Canvas may be stale:** false')
   })
 
   it('includes privacy-safe media UI state without selected values or URLs', async () => {
