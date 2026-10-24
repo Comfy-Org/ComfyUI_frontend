@@ -589,6 +589,52 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('keeps an overtaken HDRI load from enabling HDRI on the replacement node', async () => {
+      let finishHdriLoad!: () => void
+      vi.mocked(mockLoad3d.loadHDRI!).mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishHdriLoad = resolve))
+      )
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view?env.hdr')
+      vi.mocked(api.apiURL).mockReturnValue('http://localhost/view?env.hdr')
+      mockNode.properties['Light Config'] = {
+        intensity: 5,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: false,
+          intensity: 1
+        }
+      }
+      const replacementViewer = { ...mockLoad3d }
+      vi.mocked(createLoad3d)
+        .mockImplementationOnce(() => mockLoad3d as Load3d)
+        .mockImplementationOnce(() => replacementViewer as Load3d)
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      const overtaken = composable.initializeLoad3d(
+        document.createElement('div')
+      )
+      await vi.waitFor(() => expect(finishHdriLoad).toBeTypeOf('function'))
+      const replacement = createMockLGraphNode({
+        properties: {},
+        widgets: mockNode.widgets,
+        graph: mockNode.graph,
+        flags: {}
+      })
+      nodeRef.value = replacement
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
+      )
+
+      finishHdriLoad()
+      await overtaken
+      await nextTick()
+
+      expect(composable.lightConfig.value.hdri?.enabled).toBe(false)
+      expect(replacement.properties).toEqual({})
+    })
+
     it('drops an initialization the node replacement overtook', async () => {
       let finishHdriLoad!: () => void
       vi.mocked(mockLoad3d.loadHDRI!).mockImplementationOnce(

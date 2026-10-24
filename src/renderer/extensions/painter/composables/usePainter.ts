@@ -713,10 +713,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       if (!el || modelValue.value !== requestedMask) return
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
+      el.width = img.naturalWidth
+      el.height = img.naturalHeight
       mainCtx = null
-      const ctx = getCtx()
-      ctx?.clearRect(0, 0, el.width, el.height)
-      ctx?.drawImage(img, 0, 0)
+      getCtx()?.drawImage(img, 0, 0)
       canvasMask = requestedMask
       isDirty.value = false
     }

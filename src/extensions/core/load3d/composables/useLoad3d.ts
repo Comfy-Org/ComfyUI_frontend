@@ -249,8 +249,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       })
 
       const viewer = load3d
-      await restoreConfigurationsFromNode(node)
-      if (load3d !== viewer) return
+      await restoreConfigurationsFromNode(viewer, node)
+      if (!isCurrentInitialization(viewer, node)) return
 
       node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
@@ -353,7 +353,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       void viewer.setBackgroundImage(next.backgroundImage)
   }
 
-  const restoreHdri = async (viewer: Load3d, enable: boolean) => {
+  const isCurrentInitialization = (viewer: Load3d, node: LGraphNode) =>
+    load3d === viewer && toRaw(nodeRef.value) === node
+
+  const restoreHdri = async (
+    viewer: Load3d,
+    node: LGraphNode,
+    enable: boolean
+  ) => {
     const hdriPath = lightConfig.value.hdri?.hdriPath
     if (!hdriPath) return
     const hdriUrl = api.apiURL(
@@ -365,6 +372,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     try {
       await viewer.loadHDRI(hdriUrl)
     } catch (error) {
+      if (!isCurrentInitialization(viewer, node)) return
       console.warn('Failed to restore HDRI:', error)
       lightConfig.value = {
         ...lightConfig.value,
@@ -372,7 +380,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
       return
     }
-    if (enable) {
+    if (enable && isCurrentInitialization(viewer, node)) {
       lightConfig.value = {
         ...lightConfig.value,
         hdri: { ...lightConfig.value.hdri!, enabled: true }
@@ -380,10 +388,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const restoreConfigurationsFromNode = async (node: LGraphNode) => {
-    if (!load3d) return
-
-    restoreSceneConfig(node, load3d)
+  const restoreConfigurationsFromNode = async (
+    viewer: Load3d,
+    node: LGraphNode
+  ) => {
+    restoreSceneConfig(node, viewer)
     replaceConfig(modelConfig, savedModelConfigOf(node))
     replaceConfig(
       cameraConfig,
@@ -393,7 +402,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const savedLight = savedLightConfigOf(node)
     replaceConfig(lightConfig, savedLight.config)
     lastNonHdriLightIntensity.value = lightConfig.value.intensity
-    await restoreHdri(load3d, savedLight.hdriEnabled)
+    await restoreHdri(viewer, node, savedLight.hdriEnabled)
+    if (!isCurrentInitialization(viewer, node)) return
 
     applySceneConfigToLoad3d()
     applyLightConfigToLoad3d()

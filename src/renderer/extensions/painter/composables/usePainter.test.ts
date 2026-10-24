@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
+import { defineComponent, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -629,15 +629,62 @@ describe('usePainter', () => {
   })
 
   describe('mask replaced from outside', () => {
-    function stubImages() {
+    interface DrawnImage {
+      image: unknown
+      width: number
+      height: number
+    }
+
+    function fakeCanvas(width: number, height: number) {
+      let drawn: DrawnImage[] = []
+      const size = { width, height }
+      const canvas = fromPartial<HTMLCanvasElement>({
+        get width() {
+          return size.width
+        },
+        set width(next: number) {
+          size.width = next
+          drawn = []
+        },
+        get height() {
+          return size.height
+        },
+        set height(next: number) {
+          size.height = next
+          drawn = []
+        },
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
+          fromPartial<CanvasRenderingContext2D>({
+            clearRect: () => {
+              drawn = []
+            },
+            drawImage: fromAny<CanvasRenderingContext2D['drawImage'], unknown>(
+              (image: unknown) => {
+                drawn.push(
+                  ...(canvases.get(toRaw(image))?.() ?? [
+                    { image, width: size.width, height: size.height }
+                  ])
+                )
+              }
+            )
+          })
+        )
+      })
+      canvases.set(canvas, () => drawn)
+      return { canvas, contents: () => drawn }
+    }
+
+    const canvases = new Map<unknown, () => DrawnImage[]>()
+
+    function stubImages(naturalSize = 512) {
       const images: { onload: () => void }[] = []
       vi.stubGlobal(
         'Image',
         class {
           crossOrigin = ''
           src = ''
-          naturalWidth = 512
-          naturalHeight = 512
+          naturalWidth = naturalSize
+          naturalHeight = naturalSize
           onload = () => {}
           onerror = () => {}
           constructor() {
@@ -654,61 +701,67 @@ describe('usePainter', () => {
         { name: 'height', type: 'number', value: 512 }
       ])
       const mounted = mountPainter()
-      const context = fromPartial<CanvasRenderingContext2D>({
-        clearRect: vi.fn(),
-        drawImage: vi.fn()
-      })
-      mounted.canvasEl.value = fromPartial<HTMLCanvasElement>({
-        width: 512,
-        height: 512,
-        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
-          () => context
-        )
-      })
-      return { ...mounted, context }
+      const createElement = document.createElement.bind(document)
+      vi.spyOn(document, 'createElement').mockImplementation(
+        (tagName: string, options?: ElementCreationOptions) =>
+          tagName === 'canvas'
+            ? fakeCanvas(0, 0).canvas
+            : createElement(tagName, options)
+      )
+      const main = fakeCanvas(512, 512)
+      mounted.canvasEl.value = main.canvas
+      return { ...mounted, contents: main.contents }
     }
 
-    it('draws the mask a reload puts on the widget', async () => {
-      const images = stubImages()
-      const { modelValue, context } = mountWithCanvas()
-
-      modelValue.value = 'painter/restored.png [temp]'
+    async function restoreMask(
+      modelValue: { value: string },
+      mask: string,
+      images: { onload: () => void }[]
+    ) {
+      modelValue.value = mask
       await nextTick()
-      images[0].onload()
+      images.at(-1)?.onload()
+      await nextTick()
+    }
 
-      expect(context.drawImage).toHaveBeenCalledWith(images[0], 0, 0)
+    it('shows only the mask a reload puts on the widget', async () => {
+      const images = stubImages()
+      const { modelValue, contents } = mountWithCanvas()
+      await restoreMask(modelValue, 'painter/first.png [temp]', images)
+
+      await restoreMask(modelValue, 'painter/second.png [temp]', images)
+
+      expect(contents()).toEqual([
+        { image: images[1], width: 512, height: 512 }
+      ])
     })
 
-    it('clears the old pixels before drawing the replacement mask', async () => {
-      const images = stubImages()
-      const { modelValue, context } = mountWithCanvas()
+    it('draws a restored mask larger than the canvas at its full size', async () => {
+      const images = stubImages(1024)
+      const { painter, modelValue, contents } = mountWithCanvas()
 
-      modelValue.value = 'painter/restored.png [temp]'
-      await nextTick()
-      images[0].onload()
+      await restoreMask(modelValue, 'painter/large.png [temp]', images)
 
-      expect(
-        vi.mocked(context.clearRect).mock.invocationCallOrder[0]
-      ).toBeLessThan(vi.mocked(context.drawImage).mock.invocationCallOrder[0])
+      expect(painter.canvasWidth.value).toBe(1024)
+      expect(contents()).toEqual([
+        { image: images[0], width: 1024, height: 1024 }
+      ])
     })
 
     it('clears the canvas when a reload empties the mask', async () => {
       const images = stubImages()
-      const { modelValue, context } = mountWithCanvas()
-      modelValue.value = 'painter/restored.png [temp]'
-      await nextTick()
-      images[0].onload()
-      vi.mocked(context.clearRect).mockClear()
+      const { modelValue, contents } = mountWithCanvas()
+      await restoreMask(modelValue, 'painter/restored.png [temp]', images)
 
       modelValue.value = ''
       await nextTick()
 
-      expect(context.clearRect).toHaveBeenCalledWith(0, 0, 512, 512)
+      expect(contents()).toEqual([])
     })
 
     it('ignores a mask load that a newer mask overtook', async () => {
       const images = stubImages()
-      const { modelValue, context } = mountWithCanvas()
+      const { modelValue, contents } = mountWithCanvas()
 
       modelValue.value = 'painter/older.png [temp]'
       await nextTick()
@@ -717,8 +770,9 @@ describe('usePainter', () => {
       images[1].onload()
       images[0].onload()
 
-      expect(context.drawImage).toHaveBeenCalledOnce()
-      expect(context.drawImage).toHaveBeenCalledWith(images[1], 0, 0)
+      expect(contents()).toEqual([
+        { image: images[1], width: 512, height: 512 }
+      ])
     })
   })
 
