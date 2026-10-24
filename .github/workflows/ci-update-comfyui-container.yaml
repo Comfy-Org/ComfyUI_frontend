@@ -151,7 +151,7 @@ jobs:
         if: >
           steps.versions.outputs.update == 'true' &&
           steps.versions.outputs.playwright != steps.versions.outputs.current_playwright
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 
