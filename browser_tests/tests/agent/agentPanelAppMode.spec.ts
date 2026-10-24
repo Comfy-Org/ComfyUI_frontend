@@ -8,6 +8,8 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
+  test.use({ agentPanelInitiallyOpen: false })
+
   test('T-16 / PM-653 / FE-1298 keeps a single docked panel root and active workflow in app mode', async ({
     agentPanel,
     comfyPage
@@ -103,12 +105,6 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     const dockedPanel = page.getByTestId('docked-agent-panel')
     const storedOpenState = () =>
       page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
-
-    await page.evaluate(
-      ([key, value]) => localStorage.setItem(key, value),
-      [OPEN_STORAGE_KEY, 'false']
-    )
-    await comfyPage.workflow.reloadAndWaitForApp()
 
     await expect(dockedPanel).toBeVisible({ timeout: 8_000 })
     await expect.poll(storedOpenState).toBe('true')
