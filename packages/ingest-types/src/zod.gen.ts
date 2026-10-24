@@ -797,6 +797,14 @@ export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
 )
 
 /**
+ * The deployment a start was asked for, and its status after the ask.
+ */
+export const zStartWorkspaceDeploymentResult = z.object({
+  deployment_id: z.string(),
+  status: z.string()
+})
+
+/**
  * First rejected op in an abort-remainder batch.
  */
 export const zDocOpFailure = z.object({
@@ -1256,6 +1264,14 @@ export const zPromptInfo = z.object({
 export const zPromptErrorResponse = z.record(z.string(), z.unknown())
 
 /**
+ * Identity of the workspace-bound terminal subscription, not a checkout target or permission to resubscribe. Historical identity is independent of current plan availability and pricing.
+ */
+export const zPreviousPlan = z.object({
+  plan_slug: z.string(),
+  team_credit_stop_id: z.string().optional()
+})
+
+/**
  * Summary of seat costs based on current workspace members
  */
 export const zPlanSeatSummary = z.object({
@@ -1474,6 +1490,33 @@ export const zPreviewSubscribeRequest = z.object({
   team_credit_stop_id: z.string().optional()
 })
 
+export const zPlanFeatureItem = z.object({
+  key: z.enum([
+    'shortRuntime',
+    'longRuntime',
+    'addCredits',
+    'importModels',
+    'sharedCreditPool',
+    'membersUpTo',
+    'perMemberCreditLimits',
+    'memberSpendAuditing',
+    'sharedWorkflowsAssets',
+    'projects'
+  ]),
+  params: z
+    .object({
+      count: z.coerce
+        .bigint()
+        .gte(BigInt(1))
+        .max(BigInt('9223372036854775807'), {
+          error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        })
+    })
+    .optional(),
+  status: z.enum(['available', 'coming_soon']),
+  text: z.string()
+})
+
 /**
  * Why a plan is unavailable. Present exactly when available is false and
  * absent when it is true. Only the first reason that applies is reported,
@@ -1531,6 +1574,8 @@ export const zPlan = z.object({
   denied_reason: zPlanActionDeniedReason.optional(),
   denied_reason_params: zPlanActionDeniedReasonParams.optional(),
   duration: zSubscriptionDuration,
+  feature_items: z.array(zPlanFeatureItem).optional(),
+  features: z.array(z.string()).optional(),
   max_seats: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1539,6 +1584,7 @@ export const zPlan = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  popular: z.boolean().optional(),
   price_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3001,6 +3047,11 @@ export const zCancelSubscriptionAcceptedResponse = z.object({
   status: z.enum(['pending'])
 })
 
+export const zCccWebsiteRootPageInfo = z.object({
+  has_more: z.boolean(),
+  page_size: z.literal(24)
+})
+
 export const zCccWebsiteCardFacet = z.object({
   count: z.int().gte(0).optional(),
   label: z.string(),
@@ -3011,6 +3062,66 @@ export const zCccWebsiteCardFacets = z.object({
   categories: z.array(zCccWebsiteCardFacet).max(100),
   models: z.array(zCccWebsiteCardFacet).max(100),
   use_cases: z.array(zCccWebsiteCardFacet).max(100)
+})
+
+export const zCccWebsiteRootTab = z.object({
+  facets: zCccWebsiteCardFacets,
+  page: zCccWebsiteRootPageInfo,
+  sort_orders: z
+    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
+    .max(4)
+})
+
+export const zCccWebsiteRootTabs = z.object({
+  apps: zCccWebsiteRootTab,
+  models: zCccWebsiteRootTab,
+  workflows: zCccWebsiteRootTab
+})
+
+export const zCccWebsiteModelDirectory = z.object({
+  generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  items: z
+    .array(
+      z.object({
+        provider: z.string(),
+        slug: z.string(),
+        title: z.string(),
+        uid: z.uuid()
+      })
+    )
+    .max(5000),
+  revision_id: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+export const zCccWebsiteRootPresentation = z.object({
+  as_of: z.iso.datetime(),
+  items: z.array(zContentCatalogRecord).max(5000),
+  model_directory: zCccWebsiteModelDirectory,
+  next_visibility_at: z.iso.datetime().nullable(),
+  revision_id: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  tabs: zCccWebsiteRootTabs
 })
 
 export const zCccWebsiteCardsPage = z.object({
@@ -3051,6 +3162,15 @@ export const zCccPublicItemsPage = zContentCatalogProjection.and(
     page_size: z.int().gte(1).lte(100)
   })
 )
+
+/**
+ * Current Hub page that replaces an old public URL
+ */
+export const zCccLegacyTarget = z.object({
+  path: z.string(),
+  slug: z.string(),
+  type: z.enum(['workflow', 'app', 'model'])
+})
 
 /**
  * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
@@ -3220,6 +3340,7 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_id: z.string().optional(),
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
+  previous_plan: zPreviousPlan.optional(),
   renewal_date: z.iso.datetime().optional(),
   renewal_invoice: zRenewalInvoice.optional(),
   scheduled_change: zScheduledPlanChange.nullable(),
@@ -3814,6 +3935,7 @@ export const zAutoTopUpSetup = z.object({
       'subscription_state_unknown',
       'billing_operation_parked',
       'default_payment_method_missing',
+      'default_payment_method_unsupported',
       'creator_only_provisioning'
     ])
     .optional(),
@@ -3879,8 +4001,9 @@ export const zBillingBalanceResponse = z.object({
  * true, a non-null monthly_budget_cents must be at most
  * max_monthly_budget_cents; a null one means no owner limit and is
  * stored as max_monthly_budget_cents. reload_credits must be at least
- * min_reload_credits and greater than threshold_credits, and one reload
- * must cost no more than the budget. A save with enabled false accepts a
+ * min_reload_credits, at most max_reload_credits, greater than
+ * threshold_credits, and one reload must cost no more than the budget.
+ * A save with enabled false accepts a
  * null budget, stores it as null, and skips the enabled-only rules.
  *
  */
@@ -3914,6 +4037,24 @@ export const zAutoReloadSettingsRequest = z.object({
 })
 
 /**
+ * Display facts about a declined payment method. Carries no identifier.
+ */
+export const zAutoReloadDeclinedPaymentMethod = z.object({
+  brand: z.string().nullable(),
+  last4: z.string().nullable(),
+  type: z.string()
+})
+
+/**
+ * Expiry of the default card. Carries no identifier.
+ */
+export const zAutoReloadCardExpiry = z.object({
+  expired: z.boolean(),
+  month: z.int().gte(1).lte(12),
+  year: z.int().gte(1000).lte(9999)
+})
+
+/**
  * billing-api's automatic top-up settings, server prices and automatic
  * spend this cycle, passed through unchanged. Credits are whole credits;
  * amounts are US cents. When `configured` is false, `enabled` is false
@@ -3922,8 +4063,10 @@ export const zAutoReloadSettingsRequest = z.object({
  */
 export const zAutoReloadSettings = z.object({
   card_expiring_soon: z.boolean().nullish(),
+  card_expiry: zAutoReloadCardExpiry.nullable(),
   configured: z.boolean(),
   cycle_resets_at: z.iso.datetime().nullable(),
+  declined_payment_method: zAutoReloadDeclinedPaymentMethod.nullable(),
   disabled_reason: z.string().nullable(),
   enabled: z.boolean(),
   last_failure_at: z.iso.datetime().nullable(),
@@ -3936,6 +4079,15 @@ export const zAutoReloadSettings = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  max_reload_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
   min_reload_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3953,7 +4105,9 @@ export const zAutoReloadSettings = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .nullable(),
+  monthly_budget_is_default: z.boolean(),
   paused_by_budget: z.boolean(),
+  paused_by_budget_remainder: z.boolean(),
   paused_by_decline: z.boolean(),
   reload_amount_cents: z.coerce
     .bigint()
@@ -6283,6 +6437,10 @@ export const zGetCatalogAgentInstructionsResponse = z.string()
  */
 export const zGetCccAuthoringContextResponse = zCccAuthoringContext
 
+export const zListCccWebsiteCardsHeaders = z.object({
+  'X-Comfy-Catalog-Authority': z.string().optional()
+})
+
 export const zListCccWebsiteCardsQuery = z.object({
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
   limit: z.int().gte(1).lte(24).optional().default(24),
@@ -6353,7 +6511,8 @@ export const zBatchCccItemsResponse = z.array(zCccjson)
 export const zDiscardCccChangesBody = zCccjson
 
 export const zDiscardCccChangesHeaders = z.object({
-  'Idempotency-Key': z.string().min(1).max(200)
+  'Idempotency-Key': z.string().min(1).max(200),
+  Prefer: z.enum(['return=minimal']).optional()
 })
 
 /**
@@ -6553,6 +6712,12 @@ export const zPublishCccDraftHeaders = z.object({
 export const zPublishCccDraftResponse = zCccjson
 
 export const zGetCccStagingQuery = z.object({
+  representation: z.enum(['page', 'selection', 'detail']).optional(),
+  limit: z.int().gte(1).lte(100).optional().default(50),
+  cursor: z.string().max(2048).optional(),
+  sort: z.enum(['name', 'latest']).optional().default('name'),
+  change: z.enum(['new', 'updates']).optional(),
+  uid: z.uuid().optional(),
   search: z.string().max(300).optional(),
   author_uid: z.string().min(1).optional(),
   change_id: z
@@ -6573,7 +6738,7 @@ export const zGetCccStagingQuery = z.object({
 })
 
 /**
- * Private complete matching changes and exact Draft generation
+ * Private review with exact Draft generation and optional sparse page metadata
  */
 export const zGetCccStagingResponse = zCccjson
 
@@ -6587,6 +6752,10 @@ export const zStageCccChangesHeaders = z.object({
  * Atomic matching-set decisions and updated private staging state
  */
 export const zStageCccChangesResponse = zCccjson
+
+export const zListContentCatalogItemsHeaders = z.object({
+  'X-Comfy-Catalog-Authority': z.string().optional()
+})
 
 export const zListContentCatalogItemsQuery = z.object({
   q: z.string().max(300).optional(),
@@ -6615,6 +6784,10 @@ export const zListContentCatalogItemsQuery = z.object({
  */
 export const zListContentCatalogItemsResponse = zCccPublicItemsPage
 
+export const zGetContentCatalogItemHeaders = z.object({
+  'X-Comfy-Catalog-Authority': z.string().optional()
+})
+
 export const zGetContentCatalogItemPath = z.object({
   uid: z.string()
 })
@@ -6638,6 +6811,16 @@ export const zGetCccItemHistoryQuery = z.object({
  */
 export const zGetCccItemHistoryResponse = zCccjson
 
+export const zGetCccLegacyTargetPath = z.object({
+  source: z.string().max(20),
+  id: z.string().max(500)
+})
+
+/**
+ * Current Hub page of the mapped record
+ */
+export const zGetCccLegacyTargetResponse = zCccLegacyTarget
+
 export const zGetCccPublicMediaBytesPath = z.object({
   uid: z.uuid(),
   version: z.uuid()
@@ -6652,6 +6835,19 @@ export const zHeadCccPublicMediaBytesPath = z.object({
   uid: z.uuid(),
   version: z.uuid()
 })
+
+export const zListCccWebsiteModelDirectoryHeaders = z.object({
+  'X-Comfy-Catalog-Authority': z.string().optional()
+})
+
+export const zListCccWebsiteModelDirectoryQuery = z.object({
+  locale: z.enum(['en', 'zh-CN']).optional().default('en')
+})
+
+/**
+ * Complete eligible model directory, without Draft generation
+ */
+export const zListCccWebsiteModelDirectoryResponse = zCccWebsiteModelDirectory
 
 /**
  * Catalog OpenAPI with contract fingerprint and environment
@@ -6675,10 +6871,29 @@ export const zHeadCccPreviewMediaBytesPath = z.object({
   version: z.uuid()
 })
 
+/**
+ * Current public authority and its next time boundary; no private identifiers
+ */
+export const zGetCccPublicCacheAuthorityResponse = z.object({
+  as_of: z.iso.datetime(),
+  next_visibility_at: z.iso.datetime().nullable(),
+  revision_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  token: z.string().regex(/^[0-9a-f]{64}$/),
+  valid_until: z.iso.datetime()
+})
+
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  }),
+  rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   uid: z.uuid()
 })
 
@@ -6686,6 +6901,28 @@ export const zGetCccRevisionItemPath = z.object({
  * Flat Content and exact edit/revision context
  */
 export const zGetCccRevisionItemResponse = zCccjson
+
+export const zGetCccWebsiteRootPresentationHeaders = z.object({
+  'X-Comfy-Catalog-Authority': z.string().optional()
+})
+
+export const zGetCccWebsiteRootPresentationQuery = z.object({
+  path: z.enum(['/hub/models/', '/hub/workflows/', '/hub/apps/']),
+  locale: z.enum(['en', 'zh-CN']).optional().default('en'),
+  revision_id: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Complete root metadata; no personal data or executable bodies
+ */
+export const zGetCccWebsiteRootPresentationResponse =
+  zCccWebsiteRootPresentation
 
 export const zGetCccTypeSchemaPath = z.object({
   type: z.enum(['model', 'workflow', 'app', 'template_set', 'media']),
@@ -7093,6 +7330,16 @@ export const zListWorkspaceDeploymentsPath = z.object({
  * The workspace's live deployments, newest first
  */
 export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
+
+export const zStartWorkspaceDeploymentPath = z.object({
+  id: z.string(),
+  deployment_id: z.string()
+})
+
+/**
+ * Accepted; the deployment is starting, or already up
+ */
+export const zStartWorkspaceDeploymentResponse = zStartWorkspaceDeploymentResult
 
 export const zCheckWorkspaceDeploymentCompatibilityBody =
   zDeploymentCompatibilityRequest
