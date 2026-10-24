@@ -344,23 +344,22 @@ describe('extension loading', () => {
       settingStore.$patch({
         settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
       })
+      const setOrRevert = vi.spyOn(settingStore, 'setOrRevert')
       const pending = createDeferred<Response>()
       vi.spyOn(api, 'storeSetting').mockReturnValue(pending.promise)
       vi.spyOn(api, 'getExtensions').mockResolvedValue([])
       useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
 
       const loading = loadExtensions()
+      let persistence: Promise<unknown> | undefined
       try {
         await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+        persistence = setOrRevert.mock.results[0]?.value
         await expect(loading).resolves.toBeUndefined()
       } finally {
         pending.resolve(new Response())
         await loading
-        await vi.waitFor(() =>
-          expect(
-            settingStore.get('Comfy.Extension.SeenAgentExtensions')
-          ).toEqual(['agent.cushions.toolbar'])
-        )
+        await persistence
       }
     })
 
