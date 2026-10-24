@@ -267,6 +267,30 @@ export const useSettingStore = defineStore('setting', () => {
     return persistSetting(key, value, { revertOnFailure: true })
   }
 
+  /**
+   * Undo the local half of a write the server did not take. Listeners saw the
+   * optimistic value through the same `onChange` path the forward write uses,
+   * so restoring `settingValues` on its own leaves every `<id>.change` listener
+   * holding a value the store rejected. Reverse the pair through `onChange` too
+   * so the two directions cannot drift. The write-token guard keeps a revert
+   * from overwriting a later write that did land.
+   */
+  async function revertSettingLocally<K extends keyof Settings>(
+    key: K,
+    hadValue: boolean,
+    local: AppliedSetting<Settings[K]>
+  ) {
+    if (latestWrite.get(key) !== local.writeToken) return
+    if (hadValue) settingValues.value[key] = local.previousValue
+    else delete settingValues.value[key]
+    await onChange(
+      settingsById.value[key],
+      local.previousValue,
+      local.newValue,
+      settingChanged.trigger
+    )
+  }
+
   async function persistSetting<K extends keyof Settings>(
     key: K,
     value: Settings[K],
@@ -296,10 +320,7 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     if (failure) {
-      if (revertOnFailure && latestWrite.get(key) === local.writeToken) {
-        if (hadValue) settingValues.value[key] = local.previousValue
-        else delete settingValues.value[key]
-      }
+      if (revertOnFailure) await revertSettingLocally(key, hadValue, local)
       return failure
     }
 
@@ -325,14 +346,12 @@ export const useSettingStore = defineStore('setting', () => {
     return { applied, hadValue, updatedSettings }
   }
 
-  function revertBatch<K extends keyof Settings>({
+  async function revertBatch<K extends keyof Settings>({
     applied,
     hadValue
   }: SettingBatchWrite<K>) {
     for (const [key, local] of applied) {
-      if (latestWrite.get(key) !== local.writeToken) continue
-      if (hadValue.get(key)) settingValues.value[key] = local.previousValue
-      else delete settingValues.value[key]
+      await revertSettingLocally(key, hadValue.get(key) ?? false, local)
     }
   }
 
@@ -344,7 +363,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const failure = await sendSettings(batch.updatedSettings)
     if (failure) {
-      revertBatch(batch)
+      await revertBatch(batch)
       return failure
     }
 

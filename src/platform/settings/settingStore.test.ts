@@ -719,6 +719,81 @@ describe('useSettingStore', () => {
 
         expect(store.get('Comfy.Locale')).toBe('optimistic')
       })
+
+      it('tells listeners the rejected value was taken back', async () => {
+        const changes: Array<{ id: string; value: unknown }> = []
+        store.addSetting(packsSetting)
+        await store.set(PACKS, ['/extensions/saved/'])
+        store.onSettingChanged(({ id, value }) => changes.push({ id, value }))
+        vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
+
+        await store.setOrRevert(PACKS, ['/extensions/rejected/'])
+
+        expect(changes).toEqual([
+          { id: PACKS, value: ['/extensions/rejected/'] },
+          { id: PACKS, value: ['/extensions/saved/'] }
+        ])
+      })
+
+      it('does not announce a revert a later stored write overtook', async () => {
+        const acknowledge: Array<(response: Response) => void> = []
+        vi.mocked(api.storeSetting).mockImplementation(
+          () => new Promise<Response>((resolve) => acknowledge.push(resolve))
+        )
+        store.addSetting(packsSetting)
+        const changes: unknown[] = []
+        store.onSettingChanged(({ value }) => changes.push(value))
+
+        const first = store.setOrRevert(PACKS, ['/extensions/first/'])
+        await vi.waitFor(() => expect(acknowledge).toHaveLength(1))
+        const second = store.setOrRevert(PACKS, ['/extensions/second/'])
+        await vi.waitFor(() => expect(acknowledge).toHaveLength(2))
+
+        acknowledge[1](new Response())
+        await second
+        acknowledge[0](new Response(null, { status: 500 }))
+        await first
+
+        expect(store.get(PACKS)).toEqual(['/extensions/second/'])
+        expect(changes).toEqual([
+          ['/extensions/first/'],
+          ['/extensions/second/']
+        ])
+      })
+
+      it('takes back every setting a refused batch had applied', async () => {
+        const SEEN = 'Comfy.Extension.SeenAgentExtensions'
+        store.addSetting(packsSetting)
+        store.addSetting({
+          id: SEEN,
+          name: SEEN,
+          type: 'hidden',
+          defaultValue: [] as string[]
+        })
+        await store.setMany({
+          [PACKS]: ['/extensions/saved/'],
+          [SEEN]: ['agent.seen']
+        })
+        const changes: Array<{ id: string; value: unknown }> = []
+        store.onSettingChanged(({ id, value }) => changes.push({ id, value }))
+        vi.mocked(api.storeSettings).mockResolvedValue(
+          new Response(null, { status: 500, statusText: 'Server Error' })
+        )
+
+        expect(
+          await store.setManyOrRevert({
+            [PACKS]: ['/extensions/rejected/'],
+            [SEEN]: ['agent.seen', 'agent.new']
+          })
+        ).toMatchObject({ ok: false })
+
+        expect(store.get(PACKS)).toEqual(['/extensions/saved/'])
+        expect(store.get(SEEN)).toEqual(['agent.seen'])
+        expect(changes.slice(-2)).toEqual([
+          { id: PACKS, value: ['/extensions/saved/'] },
+          { id: SEEN, value: ['agent.seen'] }
+        ])
+      })
     })
 
     it('only allows reverting settings whose write cascades nowhere', () => {
