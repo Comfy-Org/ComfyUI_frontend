@@ -1,6 +1,7 @@
-import type { MaybeRef } from 'vue'
+import type { MaybeRef, Ref } from 'vue'
 
 import { toRef, useDebounceFn } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
@@ -129,7 +130,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     debouncedHandleResize
   )
 
-  const sceneConfig = ref<SceneConfig>({
+  const defaultSceneConfig = (): SceneConfig => ({
     showGrid: true,
     backgroundColor: getActivePinia()
       ? '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
@@ -138,28 +139,28 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     backgroundRenderMode: 'tiled'
   })
 
-  const modelConfig = ref<ModelConfig>({
+  const defaultGizmoConfig = (): GizmoConfig => ({
+    enabled: false,
+    mode: 'translate',
+    position: { x: 0, y: 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 }
+  })
+
+  const defaultModelConfig = (): ModelConfig => ({
     upDirection: 'original',
     materialMode: 'original',
     showSkeleton: false,
-    gizmo: {
-      enabled: false,
-      mode: 'translate',
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 }
-    }
+    gizmo: defaultGizmoConfig()
   })
 
-  const hasSkeleton = ref(false)
-
-  const cameraConfig = ref<CameraConfig>({
+  const defaultCameraConfig = (): CameraConfig => ({
     cameraType: 'perspective',
     fov: 75,
     hasCustomUp: false
   })
 
-  const lightConfig = ref<LightConfig>({
+  const defaultLightConfig = (): LightConfig => ({
     intensity: 5,
     hdri: {
       enabled: false,
@@ -168,6 +169,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       intensity: 1
     }
   })
+
+  const sceneConfig = ref<SceneConfig>(defaultSceneConfig())
+  const modelConfig = ref<ModelConfig>(defaultModelConfig())
+  const hasSkeleton = ref(false)
+  const cameraConfig = ref<CameraConfig>(defaultCameraConfig())
+  const lightConfig = ref<LightConfig>(defaultLightConfig())
   const lastNonHdriLightIntensity = ref(lightConfig.value.intensity)
 
   const isRecording = ref(false)
@@ -301,62 +308,56 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const savedSceneConfig = node.properties['Scene Config'] as
       | Partial<SceneConfig>
       | undefined
-    if (savedSceneConfig) {
-      sceneConfig.value = {
-        ...sceneConfig.value,
-        ...savedSceneConfig,
-        backgroundRenderMode: savedSceneConfig.backgroundRenderMode || 'tiled'
-      }
-    }
+    replaceConfig(
+      sceneConfig,
+      savedSceneConfig
+        ? {
+            ...defaultSceneConfig(),
+            ...savedSceneConfig,
+            backgroundRenderMode:
+              savedSceneConfig.backgroundRenderMode || 'tiled'
+          }
+        : defaultSceneConfig()
+    )
 
     const savedModelConfig = node.properties['Model Config'] as
       | StoredModelConfig
       | undefined
-    if (savedModelConfig) {
-      modelConfig.value = {
-        ...modelConfig.value,
-        ...savedModelConfig,
-        gizmo: savedModelConfig.gizmo
-          ? {
-              ...modelConfig.value.gizmo!,
+    replaceConfig(
+      modelConfig,
+      savedModelConfig
+        ? {
+            ...defaultModelConfig(),
+            ...savedModelConfig,
+            gizmo: {
+              ...defaultGizmoConfig(),
               ...savedModelConfig.gizmo,
-              scale: savedModelConfig.gizmo.scale ?? {
-                x: 1,
-                y: 1,
-                z: 1
-              }
+              scale: savedModelConfig.gizmo?.scale ?? defaultGizmoConfig().scale
             }
-          : {
-              enabled: false,
-              mode: 'translate',
-              position: { x: 0, y: 0, z: 0 },
-              rotation: { x: 0, y: 0, z: 0 },
-              scale: { x: 1, y: 1, z: 1 }
-            }
-      }
-    }
+          }
+        : defaultModelConfig()
+    )
 
     const savedCameraConfig = node.properties['Camera Config'] as
       | CameraConfig
       | null
       | undefined
-    if (savedCameraConfig) cameraConfig.value = savedCameraConfig
+    replaceConfig(cameraConfig, savedCameraConfig ?? defaultCameraConfig())
 
     const savedLightConfig = node.properties['Light Config'] as
       | Partial<LightConfig>
       | undefined
     const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
-    if (savedLightConfig) {
-      lightConfig.value = {
-        intensity: savedLightConfig.intensity ?? lightConfig.value.intensity,
-        hdri: {
-          ...lightConfig.value.hdri!,
-          ...savedLightConfig.hdri,
-          enabled: false
-        }
+    const lightDefaults = defaultLightConfig()
+    replaceConfig(lightConfig, {
+      intensity: savedLightConfig?.intensity ?? lightDefaults.intensity,
+      hdri: {
+        ...lightDefaults.hdri!,
+        ...savedLightConfig?.hdri,
+        enabled: false
       }
-      lastNonHdriLightIntensity.value = lightConfig.value.intensity
-    }
+    })
+    lastNonHdriLightIntensity.value = lightConfig.value.intensity
 
     const hdri = lightConfig.value.hdri
     let hdriLoaded = false
@@ -438,11 +439,19 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     load3d.setHDRIEnabled(hdri.enabled)
   }
 
+  const replaceConfig = <T>(config: Ref<T>, next: T) => {
+    if (!isEqual(config.value, next)) config.value = next
+  }
+
+  const writeNodeConfig = (key: string, value: object, defaults: object) => {
+    const properties = nodeRef.value?.properties
+    if (!properties) return
+    if (!(key in properties) && isEqual(value, defaults)) return
+    properties[key] = value
+  }
+
   const persistLightConfigToNode = () => {
-    const n = nodeRef.value
-    if (n) {
-      n.properties['Light Config'] = lightConfig.value
-    }
+    writeNodeConfig('Light Config', lightConfig.value, defaultLightConfig())
     markDirty()
   }
 
@@ -481,9 +490,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   watch(
     sceneConfig,
     (newValue) => {
-      if (nodeRef.value) {
-        nodeRef.value.properties['Scene Config'] = newValue
-      }
+      writeNodeConfig('Scene Config', newValue, defaultSceneConfig())
       markDirty()
     },
     { deep: true }
@@ -522,9 +529,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   watch(
     modelConfig,
     (newValue) => {
-      if (nodeRef.value) {
-        nodeRef.value.properties['Model Config'] = newValue
-      }
+      writeNodeConfig('Model Config', newValue, defaultModelConfig())
       markDirty()
     },
     { deep: true }
@@ -555,7 +560,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     cameraConfig,
     (newValue) => {
       if (load3d && nodeRef.value) {
-        nodeRef.value.properties['Camera Config'] = newValue
+        writeNodeConfig('Camera Config', newValue, defaultCameraConfig())
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
         if (newValue.hasCustomUp) {

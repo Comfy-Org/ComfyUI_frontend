@@ -668,6 +668,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
 
     const result = `${data.name} [input]`
+    canvasMask = result
     modelValue.value = result
     isDirty.value = false
     return result
@@ -684,8 +685,11 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
   }
 
+  let canvasMask = ''
+
   function restoreCanvas() {
-    const parsed = parseMaskFilename(modelValue.value)
+    const requestedMask = modelValue.value
+    const parsed = parseMaskFilename(requestedMask)
     if (!parsed) return
 
     const params = new URLSearchParams()
@@ -698,18 +702,23 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       const el = canvasEl.value
-      if (!el) return
+      if (!el || modelValue.value !== requestedMask) return
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
+      canvasMask = requestedMask
       isDirty.value = false
     }
     img.onerror = () => {
-      modelValue.value = ''
+      if (modelValue.value === requestedMask) modelValue.value = ''
     }
     img.src = url
   }
+
+  watch(modelValue, (mask) => {
+    if (mask && mask !== canvasMask) restoreCanvas()
+  })
 
   watch(litegraphNode, () => {
     registerWidgetSerialization()

@@ -628,6 +628,72 @@ describe('usePainter', () => {
     })
   })
 
+  describe('mask replaced from outside', () => {
+    function stubImages() {
+      const images: { onload: () => void }[] = []
+      vi.stubGlobal(
+        'Image',
+        class {
+          crossOrigin = ''
+          src = ''
+          naturalWidth = 512
+          naturalHeight = 512
+          onload = () => {}
+          onerror = () => {}
+          constructor() {
+            images.push(this)
+          }
+        }
+      )
+      return images
+    }
+
+    function mountWithCanvas() {
+      makePaintNode([
+        { name: 'width', type: 'number', value: 512 },
+        { name: 'height', type: 'number', value: 512 }
+      ])
+      const mounted = mountPainter()
+      const context = fromPartial<CanvasRenderingContext2D>({
+        drawImage: vi.fn()
+      })
+      mounted.canvasEl.value = fromPartial<HTMLCanvasElement>({
+        width: 512,
+        height: 512,
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+          () => context
+        )
+      })
+      return { ...mounted, context }
+    }
+
+    it('draws the mask a reload puts on the widget', async () => {
+      const images = stubImages()
+      const { modelValue, context } = mountWithCanvas()
+
+      modelValue.value = 'painter/restored.png [temp]'
+      await nextTick()
+      images[0].onload()
+
+      expect(context.drawImage).toHaveBeenCalledWith(images[0], 0, 0)
+    })
+
+    it('ignores a mask load that a newer mask overtook', async () => {
+      const images = stubImages()
+      const { modelValue, context } = mountWithCanvas()
+
+      modelValue.value = 'painter/older.png [temp]'
+      await nextTick()
+      modelValue.value = 'painter/newer.png [temp]'
+      await nextTick()
+      images[1].onload()
+      images[0].onload()
+
+      expect(context.drawImage).toHaveBeenCalledOnce()
+      expect(context.drawImage).toHaveBeenCalledWith(images[1], 0, 0)
+    })
+  })
+
   describe('handleClear', () => {
     it('does not throw when canvas element is null', () => {
       const { painter } = mountPainter()

@@ -513,6 +513,51 @@ describe('useLoad3d', () => {
       expect(createLoad3d).toHaveBeenCalledOnce()
     })
 
+    it('falls back to defaults for configuration the replacement node does not store', async () => {
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view?env.hdr')
+      vi.mocked(api.apiURL).mockReturnValue('http://localhost/view?env.hdr')
+      mockNode.properties['Scene Config'] = {
+        showGrid: false,
+        backgroundColor: '#000000',
+        backgroundImage: '',
+        backgroundRenderMode: 'tiled'
+      }
+      mockNode.properties['Light Config'] = {
+        intensity: 2,
+        hdri: {
+          enabled: true,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: false,
+          intensity: 1
+        }
+      }
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledOnce()
+      const replacement = createMockLGraphNode({
+        properties: {},
+        widgets: mockNode.widgets,
+        graph: mockNode.graph,
+        flags: {}
+      })
+
+      nodeRef.value = replacement
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(replacement)).toBeDefined()
+      )
+      await nextTick()
+
+      expect(mockLoad3d.loadHDRI).toHaveBeenCalledOnce()
+      expect(composable.sceneConfig.value.showGrid).toBe(true)
+      expect(composable.lightConfig.value).toMatchObject({
+        intensity: 5,
+        hdri: { enabled: false, hdriPath: '' }
+      })
+      expect(replacement.properties).toEqual({})
+    })
+
     it('drops an initialization the node replacement overtook', async () => {
       let finishHdriLoad!: () => void
       vi.mocked(mockLoad3d.loadHDRI!).mockImplementationOnce(

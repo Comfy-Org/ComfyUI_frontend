@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import type { ComponentWidget } from '@/types/domWidget'
 
 const i18n = createI18n({
   legacy: false,
@@ -62,19 +64,15 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
 }))
 
 const liveGraphNodes = vi.hoisted(() => ({
-  reloads: new Set<(nodeKept: boolean) => void>()
+  reloads: new Set<() => void>()
 }))
 
 vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   const { computed, onScopeDispose, shallowRef } = await import('vue')
-  const { fromPartial } = await import('@total-typescript/shoehorn')
   return {
     useLiveGraphNode: (resolve) => {
-      const freshNode = () =>
-        fromPartial<NonNullable<ReturnType<typeof resolve>>>({})
-      const node = shallowRef<ReturnType<typeof freshNode> | null>(freshNode())
-      const reload = (nodeKept: boolean) =>
-        (node.value = nodeKept ? freshNode() : null)
+      const node = shallowRef(resolve() ?? null)
+      const reload = () => (node.value = resolve() ?? null)
       liveGraphNodes.reloads.add(reload)
       onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
@@ -82,28 +80,34 @@ vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   }
 })
 
-function reloadGraph(nodeKept: boolean) {
-  for (const reload of liveGraphNodes.reloads) reload(nodeKept)
+function reloadLiveGraphNodes() {
+  for (const reload of liveGraphNodes.reloads) reload()
 }
 
 import CameraInfo from './CameraInfo.vue'
 
-function makeWidget(): SimplifiedWidget {
-  return {
-    name: 'camera_info_state',
-    type: 'cameraInfo',
-    value: [],
-    options: {}
-  }
-}
+type WidgetNode = ComponentWidget<string[]>['node']
 
 function renderComponent() {
-  return render(CameraInfo, {
-    props: { widget: makeWidget() },
+  let node: WidgetNode | undefined = fromPartial<WidgetNode>({})
+  const widget = fromPartial<ComponentWidget<string[]>>({
+    name: 'camera_info_state',
+    type: 'cameraInfo',
+    get node() {
+      return node
+    }
+  })
+  const rendered = render(CameraInfo, {
+    props: { widget },
     global: {
       plugins: [i18n]
     }
   })
+  function reloadGraph({ nodeKept }: { nodeKept: boolean }) {
+    node = nodeKept ? fromPartial<WidgetNode>({}) : undefined
+    reloadLiveGraphNodes()
+  }
+  return { ...rendered, reloadGraph }
 }
 
 function setMode(value: string) {
@@ -147,12 +151,12 @@ describe('CameraInfo toolbar', () => {
   })
 
   it('initializes the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
-    renderComponent()
+    const { reloadGraph } = renderComponent()
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Hide gizmos' }))
     Object.values(api()).forEach((fn) => fn.mockClear())
 
-    reloadGraph(true)
+    reloadGraph({ nodeKept: true })
     await nextTick()
 
     expect(api().initialize).toHaveBeenCalledOnce()
@@ -160,10 +164,10 @@ describe('CameraInfo toolbar', () => {
   })
 
   it('cleans up the viewport when a reload leaves no node behind', async () => {
-    renderComponent()
+    const { reloadGraph } = renderComponent()
     api().cleanup.mockClear()
 
-    reloadGraph(false)
+    reloadGraph({ nodeKept: false })
     await nextTick()
 
     expect(api().cleanup).toHaveBeenCalledOnce()

@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -57,24 +57,35 @@ vi.mock(
   }
 )
 
+const rootGraphNode = vi.hoisted(() => ({ current: {} as object | null }))
+
 vi.mock(import('@/scripts/app'), () => ({
-  app: fromAny<ComfyApp, object>({})
+  app: fromAny<ComfyApp, object>({
+    rootGraph: {
+      subgraphs: new Map(),
+      getNodeById: () => rootGraphNode.current
+    }
+  })
 }))
 
+function reloadGraph({ nodeKept }: { nodeKept: boolean }) {
+  rootGraphNode.current = nodeKept ? {} : null
+  onTestFinished(() => {
+    rootGraphNode.current = {}
+  })
+  reloadLiveGraphNodes()
+}
+
 const liveGraphNodes = vi.hoisted(() => ({
-  reloads: new Set<(nodeKept: boolean) => void>()
+  reloads: new Set<() => void>()
 }))
 
 vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   const { computed, onScopeDispose, shallowRef } = await import('vue')
-  const { fromPartial } = await import('@total-typescript/shoehorn')
   return {
     useLiveGraphNode: (resolve) => {
-      const freshNode = () =>
-        fromPartial<NonNullable<ReturnType<typeof resolve>>>({})
-      const node = shallowRef<ReturnType<typeof freshNode> | null>(freshNode())
-      const reload = (nodeKept: boolean) =>
-        (node.value = nodeKept ? freshNode() : null)
+      const node = shallowRef(resolve() ?? null)
+      const reload = () => (node.value = resolve() ?? null)
       liveGraphNodes.reloads.add(reload)
       onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
@@ -82,8 +93,8 @@ vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   }
 })
 
-function reloadGraph(nodeKept: boolean) {
-  for (const reload of liveGraphNodes.reloads) reload(nodeKept)
+function reloadLiveGraphNodes() {
+  for (const reload of liveGraphNodes.reloads) reload()
 }
 
 const i18n = createI18n({
@@ -142,7 +153,7 @@ describe('LightInfo lifecycle', () => {
     vi.mocked(state.initialize).mockClear()
     vi.mocked(state.setCameraLocked).mockClear()
 
-    reloadGraph(true)
+    reloadGraph({ nodeKept: true })
     await nextTick()
 
     expect(state.initialize).toHaveBeenCalledOnce()
@@ -153,7 +164,7 @@ describe('LightInfo lifecycle', () => {
     const state = lightState()
     renderComponent()
 
-    reloadGraph(false)
+    reloadGraph({ nodeKept: false })
     await nextTick()
 
     expect(state.cleanup).toHaveBeenCalledOnce()
