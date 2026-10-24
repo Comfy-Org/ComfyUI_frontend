@@ -686,9 +686,11 @@ const hasVideoInput = computed(() =>
   nodeData.inputs.some((input) => input.type === 'VIDEO')
 )
 
-const hasVideoEditWidget = computed(() =>
-  widgetIds.value.some(
-    (id) => widgetValueStore.getWidget(id)?.type === 'videoedit'
+const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
+
+const hasVideoPreviewWidget = computed(() =>
+  widgetIds.value.some((id) =>
+    VIDEO_PREVIEW_WIDGET_TYPES.has(widgetValueStore.getWidget(id)?.type ?? '')
   )
 )
 
@@ -718,7 +720,7 @@ const nodeMedia = computed(() => {
       ? 'video'
       : 'image'
 
-  if (type === 'video' && hasVideoEditWidget.value) return undefined
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
   return { type, urls } as const
 })
