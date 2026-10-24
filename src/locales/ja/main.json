@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "JSONファイルをアップロード"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "{node} に移動",
+      "goToLinkedNode": "リンク先のノードに移動",
+      "subgraphInputs": "サブグラフの入力",
+      "subgraphOutputs": "サブグラフの出力"
+    },
     "Bypass Group Nodes": "グループノードをバイパス",
     "Set Group Nodes to Always": "グループノードを常に有効にする",
     "Set Group Nodes to Never": "グループノードを常に無効にする",

@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "העלה קובץ JSON"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "מעבר אל {node}",
+      "goToLinkedNode": "מעבר לצומת מקושר",
+      "subgraphInputs": "קלטי תת-הגרף",
+      "subgraphOutputs": "פלטי תת-הגרף"
+    },
     "Bypass Group Nodes": "עקיפת צמתי הקבוצה",
     "Set Group Nodes to Always": "הגדרת צמתי הקבוצה ל'תמיד'",
     "Set Group Nodes to Never": "הגדרת צמתי הקבוצה ל'אף פעם'",

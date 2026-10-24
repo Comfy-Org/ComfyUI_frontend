@@ -4246,6 +4246,12 @@
     "uploadJsonFile": "Subir archivo JSON"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "Ir a {node}",
+      "goToLinkedNode": "Ir a un nodo conectado",
+      "subgraphInputs": "Entradas del subgrafo",
+      "subgraphOutputs": "Salidas del subgrafo"
+    },
     "Bypass Group Nodes": "Omitir nodos de grupo",
     "Set Group Nodes to Always": "Establecer nodos de grupo en Siempre",
     "Set Group Nodes to Never": "Establecer nodos de grupo en Nunca",
