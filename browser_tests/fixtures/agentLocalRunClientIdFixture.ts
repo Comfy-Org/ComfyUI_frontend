@@ -16,6 +16,7 @@ export const STALE_SESSION_CLIENT_ID = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
 const PEER_SOCKET_SID = '6c0e1d2f-3a4b-5c6d-7e8f-901a2b3c4d5e'
 
 const turnPostBodySchema = zAgentPostMessageRequest.passthrough()
+const QUEUE_REMAINING_ATTRIBUTE = 'data-agent-local-run-queue-remaining'
 
 /** The turn POST body as the server receives it. */
 type TurnPostBody = z.infer<typeof turnPostBodySchema>
@@ -31,6 +32,8 @@ export interface AgentLocalRunRig {
   startRunForUser: (jobId: string) => Promise<void>
   /** Waits two animation frames and a macrotask in the page. */
   settleExecutionFrames: () => Promise<void>
+  /** Waits until this page has processed a `status` frame with this count. */
+  waitForQueueRemaining: (count: number) => Promise<void>
   /** Finishes that run with one image output on the output node. */
   finishRunForUser: (jobId: string) => Promise<void>
   /** {@link startRunForUser} then {@link finishRunForUser}. */
@@ -105,6 +108,18 @@ async function createAgentLocalRunRig(
   }
 
   await harness.bindAndAwaitFirstTurn()
+  await page.evaluate((attribute) => {
+    window.app!.api.addEventListener('status', (event) => {
+      const count = (
+        event as CustomEvent<{
+          exec_info?: { queue_remaining?: number }
+        }>
+      ).detail.exec_info?.queue_remaining
+      if (count !== undefined) {
+        document.documentElement.setAttribute(attribute, String(count))
+      }
+    })
+  }, QUEUE_REMAINING_ATTRIBUTE)
 
   const startRunForUser = async (jobId: string) => {
     await execution.enqueueServerRun(jobId)
@@ -123,6 +138,13 @@ async function createAgentLocalRunRig(
     lastTurnClientId,
     startRunForUser,
     settleExecutionFrames: () => settleExecutionFrames(page),
+    waitForQueueRemaining: async (count: number) => {
+      await page.waitForFunction(
+        ({ attribute, count }) =>
+          document.documentElement.getAttribute(attribute) === String(count),
+        { attribute: QUEUE_REMAINING_ATTRIBUTE, count }
+      )
+    },
     finishRunForUser,
     runWorkflowForUser: async (jobId: string) => {
       await startRunForUser(jobId)

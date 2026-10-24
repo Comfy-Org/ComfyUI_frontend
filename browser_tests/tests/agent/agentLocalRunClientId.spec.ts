@@ -30,11 +30,13 @@ test.describe(
       const peer = await openPeer()
       const jobId = 'agent-local-run-addressed'
       await Promise.all([startRunForUser(jobId), peer.startRunForUser(jobId)])
+      await peer.waitForQueueRemaining(1)
 
       await expect(runningOutline).toBeVisible()
       await expect(peer.runningOutline).toHaveCount(0)
 
       await Promise.all([finishRunForUser(jobId), peer.finishRunForUser(jobId)])
+      await peer.waitForQueueRemaining(0)
 
       await expect(outputImage).toBeVisible()
       await expect(outputImage).toHaveAttribute(
