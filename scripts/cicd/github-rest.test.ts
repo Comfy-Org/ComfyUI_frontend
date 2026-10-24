@@ -10,7 +10,7 @@ const NO_DELAY = 0
 type Outcome = number | Error | [status: number, headers: HeadersInit]
 
 function responding(...outcomes: Outcome[]) {
-  const fetchMock = vi.fn(() => {
+  const fetchMock = vi.mocked(fetch).mockImplementation(() => {
     const outcome = outcomes.shift()
     if (outcome instanceof Error) return Promise.reject(outcome)
     const [status, headers] = Array.isArray(outcome) ? outcome : [outcome, {}]
@@ -18,7 +18,6 @@ function responding(...outcomes: Outcome[]) {
       new Response(JSON.stringify(BODY), { status, headers })
     )
   })
-  vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
 

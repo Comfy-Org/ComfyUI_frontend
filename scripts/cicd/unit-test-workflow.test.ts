@@ -16,7 +16,7 @@ const command = z
 // measuring the merge before it, which is the bug this key exists to fix.
 it('gives every main push its own concurrency group', () => {
   expect(workflow.getIn(['concurrency', 'group'])).toBe(
-    "${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}"
+    "${{ github.workflow }}-unit-${{ github.ref }}-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && github.sha || '' }}"
   )
 })
 
