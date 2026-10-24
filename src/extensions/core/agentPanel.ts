@@ -374,7 +374,7 @@ export function registerAgentPanelExtension(): void {
                   candidateUserId,
                   offeredWorkspaceId ?? undefined
                 )
-              return held === null
+              return held === null && agentPanelStore.enabled
             }
           }
         ).finally(() => finishAutomaticOffer(offeredIdentity))

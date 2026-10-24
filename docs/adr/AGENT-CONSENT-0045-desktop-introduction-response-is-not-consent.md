@@ -20,8 +20,8 @@ account/workspace consent setting. Only Agree or Skip sets this marker; display
 and dismissal do not. The marker controls automatic startup offers, never Agent
 access. It lives in renderer storage, keyed by scope like Cloud's one-shot offer
 key: `signed-out`, or the account and workspace. Signed-out users can respond,
-the response survives restarts, and a scope that has not answered still gets
-one card.
+the response survives restarts, and a scope that has not answered can still
+get a card under the startup rules below.
 
 For eligible, ready Desktop installations, the panel opens automatically on
 startup for Cloud's activation visits, whether or not the user skipped consent or

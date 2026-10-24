@@ -280,6 +280,24 @@ describe('AgentPanel extension flag gate', () => {
       )
     })
 
+    it('does not show the startup card once the agent stops being ready before it mounts', async () => {
+      currentUser.value = null
+      let canShow: boolean | undefined
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_trigger, _onAccept, hooks) => {
+          setAgentReady(false)
+          await nextTick()
+          canShow = hooks?.canShow?.()
+        }
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(canShow).toBe(false)
+    })
+
     it('keeps Local introduction and its startup panel independent of Cloud refusal', async () => {
       useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
         true
