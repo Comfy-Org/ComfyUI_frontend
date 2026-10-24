@@ -368,6 +368,7 @@ describe('extension loading', () => {
       settingStore.$patch({
         settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
       })
+      const setOrRevert = vi.spyOn(settingStore, 'setOrRevert')
       vi.spyOn(api, 'storeSetting').mockRejectedValue(
         new Error('settings unavailable')
       )
@@ -375,6 +376,8 @@ describe('extension loading', () => {
       useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
 
       await expect(loadExtensions()).resolves.toBeUndefined()
+      await vi.waitFor(() => expect(setOrRevert).toHaveBeenCalledOnce())
+      await setOrRevert.mock.results[0]?.value
       await vi.waitFor(() =>
         expect(reportError).toHaveBeenCalledWith('settings unavailable', {
           errorType: 'failure_recording_seen_agent_extensions',
