@@ -6,10 +6,14 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 
-const trackPromptEditorExposure = vi.hoisted(() => vi.fn())
+const telemetry = vi.hoisted(() => ({
+  installed: true,
+  trackPromptEditorExposure: vi.fn()
+}))
+const { trackPromptEditorExposure } = telemetry
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackPromptEditorExposure })
+  useTelemetry: () => (telemetry.installed ? telemetry : null)
 }))
 
 function serve(
@@ -24,6 +28,7 @@ function serve(
 
 beforeEach(() => {
   localStorage.clear()
+  telemetry.installed = true
   serve(undefined, { authenticated: false })
 })
 
@@ -43,13 +48,22 @@ describe('usePromptEditorExperimentStore', () => {
     }
   )
 
-  it('attributes events to the served arm once the authenticated config loads', () => {
-    serve('panel')
+  it.for([
+    { served: 'panel', authenticated: true, attributed: true },
+    { served: 'control', authenticated: true, attributed: true },
+    { served: 'panel', authenticated: false, attributed: false },
+    { served: 'sidebar', authenticated: true, attributed: false },
+    { served: undefined, authenticated: true, attributed: false }
+  ])(
+    'attributes events when $served is served (authenticated: $authenticated): $attributed',
+    ({ served, authenticated, attributed }) => {
+      serve(served, { authenticated })
 
-    expect(usePromptEditorExperimentStore().experimentProperties).toEqual({
-      '$feature/prompt-editor-surface': 'panel'
-    })
-  })
+      expect(usePromptEditorExperimentStore().experimentProperties).toEqual(
+        attributed ? { '$feature/prompt-editor-surface': served } : {}
+      )
+    }
+  )
 
   it('reports exposure once, for the arm that rendered', () => {
     serve('panel')
@@ -63,6 +77,32 @@ describe('usePromptEditorExperimentStore', () => {
     expect(trackPromptEditorExposure).toHaveBeenCalledWith({
       '$feature/prompt-editor-surface': 'panel'
     })
+  })
+
+  it('reports exposure again when the served arm changes', () => {
+    serve('panel')
+    const experiment = usePromptEditorExperimentStore()
+    experiment.expose('panel')
+
+    serve('control')
+    experiment.expose('control')
+
+    expect(trackPromptEditorExposure.mock.calls).toEqual([
+      [{ '$feature/prompt-editor-surface': 'panel' }],
+      [{ '$feature/prompt-editor-surface': 'control' }]
+    ])
+  })
+
+  it('keeps exposure pending until telemetry is installed', () => {
+    serve('panel')
+    const experiment = usePromptEditorExperimentStore()
+    telemetry.installed = false
+    experiment.expose('panel')
+
+    telemetry.installed = true
+    experiment.expose('panel')
+
+    expect(trackPromptEditorExposure).toHaveBeenCalledOnce()
   })
 
   it('follows a QA override without attributing or reporting exposure', () => {
