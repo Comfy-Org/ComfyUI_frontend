@@ -302,90 +302,98 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const restoreConfigurationsFromNode = async (node: LGraphNode) => {
-    if (!load3d) return
-
-    const savedSceneConfig = node.properties['Scene Config'] as
+  const savedSceneConfigOf = (node: LGraphNode): SceneConfig => {
+    const saved = node.properties['Scene Config'] as
       | Partial<SceneConfig>
       | undefined
-    replaceConfig(
-      sceneConfig,
-      savedSceneConfig
-        ? {
-            ...defaultSceneConfig(),
-            ...savedSceneConfig,
-            backgroundRenderMode:
-              savedSceneConfig.backgroundRenderMode || 'tiled'
-          }
-        : defaultSceneConfig()
-    )
+    if (!saved) return defaultSceneConfig()
+    return {
+      ...defaultSceneConfig(),
+      ...saved,
+      backgroundRenderMode: saved.backgroundRenderMode || 'tiled'
+    }
+  }
 
-    const savedModelConfig = node.properties['Model Config'] as
+  const savedModelConfigOf = (node: LGraphNode): ModelConfig => {
+    const saved = node.properties['Model Config'] as
       | StoredModelConfig
       | undefined
-    replaceConfig(
-      modelConfig,
-      savedModelConfig
-        ? {
-            ...defaultModelConfig(),
-            ...savedModelConfig,
-            gizmo: {
-              ...defaultGizmoConfig(),
-              ...savedModelConfig.gizmo,
-              scale: savedModelConfig.gizmo?.scale ?? defaultGizmoConfig().scale
-            }
-          }
-        : defaultModelConfig()
-    )
-
-    const savedCameraConfig = node.properties['Camera Config'] as
-      | CameraConfig
-      | null
-      | undefined
-    replaceConfig(cameraConfig, savedCameraConfig ?? defaultCameraConfig())
-
-    const savedLightConfig = node.properties['Light Config'] as
-      | Partial<LightConfig>
-      | undefined
-    const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
-    const lightDefaults = defaultLightConfig()
-    replaceConfig(lightConfig, {
-      intensity: savedLightConfig?.intensity ?? lightDefaults.intensity,
-      hdri: {
-        ...lightDefaults.hdri!,
-        ...savedLightConfig?.hdri,
-        enabled: false
-      }
-    })
-    lastNonHdriLightIntensity.value = lightConfig.value.intensity
-
-    const hdri = lightConfig.value.hdri
-    let hdriLoaded = false
-    if (hdri?.hdriPath) {
-      const hdriUrl = api.apiURL(
-        Load3dUtils.getResourceURL(
-          ...Load3dUtils.splitFilePath(hdri.hdriPath),
-          'input'
-        )
-      )
-      try {
-        await load3d.loadHDRI(hdriUrl)
-        hdriLoaded = true
-      } catch (error) {
-        console.warn('Failed to restore HDRI:', error)
-        lightConfig.value = {
-          ...lightConfig.value,
-          hdri: { ...lightConfig.value.hdri!, hdriPath: '', enabled: false }
-        }
+    if (!saved) return defaultModelConfig()
+    return {
+      ...defaultModelConfig(),
+      ...saved,
+      gizmo: {
+        ...defaultGizmoConfig(),
+        ...saved.gizmo,
+        scale: saved.gizmo?.scale ?? defaultGizmoConfig().scale
       }
     }
+  }
 
-    if (hdriLoaded && savedHdriEnabled) {
+  const savedLightConfigOf = (node: LGraphNode) => {
+    const saved = node.properties['Light Config'] as
+      | Partial<LightConfig>
+      | undefined
+    const defaults = defaultLightConfig()
+    return {
+      hdriEnabled: saved?.hdri?.enabled ?? false,
+      config: {
+        intensity: saved?.intensity ?? defaults.intensity,
+        hdri: { ...defaults.hdri!, ...saved?.hdri, enabled: false }
+      }
+    }
+  }
+
+  const restoreSceneConfig = (node: LGraphNode, viewer: Load3d) => {
+    const next = savedSceneConfigOf(node)
+    const backgroundImageWatched =
+      sceneConfig.value.backgroundImage !== next.backgroundImage
+    replaceConfig(sceneConfig, next)
+    if (!backgroundImageWatched && next.backgroundImage)
+      void viewer.setBackgroundImage(next.backgroundImage)
+  }
+
+  const restoreHdri = async (viewer: Load3d, enable: boolean) => {
+    const hdriPath = lightConfig.value.hdri?.hdriPath
+    if (!hdriPath) return
+    const hdriUrl = api.apiURL(
+      Load3dUtils.getResourceURL(
+        ...Load3dUtils.splitFilePath(hdriPath),
+        'input'
+      )
+    )
+    try {
+      await viewer.loadHDRI(hdriUrl)
+    } catch (error) {
+      console.warn('Failed to restore HDRI:', error)
+      lightConfig.value = {
+        ...lightConfig.value,
+        hdri: { ...lightConfig.value.hdri!, hdriPath: '', enabled: false }
+      }
+      return
+    }
+    if (enable) {
       lightConfig.value = {
         ...lightConfig.value,
         hdri: { ...lightConfig.value.hdri!, enabled: true }
       }
     }
+  }
+
+  const restoreConfigurationsFromNode = async (node: LGraphNode) => {
+    if (!load3d) return
+
+    restoreSceneConfig(node, load3d)
+    replaceConfig(modelConfig, savedModelConfigOf(node))
+    replaceConfig(
+      cameraConfig,
+      (node.properties['Camera Config'] as CameraConfig | null | undefined) ??
+        defaultCameraConfig()
+    )
+    const savedLight = savedLightConfigOf(node)
+    replaceConfig(lightConfig, savedLight.config)
+    lastNonHdriLightIntensity.value = lightConfig.value.intensity
+    await restoreHdri(load3d, savedLight.hdriEnabled)
 
     applySceneConfigToLoad3d()
     applyLightConfigToLoad3d()

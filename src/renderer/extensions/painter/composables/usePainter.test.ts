@@ -655,6 +655,7 @@ describe('usePainter', () => {
       ])
       const mounted = mountPainter()
       const context = fromPartial<CanvasRenderingContext2D>({
+        clearRect: vi.fn(),
         drawImage: vi.fn()
       })
       mounted.canvasEl.value = fromPartial<HTMLCanvasElement>({
@@ -676,6 +677,33 @@ describe('usePainter', () => {
       images[0].onload()
 
       expect(context.drawImage).toHaveBeenCalledWith(images[0], 0, 0)
+    })
+
+    it('clears the old pixels before drawing the replacement mask', async () => {
+      const images = stubImages()
+      const { modelValue, context } = mountWithCanvas()
+
+      modelValue.value = 'painter/restored.png [temp]'
+      await nextTick()
+      images[0].onload()
+
+      expect(
+        vi.mocked(context.clearRect).mock.invocationCallOrder[0]
+      ).toBeLessThan(vi.mocked(context.drawImage).mock.invocationCallOrder[0])
+    })
+
+    it('clears the canvas when a reload empties the mask', async () => {
+      const images = stubImages()
+      const { modelValue, context } = mountWithCanvas()
+      modelValue.value = 'painter/restored.png [temp]'
+      await nextTick()
+      images[0].onload()
+      vi.mocked(context.clearRect).mockClear()
+
+      modelValue.value = ''
+      await nextTick()
+
+      expect(context.clearRect).toHaveBeenCalledWith(0, 0, 512, 512)
     })
 
     it('ignores a mask load that a newer mask overtook', async () => {

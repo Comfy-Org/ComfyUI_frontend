@@ -43,6 +43,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const toast = useToast()
 
   const isDirty = ref(false)
+  let canvasMask = ''
 
   const cursorVisible = ref(false)
 
@@ -511,7 +512,16 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
+    canvasMask = ''
     modelValue.value = ''
+  }
+
+  function clearToEmptyMask() {
+    const el = canvasEl.value
+    const ctx = getCtx()
+    if (!el || !ctx) return
+    ctx.clearRect(0, 0, el.width, el.height)
+    canvasMask = ''
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -685,8 +695,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
   }
 
-  let canvasMask = ''
-
   function restoreCanvas() {
     const requestedMask = modelValue.value
     const parsed = parseMaskFilename(requestedMask)
@@ -706,7 +714,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
       mainCtx = null
-      getCtx()?.drawImage(img, 0, 0)
+      const ctx = getCtx()
+      ctx?.clearRect(0, 0, el.width, el.height)
+      ctx?.drawImage(img, 0, 0)
       canvasMask = requestedMask
       isDirty.value = false
     }
@@ -717,7 +727,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   watch(modelValue, (mask) => {
-    if (mask && mask !== canvasMask) restoreCanvas()
+    if (mask === canvasMask) return
+    if (mask) restoreCanvas()
+    else clearToEmptyMask()
   })
 
   watch(litegraphNode, () => {

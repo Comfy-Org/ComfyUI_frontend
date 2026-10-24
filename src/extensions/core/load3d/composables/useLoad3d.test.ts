@@ -558,6 +558,37 @@ describe('useLoad3d', () => {
       expect(replacement.properties).toEqual({})
     })
 
+    it('shows the saved background image in the viewer created for the replacement node', async () => {
+      const sceneWithBackground = {
+        showGrid: true,
+        backgroundColor: '#000000',
+        backgroundImage: '3d/background.png',
+        backgroundRenderMode: 'tiled'
+      }
+      mockNode.properties['Scene Config'] = { ...sceneWithBackground }
+      const nodeRef = shallowRef(mockNode)
+      await useLoad3d(nodeRef).initializeLoad3d(document.createElement('div'))
+      await nextTick()
+      vi.mocked(mockLoad3d.setBackgroundImage!).mockClear()
+      const replacement = createMockLGraphNode({
+        properties: { 'Scene Config': { ...sceneWithBackground } },
+        widgets: mockNode.widgets,
+        graph: mockNode.graph,
+        flags: {}
+      })
+
+      nodeRef.value = replacement
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(replacement)).toBeDefined()
+      )
+      await nextTick()
+
+      expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledOnce()
+      expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith(
+        '3d/background.png'
+      )
+    })
+
     it('drops an initialization the node replacement overtook', async () => {
       let finishHdriLoad!: () => void
       vi.mocked(mockLoad3d.loadHDRI!).mockImplementationOnce(
