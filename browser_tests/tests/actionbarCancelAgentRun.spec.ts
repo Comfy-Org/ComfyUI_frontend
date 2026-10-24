@@ -12,6 +12,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
@@ -106,7 +107,7 @@ test.describe(
       await cancel.click()
 
       const request = await interrupted
-      expect(request.postData()).toBeNull()
+      expect(request.postDataJSON()).toEqual({ prompt_id: AGENT_JOB_ID })
     })
 
     test('stays disabled when several runs from other clients are active', async ({
@@ -118,7 +119,7 @@ test.describe(
       const cancel = comfyPage.actionbar.cancelButton
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
-      const queueFetches = await mockJobsRoute(
+      await mockJobsRoute(
         comfyPage,
         QUEUE_ROUTE,
         JSON.stringify(
@@ -137,7 +138,9 @@ test.describe(
         )
       )
       exec.status(2)
-      await expect.poll(queueFetches).toBeGreaterThanOrEqual(1)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.queue.overlayToggle)
+      ).toContainText('2 active')
 
       await expect(cancel).toBeDisabled()
       await expect(cancel).toHaveAttribute('data-variant', 'secondary')

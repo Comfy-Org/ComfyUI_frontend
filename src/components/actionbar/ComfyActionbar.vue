@@ -145,7 +145,7 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { canInterrupt } = useInterruptibleJob()
+const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
@@ -408,8 +408,9 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const cancelCurrentJob = async () => {
-  if (!canInterrupt.value) return
-  await commandStore.execute('Comfy.Interrupt')
+  const jobId = interruptibleJobId.value
+  if (!jobId) return
+  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
