@@ -11,7 +11,7 @@ import type { Actor, Op, Stamp } from '@comfyorg/comfy-multi-player'
 
 import { createUuidv4 } from '@/utils/uuid'
 
-import type { DocOp } from './docFrameClient'
+import type { DocOp } from '@/scripts/apiDocFrames'
 import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256

@@ -60,6 +60,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { PendingIngestClientDocFrame } from '@/scripts/apiDocFrames'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -141,20 +142,34 @@ const ws = vi.hoisted(() => {
   return { add, remove, emit, clear }
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn((route: string) => `/api${route}`),
-    fetchApi: (route: string, options?: RequestInit) =>
-      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
-    getServerFeature,
-    socket: { readyState: 1, send: socketSend },
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: ws.add,
-    removeEventListener: ws.remove,
-    addCustomEventListener: ws.add,
-    removeCustomEventListener: ws.remove
+vi.mock<unknown>(import('@/scripts/api'), () => {
+  return {
+    api: {
+      apiURL: vi.fn((route: string) => `/api${route}`),
+      fetchApi: (route: string, options?: RequestInit) =>
+        fetch(route.startsWith('/api') ? route : `/api${route}`, options),
+      getServerFeature,
+      socket: { readyState: 1, send: socketSend },
+      sendDocFrame: (frame: PendingIngestClientDocFrame) => {
+        socketSend(JSON.stringify(frame))
+        return true
+      },
+      registerFrameHandler: (
+        type: string,
+        handler: (data: unknown) => void
+      ) => {
+        const listener = (event: { detail?: unknown }) => handler(event.detail)
+        ws.add(type, listener)
+        return () => ws.remove(type, listener)
+      },
+      dispatchCustomEvent: vi.fn(),
+      addEventListener: ws.add,
+      removeEventListener: ws.remove,
+      addCustomEventListener: ws.add,
+      removeCustomEventListener: ws.remove
+    }
   }
-}))
+})
 
 const appMock = vi.hoisted(() => {
   const graph = {

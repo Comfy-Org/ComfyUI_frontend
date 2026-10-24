@@ -33,7 +33,6 @@ import {
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
-import { createLoggedTransport } from './agentCrdtTransport'
 import type { AgentDocFrameTransport } from './agentDocFrameTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -399,7 +398,7 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(transport))
+  const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -411,9 +410,6 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
-  // Doc node ids whose human delete the host has applied but whose effect
-  // frame has not yet removed them from the doc. Kept pending for the
-  // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
   const sentAddsByDoc = new WeakMap<typeof bridge.follower.doc, Set<string>>()
@@ -544,16 +540,12 @@ function startAgentCrdtFollower(
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
-        // `docFrameClient` already validated this into a DocOpsResult, which
-        // OpsResultView is derived from, so it travels whole.
         if (event instanceof CustomEvent)
           listener(event.detail as OpsResultView)
       }
       bridge.addEventListener('doc_ops_result', handler)
       return () => bridge.removeEventListener('doc_ops_result', handler)
     },
-    // Send REALITY, not this composable's intent: the sender re-reads it before
-    // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     get tab() {
       return tabId
@@ -674,13 +666,6 @@ function startAgentCrdtFollower(
   }
   const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
     isTargetActive.value && workflowId === subscribedWorkflowId.value
-  /**
-   * The host echoes this tab's own ops back as a `doc_update`. The graph
-   * already holds that edit (the intent was minted from it), so the frame is
-   * merged into the doc and never re-applied. Catch-up frames are exempt:
-   * they can carry this actor as the last writer while replaying state the
-   * graph has not seen.
-   */
   const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
     !update.catchUp && update.actor === ownActor()
   const applyFrame = (update: ClassifiedDocUpdate): FrameOutcome => {
@@ -887,11 +872,6 @@ function startAgentCrdtFollower(
     )
   }
   const onFollowerReplaced: EventListener = (event) => {
-    // Gate on this composable's own INTENT, not the bridge's send REALITY
-    // (`bridge.subscribedWorkflowId`): a doc replacement while the socket is
-    // down leaves reality null, but the adapter must still be rebound to the
-    // new doc — otherwise it keeps observing the destroyed one and goes deaf
-    // when the socket recovers and updates land in the replacement.
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
     const workflowId = detail?.workflowId
@@ -997,16 +977,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_reseed_result', onReseedResult)
   const stopTransportStatus = transport.onSocketStatus(onSocketStatus)
 
-  // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
-  // with the previous mount — rebind from sessionStorage) from a later null
-  // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
-  // Readiness only. The other ordering -- graph ready first, target activated
-  // second -- cannot be caught here: `getGraph` does not change when activity
-  // flips, and even if this watcher also took `isTargetActive` as a source it
-  // was created before the binding watcher below, so it would run first and
-  // still see no subscribed workflow. Activation therefore applies what was
-  // collected at the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     const bound = subscribedWorkflowId.value
     if (graph && bound !== null && isTargetActive.value) {
@@ -1025,11 +996,6 @@ function startAgentCrdtFollower(
     if (next !== null) projection.bind(next, bridge.follower)
     subscribedWorkflowId.value = next
   }
-  // The bound workflow whose tab went inactive while the sender still held
-  // batches for it. A tab switch pauses the subscription without rebinding
-  // the session, so those batches are held rather than aborted (see
-  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
-  // them into the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
@@ -1048,14 +1014,6 @@ function startAgentCrdtFollower(
     sender.suspend()
     bridge.unsubscribe()
   }
-  // Flush first: an edit admitted this tick is pinned to the doc still bound
-  // here, and the coalescer's deferred flush would otherwise find it unbound.
-  // Then drive the bridge's intent and give the sender the same eager signal
-  // the refusal branch gets: `reconcile()` clears send reality synchronously
-  // when the desired doc changes, and a batch minted for the old doc would
-  // otherwise wait out the 10 s result-silence window before noticing. The
-  // one exception is the workflow whose ops are held: its subscribe may not
-  // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
     sender.flush()
     if (next === null) bridge.unsubscribe()
@@ -1068,9 +1026,6 @@ function startAgentCrdtFollower(
     sender.abortIfUnbound()
   }
 
-  // A tab switch keeps the projection bound: whatever the doc collects while
-  // the tab is away is applied on return, instead of the live graph being
-  // rebuilt from the whole doc over the human's edits.
   const deactivateTarget = (
     next: string | null,
     previousWorkflowId: string | null
@@ -1148,8 +1103,6 @@ function startAgentCrdtFollower(
   )
 
   onScopeDispose(() => {
-    // Teardown must be total. Anything that survives would apply every later
-    // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
       () => stopTransportStatus(),

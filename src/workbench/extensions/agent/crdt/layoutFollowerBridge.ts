@@ -1,9 +1,9 @@
 import { assert } from '@/base/assert'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { DocOp } from '@/scripts/apiDocFrames'
 
 import type {
   DocFrameClient,
-  DocOp,
   DocReseedResult,
   DocReset,
   DocSubscribed,

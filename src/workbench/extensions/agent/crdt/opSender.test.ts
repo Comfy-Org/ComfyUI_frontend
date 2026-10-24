@@ -13,7 +13,7 @@ import type { Mock } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-import type { DocOp } from './docFrameClient'
+import type { DocOp } from '@/scripts/apiDocFrames'
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'

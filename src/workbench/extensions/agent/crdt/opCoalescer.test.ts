@@ -1,7 +1,7 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { DocOp } from './docFrameClient'
+import type { DocOp } from '@/scripts/apiDocFrames'
 import type { GraphOperation } from './graphOperations'
 import { createOpCoalescer } from './opCoalescer'
 import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
