@@ -36,11 +36,8 @@ test.describe(
       await expect(peer.runningOutline).toHaveCount(0)
 
       const queuePanel = new QueuePanel(page)
-      const currentNodeProgress = queuePanel.overlay
-        .getByText('Current node:', { exact: true })
-        .locator('..')
       await expect(
-        currentNodeProgress.getByText('25%', { exact: true })
+        queuePanel.overlay.getByText(/^Current node:.*25%$/)
       ).toBeVisible()
 
       await Promise.all([finishRunForUser(jobId), peer.finishRunForUser(jobId)])

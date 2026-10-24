@@ -104,7 +104,16 @@ let keyboardRetryFingerprint: string | null = null
 function submissionFingerprint(): string {
   return JSON.stringify({
     prompt: composer.prompt.value,
-    attachments: composer.attachments.value
+    attachments: composer.attachments.value.map(
+      ({ id, name, ref, sourceKey, mediaUrl, mediaKind }) => ({
+        id,
+        name,
+        ref,
+        sourceKey,
+        mediaUrl,
+        mediaKind
+      })
+    )
   })
 }
 
@@ -289,6 +298,7 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
+  keyboardRetryFingerprint = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }

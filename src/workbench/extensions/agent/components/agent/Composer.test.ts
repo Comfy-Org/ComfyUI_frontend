@@ -415,6 +415,46 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(3)
   })
 
+  it('allows the same text after the user creates a new draft', async () => {
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    await userEvent.clear(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(2)
+  })
+
+  it('keeps generated attachment previews out of retry identity', async () => {
+    const store = useAgentComposerStore()
+    store.replaceDraft({
+      text: 'animate this',
+      workflowReferences: [],
+      attachments: [
+        {
+          id: 'video',
+          name: 'clip.mp4',
+          ref: 'clip.mp4',
+          previewUrl: 'blob:first'
+        }
+      ]
+    })
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    store.updateAttachment('video', { previewUrl: 'blob:generated' })
+    await nextTick()
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+  })
+
   it('shows Stop while streaming and emits stop instead of send', async () => {
     const { emitted } = mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
