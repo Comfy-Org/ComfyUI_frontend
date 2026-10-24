@@ -9,9 +9,11 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/minimax-h3'
-const HERO_TITLE =
-  t('minimax.hero.titleModel', {}, { locale: 'en' }) +
-  t('minimax.hero.titleRest', {}, { locale: 'en' })
+const HERO_TITLE = t(
+  'minimax.hero.headline',
+  { model: t('minimax.hero.titleModel', {}, { locale: 'en' }) },
+  { locale: 'en' }
+)
 const MODELS_HEADING = t('minimax.models.heading', {}, { locale: 'en' })
 const MODELS_ROUTE = getRoutes('en').workshop
 const CTA_HEADING = t('minimax.cta.heading', {}, { locale: 'en' })

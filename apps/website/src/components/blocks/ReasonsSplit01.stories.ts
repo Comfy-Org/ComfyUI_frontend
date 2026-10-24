@@ -11,10 +11,18 @@ const meta: Meta<typeof ReasonsSplit01> = {
       template: '<div class="bg-primary-comfy-ink"><story /></div>'
     })
   ],
+  render: (args) => ({
+    components: { ReasonsSplit01 },
+    setup: () => ({ args }),
+    template: `
+      <ReasonsSplit01 v-bind="args">
+        <template #heading>
+          Why teams choose <span class="text-primary-comfy-yellow">ComfyUI</span>
+        </template>
+      </ReasonsSplit01>
+    `
+  }),
   args: {
-    heading: 'Why teams choose ',
-    headingHighlight: 'ComfyUI',
-    highlightClass: 'text-primary-comfy-yellow',
     subtitle: 'A flexible foundation for production-grade visual AI.',
     reasons: [
       {
@@ -45,8 +53,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const WithoutHighlight: Story = {
-  args: {
-    heading: 'Why teams choose ComfyUI',
-    headingHighlight: undefined
-  }
+  render: (args) => ({
+    components: { ReasonsSplit01 },
+    setup: () => ({ args }),
+    template: `
+      <ReasonsSplit01 v-bind="args">
+        <template #heading>Why teams choose ComfyUI</template>
+      </ReasonsSplit01>
+    `
+  })
 }

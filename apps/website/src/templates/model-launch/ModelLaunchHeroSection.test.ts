@@ -74,6 +74,46 @@ describe('ModelLaunchHeroSection', () => {
     }
   )
 
+  it.for([
+    {
+      locale: 'en',
+      layout: { layout: 'media-first' },
+      title: 'Flux 3 is here'
+    },
+    {
+      locale: 'zh-CN',
+      layout: { layout: 'overlay', placeholderImageSrc: '/still.webp' },
+      title: 'Flux 3 已上线'
+    },
+    {
+      locale: 'ja',
+      layout: {
+        layout: 'overlay',
+        placeholderImageSrc: '/still.webp',
+        logoMaskImageSrc: '/still.webp'
+      },
+      title: 'Flux 3 が登場'
+    }
+  ] as const)(
+    'renders the $locale $layout.layout title as one message around the model name',
+    ({ locale, layout, title }) => {
+      render(ModelLaunchHeroSection, {
+        props: {
+          locale,
+          hero: {
+            ...layout,
+            titleKey: 'flux3.hero.headline',
+            titleModelKey: 'flux3.hero.title'
+          }
+        }
+      })
+
+      const heading = screen.getByRole('heading', { level: 1 })
+      expect(heading.textContent).toBe(title)
+      expect(within(heading).getByText('Flux 3')).toBeInTheDocument()
+    }
+  )
+
   it('shows the placeholder still above the content when a media-first hero has no video', () => {
     render(ModelLaunchHeroSection, {
       props: {

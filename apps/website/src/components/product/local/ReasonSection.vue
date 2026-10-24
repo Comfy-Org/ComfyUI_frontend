@@ -30,7 +30,7 @@ const reasons: Reason[] = [
 <template>
   <ReasonSection
     :locale="locale"
-    heading-key="download.reason.heading"
+    heading-key="download.reason.headline"
     heading-highlight-key="download.reason.headingHighlight"
     highlight-class="text-primary-warm-white"
     :reasons="reasons"

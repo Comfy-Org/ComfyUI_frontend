@@ -70,7 +70,7 @@ function heroKeys(hero: ModelLaunchHero): MaybeKey[] {
   return [
     hero.eyebrowKey,
     hero.titleKey,
-    hero.titleRestKey,
+    hero.titleModelKey,
     hero.descriptionKey,
     hero.mobileDescriptionKey,
     hero.primaryCta?.labelKey,
