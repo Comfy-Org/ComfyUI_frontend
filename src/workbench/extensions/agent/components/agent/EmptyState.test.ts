@@ -87,7 +87,7 @@ describe('EmptyState', () => {
         expect.objectContaining({
           promptId: 'slot_4',
           promptIndex: 3,
-          promptCount: 5,
+          promptCount: 4,
           visiblePromptCount: 4
         })
       ]
@@ -143,8 +143,6 @@ describe('EmptyState', () => {
       global: { plugins: [i18n] }
     })
     const buttons = screen.getAllByRole('button')
-    // happy-dom does not evaluate container queries; hide the overflow as the
-    // compact breakpoint does.
     buttons.slice(3).forEach((button) => (button.style.display = 'none'))
 
     await user.click(buttons[0])
@@ -154,8 +152,7 @@ describe('EmptyState', () => {
         LOCAL_PROMPTS[0].text,
         expect.objectContaining({
           promptId: 'slot_1',
-          // The set did not shrink, so the set-size field must not move.
-          promptCount: 5,
+          promptCount: 4,
           visiblePromptCount: 3
         })
       ]

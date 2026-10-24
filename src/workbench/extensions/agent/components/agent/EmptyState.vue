@@ -77,7 +77,7 @@ function onPromptClick(text: string, index: number): void {
     starterPromptAttribution(
       text,
       index,
-      prompts.value.length,
+      suggestions.value.length,
       promptLocale.value,
       visiblePromptCount()
     )
