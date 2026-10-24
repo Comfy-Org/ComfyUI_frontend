@@ -221,7 +221,11 @@ type SettingTelemetryOptions =
       includeValues?: boolean
     }
 
-/** Outcome of one setting write; only `saved` was acknowledged by the backend. */
+/**
+ * Outcome of one setting write; only `saved` was acknowledged by the backend.
+ * `refused` is an answer proving non-commit; `unreachable` is no answer, so the
+ * backend may hold the value either way.
+ */
 export type SettingWriteResult =
   | { ok: true; outcome: 'saved' | 'unchanged' | 'superseded' }
   | { ok: false; reason: 'refused' | 'unreachable'; detail: string }

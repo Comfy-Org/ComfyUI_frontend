@@ -45,5 +45,33 @@ test.describe(
         dialog.root.getByRole('button', { name: 'Reload to apply changes' })
       ).toBeHidden()
     })
+
+    test('tells the user and keeps the switch off when the save answer is lost', async ({
+      comfyPage,
+      page
+    }) => {
+      await page.route('**/settings/Comfy.Extension.DisabledPacks', (route) =>
+        route.request().method() === 'POST'
+          ? route.abort('failed')
+          : route.fallback()
+      )
+
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.category('Extension').click()
+
+      const packSwitch = dialog.root.getByRole('switch', { name: PACK_SWITCH })
+      await expect(packSwitch).toBeChecked()
+
+      await packSwitch.click()
+
+      await expect(
+        comfyPage.toast.withText(/Comfy\.Extension\.DisabledPacks/)
+      ).toBeVisible()
+      await expect(packSwitch).not.toBeChecked()
+      await expect(
+        dialog.root.getByRole('button', { name: 'Reload to apply changes' })
+      ).toBeVisible()
+    })
   }
 )

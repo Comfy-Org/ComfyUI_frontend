@@ -305,6 +305,35 @@ describe('ExtensionPanel', () => {
       expect(reloadButton()).not.toBeInTheDocument()
     })
 
+    it('keeps the switch off and offers the reload when the save answer is lost', async () => {
+      const user = userEvent.setup()
+      const settingStore = bootWithPacks(['/extensions/agent-cushions/'], [])
+      vi.spyOn(api, 'storeSetting').mockRejectedValue(new Error('offline'))
+
+      const panel = renderPanel()
+      await user.click(packSwitch('agent-cushions'))
+      await vi.waitFor(() =>
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({
+            kind: 'warning',
+            title: expect.stringContaining('offline')
+          })
+        )
+      )
+
+      expect(packSwitch('agent-cushions')).not.toBeChecked()
+      expect(settingStore.get(DISABLED_PACKS)).toEqual([
+        '/extensions/agent-cushions/'
+      ])
+      expect(screen.getByRole('alert')).toHaveTextContent('[-] agent-cushions')
+
+      panel.unmount()
+      renderPanel()
+
+      expect(packSwitch('agent-cushions')).not.toBeChecked()
+      expect(reloadButton()).toBeEnabled()
+    })
+
     it('opens with a corrupt saved pack list instead of throwing', () => {
       const settingStore = bootWithPacks(['/extensions/agent-cushions/'], {})
 
