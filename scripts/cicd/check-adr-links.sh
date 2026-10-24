@@ -10,8 +10,16 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+# The ADR tooling's own tests build throwaway repos whose fixtures are ADR paths
+# that deliberately do not exist here (TOPIC-0001 and friends, spelled out in
+# those files). They are inputs to those scripts, not references a reader could
+# follow, so scanning them would make every such fixture a permanent dangling
+# ref. Note this comment cannot spell such a path either: the scan reads its own
+# source too.
+adr_fixture_sources=':(exclude)scripts/cicd/check-adr-*.test.ts'
+
 # git grep exit code 1 means "no matches", which is success for this check.
-if refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- .); then
+if refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- . "$adr_fixture_sources"); then
   :
 else
   grep_status=$?
