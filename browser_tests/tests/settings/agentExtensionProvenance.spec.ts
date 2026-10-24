@@ -22,18 +22,22 @@ test.describe(
         })
       })
 
-      await comfyPage.settingDialog.open()
-      await comfyPage.settingDialog.category('Extension').click()
-      await expect(page.getByText('Created by agent')).toBeVisible()
-      await expect(page.getByText(/Adds cushion controls/)).toBeVisible()
+      await test.step('Open Extensions and see agent attribution', async () => {
+        await comfyPage.settingDialog.open()
+        await comfyPage.settingDialog.category('Extension').click()
+        await expect(page.getByText('Created by agent')).toBeVisible()
+        await expect(page.getByText(/Adds cushion controls/)).toBeVisible()
+      })
 
-      await page.getByRole('button', { name: 'Agent-created' }).click()
-      await expect(
-        page.getByRole('switch', { name: 'agent.cushions.toolbar' })
-      ).toBeVisible()
-      await expect(
-        page.getByRole('switch', { name: 'Manual.Toolbar' })
-      ).toBeHidden()
+      await test.step('Show only agent-created extensions', async () => {
+        await page.getByRole('button', { name: 'Agent-created' }).click()
+        await expect(
+          page.getByRole('switch', { name: 'agent.cushions.toolbar' })
+        ).toBeVisible()
+        await expect(
+          page.getByRole('switch', { name: 'Manual.Toolbar' })
+        ).toBeHidden()
+      })
     })
   }
 )
