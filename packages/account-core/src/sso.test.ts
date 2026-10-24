@@ -4,6 +4,7 @@ import type { SsoDiscovery } from './sso'
 import {
   discoverSso,
   readSsoError,
+  sendsToSso,
   ssoRequiredOrganizationId,
   ssoStartUrl
 } from './sso'
@@ -16,17 +17,78 @@ const json = (status: number, body: unknown) =>
     headers: { 'Content-Type': 'application/json' }
   })
 
+describe('sendsToSso', () => {
+  const required: SsoDiscovery = { kind: 'sso', required: true }
+  const optional: SsoDiscovery = { kind: 'sso', required: false }
+
+  it.for<{
+    name: string
+    discovery: SsoDiscovery
+    via: 'sso-entry' | 'email-sign-in'
+    sends: boolean
+  }>([
+    {
+      name: 'a required org from the SSO entry',
+      discovery: required,
+      via: 'sso-entry',
+      sends: true
+    },
+    {
+      name: 'a required org from an email sign-in',
+      discovery: required,
+      via: 'email-sign-in',
+      sends: true
+    },
+    {
+      name: 'an optional org from the SSO entry',
+      discovery: optional,
+      via: 'sso-entry',
+      sends: true
+    },
+    {
+      name: 'an optional org from an email sign-in',
+      discovery: optional,
+      via: 'email-sign-in',
+      sends: false
+    },
+    {
+      name: 'a domain without SSO',
+      discovery: { kind: 'not-sso' },
+      via: 'sso-entry',
+      sends: false
+    },
+    {
+      name: 'an outage',
+      discovery: { kind: 'unavailable' },
+      via: 'email-sign-in',
+      sends: false
+    }
+  ])('$name: $sends', ({ discovery, via, sends }) => {
+    expect(sendsToSso(discovery, via)).toBe(sends)
+  })
+})
+
 describe('discoverSso', () => {
   it.for<{ name: string; response: () => Response; expected: SsoDiscovery }>([
     {
       name: 'an SSO domain names its organization',
       response: () => json(200, { sso: true, organization_name: 'Acme' }),
-      expected: { kind: 'sso', organizationName: 'Acme' }
+      expected: { kind: 'sso', required: true, organizationName: 'Acme' }
     },
     {
       name: 'an SSO domain without a name is still SSO',
       response: () => json(200, { sso: true }),
-      expected: { kind: 'sso' }
+      expected: { kind: 'sso', required: true }
+    },
+    {
+      name: 'an organization in optional mode only offers SSO',
+      response: () => json(200, { sso: true, required: false }),
+      expected: { kind: 'sso', required: false }
+    },
+    {
+      name: 'an organization that says it requires SSO',
+      response: () => json(200, { sso: true, required: true }),
+      expected: { kind: 'sso', required: true }
     },
     {
       name: 'a domain without SSO',
