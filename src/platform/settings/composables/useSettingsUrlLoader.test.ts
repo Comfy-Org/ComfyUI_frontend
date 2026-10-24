@@ -66,6 +66,34 @@ describe('useSettingsUrlLoader', () => {
     })
   })
 
+  it('applies a recognized extension filter and strips it', async () => {
+    useRoute().query.settings = 'extension'
+    useRoute().query.filter = 'agent'
+
+    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    await loadSettingsFromUrl()
+
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: 'agentCreated'
+    })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('rejects an inherited key as an extension filter and keeps the param', async () => {
+    useRoute().query.settings = 'extension'
+    useRoute().query.filter = 'constructor'
+
+    const { loadSettingsFromUrl } = useSettingsUrlLoader()
+    await loadSettingsFromUrl()
+
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: undefined
+    })
+    expect(useRouter().replace).toHaveBeenCalledWith({
+      query: { filter: 'constructor' }
+    })
+  })
+
   it('strips but does not open for an unrecognized panel value', async () => {
     useRoute().query.settings = 'garbage'
 

@@ -46,7 +46,9 @@ export function useSettingsUrlLoader() {
 
     const filter = query.filter
     const extensionFilter =
-      param === 'extension' && typeof filter === 'string'
+      param === 'extension' &&
+      typeof filter === 'string' &&
+      Object.hasOwn(EXTENSION_FILTER_PARAMS, filter)
         ? EXTENSION_FILTER_PARAMS[filter]
         : undefined
 
