@@ -14,6 +14,7 @@ import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@comfyorg/mask-editor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -79,10 +80,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     b: number
   } | null = null
 
-  const litegraphNode = computed(() => {
-    if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId)
-  })
+  const litegraphNode = useLiveGraphNode(() =>
+    nodeId ? app.canvas.graph?.getNodeById(nodeId) : null
+  )
 
   const widgetValueStore = useWidgetValueStore()
 
@@ -711,6 +711,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     img.src = url
   }
 
+  watch(litegraphNode, () => {
+    registerWidgetSerialization()
+    updateInputImageUrl()
+  })
   watch(() => nodeOutputStore.nodeOutputs, updateInputImageUrl, { deep: true })
   watch(() => nodeOutputStore.nodePreviewImages, updateInputImageUrl, {
     deep: true

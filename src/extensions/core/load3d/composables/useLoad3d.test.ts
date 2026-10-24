@@ -476,6 +476,29 @@ describe('useLoad3d', () => {
     })
   })
 
+  describe('when the node is replaced', () => {
+    it('moves the viewer to the replacement node and runs its queued callbacks', async () => {
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+      const replacement = createMockLGraphNode({
+        properties: mockNode.properties,
+        widgets: mockNode.widgets,
+        graph: mockNode.graph,
+        flags: {}
+      })
+      const queued = vi.fn()
+      useLoad3d(replacement).waitForLoad3d(queued)
+
+      nodeRef.value = replacement
+
+      await vi.waitFor(() => expect(queued).toHaveBeenCalledWith(mockLoad3d))
+      expect(mockLoad3d.remove).toHaveBeenCalled()
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
+      expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
+    })
+  })
+
   describe('waitForLoad3d', () => {
     it('should execute callback immediately if Load3d exists', async () => {
       const composable = useLoad3d(mockNode)

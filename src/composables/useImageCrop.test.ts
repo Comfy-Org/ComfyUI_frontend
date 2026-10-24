@@ -38,6 +38,25 @@ const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/scripts/app'))
 
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: [] as Array<() => void>
+}))
+
+vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve: () => unknown) => {
+      const node = shallowRef(resolve() ?? null)
+      liveGraphNodes.reloads.push(() => (node.value = resolve() ?? null))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraph() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
 const onEditEnd = vi.fn()
 
 beforeEach(() => {
@@ -387,6 +406,31 @@ describe('useImageCrop', () => {
 
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/preview.png')
+  })
+
+  it('shows the image upstream of the node a reloaded graph holds', async () => {
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    const reloadedSource = createMockLGraphNode({
+      id: 98,
+      isSubgraphNode: () => false
+    })
+    mockResolveNode.mockReturnValue(
+      createMockLGraphNode({
+        id: 2,
+        getInputNode: vi.fn(() => reloadedSource),
+        getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+        isSubgraphNode: () => false
+      })
+    )
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === reloadedSource ? ['https://example.com/b.png'] : undefined
+    )
+
+    reloadGraph()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
   })
 
   it('shows the upstream image when the input is connected after mount', async () => {

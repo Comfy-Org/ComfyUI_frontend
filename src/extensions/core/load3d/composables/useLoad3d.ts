@@ -112,6 +112,7 @@ const invokeReadyCallback = (
 export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
+  let viewerContainer: HTMLElement | null = null
   let isFirstModelLoad = true
 
   const markDirty = () => {
@@ -198,6 +199,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   ])
 
   const initializeLoad3d = async (containerRef: HTMLElement | null) => {
+    viewerContainer = containerRef
     const rawNode = toRaw(nodeRef.value)
     if (!containerRef || !rawNode) return
 
@@ -1096,10 +1098,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     })
   }
 
-  const cleanup = () => {
+  const releaseLoad3d = (node: LGraphNode | null) => {
     handleEvents('remove')
 
-    const node = toRaw(nodeRef.value)
     if (!node) return
     if (nodeToLoad3dMap.get(node) === load3d) {
       nodeToLoad3dMap.delete(node)
@@ -1108,6 +1109,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     load3d?.remove()
     load3d = null
   }
+
+  const cleanup = () => releaseLoad3d(toRaw(nodeRef.value))
+
+  watch(nodeRef, (node, previous) => {
+    if (!node || !previous || !viewerContainer) return
+    releaseLoad3d(toRaw(previous))
+    void initializeLoad3d(viewerContainer)
+  })
 
   return {
     // state

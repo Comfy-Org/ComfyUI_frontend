@@ -61,6 +61,27 @@ vi.mock(import('@/scripts/app'), () => ({
   app: fromAny<ComfyApp, object>({})
 }))
 
+const liveGraphNodes = vi.hoisted(() => ({
+  current: { id: 7 } as object,
+  reloads: [] as Array<() => void>
+}))
+
+vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: () => {
+      const node = shallowRef(liveGraphNodes.current)
+      liveGraphNodes.reloads.push(() => (node.value = liveGraphNodes.current))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraphWithNewNode() {
+  liveGraphNodes.current = { id: 7 }
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -108,6 +129,20 @@ describe('LightInfo lifecycle', () => {
 
     unmount()
     expect(state.cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('starts the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
+    const state = lightState([spot])
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('button', { name: 'Lock camera' }))
+    vi.mocked(state.initialize).mockClear()
+    vi.mocked(state.setCameraLocked).mockClear()
+
+    reloadGraphWithNewNode()
+    await nextTick()
+
+    expect(state.initialize).toHaveBeenCalledOnce()
+    expect(state.setCameraLocked).toHaveBeenCalledWith(true)
   })
 
   it('invites adding a light when there are none', () => {

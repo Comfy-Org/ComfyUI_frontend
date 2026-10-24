@@ -17,6 +17,25 @@ import WidgetResolutionPreview from './WidgetResolutionPreview.vue'
 
 vi.mock(import('@/utils/litegraphUtil'))
 
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: [] as Array<() => void>
+}))
+
+vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve: () => unknown) => {
+      const node = shallowRef(resolve() ?? null)
+      liveGraphNodes.reloads.push(() => (node.value = resolve() ?? null))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraph() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
 const GRAPH_ID = 'test-graph'
 const NODE_ID = toNodeId(1)
 
@@ -132,6 +151,25 @@ describe('WidgetResolutionPreview', () => {
       widgetId(GRAPH_ID, NODE_ID, 'aspect_ratio'),
       '16:9 (Widescreen)'
     )
+    await nextTick()
+
+    expect(displayedValue()).toBe('1368 × 768')
+  })
+
+  it('keeps previewing after a reload replaces the node', async () => {
+    registerDefaultSiblings('16:9 (Widescreen)', 1.0, 8)
+    renderPreview()
+    const staleNode = resolveNode(NODE_ID)
+    const graph = staleNode?.graph
+    if (!staleNode || !graph) throw new Error('Expected a node in a graph')
+    graph.remove(staleNode)
+    const reloadedNode = new LGraphNode('Resolution')
+    reloadedNode.id = NODE_ID
+    graph.add(reloadedNode)
+    registerDefaultSiblings('16:9 (Widescreen)', 1.0, 8)
+    vi.mocked(resolveNode).mockReturnValue(reloadedNode)
+
+    reloadGraph()
     await nextTick()
 
     expect(displayedValue()).toBe('1368 × 768')

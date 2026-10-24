@@ -432,6 +432,33 @@ describe('usePainter', () => {
     })
   })
 
+  describe('after the graph is reloaded', () => {
+    function reloadPaintNode(widgets: PaintWidgetSpec[]) {
+      makePaintNode(widgets)
+      app.rootGraph.events.dispatch('configured')
+    }
+
+    it('reads the canvas size from the reloaded node', async () => {
+      makePaintNode([{ name: 'width', type: 'number', value: 1024 }])
+      const { painter } = mountPainter()
+
+      reloadPaintNode([{ name: 'width', type: 'number', value: 256 }])
+      await nextTick()
+
+      expect(painter.canvasWidth.value).toBe(256)
+    })
+
+    it('attaches serializeValue to the mask widget of the reloaded node', async () => {
+      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
+      mountPainter()
+
+      reloadPaintNode([{ name: 'mask', type: 'string', value: '' }])
+      await nextTick()
+
+      expect(widgetOf('mask').serializeValue).toBeTypeOf('function')
+    })
+  })
+
   describe('serializeValue', () => {
     it('returns existing modelValue when not dirty (preserves workflow-restored mask reference across WidgetPainter remount)', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])

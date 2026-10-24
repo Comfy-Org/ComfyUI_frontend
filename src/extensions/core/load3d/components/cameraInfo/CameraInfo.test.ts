@@ -61,6 +61,27 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
 }))
 
+const liveGraphNodes = vi.hoisted(() => ({
+  current: { id: 7 } as object,
+  reloads: [] as Array<() => void>
+}))
+
+vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: () => {
+      const node = shallowRef(liveGraphNodes.current)
+      liveGraphNodes.reloads.push(() => (node.value = liveGraphNodes.current))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraphWithNewNode() {
+  liveGraphNodes.current = { id: 7 }
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
 import CameraInfo from './CameraInfo.vue'
 
 function makeWidget(): SimplifiedWidget {
@@ -119,6 +140,19 @@ describe('CameraInfo toolbar', () => {
     await user.click(screen.getByRole('button', { name: 'Camera view' }))
 
     expect(api().setLookThrough).toHaveBeenCalledWith(true)
+  })
+
+  it('initializes the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
+    renderComponent()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Hide gizmos' }))
+    Object.values(api()).forEach((fn) => fn.mockClear())
+
+    reloadGraphWithNewNode()
+    await nextTick()
+
+    expect(api().initialize).toHaveBeenCalledOnce()
+    expect(api().setGizmosVisible).toHaveBeenCalledWith(false)
   })
 })
 
