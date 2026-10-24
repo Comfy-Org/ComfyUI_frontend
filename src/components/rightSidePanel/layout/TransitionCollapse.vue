@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 // From: https://stackoverflow.com/a/71426342/22392721
 interface Props {
   duration?: number
@@ -25,8 +27,12 @@ const closed = '0px'
 const isMounted = ref(false)
 onMounted(() => (isMounted.value = true))
 
+const settingStore = useSettingStore()
+const disableAnimations = computed(() =>
+  settingStore.get('Comfy.Appearance.DisableAnimations')
+)
 const animationDuration = computed(() =>
-  isMounted.value && !disable ? duration : 0
+  isMounted.value && !disable && !disableAnimations.value ? duration : 0
 )
 
 interface initialStyle {
@@ -83,6 +89,15 @@ function animateTransition(
   keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
   options?: number | KeyframeAnimationOptions
 ) {
+  const animationOptions =
+    typeof options === 'number' ? { duration: options } : options
+  if (animationOptions?.duration === 0) {
+    element.style.height = initialStyle.height
+    element.style.overflow = initialStyle.overflow
+    done()
+    return
+  }
+
   const animation = element.animate(keyframes, options)
   // Set height to 'auto' to restore it after animation
   element.style.height = initialStyle.height
