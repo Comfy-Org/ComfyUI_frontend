@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
@@ -116,12 +117,13 @@ describe('usePromptEditorExperimentStore', () => {
     })
   })
 
-  it('reports exposure again when the served arm changes', () => {
+  it('reports exposure again when the served arm changes', async () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
     experiment.expose('panel')
 
     serve('control')
+    await nextTick()
     experiment.expose('control')
 
     expect(trackPromptEditorExposure.mock.calls).toEqual([
@@ -142,18 +144,33 @@ describe('usePromptEditorExperimentStore', () => {
     expect(trackPromptEditorExposure).toHaveBeenCalledOnce()
   })
 
-  it('keeps the served arm when a config refresh fails', () => {
-    serve('panel')
-    const experiment = usePromptEditorExperimentStore()
+  it.for([
+    {
+      failure: 'a network error',
+      fail: () => (authenticatedRemoteConfigState.value = 'error')
+    },
+    {
+      failure: 'an auth rejection that clears the config',
+      fail: () => {
+        remoteConfig.value = {}
+        authenticatedRemoteConfigState.value = 'error'
+      }
+    }
+  ])(
+    'keeps the served arm when a refresh ends in $failure',
+    async ({ fail }) => {
+      serve('panel')
+      const experiment = usePromptEditorExperimentStore()
 
-    authenticatedRemoteConfigState.value = 'error'
-    remoteConfig.value = {}
+      fail()
+      await nextTick()
 
-    expect(experiment.assignment).toBe('panel')
-    expect(experiment.experimentPropertiesFor('panel')).toEqual({
-      '$feature/prompt-editor-surface': 'panel'
-    })
-  })
+      expect(experiment.assignment).toBe('panel')
+      expect(experiment.experimentPropertiesFor('panel')).toEqual({
+        '$feature/prompt-editor-surface': 'panel'
+      })
+    }
+  )
 
   it('reports exposure again for the next account on the same tab', () => {
     serve('panel')

@@ -56,19 +56,27 @@ export const usePromptEditorExperimentStore = defineStore(
   () => {
     const resolution = ref(resolveAssignment(undefined))
     const reportedExposure = ref<PromptEditorSurfaceVariant | null>(null)
+    function resolveServedAssignment() {
+      resolution.value = resolveAssignment(
+        remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
+      )
+    }
     watch(
-      [
-        authenticatedRemoteConfigState,
-        () => remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
-      ],
-      ([state, served]) => {
-        if (state === 'authenticated')
-          resolution.value = resolveAssignment(served)
+      authenticatedRemoteConfigState,
+      (state) => {
+        if (state === 'authenticated') resolveServedAssignment()
         if (state !== 'unloaded') return
         resolution.value = resolveAssignment(undefined)
         reportedExposure.value = null
       },
       { immediate: true, flush: 'sync' }
+    )
+    watch(
+      () => remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG],
+      () => {
+        if (authenticatedRemoteConfigState.value === 'authenticated')
+          resolveServedAssignment()
+      }
     )
     const assignment = computed(() => resolution.value.variant)
 
