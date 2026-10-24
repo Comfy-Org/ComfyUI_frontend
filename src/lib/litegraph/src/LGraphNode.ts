@@ -273,7 +273,8 @@ function configureCanonicalField(
 
 export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
-  fallbackNames?: readonly string[]
+  fallbackNames?: readonly string[],
+  restoreNamed = false
 ) {
   const positional = Array.from(info.widgets_values ?? [])
   const named =
@@ -290,7 +291,7 @@ export function createWidgetRestorationState(
     positional,
     named: named ? { ...named } : undefined,
     restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames)
+      named && (restoreNamed || LiteGraph.namedValuesRestore || fallbackNames)
     )
   }
 }
@@ -1263,7 +1264,10 @@ export class LGraphNode
   /**
    * configure a node from an object containing the serialized info
    */
-  configure(info: ISerialisedNode): void {
+  configure(
+    info: ISerialisedNode,
+    { restoreNamed = false }: { restoreNamed?: boolean } = {}
+  ): void {
     hydrateExtensionPayload(this, info, NODE_CANONICAL_FIELDS)
     if (this.graph) {
       this.graph.incrementVersion()
@@ -1327,7 +1331,8 @@ export class LGraphNode
 
     const restoration = createWidgetRestorationState(
       info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames
+      this.constructor.nodeData?.fallbackWidgetsValuesNames,
+      restoreNamed
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid

@@ -544,6 +544,54 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it.for([
+    { global: false, options: undefined, expected: 17 },
+    { global: false, options: { restoreNamed: true }, expected: 83 },
+    { global: true, options: undefined, expected: 83 },
+    { global: true, options: { restoreNamed: false }, expected: 83 }
+  ])(
+    'restores promoted values with global=$global and options=$options',
+    ({ global, options, expected }) => {
+      const original = LiteGraph.namedValuesRestore
+      onTestFinished(() => {
+        LiteGraph.namedValuesRestore = original
+      })
+      LiteGraph.namedValuesRestore = global
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const interior = new LGraphNode('Interior')
+      const input = interior.addInput('value', 'INT')
+      input.widget = { name: 'value' }
+      interior.addWidget('number', 'value', 0, () => {})
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(input, interior)
+      const host = createTestSubgraphNode(subgraph)
+
+      host.configure(
+        {
+          ...host.serialize(),
+          widgets_values: [17],
+          widgets_values_named: { seed: 83 }
+        },
+        options
+      )
+
+      expect(host.widgets.map(({ name, value }) => ({ name, value }))).toEqual([
+        { name: 'seed', value: expected }
+      ])
+      expect(LiteGraph.namedValuesRestore).toBe(global)
+
+      host.configure({
+        ...host.serialize(),
+        widgets_values_named: undefined,
+        widgets_values: [29]
+      })
+
+      expect(host.widgets.map(({ value }) => value)).toEqual([29])
+    }
+  )
+
   it('keeps the renamed label after an in-place reconfigure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: 'INT' }]
