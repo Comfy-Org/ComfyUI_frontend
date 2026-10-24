@@ -7,6 +7,7 @@ import type {
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import { rebaseChainCallback } from '@/lib/litegraph/src/utils/chainCallback'
 import { toClass as instantiateClass } from '@/lib/litegraph/src/utils/type'
 
 import { AssetWidget } from './AssetWidget'
@@ -77,6 +78,34 @@ export type WidgetTypeMap = {
 }
 
 const toWidgetClass = instantiateClass
+interface ConcreteWidgetProvenance {
+  source: IBaseWidget
+  sourceType: IBaseWidget['type']
+  sourceOnRemove: IBaseWidget['onRemove']
+}
+
+const provenanceByConcreteWidget = new WeakMap<
+  IBaseWidget,
+  ConcreteWidgetProvenance
+>()
+
+export function getConcreteWidgetSource(widget: IBaseWidget): IBaseWidget {
+  return provenanceByConcreteWidget.get(widget)?.source ?? widget
+}
+
+export function transferConcreteWidgetOnRemove(
+  outgoing: IBaseWidget,
+  replacement: IBaseWidget
+): void {
+  const provenance = provenanceByConcreteWidget.get(outgoing)
+  if (!provenance || outgoing.onRemove === provenance.sourceOnRemove) return
+
+  replacement.onRemove = rebaseChainCallback(
+    outgoing.onRemove,
+    provenance.sourceOnRemove,
+    replacement.onRemove
+  )
+}
 
 function collectDescriptors(value: object) {
   const descriptors = new Map<PropertyKey, PropertyDescriptor>()
@@ -199,10 +228,29 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   node: LGraphNode,
   wrapLegacyWidgets = true
 ): WidgetTypeMap[TWidget['type']] | undefined {
+  const installed = wrapLegacyWidgets
+    ? node.widgets?.find((candidate) => {
+        const provenance = provenanceByConcreteWidget.get(candidate)
+        return (
+          provenance?.source === widget && provenance.sourceType === widget.type
+        )
+      })
+    : undefined
+  if (installed) return installed as WidgetTypeMap[TWidget['type']]
+
   const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
-  return concrete && wrapLegacyWidgets
-    ? adoptConcreteWidget(widget, concrete)
-    : concrete
+  const result =
+    concrete && wrapLegacyWidgets
+      ? adoptConcreteWidget(widget, concrete)
+      : concrete
+  if (result && wrapLegacyWidgets && !Object.is(result, widget)) {
+    provenanceByConcreteWidget.set(result, {
+      source: widget,
+      sourceType: widget.type,
+      sourceOnRemove: widget.onRemove
+    })
+  }
+  return result
 }
 
 function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(

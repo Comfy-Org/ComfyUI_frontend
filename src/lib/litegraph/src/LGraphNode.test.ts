@@ -1,5 +1,5 @@
 import { omit } from 'es-toolkit'
-import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
@@ -9,6 +9,7 @@ import type {
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
@@ -46,6 +47,19 @@ function getMockISerialisedNode(
     },
     data
   )
+}
+
+function nonExtensibleWidget(
+  overrides: Partial<IBaseWidget> = {}
+): IBaseWidget {
+  return Object.preventExtensions<IBaseWidget>({
+    type: 'number',
+    name: 'value',
+    value: 1,
+    options: {},
+    y: 0,
+    ...overrides
+  })
 }
 
 describe('LGraphNode', () => {
@@ -744,6 +758,184 @@ describe('LGraphNode', () => {
 
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
+    })
+  })
+
+  describe('addCustomWidget', () => {
+    test('idempotently registers the same widget instance twice', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = testNode.addWidget('number', 'value', 1, null)
+
+      expect(testNode.addCustomWidget(widget)).toBe(widget)
+      expect(testNode.widgets).toEqual([widget])
+    })
+
+    test('reuses one wrapper for a non-extensible legacy widget source', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = nonExtensibleWidget()
+
+      const first = testNode.addCustomWidget(widget)
+      const second = testNode.addCustomWidget(widget)
+
+      expect(second).toBe(first)
+      expect(testNode.widgets).toEqual([first])
+    })
+
+    test('reuses the wrapper created by a direct legacy widget push', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = nonExtensibleWidget()
+
+      testNode.widgets = [widget]
+      const installed = testNode.widgets[0]
+
+      expect(testNode.addCustomWidget(widget)).toBe(installed)
+      expect(testNode.widgets).toEqual([installed])
+    })
+
+    test('allows a removed widget source to be registered again', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = testNode.addWidget('number', 'value', 1, null)
+
+      testNode.removeWidget(widget)
+
+      testNode.addCustomWidget(widget)
+      expect(testNode.widgets).toEqual([widget])
+    })
+
+    test('rebuilds a non-extensible wrapper after removal', () => {
+      const testNode = new LGraphNode('TestNode')
+      const widget = nonExtensibleWidget()
+      const first = testNode.addCustomWidget(widget)
+
+      testNode.removeWidget(first)
+      const second = testNode.addCustomWidget(widget)
+
+      expect(second).not.toBe(first)
+      expect(testNode.widgets).toEqual([second])
+    })
+
+    test('restores a pre-pushed widget by its position', () => {
+      const testNode = new LGraphNode('TestNode')
+      const source = nonExtensibleWidget({ name: 'first', value: 0 })
+      let first: IBaseWidget | undefined
+      let successor: IBaseWidget | undefined
+      testNode.onConfigure = () => {
+        testNode.widgets = [source]
+        first = testNode.widgets[0]
+        successor = testNode.addWidget('number', 'second', 0, () => undefined)
+        testNode.addCustomWidget(source)
+      }
+
+      testNode.configure(
+        getMockISerialisedNode({
+          widgets_values: [10, 20]
+        })
+      )
+
+      expect(first?.value).toBe(10)
+      expect(successor?.value).toBe(20)
+    })
+  })
+
+  describe('slot removal', () => {
+    const removalOperations = [
+      {
+        name: 'input',
+        setup(node: LGraphNode) {
+          node.addInput('first', 'number')
+          node.addInput('second', 'number')
+          const onRemoved = vi.fn()
+          node.onInputRemoved = onRemoved
+          return {
+            names: () => node.inputs.map(({ name }) => name),
+            onRemoved
+          }
+        },
+        remove(node: LGraphNode, slot: unknown) {
+          Reflect.apply(node.removeInput, node, [slot])
+        }
+      },
+      {
+        name: 'output',
+        setup(node: LGraphNode) {
+          node.addOutput('first', 'number')
+          node.addOutput('second', 'number')
+          const onRemoved = vi.fn()
+          node.onOutputRemoved = onRemoved
+          return {
+            names: () => node.outputs.map(({ name }) => name),
+            onRemoved
+          }
+        },
+        remove(node: LGraphNode, slot: unknown) {
+          Reflect.apply(node.removeOutput, node, [slot])
+        }
+      }
+    ] as const
+    const [inputRemoval, outputRemoval] = removalOperations
+    const invalidSlots: readonly unknown[] = [
+      -1,
+      2,
+      0.5,
+      '',
+      ' ',
+      '2',
+      '0x0',
+      '0e0'
+    ]
+
+    test.for(invalidSlots)('removeOutput ignores invalid slot %j', (slot) => {
+      const testNode = new LGraphNode('TestNode')
+      const { names, onRemoved } = outputRemoval.setup(testNode)
+
+      outputRemoval.remove(testNode, slot)
+
+      expect(names()).toEqual(['first', 'second'])
+      expect(onRemoved).not.toHaveBeenCalled()
+    })
+
+    test('removeInput ignores an invalid runtime slot', () => {
+      const testNode = new LGraphNode('TestNode')
+      const { names, onRemoved } = inputRemoval.setup(testNode)
+
+      inputRemoval.remove(testNode, '0x0')
+
+      expect(names()).toEqual(['first', 'second'])
+      expect(onRemoved).not.toHaveBeenCalled()
+    })
+
+    test.for(removalOperations)(
+      'accepts a runtime digit-string $name slot',
+      (operation) => {
+        const testNode = new LGraphNode('TestNode')
+        const { names, onRemoved } = operation.setup(testNode)
+
+        operation.remove(testNode, '0')
+
+        expect(names()).toEqual(['second'])
+        expect(onRemoved.mock.calls.map(([slot]) => slot)).toEqual([0])
+      }
+    )
+  })
+
+  describe('removeOutput', () => {
+    test('reindexes connected links after a digit-string slot removal', () => {
+      const graph = new LGraph()
+      const source = new LGraphNode('Source')
+      source.addOutput('first', 'number')
+      source.addOutput('removed', 'number')
+      source.addOutput('survivor', 'number')
+      const target = new LGraphNode('Target')
+      target.addInput('input', 'number')
+      graph.add(source)
+      graph.add(target)
+      const link = source.connect(2, target, 0)
+      assert.exists(link)
+
+      Reflect.apply(source.removeOutput, source, ['1'])
+
+      expect(link.origin_slot).toBe(1)
+      expect(source.outputs[1].links).toContain(link.id)
     })
   })
 

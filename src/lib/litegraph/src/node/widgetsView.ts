@@ -2,7 +2,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import {
+  getConcreteWidgetSource,
+  transferConcreteWidgetOnRemove,
+  toConcreteWidget
+} from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { RefusedWidget } from '@/types/widgetId'
@@ -142,6 +146,82 @@ function commitsThroughWidgetsView(node: LGraphNode): boolean {
   return !!descriptor?.get && widgetsViewGetters.has(descriptor.get)
 }
 
+/**
+ * Repoints an input at a widget that replaced the one it was bound to.
+ *
+ * Both halves of the binding have to move. `_widget` is the direct reference,
+ * but `widget` is the locator every name-based consumer resolves through —
+ * {@link LGraphNode.getWidgetFromSlot}, {@link LGraphNode.getSlotFromWidget},
+ * `inputAsSerialisable`, and promoted-value adoption on unpack. Leaving the
+ * locator on the outgoing name silently unbinds all of them whenever a refresh
+ * also renames the source.
+ */
+function rebindInputToReplacement(
+  input: INodeInputSlot,
+  replacement: IBaseWidget
+): void {
+  input._widget = replacement
+  if (!input.widget) return
+  input.widget.name = replacement.name
+  if ('type' in input.widget) input.widget.type = replacement.type
+}
+
+export function transferReplacedWidgetState(
+  node: LGraphNode,
+  outgoing: IBaseWidget,
+  replacement: IBaseWidget
+): void {
+  transferConcreteWidgetOnRemove(outgoing, replacement)
+  const outgoingName = outgoing.name
+  if (outgoing instanceof BaseWidget) outgoing.releaseRegisteredState()
+  for (const input of node.inputs) {
+    if (!inputBindsWidget(input, outgoing, outgoingName)) continue
+    rebindInputToReplacement(input, replacement)
+  }
+}
+
+function reconcileWrappedSources(
+  node: LGraphNode,
+  originalWidgets: readonly IBaseWidget[],
+  widgets: IBaseWidget[]
+): void {
+  const installedBySource = new Map<
+    IBaseWidget,
+    { index: number; widget: IBaseWidget }
+  >()
+  originalWidgets.forEach((widget, index) => {
+    const source = getConcreteWidgetSource(widget)
+    if (source !== widget) installedBySource.set(source, { index, widget })
+  })
+
+  const removedIndexes = new Set<number>()
+  widgets.forEach((widget, index) => {
+    const original = originalWidgets[index]
+    if (getConcreteWidgetSource(original) !== original || widget === original)
+      return
+
+    const installed = installedBySource.get(original)
+    if (installed) {
+      removedIndexes.add(index)
+      if (widget !== installed.widget) {
+        widgets[installed.index] = widget
+        transferReplacedWidgetState(node, installed.widget, widget)
+        installedBySource.set(original, { index: installed.index, widget })
+      }
+      return
+    }
+    installedBySource.set(original, { index, widget })
+  })
+
+  if (removedIndexes.size) {
+    widgets.splice(
+      0,
+      widgets.length,
+      ...widgets.filter((_, index) => !removedIndexes.has(index))
+    )
+  }
+}
+
 export function wasWidgetRefused(
   node: LGraphNode,
   widget: IBaseWidget
@@ -195,25 +275,24 @@ export function refuseAmbiguousNodeWidgets(
 function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
+  const originalWidgets = [...widgets]
 
-  const concreteWidgets = widgets.map((widget) => {
+  originalWidgets.forEach((widget, index) => {
     const unreadable = isWidgetNameUnreadable(widget)
     try {
-      return toConcreteWidget(widget, node)
+      widgets[index] = toConcreteWidget(widget, node)
     } catch (error) {
       if (!unreadable) throw error
-      return widget
     }
   })
-  for (const [index, widget] of concreteWidgets.entries()) {
-    widgets[index] = widget
-  }
+
+  reconcileWrappedSources(node, originalWidgets, widgets)
 
   if (!graphId) return
 
   const refused = refuseAmbiguousWidgets(node, widgets)
 
-  for (const widget of concreteWidgets) {
+  for (const widget of widgets) {
     if (!refused.has(widget) && isNodeBindable(widget)) {
       widget.setNodeId(node.id)
     }
