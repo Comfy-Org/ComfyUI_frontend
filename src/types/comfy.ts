@@ -166,6 +166,12 @@ export interface ComfyApp {
     workflow?: string | null | ComfyWorkflow,
     options?: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined>
+  /**
+   * For recovery that runs while a queued load is activating its workflow:
+   * loads within that held load, since {@link loadGraphData} would wait
+   * behind it. Outside an activation it is {@link loadGraphData}.
+   */
+  loadGraphDataWithinLoad: ComfyApp['loadGraphData']
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean
