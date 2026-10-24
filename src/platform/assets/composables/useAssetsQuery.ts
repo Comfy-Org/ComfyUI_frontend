@@ -1,4 +1,4 @@
-import { refAutoReset, until } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
@@ -13,6 +13,11 @@ import { encodeParams } from '@/utils/requestUtil'
 interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
+
+/** Whether older pages can be requested; 'backing-off' clears itself after 2 s. */
+type PageState = 'ready' | 'exhausted' | 'failed' | 'backing-off'
+
+const MAX_HEAD_PAGES = 2
 
 const BASE_PARAMS = {
   include_public: false,
@@ -30,9 +35,9 @@ function assetsQueryInternal(
   let nextCursor: string | undefined
   const seenCursors = new Set<string | undefined>()
   let loadGeneration = 0
-  const morePages = ref(true)
-  const backingOff = refAutoReset(false, 2000)
-  const hasMore = computed(() => morePages.value && !backingOff.value)
+  const pageState = ref<PageState>('ready')
+  const hasMore = computed(() => pageState.value === 'ready')
+  let backOffTimer: ReturnType<typeof setTimeout> | undefined
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
@@ -59,10 +64,12 @@ function assetsQueryInternal(
     })
     seenCursors.add(requestedCursor)
     nextCursor = assetResponse.next_cursor
-    morePages.value =
+    pageState.value =
       assetResponse.has_more &&
       nextCursor !== undefined &&
       !seenCursors.has(nextCursor)
+        ? 'ready'
+        : 'exhausted'
     items.value.push(...newItems)
     loadGeneration++
   }
@@ -80,15 +87,19 @@ function assetsQueryInternal(
     return loadMorePromise
   }
 
-  function loadNew() {
-    return enqueue('loadNew', async function (signal: AbortSignal) {
+  let headDisconnected = false
+  async function loadNew() {
+    await enqueue('loadNew', async function (signal: AbortSignal) {
       const knownIds = new Set(items.value.map((item) => item.id))
       const seenIds = new Set(knownIds)
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
       const seenHeadCursors = new Set<string | undefined>()
-      for (;;) {
-        if (seenHeadCursors.has(headCursor)) break
+      let reachedKnownId = false
+      while (
+        seenHeadCursors.size < MAX_HEAD_PAGES &&
+        !seenHeadCursors.has(headCursor)
+      ) {
         seenHeadCursors.add(headCursor)
 
         const query = headCursor
@@ -98,7 +109,7 @@ function assetsQueryInternal(
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
-        const reachedKnownId = assets.some((asset) => {
+        reachedKnownId = assets.some((asset) => {
           if (knownIds.has(asset.id)) return true
           if (!seenIds.has(asset.id)) {
             seenIds.add(asset.id)
@@ -110,7 +121,13 @@ function assetsQueryInternal(
         headCursor = next_cursor
       }
       items.value.splice(0, 0, ...newItems)
+      headDisconnected = !reachedKnownId
     })
+    // The head never reached a cached item, so the cache no longer matches
+    // the server (ids changed, or too many new items): rebuild it.
+    if (!headDisconnected) return
+    headDisconnected = false
+    await invalidate()
   }
 
   async function applyInvalidation(stale?: string[]) {
@@ -121,11 +138,11 @@ function assetsQueryInternal(
       return
     }
     await preempt(async () => {
-      morePages.value = true
       nextCursor = undefined
       seenCursors.clear()
       items.value = []
-      await until(backingOff).toBe(false)
+      await until(pageState).not.toBe('backing-off')
+      pageState.value = 'ready'
       await doLoadMore()
     })
   }
@@ -134,6 +151,17 @@ function assetsQueryInternal(
     const operation = invalidationQueue.then(() => applyInvalidation(stale))
     invalidationQueue = operation
     return operation
+  }
+
+  function markFailed(transient: boolean) {
+    const state = pageState.value
+    if (state === 'exhausted' || (transient && state === 'failed')) return
+    pageState.value = transient ? 'backing-off' : 'failed'
+    if (!transient) return
+    clearTimeout(backOffTimer)
+    backOffTimer = setTimeout(() => {
+      if (pageState.value === 'backing-off') pageState.value = 'ready'
+    }, 2000)
   }
 
   async function doQuery(
@@ -147,13 +175,12 @@ function assetsQueryInternal(
       .catch((e) => onError('asset fetch failed', e))
 
     if (!resp) {
-      if (!signal?.aborted) backingOff.value = true
+      if (!signal?.aborted) markFailed(true)
       return
     }
     if (!resp.ok) {
       onError('asset request failed', resp)
-      if (resp.status === 429 || resp.status >= 500) backingOff.value = true
-      else morePages.value = false
+      markFailed(resp.status === 429 || resp.status >= 500)
       return
     }
 
@@ -161,16 +188,17 @@ function assetsQueryInternal(
       .json()
       .catch((e) => onError('failed to decode asset json response', e))
     if (!jsonresp) {
-      morePages.value = false
+      markFailed(false)
       return
     }
 
     const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
-      morePages.value = false
+      markFailed(false)
       return
     }
+    if (pageState.value === 'failed') pageState.value = 'ready'
     return parseResult.data
   }
 
