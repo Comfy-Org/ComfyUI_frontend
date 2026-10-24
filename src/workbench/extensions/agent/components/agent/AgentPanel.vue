@@ -509,6 +509,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :has-selection="selectionTags.length > 0"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
