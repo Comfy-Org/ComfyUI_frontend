@@ -12,14 +12,15 @@ layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layo
 
 **Mechanical subset now machine-checked (FE-1968):** the production TypeScript files under
 the CRDT and Agent transport seams are checked for outbound `update_b64` construction,
-`op_id` regeneration, second-applier imports, branch-pinned catalog citations, scattered
-distribution checks, and hardcoded endpoints. Run
+`op_id` regeneration, branch-pinned catalog citations, scattered distribution checks,
+and hardcoded endpoints. The installed shared op layer's manifest and built JavaScript
+are checked directly for `yjs`-only runtime dependencies. Run
 `pnpm follower-invariants:check` (`scripts/check-follower-invariants.ts`, tested by
 `scripts/check-follower-invariants.test.ts`). CI runs it through the required repository
 checks. Treat a failure there as the same `issue:` severity as a manual finding of the
 same kind. This review pass still owns files outside those TypeScript seams and the
 semantic/data-flow judgment calls the script cannot make (e.g. "is this really the
-shared doc", "does this new path count as a second writer").
+shared doc", "does this new path count as a second writer/applier").
 
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, reintroduce a second model of the

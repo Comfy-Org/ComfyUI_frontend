@@ -8,7 +8,9 @@ import {
   checkNoOpIdRegeneration,
   checkNoOutboundUpdateB64,
   checkNoScatteredDistributionChecks,
-  checkSingleApplier,
+  checkOpLayerManifest,
+  checkOpLayerPurity,
+  checkOpLayerRuntimeImports,
   findFollowerFiles,
   FOLLOWER_CORE_FILES
 } from './check-follower-invariants'
@@ -174,87 +176,78 @@ describe('checkNoOpIdRegeneration', () => {
   })
 })
 
-describe('checkSingleApplier', () => {
-  test('fails a forbidden mutation fixture: importing a local applier reimplementation', () => {
-    const fixture = `
-      import { applyOp } from './applier'
-    `
-    const violations = checkSingleApplier(FOLLOWER_FILE, fixture)
-    expect(violations).toHaveLength(1)
-    expect(violations[0].rule).toBe('single-applier')
-  })
-
-  test('passes the allowed follower projection: importing the pinned shared package', () => {
-    const fixture = `
-      import type { Op } from '@comfyorg/comfy-multi-player'
-      import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
-    `
-    expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toEqual([])
-  })
-
-  test('fails a multiline local applier import', () => {
-    const fixture = `
-      import {
-        applyOp
-      } from './opApplier'
-    `
-    expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toHaveLength(1)
-  })
-
-  test('ignores local-applier examples in comments', () => {
-    const fixture = `
-      /* import { applyOp } from './applier' */
-      import { applyOps } from '@comfyorg/comfy-multi-player'
-    `
-    expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toEqual([])
+describe('op-layer purity', () => {
+  test('passes a manifest whose only runtime dependency is yjs', () => {
+    expect(
+      checkOpLayerManifest(
+        'node_modules/@comfyorg/comfy-multi-player/package.json',
+        JSON.stringify({ dependencies: { yjs: '^13.6.27' } })
+      )
+    ).toEqual([])
   })
 
   test.for([
-    `const m = await import('./applier')`,
-    `void import('../crdt/docHost.ts')`,
-    'const m = await import(`./opApplier`)',
-    "export { applyOp } from './applier'",
-    "export * from './docHost/index.ts'",
-    "import applier = require('./opApplier.cts')"
-  ])('fails a dynamic local applier import: %s', (fixture) => {
-    const violations = checkSingleApplier(FOLLOWER_FILE, fixture)
-    expect(violations).toHaveLength(1)
-    expect(violations[0].rule).toBe('single-applier')
-  })
-
-  test('passes a dynamic import of the pinned shared package', () => {
+    {
+      name: 'production dependency',
+      manifest: { dependencies: { yjs: '^13.6.27', vue: '^3.5.0' } },
+      expected: 'vue'
+    },
+    {
+      name: 'optional dependency',
+      manifest: { optionalDependencies: { ws: '^8.0.0' } },
+      expected: 'ws'
+    },
+    {
+      name: 'peer dependency',
+      manifest: { peerDependencies: { react: '^19.0.0' } },
+      expected: 'react'
+    }
+  ])('fails an extra $name', ({ manifest, expected }) => {
     expect(
-      checkSingleApplier(
-        FOLLOWER_FILE,
-        `const m = await import('@comfyorg/comfy-multi-player')`
-      )
-    ).toEqual([])
+      checkOpLayerManifest('package.json', JSON.stringify(manifest))
+    ).toEqual([
+      expect.objectContaining({
+        rule: 'op-layer-yjs-only',
+        message: expect.stringContaining(expected)
+      })
+    ])
   })
 
-  test('passes a shared-package subpath import', () => {
-    expect(
-      checkSingleApplier(
-        FOLLOWER_FILE,
-        `export { applyOps } from '@comfyorg/comfy-multi-player/applier'`
-      )
-    ).toEqual([])
-  })
-
-  test('passes a dynamic import of an unrelated seam module', () => {
-    expect(
-      checkSingleApplier(
-        FOLLOWER_FILE,
-        `const m = await import('./useAgentCrdtFollower')`
-      )
-    ).toEqual([])
-  })
-
-  test('ignores a dynamic local-applier import inside a comment', () => {
+  test('passes built runtime imports from yjs and internal modules', () => {
     const fixture = `
-      /* import('./applier') */
-      const applied = applyOps(ops)
+      import * as Y from 'yjs'
+      export { applyOps } from './applier.js'
     `
-    expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toEqual([])
+    expect(checkOpLayerRuntimeImports('dist/index.js', fixture)).toEqual([])
+  })
+
+  test.for([
+    {
+      name: 'framework import',
+      fixture: "import { ref } from 'vue'",
+      expected: 'vue'
+    },
+    {
+      name: 'server-only import',
+      fixture: "import { createHash } from 'node:crypto'",
+      expected: 'node:crypto'
+    },
+    {
+      name: 'dynamic external import',
+      fixture: "const runtime = import('@comfyorg/runtime')",
+      expected: '@comfyorg/runtime'
+    }
+  ])('fails a built $name', ({ fixture, expected }) => {
+    expect(checkOpLayerRuntimeImports('dist/index.js', fixture)).toEqual([
+      expect.objectContaining({
+        rule: 'op-layer-yjs-only',
+        message: expect.stringContaining(expected)
+      })
+    ])
+  })
+
+  test('the installed shared op layer is yjs-only', () => {
+    expect(checkOpLayerPurity(process.cwd())).toEqual([])
   })
 })
 
@@ -411,22 +404,20 @@ describe('checkFile (combined) — allowed follower projection', () => {
 
   test('a violating file reports every rule through checkFile', () => {
     const fixture = `
-      import { applyOp } from './applier'
       // catalog fetched from @main
       const frame = { update_b64: encoded, op_id: mintOpId() }
       const endpoint = isCloud
       const socket = 'wss://agent.comfy.org/ws'
     `
     const rules = checkFile(FOLLOWER_FILE, fixture).map(({ rule }) => rule)
-    expect(rules).toHaveLength(6)
+    expect(rules).toHaveLength(5)
     expect(rules).toEqual(
       expect.arrayContaining([
         'catalog-pinned-by-sha',
         'no-hardcoded-endpoint',
         'no-op-id-regeneration',
         'no-outbound-update-b64',
-        'no-scattered-distribution-checks',
-        'single-applier'
+        'no-scattered-distribution-checks'
       ])
     )
   })

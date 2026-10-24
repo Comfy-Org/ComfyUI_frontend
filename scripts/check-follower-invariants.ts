@@ -324,33 +324,139 @@ function moduleSpecifier(node: ts.Node): string | undefined {
   )
 }
 
-function singleApplier(file: string, sourceFile: ts.SourceFile): Violation[] {
+const OP_LAYER_PACKAGE_PATH =
+  'node_modules/@comfyorg/comfy-multi-player' as const
+
+function opLayerPurityViolation(
+  file: string,
+  line: number,
+  dependency: string
+): Violation {
+  return {
+    file,
+    line,
+    rule: 'op-layer-yjs-only',
+    message: `breaks CRDT invariant #3 (the op layer is yjs-only): found runtime dependency ${dependency} — see CRDT-FOLLOWER-0025`
+  }
+}
+
+function runtimeDependencyNames(manifest: unknown): string[] | undefined {
+  if (
+    typeof manifest !== 'object' ||
+    manifest === null ||
+    Array.isArray(manifest)
+  )
+    return
+  const entries = Object.entries(manifest)
+  return ['dependencies', 'optionalDependencies', 'peerDependencies'].flatMap(
+    (field) => {
+      const value = entries.find(([key]) => key === field)?.[1]
+      return typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+        ? Object.keys(value)
+        : []
+    }
+  )
+}
+
+export function checkOpLayerManifest(
+  file: string,
+  source: string
+): Violation[] {
+  let manifest: unknown
+  try {
+    manifest = JSON.parse(source)
+  } catch (error) {
+    return [
+      opLayerPurityViolation(
+        file,
+        1,
+        `unreadable manifest (${error instanceof Error ? error.message : String(error)})`
+      )
+    ]
+  }
+  const dependencies = runtimeDependencyNames(manifest)
+  if (dependencies === undefined)
+    return [opLayerPurityViolation(file, 1, 'invalid manifest shape')]
+  return dependencies
+    .filter((dependency) => dependency !== 'yjs')
+    .map((dependency) => opLayerPurityViolation(file, 1, dependency))
+}
+
+export function checkOpLayerRuntimeImports(
+  file: string,
+  source: string
+): Violation[] {
+  const parsed = parse(file, source)
+  if (parsed.violations.length)
+    return [opLayerPurityViolation(file, 1, 'invalid built JavaScript')]
+  const { sourceFile } = parsed
   const violations: Violation[] = []
-  const localApplier =
-    /(?:^|\/)(?:applier|docHost|opApplier|docApplier)(?:\/index)?(?:\.[cm]?[jt]sx?)?$/
   visit(sourceFile, (node) => {
     const specifier = moduleSpecifier(node)
-    if (specifier === undefined) return
     if (
-      specifier.startsWith('@comfyorg/comfy-multi-player') ||
-      !localApplier.test(specifier)
+      specifier === undefined ||
+      specifier.startsWith('.') ||
+      specifier.startsWith('/') ||
+      specifier === 'yjs' ||
+      specifier.startsWith('yjs/')
     )
       return
     violations.push(
-      violation(
-        file,
-        sourceFile,
-        node,
-        'single-applier',
-        'imports a local applier — conflict resolution must come from the pinned @comfyorg/comfy-multi-player package'
-      )
+      opLayerPurityViolation(file, lineOf(sourceFile, node), specifier)
     )
   })
   return violations
 }
 
-export function checkSingleApplier(file: string, source: string): Violation[] {
-  return runAstCheck(file, source, singleApplier)
+export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
+  const packageRoot = resolve(repositoryRoot, OP_LAYER_PACKAGE_PATH)
+  const manifestFile = `${OP_LAYER_PACKAGE_PATH}/package.json`
+  let manifestSource: string
+  try {
+    manifestSource = readFileSync(resolve(repositoryRoot, manifestFile), 'utf8')
+  } catch (error) {
+    return [
+      opLayerPurityViolation(
+        manifestFile,
+        1,
+        `unreadable manifest (${error instanceof Error ? error.message : String(error)})`
+      )
+    ]
+  }
+
+  const violations = checkOpLayerManifest(manifestFile, manifestSource)
+  const runtimeFiles = globSync('dist/**/*.js', { cwd: packageRoot }).sort()
+  if (runtimeFiles.length === 0) {
+    violations.push(
+      opLayerPurityViolation(
+        `${OP_LAYER_PACKAGE_PATH}/dist/**/*.js`,
+        1,
+        'no built runtime files'
+      )
+    )
+    return violations
+  }
+
+  for (const relativeFile of runtimeFiles) {
+    const file = `${OP_LAYER_PACKAGE_PATH}/${relativeFile}`
+    let source: string
+    try {
+      source = readFileSync(resolve(packageRoot, relativeFile), 'utf8')
+    } catch (error) {
+      violations.push(
+        opLayerPurityViolation(
+          file,
+          1,
+          `unreadable runtime file (${error instanceof Error ? error.message : String(error)})`
+        )
+      )
+      continue
+    }
+    violations.push(...checkOpLayerRuntimeImports(file, source))
+  }
+  return violations
 }
 
 function catalogPinnedBySha(file: string, source: string): Violation[] {
@@ -520,7 +626,6 @@ export function checkFile(file: string, source: string): Violation[] {
   return [
     ...noOutboundUpdateB64(file, parsed.sourceFile),
     ...noOpIdRegeneration(file, parsed.sourceFile),
-    ...singleApplier(file, parsed.sourceFile),
     ...catalogPinnedBySha(file, source),
     ...noScatteredDistributionChecks(file, parsed.sourceFile),
     ...noHardcodedEndpoint(file, parsed.sourceFile)
@@ -562,7 +667,10 @@ export function checkFollowerFiles(
 }
 
 function main(): void {
-  const violations = checkFollowerFiles(process.cwd())
+  const violations = [
+    ...checkFollowerFiles(process.cwd()),
+    ...checkOpLayerPurity(process.cwd())
+  ]
   if (violations.length === 0) {
     process.stdout.write(
       `Follower invariant guard passed (${FOLLOWER_CORE_FILES.length} files scanned)\n`
