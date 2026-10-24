@@ -22,7 +22,8 @@ const config: KnipConfig = {
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
-        '!src/__ecs_matrix__/**'
+        '!src/__ecs_matrix__/**',
+        '!**/.vercel/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
@@ -90,8 +91,6 @@ const config: KnipConfig = {
     'apps/website/src/types/rate-card/index.ts',
     'apps/website/src/types/rate-card/types.gen.ts',
     'apps/website/src/types/rate-card/zod.gen.ts',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',

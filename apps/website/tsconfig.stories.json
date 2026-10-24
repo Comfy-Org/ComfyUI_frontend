@@ -5,12 +5,21 @@
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
-    "composite": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "esModuleInterop": true,
+    "types": ["vite/client"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "astro:env/client": ["./src/test/astroEnv.ts"],
+      "@website/*": ["./*"]
     }
   },
-  "include": ["src/**/*.stories.ts"]
+  "include": [
+    ".storybook/**/*.ts",
+    "src/**/*.stories.ts",
+    "src/env.d.ts",
+    ".astro/**/*.d.ts"
+  ]
 }

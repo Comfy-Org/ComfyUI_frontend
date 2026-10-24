@@ -1,0 +1,103 @@
+name: 'PR: Marketing Storybook Preview'
+
+on:
+  workflow_run:
+    workflows: ['CI: Marketing Storybook Preview']
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event.workflow_run.event == 'pull_request' ||
+       (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')) &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Resolve current PR
+        if: github.event.workflow_run.event == 'pull_request'
+        id: pr
+        uses: ./.github/actions/resolve-pr-from-workflow-run
+      - name: Check push freshness
+        id: freshness
+        if: github.event.workflow_run.event == 'push'
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          CURRENT_SHA=$(git rev-parse HEAD)
+          if [[ "$CURRENT_SHA" != "$SOURCE_SHA" ]]; then
+            echo '::notice::Skipping superseded marketing build; main advanced during verification.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            echo 'Marketing deployment skipped: main advanced during verification. The previously published catalog remains live.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/download-artifact@v8
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        with:
+          name: marketing-storybook-static
+          path: marketing-storybook-static
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-node@v6
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        with:
+          node-version: '24'
+      - name: Validate static preview
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        env:
+          SOURCE_SHA: ${{ steps.pr.outputs.head-sha || github.event.workflow_run.head_sha }}
+        run: |
+          node scripts/cicd/validate-marketing-preview.ts marketing-storybook-static "$SOURCE_SHA"
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        with:
+          version: 11.13.1
+          run_install: false
+      - name: Deploy isolated preview
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_BRANCH: ${{ github.event.workflow_run.event == 'push' && 'marketing' || format('marketing-pr-{0}', steps.pr.outputs.number) }}
+          SOURCE_SHA: ${{ steps.pr.outputs.head-sha || github.event.workflow_run.head_sha }}
+        run: |
+          set -o pipefail
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo '::error::Marketing preview requires the existing Cloudflare Pages credentials.'
+            exit 1
+          fi
+          pnpm dlx wrangler@4 pages deploy marketing-storybook-static \
+            --project-name=comfy-storybook --branch="$DEPLOY_BRANCH" \
+            --commit-hash="$SOURCE_SHA" 2>&1 | tee marketing-deploy.log
+          URL=$(sed -n 's/.*\(https:\/\/[^ ]*\.pages.dev\).*/\1/p' marketing-deploy.log | head -1)
+          [[ "$URL" =~ ^https://[a-zA-Z0-9.-]+\.pages\.dev$ ]]
+          printf 'url=%s\n' "$URL" >> "$GITHUB_OUTPUT"
+          printf '{"commit":"%s","url":"%s"}\n' "$SOURCE_SHA" "$URL" > marketing-preview.json
+          printf '### Marketing Storybook\n[Component catalog preview](%s)\nSource commit: `%s`\n' "$URL" "$SOURCE_SHA" > marketing-preview.md
+      - uses: actions/upload-artifact@v6
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
+        with:
+          name: marketing-storybook-preview
+          path: marketing-preview.json
+          if-no-files-found: error
+          retention-days: 7
+      - uses: ./.github/actions/post-pr-report-comment
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true' && github.event.workflow_run.event == 'pull_request'
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          report-file: marketing-preview.md
+          comment-marker: '<!-- COMFYUI_MARKETING_STORYBOOK_PREVIEW -->'
+          token: ${{ github.token }}

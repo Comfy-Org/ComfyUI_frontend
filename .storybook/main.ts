@@ -17,10 +17,8 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 }
 
 const config: StorybookConfig = {
-  stories: [
-    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../apps/website/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
-  ],
+  // Marketing stories use the website catalog and its own source aliases.
+  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
   staticDirs: ['../public', '../apps/website/public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {

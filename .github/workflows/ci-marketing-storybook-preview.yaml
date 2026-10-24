@@ -1,0 +1,67 @@
+name: 'CI: Marketing Storybook Preview'
+
+on:
+  pull_request:
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-marketing-storybook-preview.yaml'
+      - '.github/workflows/pr-marketing-storybook-preview.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-marketing-storybook-preview.yaml'
+      - '.github/workflows/pr-marketing-storybook-preview.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: false
+      - name: Typecheck marketing stories
+        run: pnpm --filter @comfyorg/website typecheck:storybook
+      - name: Build marketing Storybook
+        run: pnpm --filter @comfyorg/website build-storybook
+      - name: Install browser test engines
+        run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Verify catalog contracts
+        id: catalog-tests
+        run: pnpm --filter @comfyorg/website test:storybook:built
+      - uses: actions/upload-artifact@v6
+        if: always() && (steps.catalog-tests.outcome == 'success' || steps.catalog-tests.outcome == 'failure')
+        with:
+          name: marketing-storybook-browser-report
+          if-no-files-found: error
+          path: apps/website/playwright-report/storybook
+          retention-days: 7
+      - name: Verify generated metadata
+        run: git diff --exit-code -- apps/website/.storybook/generated
+      - name: Stamp source commit
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node --input-type=module -e "import {writeFileSync} from 'node:fs'; writeFileSync('apps/website/dist/storybook/build-info.json', JSON.stringify({commit:process.env.SOURCE_SHA}) + '\n')"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: marketing-storybook-static
+          path: apps/website/dist/storybook
+          if-no-files-found: error
+          retention-days: 7
