@@ -88,10 +88,16 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
       width: box.width - 4,
       height: box.height - 4
     }
-    const atRest = await comfyPage.page.screenshot({ clip: textOnly })
+    const atRest = await comfyPage.page.screenshot({
+      clip: textOnly,
+      animations: 'disabled'
+    })
 
     await textarea.hover()
-    const hovered = await comfyPage.page.screenshot({ clip: textOnly })
+    const hovered = await comfyPage.page.screenshot({
+      clip: textOnly,
+      animations: 'disabled'
+    })
 
     expect(hovered.equals(atRest), 'text moved when hovered').toBe(true)
   })

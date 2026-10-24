@@ -69,7 +69,7 @@
         v-bind="filteredProps"
         :id
         ref="textAreaRef"
-        v-model="modelValue"
+        :model-value="text"
         class="min-h-0 flex-1 resize-none overflow-y-auto rounded-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground focus-visible:ring-0"
         :placeholder
         :readonly="isReadOnly"
@@ -78,6 +78,7 @@
         @pointermove.capture.stop
         @pointerup.capture.stop
         @contextmenu.capture="handleContextMenu"
+        @update:model-value="(value) => (modelValue = String(value))"
       />
     </div>
   </div>
@@ -119,7 +120,8 @@ const {
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
-const modelValue = defineModel<string>({ default: '' })
+const modelValue = defineModel<string | null>({ default: '' })
+const text = computed(() => modelValue.value ?? '')
 
 const isFocused = ref(false)
 function trackFocus() {
@@ -139,8 +141,8 @@ const { t, n } = useI18n()
 const characterCount = computed(() =>
   t(
     'textEditor.characterCount',
-    { count: n(modelValue.value.length) },
-    modelValue.value.length
+    { count: n(text.value.length) },
+    text.value.length
   )
 )
 const id = useId()
@@ -158,7 +160,7 @@ function handleContextMenu(e: MouseEvent) {
 }
 
 async function handleCopy() {
-  isCopied.value = await copyToClipboard(modelValue.value, {
+  isCopied.value = await copyToClipboard(text.value, {
     toastOnSuccess: false
   })
 }
@@ -172,7 +174,7 @@ function openTextEditor() {
       ? undefined
       : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
   closeTextEditor = showTextEditor({
-    text: modelValue.value,
+    text: text.value,
     widgetLabel: displayName.value,
     nodeTitle: node?.title,
     readOnly: isReadOnly.value,
