@@ -1193,6 +1193,20 @@ describe('ComfyApp', () => {
 
         expect(mockCanvas.draw).not.toHaveBeenCalled()
       })
+
+      it('is dropped when another root graph is activated before the canvas shows', async () => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        app.activateRootGraph(new LGraph())
+        revealCanvas()
+
+        expect(mockCanvas.draw).not.toHaveBeenCalled()
+      })
     })
 
     it('brackets an API JSON import with graph-load hooks', async () => {
