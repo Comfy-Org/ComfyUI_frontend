@@ -1,9 +1,14 @@
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
 import type { CoachStep } from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
+  hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
   useOnboarding
@@ -17,8 +22,118 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
   placement: 'left-center'
 }))
 
+function pendingResponse() {
+  let resolve: (response: Response) => void = () => {}
+  const promise = new Promise<Response>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
+function onboardedScopes(): string[] | undefined {
+  return useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
+}
+
 describe('useOnboarding', () => {
-  beforeEach(() => window.localStorage.clear())
+  beforeEach(() => {
+    window.localStorage.clear()
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+  })
+
+  it('stays finished on an origin whose localStorage never saw the tour', async () => {
+    useOnboarding(STEPS, KEY).finish()
+    await nextTick()
+
+    window.localStorage.clear()
+
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(false)
+    expect(hasSeenCoach(KEY)).toBe(true)
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        [KEY]
+      )
+    )
+  })
+
+  it('copies a completion recorded only in localStorage into settings', () => {
+    localStorage.setItem(KEY, 'true')
+
+    useOnboarding(STEPS, KEY)
+
+    expect(onboardedScopes()).toEqual([KEY])
+  })
+
+  it('retries a completion whose settings write failed on the next mount', async () => {
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
+    useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    await nextTick()
+
+    useOnboarding(STEPS, KEY)
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+  })
+
+  it('sends a restart only after the finish write settles', async () => {
+    const { promise: finishWrite, resolve: settleFinish } = pendingResponse()
+    vi.mocked(api.storeSetting).mockReturnValueOnce(finishWrite)
+    const tour = useOnboarding(STEPS, KEY)
+
+    tour.finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+    tour.restart()
+    await nextTick()
+    expect(api.storeSetting).toHaveBeenCalledTimes(1)
+
+    settleFinish(new Response())
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
+  })
+
+  it('keeps retrying a restart whose write failed after an older write succeeded', async () => {
+    const { promise: finishWrite, resolve: settleFinish } = pendingResponse()
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(finishWrite)
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+    const tour = useOnboarding(STEPS, KEY)
+    tour.finish()
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
+    tour.restart()
+    settleFinish(new Response())
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
+    await nextTick()
+
+    resetCoach(KEY)
+
+    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(3))
+    expect(api.storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
+  })
+
+  it('replays after clearing both the local and settings completion', async () => {
+    useOnboarding(STEPS, KEY).finish()
+    await nextTick()
+
+    resetCoach(KEY)
+
+    expect(onboardedScopes()).toEqual([])
+    expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
+  })
 
   it('honours a replay requested while no tour is mounted', async () => {
     // The take-the-tour button stays clickable while the coach is deferred by
