@@ -930,6 +930,24 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
+  it('keeps a useful status text inside the bounded fallback', async () => {
+    respond(
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'Bad Gateway'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe(
+      'Agent request failed (HTTP 502 Bad Gateway, get_thread_messages)'
+    )
+  })
+
   it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 

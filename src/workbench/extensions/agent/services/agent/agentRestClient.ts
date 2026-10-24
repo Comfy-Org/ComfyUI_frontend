@@ -289,7 +289,8 @@ function getBackendErrorMessage(body: unknown): string | undefined {
 function getErrorMessage(
   body: unknown,
   status: number,
-  operation: AgentApiOperation
+  operation: AgentApiOperation,
+  statusText: string
 ): string {
   const refused = zAttachmentRejection.safeParse(body)
   if (refused.success) {
@@ -300,9 +301,15 @@ function getErrorMessage(
   }
 
   const backendMessage = getBackendErrorMessage(body)
+  const normalizedStatusText = statusText.trim()
+  const statusTextSuffix =
+    !normalizedStatusText ||
+    normalizedStatusText.toLowerCase() === 'no error message'
+      ? ''
+      : ` ${normalizedStatusText}`
   return backendMessage?.trim()
     ? backendMessage
-    : `Agent request failed (HTTP ${status}, ${operation})`
+    : `Agent request failed (HTTP ${status}${statusTextSuffix}, ${operation})`
 }
 
 const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
@@ -528,7 +535,12 @@ export function createAgentRestClient() {
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const backendMessage = getBackendErrorMessage(body)
-    const message = getErrorMessage(body, response.status, operation)
+    const message = getErrorMessage(
+      body,
+      response.status,
+      operation,
+      response.statusText
+    )
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )

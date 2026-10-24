@@ -19,8 +19,6 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test(
-  // #20626: an upstream response whose status text is literally "No error
-  // message" must still tell the user which bounded Agent operation failed.
   'names the failed operation when an upstream status text has no error message',
   { tag: '@cloud' },
   async ({ agentPanel }) => {
