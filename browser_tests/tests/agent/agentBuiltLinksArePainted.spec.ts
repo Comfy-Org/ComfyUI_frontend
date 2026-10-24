@@ -63,10 +63,9 @@ async function paintedLinkIds(page: Page): Promise<number[]> {
   const ids = await page.evaluate(() => {
     const canvas = window.app?.canvas
     if (!canvas?.renderedPaths) return []
-    canvas.draw(true, true)
-    return [...canvas.renderedPaths]
-      .filter((segment) => 'origin_id' in segment)
-      .map((segment) => Number(segment.id))
+    return [...window.app!.graph.links.values()]
+      .filter((link) => canvas.renderedPaths.has(link))
+      .map((link) => Number(link.id))
   })
   return ids.sort((a, b) => a - b)
 }
@@ -111,11 +110,13 @@ test.describe(
       test.setTimeout(120_000)
 
       await test.step('replay the recorded turn that wires the refiner in', () =>
-        agentConversation.runTurns())
+        agentConversation.runTurns({
+          beforeFirstGraphOps: () => agentConversation.fitCanvasToGraph()
+        }))
 
       const agentLinkIds =
         await test.step('half 1: the agent-built links are drawn on the canvas', async () => {
-          await agentConversation.fitCanvasToGraph()
+          await comfyPage.nextFrame()
           const expected = await graphLinkIds(page)
           expect(expected.length).toBeGreaterThanOrEqual(4)
           await expect
@@ -143,13 +144,14 @@ test.describe(
           await (await refiner.getInput(negative)).getPosition()
         )
 
+        await expect
+          .poll(
+            () => graphLinkIds(page),
+            'the hand drag did not create a link, so this spec never reached the rendering question'
+          )
+          .toHaveLength(agentLinkIds.length + 1)
         const withHandDrawn = await graphLinkIds(page)
-        expect(
-          withHandDrawn,
-          'the hand drag did not create a link, so this spec never reached the rendering question'
-        ).toHaveLength(agentLinkIds.length + 1)
 
-        await agentConversation.fitCanvasToGraph()
         await expect
           .poll(() => paintedLinkIds(page), { timeout: 15_000 })
           .toEqual(withHandDrawn)
@@ -166,6 +168,12 @@ test.describe(
             toSlot: link.target_slot
           }
         }, toLinkId(handDrawnId))
+        expect(endpoints).toEqual({
+          fromNode: PROMPT_ENCODER_ID,
+          fromSlot: PROMPT_ENCODER_CONDITIONING_OUTPUT,
+          toNode: REFINER_ID,
+          toSlot: negative
+        })
         await expect(
           agentConversation.vueNodes.getOutputSlotRow(
             endpoints.fromNode,
@@ -201,6 +209,9 @@ test.describe(
 
       const before = await graphLinkIds(page)
 
+      await comfyPage.canvasOps.setScale(0.5)
+      await comfyPage.canvasOps.setOffset([-1500, -600])
+
       await test.step('the agent loads a two-node workflow with a link in it', () =>
         agentConversation.pushHostOps([LINKED_INSERT]))
 
@@ -218,11 +229,44 @@ test.describe(
         after,
         'the insert put no link on the graph, so this spec never reached the rendering question'
       ).toHaveLength(before.length + 1)
+      const insertedLinkId = after.find((id) => !before.includes(id))
+      expect(insertedLinkId).toBeDefined()
 
-      await agentConversation.fitCanvasToGraph()
       await expect
         .poll(() => paintedLinkIds(page), { timeout: 15_000 })
-        .toEqual(after)
+        .toContain(insertedLinkId)
+      const insertedEndpoints = await page.evaluate((id) => {
+        const graph = window.app!.graph
+        const link = graph.links.get(id)!
+        return {
+          fromNode: String(link.origin_id),
+          fromSlot: link.origin_slot,
+          fromType: graph.getNodeById(link.origin_id)?.type,
+          toNode: String(link.target_id),
+          toSlot: link.target_slot,
+          toType: graph.getNodeById(link.target_id)?.type
+        }
+      }, toLinkId(insertedLinkId!))
+      expect(insertedEndpoints).toEqual({
+        fromNode: expect.any(String),
+        fromSlot: 1,
+        fromType: 'CheckpointLoaderSimple',
+        toNode: expect.any(String),
+        toSlot: 0,
+        toType: 'CLIPTextEncode'
+      })
+      await expect(
+        agentConversation.vueNodes.getOutputSlotRow(
+          insertedEndpoints.fromNode,
+          insertedEndpoints.fromSlot
+        )
+      ).toHaveClass(/lg-slot--connected/)
+      await expect(
+        agentConversation.vueNodes.getInputSlotRow(
+          insertedEndpoints.toNode,
+          insertedEndpoints.toSlot
+        )
+      ).toHaveClass(/lg-slot--connected/)
     })
   }
 )
