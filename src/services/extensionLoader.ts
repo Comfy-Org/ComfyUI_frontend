@@ -32,12 +32,6 @@ function getExtensionPackPath(extension: string): string | undefined {
   }
 }
 
-function normalizePackPaths(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((path): path is string => typeof path === 'string')
-    : []
-}
-
 export function shouldLoadExtension(
   extension: string,
   {
@@ -186,9 +180,7 @@ export async function loadExtensions() {
   extensionStore.loadDisabledExtensionNames(
     settingStore.get('Comfy.Extension.Disabled')
   )
-  const disabledPackPaths = normalizePackPaths(
-    settingStore.get('Comfy.Extension.DisabledPacks')
-  )
+  const disabledPackPaths = settingStore.get('Comfy.Extension.DisabledPacks')
   const disableAllCustomExtensions = new URLSearchParams(
     window.location.search
   ).has('safe')

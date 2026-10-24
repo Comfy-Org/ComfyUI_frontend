@@ -32,9 +32,22 @@ interface SettingChange {
 }
 
 interface AppliedSetting<TValue> {
+  written: true
   previousValue: TValue
   newValue: TValue
+  writeToken: number
 }
+
+type LocalSettingWrite<TValue> =
+  | AppliedSetting<TValue>
+  | { written: false; outcome: 'unchanged' | 'superseded' }
+
+/** Settings with no `onChange` to undo, so a failed write can be reverted. */
+export const REVERTIBLE_SETTING_IDS = [
+  'Comfy.Extension.DisabledPacks'
+] as const satisfies readonly (keyof Settings)[]
+
+type RevertibleSettingId = (typeof REVERTIBLE_SETTING_IDS)[number]
 
 function resolveDefaultValue<T>(value: T | (() => T)): T {
   return typeof value === 'function' ? (value as () => T)() : value
@@ -175,31 +188,22 @@ export const useSettingStore = defineStore('setting', () => {
     return settingValues.value[key] !== undefined
   }
 
-  /**
-   * Apply a setting value locally: clone, migrate, update the in-memory
-   * store, and fire onChange. Returns the migrated value, or `undefined`
-   * when the value is unchanged and was skipped.
-   *
-   * The store is updated before `onChange` runs so that handlers reading
-   * this setting — including handlers of other settings this one cascades
-   * into — observe the new value rather than the one it replaced.
-   */
   async function applySettingLocally<K extends keyof Settings>(
     key: K,
     value: Settings[K]
-  ): Promise<AppliedSetting<Settings[K]> | undefined> {
+  ): Promise<LocalSettingWrite<Settings[K]>> {
     const clonedValue = cloneDeep(value)
     const newValue = tryMigrateDeprecatedValue(
       settingsById.value[key],
       clonedValue
     )
     const oldValue = get(key)
-    if (newValue === oldValue) return undefined
+    if (newValue === oldValue) return { written: false, outcome: 'unchanged' }
 
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
-    const write = (latestWrite.get(key) ?? 0) + 1
-    latestWrite.set(key, write)
+    const writeToken = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, writeToken)
 
     await onChange(
       settingsById.value[key],
@@ -208,12 +212,14 @@ export const useSettingStore = defineStore('setting', () => {
       settingChanged.trigger
     )
 
-    // Handlers are awaited, so a slow one lets a later change to this key land
-    // first. That change owns the value now; persisting ours would revert it.
-    if (latestWrite.get(key) !== write) return undefined
+    if (latestWrite.get(key) !== writeToken) {
+      return { written: false, outcome: 'superseded' }
+    }
     return {
+      written: true,
       previousValue: oldValue,
-      newValue: typedNewValue
+      newValue: typedNewValue,
+      writeToken
     }
   }
 
@@ -223,46 +229,29 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    await persistSetting(key, value, false)
+    await persistSetting(key, value, { revertOnFailure: false })
   }
 
-  /**
-   * Set a setting value, returning the key to the value it held before when
-   * the server refuses the write or cannot be reached.
-   *
-   * Use this when the stored value is the only record of a control the user
-   * just operated: keeping a refused value leaves every reader — including
-   * that control, once it is remounted — showing a state the backend never
-   * accepted. {@link set} is the one to use where an optimistic local value is
-   * wanted even though the write failed, as a dismissal that should stay
-   * dismissed for the rest of the session is.
-   *
-   * Unlike {@link set} this reports an unreachable backend as a value rather
-   * than a rejection, so the two failures are one branch for the caller.
-   */
-  async function setOrRevert<K extends keyof Settings>(
+  /** Set a value, restoring the one it replaced if the backend never took it. */
+  async function setOrRevert<K extends RevertibleSettingId>(
     key: K,
     value: Settings[K]
   ) {
-    return persistSetting(key, value, true)
+    return persistSetting(key, value, { revertOnFailure: true })
   }
 
   async function persistSetting<K extends keyof Settings>(
     key: K,
     value: Settings[K],
-    revertOnFailure: boolean
+    { revertOnFailure }: { revertOnFailure: boolean }
   ): Promise<SettingWriteResult> {
     const hadValue = exists(key)
-    const applied = await applySettingLocally(key, value)
-    if (applied === undefined) return { ok: true }
-    const write = latestWrite.get(key)
+    const local = await applySettingLocally(key, value)
+    if (!local.written) return { ok: true, outcome: local.outcome }
 
     let failure: SettingWriteResult | undefined
     try {
-      const response = await api.storeSetting(key, applied.newValue)
-      // `api.fetchApi` resolves for any status it got a response for, so a
-      // refusal arrives here looking exactly like a saved value. Reported as
-      // data rather than thrown: whether one matters is the caller's call.
+      const response = await api.storeSetting(key, local.newValue)
       if (!response.ok) {
         failure = {
           ok: false,
@@ -271,8 +260,6 @@ export const useSettingStore = defineStore('setting', () => {
         }
       }
     } catch (cause) {
-      // Rethrown for `set`, whose callers have always seen a rejection for an
-      // unreachable backend and some of which depend on it.
       if (!revertOnFailure) throw cause
       failure = {
         ok: false,
@@ -282,20 +269,16 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     if (failure) {
-      // Skipped when a later write has landed — that value owns the key now,
-      // exactly as in `applySettingLocally`. The revert deliberately does not
-      // re-run `onChange`: handlers may cascade into further writes, and
-      // re-entering them here would let a refused save trigger more of them.
-      if (revertOnFailure && latestWrite.get(key) === write) {
-        if (hadValue) settingValues.value[key] = applied.previousValue
+      if (revertOnFailure && latestWrite.get(key) === local.writeToken) {
+        if (hadValue) settingValues.value[key] = local.previousValue
         else delete settingValues.value[key]
       }
       return failure
     }
 
-    const event = settingChangedEvent(settingsById.value[key], key, applied)
+    const event = settingChangedEvent(settingsById.value[key], key, local)
     if (event) useTelemetry()?.trackSettingChanged(event)
-    return { ok: true }
+    return { ok: true, outcome: 'saved' }
   }
 
   /**
@@ -307,10 +290,10 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = await applySettingLocally(key, settings[key])
-      if (applied !== undefined) {
-        Object.assign(updatedSettings, { [key]: applied.newValue })
-        const event = settingChangedEvent(settingsById.value[key], key, applied)
+      const local = await applySettingLocally(key, settings[key])
+      if (local.written) {
+        Object.assign(updatedSettings, { [key]: local.newValue })
+        const event = settingChangedEvent(settingsById.value[key], key, local)
         if (event) telemetryEvents.push(event)
       }
     }

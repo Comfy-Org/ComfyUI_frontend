@@ -221,14 +221,9 @@ type SettingTelemetryOptions =
       includeValues?: boolean
     }
 
-/**
- * Whether a setting write reached the backend. `refused` means the backend
- * answered and declined — an HTTP error status, which `api.fetchApi` resolves
- * rather than rejects, so it is otherwise indistinguishable from a saved
- * value. `unreachable` means no answer arrived at all.
- */
+/** Outcome of one setting write; only `saved` was acknowledged by the backend. */
 export type SettingWriteResult =
-  | { ok: true }
+  | { ok: true; outcome: 'saved' | 'unchanged' | 'superseded' }
   | { ok: false; reason: 'refused' | 'unreachable'; detail: string }
 
 export interface SettingParams<TValue = unknown> extends FormItem {

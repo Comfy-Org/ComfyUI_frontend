@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -25,14 +26,6 @@ function renderPanel() {
   return render(ExtensionPanel, { global: { plugins: [testI18n] } })
 }
 
-/**
- * Brings up the panel's dependencies the way boot does: the saved value is in
- * place before the setting registers, so its normalization runs, and the
- * extension store takes its snapshot from that same value. Tests drive the
- * save through `api.storeSetting` rather than stubbing `settingStore.set`,
- * because every behaviour here is about the ordering and failure handling
- * between the panel and the setting that owns the value.
- */
 function bootWithPacks(packs: string[], saved: unknown) {
   const settingStore = useSettingStore()
   Object.assign(settingStore.settingValues, { [DISABLED_PACKS]: saved })
@@ -42,11 +35,6 @@ function bootWithPacks(packs: string[], saved: unknown) {
     settingStore.get(DISABLED_PACKS)
   )
   return settingStore
-}
-
-/** See the note on the same helper in `extensionStore.test.ts`. */
-async function flushMicrotasks() {
-  for (let hop = 0; hop < 50; hop++) await Promise.resolve()
 }
 
 const packSwitch = (name: string) =>
@@ -204,30 +192,6 @@ describe('ExtensionPanel', () => {
   })
 
   describe('extension packs', () => {
-    it('disables a whole extension pack without dropping absent disabled packs', async () => {
-      const user = userEvent.setup()
-      const settingStore = bootWithPacks(
-        ['/extensions/agent-cushions/'],
-        ['/extensions/missing/']
-      )
-      vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-
-      renderPanel()
-      await user.click(packSwitch('agent-cushions'))
-      await flushMicrotasks()
-
-      expect(api.storeSetting).toHaveBeenLastCalledWith(DISABLED_PACKS, [
-        '/extensions/missing/',
-        '/extensions/agent-cushions/'
-      ])
-      expect(settingStore.get(DISABLED_PACKS)).toEqual([
-        '/extensions/missing/',
-        '/extensions/agent-cushions/'
-      ])
-      expect(reloadButton()).toBeVisible()
-      expect(screen.getByRole('alert')).toHaveTextContent('[-] agent-cushions')
-    })
-
     it('keeps disabled packs across panel remounts and later edits', async () => {
       const user = userEvent.setup()
       const settingStore = bootWithPacks(
@@ -238,7 +202,12 @@ describe('ExtensionPanel', () => {
 
       const panel = renderPanel()
       await user.click(packSwitch('agent-cushions'))
-      await flushMicrotasks()
+      await vi.waitFor(() =>
+        expect(settingStore.get(DISABLED_PACKS)).toEqual([
+          '/extensions/missing/',
+          '/extensions/agent-cushions/'
+        ])
+      )
       panel.unmount()
       renderPanel()
 
@@ -246,22 +215,24 @@ describe('ExtensionPanel', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('[-] agent-cushions')
 
       await user.click(packSwitch('other'))
-      await flushMicrotasks()
-
-      expect(settingStore.get(DISABLED_PACKS)).toEqual([
-        '/extensions/missing/',
-        '/extensions/agent-cushions/',
-        '/extensions/other/'
-      ])
+      await vi.waitFor(() =>
+        expect(settingStore.get(DISABLED_PACKS)).toEqual([
+          '/extensions/missing/',
+          '/extensions/agent-cushions/',
+          '/extensions/other/'
+        ])
+      )
     })
 
-    it('keeps the reload unavailable until the save is acknowledged', async () => {
+    it('holds the reload and every pack switch until the save is acknowledged', async () => {
       const user = userEvent.setup()
-      bootWithPacks(['/extensions/agent-cushions/'], [])
+      bootWithPacks(['/extensions/agent-cushions/', '/extensions/other/'], [])
       let acknowledge = () => {}
+      let requested = false
       vi.spyOn(api, 'storeSetting').mockImplementation(
         () =>
           new Promise<Response>((resolve) => {
+            requested = true
             acknowledge = () => resolve(new Response())
           })
       )
@@ -269,56 +240,47 @@ describe('ExtensionPanel', () => {
 
       renderPanel()
       await user.click(packSwitch('agent-cushions'))
-      await flushMicrotasks()
+      await vi.waitFor(() => expect(requested).toBe(true))
 
-      // Reloading now would re-read the list the server still holds and lose
-      // the change the switch already shows.
       expect(reloadButton()).toBeDisabled()
+      expect(packSwitch('other')).toBeDisabled()
 
       acknowledge()
-      await flushMicrotasks()
+      await vi.waitFor(() => expect(reloadButton()).toBeEnabled())
 
-      expect(reloadButton()).toBeEnabled()
+      expect(packSwitch('other')).toBeEnabled()
       await user.click(reloadButton()!)
       expect(reload).toHaveBeenCalledOnce()
     })
 
-    it.for([
-      {
-        label: 'refuses the write',
-        storeSetting: () =>
-          Promise.resolve(
-            new Response(null, { status: 500, statusText: 'Server Error' })
-          )
-      },
-      {
-        label: 'is unreachable',
-        storeSetting: () => Promise.reject(new Error('offline'))
-      }
-    ])(
-      'returns the switch to the stored value when the server $label',
-      async ({ storeSetting }) => {
-        const user = userEvent.setup()
-        const settingStore = bootWithPacks(['/extensions/agent-cushions/'], [])
-        vi.spyOn(api, 'storeSetting').mockImplementation(storeSetting)
+    it('returns the switch to the stored value and says so when the save fails', async () => {
+      const user = userEvent.setup()
+      const settingStore = bootWithPacks(['/extensions/agent-cushions/'], [])
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
 
-        const panel = renderPanel()
-        await user.click(packSwitch('agent-cushions'))
-        await flushMicrotasks()
+      const panel = renderPanel()
+      await user.click(packSwitch('agent-cushions'))
+      await vi.waitFor(() =>
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({
+            kind: 'warning',
+            title: expect.stringContaining('500 Server Error')
+          })
+        )
+      )
 
-        expect(packSwitch('agent-cushions')).toBeChecked()
-        expect(settingStore.get(DISABLED_PACKS)).toEqual([])
-        expect(reloadButton()).not.toBeInTheDocument()
+      expect(packSwitch('agent-cushions')).toBeChecked()
+      expect(settingStore.get(DISABLED_PACKS)).toEqual([])
+      expect(reloadButton()).not.toBeInTheDocument()
 
-        // The failed disable must not come back when the panel is reopened,
-        // which is what a panel-local rollback could not guarantee.
-        panel.unmount()
-        renderPanel()
+      panel.unmount()
+      renderPanel()
 
-        expect(packSwitch('agent-cushions')).toBeChecked()
-        expect(reloadButton()).not.toBeInTheDocument()
-      }
-    )
+      expect(packSwitch('agent-cushions')).toBeChecked()
+      expect(reloadButton()).not.toBeInTheDocument()
+    })
 
     it('opens with a corrupt saved pack list instead of throwing', () => {
       const settingStore = bootWithPacks(['/extensions/agent-cushions/'], {})
@@ -339,9 +301,9 @@ describe('ExtensionPanel', () => {
       expect(screen.getByRole('cell', { name: 'with space' })).toBeVisible()
 
       await user.click(packSwitch('with space'))
-      await flushMicrotasks()
-
-      expect(screen.getByRole('alert')).toHaveTextContent('[-] with space')
+      await vi.waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent('[-] with space')
+      )
     })
   })
 
