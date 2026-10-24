@@ -31,6 +31,10 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  clearPendingSignInAccept,
+  hasPendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -165,7 +169,7 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
-      const { withConsent } = useAgentConsent()
+      const { withConsent, resumeAcceptAfterReload } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       const dialogStore = useDialogStore()
@@ -483,13 +487,25 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
-      const loadConsentIfEligible = (): void => {
+      let resumingAccept = false
+      function resumePendingAccept(): boolean {
+        if (introductionStore.isContinuingSignIn || !hasPendingSignInAccept())
+          return false
+        if (!isLoggedIn.value) {
+          if (isAuthInitialized.value) clearPendingSignInAccept()
+          return false
+        }
+        if (!resolvedUserInfo.value) return true
+        resumingAccept = true
+        void resumeAcceptAfterReload().finally(() => {
+          resumingAccept = false
+          if (!workspaceStore.isSwitching) loadConsentIfEligible(false)
+        })
+        return true
+      }
+
+      function loadConsent(): void {
         const { introduceBeforeSignIn } = agentPanelStore.onboarding
-        if (
-          !agentPanelStore.enabled ||
-          (introduceBeforeSignIn && !isAuthInitialized.value)
-        )
-          return
         if (introduceBeforeSignIn && !isLoggedIn.value) {
           offerWhenStartupDecided()
           return
@@ -513,13 +529,24 @@ export function registerAgentPanelExtension(): void {
             })
           })
       }
+      const loadConsentIfEligible = (resume = true): void => {
+        const { introduceBeforeSignIn } = agentPanelStore.onboarding
+        if (
+          !agentPanelStore.enabled ||
+          (introduceBeforeSignIn && !isAuthInitialized.value)
+        )
+          return
+        if (resumingAccept || (resume && resumePendingAccept())) return
+        loadConsent()
+      }
       watch(
         [
           () => resolvedUserInfo.value?.id,
           () => consentStore.identity,
-          () => isAuthInitialized.value
+          () => isAuthInitialized.value,
+          () => workspaceStore.isSwitching
         ],
-        loadConsentIfEligible
+        () => loadConsentIfEligible()
       )
 
       whenever(

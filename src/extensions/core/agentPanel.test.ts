@@ -86,24 +86,28 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => {
-    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(
-        async (
-          _trigger: AgentConsentTrigger,
-          onAccept: () => void,
-          hooks?: ConsentOfferHooks
-        ) => {
-          if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
-          onAccept()
-        }
-      )
-    })
-    const CONSENT_DIALOG_KEY = 'agent-consent' as const
-    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
+  {
+    spy: true
   }
 )
+
+const mockedConsent = fromPartial<ReturnType<typeof useAgentConsent>>({
+  withConsent: vi.fn(
+    async (
+      _trigger: AgentConsentTrigger,
+      onAccept: () => void,
+      hooks?: ConsentOfferHooks
+    ) => {
+      if (hooks?.canShow?.() === false) return
+      hooks?.onShown?.()
+      onAccept()
+    }
+  ),
+  resumeAcceptAfterReload: vi.fn(async () => {})
+})
+let resumeAcceptAfterReload: ReturnType<
+  typeof useAgentConsent
+>['resumeAcceptAfterReload']
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -229,6 +233,8 @@ describe('AgentPanel extension flag gate', () => {
       () => isAuthInitialized.value
     )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
+    resumeAcceptAfterReload = useAgentConsent().resumeAcceptAfterReload
+    vi.mocked(useAgentConsent).mockReturnValue(mockedConsent)
     mocks.isCloud = true
     mocks.isDesktop = false
     setupScope = effectScope()
@@ -2238,6 +2244,103 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterLoadGraph!(fromPartial({ rootGraph: graph }))
 
     expect(composer.nodes).toEqual([{ id: '12', title: 'Original title' }])
+  })
+
+  describe('an accept the sign-in reload interrupted', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+      )
+      setAgentReady(true)
+    })
+
+    afterEach(() => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = false
+    })
+
+    it('is finished before consent is read', async () => {
+      let finishResume = () => {}
+      const resume = vi.mocked(useAgentConsent().resumeAcceptAfterReload)
+      resume.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishResume = resolve))
+      )
+
+      await loadEntryAndSetup()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+      expect(resume).toHaveBeenCalledOnce()
+      expect(consentStore.load).not.toHaveBeenCalled()
+
+      finishResume()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+      expect(resume).toHaveBeenCalledOnce()
+      expect(consentStore.load).toHaveBeenCalledOnce()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('waits for the signed-in account to resolve', async () => {
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('is kept while auth has not settled on signed out', async () => {
+      currentUser.value = null
+      isAuthInitialized.value = false
+
+      await loadEntryAndSetup()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('is dropped when the page comes back signed out', async () => {
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('is left to the sign-in still waiting in this page', async () => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = true
+
+      await loadEntryAndSetup()
+
+      expect(useAgentConsent().resumeAcceptAfterReload).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('binds startup recovery before workspace readiness and invalidates it when the account changes', async () => {
+      Object.assign(workspaceStore, { isSwitching: true })
+      vi.mocked(useAgentConsent().resumeAcceptAfterReload).mockImplementation(
+        resumeAcceptAfterReload
+      )
+
+      await loadEntryAndSetup()
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        scope: { userId: 'account-a' }
+      })
+      expect(consentStore.load).not.toHaveBeenCalled()
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+      Object.assign(workspaceStore, { isSwitching: false })
+      await vi.waitFor(() =>
+        expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      )
+
+      expect(consentStore.accept).not.toHaveBeenCalled()
+    })
   })
 
   it('does not self-register when its module is imported', () => {

@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentConsentDecision,
@@ -15,6 +16,15 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
+import {
+  clearPendingSignInAccept,
+  readPendingSignInAccept,
+  ownsPendingSignInAccept,
+  bindPendingSignInAccept,
+  writePendingSignInAccept
+} from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -50,8 +60,10 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
   const agentPanelStore = useAgentPanelStore()
+  const composerStore = useAgentComposerStore()
   const toast = useToast()
-  const { isLoggedIn } = useCurrentUser()
+  const { isLoggedIn, resolvedUserInfo, isAuthInitialized } = useCurrentUser()
+  const workspaceStore = useTeamWorkspaceStore()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
@@ -95,6 +107,7 @@ export function useAgentConsent() {
     expectedIdentity?: string,
     { onShown, canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
+    const pendingAccept = readPendingSignInAccept()
     return new Promise<boolean>((resolve) => {
       if (canShow && !canShow()) {
         resolve(false)
@@ -153,6 +166,7 @@ export function useAgentConsent() {
 
       function finishAcceptance(saved: boolean): void {
         if (settled) return
+        if (saved && pendingAccept) clearPendingSignInAccept(pendingAccept)
         if (!persistOnAccept) reportOutcome('accepted_pending_sign_in')
         else reportOutcome(saved ? 'accepted' : 'accept_not_persisted')
         closeWith(saved)
@@ -210,6 +224,7 @@ export function useAgentConsent() {
           onReject: () => {
             if (settled) return
             markIntroductionResponded()
+            if (pendingAccept) clearPendingSignInAccept(pendingAccept)
             reportOutcome('rejected')
             if (
               agentPanelStore.onboarding.persistSkipAsRefusal &&
@@ -227,6 +242,7 @@ export function useAgentConsent() {
             if (settled) return
             settled = true
             stopScopeWatch()
+            if (pendingAccept) clearPendingSignInAccept(pendingAccept)
             if (shown) reportOutcome('dismissed')
             else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
@@ -236,6 +252,63 @@ export function useAgentConsent() {
     })
   }
 
+  function reportSaveFailure(error: unknown): void {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_consent_setting_write_failure'
+    })
+    toast.error(t('g.error'), {
+      description: t('agent.consent.saveError')
+    })
+  }
+
+  function bindSamePagePendingAccept(pending: PendingSignInAccept): boolean {
+    if (!ownsPendingSignInAccept(pending)) return true
+    const userId = resolvedUserInfo.value?.id
+    if (!userId) return false
+    const bound = bindPendingSignInAccept(pending, {
+      userId,
+      workspaceId: workspaceStore.activeWorkspaceId ?? undefined
+    })
+    if (bound.ok) return true
+    clearPendingSignInAccept(pending)
+    if (!agentPanelStore.onboarding.introduceBeforeSignIn) return true
+    reportSaveFailure(bound.error)
+    return false
+  }
+
+  async function saveAcceptanceAfterSignIn(
+    expectedIdentity?: string,
+    pending?: PendingSignInAccept
+  ): Promise<string | null> {
+    try {
+      const decisionIdentity =
+        expectedIdentity ?? (await consentStore.ensureScope())
+      if (decisionIdentity && pending && !bindSamePagePendingAccept(pending))
+        return null
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity))) {
+        useTelemetry()?.trackAgentConsentResolved({
+          decision: 'accept_not_persisted',
+          save_error_shown: false
+        })
+        return null
+      }
+      useTelemetry()?.trackAgentConsentResolved({
+        decision: 'accepted',
+        save_error_shown: false
+      })
+      return decisionIdentity
+    } catch (error) {
+      reportSaveFailure(error)
+      return null
+    }
+  }
+
+  function heldDraftText(): string {
+    const held = composerStore.submission
+    return held?.phase === 'pending' ? held.snapshot.prompt.text : ''
+  }
+
   async function acceptAfterSignIn(
     trigger: AgentConsentTrigger,
     hooks: ConsentOfferHooks
@@ -243,9 +316,15 @@ export function useAgentConsent() {
     if (!(await showConsentDialog(trigger, false, undefined, hooks)))
       return null
     introductionStore.isContinuingSignIn = true
+    const result = writePendingSignInAccept(heldDraftText())
     try {
+      if (!result.ok && agentPanelStore.onboarding.introduceBeforeSignIn) {
+        reportSaveFailure(result.error)
+        return null
+      }
+      let signedIn: boolean
       try {
-        if (!(await showSignInDialog())) return null
+        signedIn = await showSignInDialog()
       } catch (error) {
         reportError(error, {
           surface: 'agent',
@@ -256,35 +335,124 @@ export function useAgentConsent() {
         })
         return null
       }
-
-      try {
-        const decisionIdentity = await consentStore.ensureScope()
-        if (
-          !decisionIdentity ||
-          !(await consentStore.accept(decisionIdentity))
-        ) {
-          useTelemetry()?.trackAgentConsentResolved({
-            decision: 'accept_not_persisted',
-            save_error_shown: false
-          })
-          return null
-        }
-        useTelemetry()?.trackAgentConsentResolved({
-          decision: 'accepted',
-          save_error_shown: false
-        })
-        return decisionIdentity
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_consent_setting_write_failure'
-        })
-        toast.error(t('g.error'), {
-          description: t('agent.consent.saveError')
-        })
-        return null
-      }
+      if (!signedIn) return null
+      return await saveAcceptanceAfterSignIn(
+        undefined,
+        result.ok ? result.pending : undefined
+      )
     } finally {
+      if (result.ok) clearPendingSignInAccept(result.pending)
+      introductionStore.isContinuingSignIn = false
+    }
+  }
+
+  function restorePendingDraft(draft: string): void {
+    if (
+      draft &&
+      !composerStore.draft &&
+      composerStore.prompt.references.length === 0 &&
+      composerStore.attachments.length === 0 &&
+      !composerStore.submission
+    )
+      composerStore.restorePrompt({ text: draft, references: [] }, [])
+  }
+
+  function pendingAcceptForCurrentUser(): {
+    pending: PendingSignInAccept
+    accountId: string
+  } | null {
+    const pending = readPendingSignInAccept()
+    if (!pending) return null
+    if (!isLoggedIn.value) {
+      if (isAuthInitialized.value) clearPendingSignInAccept(pending)
+      return null
+    }
+    const accountId = resolvedUserInfo.value?.id
+    if (!accountId) return null
+    if (pending.scope && pending.scope.userId !== accountId) {
+      clearPendingSignInAccept(pending)
+      return null
+    }
+    return { pending, accountId }
+  }
+
+  function preparePendingAccept() {
+    const prepared = pendingAcceptForCurrentUser()
+    if (!prepared) return null
+    const { pending, accountId } = prepared
+    if (
+      !pending.scope?.workspaceId ||
+      pending.scope.workspaceId === workspaceStore.activeWorkspaceId
+    )
+      restorePendingDraft(pending.draft)
+    if (pending.scope) return { pending, accountId }
+    const bound = bindPendingSignInAccept(pending, { userId: accountId })
+    if (bound.ok) return { pending: bound.pending, accountId }
+    clearPendingSignInAccept(pending)
+    reportSaveFailure(bound.error)
+    return null
+  }
+
+  function bindPendingWorkspace(
+    pending: PendingSignInAccept,
+    accountId: string
+  ): boolean {
+    if (
+      pending.scope?.workspaceId &&
+      pending.scope.workspaceId !== workspaceStore.activeWorkspaceId
+    ) {
+      clearPendingSignInAccept(pending)
+      return false
+    }
+    const bound = bindPendingSignInAccept(pending, {
+      userId: accountId,
+      workspaceId: workspaceStore.activeWorkspaceId ?? undefined
+    })
+    if (bound.ok) return true
+    clearPendingSignInAccept(pending)
+    reportSaveFailure(bound.error)
+    return false
+  }
+
+  async function persistPendingAccept(
+    pending: PendingSignInAccept,
+    accountId: string,
+    decisionIdentity: string
+  ): Promise<void> {
+    if (!ownsPendingSignInAccept(pending)) return
+    if (!bindPendingWorkspace(pending, accountId)) return
+    restorePendingDraft(pending.draft)
+    const alreadyAccepted = await consentStore.load()
+    if (
+      identity.value !== decisionIdentity ||
+      !ownsPendingSignInAccept(pending)
+    )
+      return
+    if (alreadyAccepted || (await saveAcceptanceAfterSignIn(decisionIdentity)))
+      clearPendingSignInAccept(pending)
+  }
+
+  async function resumeAcceptAfterReload(): Promise<void> {
+    if (introductionStore.isContinuingSignIn) return
+    const prepared = preparePendingAccept()
+    if (!prepared) return
+    const { pending, accountId } = prepared
+    if (workspaceStore.isSwitching) return
+    const generation = workspaceStore.workspaceTransitionGeneration
+    introductionStore.isContinuingSignIn = true
+    let decisionIdentity: string | null = null
+    const scopeUnchanged = () =>
+      resolvedUserInfo.value?.id === accountId &&
+      workspaceStore.workspaceTransitionGeneration === generation &&
+      (!decisionIdentity || identity.value === decisionIdentity)
+    try {
+      decisionIdentity = await consentStore.ensureScope()
+      if (!scopeUnchanged() || !decisionIdentity) return
+      await persistPendingAccept(pending, accountId, decisionIdentity)
+    } catch (error) {
+      if (scopeUnchanged()) reportSaveFailure(error)
+    } finally {
+      if (!scopeUnchanged()) clearPendingSignInAccept(pending)
       introductionStore.isContinuingSignIn = false
     }
   }
@@ -349,6 +517,7 @@ export function useAgentConsent() {
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {
+    if (introductionStore.isContinuingSignIn) return
     const decisionIdentity = isLoggedIn.value
       ? await requestConsentForCurrentUser(trigger, hooks)
       : await acceptAfterSignIn(trigger, hooks)
@@ -361,5 +530,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, isChecking, withConsent }
+  return { accepted, isChecking, withConsent, resumeAcceptAfterReload }
 }
