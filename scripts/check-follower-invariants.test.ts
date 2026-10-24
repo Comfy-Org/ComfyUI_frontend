@@ -129,14 +129,40 @@ describe('checkNoOpIdRegeneration', () => {
   })
 
   test.for([
-    "const retry = { op_id: createUuidv4().replaceAll('-', '') }",
-    'const retry = { op_id: globalThis.crypto.randomUUID() }',
-    'const retry = { op_id: String(uuid()) }',
-    "operation['op_id'] = mintOpId()",
-    'const fresh = mintOpId(); const retry = { op_id: fresh }',
-    'const op_id = mintOpId(); const retry = { op_id }'
-  ])('fails nested, indirect, or bracketed minting: %s', (fixture) => {
-    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(1)
+    {
+      name: 'transformed UUID expression',
+      fixture: "const retry = { op_id: createUuidv4().replaceAll('-', '') }",
+      expected: 1
+    },
+    {
+      name: 'global crypto UUID expression',
+      fixture: 'const retry = { op_id: globalThis.crypto.randomUUID() }',
+      expected: 1
+    },
+    {
+      name: 'string-wrapped UUID expression',
+      fixture: 'const retry = { op_id: String(uuid()) }',
+      expected: 1
+    },
+    {
+      name: 'bracketed op_id assignment',
+      fixture: "operation['op_id'] = mintOpId()",
+      expected: 1
+    },
+    {
+      name: 'indirect op_id property',
+      fixture: 'const fresh = mintOpId(); const retry = { op_id: fresh }',
+      expected: 1
+    },
+    {
+      name: 'shorthand op_id property',
+      fixture: 'const op_id = mintOpId(); const retry = { op_id }',
+      expected: 1
+    }
+  ])('fails $name', ({ fixture, expected }) => {
+    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(
+      expected
+    )
   })
 
   test('ignores op_id examples in comments', () => {
