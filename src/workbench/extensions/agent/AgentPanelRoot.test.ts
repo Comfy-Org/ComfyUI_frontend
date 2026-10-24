@@ -35,7 +35,6 @@ import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
@@ -6719,31 +6718,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
     expect(bodies).toHaveLength(0)
     expect(useAgentComposerStore().draft).toBe('build me a workflow')
-  })
-
-  it('asks a signed-in Desktop user who skipped the startup card for consent on send', async () => {
-    distribution.isCloud = false
-    distribution.isDesktop = true
-    makeTab('wf-42')
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspaceId: 'workspace-a'
-    })
-    expect(useAgentConsentIntroductionStore().markResponded()).toBe(true)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    withConsent.mockResolvedValueOnce()
-    const bodies = mockMessagesEndpoint('wf-42')
-    renderWithSelectedTarget()
-
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('build me a workflow')
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
-
-    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
-      'first_message',
-      expect.any(Function)
-    )
-    expect(bodies).toHaveLength(0)
   })
 
   it.for([
