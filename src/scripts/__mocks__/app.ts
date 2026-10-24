@@ -5,6 +5,7 @@ import { shallowRef } from 'vue'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ANIM_PREVIEW_WIDGET as realAnimationWidget,
   ComfyApp as RealComfyApp,
@@ -26,6 +27,7 @@ type Canvas = Pick<
   | 'selected_nodes'
   | 'selectedItems'
   | 'selectOnly'
+  | 'state'
   | 'subgraph'
 > &
   Pick<RealComfyApp['canvas'], keyof typeof canvasActions>
@@ -38,6 +40,7 @@ const canvasActions = vi.mockObject<
     | 'deleteSelected'
     | 'emitAfterChange'
     | 'emitBeforeChange'
+    | 'finalizeGhostPlacement'
     | 'getWidgetAtCursor'
     | 'pasteFromClipboard'
     | 'processMouseDown'
@@ -69,6 +72,7 @@ const canvasActions = vi.mockObject<
     processMouseWheel() {},
     emitBeforeChange() {},
     emitAfterChange() {},
+    finalizeGhostPlacement() {},
     getWidgetAtCursor: () => undefined
   },
   { spy: true }
@@ -205,6 +209,16 @@ function createState(): AppState {
       read_only: false,
       selectOnly: false,
       isDragging: false,
+      state: {
+        draggingItems: false,
+        draggingCanvas: false,
+        readOnly: false,
+        selectOnly: false,
+        hoveringOver: CanvasItem.Nothing,
+        shouldSetCursor: true,
+        selectionChanged: false,
+        ghostNodeId: null
+      },
       linkConnector: new LinkConnector(() => {})
     }
   }
