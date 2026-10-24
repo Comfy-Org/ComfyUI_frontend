@@ -82,15 +82,18 @@ function ensureScopeWatcher(): void {
 
 export function useBillingPlans() {
   ensureScopeWatcher()
-  function adopt(response: BillingPlansResponse, scopeKey: string): void {
+  function adopt(
+    response: BillingPlansResponse,
+    scopeKey: string
+  ): TypeError | null {
     if (!Array.isArray(response.plans)) {
-      throw new TypeError('Billing plans response did not contain a plan list')
+      return new TypeError('Billing plans response did not contain a plan list')
     }
     if (
       response.team_credit_stops != null &&
       !Array.isArray(response.team_credit_stops.stops)
     ) {
-      throw new TypeError(
+      return new TypeError(
         'Billing plans response did not contain a team credit stop list'
       )
     }
@@ -98,6 +101,7 @@ export function useBillingPlans() {
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
     adoptedScopeKey = scopeKey
+    return null
   }
 
   function fetchPlans(reissueCount = 0): Promise<void> {
@@ -110,10 +114,6 @@ export function useBillingPlans() {
       errorScopeKey = null
     }
     const rail = useBillingReadRail()
-    // A superseded read publishes nothing, so whatever the last read left
-    // behind has to survive this one: the catalog stays, and so does the
-    // error, or a failed read followed by a superseded one would leave an
-    // empty catalog with nothing on screen to explain it.
     const priorError = error.value
     isLoading.value = true
     error.value = null
@@ -139,6 +139,12 @@ export function useBillingPlans() {
       return fetchPlans(reissueCount + 1)
     }
 
+    const recordCatalogFailure = (err: unknown): void => {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch plans'
+      errorScopeKey = scopeKey
+      reportCatalogFallback(err, hasCatalogForScope(scopeKey))
+    }
+
     const request: Promise<void> = (
       rail
         ? readOnRail(rail.readPlans, 'getBillingPlans')
@@ -146,21 +152,17 @@ export function useBillingPlans() {
     )
       .then((response) => {
         if (fetchPromise !== request) return fetchPromise ?? undefined
-        // Undefined is a read the scope moved on under; the catalog it would
-        // have published belongs to an actor this host has left.
-        if (response === undefined) return reissueForCurrentScope()
-        else if (billingScopeKey() === scopeKey) adopt(response, scopeKey)
-        else return reissueForCurrentScope()
+        if (response === undefined || billingScopeKey() !== scopeKey)
+          return reissueForCurrentScope()
+        const rejection = adopt(response, scopeKey)
+        if (rejection) recordCatalogFailure(rejection)
       })
       .catch((err: unknown) => {
         if (fetchPromise !== request) return fetchPromise ?? undefined
         if (billingScopeKey() !== scopeKey) {
           return reissueForCurrentScope()
         }
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch plans'
-        errorScopeKey = scopeKey
-        reportCatalogFallback(err, hasCatalogForScope(scopeKey))
+        recordCatalogFailure(err)
       })
       .finally(() => {
         if (fetchPromise !== request) return
