@@ -4076,8 +4076,8 @@
     "linkWorkspaceRefused": "Couldn't switch to that workspace. You're still in {workspaceName}.",
     "lookupUnavailable": "Could not check which deployment this editor runs on.",
     "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
-    "runsThisWorkflow": "Runs this workflow",
-    "otherDeployments": "Other deployments",
+    "compatibleEnvironments": "Compatible environments",
+    "incompatibleEnvironments": "Incompatible environments",
     "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}."
   },
   "selectionToolbox": {
