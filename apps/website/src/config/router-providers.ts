@@ -14,6 +14,7 @@
 export const ROUTER_SERVING_PROVIDERS = [
   { id: 'fal', name: 'fal' },
   { id: 'higgsfield', name: 'Higgsfield' },
+  { id: 'pika', name: 'Pika' },
   { id: 'runware', name: 'Runware' },
   { id: 'wavespeed', name: 'WaveSpeed' }
 ] as const
@@ -37,10 +38,10 @@ export interface RouterProviderCoverageRow {
 const DOCS_MODELS_URL = 'https://docs.comfy.org/development/comfy-router/models'
 
 /** The day the rows and the catalog size were last checked against the docs. */
-export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-30'
+export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-10-14'
 
 /** How many models the Router catalog lists, all served by Comfy. */
-export const ROUTER_CATALOG_MODEL_COUNT = 213
+export const ROUTER_CATALOG_MODEL_COUNT = 215
 
 /** In the order the page shows them: alphabetical by `name`. */
 export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
@@ -48,7 +49,7 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     name: 'GPT Image 2',
     modelId: 'openai/gpt-image-2',
     docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2/code`,
-    providers: ['fal', 'runware', 'wavespeed']
+    providers: ['fal', 'pika', 'runware', 'wavespeed']
   },
   {
     name: 'GPT Image 2.5 Flare',
@@ -78,20 +79,20 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     name: 'Nano Banana 2',
     modelId: 'vertexai/gemini-3.1-flash-image',
     docsUrl: `${DOCS_MODELS_URL}/google/nano-banana-2/code`,
-    providers: ['fal', 'runware', 'wavespeed']
+    providers: ['fal', 'pika', 'runware', 'wavespeed']
   },
   {
     name: 'Nano Banana Pro',
     modelId: 'vertexai/gemini-3-pro-image',
     docsUrl: `${DOCS_MODELS_URL}/google/nano-banana-pro/code`,
-    providers: ['fal', 'runware', 'wavespeed']
+    providers: ['fal', 'pika', 'runware', 'wavespeed']
   },
   {
     name: 'Seedance 2.0',
     docsName: 'Dreamina Seedance 2.0 260128',
     modelId: 'byteplus/dreamina-seedance-2-0-260128',
     docsUrl: `${DOCS_MODELS_URL}/byteplus/dreamina-seedance-2-0-260128/code`,
-    providers: ['fal', 'higgsfield', 'runware', 'wavespeed']
+    providers: ['fal', 'higgsfield', 'pika', 'runware', 'wavespeed']
   },
   {
     name: 'Seedance 2.5',

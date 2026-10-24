@@ -18,6 +18,7 @@ test.describe('Router page @smoke', () => {
       'Comfy',
       'fal',
       'Higgsfield',
+      'Pika',
       'Runware',
       'WaveSpeed'
     ]) {
@@ -31,6 +32,7 @@ test.describe('Router page @smoke', () => {
       /^Served$/,
       /Not served$/,
       /^Served$/,
+      /Not served$/,
       /Not served$/,
       /Not served$/
     ])

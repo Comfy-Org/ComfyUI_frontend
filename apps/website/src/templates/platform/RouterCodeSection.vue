@@ -40,6 +40,11 @@ const providerLogos: Record<
     name: 'Higgsfield',
     logo: '/icons/router-providers/higgsfield.svg',
     logoClass: 'h-3.5'
+  },
+  pika: {
+    name: 'Pika',
+    logo: '/icons/router-providers/pika-wordmark.svg',
+    logoClass: 'h-3'
   }
 }
 
