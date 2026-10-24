@@ -27,7 +27,7 @@
         <div
           role="group"
           :aria-label="$t('g.actions')"
-          class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+          class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
         >
           <span class="pr-1 text-2xs text-muted-foreground tabular-nums">
             {{ characterCount }}
@@ -106,7 +106,7 @@ import {
 } from '@/utils/widgetPropFilter'
 
 const actionButtonClass =
-  'pointer-events-none rounded-sm hover:bg-muted group-hover:pointer-events-auto'
+  'pointer-events-none rounded-sm hover:bg-muted group-hover:pointer-events-auto pointer-coarse:pointer-events-auto'
 
 const {
   widget,
@@ -174,7 +174,7 @@ function openTextEditor() {
       ? undefined
       : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
   closeTextEditor = showTextEditor({
-    text: text.value,
+    readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle: node?.title,
     readOnly: isReadOnly.value,

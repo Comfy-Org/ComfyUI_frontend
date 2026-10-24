@@ -6,7 +6,7 @@ import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEdi
 import { useDialogStore } from '@/stores/dialogStore'
 
 interface TextEditorOptions {
-  text: string
+  readText: () => string
   widgetLabel: string
   nodeTitle?: string
   readOnly: boolean
@@ -14,12 +14,13 @@ interface TextEditorOptions {
 }
 
 /**
- * Opens the shared text editor dialog. Each edit goes to `onEdit`, and closing
+ * Opens the shared text editor dialog on the text `readText` returns, kept in
+ * sync while it is open. Each edit goes to `onEdit`, and closing
  * after an edit records one undo step. Returns a close function that only
  * closes the dialog this call opened.
  */
 export function showTextEditor({
-  text,
+  readText,
   widgetLabel,
   nodeTitle,
   readOnly,
@@ -41,7 +42,7 @@ export function showTextEditor({
     },
     component: TextEditorDialogContent,
     props: {
-      text,
+      readText,
       label: widgetLabel,
       readOnly,
       onEdit: (value: string) => {
