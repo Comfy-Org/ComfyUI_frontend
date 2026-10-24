@@ -250,7 +250,7 @@ describe('useImageCrop', () => {
     vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode
         ? outputStore.nodeOutputs[SOURCE_LOCATOR]?.images?.flatMap((image) =>
-            image.filename ? [image.filename] : []
+            image?.filename ? [image.filename] : []
           )
         : undefined
     )

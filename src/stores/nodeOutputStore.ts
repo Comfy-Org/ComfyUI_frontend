@@ -34,6 +34,11 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
+import {
+  isViewableResultItem,
+  toViewRequest,
+  viewableResultItems
+} from '@/utils/resultItemUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -58,9 +63,6 @@ interface SetOutputOptions {
 }
 
 type NodePreviewMap = Partial<Record<string, string[]>>
-type RuntimeOutput = Pick<ExecutedWsMessage['output'], 'animated'> & {
-  images?: (ResultItem | null)[]
-}
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
@@ -110,14 +112,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   const isImageOutputs = (
     node: LGraphNode,
-    outputs: RuntimeOutput
+    outputs: ExecutedWsMessage['output'] | undefined
   ): boolean => {
     if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
-    const images = outputs.images?.filter((image) => image !== null)
-    if (!images?.length) return false
+    const images = viewableResultItems(outputs?.images)
+    if (!images.length) return false
 
-    if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
+    if (images.some((image) => image.filename.toLowerCase().endsWith('.svg')))
       return false
 
     return true
@@ -125,7 +127,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function getPreviewParam(
     node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
+    outputs: ExecutedWsMessage['output'] | undefined
   ): string {
     return isImageOutputs(node, outputs) ? useApp().getPreviewFormatParam() : ''
   }
@@ -134,18 +136,24 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
-    if (!outputs?.images?.length) return
+    const images = viewableResultItems(outputs?.images)
+    if (!images.length) return
 
     const rand = useApp().getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
-      const filename = image.filename ?? ''
-      const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
+    return images.map((image) => {
+      const request = toViewRequest(image)
+      const { filepath, rootFolder } = parseAnnotatedPath(
+        request.filename,
+        request.type
+      )
       const params = new URLSearchParams({
-        ...image,
-        filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
-        type: rootFolder
+        filename:
+          node.comfyClass === 'LoadImageOutput' ? request.filename : filepath,
+        ...(image.subfolder != null && { subfolder: image.subfolder }),
+        type: rootFolder,
+        ...(image.preview_id && { preview_id: image.preview_id })
       })
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
@@ -199,12 +207,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const incomingImages = 'images' in outputs ? outputs.images : undefined
     const hasIncomingImages =
-      Array.isArray(incomingImages) && incomingImages.length > 0
+      Array.isArray(incomingImages) && incomingImages.some(isViewableResultItem)
     const existingOutput = nodeOutputs.value[nodeLocatorId]
     if (!hasIncomingImages && isInputPreviewOutput(existingOutput)) {
       outputs = {
         ...outputs,
-        images: existingOutput.images
+        images: options.merge ? [] : existingOutput.images
       }
     }
 

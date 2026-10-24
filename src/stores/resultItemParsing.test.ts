@@ -208,4 +208,20 @@ describe(parseTaskOutput, () => {
     expect(result[1].nodeId).toBe('2')
     expect(result[1].filename).toBe('b.wav')
   })
+
+  it('drops null and filename-less entries', () => {
+    const taskOutput: Record<string, NodeExecutionOutput> = {
+      '1': makeOutput({
+        images: [
+          null,
+          {},
+          { filename: 'good.png', subfolder: '', type: 'output' }
+        ]
+      })
+    }
+
+    const result = parseTaskOutput(taskOutput)
+
+    expect(result.map((item) => item.filename)).toEqual(['good.png'])
+  })
 })
