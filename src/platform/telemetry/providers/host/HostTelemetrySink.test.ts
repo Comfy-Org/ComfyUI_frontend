@@ -415,6 +415,7 @@ describe('HostTelemetrySink', () => {
         sink.trackPromptEditorClosed({
           surface: 'dialog',
           trigger: 'expand_button',
+          end_reason: 'close',
           duration_ms: 900,
           input_count: 3,
           node_switch_count: 0
@@ -422,6 +423,7 @@ describe('HostTelemetrySink', () => {
       properties: {
         surface: 'dialog',
         trigger: 'expand_button',
+        end_reason: 'close',
         duration_ms: 900,
         input_count: 3,
         node_switch_count: 0

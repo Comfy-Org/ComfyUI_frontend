@@ -980,6 +980,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackPromptEditorClosed(metadata: PromptEditorClosedMetadata): void {
+    if (metadata.end_reason === 'pagehide') {
+      this.captureOnTeardown(TelemetryEvents.PROMPT_EDITOR_CLOSED, metadata)
+      return
+    }
     this.trackEvent(TelemetryEvents.PROMPT_EDITOR_CLOSED, metadata)
   }
 

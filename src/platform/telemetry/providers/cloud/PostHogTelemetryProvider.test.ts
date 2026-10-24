@@ -1493,6 +1493,7 @@ describe('PostHogTelemetryProvider', () => {
       }
       const closed = {
         ...opened,
+        end_reason: 'close' as const,
         duration_ms: 1200,
         input_count: 4,
         node_switch_count: 2
@@ -1755,6 +1756,27 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.AGENT_PANEL_CLOSED,
         { source: 'pagehide', open_duration_ms: 5000 },
+        { transport: 'sendBeacon', send_instantly: true }
+      )
+    })
+
+    it('captures a pagehide prompt editor close with an immediate sendBeacon send', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const closed = {
+        surface: 'panel',
+        trigger: 'expand_button',
+        end_reason: 'pagehide',
+        duration_ms: 5000,
+        input_count: 2,
+        node_switch_count: 1
+      } as const
+
+      provider.trackPromptEditorClosed(closed)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PROMPT_EDITOR_CLOSED,
+        closed,
         { transport: 'sendBeacon', send_instantly: true }
       )
     })
