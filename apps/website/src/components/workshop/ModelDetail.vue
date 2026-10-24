@@ -994,6 +994,7 @@ function useInCode() {
             v-if="gate === 'signedOut'"
             as="a"
             :href="signInHref"
+            :aria-label="t('workshop.run.signIn')"
             size="lg"
             class="w-full px-5"
             data-testid="run-button"

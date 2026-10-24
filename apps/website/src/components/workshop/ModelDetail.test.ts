@@ -1311,7 +1311,7 @@ describe('ModelDetail', () => {
       await mountDetail({ model: { ...model, incompleteReason: reason } })
       expect(screen.getByText('Incomplete')).toBeTruthy()
       expect(screen.getByText(explanation)).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       const button = screen.getByRole('button', {
         name: 'Run not yet supported'
       })
@@ -2172,7 +2172,7 @@ describe('ModelDetail', () => {
     onTestFinished(() => assign.mockRestore())
     await mountDetail({ model: runnable })
     await nextTick()
-    const button = screen.getByRole('link', { name: 'Run' })
+    const button = screen.getByRole('link', { name: 'Sign in to run' })
     expect(button.getAttribute('data-gate')).toBe('signedOut')
     expect(button.getAttribute('href')).toBe(
       '/login/?returnTo=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
@@ -2233,7 +2233,7 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('button', { name: 'Replace local.png' })
       ).toBeTruthy()
-      expect(screen.getByRole('link', { name: 'Run' })).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Sign in to run' })).toBeTruthy()
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       unmount()
 
@@ -2265,7 +2265,7 @@ describe('ModelDetail', () => {
       if (disabled === 'auth') auth.enabled.value = false
       await mountDetail({ model: disabled === 'model' ? model : runnable })
       await nextTick()
-      expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
           name: 'This model cannot be run from the browser yet.'
@@ -2282,7 +2282,7 @@ describe('ModelDetail', () => {
         .getByRole('button', { name: 'Checking your session…' })
         .hasAttribute('disabled')
     ).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Run' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
     auth.session.value = credential
     auth.settled.value = true
     await nextTick()

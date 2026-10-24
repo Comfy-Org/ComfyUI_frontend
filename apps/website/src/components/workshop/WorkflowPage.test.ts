@@ -152,4 +152,17 @@ describe('WorkflowPage header', () => {
 
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
+
+  it('reports no Try in Cloud while Workflows access is off', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    mount()
+    const link = screen.getByRole('link', { name: 'Try in Cloud' })
+    link.addEventListener('click', (click) => click.preventDefault(), {
+      once: true
+    })
+    await userEvent.setup().click(link)
+
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
 })

@@ -39,7 +39,7 @@ describe('WorkflowRunControls', () => {
     })
     const destination =
       '/login/?returnTo=%2Fhub%2Fworkflows%2Fremove-background%2F%3Ftab%3Dapi'
-    const run = await screen.findByRole('link', { name: 'Run' })
+    const run = await screen.findByRole('link', { name: 'Sign in to run' })
     await vi.waitFor(() => expect(run.getAttribute('href')).toBe(destination))
 
     await userEvent.setup().click(run)
