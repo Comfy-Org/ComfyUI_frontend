@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -62,9 +68,13 @@ function renderGroup(assets: ReplyAsset[]) {
       plugins: [i18n],
       stubs: {
         MediaLightbox: {
-          props: ['allGalleryItems', 'activeIndex'],
+          props: {
+            allGalleryItems: Array,
+            activeIndex: Number,
+            autoplayVideo: Boolean
+          },
           template:
-            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
+            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" :data-autoplay-video="String(autoplayVideo)" />'
         },
         ReplyAudioCard: {
           props: ['asset', 'title'],
@@ -101,9 +111,9 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
     expect(
-      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
-        'reply-video-affordance'
-      )
+      within(
+        screen.getByRole('button', { name: 'Open video: clip.mp4' })
+      ).getByTestId('reply-video-affordance')
     ).toBeInTheDocument()
     expect(
       within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
@@ -117,14 +127,120 @@ describe('ReplyAssetGroup', () => {
     ).toBeNull()
   })
 
+  it('PM-1895 announces a video name containing markup characters literally', () => {
+    renderGroup([
+      { ...video, url: 'https://x/a&b.mp4', filename: "a&b <Tom's>.mp4" },
+      { ...image(1), url: 'https://x/a&b.png', filename: "a&b <Tom's>.png" }
+    ])
+
+    expect(
+      screen.getByRole('button', { name: "Open video: a&b <Tom's>.mp4" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: "a&b <Tom's>.png" })
+    ).toBeInTheDocument()
+  })
+
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
-    await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open video: clip.mp4' })
+    )
 
     const lightbox = screen.getByTestId('lightbox')
     expect(lightbox.dataset.active).toBe('1')
     expect(lightbox.dataset.count).toBe('2')
+  })
+
+  it('PM-1895 opens the lightbox already playing when the tile was a video', async () => {
+    renderGroup([image(1), video])
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open video: clip.mp4' })
+    )
+
+    expect(screen.getByTestId('lightbox').dataset.autoplayVideo).toBe('true')
+  })
+
+  it('does not opt into video autoplay when the lightbox opens from an image', async () => {
+    renderGroup([image(1), video])
+
+    await userEvent.click(screen.getByRole('button', { name: 'i1.png' }))
+
+    expect(screen.getByTestId('lightbox').dataset.autoplayVideo).toBe('false')
+  })
+
+  it('PM-1895 clears the play badge while the hover preview is playing', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue()
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, 'pause')
+      .mockImplementation(() => {})
+    renderGroup([video, image(1)])
+    const element = screen.getByTestId('reply-video-preview')
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    await userEvent.hover(element)
+    await fireEvent(element, new Event('playing'))
+    expect(screen.queryByTestId('reply-video-affordance')).toBeNull()
+
+    await userEvent.unhover(element)
+    await fireEvent(element, new Event('pause'))
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    play.mockRestore()
+    pause.mockRestore()
+  })
+
+  it('PM-1895 keeps the playing tile badge-free when another tile pauses', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue()
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, 'pause')
+      .mockImplementation(() => {})
+    const second: ReplyAsset = {
+      url: 'https://x/clip2.mp4',
+      filename: 'clip2.mp4',
+      kind: 'video'
+    }
+    renderGroup([video, second])
+    const [first, other] = screen.getAllByTestId('reply-video-preview')
+    const playingTile = screen.getByRole('button', {
+      name: 'Open video: clip.mp4'
+    })
+
+    await fireEvent(first, new Event('playing'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(other, new Event('pause'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(first, new Event('pause'))
+    expect(
+      within(playingTile).getByTestId('reply-video-affordance')
+    ).toBeInTheDocument()
+
+    play.mockRestore()
+    pause.mockRestore()
+  })
+
+  it('PM-1895 keeps the play badge when the browser refuses the preview', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockRejectedValue(new Error('NotAllowedError'))
+    renderGroup([video])
+
+    await userEvent.hover(screen.getByTestId('reply-video-preview'))
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+
+    play.mockRestore()
   })
 
   it('plays a video preview on hover and pauses on leave', async () => {

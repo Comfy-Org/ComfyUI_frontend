@@ -69,6 +69,7 @@ const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
 const galleryIndex = ref(-1)
+const autoplayGalleryVideo = ref(false)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -182,8 +183,11 @@ function inspect(asset: ReplyAsset): void {
     })
     return
   }
+  autoplayGalleryVideo.value = asset.kind === 'video'
   galleryIndex.value = galleryAssets.value.indexOf(asset)
 }
+
+const previewing = ref<string | null>(null)
 
 function playPreview(event: Event): void {
   const video = event.target
@@ -194,6 +198,10 @@ function stopPreview(event: Event): void {
   const video = event.target
   if (video instanceof HTMLVideoElement) video.pause()
 }
+
+function clearPreviewing(asset: ReplyAsset): void {
+  if (previewing.value === asset.url) previewing.value = null
+}
 </script>
 
 <template>
@@ -203,7 +211,15 @@ function stopPreview(event: Event): void {
         v-for="asset in visibleVisual"
         :key="asset.url"
         type="button"
-        :aria-label="asset.label ?? asset.filename"
+        :aria-label="
+          asset.kind === 'video'
+            ? t(
+                'agent.openVideo',
+                { name: asset.label ?? asset.filename },
+                { escapeParameter: false }
+              )
+            : (asset.label ?? asset.filename)
+        "
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
@@ -232,6 +248,8 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+          @playing="previewing = asset.url"
+          @pause="clearPreviewing(asset)"
         />
         <img
           v-else-if="modelThumbnails[asset.url]"
@@ -252,7 +270,7 @@ function stopPreview(event: Event): void {
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
         <span
-          v-if="asset.kind === 'video'"
+          v-if="asset.kind === 'video' && previewing !== asset.url"
           data-testid="reply-video-affordance"
           aria-hidden="true"
           class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -313,6 +331,7 @@ function stopPreview(event: Event): void {
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
+      :autoplay-video="autoplayGalleryVideo"
       @update:active-index="galleryIndex = $event"
     />
   </div>
