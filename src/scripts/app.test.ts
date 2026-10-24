@@ -596,17 +596,17 @@ describe('ComfyApp', () => {
         outcome: 'keeps',
         workflowState: 'active',
         isActive: true,
-        keepsGraph: true
+        graphAfter: (owned: LGraph) => owned
       },
       {
         outcome: 'releases',
         workflowState: 'inactive',
         isActive: false,
-        keepsGraph: false
+        graphAfter: () => null
       }
     ])(
       '$outcome the owned graph when a forced reload into an $workflowState workflow fails',
-      async ({ isActive, keepsGraph }) => {
+      async ({ isActive, graphAfter }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const workflow = markLoaded(
           new ComfyWorkflow({
@@ -627,9 +627,63 @@ describe('ComfyApp', () => {
           app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
         ).resolves.toBe(false)
 
-        expect(workflow.graph === graph).toBe(keepsGraph)
+        expect(workflow.graph).toBe(graphAfter(graph))
       }
     )
+
+    it('reports a failed forced reload before releasing the inactive workflow graph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/owned.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.mocked(useWorkflowStore().isActive).mockReturnValue(false)
+      const configureError = new Error('bad workflow json')
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw configureError
+      })
+      vi.spyOn(workflow, 'releaseGraph').mockImplementation(() => {
+        throw new Error('release failed')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+      ).rejects.toThrow('release failed')
+
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        configureError
+      )
+    })
+
+    it('configures the given workflow graph on a non-clean load even when another graph is active', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/undone.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const owned = new LGraph()
+      workflow.adoptGraph(owned)
+      const active = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', active)
+      const configureOwned = vi.spyOn(owned, 'configure')
+      const configureActive = vi.spyOn(active, 'configure')
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+
+      expect(configureOwned).toHaveBeenCalledOnce()
+      expect(configureActive).not.toHaveBeenCalled()
+      expect(app.rootGraph).toBe(active)
+    })
 
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
       // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
