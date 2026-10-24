@@ -2970,6 +2970,60 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it.for<{ name: string; transmitted: boolean; unapplied: number }>([
+    {
+      name: 'keeps a grow the host may have applied out of the unapplied report',
+      transmitted: true,
+      unapplied: 0
+    },
+    {
+      name: 'reports a grow the transport never carried as unapplied',
+      transmitted: false,
+      unapplied: 1
+    }
+  ])('$name', async ({ transmitted, unapplied }) => {
+    vi.useFakeTimers()
+    const workflowId = ref<string | null>('wf-1')
+    const onHumanOpsUnapplied = vi.fn()
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(workflowId, {
+          transport: agentSocket.transport,
+          events: { onHumanOpsUnapplied }
+        })
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    if (!transmitted) bridge().subscribedWorkflowId = null
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 7,
+        from_node: '1',
+        from_slot: 0,
+        to_node: '2',
+        to_slot: null,
+        link_type: 'IMAGE',
+        grow: { name: 'images.image_2', type: 'IMAGE' }
+      }
+    ])
+    await Promise.resolve()
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-1' })
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(onHumanOpsUnapplied.mock.calls.flatMap(([ops]) => ops)).toHaveLength(
+      unapplied
+    )
+    unmount()
+  })
+
   it('settles a stranded in-flight batch before notifying onSyncError of a permanent refusal', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')

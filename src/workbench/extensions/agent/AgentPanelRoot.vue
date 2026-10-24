@@ -1075,7 +1075,8 @@ const {
     onSyncError: (message, code) =>
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
-      })
+      }),
+    onHumanOpsUnapplied: (ops) => docOpMinter.forgetUnappliedGrows(ops)
   },
   applierDeps: {
     getCanvas: () => app.canvas,
