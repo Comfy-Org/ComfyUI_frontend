@@ -6738,6 +6738,112 @@ describe('thread resume (B17)', () => {
     })
   })
 
+  describe('a turn still running when the thread comes back', () => {
+    function running(): AgentMessages {
+      return HISTORY.map((row) =>
+        row.role === 'user'
+          ? { ...row, workflow_id: 'wf-9' }
+          : { ...row, status: 'streaming' as const, content: {} }
+      )
+    }
+
+    function finished(): AgentMessages {
+      return HISTORY.map((row) =>
+        row.role === 'user' ? { ...row, workflow_id: 'wf-9' } : row
+      )
+    }
+
+    function detachedAfterWf9(): AgentMessages {
+      return [
+        ...finished(),
+        {
+          ...historyRow(2, 'user', 'turn-2', 'go on', 'row-3'),
+          thread_id: 'th-9',
+          workflow_id: ''
+        },
+        {
+          ...historyRow(3, 'assistant', 'turn-2', '', 'row-4'),
+          thread_id: 'th-9',
+          content: {},
+          status: 'streaming' as const
+        }
+      ]
+    }
+
+    beforeEach(() => {
+      useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).start()
+    })
+
+    function resume(history: AgentMessages) {
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages: vi.fn(async () => history) }),
+        events: fakeEvents().source
+      })
+      session.start()
+      return session
+    }
+
+    it.for([
+      ['a running turn on a known tab', running, true, 'wf-9'],
+      ['a finished thread', finished, true, null],
+      ['a running turn whose tab is unknown', running, false, null],
+      [
+        'a running turn sent with no workflow after one on wf-9',
+        detachedAfterWf9,
+        true,
+        null
+      ]
+    ] as const)(
+      'binds on resume only the workflow of the turn still running: %s',
+      async ([, history, tabKnown, expected]) => {
+        if (tabKnown)
+          useAgentWorkflowTabBindingStore().bind('wf-9', 'workflows/duck.json')
+        const session = resume(history())
+
+        await vi.waitFor(() => expect(session.threadId.value).toBe('th-9'))
+        await vi.waitFor(() =>
+          expect(session.entries.value.length).toBeGreaterThanOrEqual(2)
+        )
+        expect(session.boundWorkflowId.value).toBe(expected)
+      }
+    )
+
+    it('binds the running turn of a thread picked from history', async () => {
+      useAgentWorkflowTabBindingStore().bind('wf-9', 'workflows/duck.json')
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages: vi.fn(async () => running()) }),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      await session.loadThread('th-9')
+
+      expect(session.boundWorkflowId.value).toBe('wf-9')
+    })
+
+    it('does not bind a finished thread whose turn is still stashed', async () => {
+      useAgentWorkflowTabBindingStore().bind('wf-9', 'workflows/duck.json')
+      let th9 = running()
+      const session = useAgentSession({
+        rest: fakeRest({
+          getMessages: vi.fn(async (threadId: string) =>
+            threadId === 'th-9' ? th9 : []
+          )
+        }),
+        events: fakeEvents().source
+      })
+      session.start()
+      await session.loadThread('th-9')
+      await session.loadThread('th-other')
+
+      th9 = finished()
+      await session.loadThread('th-9')
+
+      expect(session.boundWorkflowId.value).toBeNull()
+    })
+  })
+
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
     const onThreadActivated = vi.fn()

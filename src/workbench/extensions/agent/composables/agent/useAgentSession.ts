@@ -887,6 +887,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       if (workflowReady === false) return false
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
+      bindRunningTurnWorkflow()
       return true
     } catch (error) {
       return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
@@ -2049,6 +2050,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ? promptEditState.value.turnId
       : null
   )
+
+  function bindRunningTurnWorkflow(): void {
+    const workflowId = conversationStore.hydratedLiveWorkflowId
+    if (boundWorkflowId.value !== null || workflowId === undefined) return
+    if (bindingStore.tabPathFor(workflowId) === undefined) return
+    bindWorkflow(workflowId)
+  }
 
   function bindWorkflow(workflowId: string): void {
     boundWorkflowId.value = workflowId

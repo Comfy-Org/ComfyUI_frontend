@@ -61,6 +61,8 @@ export interface NormalizedAgentTranscript {
   userWorkflowReferences: Map<TurnId, WorkflowReference[]>
   userSkillReferences: Map<TurnId, SkillReference>
   latestWorkflowId?: string
+  /** The workflow on the user row of the turn still running, if any. */
+  liveWorkflowId?: string
   rowIds: Set<string>
   /** Tracks turns with assistant rows, including rows that produce no parts. */
   assistantTurnIds: Set<TurnId>
@@ -578,6 +580,7 @@ export function normalizeAgentTranscript(
   const rowIds = new Set<string>()
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
+  const workflowByTurn = new Map<TurnId, string>()
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
     const turnId = row.turn_id as TurnId
@@ -594,7 +597,10 @@ export function normalizeAgentTranscript(
         userWorkflowReferences,
         userSkillReferences
       )
-      if (workflowId) latestWorkflowId = workflowId
+      if (workflowId) {
+        latestWorkflowId = workflowId
+        workflowByTurn.set(turnId, workflowId)
+      }
     }
     if (row.role === 'assistant') {
       pendingByTurn.set(
@@ -605,6 +611,11 @@ export function normalizeAgentTranscript(
   }
 
   const live = liveTranscriptTurn(pendingByTurn, assistants)
+  const liveTurnId = [...assistants.keys()].at(-1)
+  const liveWorkflowId =
+    live && liveTurnId !== undefined
+      ? workflowByTurn.get(liveTurnId)
+      : undefined
   const messages = turnOrder.map((turnId) => {
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
     if (message === live?.message) message.streaming = true
@@ -619,6 +630,7 @@ export function normalizeAgentTranscript(
     userWorkflowReferences,
     userSkillReferences,
     latestWorkflowId,
+    liveWorkflowId,
     rowIds,
     assistantTurnIds: new Set(assistants.keys()),
     pending: live

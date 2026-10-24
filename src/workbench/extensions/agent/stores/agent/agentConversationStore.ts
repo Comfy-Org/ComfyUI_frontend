@@ -251,6 +251,7 @@ export const useAgentConversationStore = defineStore(
     const historySkillNames = shallowRef<readonly string[]>([])
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
+    const hydratedLiveWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     const activeSlot = shallowRef<ActiveTurnSlot | null>(null)
     let canvasSyncGate: (workflowId?: string) => CanvasConfirmation = () =>
@@ -1045,6 +1046,7 @@ export const useAgentConversationStore = defineStore(
       userSkillReferences.value = new Map()
       historySkillNames.value = []
       latestWorkflowId.value = undefined
+      hydratedLiveWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
@@ -1100,6 +1102,7 @@ export const useAgentConversationStore = defineStore(
         )
       ]
       latestWorkflowId.value = transcript.latestWorkflowId
+      hydratedLiveWorkflowId.value = transcript.liveWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedTurnIds = new Map(
         history
@@ -1248,6 +1251,7 @@ export const useAgentConversationStore = defineStore(
       isStreaming,
       status,
       latestWorkflowId,
+      hydratedLiveWorkflowId,
       recordApprovalShown,
       approvalShownAt,
       forgetApprovalTiming,
