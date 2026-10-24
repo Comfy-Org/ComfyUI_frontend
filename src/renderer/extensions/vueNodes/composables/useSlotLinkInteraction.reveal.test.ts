@@ -229,6 +229,18 @@ describe('hidden link visibility during slot drags', () => {
     expect(isLinkRevealed(f.graphScope.rootGraphId, f.link.id)).toBe(true)
   })
 
+  it('cancels the drag when the window loses focus', async () => {
+    const f = createFixture()
+    f.slot(f.source).down()
+    expect(f.canvas.linkConnector.isConnecting).toBe(true)
+    await nextTick()
+
+    window.dispatchEvent(new FocusEvent('blur'))
+
+    expect(f.canvas.linkConnector.isConnecting).toBe(false)
+    expect(isLinkRevealed(f.graphScope.rootGraphId, f.link.id)).toBe(false)
+  })
+
   it('clears the drag reveal when the graph is reset', () => {
     const f = createFixture()
     f.slot(f.source).down()

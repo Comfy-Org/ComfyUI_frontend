@@ -2369,8 +2369,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const { canvas } = this
-    // hack used when moving canvas between windows
-    const { document } = this.getCanvasWindow()
+    const canvasWindow = this.getCanvasWindow()
+    const { document } = canvasWindow
 
     this._mousedown_callback = this.processMouseDown.bind(this)
     this._mousewheel_callback = this.processMouseWheel.bind(this)
@@ -2388,15 +2388,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.addEventListener('pointercancel', this._mousecancel_callback, true)
 
     canvas.addEventListener('contextmenu', this._doNothing)
-    // Prevent middle-click paste (PRIMARY clipboard on Linux) - fixes #4464
     canvas.addEventListener('auxclick', this._preventMiddleAuxClick)
 
-    // Keyboard
     this._key_callback = this.processKey.bind(this)
 
     canvas.addEventListener('keydown', this._key_callback, true)
-    // keyup event must be bound on the document
     document.addEventListener('keyup', this._key_callback, true)
+    canvasWindow.addEventListener('blur', this._cancelLinkDragOnWindowBlur)
 
     canvas.addEventListener('dragover', this._doNothing, false)
     canvas.addEventListener('dragend', this._doNothing, false)
@@ -2415,7 +2413,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    const { document } = this.getCanvasWindow()
+    const canvasWindow = this.getCanvasWindow()
+    const { document } = canvasWindow
     const { canvas } = this
     this._finishDragZoom()
     try {
@@ -2433,6 +2432,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       canvas.removeEventListener('wheel', this._mousewheel_callback!)
       canvas.removeEventListener('keydown', this._key_callback!, true)
       document.removeEventListener('keyup', this._key_callback!, true)
+      canvasWindow.removeEventListener('blur', this._cancelLinkDragOnWindowBlur)
       canvas.removeEventListener('contextmenu', this._doNothing)
       canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
       canvas.removeEventListener('dragenter', this._doReturnTrue)
@@ -4231,6 +4231,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.adjustMouseEvent(e)
     this.updateMouseOverNodes(null, e)
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
+  }
+
+  private readonly _cancelLinkDragOnWindowBlur = (): void => {
+    if (this.pointer.isDown && this.linkConnector.isConnecting) {
+      this.pointer.reset()
+    }
   }
 
   processMouseCancel(): void {
