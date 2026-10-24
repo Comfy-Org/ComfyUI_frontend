@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { globSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
@@ -10,30 +10,36 @@ export interface Violation {
   message: string
 }
 
-export const FOLLOWER_CORE_FILES = [
-  'src/workbench/extensions/agent/crdt/agentCrdtProjection.ts',
-  'src/workbench/extensions/agent/crdt/agentCrdtTransport.ts',
-  'src/workbench/extensions/agent/crdt/docChangeCollector.ts',
-  'src/workbench/extensions/agent/crdt/docFrameClient.ts',
-  'src/workbench/extensions/agent/crdt/docOpMinter.ts',
-  'src/workbench/extensions/agent/crdt/followerDoc.ts',
-  'src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts',
-  'src/workbench/extensions/agent/crdt/liveGraphApplier.ts',
-  'src/workbench/extensions/agent/crdt/opEnvelope.ts',
-  'src/workbench/extensions/agent/crdt/opSender.ts',
-  'src/workbench/extensions/agent/crdt/restoreOpMinter.ts',
-  'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts'
+export const FOLLOWER_SCOPE_PATTERNS = [
+  'src/workbench/extensions/agent/crdt/**/*.ts',
+  'src/workbench/extensions/agent/services/agent/**/*.ts'
 ] as const
 
 type AstCheck = (file: string, sourceFile: ts.SourceFile) => Violation[]
 
-const FOLLOWER_CORE_FILE_SET = new Set<string>(FOLLOWER_CORE_FILES)
-
-const isFollowerCoreFile = (file: string): boolean =>
-  FOLLOWER_CORE_FILE_SET.has(file)
-
 const isTestOrFixture = (file: string): boolean =>
-  /\.(test|spec)\.ts$/.test(file) || file.includes('__fixtures__/')
+  /\.(test|spec)\.ts$/.test(file) ||
+  file.includes('__fixtures__/') ||
+  file.includes('__mocks__/')
+
+const isFollowerSeamFile = (file: string): boolean =>
+  FOLLOWER_SCOPE_PATTERNS.some((pattern) => {
+    const directory = pattern.slice(0, pattern.indexOf('**'))
+    return file.startsWith(directory)
+  }) &&
+  file.endsWith('.ts') &&
+  !file.endsWith('.d.ts') &&
+  !isTestOrFixture(file)
+
+export function findFollowerFiles(repositoryRoot: string): string[] {
+  return globSync([...FOLLOWER_SCOPE_PATTERNS], {
+    cwd: repositoryRoot
+  })
+    .filter(isFollowerSeamFile)
+    .sort()
+}
+
+export const FOLLOWER_CORE_FILES = findFollowerFiles(process.cwd())
 
 function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
   return (
@@ -62,30 +68,80 @@ function visit(sourceFile: ts.SourceFile, inspect: (node: ts.Node) => void) {
 function propertyName(name: ts.PropertyName | undefined): string | undefined {
   if (!name) return
   if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text
+  if (
+    ts.isComputedPropertyName(name) &&
+    (ts.isStringLiteral(name.expression) ||
+      ts.isNoSubstitutionTemplateLiteral(name.expression))
+  )
+    return name.expression.text
 }
 
-function callName(expression: ts.Expression): string | undefined {
-  if (ts.isIdentifier(expression)) return expression.text
-  if (ts.isPropertyAccessExpression(expression)) {
-    const owner = ts.isIdentifier(expression.expression)
-      ? expression.expression.text
-      : undefined
-    return owner ? `${owner}.${expression.name.text}` : expression.name.text
-  }
+function memberName(expression: ts.Expression): string | undefined {
+  if (ts.isPropertyAccessExpression(expression)) return expression.name.text
+  if (
+    ts.isElementAccessExpression(expression) &&
+    (ts.isStringLiteral(expression.argumentExpression) ||
+      ts.isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+  )
+    return expression.argumentExpression.text
 }
 
-const OP_ID_MINTERS = new Set([
+const OP_ID_MINTERS = new Set<string>([
   'createUuidv4',
   'uuidv4',
   'uuid',
-  'crypto.randomUUID',
+  'randomUUID',
   'mintOpId'
 ])
 
-function isFreshOpId(expression: ts.Expression): boolean {
+function expressionMintsOpId(expression: ts.Expression): boolean {
+  let minted = false
+  const walk = (node: ts.Node): void => {
+    if (minted) return
+    if (ts.isCallExpression(node)) {
+      const name = ts.isIdentifier(node.expression)
+        ? node.expression.text
+        : memberName(node.expression)
+      if (name && OP_ID_MINTERS.has(name)) minted = true
+    }
+    if (!minted) ts.forEachChild(node, walk)
+  }
+  walk(expression)
+  return minted
+}
+
+function mintedOpIdIdentifiers(sourceFile: ts.SourceFile): Set<string> {
+  const minted = new Set<string>()
+  let changed = true
+  while (changed) {
+    changed = false
+    visit(sourceFile, (node) => {
+      if (
+        !ts.isVariableDeclaration(node) ||
+        !ts.isIdentifier(node.name) ||
+        !node.initializer ||
+        minted.has(node.name.text)
+      )
+        return
+      if (
+        expressionMintsOpId(node.initializer) ||
+        (ts.isIdentifier(node.initializer) && minted.has(node.initializer.text))
+      ) {
+        minted.add(node.name.text)
+        changed = true
+      }
+    })
+  }
+  return minted
+}
+
+function isFreshOpId(
+  expression: ts.Expression,
+  mintedIdentifiers: ReadonlySet<string>
+): boolean {
   return (
-    ts.isCallExpression(expression) &&
-    OP_ID_MINTERS.has(callName(expression.expression) ?? '')
+    expressionMintsOpId(expression) ||
+    (ts.isIdentifier(expression) && mintedIdentifiers.has(expression.text))
   )
 }
 
@@ -116,11 +172,42 @@ function runAstCheck(
   source: string,
   check: AstCheck
 ): Violation[] {
-  if (isTestOrFixture(file) || !isFollowerCoreFile(file)) return []
+  if (!isFollowerSeamFile(file)) return []
   const parsed = parse(file, source)
   return parsed.violations.length
     ? parsed.violations
     : check(file, parsed.sourceFile)
+}
+
+function isDestructuringProperty(node: ts.Node): boolean {
+  if (!ts.isPropertyAssignment(node) && !ts.isShorthandPropertyAssignment(node))
+    return false
+  const objectLiteral = node.parent
+  let container = objectLiteral.parent
+  let assignmentTarget: ts.Node = objectLiteral
+  while (ts.isParenthesizedExpression(container)) {
+    assignmentTarget = container
+    container = container.parent
+  }
+  return (
+    ts.isObjectLiteralExpression(objectLiteral) &&
+    ts.isBinaryExpression(container) &&
+    container.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    container.left === assignmentTarget
+  )
+}
+
+function isOutboundUpdateField(node: ts.Node): boolean {
+  if (isDestructuringProperty(node)) return false
+  if (ts.isPropertyAssignment(node))
+    return propertyName(node.name) === 'update_b64'
+  if (ts.isShorthandPropertyAssignment(node))
+    return node.name.text === 'update_b64'
+  return (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    memberName(node.left) === 'update_b64'
+  )
 }
 
 function noOutboundUpdateB64(
@@ -129,11 +216,7 @@ function noOutboundUpdateB64(
 ): Violation[] {
   const violations: Violation[] = []
   visit(sourceFile, (node) => {
-    const isAssignment =
-      ts.isPropertyAssignment(node) && propertyName(node.name) === 'update_b64'
-    const isShorthand =
-      ts.isShorthandPropertyAssignment(node) && node.name.text === 'update_b64'
-    if (!isAssignment && !isShorthand) return
+    if (!isOutboundUpdateField(node)) return
     violations.push(
       violation(
         file,
@@ -160,17 +243,17 @@ function noOpIdRegeneration(
 ): Violation[] {
   if (file.endsWith('/opEnvelope.ts')) return []
   const violations: Violation[] = []
+  const mintedIdentifiers = mintedOpIdIdentifiers(sourceFile)
   visit(sourceFile, (node) => {
     const objectAssignment =
       ts.isPropertyAssignment(node) &&
       propertyName(node.name) === 'op_id' &&
-      isFreshOpId(node.initializer)
+      isFreshOpId(node.initializer, mintedIdentifiers)
     const fieldAssignment =
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-      ts.isPropertyAccessExpression(node.left) &&
-      node.left.name.text === 'op_id' &&
-      isFreshOpId(node.right)
+      memberName(node.left) === 'op_id' &&
+      isFreshOpId(node.right, mintedIdentifiers)
     if (!objectAssignment && !fieldAssignment) return
     violations.push(
       violation(
@@ -192,9 +275,27 @@ export function checkNoOpIdRegeneration(
   return runAstCheck(file, source, noOpIdRegeneration)
 }
 
-function moduleSpecifier(node: ts.Node): string | undefined {
+function staticModuleSpecifier(node: ts.Node): string | undefined {
   if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier))
     return node.moduleSpecifier.text
+  if (
+    ts.isExportDeclaration(node) &&
+    node.moduleSpecifier &&
+    ts.isStringLiteral(node.moduleSpecifier)
+  )
+    return node.moduleSpecifier.text
+}
+
+function importEqualsSpecifier(node: ts.Node): string | undefined {
+  if (
+    ts.isImportEqualsDeclaration(node) &&
+    ts.isExternalModuleReference(node.moduleReference) &&
+    ts.isStringLiteral(node.moduleReference.expression)
+  )
+    return node.moduleReference.expression.text
+}
+
+function dynamicImportSpecifier(node: ts.Node): string | undefined {
   if (
     ts.isCallExpression(node) &&
     node.expression.kind === ts.SyntaxKind.ImportKeyword &&
@@ -204,16 +305,24 @@ function moduleSpecifier(node: ts.Node): string | undefined {
     return node.arguments[0].text
 }
 
+function moduleSpecifier(node: ts.Node): string | undefined {
+  return (
+    staticModuleSpecifier(node) ??
+    importEqualsSpecifier(node) ??
+    dynamicImportSpecifier(node)
+  )
+}
+
 function singleApplier(file: string, sourceFile: ts.SourceFile): Violation[] {
   const violations: Violation[] = []
-  const localApplier = /(?:^|\/)(?:applier|docHost|opApplier|docApplier)$/
+  const localApplier =
+    /(?:^|\/)(?:applier|docHost|opApplier|docApplier)(?:\/index)?(?:\.[cm]?[jt]sx?)?$/
   visit(sourceFile, (node) => {
     const specifier = moduleSpecifier(node)
     if (specifier === undefined) return
-    const moduleName = specifier.replace(/\.(?:m?[jt]s)$/, '')
     if (
-      moduleName === '@comfyorg/comfy-multi-player' ||
-      !localApplier.test(moduleName)
+      specifier.startsWith('@comfyorg/comfy-multi-player') ||
+      !localApplier.test(specifier)
     )
       return
     violations.push(
@@ -234,22 +343,30 @@ export function checkSingleApplier(file: string, source: string): Violation[] {
 }
 
 function catalogPinnedBySha(file: string, source: string): Violation[] {
-  if (isTestOrFixture(file) || !isFollowerCoreFile(file)) return []
-  const branchCitation =
-    /(catalog|vocabulary)[^\n]{0,80}(refs\/heads\/[\w-]+|@(main|master|develop|HEAD)\b)/i
-  return source.split('\n').flatMap((line, index) =>
-    branchCitation.test(line)
-      ? [
-          {
-            file,
-            line: index + 1,
-            rule: 'catalog-pinned-by-sha',
-            message:
-              'cites the widget catalog or vocabulary by a moving branch instead of a pinned SHA'
-          }
-        ]
-      : []
-  )
+  if (!isFollowerSeamFile(file)) return []
+  const violations: Violation[] = []
+  const citation = /\b(catalog|vocabulary)\b/gi
+  const movingReference =
+    /(?:refs\/heads\/[\w.-]+|@(main|master|develop|HEAD)\b|\/(?:blob|tree)\/(?:main|master|develop|HEAD)(?:\/|\b)|raw\.githubusercontent\.com\/[^\s/]+\/[^\s/]+\/(?:main|master|develop|HEAD)(?:\/|\b)|[?&]ref=(?:main|master|develop|HEAD)\b)/i
+  for (const match of source.matchAll(citation)) {
+    const start = match.index
+    const window = source.slice(start, start + 240)
+    const hostedCitation =
+      /https?:\/\/(?:github\.com|raw\.githubusercontent\.com)\//i.test(window)
+    if (
+      !movingReference.test(window) &&
+      (!hostedCitation || /\b[0-9a-f]{40}\b/i.test(window))
+    )
+      continue
+    violations.push({
+      file,
+      line: source.slice(0, start).split('\n').length,
+      rule: 'catalog-pinned-by-sha',
+      message:
+        'cites the widget catalog or vocabulary without a pinned commit SHA'
+    })
+  }
+  return violations
 }
 
 export function checkCatalogPinnedBySha(
@@ -263,13 +380,33 @@ function noScatteredDistributionChecks(
   file: string,
   sourceFile: ts.SourceFile
 ): Violation[] {
+  if (
+    file.endsWith('/services/agent/agentAuth.ts') ||
+    file.endsWith('/crdt/crdtDebugGate.ts') ||
+    file.endsWith('/crdt/crdtDebugReport.ts')
+  )
+    return []
   const violations: Violation[] = []
   visit(sourceFile, (node) => {
-    if (
-      !ts.isIdentifier(node) ||
-      !['DISTRIBUTION', 'isCloud', 'isDesktop'].includes(node.text)
-    )
-      return
+    const identifier =
+      ts.isIdentifier(node) &&
+      [
+        'DISTRIBUTION',
+        '__DISTRIBUTION__',
+        'isCloud',
+        'isDesktop',
+        'isNightly'
+      ].includes(node.text)
+    const environment =
+      ts.isPropertyAccessExpression(node) &&
+      node.getText(sourceFile).startsWith('import.meta.env')
+    const keyedDistribution =
+      ts.isElementAccessExpression(node) &&
+      ts.isStringLiteralLike(node.argumentExpression) &&
+      ['isCloud', 'isDesktop', 'isNightly'].includes(
+        node.argumentExpression.text
+      )
+    if (!identifier && !environment && !keyedDistribution) return
     violations.push(
       violation(
         file,
@@ -290,18 +427,61 @@ export function checkNoScatteredDistributionChecks(
   return runAstCheck(file, source, noScatteredDistributionChecks)
 }
 
+function endpointText(node: ts.Node): string | undefined {
+  if (
+    ts.isStringLiteral(node) ||
+    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isTemplateHead(node)
+  )
+    return node.text
+}
+
+const ALLOWED_AGENT_EVENT_PATHS = new Set([
+  '/agent/events',
+  '/api/agent/events'
+])
+
+function hasEndpointContext(node: ts.Node, sourceFile: ts.SourceFile): boolean {
+  let current: ts.Node = node
+  while (current !== sourceFile) {
+    if (
+      ts.isNewExpression(current) &&
+      ts.isIdentifier(current.expression) &&
+      current.expression.text === 'WebSocket'
+    )
+      return true
+    if (
+      ts.isPropertyAssignment(current) &&
+      propertyName(current.name) === 'endpoint'
+    )
+      return true
+    current = current.parent
+  }
+  return false
+}
+
+function isHardcodedEndpoint(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): boolean {
+  const text = endpointText(node)
+  if (!text) return false
+  if (/^(?:(?:wss?|https?):\/\/|\/\/)/i.test(text)) return true
+  if (!text.startsWith('/')) return false
+  if (ALLOWED_AGENT_EVENT_PATHS.has(text)) return false
+  return (
+    /^\/(?:ws|socket)(?:\/|$)/i.test(text) ||
+    hasEndpointContext(node, sourceFile)
+  )
+}
+
 function noHardcodedEndpoint(
   file: string,
   sourceFile: ts.SourceFile
 ): Violation[] {
   const violations: Violation[] = []
-  const endpoint = /^(?:wss?|https?):\/\//
   visit(sourceFile, (node) => {
-    const text =
-      ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
-        ? node.text
-        : undefined
-    if (!text || !endpoint.test(text)) return
+    if (!isHardcodedEndpoint(node, sourceFile)) return
     violations.push(
       violation(
         file,
@@ -322,17 +502,8 @@ export function checkNoHardcodedEndpoint(
   return runAstCheck(file, source, noHardcodedEndpoint)
 }
 
-export const CHECKS = [
-  checkNoOutboundUpdateB64,
-  checkNoOpIdRegeneration,
-  checkSingleApplier,
-  checkCatalogPinnedBySha,
-  checkNoScatteredDistributionChecks,
-  checkNoHardcodedEndpoint
-]
-
 export function checkFile(file: string, source: string): Violation[] {
-  if (isTestOrFixture(file) || !isFollowerCoreFile(file)) return []
+  if (!isFollowerSeamFile(file)) return []
   const parsed = parse(file, source)
   if (parsed.violations.length) return parsed.violations
   return [
@@ -347,10 +518,21 @@ export function checkFile(file: string, source: string): Violation[] {
 
 export function checkFollowerFiles(
   repositoryRoot: string,
-  files: readonly string[] = FOLLOWER_CORE_FILES
+  files?: readonly string[]
 ): Violation[] {
   const violations: Violation[] = []
-  for (const file of files) {
+  const selectedFiles = files ?? findFollowerFiles(repositoryRoot)
+  if (selectedFiles.length === 0) {
+    return [
+      {
+        file: FOLLOWER_SCOPE_PATTERNS.join(', '),
+        line: 1,
+        rule: 'follower-scope-empty',
+        message: 'no production follower seam files matched the declared scope'
+      }
+    ]
+  }
+  for (const file of selectedFiles) {
     let source: string
     try {
       source = readFileSync(resolve(repositoryRoot, file), 'utf8')

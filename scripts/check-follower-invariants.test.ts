@@ -9,6 +9,7 @@ import {
   checkNoOutboundUpdateB64,
   checkNoScatteredDistributionChecks,
   checkSingleApplier,
+  findFollowerFiles,
   FOLLOWER_CORE_FILES
 } from './check-follower-invariants'
 
@@ -49,7 +50,11 @@ describe('checkNoOutboundUpdateB64', () => {
     '{ update_b64: data.update_b64 }',
     '{ update_b64: stringValue }',
     '{ update_b64: stringify(update) }',
-    '{ update_b64 }'
+    '{ update_b64 }',
+    "{ ['update_b64']: encoded }",
+    'Object.assign(frame, { update_b64: encoded })',
+    'frame.update_b64 = encoded',
+    "frame['update_b64'] = encoded"
   ])('fails outbound expression %s', (expression) => {
     expect(
       checkNoOutboundUpdateB64(
@@ -57,6 +62,15 @@ describe('checkNoOutboundUpdateB64', () => {
         `socket.send(JSON.stringify(${expression}))`
       )
     ).toHaveLength(1)
+  })
+
+  test('passes an inbound destructuring assignment', () => {
+    expect(
+      checkNoOutboundUpdateB64(
+        FOLLOWER_FILE,
+        'let update_b64; ({ update_b64 } = data)'
+      )
+    ).toEqual([])
   })
 })
 
@@ -114,6 +128,16 @@ describe('checkNoOpIdRegeneration', () => {
     expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(1)
   })
 
+  test.for([
+    "const retry = { op_id: createUuidv4().replaceAll('-', '') }",
+    'const retry = { op_id: globalThis.crypto.randomUUID() }',
+    'const retry = { op_id: String(uuid()) }',
+    "operation['op_id'] = mintOpId()",
+    'const fresh = mintOpId(); const retry = { op_id: fresh }'
+  ])('fails nested, indirect, or bracketed minting: %s', (fixture) => {
+    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toHaveLength(1)
+  })
+
   test('ignores op_id examples in comments', () => {
     const fixture = `
       /* retry = { op_id: createUuidv4() } */
@@ -161,7 +185,10 @@ describe('checkSingleApplier', () => {
   test.for([
     `const m = await import('./applier')`,
     `void import('../crdt/docHost.ts')`,
-    'const m = await import(`./opApplier`)'
+    'const m = await import(`./opApplier`)',
+    "export { applyOp } from './applier'",
+    "export * from './docHost/index.ts'",
+    "import applier = require('./opApplier.cts')"
   ])('fails a dynamic local applier import: %s', (fixture) => {
     const violations = checkSingleApplier(FOLLOWER_FILE, fixture)
     expect(violations).toHaveLength(1)
@@ -173,6 +200,15 @@ describe('checkSingleApplier', () => {
       checkSingleApplier(
         FOLLOWER_FILE,
         `const m = await import('@comfyorg/comfy-multi-player')`
+      )
+    ).toEqual([])
+  })
+
+  test('passes a shared-package subpath import', () => {
+    expect(
+      checkSingleApplier(
+        FOLLOWER_FILE,
+        `export { applyOps } from '@comfyorg/comfy-multi-player/applier'`
       )
     ).toEqual([])
   })
@@ -196,19 +232,23 @@ describe('checkSingleApplier', () => {
 })
 
 describe('checkCatalogPinnedBySha', () => {
-  test('fails a forbidden mutation fixture: citing the catalog by moving branch', () => {
-    const fixture = `
-      // fetched from the widget catalog @main
-    `
+  test.for([
+    'widget catalog @main',
+    'widget catalog https://github.com/Comfy-Org/repo/blob/main/catalog.json',
+    'widget vocabulary https://github.com/Comfy-Org/repo/tree/develop/spec',
+    'widget catalog https://raw.githubusercontent.com/Comfy-Org/repo/main/catalog.json',
+    'widget vocabulary https://example.com/spec?ref=HEAD',
+    'widget catalog\nhttps://github.com/Comfy-Org/repo/blob/master/catalog.json',
+    'widget catalog https://github.com/Comfy-Org/repo/commits/latest/catalog.json'
+  ])('fails an unpinned catalog citation: %s', (fixture) => {
     const violations = checkCatalogPinnedBySha(FOLLOWER_FILE, fixture)
     expect(violations).toHaveLength(1)
     expect(violations[0].rule).toBe('catalog-pinned-by-sha')
   })
 
   test('passes the allowed follower projection: citing the catalog by SHA', () => {
-    const fixture = `
-      // catalog pinned at meta.catalog_version, cited by sha256 8d062714
-    `
+    const fixture =
+      'catalog https://github.com/Comfy-Org/repo/blob/0123456789abcdef0123456789abcdef01234567/catalog.json'
     expect(checkCatalogPinnedBySha(FOLLOWER_FILE, fixture)).toEqual([])
   })
 })
@@ -235,14 +275,22 @@ describe('checkNoScatteredDistributionChecks', () => {
     )
   })
 
-  test('passes a debug-report file reading DISTRIBUTION for display only', () => {
-    const fixture = `
-      lines.push(\`- **Distribution:** \${DISTRIBUTION}\`)
-    `
+  test.for([
+    'const endpoint = __DISTRIBUTION__ === "cloud" ? cloud : local',
+    'const endpoint = isNightly ? nightly : stable',
+    'const endpoint = import.meta.env.VITE_AGENT_ENDPOINT',
+    "const endpoint = distribution['isCloud'] ? cloud : local"
+  ])('fails another distribution expression: %s', (fixture) => {
+    expect(
+      checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture)
+    ).not.toEqual([])
+  })
+
+  test('passes the explicit agentAuth credential-branch exemption', () => {
     expect(
       checkNoScatteredDistributionChecks(
-        'src/workbench/extensions/agent/crdt/crdtDebugReport.ts',
-        fixture
+        'src/workbench/extensions/agent/services/agent/agentAuth.ts',
+        'const auth = isCloud ? cloudAuth : localAuth'
       )
     ).toEqual([])
   })
@@ -290,6 +338,23 @@ describe('checkNoHardcodedEndpoint', () => {
        */
       const socket = api.socket(api.apiURL('/api/agent/events'))
     `
+    expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test.for([
+    "const socket = new WebSocket('WSS://agent.comfy.org/ws')",
+    "const socket = new WebSocket('//agent.comfy.org/ws')",
+    'const socket = new WebSocket(`wss://${host}/ws`)',
+    "const socket = new WebSocket(api.apiURL('/ws'))",
+    "const options = { endpoint: api.apiURL('/other-events') }"
+  ])('fails an alternate endpoint form: %s', (fixture) => {
+    expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toHaveLength(1)
+  })
+
+  test.for([
+    "const socket = new WebSocket(api.apiURL('/agent/events'))",
+    "const socket = new WebSocket(api.apiURL('/api/agent/events'))"
+  ])('passes the shared event endpoint: %s', (fixture) => {
     expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
   })
 })
@@ -360,6 +425,37 @@ describe('checkFile against the real follower-core sources', () => {
         line: 1,
         rule: 'declared-file-unreadable'
       })
+    ])
+  })
+
+  test('a newly added CRDT seam file is in scope without an allowlist edit', () => {
+    const file = 'src/workbench/extensions/agent/crdt/newFollowerSeam.ts'
+    expect(
+      checkFile(file, "const socket = new WebSocket('wss://example.com/ws')")
+    ).toEqual([
+      expect.objectContaining({
+        file,
+        rule: 'no-hardcoded-endpoint'
+      })
+    ])
+  })
+
+  test('discovers CRDT and Agent transport production files', () => {
+    const files = findFollowerFiles(process.cwd())
+    expect(files).toContain(
+      'src/workbench/extensions/agent/crdt/opCoalescer.ts'
+    )
+    expect(files).toContain(
+      'src/workbench/extensions/agent/services/agent/agentEventSource.ts'
+    )
+    expect(files).not.toContain(
+      'src/workbench/extensions/agent/crdt/opEnvelope.test.ts'
+    )
+  })
+
+  test('an empty discovered scope fails closed', () => {
+    expect(checkFollowerFiles('/definitely-not-a-repository')).toEqual([
+      expect.objectContaining({ rule: 'follower-scope-empty' })
     ])
   })
 })
