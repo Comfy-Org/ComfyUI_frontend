@@ -14,7 +14,7 @@ import { PROMPT_EDITOR_SURFACE_VARIANTS } from '@/platform/telemetry/types'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-export const PROMPT_EDITOR_SURFACE_FLAG = 'prompt-editor-surface'
+const PROMPT_EDITOR_SURFACE_FLAG = 'prompt-editor-surface'
 
 function isPromptEditorSurfaceVariant(
   value: unknown
