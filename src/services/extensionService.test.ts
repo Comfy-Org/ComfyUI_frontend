@@ -123,7 +123,7 @@ describe('invokeExtensionsAsync', () => {
   it('skips disabled extensions', async () => {
     const hook = vi.fn()
     register({ name: 'off', [HOOK]: hook }, { name: 'on', [HOOK]: hook })
-    useExtensionStore().loadDisabledExtensionNames(['off'])
+    useExtensionStore().loadBootDisabledExtensionNames(['off'])
 
     await invoke()
 

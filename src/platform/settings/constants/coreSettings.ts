@@ -690,6 +690,24 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
+    id: 'Comfy.Extension.DisabledPacks',
+    name: 'Disabled extension packs',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    migrateDeprecatedValue: (value: unknown) =>
+      Array.isArray(value)
+        ? value.filter((path): path is string => typeof path === 'string')
+        : [],
+    versionAdded: '1.59.0'
+  },
+  {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extensions',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.59.0'
+  },
+  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',

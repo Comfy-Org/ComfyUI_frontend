@@ -1,14 +1,27 @@
 import type { Component } from 'vue'
+import { readonly, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
+  ExtensionFilterType,
   SettingDialogProps,
   SettingPanelType
 } from '@/platform/settings/types'
 
 const DIALOG_KEY = 'global-settings'
+
+export interface SettingsPanelNavigation {
+  panel: SettingPanelType
+  extensionFilter?: ExtensionFilterType
+  requestId: number
+}
+
+const navigation = ref<SettingsPanelNavigation>()
+let lastRequestId = 0
+
+export const settingsPanelNavigation = readonly(navigation)
 
 // The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 let settingDialogComponent: Component<SettingDialogProps> | undefined
@@ -59,4 +72,16 @@ export function useSettingsDialog() {
   }
 
   return { show, hide, showAbout }
+}
+
+export function showSettingsPanel(
+  panel: SettingPanelType,
+  options: Pick<SettingsPanelNavigation, 'extensionFilter'> = {}
+) {
+  navigation.value = { ...options, panel, requestId: ++lastRequestId }
+  useSettingsDialog().show(panel)
+}
+
+export function consumeSettingsPanelNavigation(requestId: number) {
+  if (navigation.value?.requestId === requestId) navigation.value = undefined
 }

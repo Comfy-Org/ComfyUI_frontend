@@ -9,6 +9,13 @@ import type { NodeError } from '@/platform/remote/comfyui/types'
 import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
 
+export interface ExtensionProvenance {
+  createdBy: 'comfy-agent'
+  threadId?: string
+  createdAt?: string
+  summary?: string
+}
+
 interface BaseSidebarTabExtension {
   id: string
   title: string
@@ -17,6 +24,10 @@ interface BaseSidebarTabExtension {
   tooltip?: string
   label?: string
   onToggle?: () => boolean | Promise<boolean>
+  source?: {
+    extensionName: string
+    provenance?: ExtensionProvenance
+  }
 }
 
 interface BaseBottomPanelExtension {

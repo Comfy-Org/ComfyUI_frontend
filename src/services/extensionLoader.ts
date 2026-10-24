@@ -1,4 +1,5 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -10,6 +11,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { installErrorNodeWidgets } from '@/scripts/errorNodeWidgets'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  disableAgentExtensions,
+  showAgentExtensionSettings
+} from '@/platform/settings/agentExtensionService'
 import { getErrorMessage, toError } from '@/utils/errorUtil'
 
 const INLINED_CLOUD_EXTENSIONS = new Set([
@@ -17,12 +23,33 @@ const INLINED_CLOUD_EXTENSIONS = new Set([
   '/extensions/cloud/sentry.js'
 ])
 
+function getExtensionPackPath(extension: string): string | undefined {
+  try {
+    const pathname = new URL(extension, window.location.href).pathname
+    return pathname.match(/^\/extensions\/[^/]+\//)?.[0]
+  } catch {
+    return undefined
+  }
+}
+
 export function shouldLoadExtension(
   extension: string,
-  isCloudBuild: boolean
+  {
+    isCloudBuild,
+    disabledPackPaths = [],
+    disableAllCustomExtensions = false
+  }: {
+    isCloudBuild: boolean
+    disabledPackPaths?: readonly string[]
+    disableAllCustomExtensions?: boolean
+  }
 ): boolean {
   if (extension.includes('extensions/core')) return false
-  return !isCloudBuild || !INLINED_CLOUD_EXTENSIONS.has(extension)
+  if (isCloudBuild && INLINED_CLOUD_EXTENSIONS.has(extension)) return false
+  if (disableAllCustomExtensions) return false
+
+  const packPath = getExtensionPackPath(extension)
+  return packPath === undefined || !disabledPackPaths.includes(packPath)
 }
 
 const MAX_EXTENSION_PATH_LENGTH = 512
@@ -106,6 +133,54 @@ export function reportExtensionLoadFailures(
   })
 }
 
+export async function notifyNewAgentExtensions() {
+  const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
+  const seenNames = settingStore.get('Comfy.Extension.SeenAgentExtensions')
+  const seen = new Set(seenNames)
+  const unseen = extensionStore.agentExtensions.filter(
+    (extension) => !seen.has(extension.name)
+  )
+  if (unseen.length === 0) return
+
+  const [first] = unseen
+  const title =
+    unseen.length === 1
+      ? t('g.agentExtensionAdded', { name: first.name })
+      : t('g.agentExtensionsAdded', { count: unseen.length })
+  useToast().info(title, {
+    description: unseen.length === 1 ? first.provenance?.summary : undefined,
+    actions: [
+      { label: t('g.manage'), onClick: showAgentExtensionSettings },
+      {
+        label: t('g.disable'),
+        onClick: () => {
+          void disableAgentExtensions(unseen)
+        }
+      }
+    ]
+  })
+
+  const result = await settingStore.setOrRevert(
+    'Comfy.Extension.SeenAgentExtensions',
+    [
+      ...new Set([
+        ...seenNames,
+        ...extensionStore.agentExtensions.map((x) => x.name)
+      ])
+    ]
+  )
+  if (!result.ok) {
+    reportError(result.detail, {
+      errorType: 'failure_recording_seen_agent_extensions',
+      surface: 'platform',
+      level: 'warning',
+      tags: { reason: result.reason },
+      context: { unseen_extension_count: unseen.length }
+    })
+  }
+}
+
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
@@ -113,11 +188,29 @@ export function reportExtensionLoadFailures(
  */
 export async function loadExtensions() {
   const extensionStore = useExtensionStore()
-  extensionStore.loadDisabledExtensionNames(
-    useSettingStore().get('Comfy.Extension.Disabled')
+  const settingStore = useSettingStore()
+  extensionStore.loadBootDisabledExtensionNames(
+    settingStore.get('Comfy.Extension.Disabled')
   )
+  const disabledPackPaths = settingStore.get('Comfy.Extension.DisabledPacks')
+  const disableAllCustomExtensions = new URLSearchParams(
+    window.location.search
+  ).has('safe')
 
   const extensions = await api.getExtensions()
+  extensionStore.loadExtensionPackPaths(
+    extensions
+      .filter((extension) =>
+        shouldLoadExtension(extension, {
+          isCloudBuild: __DISTRIBUTION__ === 'cloud'
+        })
+      )
+      .flatMap((extension) => {
+        const packPath = getExtensionPackPath(extension)
+        return packPath === undefined ? [] : [packPath]
+      }),
+    disabledPackPaths
+  )
 
   installErrorNodeWidgets()
   installTouchPointerGuards()
@@ -132,10 +225,20 @@ export async function loadExtensions() {
       Promise.all(
         extensions
           .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+            shouldLoadExtension(extension, {
+              isCloudBuild: __DISTRIBUTION__ === 'cloud',
+              disabledPackPaths,
+              disableAllCustomExtensions
+            })
           )
           .map((ext) => importCustomExtension(ext))
       )
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
+  void notifyNewAgentExtensions().catch((cause) => {
+    reportError(cause, {
+      errorType: 'failure_recording_seen_agent_extensions',
+      surface: 'platform'
+    })
+  })
 }

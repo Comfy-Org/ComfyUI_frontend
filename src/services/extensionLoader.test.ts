@@ -3,16 +3,33 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
 import {
   loadExtensions,
+  notifyNewAgentExtensions,
   reportExtensionLoadFailures,
   shouldLoadExtension
 } from './extensionLoader'
 
 vi.mock(import('@/platform/telemetry/reportError'))
+
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+
+function createDeferred<T>() {
+  let resolve: (value: T) => void = () => {}
+  let reject: (error: unknown) => void = () => {}
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 
 const coreLoad = vi.hoisted(() => ({
   onConfigure: undefined as unknown,
@@ -40,25 +57,65 @@ describe('shouldLoadExtension', () => {
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'skips the inlined Cloud extension %s in cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, true)).toBe(false)
+      expect(shouldLoadExtension(extension, { isCloudBuild: true })).toBe(false)
     }
   )
 
   it.for(['/extensions/cloud/rum.js', '/extensions/cloud/sentry.js'])(
     'keeps the legacy path %s available outside cloud builds',
     (extension) => {
-      expect(shouldLoadExtension(extension, false)).toBe(true)
+      expect(shouldLoadExtension(extension, { isCloudBuild: false })).toBe(true)
     }
   )
 
   it('skips core extensions that load through the core entry point', () => {
-    expect(shouldLoadExtension('/extensions/core/foo.js', false)).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/core/foo.js', { isCloudBuild: false })
+    ).toBe(false)
   })
 
   it('loads other extensions', () => {
-    expect(shouldLoadExtension('/extensions/comfyui-foo/main.js', true)).toBe(
-      true
-    )
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: true
+      })
+    ).toBe(true)
+  })
+
+  it('skips every module from a disabled pack without prefix-matching peers', () => {
+    const disabled = ['/extensions/agent-cushions/']
+
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions/main.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions/nested/panel.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(false)
+    expect(
+      shouldLoadExtension('/extensions/agent-cushions-extra/main.js', {
+        isCloudBuild: false,
+        disabledPackPaths: disabled
+      })
+    ).toBe(true)
+  })
+
+  it('skips every custom extension during a safe boot', () => {
+    expect(
+      shouldLoadExtension('/extensions/comfyui-foo/main.js', {
+        isCloudBuild: false,
+        disableAllCustomExtensions: true
+      })
+    ).toBe(false)
+  })
+
+  it('loads a malformed backend entry rather than throwing', () => {
+    expect(shouldLoadExtension('http://[', { isCloudBuild: false })).toBe(true)
   })
 })
 
@@ -239,6 +296,25 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('reads safe mode from the URL while retaining discovered pack paths', async () => {
+      const originalUrl = window.location.href
+      window.history.replaceState({}, '', '/?safe')
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([
+        '/extensions/agent-cushions/main.js'
+      ])
+
+      try {
+        await loadExtensions()
+
+        expect(reportError).not.toHaveBeenCalled()
+        expect(useExtensionStore().extensionPackPaths).toEqual([
+          '/extensions/agent-cushions/'
+        ])
+      } finally {
+        window.history.replaceState({}, '', originalUrl)
+      }
+    })
+
     it('reports every failing custom import as one aggregate', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/pack-a/main.js',
@@ -261,6 +337,58 @@ describe('extension loading', () => {
       await loadExtensions()
 
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('finishes loading while recording seen extensions is pending', async () => {
+      const settingStore = useSettingStore()
+      settingStore.$patch({
+        settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+      })
+      const setOrRevert = vi.spyOn(settingStore, 'setOrRevert')
+      const pending = createDeferred<Response>()
+      vi.spyOn(api, 'storeSetting').mockReturnValue(pending.promise)
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([])
+      useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+      const loading = loadExtensions()
+      let persistence: Promise<unknown> | undefined
+      try {
+        await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledOnce())
+        persistence = setOrRevert.mock.results[0]?.value
+        await expect(loading).resolves.toBeUndefined()
+      } finally {
+        pending.resolve(new Response())
+        await loading
+        await persistence
+      }
+    })
+
+    it('reports when recording the seen list fails', async () => {
+      const settingStore = useSettingStore()
+      settingStore.$patch({
+        settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+      })
+      const setOrRevert = vi
+        .spyOn(settingStore, 'setOrRevert')
+        .mockResolvedValue({
+          ok: false,
+          reason: 'unreachable',
+          detail: 'settings unavailable'
+        })
+      useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+      await expect(notifyNewAgentExtensions()).resolves.toBeUndefined()
+      expect(setOrRevert).toHaveBeenCalledExactlyOnceWith(
+        'Comfy.Extension.SeenAgentExtensions',
+        ['agent.cushions.toolbar']
+      )
+      expect(reportError).toHaveBeenCalledWith('settings unavailable', {
+        errorType: 'failure_recording_seen_agent_extensions',
+        surface: 'platform',
+        level: 'warning',
+        tags: { reason: 'unreachable' },
+        context: { unseen_extension_count: 1 }
+      })
     })
 
     it('skips core extensions', async () => {
@@ -307,5 +435,96 @@ describe('extension loading', () => {
         'bootstrap/extensions-load-custom:end'
       ])
     })
+  })
+})
+
+describe('agent extension discovery', () => {
+  it('notifies once with manage and disable actions and records the seen name', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: {
+        'Comfy.Extension.Disabled': [],
+        'Comfy.Extension.DisabledPacks': [],
+        'Comfy.Extension.SeenAgentExtensions': ['agent.lights.toolbar']
+      }
+    })
+    const storeSetting = vi
+      .spyOn(api, 'storeSetting')
+      .mockResolvedValue(new Response())
+    useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
+    useExtensionStore().registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: {
+        createdBy: 'comfy-agent',
+        summary: 'Adds cushion controls'
+      }
+    })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        title: 'Your agent added agent.cushions.toolbar',
+        description: 'Adds cushion controls',
+        actions: [
+          expect.objectContaining({ label: 'Manage' }),
+          expect.objectContaining({ label: 'Disable' })
+        ]
+      })
+    ])
+    expect(storeSetting).toHaveBeenCalledWith(
+      'Comfy.Extension.SeenAgentExtensions',
+      ['agent.lights.toolbar', 'agent.cushions.toolbar']
+    )
+
+    const [manage, disable] = useToast().toasts[0].actions
+    manage.onClick()
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: 'agentCreated'
+    })
+
+    const storeSettings = vi
+      .spyOn(api, 'storeSettings')
+      .mockResolvedValue(new Response())
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+    disable.onClick()
+
+    await vi.waitFor(() =>
+      expect(storeSettings).toHaveBeenCalledExactlyOnceWith({
+        'Comfy.Extension.Disabled': ['agent.cushions.toolbar'],
+        'Comfy.Extension.DisabledPacks': []
+      })
+    )
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('does not notify for an agent extension already in the seen set', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: {
+        'Comfy.Extension.SeenAgentExtensions': ['agent.cushions.toolbar']
+      }
+    })
+    useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('summarizes multiple unseen agent extensions in one notification', async () => {
+    const settingStore = useSettingStore()
+    settingStore.$patch({
+      settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+    })
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+    useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
+
+    await notifyNewAgentExtensions()
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ title: 'Your agent added 2 extensions' })
+    ])
   })
 })

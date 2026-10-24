@@ -12,6 +12,7 @@
     size="unset"
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
+    @contextmenu="emit('contextmenu', $event)"
   >
     <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">
@@ -79,6 +80,7 @@ const {
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
+  (e: 'contextmenu', event: MouseEvent): void
 }>()
 const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge

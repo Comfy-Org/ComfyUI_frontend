@@ -103,6 +103,8 @@ export type Settings = {
   'Comfy.Keybinding.NewBindings': Array<Keybinding>
   'Comfy.Keybinding.CurrentPreset': string
   'Comfy.Extension.Disabled': Array<string>
+  'Comfy.Extension.DisabledPacks': Array<string>
+  'Comfy.Extension.SeenAgentExtensions': Array<string>
   'Comfy.LinkRenderMode': number
   'Comfy.Node.AutoSnapLinkToSlot': boolean
   'Comfy.Node.SnapHighlightsNode': boolean
@@ -219,6 +221,11 @@ type SettingTelemetryOptions =
       includeValues?: boolean
     }
 
+/** Outcome of one setting write; only `saved` was acknowledged by the backend. */
+export type SettingWriteResult =
+  | { ok: true; outcome: 'saved' | 'unchanged' | 'superseded' }
+  | { ok: false; reason: 'refused' | 'unreachable'; detail: string }
+
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings
   defaultValue: TValue | (() => TValue)
@@ -275,6 +282,8 @@ export type SettingPanelType =
   | 'workspace'
   | 'workspace-allowlist'
   | 'workspace-members'
+
+export type ExtensionFilterType = 'all' | 'core' | 'custom' | 'agentCreated'
 
 export interface SettingDialogProps {
   onClose: () => void
