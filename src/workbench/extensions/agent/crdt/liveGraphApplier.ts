@@ -23,7 +23,6 @@ import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -35,7 +34,6 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
-import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -868,28 +866,52 @@ export class LiveGraphApplier {
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
     const rootGraph = graph.rootGraph
-    const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
+    const { definitions, malformed } = readSubgraphDefinitions(doc)
+    for (const { id, issues } of malformed) {
+      this.reportDefinitionFailure(
+        graph,
+        [String(id)],
+        new Error(
+          `Agent subgraph definition ${String(id)} is malformed: ${issues}`
+        )
+      )
+    }
+    const missing = allSubgraphDefinitions(definitions)
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
     if (missing.length === 0) return
-    const reserved = docRootIds(doc)
-    for (const definition of topologicalSortSubgraphs(missing)) {
-      const failure = tryCreateSubgraph(rootGraph, definition, reserved)
-      if (failure === undefined) {
-        this.reported.delete(`definition:${definition.id}`)
-        this.recordInteriorIds(rootGraph, definition)
-        continue
-      }
-      this.incrementFailureCount()
-      if (this.reported.has(`definition:${definition.id}`)) continue
-      this.reported.add(`definition:${definition.id}`)
-      reportError(failure, {
-        surface: 'agent',
-        errorType: 'agent_subgraph_definitions_failed',
-        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { graphId: graph.id, definitionId: definition.id }
-      })
+    const failure = tryCreateSubgraphs(rootGraph, missing, docRootIds(doc))
+    if (failure !== undefined) {
+      this.reportDefinitionFailure(
+        graph,
+        missing.map((definition) => definition.id),
+        failure
+      )
+      return
     }
+    for (const definition of missing) {
+      this.reported.delete(`definition:${definition.id}`)
+      this.recordInteriorIds(rootGraph, definition)
+    }
+  }
+
+  private reportDefinitionFailure(
+    graph: LGraph,
+    definitionIds: string[],
+    failure: unknown
+  ): void {
+    this.incrementFailureCount()
+    const unreported = definitionIds.filter(
+      (id) => !this.reported.has(`definition:${id}`)
+    )
+    if (unreported.length === 0) return
+    for (const id of unreported) this.reported.add(`definition:${id}`)
+    reportError(failure, {
+      surface: 'agent',
+      errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, definitionIds }
+    })
   }
 
   private recordInteriorIds(
@@ -1854,32 +1876,28 @@ function docRootIds(doc: Y.Doc): { nodeIds: NodeId[]; linkIds: number[] } {
   return { nodeIds, linkIds }
 }
 
-function tryCreateSubgraph(
+function tryCreateSubgraphs(
   rootGraph: LGraph,
-  definition: ExportedSubgraph,
+  definitions: ExportedSubgraph[],
   reserved: { nodeIds: NodeId[]; linkIds: number[] }
 ): unknown {
-  if (!isUuidShapedSubgraphId(definition.id)) {
-    return new Error(
-      `Agent subgraph definition id is not a UUID: ${definition.id}`
-    )
-  }
   try {
     withNamedValuesRestore(() =>
-      rootGraph.createSubgraphs([definition], reserved)
+      rootGraph.createSubgraphs(definitions, reserved)
     )
     return undefined
   } catch (cause) {
-    const halfBuilt = rootGraph.subgraphs.get(definition.id)
-    if (halfBuilt) {
-      try {
-        rootGraph.releaseSubgraphs([halfBuilt])
-      } catch (rollbackCause) {
-        return new AggregateError(
-          [cause, rollbackCause],
-          `Agent subgraph definition ${definition.id} failed to register and roll back`
-        )
-      }
+    const halfBuilt = definitions.flatMap(
+      (definition) => rootGraph.subgraphs.get(definition.id) ?? []
+    )
+    if (halfBuilt.length === 0) return cause
+    try {
+      rootGraph.releaseSubgraphs(halfBuilt)
+    } catch (rollbackCause) {
+      return new AggregateError(
+        [cause, rollbackCause],
+        'Agent subgraph definitions failed to register and roll back'
+      )
     }
     return cause
   }

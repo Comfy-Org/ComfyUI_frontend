@@ -27,6 +27,7 @@ import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
@@ -62,6 +63,12 @@ class TestSink extends LGraphNode {
   constructor() {
     super('Test Sink')
     this.addInput('image', 'IMAGE')
+  }
+}
+
+class TestThrowingConfigure extends LGraphNode {
+  override onConfigure(): void {
+    throw new Error('configure exploded')
   }
 }
 
@@ -345,6 +352,7 @@ beforeEach(() => {
   )
   LiteGraph.registerNodeType('TestRepeatedWidgetName', TestRepeatedWidgetName)
   LiteGraph.registerNodeType('TestSink', TestSink)
+  LiteGraph.registerNodeType('TestThrowingConfigure', TestThrowingConfigure)
 
   const dynamicCombo = transformInputSpecV1ToV2(
     ['COMFY_DYNAMICCOMBO_V3', { options: [] }],
@@ -1647,6 +1655,94 @@ describe('LiveGraphApplier', () => {
         errorType: 'agent_subgraph_definitions_failed'
       })
     )
+  })
+
+  describe('subgraph definition registration', () => {
+    const OUTER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    const INNER = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    const interior = (type: string): ISerialisedNode => ({
+      id: 1,
+      type,
+      pos: [0, 0],
+      size: [100, 80],
+      flags: {},
+      order: 0,
+      mode: 0
+    })
+    const outer = () =>
+      createTestSubgraphData({ id: OUTER, nodes: [interior(INNER)] })
+    const inner = (type = 'TestSink') =>
+      createTestSubgraphData({ id: INNER, nodes: [interior(type)] })
+
+    it.for([
+      ['outer first', () => [outer(), inner()]],
+      ['inner first', () => [inner(), outer()]]
+    ] as const)(
+      'registers a definition that nests a sibling delivered %s',
+      ([, definitions]) => {
+        const { graph, applyCollected } = setup({
+          nodes: [],
+          links: [],
+          definitions: { subgraphs: definitions() }
+        })
+
+        const result = applyCollected()
+
+        expect(result.failureCount).toBe(0)
+        expect(graph.subgraphs.has(INNER)).toBe(true)
+        expect(
+          graph.subgraphs.get(OUTER)?.nodes.map(({ type }) => type)
+        ).toEqual([INNER])
+      }
+    )
+
+    it('reports a malformed definition and registers its valid sibling', () => {
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [inner(), { ...outer(), inputs: 'invalid' }]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(1)
+      expect([...graph.subgraphs.keys()]).toEqual([INNER])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining(`${OUTER} is malformed: inputs`)
+        }),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionIds: [OUTER] })
+        })
+      )
+    })
+
+    it('registers none of a frame whose definitions fail to configure', () => {
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [outer(), inner('TestThrowingConfigure')]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(1)
+      expect(graph.subgraphs.size).toBe(0)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'configure exploded' }),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({
+            definitionIds: expect.arrayContaining([OUTER, INNER])
+          })
+        })
+      )
+    })
   })
 
   it('restores a widget and its mirrored property when a widget callback throws', () => {
