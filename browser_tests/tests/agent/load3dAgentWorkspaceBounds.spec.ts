@@ -17,11 +17,11 @@ test.describe(
       page
     }) => {
       const PIXEL_SLACK = 1
-      const expectPixels = (
+      function expectPixels(
         actual: number,
         expected: number,
         label: string
-      ) => {
+      ): void {
         expect(actual, label).toBeGreaterThanOrEqual(expected - PIXEL_SLACK)
         expect(actual, label).toBeLessThanOrEqual(expected + PIXEL_SLACK)
       }
@@ -29,7 +29,7 @@ test.describe(
       const viewer = new Load3DViewerHelper(page)
       const panel = page.getByTestId('docked-agent-panel')
 
-      const openViewer = async () => {
+      async function openViewer(): Promise<void> {
         await load3dAgent.viewer.openViewerButton.click()
         await viewer.waitForOpen()
         await expect
@@ -37,7 +37,7 @@ test.describe(
           .toBe(0)
       }
 
-      const expectViewerBesidePanel = async (width: number) => {
+      async function expectViewerBesidePanel(width: number): Promise<void> {
         await page.setViewportSize({ width, height: 800 })
         await expect
           .poll(() => page.evaluate(() => window.innerWidth))
@@ -82,7 +82,7 @@ test.describe(
         }).toPass({ timeout: 5000 })
       }
 
-      const resizePanelTo = async (width: number) => {
+      async function resizePanelTo(width: number): Promise<void> {
         await viewer.cancelButton.click()
         await viewer.waitForClosed()
         const handleBox = await page
