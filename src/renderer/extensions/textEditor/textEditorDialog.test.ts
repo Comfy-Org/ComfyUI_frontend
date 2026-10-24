@@ -6,6 +6,10 @@ import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import {
+  authenticatedRemoteConfigState,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
@@ -277,6 +281,34 @@ describe('showTextEditor', () => {
     expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledOnce()
     expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledWith(
       expect.objectContaining({ end_reason: 'pagehide' })
+    )
+  })
+
+  describe('with an arm served', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+      authenticatedRemoteConfigState.value = 'unloaded'
+    })
+
+    it.for([
+      { served: 'control', trigger: 'expand_button', attributed: true },
+      { served: 'panel', trigger: 'expand_button', attributed: false },
+      { served: 'panel', trigger: 'focus_view', attributed: true }
+    ] as const)(
+      'attributes a $trigger session to the $served arm: $attributed',
+      ({ served, trigger, attributed }) => {
+        remoteConfig.value = { 'prompt-editor-surface': served }
+        authenticatedRemoteConfigState.value = 'authenticated'
+        renderDialogHost()
+
+        openEditor({ trigger })
+
+        expect(telemetry.trackPromptEditorOpened).toHaveBeenCalledWith({
+          surface: 'dialog',
+          trigger,
+          ...(attributed && { '$feature/prompt-editor-surface': served })
+        })
+      }
     )
   })
 

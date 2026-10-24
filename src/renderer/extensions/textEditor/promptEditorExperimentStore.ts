@@ -68,28 +68,34 @@ export const usePromptEditorExperimentStore = defineStore(
         resolution.value = resolveAssignment(undefined)
         reportedExposure.value = null
       },
-      { immediate: true }
+      { immediate: true, flush: 'sync' }
     )
     const assignment = computed(() => resolution.value.variant)
-    const experimentProperties = computed(
-      (): Pick<PromptEditorOpenedMetadata, '$feature/prompt-editor-surface'> =>
-        resolution.value.isAttributed
-          ? { '$feature/prompt-editor-surface': resolution.value.variant }
-          : {}
-    )
+
+    function isAttributedTo(rendered: PromptEditorSurfaceVariant) {
+      const { variant, isAttributed } = resolution.value
+      return isAttributed && rendered === variant
+    }
+
+    function experimentPropertiesFor(
+      rendered: PromptEditorSurfaceVariant
+    ): Pick<PromptEditorOpenedMetadata, '$feature/prompt-editor-surface'> {
+      return isAttributedTo(rendered)
+        ? { '$feature/prompt-editor-surface': rendered }
+        : {}
+    }
 
     function expose(rendered: PromptEditorSurfaceVariant) {
-      const { variant, isAttributed } = resolution.value
-      if (!isAttributed || rendered !== variant) return
-      if (reportedExposure.value === variant) return
+      if (!isAttributedTo(rendered)) return
+      if (reportedExposure.value === rendered) return
       const telemetry = useTelemetry()
       if (!telemetry) return
-      reportedExposure.value = variant
+      reportedExposure.value = rendered
       telemetry.trackPromptEditorExposure({
-        '$feature/prompt-editor-surface': variant
+        '$feature/prompt-editor-surface': rendered
       })
     }
 
-    return { assignment, experimentProperties, expose }
+    return { assignment, experimentPropertiesFor, expose }
   }
 )
