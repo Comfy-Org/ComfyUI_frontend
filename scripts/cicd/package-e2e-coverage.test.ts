@@ -199,8 +199,9 @@ describe('package-e2e-coverage.sh', () => {
 
   it('preserves line coverage when function metadata is inconsistent', () => {
     using fixture = coverageFixture()
-    const sameNamedClosures = (file: string) =>
-      `SF:${file}\nFN:10,inner_clicked\nFN:20,inner_clicked\nDA:10,1\nLF:1\nLH:1\nend_of_record\n`
+    function sameNamedClosures(file: string) {
+      return `SF:${file}\nFN:10,inner_clicked\nFN:20,inner_clicked\nDA:10,1\nLF:1\nLH:1\nend_of_record\n`
+    }
     fixture.writeShard(
       'e2e-coverage-shard-1',
       sameNamedClosures('src/canvas.ts') + coverage('src')
