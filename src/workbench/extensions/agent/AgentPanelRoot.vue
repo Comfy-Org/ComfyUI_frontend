@@ -1863,11 +1863,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  composerStore.setWorkflowReferences([])
-  composerStore.resetPromptHistory()
+  composerStore.clearDraft()
   newChat(source)
-  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
-  else agentPanelStore.startFollowingVisibleWorkflow()
+  agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const fileInput = ref<HTMLInputElement>()
