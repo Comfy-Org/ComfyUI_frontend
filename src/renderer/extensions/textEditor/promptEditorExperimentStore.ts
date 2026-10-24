@@ -31,43 +31,51 @@ function readQaOverride(): unknown {
     : getDevOverride<unknown>(PROMPT_EDITOR_SURFACE_FLAG)
 }
 
+interface PromptEditorAssignment {
+  variant: PromptEditorSurfaceVariant
+  isAttributed: boolean
+}
+
+function resolveAssignment(): PromptEditorAssignment {
+  const qaOverride = readQaOverride()
+  if (qaOverride !== undefined)
+    return {
+      variant: isPromptEditorSurfaceVariant(qaOverride)
+        ? qaOverride
+        : 'control',
+      isAttributed: false
+    }
+  const served = isAuthenticatedConfigLoaded.value
+    ? remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
+    : undefined
+  return isPromptEditorSurfaceVariant(served)
+    ? { variant: served, isAttributed: true }
+    : { variant: 'control', isAttributed: false }
+}
+
 /** Assignment and exposure for the dialog-versus-panel prompt editor experiment. */
 export const usePromptEditorExperimentStore = defineStore(
   'promptEditorExperiment',
   () => {
-    const qaOverride = readQaOverride()
-    const hasQaOverride = qaOverride !== undefined
-    const isAttributed = computed(
-      () => !hasQaOverride && isAuthenticatedConfigLoaded.value
-    )
-    function servedVariant(): unknown {
-      if (hasQaOverride) return qaOverride
-      return isAuthenticatedConfigLoaded.value
-        ? remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
-        : undefined
-    }
-    const assignment = computed<PromptEditorSurfaceVariant>(() => {
-      const served = servedVariant()
-      return isPromptEditorSurfaceVariant(served) ? served : 'control'
-    })
+    const resolution = computed(resolveAssignment)
+    const assignment = computed(() => resolution.value.variant)
     const experimentProperties = computed(
       (): Pick<PromptEditorOpenedMetadata, '$feature/prompt-editor-surface'> =>
-        isAttributed.value
-          ? { '$feature/prompt-editor-surface': assignment.value }
+        resolution.value.isAttributed
+          ? { '$feature/prompt-editor-surface': resolution.value.variant }
           : {}
     )
-    const hasReportedExposure = ref(false)
+    const reportedExposure = ref<PromptEditorSurfaceVariant | null>(null)
 
     function expose(rendered: PromptEditorSurfaceVariant) {
-      if (
-        hasReportedExposure.value ||
-        !isAttributed.value ||
-        rendered !== assignment.value
-      )
-        return
-      hasReportedExposure.value = true
-      useTelemetry()?.trackPromptEditorExposure({
-        '$feature/prompt-editor-surface': assignment.value
+      const { variant, isAttributed } = resolution.value
+      if (!isAttributed || rendered !== variant) return
+      if (reportedExposure.value === variant) return
+      const telemetry = useTelemetry()
+      if (!telemetry) return
+      reportedExposure.value = variant
+      telemetry.trackPromptEditorExposure({
+        '$feature/prompt-editor-surface': variant
       })
     }
 
