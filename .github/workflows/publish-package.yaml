@@ -7,7 +7,14 @@ on:
         description: 'Package to publish'
         required: true
         type: 'choice'
-        options: [account-core, account-ui, billing-contract, ingest-types]
+        options:
+          [
+            account-core,
+            account-ui,
+            billing-contract,
+            ingest-types,
+            code-quality
+          ]
       version:
         description: 'Version to publish (e.g., 1.0.0-alpha.1)'
         required: true
@@ -74,6 +81,7 @@ jobs:
             account-ui) NPM_NAME='@comfyorg/account-ui' ;;
             billing-contract) NPM_NAME='@comfyorg/billing-contract' ;;
             ingest-types) NPM_NAME='@comfyorg/ingest-types' ;;
+            code-quality) NPM_NAME='@comfyorg/code-quality' ;;
             *)
               echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
               exit 1
@@ -184,6 +192,13 @@ jobs:
       # entry from a clean consumer, whichever package this run publishes.
       - name: Smoke-test the packed tarballs
         run: pnpm --filter @comfyorg/account-core run smoke:pack
+
+      - name: Verify code-quality consumers
+        if: inputs.package == 'code-quality'
+        run: |
+          pnpm --filter @comfyorg/code-quality check
+          pnpm --filter @comfyorg/code-quality smoke:pack npm
+          pnpm --filter @comfyorg/code-quality smoke:pack pnpm
 
       - name: Check if version already on npm
         id: check_npm
