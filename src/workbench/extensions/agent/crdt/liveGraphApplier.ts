@@ -31,6 +31,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -40,6 +41,7 @@ import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
@@ -1429,7 +1431,7 @@ export class LiveGraphApplier {
         )
     if (!growsAboveMax) {
       applyRemoteDynamicGroupRowCount(node, () =>
-        this.setWidgetValue(node, widget, value)
+        this.assignWidgetValue(node, widget, value)
       )
       if (reachesDynamicGroupRowCount(widget, value)) return
     }
@@ -1446,6 +1448,29 @@ export class LiveGraphApplier {
     value: WidgetValue
   ) {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
+    if (!(widget instanceof BaseWidget)) {
+      this.assignWidgetValue(node, widget, value)
+      return
+    }
+    const rollback = captureWidgetValue(node, widget)
+    try {
+      widget.setValue(value, {
+        node,
+        canvas: this.deps.getCanvas?.() ?? undefined
+      })
+    } catch (error) {
+      rollback()
+      throw error
+    }
+    convergeDocumentToLiveValue(widget, value)
+  }
+
+  private assignWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
+    if (Object.is(widget.value, value)) return
     const previous = widget.value
     const rollback = writeWidgetValue(node, widget, value)
     try {
@@ -1740,28 +1765,45 @@ function hostWidgetEntries(
   return Object.entries(widgets ?? {})
 }
 
-/** Writes a widget value and its mirrored node property; returns the undo. */
+function captureWidgetValue(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  mirrorProperty = true
+): () => void {
+  const previous = widget.value
+  const property = widget.options.property
+  if (!mirrorProperty || !property || node.properties[property] === undefined)
+    return () => {
+      widget.value = previous
+    }
+  const previousProperty = node.properties[property]
+  return () => {
+    widget.value = previous
+    node.setProperty(property, previousProperty)
+  }
+}
+
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
   value: WidgetValue,
   mirrorProperty = true
 ): () => void {
-  const previous = widget.value
+  const rollback = captureWidgetValue(node, widget, mirrorProperty)
   const property = widget.options.property
-  if (!mirrorProperty || !property || node.properties[property] === undefined) {
-    widget.value = value
-    return () => {
-      widget.value = previous
-    }
-  }
-  const previousProperty = node.properties[property]
   widget.value = value
-  node.setProperty(property, value)
-  return () => {
-    widget.value = previous
-    node.setProperty(property, previousProperty)
-  }
+  if (mirrorProperty && property && node.properties[property] !== undefined)
+    node.setProperty(property, value)
+  return rollback
+}
+
+function convergeDocumentToLiveValue(
+  widget: BaseWidget,
+  documentValue: WidgetValue
+): void {
+  const id = widget.widgetId
+  if (!id || Object.is(widget.value, documentValue)) return
+  withGraphIntentSource('local', () => useWidgetValueStore().announceValue(id))
 }
 
 function applyFlags(node: LGraphNode, flags: INodeFlags): void {
