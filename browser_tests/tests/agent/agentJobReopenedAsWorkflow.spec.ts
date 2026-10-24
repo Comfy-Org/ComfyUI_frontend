@@ -15,6 +15,18 @@ const OPEN_AS_WORKFLOW = enMessages.queue.jobMenu.openAsWorkflowNewTab
 
 // A two-node graph in the frontend ("save") format: a top-level `nodes` array,
 // which is what `validateComfyWorkflow` needs to rebuild a canvas.
+//
+// Node ids 1 and 2 are deliberately the SAME ids the harness seed uses
+// (`SOURCE_NODE_ID` / `TARGET_NODE_ID`), because that is what a real job graph
+// is free to do — ids are per-graph. So the ids cannot witness which graph is
+// on the canvas, and every node here carries an explicit `title` instead. A
+// title wins over the node definition's `display_name`
+// (`resolveNodeDisplayName`, `src/utils/nodeTitleUtil.ts`), so these strings
+// are what the header renders regardless of what `object_info` serves, and no
+// seed node can produce them.
+const JOB_CHECKPOINT_TITLE = 'Job graph checkpoint loader'
+const JOB_PREVIEW_TITLE = 'Job graph preview image'
+
 const FRONTEND_WORKFLOW = {
   id: '5f2f2c22-0000-4000-8000-0000000000aa',
   revision: 0,
@@ -24,6 +36,7 @@ const FRONTEND_WORKFLOW = {
     {
       id: 1,
       type: 'CheckpointLoaderSimple',
+      title: JOB_CHECKPOINT_TITLE,
       pos: [80, 80],
       size: [320, 100],
       flags: {},
@@ -41,6 +54,7 @@ const FRONTEND_WORKFLOW = {
     {
       id: 2,
       type: 'PreviewImage',
+      title: JOB_PREVIEW_TITLE,
       pos: [480, 80],
       size: [240, 260],
       flags: {},
@@ -115,11 +129,57 @@ function openAsWorkflowItem(page: Page): Locator {
  * Asserts the entry before clicking it, so a renamed label or changed role
  * fails on the locator at the expect timeout instead of silently consuming
  * the whole 180s test budget inside `click`'s auto-wait.
+ *
+ * The menu entry's `command` is fire-and-forget (`useJobMenu.ts`,
+ * `command: () => openJobWorkflow()`), so `click` resolves as soon as the DOM
+ * event is dispatched — long before `openJobWorkflow` has awaited
+ * `GET /api/jobs/{id}`, which is the fetch that decides whether a tab opens at
+ * all. Anything asserted straight after a bare `click` is therefore racing the
+ * action. This waits for that response before returning, so a caller's next
+ * assertion is made against an action that has passed its only async boundary
+ * ahead of the tab.
  */
-async function clickOpenAsWorkflow(page: Page): Promise<void> {
+async function clickOpenAsWorkflow(page: Page, jobId: string): Promise<void> {
   const item = openAsWorkflowItem(page)
   await expect(item).toBeVisible()
+
+  const jobDetailFetched = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/api/jobs/${encodeURIComponent(jobId)}`) &&
+      response.request().method().toUpperCase() === 'GET'
+  )
   await item.click()
+  await jobDetailFetched
+}
+
+/**
+ * How long a tab gets to appear before "no tab opened" is believed. The
+ * success case opens its tab after the same `GET /api/jobs/{id}` this waits
+ * past, so this only has to cover `createTemporary` plus `openWorkflow`'s
+ * render — but a negative assertion is only as good as the window it is given,
+ * so this is deliberately far longer than that.
+ */
+const NO_NEW_TAB_WINDOW_MS = 5_000
+
+/**
+ * Requires that no tab is added, by actually waiting for one.
+ *
+ * `expect(tabs).toHaveCount(before)` cannot express this: it is satisfied by
+ * its first sample, so it reports success for "the tab has not been created
+ * YET" — which is the state the click leaves the page in. Waiting for the tab
+ * that would be created and requiring that wait to time out is the same claim
+ * stated so that it can fail.
+ */
+async function expectNoTabOpened(
+  topbar: Topbar,
+  tabsBefore: number
+): Promise<void> {
+  await expect(
+    topbar.tabs
+      .nth(tabsBefore)
+      .waitFor({ state: 'attached', timeout: NO_NEW_TAB_WINDOW_MS })
+  ).rejects.toThrow(/Timeout/)
+  await expect(topbar.tabs).toHaveCount(tabsBefore)
 }
 
 /**
@@ -177,16 +237,23 @@ test.describe(
       const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await openJobMenu(queuePanel, SERVER_RUN_JOB_ID)
-      await clickOpenAsWorkflow(page)
+      await clickOpenAsWorkflow(page, SERVER_RUN_JOB_ID)
 
       await test.step('a new tab holds the job’s graph', async () => {
         await expect(topbar.tabs).toHaveCount(tabsBefore + 1)
         await expect(
           topbar.getActiveTab().filter({ hasText: `Job ${SERVER_RUN_JOB_ID}` })
         ).toBeVisible()
+        // By title bound to id, not by id alone: `getNodeLocator` is a
+        // page-wide `[data-node-id]` query and the seed occupies these very
+        // ids, so an id-only assertion is satisfied by the graph this step
+        // claims was replaced. The title is what only the job graph can
+        // supply.
         for (const node of FRONTEND_WORKFLOW.nodes)
           await expect(
-            harness.vueNodes.getNodeLocator(String(node.id))
+            harness.vueNodes
+              .getNodeByTitle(node.title)
+              .and(harness.vueNodes.getNodeLocator(String(node.id)))
           ).toBeVisible()
       })
     })
@@ -223,7 +290,8 @@ test.describe(
     // test rather than being absorbed as the expected defect.
     test('says why it cannot, when the agent ran a graph it cannot rebuild', async ({
       rig: { execution },
-      page
+      page,
+      toast
     }) => {
       const topbar = new Topbar(page)
       const tabsBefore = await topbar.tabs.count()
@@ -244,17 +312,31 @@ test.describe(
       const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await openJobMenu(queuePanel, SERVER_RUN_JOB_ID)
-      await clickOpenAsWorkflow(page)
+
+      // Baseline for the pinned assertion below, and outside the
+      // expected-failure window: if setup had left a toast on screen, "a toast
+      // is visible" would be satisfied by that toast rather than by a refusal,
+      // and the pin would pass for a reason unrelated to the defect.
+      await expect(toast.visibleToasts).toHaveCount(0)
+
+      await clickOpenAsWorkflow(page, SERVER_RUN_JOB_ID)
 
       // Nothing opened — that part is not the defect on its own, and it is
       // asserted outside the expected-failure window so a tab that DOES open
       // is reported as a test failure rather than read as the known defect.
-      await expect(topbar.tabs).toHaveCount(tabsBefore)
+      await expectNoTabOpened(topbar, tabsBefore)
 
       // The defect is that nothing was said either. A toast is how the app
       // refuses the SAME action on the asset route
       // (`useMediaAssetActions.ts`, `mediaAsset.noWorkflowDataFound`), so it
       // is the mechanism this route is missing rather than an invented one.
+      //
+      // Asserted through the `toast` fixture, which tracks what actually
+      // renders a toast on this branch (`[data-testid="toast"]`,
+      // `src/components/ui/toast/Toaster.vue`). The PrimeVue `.p-toast-message`
+      // class is gone from the app, so a locator built on it would match
+      // nothing even after a refusal lands — the pin would stay red forever
+      // and could never confirm the fix.
       //
       // Deliberately not asserted, though it is also true and also wrong: the
       // menu does not even close, so the click leaves the UI exactly as it
@@ -264,7 +346,7 @@ test.describe(
         true,
         'useJobMenu.openJobWorkflow returns silently when the job carries no frontend graph — no toast, no dialog, no tab'
       )
-      await expect(page.locator('.p-toast-message:visible')).toBeVisible()
+      await expect(toast.visibleToasts.first()).toBeVisible()
     })
   }
 )
