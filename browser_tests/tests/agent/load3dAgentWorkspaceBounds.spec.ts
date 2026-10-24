@@ -6,13 +6,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
 import { Load3DViewerHelper } from '@e2e/tests/load3d/Load3DViewerHelper'
 
-const PIXEL_SLACK = 1
-
-function expectPixels(actual: number, expected: number, label: string): void {
-  expect(actual, label).toBeGreaterThanOrEqual(expected - PIXEL_SLACK)
-  expect(actual, label).toBeLessThanOrEqual(expected + PIXEL_SLACK)
-}
-
 test.describe(
   'Load3D Agent workspace bounds',
   { tag: ['@cloud', '@agent'] },
@@ -23,6 +16,16 @@ test.describe(
       load3dAgent,
       page
     }) => {
+      const PIXEL_SLACK = 1
+      const expectPixels = (
+        actual: number,
+        expected: number,
+        label: string
+      ) => {
+        expect(actual, label).toBeGreaterThanOrEqual(expected - PIXEL_SLACK)
+        expect(actual, label).toBeLessThanOrEqual(expected + PIXEL_SLACK)
+      }
+
       const viewer = new Load3DViewerHelper(page)
       const panel = page.getByTestId('docked-agent-panel')
 
@@ -142,6 +145,7 @@ test.describe(
           expect(panelBox).not.toBeNull()
           if (!dialogBox || !panelBox) return
 
+          expect(dialogBox.width).toBeGreaterThan(0)
           expect(dialogBox.x).toBeGreaterThanOrEqual(0)
           expect(dialogBox.y).toBeGreaterThanOrEqual(0)
           expect(dialogBox.x + dialogBox.width).toBeLessThanOrEqual(
@@ -199,6 +203,11 @@ test.describe(
           'false'
         )
         await agentPanel.open()
+        await expect(agentPanel.root).toBeVisible()
+        await expect(agentPanel.openButton).toHaveAttribute(
+          'aria-pressed',
+          'true'
+        )
       })
     })
   }
