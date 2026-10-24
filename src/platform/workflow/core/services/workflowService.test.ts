@@ -99,7 +99,9 @@ vi.mock<unknown>(
   () => ({
     useWorkflowThumbnail: () => ({
       storeThumbnail: storeThumbnailMock,
-      getThumbnail: vi.fn()
+      getThumbnail: vi.fn(),
+      clearThumbnail: vi.fn(),
+      moveWorkflowThumbnail: vi.fn()
     })
   })
 )
@@ -1869,6 +1871,271 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(replacement.path)
+    })
+  })
+
+  describe('user activations', () => {
+    function activateOnLoad(): void {
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, workflow) => {
+          useWorkflowStore().activeWorkflow = workflow as LoadedComfyWorkflow
+          return true
+        }
+      )
+    }
+
+    it('reports a tab only when a user action activates it', async () => {
+      const workflowStore = useWorkflowStore()
+      const restored = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/restored.json'
+      })
+      const clicked = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/clicked.json'
+      })
+      activateOnLoad()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+      const service = useWorkflowService()
+
+      await service.openWorkflow(restored)
+      await service.openWorkflow(clicked, { initiator: 'user' })
+
+      expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
+      expect(activated.mock.calls).toEqual([[clicked]])
+    })
+
+    it('does not report a user activation whose load fails', async () => {
+      const workflowStore = useWorkflowStore()
+      const clicked = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/clicked.json'
+      })
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await expect(
+        useWorkflowService().openWorkflow(clicked, { initiator: 'user' })
+      ).resolves.toBe(false)
+
+      expect(activated).not.toHaveBeenCalled()
+    })
+
+    function openThreeTabs(): {
+      byName: (name: string) => ComfyWorkflow
+      activated: ReturnType<typeof vi.fn>
+    } {
+      const workflowStore = useWorkflowStore()
+      const names = ['first', 'second', 'third']
+      const tabs = names.map((name, index) => {
+        const tab = createWorkflow(null, {
+          loadable: true,
+          path: `workflows/${name}.json`
+        })
+        Object.defineProperty(tab, 'unload', { value: vi.fn() })
+        workflowStore.attachWorkflow(tab, index)
+        return tab
+      })
+      workflowStore.activeWorkflow = tabs[0] as LoadedComfyWorkflow
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockImplementation(
+        () =>
+          workflowStore.openWorkflows.find(
+            (tab) => !workflowStore.isActive(tab)
+          ) ?? null
+      )
+      activateOnLoad()
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+      return { byName: (name) => tabs[names.indexOf(name)], activated }
+    }
+
+    it.for([
+      { closed: 'the active tab', closing: ['first'], left: 'second' },
+      {
+        closed: 'several tabs',
+        closing: ['first', 'second'],
+        left: 'third'
+      }
+    ])(
+      'reports once, for the tab left active, when a user closes $closed',
+      async ({ closing, left }) => {
+        const { byName, activated } = openThreeTabs()
+
+        await useWorkflowService().closeWorkflows(closing.map(byName), {
+          warnIfUnsaved: false,
+          initiator: 'user'
+        })
+
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(byName(left).path)
+        expect(activated.mock.calls).toEqual([[byName(left)]])
+      }
+    )
+
+    it('does not report a tab something else activated while a close waited', async () => {
+      const { byName, activated } = openThreeTabs()
+      const dirty = byName('second')
+      Object.assign(dirty, { isModified: true })
+      let answer!: (choice: boolean | null) => void
+      vi.mocked(useDialogService().confirm).mockReturnValueOnce(
+        new Promise((resolve) => (answer = resolve))
+      )
+      const closing = useWorkflowService().closeWorkflows([dirty], {
+        warnIfUnsaved: true,
+        initiator: 'user'
+      })
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalled()
+      )
+
+      await useWorkflowService().openWorkflow(byName('third'))
+      answer(false)
+      await closing
+
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(byName('third').path)
+      expect(activated).not.toHaveBeenCalled()
+    })
+
+    it('does not report a replacement superseded while a later close waits', async () => {
+      const { byName, activated } = openThreeTabs()
+      const workflowStore = useWorkflowStore()
+      const third = byName('third')
+      Object.assign(third, { isModified: true })
+      let answer!: (choice: boolean | null) => void
+      vi.mocked(useDialogService().confirm).mockReturnValueOnce(
+        new Promise((resolve) => (answer = resolve))
+      )
+      const service = useWorkflowService()
+      const closing = service.closeWorkflows([byName('first'), third], {
+        warnIfUnsaved: true,
+        initiator: 'user'
+      })
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalled()
+      )
+      expect(workflowStore.activeWorkflow?.path).toBe(byName('second').path)
+      expect(workflowStore.openWorkflows.map((tab) => tab.path)).toEqual([
+        byName('second').path,
+        third.path
+      ])
+
+      await service.openWorkflow(third)
+      answer(null)
+      await closing
+
+      expect(workflowStore.activeWorkflow?.path).toBe(third.path)
+      expect(activated).not.toHaveBeenCalled()
+    })
+
+    it('reports the tab an earlier close activated when a later close throws', async () => {
+      const { byName, activated } = openThreeTabs()
+      const failure = new Error('load failed')
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (_data, _clean, _restore, workflow) => {
+          const loading = workflow as ComfyWorkflow
+          if (loading.path === byName('third').path) throw failure
+          useWorkflowStore().activeWorkflow = loading as LoadedComfyWorkflow
+          return true
+        }
+      )
+
+      await expect(
+        useWorkflowService().closeWorkflows(
+          [byName('first'), byName('second')],
+          { warnIfUnsaved: false, initiator: 'user' }
+        )
+      ).rejects.toBe(failure)
+
+      expect(activated.mock.calls).toEqual([[byName('second')]])
+    })
+
+    it.for([
+      {
+        name: 'reports the default workflow left active after a user close',
+        options: { warnIfUnsaved: false, initiator: 'user' as const },
+        expectedPaths: ['Unsaved Workflow.json']
+      },
+      {
+        name: 'does not report the default workflow for a non-user close',
+        options: { warnIfUnsaved: false },
+        expectedPaths: []
+      }
+    ])('$name', async ({ options, expectedPaths }) => {
+      const workflowStore = useWorkflowStore()
+      const only = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/only.json'
+      })
+      Object.defineProperty(only, 'unload', { value: vi.fn() })
+      workflowStore.attachWorkflow(only, 0)
+      workflowStore.activeWorkflow = only as LoadedComfyWorkflow
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(null)
+      const fallback = createWorkflow(null, {
+        loadable: true,
+        path: 'Unsaved Workflow.json'
+      })
+      vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
+        if (data === defaultGraph)
+          useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
+        return true
+      })
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await useWorkflowService().closeWorkflows([only], options)
+
+      expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
+      expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+        expectedPaths
+      )
+    })
+
+    it.for([
+      {
+        name: 'reports the tab a user lands on after a direct deletion',
+        silent: false,
+        expectedPaths: ['workflows/second.json']
+      },
+      {
+        name: 'does not report a tab activation for an internal deletion',
+        silent: true,
+        expectedPaths: []
+      }
+    ])('$name', async ({ silent, expectedPaths }) => {
+      const { byName, activated } = openThreeTabs()
+      Object.defineProperty(byName('first'), 'delete', {
+        value: vi.fn(async () => {})
+      })
+
+      await expect(
+        useWorkflowService().deleteWorkflow(byName('first'), silent)
+      ).resolves.toBe(true)
+
+      expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+        expectedPaths
+      )
+    })
+
+    it('keeps a throwing listener from failing the tab switch', async () => {
+      const workflowStore = useWorkflowStore()
+      const clicked = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/clicked.json'
+      })
+      activateOnLoad()
+      workflowStore.onUserActivation(() => {
+        throw new Error('subscriber blew up')
+      })
+      const settled = vi.fn()
+      workflowStore.onUserActivation(settled)
+
+      await expect(
+        useWorkflowService().openWorkflow(clicked, { initiator: 'user' })
+      ).resolves.toBe(true)
+
+      expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
+      expect(settled).toHaveBeenCalledWith(clicked)
     })
   })
 

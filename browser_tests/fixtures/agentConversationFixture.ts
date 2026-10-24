@@ -353,12 +353,6 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText(name)
   }
 
-  /**
-   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
-   * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
-   * implementations of the same save/reopen round trip.
-   */
   async persistSavedWorkflow(): Promise<void> {
     this.savedWorkflow = await mockSavedWorkflowPersistence(
       this.page,
@@ -1359,6 +1353,7 @@ interface ConversationFixtures {
   bootAssets: ListAssetsResponse
   // Opt in only for cases that assert telemetry through hostTelemetryFixture.
   telemetryEnabled: boolean
+  seedPassthrough: Omit<Partial<WorkflowJSON>, 'nodes' | 'links'>
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1374,6 +1369,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   workflowTarget: ['saved-via-picker', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   telemetryEnabled: [false, { option: true }],
+  seedPassthrough: [{}, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1396,7 +1392,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       humanOpsHost,
       workflowTarget,
       bootAssets,
-      telemetryEnabled
+      telemetryEnabled,
+      seedPassthrough
     },
     use,
     testInfo
@@ -1408,10 +1405,15 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       throw new Error(
         `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
       )
+    const conversation = loadAgentConversation(conversationCase)
+    conversation.workflow.seed = {
+      ...conversation.workflow.seed,
+      ...seedPassthrough
+    }
     const harness = new AgentConversationHarness(
       page,
       comfyPage,
-      loadAgentConversation(conversationCase),
+      conversation,
       replayTiming,
       conversationCase,
       extraNodeDefs,

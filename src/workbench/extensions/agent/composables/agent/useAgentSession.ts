@@ -1102,8 +1102,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordTurnStarted(turnId: TurnId, startsThread: boolean): void {
     turnStartedAt.set(turnId, Date.now())
     if (startsThread && pendingThreadSource.value !== null) {
-      onThreadStarted?.(pendingThreadSource.value)
+      const source = pendingThreadSource.value
       pendingThreadSource.value = null
+      runAcceptedTurnSideEffect(
+        () => onThreadStarted?.(source),
+        'agent_thread_started_callback_failed'
+      )
+    }
+  }
+
+  function runAcceptedTurnSideEffect(
+    effect: () => void,
+    errorType: string
+  ): void {
+    try {
+      effect()
+    } catch (error) {
+      reportError(error, { surface: 'agent', errorType })
+      trackAgentError('request_failed', 'post_acceptance', 'none')
     }
   }
 
@@ -1118,16 +1134,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
-    onThreadActivated?.(ack.thread_id)
-    localStorage.setItem(threadStorageKey, ack.thread_id)
-    if (ack.workflow_id !== undefined) {
+    let adoptWorkflow: (() => void) | undefined
+    const workflowId = ack.workflow_id
+    if (workflowId !== undefined) {
       const boundAtAck = boundWorkflowId.value
-      bindWorkflow(ack.workflow_id)
+      bindWorkflow(workflowId)
       const shouldAdopt =
         wfContext?.id !== undefined ||
-        (ack.workflow_id !== boundAtAck &&
-          bindingStore.tabPathFor(ack.workflow_id) === undefined)
-      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext, boundAtAck)
+        (workflowId !== boundAtAck &&
+          bindingStore.tabPathFor(workflowId) === undefined)
+      if (shouldAdopt)
+        adoptWorkflow = () =>
+          workflow?.adopted(workflowId, wfContext, boundAtAck)
     }
     const turnId = toTurnId(ack.message_id)
     conversationStore.recordUser(
@@ -1148,6 +1166,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
     stopPendingActiveTurn()
+    runAcceptedTurnSideEffect(
+      () => onThreadActivated?.(ack.thread_id),
+      'agent_thread_activated_callback_failed'
+    )
+    runAcceptedTurnSideEffect(
+      () => localStorage.setItem(threadStorageKey, ack.thread_id),
+      'agent_thread_persistence_failed'
+    )
+    if (adoptWorkflow)
+      runAcceptedTurnSideEffect(
+        adoptWorkflow,
+        'agent_workflow_adoption_callback_failed'
+      )
   }
 
   function stopPendingActiveTurn(): void {
@@ -1332,7 +1363,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number,
     onAccepted?: () => void
   ): boolean {
-    onAccepted?.()
+    runAcceptedTurnSideEffect(
+      () => onAccepted?.(),
+      'agent_turn_accepted_callback_failed'
+    )
     return generation === loadGeneration
   }
 

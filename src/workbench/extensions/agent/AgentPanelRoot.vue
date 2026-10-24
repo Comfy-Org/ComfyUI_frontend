@@ -65,6 +65,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -106,7 +107,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { AgentActiveTabData } from './schemas/agentApiSchema'
+import type { AgentActiveTabData, AgentWsEvent } from './schemas/agentApiSchema'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
@@ -641,9 +642,9 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
-const coachCompletionWaiters = new Set<() => void>()
-function releaseCoachCompletionWaiters(): void {
-  for (const resolve of coachCompletionWaiters) resolve()
+const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+function releaseCoachCompletionWaiters(proceed = true): void {
+  for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
 }
 watch(
@@ -656,10 +657,11 @@ watch(
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+const sendHeldByCoach = ref(false)
 
-async function waitForCoachCompletion(): Promise<void> {
+async function waitForCoachCompletion(): Promise<boolean> {
   const key = onboardingKey.value
-  if (!key || hasSeenCoach(key)) return
+  if (!key || hasSeenCoach(key)) return true
   await nextTick()
   if (
     key !== onboardingKey.value ||
@@ -667,8 +669,15 @@ async function waitForCoachCompletion(): Promise<void> {
     coachDeferredBy.value !== null ||
     !coachRef.value
   )
-    return
-  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+    return true
+  sendHeldByCoach.value = true
+  try {
+    return await new Promise<boolean>((resolve) =>
+      coachCompletionWaiters.add(resolve)
+    )
+  } finally {
+    sendHeldByCoach.value = false
+  }
 }
 
 function restartCoach(): void {
@@ -931,6 +940,21 @@ function reportPendingSend(): void {
   })
 }
 
+function registerAgentRunJobOwner(event: AgentWsEvent): void {
+  if (event.type !== 'agent_tool_call') return
+  const { job_id: jobId, job_workflow_id: workflowId } = event.data
+  if (!jobId || !workflowId) return
+  const workflow = boundOrOpenWorkflowFor(workflowId)
+  if (workflow) useExecutionStore().registerJobOwner(jobId, workflow)
+}
+
+const agentNodeDefinitionRefresh = useAgentNodeDefinitionRefreshStore()
+
+function observeAgentEvent(event: AgentWsEvent): void {
+  agentNodeDefinitionRefresh.observeAgentEvent(event)
+  registerAgentRunJobOwner(event)
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -956,7 +980,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
-  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
+  onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
@@ -1482,10 +1506,13 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters()
+      releaseCoachCompletionWaiters(
+        coachDeferredBy.value !== null && agentPanelStore.isVisible
+      )
     },
     invalidateConsentHeldSubmission: () => {
       if (
+        !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
         composerStore.submission?.id === consentHeldSubmissionId
       )
@@ -1706,6 +1733,7 @@ async function consentAllowsSubmission(
   submissionId: number | undefined
 ): Promise<boolean> {
   let hasConsent = false
+  let coachReleased = false
   let acceptedIdentity: string | null = null
   consentHeldSubmissionId = submissionId
   try {
@@ -1713,7 +1741,7 @@ async function consentAllowsSubmission(
       hasConsent = true
       acceptedIdentity = consentIdentity.value
     })
-    if (hasConsent) await waitForCoachCompletion()
+    if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -1721,6 +1749,7 @@ async function consentAllowsSubmission(
   return (
     composerStore.submission?.id === submissionId &&
     hasConsent &&
+    coachReleased &&
     consentAccepted.value &&
     consentIdentity.value === acceptedIdentity
   )
@@ -2254,7 +2283,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      :hold-notice="sendHeldByCoach ? t('agent.coachHoldNotice') : undefined"
       @finished="releaseCoachCompletionWaiters"
+      @stalled="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

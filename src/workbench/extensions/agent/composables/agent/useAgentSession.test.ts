@@ -7149,7 +7149,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
-  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+  it('keeps an accepted turn live when thread persistence fails', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
@@ -7161,18 +7161,57 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     try {
       const ok = await session.sendMessage('make me a cat')
-      expect(ok).toBe(false)
+      expect(ok).toBe(true)
     } finally {
       setItem.mockRestore()
     }
 
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(session.threadId.value).toBe('th-1')
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      surface: 'agent',
+      errorType: 'agent_thread_persistence_failed'
+    })
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
       failure_stage: 'post_acceptance',
       retryable: false,
       turn_accepted: true,
-      ui_treatment: 'inline_notice'
+      ui_treatment: 'none'
+    })
+  })
+
+  it('keeps an accepted turn live when workflow adoption fails', async () => {
+    const rest = fakeRest()
+    const adoptionError = new Error('adoption failed')
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {
+          throw adoptionError
+        }
+      }
+    })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(true)
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(adoptionError, {
+      surface: 'agent',
+      errorType: 'agent_workflow_adoption_callback_failed'
     })
   })
 
