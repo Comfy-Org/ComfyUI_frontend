@@ -82,16 +82,6 @@ function rejectedTarget(op: Op | undefined): string | undefined {
   }
 }
 
-/**
- * The node id and (when minted in the same op) class the rejected op
- * addressed, for the telemetry context only — never rendered to the user.
- *
- * PM-2067: a thin Sentry relay of a host rejection names an id in its
- * message with no stack frame to say whether it is a node class or a
- * subgraph definition, and no way to tell whether the same node recurs
- * across events or the rejection is scattered. Both questions are answered
- * by the id this op already carries once it is on the context.
- */
 function rejectedOpContext(op: Op | undefined): {
   nodeId?: string | number
   classType?: string

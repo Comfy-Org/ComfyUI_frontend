@@ -226,10 +226,6 @@ describe('a human edit the doc host rejects', () => {
     }
   )
 
-  // PM-2067: a thin Sentry relay of this exact rejection had no stack frame
-  // to say whether the id in the message was a node class or a subgraph
-  // definition, and no way to tell whether the same node recurs across
-  // events. The rejected op already carries both answers once resolved.
   it('reports the rejected node id on the telemetry context', async () => {
     const { submit } = mountFollower()
 
