@@ -5,6 +5,7 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
+import { combineAbortSignals } from '@/base/common/abortSignal'
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
 
 function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
@@ -22,7 +23,7 @@ function requestSignal({
   const signals: AbortSignal[] = []
   if (signal instanceof AbortSignal) signals.push(signal)
   if (timeout) signals.push(AbortSignal.timeout(timeout))
-  return AbortSignal.any(signals)
+  return combineAbortSignals(signals)
 }
 
 function statusError(
