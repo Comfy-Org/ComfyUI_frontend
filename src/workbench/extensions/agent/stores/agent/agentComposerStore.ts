@@ -625,6 +625,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    hasDraft,
     nodeScope,
     promptEpoch,
     promptOrigin,
