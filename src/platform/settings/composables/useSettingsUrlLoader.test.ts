@@ -79,20 +79,26 @@ describe('useSettingsUrlLoader', () => {
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('rejects an inherited key as an extension filter and keeps the param', async () => {
-    useRoute().query.settings = 'extension'
-    useRoute().query.filter = 'constructor'
+  // `constructor` and `toString` resolve to functions off the prototype and
+  // `__proto__` to an object, so an unguarded lookup hands the panel a value
+  // that is not an `ExtensionFilterType` at all. The plain unknown string is
+  // the control that tells an own-key defect apart from a merely absent key:
+  // without it, a lookup that rejected everything would pass too.
+  it.for(['constructor', 'toString', '__proto__', 'nonsense'] as const)(
+    'rejects ?filter=%s and keeps the param',
+    async (filter) => {
+      useRoute().query.settings = 'extension'
+      useRoute().query.filter = filter
 
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    await loadSettingsFromUrl()
+      const { loadSettingsFromUrl } = useSettingsUrlLoader()
+      await loadSettingsFromUrl()
 
-    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
-      extensionFilter: undefined
-    })
-    expect(useRouter().replace).toHaveBeenCalledWith({
-      query: { filter: 'constructor' }
-    })
-  })
+      expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+        extensionFilter: undefined
+      })
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: { filter } })
+    }
+  )
 
   it('strips but does not open for an unrecognized panel value', async () => {
     useRoute().query.settings = 'garbage'

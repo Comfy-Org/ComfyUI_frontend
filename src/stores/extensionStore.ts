@@ -42,7 +42,6 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
-  // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
   const extensions = computed(() => Object.values(extensionByName.value))
   const isAgentCreatedExtension = (extension: ComfyExtension) =>
