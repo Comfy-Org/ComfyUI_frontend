@@ -144,7 +144,7 @@ function openFocusView({ node, widget }: PromptPanelTarget) {
       String(getWidgetState(node, widget)?.value ?? widget.value ?? ''),
     widgetLabel: state?.label || widget.label || widget.name,
     nodeTitle: node.title,
-    readOnly: isWidgetReadOnly(node, widget),
+    readOnly: () => isWidgetReadOnly(node, widget),
     maximized: true,
     trigger: 'focus_view',
     onEdit: (text) => setWidgetValue(node, widget, text)
