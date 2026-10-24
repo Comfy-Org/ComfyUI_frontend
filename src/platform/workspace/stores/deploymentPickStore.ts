@@ -440,6 +440,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return null
   }
 
+  /** True when this default would change what this browser runs on. */
   function defaultMovesThisBrowser(deploymentId: string | null): boolean {
     return followsWorkspace.value && deploymentId !== pickedDeploymentId.value
   }
@@ -508,7 +509,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     pick,
     pickFromLink,
     followWorkspace,
-    setDefault
+    setDefault,
+    defaultMovesThisBrowser
   }
 })
 
