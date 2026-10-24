@@ -10,15 +10,15 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { scanAllModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   seedMediaNodeDefs
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import {
   getExecutionIdByNode,
   isCandidateScopeActive

@@ -7,7 +7,7 @@ import {
 import { delay } from 'es-toolkit'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'

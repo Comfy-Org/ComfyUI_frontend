@@ -26,7 +26,6 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -73,7 +72,10 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
+      status: 'complete',
+      threads: []
+    })),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -1916,13 +1918,23 @@ describe('useAgentSession (v1 composition root)', () => {
       events: fakeEvents().source
     })
     session.start()
+    const onAccepted = vi.fn()
 
-    const send = session.sendMessage('late reply')
+    const send = session.sendMessage(
+      'late reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      onAccepted
+    )
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
     session.stop()
     resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
 
     await expect(send).resolves.toBe(false)
+    expect(onAccepted).toHaveBeenCalledOnce()
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
@@ -2267,6 +2279,159 @@ describe('useAgentSession (v1 composition root)', () => {
         expect.any(Error),
         expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
       )
+    })
+
+    it.for([
+      ['no selection', { error: 'already answered', status: 'answered' }],
+      [
+        'a null selection',
+        { error: 'already answered', status: 'answered', selected: null }
+      ]
+    ] as const)(
+      'does not report a 409 with %s as another answer winning',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(reportError).not.toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+        expect(session.notices.value).toEqual([])
+      }
+    )
+
+    it.for([
+      [
+        'a null selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          selected: null,
+          other_text: 'someone else'
+        }
+      ],
+      [
+        'no selection',
+        {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'someone else'
+        }
+      ]
+    ] as const)(
+      'reports a 409 whose free text alone shows another answer won (%s)',
+      async ([, body]) => {
+        const { session, answerAsk } = await parkedOnQuestion()
+        answerAsk.mockRejectedValue(
+          new AgentApiError('already answered', 409, body)
+        )
+
+        await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+        expect(card()).toMatchObject({
+          resolution: {
+            status: 'answered',
+            selected: [],
+            otherText: 'someone else'
+          }
+        })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        )
+        expect(session.notices.value).toEqual([
+          {
+            level: 'error',
+            text: enMessages.agent.runApproval.answerSuperseded
+          }
+        ])
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a 202 that names only free text (%s)',
+      async ([, otherText, superseded]) => {
+        const { session } = await parkedOnQuestion({
+          status: 'answered',
+          other_text: otherText
+        })
+
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it.for([
+      ['reports', 'someone else', true],
+      ['does not report', 'a LoRA', false]
+    ] as const)(
+      '%s a free-text-only frame (%s)',
+      async ([, otherText, superseded]) => {
+        const { session, emit } = await parkedOnQuestion()
+        await session.answerAsk('turn-1:call-1', {
+          selected: [],
+          other_text: 'a LoRA'
+        })
+
+        emit(
+          wire({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: 'th-1',
+              message_id: 'msg-1',
+              ask_id: 'turn-1:call-1',
+              status: 'answered',
+              selected: [],
+              other_text: otherText
+            }
+          })
+        )
+
+        expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
+      }
+    )
+
+    it('does not report a 409 naming only the same free text as another answer winning', async () => {
+      const { session, answerAsk } = await parkedOnQuestion()
+      answerAsk.mockRejectedValue(
+        new AgentApiError('already answered', 409, {
+          error: 'already answered',
+          status: 'answered',
+          other_text: 'a LoRA'
+        })
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl'],
+        other_text: 'a LoRA'
+      })
+
+      expect(session.notices.value).toEqual([])
+    })
+
+    it('does not report an answered frame with a null selection as another answer winning', async () => {
+      const { session, emit } = await parkedOnQuestion()
+      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+
+      emit(askResolved('msg-1', 'turn-1:call-1', null))
+
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
     })
 
     it('puts the card back in service when the server rejects the selection', async () => {
@@ -4803,6 +4968,28 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('keeps the kind and stored preview on a sent EXR', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('use this plate', [
+      {
+        ref: 'a1b2c3',
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl: '/stored-preview.png'
+      }
+    ])
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ kind: 'image', previewUrl: '/stored-preview.png' }]
+    })
+  })
+
   it('serializes stable attachment refs without unrelated fields', async () => {
     const { postedBody, send } = wireSend()
 
@@ -6795,31 +6982,6 @@ describe('thread resume (B17)', () => {
 
     expect(await session.loadThread('th-history')).toBe(false)
   })
-
-  it('listThreads returns the REST client thread list', async () => {
-    const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          created_at: '2026-07-07T00:00:00Z',
-          id: 'th-9',
-          last_message_at: '2026-07-07T00:00:00Z',
-          message_count: 2,
-          preview: 'build a duck',
-          status: 'active',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z',
-          workflow_id: 'wf-9'
-        }
-      ]
-    )
-    const session = useAgentSession({
-      rest: fakeRest({ listThreads }),
-      events: fakeEvents().source
-    })
-    const threads = await session.listThreads()
-    expect(threads).toHaveLength(1)
-    expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
-  })
 })
 
 describe('app:agent_error telemetry (TEL-8)', () => {
@@ -6987,7 +7149,7 @@ describe('app:agent_error telemetry (TEL-8)', () => {
     })
   })
 
-  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+  it('keeps an accepted turn live when thread persistence fails', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
     session.start()
@@ -6999,18 +7161,57 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     try {
       const ok = await session.sendMessage('make me a cat')
-      expect(ok).toBe(false)
+      expect(ok).toBe(true)
     } finally {
       setItem.mockRestore()
     }
 
     expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(session.threadId.value).toBe('th-1')
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(expect.any(DOMException), {
+      surface: 'agent',
+      errorType: 'agent_thread_persistence_failed'
+    })
     expect(telemetry.trackAgentError).toHaveBeenCalledWith({
       error_class: 'request_failed',
       failure_stage: 'post_acceptance',
       retryable: false,
       turn_accepted: true,
-      ui_treatment: 'inline_notice'
+      ui_treatment: 'none'
+    })
+  })
+
+  it('keeps an accepted turn live when workflow adoption fails', async () => {
+    const rest = fakeRest()
+    const adoptionError = new Error('adoption failed')
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {
+          throw adoptionError
+        }
+      }
+    })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(true)
+    expect(session.entries.value.map(({ role }) => role)).toEqual([
+      'user',
+      'assistant'
+    ])
+    expect(session.isStreaming.value).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(adoptionError, {
+      surface: 'agent',
+      errorType: 'agent_workflow_adoption_callback_failed'
     })
   })
 

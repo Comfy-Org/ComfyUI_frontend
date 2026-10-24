@@ -33,11 +33,16 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createUuidv4 } from '@/utils/uuid'
 
-import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
+import {
+  PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
+  PROMOTED_WRITE_RETRY_MS,
+  attachDocOpMinter,
+  wireNodeSnapshot
+} from './docOpMinter'
 import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -148,30 +153,45 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-/** The bound document's view of `graph`, as the host holds it. */
-function mintDocFrom(graph: LGraph) {
+function mintDocFrom(graph: LGraph, catalog: WidgetCatalog = CATALOG) {
   const serialized = graph.serialize() as unknown as WorkflowJSON
-  return mint(serialized, CATALOG)
+  return mint(serialized, catalog)
 }
 
 const zDocInputs = z.array(
   z.object({ name: z.string(), link: z.number().nullable() })
 )
 
-function applyOutcomes(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+function applyOutcomes(
+  doc: ReturnType<typeof mint>,
+  ops: GraphOperation[],
+  catalog: WidgetCatalog = CATALOG,
+  baseVersion = 1
+) {
   return applyOps(
     doc,
-    mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
-    CATALOG
+    mintWireOps(ops, { actor: 'human:user:tab', baseVersion }),
+    catalog
   ).outcomes
 }
 
-function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
-  return applyOutcomes(doc, ops).map((outcome) => outcome.outcome)
+function applyMinted(
+  doc: ReturnType<typeof mint>,
+  ops: GraphOperation[],
+  catalog: WidgetCatalog = CATALOG,
+  baseVersion = 1
+) {
+  return applyOutcomes(doc, ops, catalog, baseVersion).map(
+    (outcome) => outcome.outcome
+  )
 }
 
-function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
-  const node = project(doc, CATALOG).nodes.find(
+function docInputs(
+  doc: ReturnType<typeof mint>,
+  nodeId: unknown,
+  catalog: WidgetCatalog = CATALOG
+) {
+  const node = project(doc, catalog).nodes.find(
     (candidate) => String(candidate.id) === String(nodeId)
   )
   return node ? zDocInputs.parse(node.inputs) : null
@@ -179,6 +199,68 @@ function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
 
 function afterFlush(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve))
+}
+
+function dynamicComboScenario(graph: LGraph) {
+  const resizeType: ComfyNodeDefV1['input'] = {
+    required: {
+      resize_type: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'scale by multiplier',
+              inputs: { required: { multiplier: ['FLOAT', {}] } }
+            },
+            {
+              key: 'match size',
+              inputs: { required: { match: ['IMAGE,MASK', {}] } }
+            }
+          ]
+        }
+      ]
+    }
+  }
+  useNodeDefStore().addNodeDef({
+    name: 'TestResize',
+    display_name: 'Test Resize',
+    category: 'test',
+    python_module: 'custom_nodes.test',
+    description: '',
+    input: resizeType,
+    output: ['IMAGE'],
+    output_name: ['IMAGE'],
+    output_is_list: [false],
+    output_node: false
+  })
+  const source = new TestSource()
+  const resize = new LGraphNode('Test Resize', 'TestResize')
+  resize.widgets = []
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.resize_type, {
+      name: 'resize_type'
+    })
+  )
+  withGraphIntentSource('load', () => {
+    graph.add(source)
+    graph.add(resize)
+  })
+  const catalog: WidgetCatalog = {
+    types: {
+      ...CATALOG.types,
+      TestResize: { widget_order: ['resize_type'] }
+    }
+  }
+  const doc = mintDocFrom(graph, catalog)
+  const selector = resize.widgets[0]
+  assert(selector)
+  withGraphIntentSource('load', () => {
+    selector.value = 'match size'
+  })
+  const match = resize.findInputSlot('resize_type.match')
+  expect(match).toBeGreaterThanOrEqual(0)
+  return { source, resize, doc, catalog, match }
 }
 
 function seedGraph(graph: LGraph) {
@@ -212,9 +294,21 @@ describe('attachDocOpMinter', () => {
   let enabled: boolean
   let bound: boolean
   let docInputNames: DocOpMinterDeps['docInputNames']
+  let docWidgetValue: DocOpMinterDeps['docWidgetValue']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
+  let docDefinitionIds: Set<string>
+  let graphAvailable: boolean
+  let unbound: boolean
   let refusals: Array<[string, string]>
+  let seededPromotedDocs: Set<ReturnType<typeof mint>>
+  let dynamicComboDocs: Set<ReturnType<typeof mint>>
+
+  function registeredDynamicComboScenario() {
+    const scenario = dynamicComboScenario(graph)
+    dynamicComboDocs.add(scenario.doc)
+    return scenario
+  }
 
   beforeEach(() => {
     graph = new LGraph()
@@ -223,24 +317,66 @@ describe('attachDocOpMinter', () => {
     enabled = true
     bound = true
     docInputNames = () => null
+    docWidgetValue = () => undefined
     docPromotedWidgets = () => null
     mayWrite = true
+    docDefinitionIds = new Set()
+    graphAvailable = true
+    unbound = false
     refusals = []
+    seededPromotedDocs = new Set()
+    dynamicComboDocs = new Set()
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId,
+      getGraph: () => (graphAvailable ? graph : null),
+      boundRootGraphId: () => (unbound ? null : rootGraphId),
       docInputNames: (nodeId) => docInputNames(nodeId),
+      docWidgetValue: (nodeId, widgetName) =>
+        docWidgetValue(nodeId, widgetName),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
+      docHasSubgraphDefinition: (id) => docDefinitionIds.has(id),
       onWidgetWriteRefused: (nodeId, widgetName) =>
         refusals.push([nodeId, widgetName])
     })
   })
 
-  afterEach(() => minter.detach())
+  afterEach(() => {
+    minter.detach()
+    for (const doc of seededPromotedDocs) {
+      if (!doc.isDestroyed) doc.destroy()
+    }
+    for (const doc of dynamicComboDocs) {
+      if (!doc.isDestroyed) doc.destroy()
+    }
+  })
+
+  it('reports mint divergence once when a node cannot be serialized', async () => {
+    const node = new TestSource()
+    graph.add(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() => {
+      throw new Error('private widget content')
+    })
+
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('agent_crdt_node_snapshot_missing'),
+      expect.objectContaining({
+        fingerprint: ['agent_crdt_node_snapshot_missing'],
+        context: expect.objectContaining({
+          code: 'missing_node_snapshot',
+          graphId: graph.id,
+          nodeId: node.id,
+          operations: ['add_node']
+        })
+      })
+    )
+  })
 
   describe('mints one op per graph command', () => {
     it.for([
@@ -525,8 +661,10 @@ describe('attachDocOpMinter', () => {
       getGraph: () => graph,
       boundRootGraphId: () => rootGraphId,
       docInputNames: () => null,
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {}
     })
 
@@ -711,6 +849,505 @@ describe('attachDocOpMinter', () => {
       ])
       doc.destroy()
     })
+
+    it('refuses a dynamic-combo child when the document has another selection', async () => {
+      const { source, resize, doc, match } = registeredDynamicComboScenario()
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc'
+        })
+      )
+    })
+
+    it('grows a dynamic-combo child while its local selection is still in flight', async () => {
+      const { source, resize, doc } = registeredDynamicComboScenario()
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+      withGraphIntentSource('load', () => {
+        selector.value = 'scale by multiplier'
+      })
+
+      selector.value = 'match size'
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: resize.id,
+          widget: 'resize_type',
+          value: 'match size'
+        })
+      ])
+      minted.length = 0
+
+      const match = resize.findInputSlot('resize_type.match')
+      expect(match).toBeGreaterThanOrEqual(0)
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('refuses a dynamic-combo child after the document supersedes its pending selection', async () => {
+      const { source, resize, doc, catalog } = registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+      withGraphIntentSource('load', () => {
+        selector.value = 'scale by multiplier'
+      })
+
+      selector.value = 'match size'
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: resize.id,
+          widget: 'resize_type',
+          value: 'match size'
+        })
+      ])
+      minted.length = 0
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'scale by multiplier'
+            }
+          ],
+          catalog,
+          2
+        )
+      ).toEqual(['applied'])
+
+      const match = resize.findInputSlot('resize_type.match')
+      expect(match).toBeGreaterThanOrEqual(0)
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc'
+        })
+      )
+    })
+
+    it('refuses a dynamic-combo child while a conflicting local selection is pending', async () => {
+      const { source, resize, doc, catalog } = registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+
+      selector.value = 'scale by multiplier'
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: resize.id,
+          widget: 'resize_type',
+          value: 'scale by multiplier'
+        })
+      ])
+      minted.length = 0
+      withGraphIntentSource('agent-remote', () => {
+        selector.value = 'match size'
+      })
+
+      const match = resize.findInputSlot('resize_type.match')
+      expect(match).toBeGreaterThanOrEqual(0)
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc'
+        })
+      )
+    })
+
+    it('grows and disconnects a selected dynamic-combo child before the grow echo lands', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      const handWired = resize.inputs[match].link
+      const grow = [...minted]
+      expect(grow).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          link_id: handWired,
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'disconnect', link_id: handWired })
+      ])
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied'])
+      expect(docInputs(doc, resize.id, catalog)).toContainEqual({
+        name: 'resize_type.match',
+        link: null
+      })
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('grows a dynamic-combo child after a settled local selection is overwritten', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+      const selector = resize.widgets?.[0]
+      assert(selector)
+
+      selector.value = 'scale by multiplier'
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied'])
+      minted.length = 0
+
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog,
+          2
+        )
+      ).toEqual(['applied'])
+      withGraphIntentSource('agent-remote', () => {
+        selector.value = 'match size'
+      })
+
+      source.connect(0, resize, match)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('replays a deferred dynamic-combo rewire after the grow echo lands', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      const grow = [...minted]
+      expect(grow).toHaveLength(1)
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      source.connect(0, resize, match)
+      await afterFlush()
+      const rewired = resize.inputs[match].link
+      expect(minted).toEqual([])
+
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual(['applied', 'applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toContainEqual({
+        name: 'resize_type.match',
+        link: rewired
+      })
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('drops a deferred dynamic-combo disconnect when another document binds', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      const grow = [...minted]
+      expect(grow).toHaveLength(1)
+      minted.length = 0
+
+      resize.disconnectInput(match)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      rootGraphId = toRootGraphId(new LGraph().id)
+      expect(applyMinted(doc, grow, catalog)).toEqual(['applied'])
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_workflow_changed'
+        })
+      )
+    })
+
+    it('cancels an unsent dynamic-combo grow when disconnected in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      resize.disconnectInput(match)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('drops a deferred dynamic-combo operation when its grow never lands', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      minted.length = 0
+      resize.disconnectInput(match)
+      await afterFlush()
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_link_slot_not_in_doc',
+          context: expect.objectContaining({
+            nodeId: resize.id,
+            input: 'resize_type.match',
+            operations: ['disconnect']
+          })
+        })
+      )
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          to_node: resize.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+    })
+
+    it('drops pending dynamic-combo state when its node is removed', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      minted.length = 0
+      resize.disconnectInput(match)
+      graph.remove(resize)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'delete_node', node_id: resize.id })
+      ])
+      minted.length = 0
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
@@ -765,6 +1402,7 @@ describe('attachDocOpMinter', () => {
       hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
+    seededPromotedDocs.add(doc)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
@@ -1034,15 +1672,6 @@ describe('attachDocOpMinter', () => {
         })
         host.widgets[1].value = 'misplaced'
       }
-    },
-    {
-      name: 'a host the document cannot vouch for yet',
-      errorType: 'agent_crdt_promoted_widget_doc_not_synced',
-      widgetName: 'text',
-      act: (host: ReturnType<typeof createTestSubgraphNode>) => {
-        mayWrite = false
-        host.widgets[1].value = 'too early'
-      }
     }
   ])(
     'reports and notifies a refused write to $name',
@@ -1061,6 +1690,368 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     }
   )
+
+  describe('PM-2003: a promoted write made while the document is catching up', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+    })
+
+    it('is held without a notice and minted once the document catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'randomized'
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'set_widget',
+          node_id: host.id,
+          widget: 'text',
+          value: 'randomized',
+          promoted: expect.objectContaining({ value_index: 1 })
+        })
+      ])
+      expect(refusals).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+      doc.destroy()
+    })
+
+    it('mints the latest value once when the same widget changes again before catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toHaveLength(1)
+      const [write] = minted
+      assert(write.op === 'set_widget')
+      expect(write.value).toBe('second')
+      expect(write.promoted?.host_widgets_values[1]).toBe('second')
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write to the same widget made after catch-up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      mayWrite = true
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['newer'])
+      doc.destroy()
+    })
+
+    it('carries every held sibling in the host values once caught up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[0].value = 'prefix edit'
+      host.widgets[1].value = 'text edit'
+      await afterFlush()
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted.map((op) => op.op === 'set_widget' && op.widget)).toEqual([
+        'prefix',
+        'text'
+      ])
+      const last = minted.at(-1)
+      assert(last?.op === 'set_widget')
+      expect(last.promoted?.host_widgets_values).toEqual([
+        'prefix edit',
+        'text edit'
+      ])
+      doc.destroy()
+    })
+
+    it('is refused with one notice when the document never catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'never synced'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1)
+      expect(refusals).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is checked against the caught-up layout, not the one it was made against', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'misplaced'
+      await afterFlush()
+      docPromotedWidgets = () => ({
+        valueCount: 2,
+        declaredNames: ['text', 'prefix'],
+        promotedNames: ['text', 'prefix']
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_order_drift'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('is refused, not minted into another workflow, when the bound workflow changes first', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for the old workflow'
+      await afterFlush()
+      rootGraphId = toRootGraphId(createUuidv4())
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_workflow_changed'
+        })
+      )
+      doc.destroy()
+    })
+
+    it('still lands when the catch-up arrives after one ack-timeout retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'slow relay'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(15_500)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['slow relay'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write made while the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'older'
+      await afterFlush()
+      bound = false
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped when the catch-up replaced the value on the canvas', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'human value'
+      await afterFlush()
+      withGraphIntentSource('agent-remote', () => {
+        host.widgets[1].value = 'agent value'
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is refused when a transient document unbind outlasts the catch-up deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('keeps waiting while the graph is briefly unavailable', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'during a load'
+      await afterFlush()
+      graphAvailable = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(refusals).toEqual([])
+      graphAvailable = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['during a load'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps waiting through a moment when the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'across a resend'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['across a resend'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('lands when the catch-up answers the last subscribe retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'third attempt'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(40_000)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['third attempt'])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('keeps the first deadline when a newer write replaces a held one', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(
+        PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1_000
+      )
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(1_000 + PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([[host.id, 'text']])
+      doc.destroy()
+    })
+
+    it('is refused when the graph stays unavailable past the deadline', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'graph gone'
+      await afterFlush()
+      graphAvailable = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(refusals).toEqual([[host.id, 'text']])
+      expect(vi.getTimerCount()).toBe(0)
+
+      graphAvailable = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(minted).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently at once when the chat unbinds the workflow', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      unbound = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(vi.getTimerCount()).toBe(0)
+      bound = true
+      unbound = false
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+
+    it('is dropped silently on detach', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'held'
+      await afterFlush()
+      expect(vi.getTimerCount()).toBe(1)
+      minter.detach()
+      expect(vi.getTimerCount()).toBe(0)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toEqual([])
+      doc.destroy()
+    })
+  })
 
   it('still mints for a host the caught-up document does not hold yet', async () => {
     const { host, doc } = seedPromotedHost()
@@ -1315,6 +2306,84 @@ describe('attachDocOpMinter', () => {
       })
     ])
     expect(minted[0]).not.toHaveProperty('promoted')
+  })
+
+  function handAddedPromotedHost() {
+    const inner = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(inner.id, inner)
+    const outer = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(outer.id, outer)
+    withGraphIntentSource('load', () => {
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      const interior = LiteGraph.createNode('TestPrompt')
+      assert.exists(interior)
+      outer.add(interior)
+      outer.inputNode.slots[0].connect(interior.inputs[0], interior)
+    })
+    const doc = mintDocFrom(graph)
+    seededPromotedDocs.add(doc)
+    docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
+    const host = createTestSubgraphNode(outer)
+    graph.add(host)
+    return { host, inner, outer, doc }
+  }
+
+  it('defines a hand-added host’s subgraphs the document lacks, so its promoted write places', async () => {
+    const { host, inner, outer, doc } = handAddedPromotedHost()
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', inner.id, outer.id])
+    expect(applyMinted(doc, minted)).toEqual(['applied', 'applied', 'applied'])
+    expect(readDocPromotedWidgets(doc, String(host.id))).toMatchObject({
+      promotedNames: ['text']
+    })
+
+    minted = []
+    host.widgets[0].value = 'pasted'
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'set_widget',
+        widget: 'text',
+        promoted: expect.objectContaining({ value_index: 0 })
+      })
+    ])
+    expect(refusals).toEqual([])
+    expect(applyMinted(doc, minted)).toEqual(['applied'])
+  })
+
+  it('keeps the add and skips a definition that cannot serialize, with its dependents', async () => {
+    const { inner } = handAddedPromotedHost()
+    vi.spyOn(inner, 'asSerialisable').mockImplementation(() => {
+      throw new Error('extension serializer failed')
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(['add_node'])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: inner.id }
+      })
+    )
+  })
+
+  it('does not redefine a subgraph the document already holds', async () => {
+    const { inner, outer } = handAddedPromotedHost()
+    docDefinitionIds.add(inner.id)
+    await afterFlush()
+
+    expect(
+      minted.map((op) => (op.op === 'define_subgraph' ? op.subgraph_id : op.op))
+    ).toEqual(['add_node', outer.id])
   })
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
@@ -1677,21 +2746,27 @@ describe('attachDocOpMinter', () => {
     expect(
       vi.mocked(reportError).mock.calls.map(([, options]) => options)
     ).toEqual([
-      {
-        surface: 'agent',
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: stale.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: stale.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: otherGraph.id, nodeId: other.id }
-      },
-      {
-        surface: 'agent',
+        context: expect.objectContaining({
+          graphId: otherGraph.id,
+          nodeId: other.id
+        })
+      }),
+      expect.objectContaining({
         errorType: 'agent_crdt_widget_owner_unresolved',
-        context: { graphId: staleGraph.id, nodeId: sibling.id }
-      }
+        context: expect.objectContaining({
+          graphId: staleGraph.id,
+          nodeId: sibling.id
+        })
+      })
     ])
   })
 
@@ -2013,88 +3088,156 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     return node
   }
 
-  it('declares the order when an extension adds a value widget the definition does not describe', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
-    )
-    const node = nodeWith('Display Int', (n) => {
-      n.addInput('input', 'INT')
-      n.addWidget('text', 'output', '', () => {})
-      n.addWidget('button', 'copy', 'copy', () => {})
-    })
+  it.for([
+    {
+      case: 'an extension widget the definition does not describe',
+      definitions: [
+        nodeDef('Display Int', {
+          input: ['INT', { forceInput: true }]
+        })
+      ],
+      type: 'Display Int',
+      build: (n: LGraphNode) => {
+        n.addInput('input', 'INT')
+        n.addWidget('text', 'output', '', () => {})
+        n.addWidget('button', 'copy', 'copy', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'widgets the definition fully describes',
+      definitions: [nodeDef('Described', { steps: ['INT', {}] })],
+      type: 'Described',
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      },
+      values: { steps: 20 },
+      order: ['steps']
+    },
+    {
+      case: 'a companion linked to a described widget',
+      definitions: [nodeDef('Seeded', { seed: ['INT', {}] })],
+      type: 'Seeded',
+      build: (n: LGraphNode) => {
+        const seed = n.addWidget('number', 'seed', 1, () => {})
+        const control = n.addWidget(
+          'combo',
+          'control_after_generate',
+          'fixed',
+          () => {},
+          { values: ['fixed', 'randomize'] }
+        )
+        seed.linkedWidgets = [control]
+      },
+      values: { seed: 1, control_after_generate: 'fixed' },
+      order: ['seed', 'control_after_generate']
+    },
+    {
+      case: 'a class with no definition',
+      definitions: [],
+      type: 'Undefined Class',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'output', '', () => {})
+      },
+      values: { output: '' },
+      order: ['output']
+    },
+    {
+      case: 'integer-like widget names',
+      definitions: [],
+      type: 'Integer Names',
+      build: (n: LGraphNode) => {
+        n.addWidget('text', '2', 'two', () => {})
+        n.addWidget('text', '1', 'one', () => {})
+      },
+      values: { '2': 'two', '1': 'one' },
+      order: ['2', '1']
+    }
+  ])(
+    'declares the live widget order for $case',
+    ({ definitions, type, build, values, order }) => {
+      useNodeDefStore().updateNodeDefs(definitions)
+      const node = nodeWith(type, build)
 
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values: { output: '' },
-      widgets_values_form: { order: ['output'] }
-    })
-  })
+      expect(wireNodeSnapshot(node)).toMatchObject({
+        widgets_values: values,
+        widgets_values_form: { order }
+      })
+    }
+  )
 
-  it('declares every value widget, described ones included, once one is not', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Mixed', { steps: ['INT', {}] }))
-    const node = nodeWith('Mixed', (n) => {
-      n.addWidget('number', 'steps', 20, () => {})
-      n.addWidget('text', 'preview', 'x', () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values: { steps: 20, preview: 'x' },
-      widgets_values_form: { order: ['steps', 'preview'] }
-    })
-  })
-
-  it('keeps the catalog path when every widget is a definition input', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
-    const node = nodeWith('Described', (n) => {
-      n.addWidget('number', 'steps', 20, () => {})
-    })
+  it.for([
+    {
+      case: 'a dynamic combo input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'a dynamic group input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICGROUP_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.0.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'an autogrow input',
+      definition: nodeDef('Dynamic', { mode: ['COMFY_AUTOGROW_V3', {}] }),
+      build: (n: LGraphNode) => {
+        n.addWidget('number', 'mode.steps', 4, () => {})
+      }
+    },
+    {
+      case: 'no value widgets',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('button', 'refresh', 'refresh', () => {})
+      }
+    },
+    {
+      case: 'an unnamed value widget',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', '', 'b', () => {})
+      }
+    },
+    {
+      case: 'two value widgets sharing a name',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'prompt', 'b', () => {})
+      }
+    }
+  ])('declares no form for a node with $case', ({ definition, build }) => {
+    useNodeDefStore().addNodeDef(definition)
+    const node = nodeWith('Dynamic', build)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 
-  it('treats a companion linked to a described widget as described', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Seeded', { seed: ['INT', {}] }))
-    const node = nodeWith('Seeded', (n) => {
-      const seed = n.addWidget('number', 'seed', 1, () => {})
-      const control = n.addWidget(
-        'combo',
-        'control_after_generate',
-        'fixed',
-        () => {},
-        { values: ['fixed', 'randomize'] }
-      )
-      seed.linkedWidgets = [control]
-    })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('treats a dynamic child named under a definition input as described', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
-    )
+  it('declares the filtered form when serialization removes a widget', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Dynamic', {}))
     const node = nodeWith('Dynamic', (n) => {
-      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-      n.addWidget('number', 'mode.steps', 4, () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares the order when an extension widget shares a forceInput name', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Any', { source: ['*', { forceInput: true }] })
-    )
-    const node = nodeWith('Display Any', (n) => {
-      n.addInput('source', '*')
-      n.addWidget('text', 'source', '', () => {})
+      n.addWidget('text', 'prompt', 'a', () => {})
+      n.addWidget('text', 'extra', 'b', () => {})
+      new LGraph().add(n)
+      n.onSerialize = () => {
+        n.widgets?.pop()
+      }
     })
 
     expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values_form: { order: ['source'] }
+      widgets_values: { prompt: 'a' },
+      widgets_values_form: { order: ['prompt'] }
     })
   })
 
-  it('declares nothing for a node built by the real widget constructors', () => {
+  it('declares the form for a node built by the real widget constructors', () => {
     const required = {
       seed: ['INT', { default: 1, control_after_generate: true }],
       sampler_name: [['euler', 'dpmpp_2m'], {}],
@@ -2109,27 +3252,12 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         )
     })
 
-    expect(Object.keys(wireNodeSnapshot(node)?.widgets_values ?? {})).toEqual(
-      expect.arrayContaining(['seed', 'sampler_name'])
-    )
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares the order when an extension widget shares a socket-only input name', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Display Image', { source: ['IMAGE', {}] })
-    )
-    const node = nodeWith('Display Image', (n) => {
-      n.addInput('source', 'IMAGE')
-      n.addWidget('text', 'source', '', () => {})
-    })
-
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values_form: { order: ['source'] }
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['seed', 'control_after_generate', 'sampler_name']
     })
   })
 
-  it('drops a form the node carried in from a loaded projection when none applies', () => {
+  it('replaces a form the node carried in from a loaded projection with its live order', () => {
     useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
     const node = nodeWith('Described', (n) => {
       n.addWidget('number', 'steps', 20, () => {})
@@ -2139,71 +3267,157 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         widgets_values_form: { order: ['steps', 'gone'] }
       })
     )
-    expect(node.serialize()).toHaveProperty('widgets_values_form')
 
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('declares nothing for a class with no definition', () => {
-    const node = nodeWith('Undefined Class', (n) => {
-      n.addWidget('text', 'output', '', () => {})
+    expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
+      order: ['steps']
     })
-
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 
-  it('declares nothing when the node has no value widgets', () => {
-    useNodeDefStore().addNodeDef(nodeDef('Buttons', {}))
-    const node = nodeWith('Buttons', (n) => {
-      n.addWidget('button', 'refresh', 'refresh', () => {})
-    })
+  it.for<{ catalogCase: string; catalog: WidgetCatalog }>([
+    {
+      catalogCase: 'lists no widgets for the class',
+      catalog: { types: { Described: { widget_order: [] } } }
+    },
+    {
+      catalogCase: 'does not list the class',
+      catalog: { types: {} }
+    }
+  ])(
+    'mints a described node the applier accepts when the catalog $catalogCase',
+    ({ catalog }) => {
+      useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+      const node = nodeWith('Described', (n) => {
+        n.addWidget('number', 'steps', 20, () => {})
+      })
+      const snapshot = wireNodeSnapshot(node)!
+      const doc = mint({ nodes: [], links: [] }, catalog)
 
-    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
-  })
+      const result = applyOps(
+        doc,
+        mintWireOps(
+          [
+            {
+              op: 'add_node',
+              node_id: snapshot.id,
+              class_type: snapshot.type,
+              pos: [0, 0],
+              node: snapshot
+            }
+          ],
+          {
+            actor: 'human:user:tab',
+            baseVersion: 1
+          }
+        ),
+        catalog
+      )
 
-  it('mints a declared node the applier accepts against a catalog that lists no widgets', () => {
+      expect(result.outcomes).toEqual([
+        expect.objectContaining({ outcome: 'applied' })
+      ])
+      expect(project(doc, catalog).nodes).toEqual([
+        expect.objectContaining({
+          type: 'Described',
+          widgets_values: { steps: 20 },
+          widgets_values_form: { order: ['steps'] }
+        })
+      ])
+      doc.destroy()
+    }
+  )
+
+  it('keeps a catalogued dynamic combo writable after its selection changes', () => {
     useNodeDefStore().addNodeDef(
-      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
-    const node = nodeWith('Display Int', (n) => {
-      n.addInput('input', 'INT')
-      n.addWidget('text', 'output', '', () => {})
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+    const catalog: WidgetCatalog = {
+      types: {
+        Dynamic: {
+          widget_order: ['mode', 'mode.steps'],
+          dynamic_combos: {
+            mode: {
+              default: 'a',
+              options: {
+                a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+              }
+            }
+          }
+        }
+      }
+    }
+    const snapshot = wireNodeSnapshot(node)!
+    expect(snapshot).toMatchObject({
+      widgets_values: { mode: 'a', 'mode.steps': 4 }
+    })
+    const doc = mint({ nodes: [], links: [] }, catalog)
+    const operations: GraphOperation[] = [
+      {
+        op: 'add_node',
+        node_id: node.id,
+        class_type: 'Dynamic',
+        pos: [0, 0],
+        node: snapshot
+      },
+      { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
+      { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
+    ]
+
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(operations, { actor: 'human:user:tab', baseVersion: 1 }),
+      catalog
+    )
+
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied',
+      'applied',
+      'applied'
+    ])
+    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
+  })
+
+  it('refuses an uncatalogued dynamic combo before accepting partial widget state', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
     })
     const snapshot = wireNodeSnapshot(node)!
-    const catalog: WidgetCatalog = {
-      types: { 'Display Int': { widget_order: [] } }
-    }
+    const catalog: WidgetCatalog = { types: {} }
     const doc = mint({ nodes: [], links: [] }, catalog)
 
-    const result = applyOps(
+    const { outcomes } = applyOps(
       doc,
       mintWireOps(
         [
           {
             op: 'add_node',
-            node_id: snapshot.id,
-            class_type: snapshot.type,
+            node_id: node.id,
+            class_type: 'Dynamic',
             pos: [0, 0],
             node: snapshot
           }
         ],
-        {
-          actor: 'human:user:tab',
-          baseVersion: 1
-        }
+        { actor: 'human:user:tab', baseVersion: 1 }
       ),
       catalog
     )
 
-    expect(result.outcomes).toEqual([
-      expect.objectContaining({ outcome: 'applied' })
-    ])
-    expect(project(doc, catalog).nodes).toEqual([
+    expect(outcomes).toEqual([
       expect.objectContaining({
-        type: 'Display Int',
-        widgets_values: { output: '' },
-        widgets_values_form: { order: ['output'] }
+        outcome: 'rejected',
+        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
       })
     ])
+    expect(project(doc, catalog).nodes).toEqual([])
+    doc.destroy()
   })
 })

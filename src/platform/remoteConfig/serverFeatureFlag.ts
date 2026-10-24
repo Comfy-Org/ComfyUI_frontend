@@ -15,9 +15,11 @@ export enum ServerFeatureFlag {
   PARTNER_NODE_TOKEN = 'partner_node_token',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
+  DEPLOY_TO_CLOUD = 'deploy_to_cloud',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
+  DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED = 'deployment_compatibility_marks_enabled',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
@@ -34,5 +36,6 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
-  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience'
+  AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
+  AGENT = 'agent'
 }

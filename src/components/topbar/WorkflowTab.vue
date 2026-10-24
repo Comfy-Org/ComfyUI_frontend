@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -104,14 +104,17 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
   <WorkflowTabPopover
-    ref="popoverRef"
+    v-model:open="popoverOpen"
+    v-model:clicked="popoverClicked"
+    :anchor="workflowTabRef"
+    :hovered="popoverHovered"
     :workflow-filename="workflowOption.workflow.filename"
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
@@ -120,12 +123,12 @@
 
 <script setup lang="ts">
 import {
-  ContextMenuContent,
   ContextMenuPortal,
+  ContextMenuContent,
   ContextMenuRoot,
   ContextMenuTrigger
 } from 'reka-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -183,12 +186,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
+const popoverOpen = ref(false)
+const popoverHovered = ref(false)
+const popoverClicked = ref(false)
 const workflowThumbnail = useWorkflowThumbnail()
 
 // Use computed refs to cache autosave settings
@@ -286,36 +292,26 @@ const thumbnailUrl = computed(() => {
   return workflowThumbnail.getThumbnail(workflowOption.workflow.key)
 })
 
-// Event handlers that delegate to the popover component
-const handleMouseEnter = (event: Event) => {
-  popoverRef.value?.showPopover(event)
+const handleMouseEnter = () => {
+  popoverClicked.value = false
+  popoverHovered.value = true
 }
 
 const handleMouseLeave = () => {
-  popoverRef.value?.hidePopover()
+  popoverHovered.value = false
 }
 
-const handleClick = (event: Event) => {
-  popoverRef.value?.togglePopover(event)
+const handleClick = () => {
+  if (!popoverOpen.value) popoverClicked.value = true
+  popoverOpen.value = !popoverOpen.value
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
-  for (const opt of options) {
-    if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
-        warnIfUnsaved: !workspaceStore.shiftDown,
-        hint: t('sideToolbar.workflowTab.dirtyCloseHint')
-      }))
-    ) {
-      // User cancelled, or the replacement load failed
-      break
-    }
-  }
-}
-
-const onCloseWorkflow = async (option: WorkflowOption) => {
-  await closeWorkflows([option])
-}
+const onCloseWorkflow = (option: WorkflowOption) =>
+  useWorkflowService().closeWorkflows([option.workflow], {
+    warnIfUnsaved: !workspaceStore.shiftDown,
+    hint: t('sideToolbar.workflowTab.dirtyCloseHint'),
+    initiator: 'user'
+  })
 
 const commandStore = useCommandStore()
 const workflow = computed(() => workflowOption.workflow)
@@ -402,9 +398,5 @@ usePragmaticDroppable(tabGetter, {
       workflowStore.reorderWorkflows(fromIndex, toIndex)
     }
   }
-})
-
-onUnmounted(() => {
-  popoverRef.value?.hidePopover()
 })
 </script>

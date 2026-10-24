@@ -243,10 +243,13 @@ describe('runArchitecture', () => {
 describe('main', () => {
   function runMain(args: string[], root: string) {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const exitCode = main(args, root)
     const output = stderr.mock.calls.map(([text]) => String(text)).join('')
+    const summary = stdout.mock.calls.map(([text]) => String(text)).join('')
     stderr.mockRestore()
-    return { exitCode, output }
+    stdout.mockRestore()
+    return { exitCode, output, summary }
   }
 
   it.for([
@@ -287,8 +290,12 @@ describe('main', () => {
     const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
     roots.push(reportDirectory)
     const reportFile = join(reportDirectory, 'report.md')
-    const { exitCode } = runMain(['--check', '--report', reportFile], root)
+    const { exitCode, summary } = runMain(
+      ['--check', '--report', reportFile],
+      root
+    )
     expect(exitCode).toBe(0)
+    expect(summary).toBe('Architecture check passed with 1 warning(s)\n')
     expect(readFileSync(reportFile, 'utf8')).toContain(
       '- src/brandNew.ts is not claimed by any domain'
     )
@@ -357,9 +364,9 @@ describe('formatReport', () => {
   })
 
   it.for([
-    { count: 50, last: 'src/file49.ts is unclaimed', overflow: undefined },
-    { count: 51, last: 'src/file49.ts is unclaimed', overflow: '…and 1 more' }
-  ])('lists at most 50 of $count findings', ({ count, last, overflow }) => {
+    { count: 50, lastLine: '- src/file49.ts is unclaimed' },
+    { count: 51, lastLine: '- …and 1 more' }
+  ])('lists at most 50 of $count findings', ({ count, lastLine }) => {
     const warnings = Array.from({ length: count }, (_, i) => ({
       message: `src/file${i}.ts is unclaimed`,
       file: `src/file${i}.ts`
@@ -368,7 +375,7 @@ describe('formatReport', () => {
       .trimEnd()
       .split('\n')
     expect(lines[0]).toBe(`### Warnings (${count})`)
-    expect(lines.at(-1)).toBe(`- ${overflow ?? last}`)
+    expect(lines.at(-1)).toBe(lastLine)
     expect(lines).not.toContain('- src/file50.ts is unclaimed')
   })
 

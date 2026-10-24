@@ -8,6 +8,8 @@ import {
   boxesAt,
   fromBoundingBoxes,
   isRegionList,
+  regionColor,
+  regionTag,
   tagRects,
   toBoundingBoxes
 } from './boundingBoxesUtil'
@@ -280,5 +282,16 @@ describe('toBoundingBoxes', () => {
       1000
     )
     expect(restored).toEqual(boxes)
+  })
+})
+
+describe('region labels', () => {
+  it('numbers regions from 01 like the canvas tags', () => {
+    expect([0, 9, 99].map(regionTag)).toEqual(['01', '10', '100'])
+  })
+
+  it('colors a region by its first palette color or a neutral grey', () => {
+    expect(regionColor({ palette: ['', '#ff0000'] })).toBe('#ff0000')
+    expect(regionColor({ palette: [] })).toBe('#8c8c8c')
   })
 })

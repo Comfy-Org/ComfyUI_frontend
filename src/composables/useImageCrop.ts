@@ -66,10 +66,11 @@ interface UseImageCropOptions {
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
+  onEditEnd?: () => void
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
-  const { imageEl, containerEl, modelValue } = options
+  const { imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
   const node = shallowRef<LGraphNode | null>(null)
@@ -146,6 +147,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       lockedRatio.value =
         ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
       applyLockedRatio()
+      onEditEnd?.()
     }
   })
 
@@ -428,6 +430,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
     isDragging.value = false
     releasePointer(e)
+    onEditEnd?.()
   }
 
   const handleResizeStart = (e: PointerEvent, direction: ResizeDirection) => {
@@ -581,6 +584,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     isResizing.value = false
     resizeDirection.value = null
     releasePointer(e)
+    onEditEnd?.()
   }
 
   onMounted(() => {

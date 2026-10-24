@@ -2,15 +2,14 @@ import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { normalizeHostedBillingDestination } from '@/config/billingWeb'
+import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
-  cachedBillingControlEnabled,
-  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@/platform/telemetry'
@@ -138,6 +137,12 @@ export function useFeatureFlags() {
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
+    /** ComfyUI's `agent` server feature; callers validate `state`. */
+    get agent() {
+      return api.getServerFeature<{ state?: unknown } | null | undefined>(
+        ServerFeatureFlag.AGENT
+      )
+    },
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
@@ -203,6 +208,9 @@ export function useFeatureFlags() {
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
+    get deployToCloud() {
+      return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
+    },
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
@@ -221,6 +229,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
+        false
+      )
+    },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
         false
       )
     },
@@ -278,7 +293,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
-        cachedBillingControlEnabled
+        useRemoteConfigCache().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
@@ -307,8 +322,6 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
-      if (!isCloud) return false
-
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
@@ -326,7 +339,7 @@ export function useFeatureFlags() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig.value.v1_payment_recovery,
-        cachedV1PaymentRecovery
+        useRemoteConfigCache().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {

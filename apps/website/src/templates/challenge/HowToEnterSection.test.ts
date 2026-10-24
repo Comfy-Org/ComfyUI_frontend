@@ -86,11 +86,11 @@ describe('HowToEnterSection', () => {
     const region = await openStep('2. App requirements')
 
     expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
-      'Your work must be built using the Comfy Developer Platform (Comfy Router and/or Comfy SDK)',
+      'Your work must be built with ComfyUI. Run it however you like: entirely local, Comfy Cloud, the Developer Platform, Comfy Router, the Comfy SDK, or any mix of them',
       'Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine',
       'Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video',
       'All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses',
-      'By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels',
+      'By submitting, you agree to allow ComfyUI, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels',
       'One submission per person'
     ])
   })

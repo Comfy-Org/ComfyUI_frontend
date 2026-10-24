@@ -1,3 +1,7 @@
+import type {
+  AgentThreadListResponse,
+  PaginationInfo
+} from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,7 +14,10 @@ import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
 
-import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentThreadSummary,
+  CloudWorkflowEntry
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -99,6 +106,12 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
+
+// `mockReset` does not touch plain fields, so a socket id set by one test would
+// otherwise leak into the next.
+beforeEach(() => {
+  vi.mocked(api).clientId = undefined
+})
 
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
@@ -310,6 +323,25 @@ describe('agentRestClient route + method', () => {
     expect(listing.complete).toBe(false)
   })
 
+  it('preserves workflow-list rejection after a successful first page', async () => {
+    respond(
+      jsonResponse(200, {
+        data: [{ id: 'wf-1', name: 'one' }],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 2,
+          has_more: true,
+          next_cursor: 'page-2'
+        }
+      })
+    )
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listCloudWorkflows()).rejects.toBe(cause)
+  })
+
   it('includes saved workflows beyond the fifth page', async () => {
     for (let page = 0; page < 6; page++) {
       respond(
@@ -335,6 +367,151 @@ describe('agentRestClient route + method', () => {
       'wf-5'
     ])
     expect(listing.complete).toBe(true)
+  })
+})
+
+describe('listThreads pagination', () => {
+  function threadPage(
+    ids: string[],
+    { has_more, next_cursor }: Pick<PaginationInfo, 'has_more' | 'next_cursor'>
+  ): Response {
+    const threads: AgentThreadSummary[] = ids.map((id) => ({
+      id,
+      title: id,
+      preview: '',
+      workflow_id: '',
+      status: 'active',
+      message_count: 1,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+      last_message_at: '2026-10-01T00:00:00Z'
+    }))
+    return jsonResponse(200, {
+      threads,
+      pagination: { offset: 0, limit: 100, total: 0, has_more, next_cursor }
+    } satisfies AgentThreadListResponse)
+  }
+
+  it('follows next_cursor at the maximum page size until has_more is false', async () => {
+    respond(
+      threadPage(['th-1', 'th-2'], { has_more: true, next_cursor: 'next page' })
+    )
+    respond(threadPage(['th-3'], { has_more: false }))
+
+    const result = await makeClient().listThreads()
+
+    expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
+      '/agent/threads?limit=100',
+      '/agent/threads?limit=100&after=next%20page'
+    ])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-1' }, { id: 'th-2' }, { id: 'th-3' }]
+    })
+  })
+
+  it.for([
+    {
+      reason: 'missing_cursor',
+      pages: () => [threadPage(['th-1'], { has_more: true })]
+    },
+    {
+      reason: 'repeated_cursor',
+      pages: () => [
+        threadPage(['th-1'], { has_more: true, next_cursor: 'a' }),
+        threadPage(['th-2'], { has_more: true, next_cursor: 'a' })
+      ]
+    }
+  ])(
+    'returns $reason without partial threads when paging stops before the last page',
+    async ({ reason, pages }) => {
+      pages().forEach(respond)
+
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'incomplete',
+        reason
+      })
+    }
+  )
+
+  it('passes the caller abort signal to every page request', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(threadPage(['th-2'], { has_more: false }))
+    const { signal } = new AbortController()
+
+    await makeClient().listThreads({ signal })
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.signal)
+    ).toEqual([signal, signal])
+  })
+
+  it('returns a failure without partial threads when a later page fails', async () => {
+    respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
+    respond(jsonResponse(503, { error: 'unavailable' }))
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
+    })
+  })
+  it.for([
+    {
+      name: 'invalid JSON',
+      response: () => new Response('{'),
+      error: 'AgentResponseUnreadableError'
+    },
+    {
+      name: 'invalid schema',
+      response: () => jsonResponse(200, {}),
+      error: 'ZodError'
+    }
+  ])('returns a failure for $name', async ({ response, error }) => {
+    respond(response())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: error })
+    })
+  })
+
+  it('returns the transport failure as data', async () => {
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause
+    })
+  })
+
+  it('does not start a cancelled listing', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('does not request another page after cancellation during a page read', async () => {
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockImplementationOnce(async () => {
+      controller.abort()
+      return threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' })
+    })
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -397,7 +574,9 @@ describe('getCloudWorkflow', () => {
 })
 
 describe('postMessage wire body', () => {
-  it('uses snake_case workflow_id and includes only the keys provided', async () => {
+  const buildVersion = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
+
+  it('uses snake_case workflow_id and includes only the keys provided plus the build', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: 'build it',
@@ -413,7 +592,8 @@ describe('postMessage wire body', () => {
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
-      attachments: ['a1']
+      attachments: ['a1'],
+      client_version: buildVersion
     })
     expect(contentType(init)).toBe('application/json')
   })
@@ -428,7 +608,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      current_tab_unbound: true
+      current_tab_unbound: true,
+      client_version: buildVersion
     })
   })
 
@@ -438,7 +619,8 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      client_version: buildVersion
     })
   })
 
@@ -456,7 +638,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      client_version: buildVersion
     })
   })
 
@@ -469,6 +652,32 @@ describe('postMessage wire body', () => {
     ).not.toContain('client_message_id')
   })
 
+  // ComfyUI delivers a prompt's execution events only to the socket that
+  // submitted it, so a local run the agent starts on our behalf has to be
+  // submitted as THIS tab or the canvas shows no node highlights, no progress
+  // and no outputs for it (PM-1875). Nothing else carries the id to the server.
+  it("sends this tab's socket id so agent runs reach this canvas", async () => {
+    vi.mocked(api).clientId = 'tab-socket-id'
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'run it',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      client_id: 'tab-socket-id',
+      client_version: buildVersion
+    })
+  })
+
+  it('omits client_id before the socket has reported one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(
+      Object.keys(JSON.parse(String(lastCall().init.body)) as object)
+    ).not.toContain('client_id')
+  })
+
   it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -479,7 +688,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
+      client_version: buildVersion
     })
   })
 
@@ -500,6 +710,20 @@ describe('postMessage wire body', () => {
     expect(parsed.draft).toEqual({
       content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
     })
+  })
+
+  it('reports the submitting build in a form the server keeps', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'build it' })
+
+    const { client_version } = JSON.parse(String(lastCall().init.body)) as {
+      client_version?: string
+    }
+    expect(client_version).toMatch(/^[A-Za-z0-9.+-]{1,64}$/)
+    expect(client_version?.split('+')).toEqual([
+      __COMFYUI_FRONTEND_VERSION__,
+      __COMFYUI_FRONTEND_COMMIT__
+    ])
   })
 })
 
@@ -550,14 +774,20 @@ describe('success response parsing', () => {
       },
       path: ['pagination', 'limit']
     }
-  ])('rejects $name from the agent service', async ({ response, path }) => {
-    respond(jsonResponse(200, response))
+  ])(
+    'returns a schema failure for $name from the agent service',
+    async ({ response, path }) => {
+      respond(jsonResponse(200, response))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject({
-      name: 'ZodError',
-      issues: expect.arrayContaining([expect.objectContaining({ path })])
-    })
-  })
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause: expect.objectContaining({
+          name: 'ZodError',
+          issues: expect.arrayContaining([expect.objectContaining({ path })])
+        })
+      })
+    }
+  )
 })
 
 describe('error mapping', () => {
@@ -1110,7 +1340,10 @@ describe('error mapping', () => {
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
       respond(response)
 
-      await expect(makeClient().listThreads()).rejects.toBe(cause)
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause
+      })
     }
   )
 })

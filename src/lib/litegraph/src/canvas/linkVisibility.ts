@@ -12,6 +12,10 @@ import type { LinkId } from '@/types/linkId'
 
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import {
+  cancelLinkHideTransition,
+  startLinkHideTransitions
+} from '@/lib/litegraph/src/canvas/linkHideTransition'
 
 export interface LinkMutationHost {
   emitBeforeChange(): void
@@ -43,9 +47,7 @@ export function hideLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
-    useLinkPresentationStore().patch(scope, linkId, { hidden: true })
-  )
+  hideLinks(host, scope, [linkId])
 }
 
 export function hideLinks(
@@ -55,7 +57,25 @@ export function hideLinks(
 ): void {
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+    const newlyHidden: LinkId[] = []
+    for (const linkId of linkIds) {
+      if (store.getPresentation(scope, linkId)?.hidden === true) continue
+      store.patch(scope, linkId, { hidden: true })
+      if (store.getPresentation(scope, linkId)?.hidden === true)
+        newlyHidden.push(linkId)
+    }
+    startLinkHideTransitions(scope.rootGraphId, newlyHidden, performance.now())
+  })
+}
+
+export function showLinks(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkIds: Iterable<LinkId>
+): void {
+  mutateLink(host, () => {
+    const store = useLinkPresentationStore()
+    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: false })
   })
 }
 
@@ -79,6 +99,12 @@ export function deleteLinks(
   })
 }
 
+export function getLinkStackMenuOptions(): IContextMenuValue<string>[] {
+  return [
+    { content: st('contextMenu.Show Links', 'Show Links'), value: 'Show Links' }
+  ]
+}
+
 export function getVisibleRerouteLink(
   graph: LGraph,
   reroute: Reroute
@@ -97,9 +123,10 @@ export function showLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
+  mutateLink(host, () => {
+    cancelLinkHideTransition(scope.rootGraphId, linkId)
     useLinkPresentationStore().patch(scope, linkId, { hidden: false })
-  )
+  })
 }
 
 export function renameLink(
