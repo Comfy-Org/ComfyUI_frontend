@@ -136,9 +136,6 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
     compatibility: DeploymentCompatibility
   } | null>(null)
   let checkFailureReported = false
-  // A workflow that is opened again brings back the same key, so the key
-  // cannot tell this check's answer from an earlier one; each check is
-  // numbered and only the newest one's answer counts.
   let latestCheck = 0
 
   watch(
