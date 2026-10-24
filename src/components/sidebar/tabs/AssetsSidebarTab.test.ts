@@ -386,11 +386,16 @@ describe('AssetsSidebarTab gallery selection', () => {
     await screen.findByTestId('lightbox-filename')
 
     await userEvent.click(screen.getByLabelText('More Options'))
-    await userEvent.click(
-      await screen.findByRole('menuitem', {
-        name: 'mediaAsset.actions.download'
-      })
+    const menu = await screen.findByRole('menu')
+    const item = await screen.findByRole('menuitem', {
+      name: 'mediaAsset.actions.download'
+    })
+
+    expect(screen.getByRole('dialog').compareDocumentPosition(menu)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
     )
+
+    await userEvent.click(item)
 
     expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([second])
   })
