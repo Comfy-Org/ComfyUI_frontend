@@ -685,6 +685,27 @@ describe('ComfyApp', () => {
       expect(app.rootGraph).toBe(active)
     })
 
+    it('refuses a non-clean load into a workflow whose graph was released instead of borrowing the active one', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/closed.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const active = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', active)
+      const configureActive = vi.spyOn(active, 'configure')
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+      ).resolves.toBe(false)
+
+      expect(configureActive).not.toHaveBeenCalled()
+      expect(mockExtensionService.invokeExtensionsAsync).not.toHaveBeenCalled()
+    })
+
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
       // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
       // extension hook throwing, here) previously skipped both
@@ -903,12 +924,14 @@ describe('ComfyApp', () => {
 
     it('does not assign a newer workflow graph to an Undo load waiting after configuration', async () => {
       app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const active = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', active)
       const firstWorkflow = new ComfyWorkflow({
         path: 'workflows/undo.json',
         modified: 0,
         size: 0
       })
+      firstWorkflow.adoptGraph(new LGraph())
       const saved = createWorkflowGraphData()
       saved.extra = { marker: 'saved' }
       const changed = structuredClone(saved)
@@ -922,6 +945,7 @@ describe('ComfyApp', () => {
         modified: 0,
         size: 0
       })
+      secondWorkflow.adoptGraph(active)
       const other = createWorkflowGraphData()
       other.extra = { marker: 'other' }
       const secondTracker = new ChangeTracker(secondWorkflow, other)
@@ -996,6 +1020,7 @@ describe('ComfyApp', () => {
             size: 0
           })
         )
+        firstWorkflow.adoptGraph(new LGraph())
         const firstTracker = markRaw(new ChangeTracker(firstWorkflow, saved))
         firstTracker.activeState = changed
         firstTracker._restoringState = true
@@ -1009,6 +1034,7 @@ describe('ComfyApp', () => {
             size: 0
           })
         )
+        secondWorkflow.adoptGraph(graph)
         const secondTracker = markRaw(new ChangeTracker(secondWorkflow, other))
         secondWorkflow.changeTracker = secondTracker
         let releasePause!: () => void
