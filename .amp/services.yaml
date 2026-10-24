@@ -67,3 +67,10 @@ services:
     portal:
       title: ComfyUI Frontend
       description: ComfyUI frontend development server.
+
+  website:
+    port: 4321
+    command: pnpm --filter @comfyorg/website dev --host 0.0.0.0 --port "$PORT"
+    portal:
+      title: Comfy.org Website
+      description: Astro development server for apps/website.
