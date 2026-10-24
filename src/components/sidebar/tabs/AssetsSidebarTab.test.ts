@@ -234,6 +234,21 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
+  it('offers inspect from the asset grid', async () => {
+    useAssetsStore().outputAssets.items = [{ ...folderAsset, name: 'a.png' }]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    ).toBeVisible()
+  })
+
   it('inspects an HDR output in the HDR viewer', async () => {
     useAssetsStore().outputAssets.items = [
       {
@@ -403,6 +418,11 @@ describe('AssetsSidebarTab gallery selection', () => {
 
     await userEvent.click(screen.getByLabelText('More Options'))
     const menu = await screen.findByRole('menu')
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'mediaAsset.actions.inspect' })
+    ).not.toBeInTheDocument()
+
     const item = await screen.findByRole('menuitem', {
       name: 'mediaAsset.actions.download'
     })

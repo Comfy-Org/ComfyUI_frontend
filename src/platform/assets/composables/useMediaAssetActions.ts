@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers' 
+import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
