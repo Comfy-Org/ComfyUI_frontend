@@ -94,7 +94,9 @@ describe('ExtensionPanel', () => {
     registerExtensions('Alpha', 'Zebra')
     const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
     renderPanel()
-    const search = screen.getByRole('combobox')
+    const search = screen.getByRole('combobox', {
+      name: 'Search Extensions...'
+    })
     const selectAll = () => screen.getByRole('checkbox', { name: 'Select All' })
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
