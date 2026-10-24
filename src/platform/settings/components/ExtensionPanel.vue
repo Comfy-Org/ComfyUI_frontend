@@ -77,15 +77,17 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import {
-  agentExtensionFilterRequest,
-  consumeAgentExtensionFilterRequest,
-  getAgentExtensionDisableSettings
-} from '@/platform/settings/agentExtensionService'
-import type { ExtensionFilterType } from '@/platform/settings/agentExtensionService'
 import ExtensionListTable from '@/platform/settings/components/ExtensionListTable.vue'
 import ExtensionPackTable from '@/platform/settings/components/ExtensionPackTable.vue'
+import {
+  consumeSettingsPanelNavigation,
+  settingsPanelNavigation
+} from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type {
+  ExtensionFilterType,
+  SettingWriteResult
+} from '@/platform/settings/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { extensionPackName, useExtensionStore } from '@/stores/extensionStore'
 
@@ -107,12 +109,14 @@ const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
+// Immediate, so a request made before this panel mounted still selects its
+// filter rather than leaving a freshly opened panel on All.
 watch(
-  agentExtensionFilterRequest,
-  (requestedFilter) => {
-    if (!requestedFilter) return
-    filterType.value = requestedFilter
-    consumeAgentExtensionFilterRequest(requestedFilter)
+  settingsPanelNavigation,
+  (request) => {
+    if (request?.panel !== 'extension') return
+    if (request.extensionFilter) filterType.value = request.extensionFilter
+    consumeSettingsPanelNavigation(request.requestId)
   },
   { immediate: true }
 )
@@ -231,10 +235,10 @@ async function setExtensionEnabled(name: string, enabled: boolean) {
   await updateExtensionStatus()
 }
 
-async function setExtensionPackEnabled(path: string, enabled: boolean) {
-  const result = await extensionStore.setExtensionPackEnabled(path, enabled)
-  if (result.ok) return
-
+function reportPackSaveFailure(
+  result: Extract<SettingWriteResult, { ok: false }>,
+  context: Record<string, unknown>
+) {
   useToast().warning(
     t('toastMessages.errorSaveSetting', {
       id: 'Comfy.Extension.DisabledPacks',
@@ -246,8 +250,13 @@ async function setExtensionPackEnabled(path: string, enabled: boolean) {
     surface: 'platform',
     level: 'warning',
     tags: { reason: result.reason },
-    context: { path, enabled }
+    context
   })
+}
+
+async function setExtensionPackEnabled(path: string, enabled: boolean) {
+  const result = await extensionStore.setExtensionPackEnabled(path, enabled)
+  if (!result.ok) reportPackSaveFailure(result, { path, enabled })
 }
 
 const enableAllExtensions = async () => {
@@ -277,17 +286,25 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
+/**
+ * Unlike the toast and sidebar entry points, this one does not reload: the
+ * panel collects changes and the user applies them from the banner. The
+ * switches are reconciled from what the accepted write actually stored, so a
+ * refused write leaves every control showing the state the backend still holds.
+ */
 const disableAgentExtensions = async () => {
-  const settings = getAgentExtensionDisableSettings(
+  const result = await extensionStore.disableAgentExtensions(
     extensionStore.agentExtensions
   )
-  await settingStore.setMany(settings)
-  editingEnabledExtensions.value = Object.fromEntries(
-    Object.entries(editingEnabledExtensions.value).map(([name, enabled]) => [
-      name,
-      settings['Comfy.Extension.Disabled'].includes(name) ? false : enabled
-    ])
-  )
+  if (!result.ok) {
+    reportPackSaveFailure(result, { action: 'disable_agent_created' })
+    return
+  }
+
+  const disabledNames = new Set(settingStore.get('Comfy.Extension.Disabled'))
+  for (const name of Object.keys(editingEnabledExtensions.value)) {
+    if (disabledNames.has(name)) editingEnabledExtensions.value[name] = false
+  }
 }
 
 const applyChanges = () => {

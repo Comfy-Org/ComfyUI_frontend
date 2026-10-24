@@ -67,7 +67,9 @@
             v-if="extensionStore.isAgentCreatedExtension(extension)"
             class="text-xs text-muted-foreground"
           >
-            <span>{{ agentPackName(extension.name) }}</span>
+            <span>
+              {{ agentExtensionPackName(extension.name) ?? extension.name }}
+            </span>
             <span v-if="extension.provenance?.summary">
               · {{ extension.provenance.summary }}
             </span>
@@ -106,7 +108,10 @@ import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
 import TableSortHead from '@/components/ui/table/TableSortHead.vue'
 import type { TableSortDirection } from '@/components/ui/table/tableUtils'
-import { useExtensionStore } from '@/stores/extensionStore'
+import {
+  agentExtensionPackName,
+  useExtensionStore
+} from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const { extensions, selectedNames, enabledByName, selectAllState, actions } =
@@ -129,8 +134,4 @@ const emit = defineEmits<{
 }>()
 
 const extensionStore = useExtensionStore()
-
-function agentPackName(name: string) {
-  return name.startsWith('agent.') ? (name.split('.')[1] ?? name) : name
-}
 </script>

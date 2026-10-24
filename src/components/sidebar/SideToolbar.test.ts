@@ -6,7 +6,9 @@ import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useUserStore } from '@/stores/userStore'
@@ -40,6 +42,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+
+vi.mock(import('@/scripts/api'))
 
 const i18n = createI18n({
   legacy: false,
@@ -162,28 +168,72 @@ describe('SideToolbar', () => {
     expect(screen.getByTestId('logout')).toBeInTheDocument()
   })
 
-  it('badges sourced agent tabs and exposes management actions', async () => {
+  it('badges sourced agent tabs and disables the one that was right-clicked', async () => {
+    const user = userEvent.setup()
+    const extensionStore = useExtensionStore()
+    extensionStore.registerExtension({
+      name: 'agent.cushions.toolbar',
+      provenance: { createdBy: 'comfy-agent' }
+    })
+    extensionStore.registerExtension({
+      name: 'agent.lights.toolbar',
+      provenance: { createdBy: 'comfy-agent' }
+    })
+    useSettingStore().$patch({
+      settingValues: {
+        'Comfy.Extension.Disabled': [],
+        'Comfy.Extension.DisabledPacks': []
+      }
+    })
+    useSidebarTabStore().sidebarTabs = [
+      {
+        ...assetsTab,
+        source: { extensionName: 'agent.cushions.toolbar' }
+      },
+      {
+        ...workflowsTab,
+        source: { extensionName: 'agent.lights.toolbar' }
+      }
+    ]
+    vi.mocked(api.storeSettings).mockResolvedValue(new Response())
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+    renderToolbar()
+
+    expect(screen.getAllByText('AI')).toHaveLength(2)
+
+    // The second tab, so a Disable that always picks the first installed
+    // agent extension cannot pass.
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Workflows' })
+    )
+    await user.click(await screen.findByRole('menuitem', { name: /disable/i }))
+
+    await vi.waitFor(() =>
+      expect(api.storeSettings).toHaveBeenCalledExactlyOnceWith({
+        'Comfy.Extension.Disabled': ['agent.lights.toolbar'],
+        'Comfy.Extension.DisabledPacks': []
+      })
+    )
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
+  })
+
+  it('navigates Settings to the Agent-created extensions from the tab menu', async () => {
+    const user = userEvent.setup()
     useExtensionStore().registerExtension({
       name: 'agent.cushions.toolbar',
       provenance: { createdBy: 'comfy-agent' }
     })
     useSidebarTabStore().sidebarTabs = [
-      {
-        ...assetsTab,
-        source: {
-          extensionName: 'agent.cushions.toolbar',
-          provenance: { createdBy: 'comfy-agent' }
-        }
-      }
+      { ...assetsTab, source: { extensionName: 'agent.cushions.toolbar' } }
     ]
     renderToolbar()
 
-    expect(screen.getByText('AI')).toBeVisible()
     await fireEvent.contextMenu(screen.getByRole('button', { name: 'Assets' }))
-    expect(
-      await screen.findByRole('menuitem', { name: /manage/i })
-    ).toBeVisible()
-    expect(screen.getByRole('menuitem', { name: /disable/i })).toBeVisible()
+    await user.click(await screen.findByRole('menuitem', { name: /manage/i }))
+
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: 'agentCreated'
+    })
   })
 
   it('preserves the native context menu for tabs without an agent extension', () => {

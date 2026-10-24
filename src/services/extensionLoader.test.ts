@@ -6,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
@@ -17,6 +18,18 @@ import {
 } from './extensionLoader'
 
 vi.mock(import('@/platform/telemetry/reportError'))
+
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+
+function createDeferred<T>() {
+  let resolve: (value: T) => void = () => {}
+  let reject: (error: unknown) => void = () => {}
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
 
 const coreLoad = vi.hoisted(() => ({
   onConfigure: undefined as unknown,
@@ -326,6 +339,28 @@ describe('extension loading', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('finishes loading while recording seen extensions is pending', async () => {
+      const settingStore = useSettingStore()
+      settingStore.$patch({
+        settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
+      })
+      const pending = createDeferred<void>()
+      vi.spyOn(settingStore, 'set').mockReturnValue(pending.promise)
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([])
+      useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
+
+      let loaded = false
+      const loading = loadExtensions().then(() => {
+        loaded = true
+      })
+      try {
+        await vi.waitFor(() => expect(loaded).toBe(true))
+      } finally {
+        pending.resolve()
+        await loading
+      }
+    })
+
     it('finishes loading when recording seen agent extensions fails', async () => {
       const settingStore = useSettingStore()
       settingStore.$patch({
@@ -403,10 +438,11 @@ describe('agent extension discovery', () => {
       settingValues: {
         'Comfy.Extension.Disabled': [],
         'Comfy.Extension.DisabledPacks': [],
-        'Comfy.Extension.SeenAgentExtensions': []
+        'Comfy.Extension.SeenAgentExtensions': ['agent.lights.toolbar']
       }
     })
     const setSetting = vi.spyOn(settingStore, 'set').mockResolvedValue()
+    useExtensionStore().registerExtension({ name: 'agent.lights.toolbar' })
     useExtensionStore().registerExtension({
       name: 'agent.cushions.toolbar',
       provenance: {
@@ -429,8 +465,29 @@ describe('agent extension discovery', () => {
     ])
     expect(setSetting).toHaveBeenCalledWith(
       'Comfy.Extension.SeenAgentExtensions',
-      ['agent.cushions.toolbar']
+      ['agent.lights.toolbar', 'agent.cushions.toolbar']
     )
+
+    const [manage, disable] = useToast().toasts[0].actions
+    manage.onClick()
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: 'agentCreated'
+    })
+
+    const storeSettings = vi
+      .spyOn(api, 'storeSettings')
+      .mockResolvedValue(new Response())
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+    disable.onClick()
+
+    // Only the extension this toast announced, not every installed one.
+    await vi.waitFor(() =>
+      expect(storeSettings).toHaveBeenCalledExactlyOnceWith({
+        'Comfy.Extension.Disabled': ['agent.cushions.toolbar'],
+        'Comfy.Extension.DisabledPacks': []
+      })
+    )
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce())
   })
 
   it('does not notify for an agent extension already in the seen set', async () => {

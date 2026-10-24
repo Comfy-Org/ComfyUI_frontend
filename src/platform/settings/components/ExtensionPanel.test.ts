@@ -8,7 +8,7 @@ import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { requestAgentExtensionFilter } from '@/platform/settings/agentExtensionService'
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
 
 import ExtensionPanel from './ExtensionPanel.vue'
 
@@ -309,6 +309,12 @@ describe('ExtensionPanel', () => {
 
   it('filters, describes, and disables agent-created extensions', async () => {
     const user = userEvent.setup()
+    const settingStore = bootWithPacks(['/extensions/cushions/'], [])
+    settingStore.addSetting(
+      CORE_SETTINGS.find(
+        (setting) => setting.id === 'Comfy.Extension.Disabled'
+      )!
+    )
     const extensionStore = useExtensionStore()
     extensionStore.registerExtension({ name: 'Manual.Toolbar' })
     extensionStore.registerExtension({
@@ -318,13 +324,16 @@ describe('ExtensionPanel', () => {
         summary: 'Adds cushion controls'
       }
     })
-    extensionStore.loadExtensionPackPaths(['/extensions/cushions/'], [])
-    const setSettings = vi
-      .spyOn(useSettingStore(), 'setMany')
-      .mockResolvedValue()
+    extensionStore.registerExtension({
+      name: 'agent-made.standalone',
+      provenance: { createdBy: 'comfy-agent' }
+    })
+    const storeSettings = vi
+      .spyOn(api, 'storeSettings')
+      .mockResolvedValue(new Response())
 
     renderPanel()
-    expect(screen.getByText('Created by agent')).toBeVisible()
+    expect(screen.getAllByText('Created by agent')).toHaveLength(2)
     expect(screen.getByText(/Adds cushion controls/)).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Agent-created' }))
@@ -341,20 +350,74 @@ describe('ExtensionPanel', () => {
         name: 'Disable all agent-created'
       })
     )
-    expect(setSettings).toHaveBeenCalledExactlyOnceWith({
-      'Comfy.Extension.Disabled': [],
+
+    expect(storeSettings).toHaveBeenCalledExactlyOnceWith({
+      'Comfy.Extension.Disabled': ['agent-made.standalone'],
       'Comfy.Extension.DisabledPacks': ['/extensions/cushions/']
     })
+    // The pack-sourced extension keeps its own switch: its pack carries the
+    // disable, and the pack switch is what records it.
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('switch', { name: 'agent-made.standalone' })
+      ).not.toBeChecked()
+    )
     expect(
       screen.getByRole('switch', { name: 'agent.cushions.toolbar' })
     ).toBeChecked()
+    expect(packSwitch('cushions')).not.toBeChecked()
+    expect(reloadButton()).toBeVisible()
   })
 
-  it('applies an agent filter request while the panel is already open', async () => {
-    registerExtensions('Manual.Toolbar', 'agent.cushions.toolbar')
-    renderPanel()
+  it('leaves every control enabled when the bulk disable is refused', async () => {
+    const user = userEvent.setup()
+    const settingStore = bootWithPacks(['/extensions/cushions/'], [])
+    settingStore.addSetting(
+      CORE_SETTINGS.find(
+        (setting) => setting.id === 'Comfy.Extension.Disabled'
+      )!
+    )
+    registerExtensions('agent.cushions.toolbar')
+    vi.spyOn(api, 'storeSettings').mockResolvedValue(
+      new Response(null, { status: 500, statusText: 'Server Error' })
+    )
 
-    requestAgentExtensionFilter('agentCreated')
+    renderPanel()
+    await user.click(screen.getByRole('button', { name: 'More Options' }))
+    await user.click(
+      await screen.findByRole('menuitem', {
+        name: 'Disable all agent-created'
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'warning' })
+      ])
+    )
+    expect(settingStore.get(DISABLED_PACKS)).toEqual([])
+    expect(packSwitch('cushions')).toBeChecked()
+    expect(reloadButton()).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'before mount',
+      arrange: () => {
+        showSettingsPanel('extension', { extensionFilter: 'agentCreated' })
+        renderPanel()
+      }
+    },
+    {
+      name: 'after mount',
+      arrange: () => {
+        renderPanel()
+        showSettingsPanel('extension', { extensionFilter: 'agentCreated' })
+      }
+    }
+  ])('applies an agent filter request $name', async ({ arrange }) => {
+    registerExtensions('Manual.Toolbar', 'agent.cushions.toolbar')
+    arrange()
 
     expect(
       await screen.findByRole('switch', { name: 'agent.cushions.toolbar' })

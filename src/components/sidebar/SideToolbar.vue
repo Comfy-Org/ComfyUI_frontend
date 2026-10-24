@@ -185,13 +185,9 @@ function getAgentTabExtension(tab: SidebarTabExtension) {
 const isAgentTab = (tab: SidebarTabExtension) => !!getAgentTabExtension(tab)
 
 async function disableAgentTabExtension() {
-  const extensionName = agentTab.value?.source?.extensionName
-  if (!extensionName) return
-  const extension = extensionStore.extensions.find(
-    (item) => item.name === extensionName
-  )
-  if (!extension || !extensionStore.isAgentCreatedExtension(extension)) return
-  await disableAgentExtensions([extension])
+  if (!agentTab.value) return
+  const extension = getAgentTabExtension(agentTab.value)
+  if (extension) await disableAgentExtensions([extension])
 }
 
 const agentTabMenuItems = computed<MenuItem[]>(() => [
