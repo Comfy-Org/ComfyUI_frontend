@@ -11,22 +11,41 @@ import { widgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
+const { rootGraphRef } = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    rootGraphRef: shallowRef({
       id: '11111111-1111-4111-8111-111111111111',
       nodes: [] as LGraphNode[],
       events: new EventTarget(),
       getNodeById: vi.fn() as (id: number) => LGraphNode | null
+    })
+  }
+})
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    get rootGraph() {
+      return rootGraphRef.value
     },
     get rootGraphOrUndefined() {
-      return this.rootGraph
+      return rootGraphRef.value
     }
   }
 }))
 
 const rootGraphId = '11111111-1111-4111-8111-111111111111'
 const entitySeed = `${rootGraphId}:1:seed` as WidgetId
+
+function makeRootGraph(nodes: LGraphNode[]): typeof rootGraphRef.value {
+  return fromAny<typeof rootGraphRef.value, unknown>({
+    id: '22222222-2222-4222-8222-222222222222',
+    nodes,
+    events: new EventTarget(),
+    getNodeById: (id: number) =>
+      nodes.find((n) => String(n.id) === String(id)) ?? null
+  })
+}
 
 function makeNode(id: number, widgetNames: string[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
@@ -97,6 +116,18 @@ describe('useResolvedSelectedInputs', () => {
     dispatchRootGraphEvent('subgraph-created')
 
     expect(resolved.value[0]?.status).toBe('unknown')
+  })
+
+  it('re-resolves selections against the new root after the active root graph changes', () => {
+    setRootGraphNodes([])
+    useAppModeStore().selectedInputs = [[entitySeed, 'seed']]
+
+    const resolved = useResolvedSelectedInputs()
+    expect(resolved.value[0]?.status).toBe('unknown')
+
+    rootGraphRef.value = makeRootGraph([makeNode(1, ['seed'])])
+
+    expect(resolved.value[0]?.status).toBe('resolved')
   })
 
   it('resolves promoted subgraph inputs from their host input widgetId', () => {
