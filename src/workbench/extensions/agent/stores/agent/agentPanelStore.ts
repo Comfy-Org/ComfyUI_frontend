@@ -42,7 +42,6 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
 interface AgentOnboardingPolicy {
-  startup: 'activationVisits' | 'lockedUntilConsent'
   offerMemory: 'shown' | 'answered'
   agentButton: 'requestConsent' | 'togglePanel'
   persistSkipAsRefusal: boolean
@@ -50,7 +49,6 @@ interface AgentOnboardingPolicy {
 }
 
 const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
-  startup: 'activationVisits',
   offerMemory: 'shown',
   agentButton: 'requestConsent',
   persistSkipAsRefusal: true,
@@ -58,7 +56,6 @@ const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
 }
 
 const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
-  startup: 'lockedUntilConsent',
   offerMemory: 'answered',
   agentButton: 'togglePanel',
   persistSkipAsRefusal: false,

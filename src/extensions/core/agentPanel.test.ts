@@ -280,10 +280,9 @@ describe('AgentPanel extension flag gate', () => {
       )
     })
 
-    it('keeps Local introduction and its locked panel independent of Cloud refusal', async () => {
+    it('keeps Local introduction and its startup panel independent of Cloud refusal', async () => {
       useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
         true
-      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
       await loadEntryAndSetup()
       await flush()
 
@@ -299,11 +298,10 @@ describe('AgentPanel extension flag gate', () => {
         visits: '0'
       },
       {
-        session: 'signed in after discovery',
+        session: 'signed in on second visit',
         user: { id: 'account-a' },
-        visits: '2'
-      },
-      { session: 'signed out after discovery', user: null, visits: '2' }
+        visits: '1'
+      }
     ])('offers consent on startup when $session', async ({ user, visits }) => {
       currentUser.value = user
       localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, visits)
@@ -321,6 +319,23 @@ describe('AgentPanel extension flag gate', () => {
         'first_load'
       )
     })
+
+    it.for([
+      { session: 'signed out', user: null },
+      { session: 'signed in', user: { id: 'account-a' } }
+    ])(
+      'leaves the panel and card closed when $session after the two activation visits',
+      async ({ user }) => {
+        currentUser.value = user
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      }
+    )
 
     it.for([
       { surface: 'dialog', hold: openDialog, release: closeDialog },
@@ -391,7 +406,7 @@ describe('AgentPanel extension flag gate', () => {
         workspaceId: null
       }
     ])(
-      'keeps only the locked panel when initial $restore arrives late after an earlier Skip',
+      'opens only the startup panel when initial $restore arrives late after an earlier Skip',
       async ({ user, initialized, workspaceId }) => {
         currentUser.value = user
         isAuthInitialized.value = initialized
@@ -401,7 +416,7 @@ describe('AgentPanel extension flag gate', () => {
           'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
           'true'
         )
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
         await loadEntryAndSetup()
         await flush()
 
@@ -438,43 +453,39 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it.for([
-      { session: 'signed out', user: null, scope: 'signed-out' },
-      {
-        session: 'signed in',
-        user: { id: 'account-a' },
-        scope: 'account-a.workspace-a'
-      }
+      { session: 'signed out', user: null },
+      { session: 'signed in', user: { id: 'account-a' } }
     ])(
-      'opens the locked panel on every $session launch after Skip',
-      async ({ user, scope }) => {
+      'remembers a $session Skip across launches and opens the panel only for the two activation visits',
+      async ({ user }) => {
         currentUser.value = user
-        localStorage.setItem(
-          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
-          'true'
+        vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+          async (_trigger, _onAccept, hooks) => {
+            if (hooks?.canShow?.() === false) return
+            hooks?.onShown?.()
+            useAgentConsentIntroductionStore().markResponded()
+          }
         )
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
-        openDialog()
+        const relaunch = async (): Promise<void> => {
+          agentStore.close('close_button')
+          setupScope.stop()
+          setupScope = effectScope()
+          await loadEntryAndSetup()
+          await flush()
+        }
 
         await loadEntryAndSetup()
         await flush()
-        expect(agentStore.isVisible).toBe(false)
-
-        closeDialog()
-        await flush()
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
         expect(agentStore.isVisible).toBe(true)
-        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
 
-        agentStore.close('close_button')
-        setAgentReady(true)
-        await flush()
-        expect(agentStore.isVisible).toBe(false)
-        setupScope.stop()
-        setupScope = effectScope()
-
-        await loadEntryAndSetup()
-        await flush()
+        await relaunch()
         expect(agentStore.isVisible).toBe(true)
         expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+
+        await relaunch()
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       }
     )
 
@@ -487,7 +498,6 @@ describe('AgentPanel extension flag gate', () => {
       async ({ agent }) => {
         currentUser.value = null
         Object.assign(agentStore, { comfyAgent: agent, flagsSettled: true })
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
 
         await loadEntryAndSetup()
         await flush()

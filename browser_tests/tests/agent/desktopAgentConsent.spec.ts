@@ -16,7 +16,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     initialLocalStorage: { [AGENT_COACH_SEEN_KEY]: 'true' }
   })
 
-  test('keeps the panel locked after Skip and asks again only on Send', async ({
+  test('remembers Skip, opens the panel for two launches, and asks again only on Send', async ({
     comfyPage,
     agentPanel,
     agentConsentWrites,
@@ -49,7 +49,7 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       await expect(agentPanel.consentDialog).toHaveCount(0)
     })
 
-    await test.step('The next launch keeps the locked panel without repeating the introduction', async () => {
+    await test.step('The second launch opens the panel again without repeating the introduction', async () => {
       await agentPanel.openButton.click()
       await expect(agentPanel.root).toHaveCount(0)
       await expect(agentPanel.openButton).toHaveAttribute(
@@ -59,6 +59,21 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
       await comfyPage.workflow.reloadAndWaitForApp()
       await expect(agentPanel.root).toBeVisible()
       await expect(agentPanel.consentDialog).toHaveCount(0)
+      expect(agentConsentWrites).toEqual([])
+    })
+
+    await test.step('The third launch leaves the closed panel and the card closed', async () => {
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toHaveCount(0)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(agentPanel.openButton).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+      await expect(agentPanel.root).toHaveCount(0)
+      await expect(agentPanel.consentDialog).toHaveCount(0)
+      await agentPanel.openButton.click()
+      await expect(agentPanel.root).toBeVisible()
       expect(agentConsentWrites).toEqual([])
     })
 
