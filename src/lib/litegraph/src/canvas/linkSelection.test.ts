@@ -622,20 +622,54 @@ describe('going to the other end of a socket', () => {
     expect(destinationIds(subgraph)).toEqual([SUBGRAPH_INPUT_ID])
   })
 
-  it('goes nowhere when a link points past the inputs of a node', () => {
-    const { graph, source, targets, links } = createFanOut()
-    links[0].target_slot = 3
+  it.for([
+    {
+      name: 'past the inputs of a node',
+      retarget: (link: LLink) => {
+        link.target_slot = 3
+      }
+    },
+    {
+      name: 'into a node with no inputs',
+      retarget: (link: LLink, graph: LGraph) => {
+        link.target_id = createTestNode(graph).id
+      }
+    }
+  ])('goes nowhere when a link points $name', ({ retarget }) => {
+    const { graph, source, links } = createFanOut()
+    retarget(links[0], graph)
     clickSocket(graph, source, 'output')
+    const [stale] = getSelectedLinkDestinations(graph).filter(
+      ({ links: reached }) => reached.includes(links[0])
+    )
 
-    const { host, moved } = goTo(graph, targets[0])
+    const { host, moved } = goTo(graph, { id: stale.nodeId })
 
     expect(moved).toBe(false)
     expect(host.animateToBounds).not.toHaveBeenCalled()
   })
 
-  it('centres the landing socket when the node is bigger than the view', () => {
+  it('lands on the valid input when another link to the node is malformed', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number'])
+    const target = createTestNode(graph, ['number', 'number'])
+    const valid = connect(source, target, 1)
+    connect(source, target, 0).target_slot = -1
+    clickSocket(graph, source, 'output')
+
+    expect(goTo(graph, target).moved).toBe(true)
+
+    const [x, y] = target.getInputPos(1)
+    expect(getSelectedLinkIds(graph)).toEqual([valid.id])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+  })
+
+  it.for([
+    { name: 'bigger than the view', height: 2000 },
+    { name: 'too big to leave room for the menu', height: 520 }
+  ])('centres the landing socket when the node is $name', ({ height }) => {
     const { graph, source, targets } = createFanOut()
-    targets[2].size = [300, 2000]
+    targets[2].size = [300, height]
     targets[2].updateArea()
     clickSocket(graph, source, 'output')
 

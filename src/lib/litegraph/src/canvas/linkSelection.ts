@@ -1,4 +1,4 @@
-import { inRange, partition, sortBy } from 'es-toolkit'
+import { partition, sortBy } from 'es-toolkit'
 
 import { getLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import {
@@ -50,6 +50,8 @@ interface PanOptions {
 }
 
 type SlotType = 'input' | 'output'
+
+const ARRIVAL_TOOLBOX_CLEARANCE = 64
 
 type LinkEndNode =
   | { readonly kind: 'node'; readonly node: LGraphNode }
@@ -268,13 +270,11 @@ function slotCount(end: LinkEndNode, type: SlotType): number {
   return type === 'input' ? end.node.inputs.length : end.node.outputs.length
 }
 
-function socketPosition(
-  end: LinkEndNode,
-  type: SlotType,
-  slot: number
-): Point | undefined {
-  if (!Number.isInteger(slot) || !inRange(slot, slotCount(end, type)))
-    return undefined
+function isSlotIndex(end: LinkEndNode, type: SlotType, slot: number): boolean {
+  return Number.isInteger(slot) && slot >= 0 && slot < slotCount(end, type)
+}
+
+function socketPosition(end: LinkEndNode, type: SlotType, slot: number): Point {
   const [x, y] =
     end.kind !== 'node'
       ? end.node.slots[slot].pos
@@ -335,12 +335,14 @@ function selectArrivalSocket(
   destination: LinkDestination
 ): Point | undefined {
   const arrivalType = oppositeSlotType(departureType)
-  const arrivalSlot = Math.min(
-    ...destination.links.map((link) => farEnd(link, departureType).slot)
-  )
+  const arrivalSlots = destination.links
+    .map((link) => farEnd(link, departureType).slot)
+    .filter((slot) => isSlotIndex(destination, arrivalType, slot))
+  if (!arrivalSlots.length) return undefined
+  const arrivalSlot = Math.min(...arrivalSlots)
   const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
+  if (!links.length) return undefined
   const position = socketPosition(destination, arrivalType, arrivalSlot)
-  if (!links.length || !position) return undefined
   selectSocketLinks(links, arrivalType, position)
   return position
 }
@@ -353,7 +355,11 @@ function fitsInView(
   const [viewWidth, viewHeight] = viewport
     ? [viewport[2], viewport[3]]
     : ds.getViewportSize()
-  return width * ds.scale <= viewWidth && height * ds.scale <= viewHeight
+  const clearance = 2 * ARRIVAL_TOOLBOX_CLEARANCE
+  return (
+    width * ds.scale <= viewWidth - clearance &&
+    height * ds.scale <= viewHeight - clearance
+  )
 }
 
 function panToBounds(
