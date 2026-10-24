@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "선택한 노드 축소/확장"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "선택한 노드의 링크 숨기기/표시"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "선택한 노드 음소거/음소거 해제"
   },

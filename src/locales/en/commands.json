@@ -110,6 +110,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Collapse/Expand Selected Nodes"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Hide/Show Links on Selected Nodes"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Mute/Unmute Selected Nodes"
   },

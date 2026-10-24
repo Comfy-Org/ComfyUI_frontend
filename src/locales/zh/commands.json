@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "折叠/展开选中节点"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "隐藏/显示选中节点的连线"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "静音/取消静音选中节点"
   },

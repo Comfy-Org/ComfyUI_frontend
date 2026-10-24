@@ -211,6 +211,31 @@ describe('keybindingService - Canvas Keybindings', () => {
     outsideDiv.remove()
   })
 
+  describe('L toggles the links on the selected nodes', () => {
+    it('runs from the canvas', async () => {
+      const event = createTestKeyboardEvent('l', { target: canvasChild })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.Canvas.ToggleSelectedNodes.Links'
+      )
+    })
+
+    it.for(['input', 'textarea'] as const)(
+      'does not run while typing in a node widget %s',
+      async (tagName) => {
+        const widget = document.createElement(tagName)
+        canvasContainer.appendChild(widget)
+        const event = createTestKeyboardEvent('l', { target: widget })
+
+        await keybindingService.keybindHandler(event)
+
+        expect(useCommandStore().execute).not.toHaveBeenCalled()
+      }
+    )
+  })
+
   describe('keybinding whose command is no longer registered', () => {
     beforeEach(() => {
       useKeybindingStore().addUserKeybinding(
