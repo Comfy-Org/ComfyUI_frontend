@@ -9,6 +9,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import type { DeploymentRowLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import {
   COMFY_CLOUD_ROW,
+  deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -21,7 +22,8 @@ interface MarkedRow {
 }
 
 interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
-  compatibilityNote: string | null
+  note: string | null
+  pickable: boolean
 }
 
 interface DeploymentSection<Row> {
@@ -34,6 +36,17 @@ const SECTION_LABEL_KEYS: Record<DeploymentSectionKey, string> = {
   current: 'deploymentSwitcher.runningOn',
   compatible: 'deploymentSwitcher.compatibleEnvironments',
   incompatible: 'deploymentSwitcher.incompatibleEnvironments'
+}
+
+const STOPPED_STATUSES = new Set(['stopped', 'failed'])
+
+function reasonKey(deployment: WorkspaceDeployment): string | null {
+  const tone = deploymentStatusTone(deployment.status)
+  if (tone === 'ready') return null
+  if (tone === 'pending') return 'deploymentSwitcher.reason.starting'
+  return STOPPED_STATUSES.has(deployment.status)
+    ? 'deploymentSwitcher.reason.startElsewhere'
+    : 'deploymentSwitcher.reason.notReady'
 }
 
 /**
@@ -60,7 +73,10 @@ export function sectionRows<Row extends MarkedRow>(
   return sections.filter((section) => section.rows.length > 0)
 }
 
-/** The Run on menu's rows under their headings, and the picked row's value. */
+/**
+ * The Run on menu's rows under their headings, and the picked row's value.
+ * Only a ready deployment can be picked, and any other row says why.
+ */
 export function useDeploymentRows() {
   const { t, locale } = useI18n()
   const { deployments, pickedDeploymentId } = storeToRefs(
@@ -69,6 +85,10 @@ export function useDeploymentRows() {
   const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
   const { markFor } = useDeploymentCompatibility()
 
+  function nodeList(nodeTypes: string[]): string {
+    return new Intl.ListFormat(locale.value).format(nodeTypes)
+  }
+
   function compatibilityNote(
     mark: DeploymentCompatibilityMark | null,
     deployment: string
@@ -76,10 +96,7 @@ export function useDeploymentRows() {
     if (mark?.kind === 'missing') {
       return t(
         'deploymentSwitcher.missingNodesNamed',
-        {
-          deployment,
-          nodes: new Intl.ListFormat(locale.value).format(mark.nodeTypes)
-        },
+        { deployment, nodes: nodeList(mark.nodeTypes) },
         { escapeParameter: false }
       )
     }
@@ -91,15 +108,47 @@ export function useDeploymentRows() {
     )
   }
 
+  function compatibilityAfterReason(
+    mark: DeploymentCompatibilityMark | null
+  ): string | null {
+    if (mark?.kind === 'missing') {
+      return t(
+        'deploymentSwitcher.missingNodesAfterReason',
+        { nodes: nodeList(mark.nodeTypes) },
+        { escapeParameter: false }
+      )
+    }
+    if (mark?.kind !== 'unknown') return null
+    return t('deploymentSwitcher.notCheckedAfterReason')
+  }
+
+  function pickReason(
+    deployment: WorkspaceDeployment | null,
+    label: string
+  ): string | null {
+    const key = deployment === null ? null : reasonKey(deployment)
+    if (key === null) return null
+    return t(key, { deployment: label }, { escapeParameter: false })
+  }
+
+  function note(
+    mark: DeploymentCompatibilityMark | null,
+    deployment: WorkspaceDeployment | null
+  ): string | null {
+    const label = deploymentFullLabel(deployment)
+    const reason = pickReason(deployment, label)
+    if (reason === null) return compatibilityNote(mark, label)
+    const compatibility = compatibilityAfterReason(mark)
+    return compatibility === null ? reason : `${reason} ${compatibility}`
+  }
+
   function row(deployment: WorkspaceDeployment | null): DeploymentRow {
     const mark = markFor(deployment?.deployment_id ?? null)
     return {
       ...deploymentRowLabels(deployment),
       mark,
-      compatibilityNote: compatibilityNote(
-        mark,
-        deploymentFullLabel(deployment)
-      )
+      note: note(mark, deployment),
+      pickable: deployment === null || deployment.status === 'ready'
     }
   }
 
