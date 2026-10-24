@@ -44,6 +44,7 @@ const defaultFlags: FeatureFlags = {
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
   signupTurnstileMode: 'off',
+  emailVerificationNudgeEnabled: false,
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
   assetsEnabled: false,

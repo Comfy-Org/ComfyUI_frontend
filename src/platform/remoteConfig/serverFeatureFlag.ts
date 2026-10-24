@@ -34,6 +34,7 @@ export enum ServerFeatureFlag {
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   AUTO_TOP_UP_ENABLED = 'auto_top_up_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
+  EMAIL_VERIFICATION_NUDGE_ENABLED = 'email_verification_nudge_enabled',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   ONBOARDING_TOUR_ENABLED = 'onboarding_tour_enabled',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
