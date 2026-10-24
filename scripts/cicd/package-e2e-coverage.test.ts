@@ -199,15 +199,15 @@ describe('package-e2e-coverage.sh', () => {
 
   it('preserves line coverage when function metadata is inconsistent', () => {
     using fixture = coverageFixture()
-    const sameNamedClosures =
-      'SF:src/canvas.ts\nFN:10,inner_clicked\nFN:20,inner_clicked\nDA:10,1\nLF:1\nLH:1\nend_of_record\n'
+    const sameNamedClosures = (file: string) =>
+      `SF:${file}\nFN:10,inner_clicked\nFN:20,inner_clicked\nDA:10,1\nLF:1\nLH:1\nend_of_record\n`
     fixture.writeShard(
       'e2e-coverage-shard-1',
-      sameNamedClosures + coverage('src')
+      sameNamedClosures('src/canvas.ts') + coverage('src')
     )
     fixture.writeShard(
       'e2e-coverage-shard-2',
-      sameNamedClosures + coverage('src')
+      sameNamedClosures('src/node.ts') + coverage('src')
     )
 
     const result = fixture.run(true)
@@ -215,6 +215,7 @@ describe('package-e2e-coverage.sh', () => {
     expect(result.status).toBe(0)
     const merged = readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
     expect(merged).toContain('SF:src/canvas.ts')
+    expect(merged).toContain('SF:src/node.ts')
     expect(merged).toContain('SF:src/file 0.ts')
   })
 
