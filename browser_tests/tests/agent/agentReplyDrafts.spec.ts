@@ -242,6 +242,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
     test(`a completed turn keeps its ${selection} approval action live`, async ({
       page
     }) => {
+      test.fail(false, 'The completed-turn approval regression is fixed')
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []

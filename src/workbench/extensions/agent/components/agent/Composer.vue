@@ -27,6 +27,7 @@ import type {
   AttachmentValidationError,
   ComposerAttachment
 } from '@/workbench/extensions/agent/types/composerAttachment'
+import { composerReferenceKey } from '@/workbench/extensions/agent/types/composerPrompt'
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -99,6 +100,20 @@ const { t } = useI18n()
 const skills = useSkillPacksStore()
 
 const running = computed(() => streaming || submitting)
+let keyboardRetryFingerprint: string | null = null
+
+function submissionFingerprint(): string {
+  const { text, references } = composer.prompt.value
+  return JSON.stringify({
+    text,
+    references: references.map((reference) => ({
+      key: composerReferenceKey(reference),
+      textOffset: 'textOffset' in reference ? reference.textOffset : null,
+      scope: 'scope' in reference ? reference.scope : null
+    })),
+    attachments: composer.attachments.value.map(({ id }) => id)
+  })
+}
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
@@ -107,6 +122,7 @@ const composer = useComposer({
       emit('workflowTargetRequired')
       return
     }
+    keyboardRetryFingerprint = submissionFingerprint()
     const prepared = composerPromptForSubmission(composer.prompt.value)
     if (workflowReferences.value.length > 0) {
       const { text: draft, workflowReferences: references } = prepared
@@ -280,6 +296,8 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
+  if (keyboardRetryFingerprint !== submissionFingerprint())
+    keyboardRetryFingerprint = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }
@@ -385,7 +403,12 @@ function openReferenceMenu(): void {
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
-  if (running.value) return
+  if (
+    running.value ||
+    keyboardRetryFingerprint === submissionFingerprint() ||
+    !composer.canSend.value
+  )
+    return
   composer.submit()
 }
 
@@ -517,11 +540,13 @@ function insert(
   text: string,
   starterPrompt?: AgentStarterPromptAttribution
 ): void {
+  keyboardRetryFingerprint = null
   composer.insert(text, starterPrompt)
   editorRef.value?.focus()
 }
 
 function replaceDraft(prompt: PromptSnapshot): void {
+  keyboardRetryFingerprint = null
   composer.replacePrompt(prompt)
   editorRef.value?.focus()
 }

@@ -394,6 +394,91 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('requires a click or an edited draft before retrying an Enter send', async () => {
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(2)
+
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(2)
+
+    await userEvent.click(box)
+    await userEvent.paste(' at dusk')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(3)
+  })
+
+  it('allows the same text after the user creates a new draft', async () => {
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    await userEvent.clear(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(2)
+  })
+
+  it('allows an edited message to resubmit the same text', async () => {
+    const send = vi.fn()
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, { ref: composer, hasWorkflowTarget: true, onSend: send })
+    })
+    useAgentComposerStore().setText('make a fox')
+    render(Host, { global: { plugins: [i18n] } })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(send).toHaveBeenCalledTimes(1)
+
+    composer.value?.replaceDraft({
+      text: 'make a fox',
+      workflowReferences: []
+    })
+    await nextTick()
+    await userEvent.keyboard('{Enter}')
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps generated attachment previews out of retry identity', async () => {
+    const store = useAgentComposerStore()
+    store.replaceDraft({
+      text: 'animate this',
+      workflowReferences: [],
+      attachments: [
+        {
+          id: 'video',
+          name: 'clip.mp4',
+          ref: 'clip.mp4',
+          previewUrl: 'blob:first'
+        }
+      ]
+    })
+    expect(store.referenceAttachment('video')).toBe(true)
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    store.updateAttachment('video', { previewUrl: 'blob:generated' })
+    await nextTick()
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+  })
+
   it('shows Stop while streaming and emits stop instead of send', async () => {
     const { emitted } = mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
