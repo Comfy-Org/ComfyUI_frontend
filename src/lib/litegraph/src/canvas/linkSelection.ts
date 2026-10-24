@@ -44,6 +44,11 @@ interface LinkJumpHost {
   setDirty(foreground: boolean, background?: boolean): void
 }
 
+interface PanOptions {
+  viewport?: ReadOnlyRect
+  reducedMotion: boolean
+}
+
 type SlotType = 'input' | 'output'
 
 type LinkEndNode =
@@ -291,10 +296,7 @@ export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
 export function goToLinkDestination(
   host: LinkJumpHost,
   nodeId: NodeId,
-  {
-    viewport,
-    reducedMotion
-  }: { viewport?: ReadOnlyRect; reducedMotion: boolean }
+  options: PanOptions
 ): boolean {
   const { graph } = host
   const socketType = useLinkSelectionStore().selection?.socketType
@@ -303,21 +305,37 @@ export function goToLinkDestination(
     (candidate) => candidate.nodeId === nodeId
   )
   if (!destination) return false
-  const arrivalType = oppositeSlotType(socketType)
-  const arrivalSlot = farEnd(destination.links[0], socketType).slot
+  selectArrivalSocket(graph, socketType, destination)
+  panToBounds(host, destination.node.boundingRect, options)
+  return true
+}
+
+function selectArrivalSocket(
+  graph: LGraph,
+  departureType: SlotType,
+  destination: LinkDestination
+): void {
+  const arrivalType = oppositeSlotType(departureType)
+  const arrivalSlot = farEnd(destination.links[0], departureType).slot
   selectSocketLinks(
-    slotLinks(graph, nodeId, arrivalType, arrivalSlot),
+    slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot),
     arrivalType,
     socketPosition(destination, arrivalType, arrivalSlot)
   )
+}
+
+function panToBounds(
+  host: LinkJumpHost,
+  bounds: ReadOnlyRect,
+  { viewport, reducedMotion }: PanOptions
+): void {
   const framing = { zoom: 0, viewport }
-  if (reducedMotion) {
-    host.ds.fitToBounds(destination.node.boundingRect, framing)
-    host.setDirty(true, true)
-  } else {
-    host.animateToBounds(destination.node.boundingRect, framing)
+  if (!reducedMotion) {
+    host.animateToBounds(bounds, framing)
+    return
   }
-  return true
+  host.ds.fitToBounds(bounds, framing)
+  host.setDirty(true, true)
 }
 
 export function selectLinksInMarquee(
