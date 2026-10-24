@@ -3,6 +3,7 @@ import { effectScope, watch } from 'vue'
 import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type {
   CameraConfig,
@@ -126,7 +127,7 @@ class Load3DConfiguration {
     )
 
     if (filePath) {
-      void onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath, isKeepingLoadedModel(this.load3d))
     }
   }
 
@@ -142,7 +143,10 @@ class Load3DConfiguration {
       silentOnNotFound
     )
     if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
-      void onModelWidgetUpdate(modelWidget.value)
+      void onModelWidgetUpdate(
+        modelWidget.value,
+        isKeepingLoadedModel(this.load3d)
+      )
     }
 
     return onModelWidgetUpdate
@@ -272,7 +276,7 @@ class Load3DConfiguration {
     silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: IBaseWidget['value']) => {
+    return async (value: IBaseWidget['value'], keepLoadedModel = false) => {
       if (!value || value === LOAD3D_NONE_MODEL) {
         this.load3d.clearModel()
         return
@@ -291,6 +295,15 @@ class Load3DConfiguration {
           folder
         )
       )
+
+      if (
+        keepLoadedModel &&
+        Load3dUtils.isSameResourceURL(
+          this.load3d.modelManager.originalURL,
+          modelUrl
+        )
+      )
+        return
 
       const outcome = await this.load3d.loadModel(modelUrl, filename)
       reportLoadModelOutcome(outcome, { silentOnNotFound })
