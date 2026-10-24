@@ -34,7 +34,11 @@ export function isWidgetReadOnly(
   const state = getWidgetState(node, widget)
   const options = state?.options ?? widget.options
   return Boolean(
-    options.read_only || options.disabled || state?.disabled || widget.disabled
+    options.read_only ||
+    options.disabled ||
+    state?.disabled ||
+    widget.disabled ||
+    widget.computedDisabled
   )
 }
 

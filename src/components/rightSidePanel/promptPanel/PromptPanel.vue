@@ -122,6 +122,7 @@ function isEditablePrompt(node: LGraphNode, widget: IBaseWidget) {
 watch(
   selectedNode,
   (node) => {
+    if (promptPanelStore.isPanelHidden) return
     if (!node || node === promptPanelStore.target?.node) {
       promptlessNode.value = null
       return

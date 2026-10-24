@@ -61,6 +61,7 @@ function endEditSession() {
 
 onMounted(() => {
   if (!promptPanelStore.autofocus) return
+  promptPanelStore.autofocus = false
   const element: unknown = textareaRef.value?.$el
   if (!(element instanceof HTMLTextAreaElement)) return
   element.setSelectionRange(0, 0)

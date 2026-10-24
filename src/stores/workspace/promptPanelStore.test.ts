@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -7,6 +8,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
@@ -19,6 +21,24 @@ const telemetry = vi.hoisted(() => ({
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
+
+class PromptNode extends LGraphNode {
+  constructor() {
+    super('test/prompt-node')
+    this.serialize_widgets = true
+    this.addWidget('textarea', 'text', 'a portrait', () => {})
+  }
+}
+
+function addReloadablePromptNode() {
+  LiteGraph.registerNodeType('test/prompt-node', PromptNode)
+  const graph = createTestRootGraph()
+  const node = LiteGraph.createNode('test/prompt-node')
+  if (!node) throw new Error('The prompt node type is not registered')
+  graph.add(node)
+  const [widget] = node.widgets ?? []
+  return { graph, target: { node, widget } }
+}
 
 function addTextNode(graph = createTestRootGraph()) {
   const node = new LGraphNode('CLIP Text Encode')
@@ -78,10 +98,24 @@ describe('usePromptPanelStore', () => {
       surface: 'panel',
       trigger: 'expand_button',
       '$feature/prompt-editor-surface': 'panel',
+      end_reason: 'close',
       duration_ms: expect.any(Number),
       input_count: 2,
       node_switch_count: 1
     })
+  })
+
+  it('ends the session once when the page hides with the panel open', () => {
+    const store = usePromptPanelStore()
+    store.open(addTextNode().target)
+    store.recordInput()
+
+    window.dispatchEvent(new Event('pagehide'))
+    store.close()
+
+    expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ end_reason: 'pagehide', input_count: 1 })
+    )
   })
 
   it('ignores selection changes when no session is open', () => {
@@ -119,29 +153,72 @@ describe('usePromptPanelStore', () => {
   })
 
   it('follows its node through an undo that reloads the graph', () => {
-    class PromptNode extends LGraphNode {
-      constructor() {
-        super('test/prompt-node')
-        this.serialize_widgets = true
-        this.addWidget('textarea', 'text', 'a portrait', () => {})
-      }
-    }
-    LiteGraph.registerNodeType('test/prompt-node', PromptNode)
-    const graph = createTestRootGraph()
-    const node = LiteGraph.createNode('test/prompt-node')
-    if (!node) throw new Error('The prompt node type is not registered')
-    graph.add(node)
-    const [widget] = node.widgets ?? []
+    const { graph, target } = addReloadablePromptNode()
     const store = usePromptPanelStore()
-    store.open({ node, widget })
+    store.open(target)
 
     graph.configure(graph.serialize())
 
-    expect(store.target?.node).not.toBe(node)
-    expect(store.target?.node.id).toBe(node.id)
+    expect(store.target?.node).not.toBe(target.node)
+    expect(store.target?.node.id).toBe(target.node.id)
     expect(store.target?.widget.name).toBe('text')
     expect(telemetry.trackPromptEditorClosed).not.toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      event: 'another workflow loads into the same graph',
+      act: (graph: ReturnType<typeof createTestRootGraph>) =>
+        graph.configure({ ...graph.serialize(), id: crypto.randomUUID() })
+    },
+    {
+      event: 'another workflow becomes active',
+      act: () => {
+        useWorkflowStore().activeWorkflow = fromPartial({ path: 'other.json' })
+      }
+    }
+  ])(
+    'ends the session when $event, even with the same node id',
+    async ({ act }) => {
+      const { graph, target } = addReloadablePromptNode()
+      const store = usePromptPanelStore()
+      store.open(target)
+
+      act(graph)
+
+      await vi.waitFor(() => expect(store.target).toBeNull())
+      expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      request: 'the errors tab',
+      act: () => useRightSidePanelStore().openPanel('errors'),
+      leaves: true
+    },
+    {
+      request: 'a section',
+      act: () => useRightSidePanelStore().focusSection('advanced-inputs'),
+      leaves: true
+    },
+    {
+      request: 'the panel without a tab',
+      act: () => useRightSidePanelStore().openPanel(),
+      leaves: false
+    }
+  ])(
+    'leaves the prompt view when $request is requested: $leaves',
+    ({ act, leaves }) => {
+      const store = usePromptPanelStore()
+      store.open(addTextNode().target)
+
+      act()
+
+      expect(store.isPromptViewShown).toBe(!leaves)
+      expect(store.isActive).toBe(true)
+    }
+  )
 
   it('does not open while the workspace hides its panels', () => {
     const store = usePromptPanelStore()

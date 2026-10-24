@@ -1,3 +1,4 @@
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
@@ -5,7 +6,11 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useTelemetry } from '@/platform/telemetry'
-import type { PromptEditorOpenedMetadata } from '@/platform/telemetry/types'
+import type {
+  PromptEditorClosedMetadata,
+  PromptEditorOpenedMetadata
+} from '@/platform/telemetry/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
@@ -28,6 +33,7 @@ interface PromptPanelSession {
 export const usePromptPanelStore = defineStore('promptPanel', () => {
   const rightSidePanelStore = useRightSidePanelStore()
   const promptEditorExperiment = usePromptEditorExperimentStore()
+  const workflowStore = useWorkflowStore()
 
   const target = shallowRef<PromptPanelTarget | null>(null)
   const isPromptViewShown = ref(false)
@@ -48,7 +54,8 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
       })
     }
     const rootGraph = graph.rootGraph
-    const onConfigured = () => findTargetAgain(rootGraph, graph.id)
+    const graphId = graph.id
+    const onConfigured = () => findTargetAgain(rootGraph, graphId)
     graph.events.addEventListener('node:before-removed', onNodeRemoved)
     rootGraph.events.addEventListener('configured', onConfigured)
     releaseTarget = () => {
@@ -111,15 +118,13 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     if (session) session = { ...session, inputCount: session.inputCount + 1 }
   }
 
-  function close() {
-    releaseTarget?.()
-    releaseTarget = undefined
-    target.value = null
-    isPromptViewShown.value = false
-    isEditorFocused.value = false
+  function reportSessionEnd(
+    endReason: PromptEditorClosedMetadata['end_reason']
+  ) {
     if (!session) return
     useTelemetry()?.trackPromptEditorClosed({
       ...session.opened,
+      end_reason: endReason,
       duration_ms: Math.round(performance.now() - session.openedAt),
       input_count: session.inputCount,
       node_switch_count: session.nodeSwitchCount
@@ -127,12 +132,29 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     session = undefined
   }
 
+  function close() {
+    releaseTarget?.()
+    releaseTarget = undefined
+    target.value = null
+    isPromptViewShown.value = false
+    isEditorFocused.value = false
+    reportSessionEnd('close')
+  }
+
+  useEventListener(window, 'pagehide', () => reportSessionEnd('pagehide'))
+
   watch(
     () => rightSidePanelStore.isOpen,
     (isOpen) => {
       if (!isOpen) close()
     }
   )
+  watch(() => workflowStore.activeWorkflow, close)
+  rightSidePanelStore.$onAction(({ name, args }) => {
+    const requestsView =
+      name === 'focusSection' || (name === 'openPanel' && args[0] !== undefined)
+    if (requestsView) isPromptViewShown.value = false
+  })
 
   return {
     target,

@@ -94,7 +94,6 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
@@ -178,6 +177,7 @@ const rightSidePanelStore = useRightSidePanelStore()
 const isPromptPanelArm = computed(
   () =>
     promptEditorExperiment.assignment === 'panel' &&
+    !hideLayoutField &&
     !canvasStore.linearMode &&
     !isBuilderMode.value &&
     !promptPanelStore.isPanelHidden &&
@@ -185,7 +185,11 @@ const isPromptPanelArm = computed(
 )
 let closeTextEditor: (() => void) | undefined
 
-function openPromptPanel(node: LGraphNode | undefined): boolean {
+function openPromptPanel(): boolean {
+  const node =
+    nodeId === undefined
+      ? undefined
+      : canvasStore.currentGraph?.getNodeById(nodeId)
   const target = node?.widgets?.find(({ name }) => name === widget.name)
   if (!node || !target) return false
   promptEditorExperiment.expose('panel')
@@ -198,7 +202,7 @@ function openTextEditor() {
     nodeId === undefined
       ? undefined
       : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
-  if (isPromptPanelArm.value && openPromptPanel(node)) return
+  if (isPromptPanelArm.value && openPromptPanel()) return
   promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
