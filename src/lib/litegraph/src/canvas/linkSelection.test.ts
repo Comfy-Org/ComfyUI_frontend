@@ -605,7 +605,7 @@ describe('going to the other end of a socket', () => {
   it.for([
     { name: 'past the subgraph inputs', originSlot: 5 },
     { name: 'at a negative subgraph slot', originSlot: -1 }
-  ])('goes nowhere when a link points $name', ({ originSlot }) => {
+  ])('offers no jump for a link that points $name', ({ originSlot }) => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
@@ -615,11 +615,21 @@ describe('going to the other end of a socket', () => {
     link.origin_slot = originSlot
     clickSocket(subgraph, target, 'input')
 
-    const { host, moved } = goTo(subgraph, { id: SUBGRAPH_INPUT_ID })
+    expect(destinationIds(subgraph)).toEqual([])
+    expect(goTo(subgraph, { id: SUBGRAPH_INPUT_ID }).moved).toBe(false)
+  })
 
-    expect(moved).toBe(false)
-    expect(host.animateToBounds).not.toHaveBeenCalled()
-    expect(destinationIds(subgraph)).toEqual([SUBGRAPH_INPUT_ID])
+  it('offers no jump to the side a subgraph input node does not have', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const source = createTestNode(subgraph, [], ['number'])
+    const target = createTestNode(subgraph, ['number'])
+    const link = connect(source, target)
+    link.target_id = SUBGRAPH_INPUT_ID
+    clickSocket(subgraph, source, 'output')
+
+    expect(destinationIds(subgraph)).toEqual([])
   })
 
   it.for([
@@ -635,18 +645,13 @@ describe('going to the other end of a socket', () => {
         link.target_id = createTestNode(graph).id
       }
     }
-  ])('goes nowhere when a link points $name', ({ retarget }) => {
-    const { graph, source, links } = createFanOut()
+  ])('offers no jump for a link that points $name', ({ retarget }) => {
+    const { graph, source, targets, links } = createFanOut()
     retarget(links[0], graph)
     clickSocket(graph, source, 'output')
-    const [stale] = getSelectedLinkDestinations(graph).filter(
-      ({ links: reached }) => reached.includes(links[0])
-    )
 
-    const { host, moved } = goTo(graph, { id: stale.nodeId })
-
-    expect(moved).toBe(false)
-    expect(host.animateToBounds).not.toHaveBeenCalled()
+    expect(destinationIds(graph)).toEqual([targets[1].id, targets[2].id])
+    expect(goTo(graph, targets[0]).moved).toBe(false)
   })
 
   it('lands on the valid input when another link to the node is malformed', () => {
