@@ -13,7 +13,7 @@ function expectPixels(actual: number, expected: number, label: string): void {
   expect(actual, label).toBeLessThanOrEqual(expected + PIXEL_SLACK)
 }
 
-test.describe('Load3D agent updates', { tag: ['@cloud', '@agent'] }, () => {
+test.describe('Load3D Agent updates', { tag: ['@cloud', '@agent'] }, () => {
   test.describe.configure({ timeout: 60_000 })
 
   test('retires an incompatible replacement link without blocking the next agent edit', async ({
