@@ -22,6 +22,9 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { emitGraphRestored } from '@/scripts/graphRestore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -199,6 +202,14 @@ function docInputs(
 
 function afterFlush(): Promise<void> {
   return new Promise((resolve) => queueMicrotask(resolve))
+}
+
+async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
+  const state = await validateComfyWorkflow(graph.serialize(), (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('graph did not serialize to a valid workflow')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
 }
 
 function dynamicComboScenario(graph: LGraph) {
@@ -521,6 +532,235 @@ describe('attachDocOpMinter', () => {
       await afterFlush()
 
       expect(minted).toEqual([expected])
+    })
+  })
+
+  describe('an undo/redo restore mints what the restored change would', () => {
+    type Seeded = ReturnType<typeof seedGraph>
+
+    async function restoreThrough(change: (seeded: Seeded) => unknown) {
+      const seeded = seedGraph(graph)
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => change(seeded))
+      emitGraphRestored({ previous, next: await workflowJson(graph) })
+      await afterFlush()
+      return expected
+    }
+
+    it.for([
+      {
+        change: 'a node move',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          return []
+        }
+      },
+      {
+        change: 'a node move and rename',
+        act: ({ source }: Seeded) => {
+          source.pos = [300, 200]
+          source.title = 'Renamed'
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'title',
+              value: 'Renamed'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a node removal',
+        act: ({ sink, link }: Seeded) => {
+          graph.remove(sink)
+          return [
+            { op: 'delete_node', node_id: sink.id, removed_links: [link.id] }
+          ]
+        }
+      },
+      {
+        change: 'a node addition and its link',
+        act: ({ source }: Seeded) => {
+          const sink = new TestSink()
+          sink.pos = [40, 0]
+          graph.add(sink)
+          source.connect(0, sink, 0)
+          return [
+            {
+              op: 'add_node',
+              node_id: sink.id,
+              class_type: 'TestSink',
+              pos: [40, 0],
+              node: expect.objectContaining({ type: 'TestSink' })
+            },
+            {
+              op: 'connect',
+              link_id: sink.inputs[0].link,
+              from_node: source.id,
+              from_slot: 0,
+              to_node: sink.id,
+              to_slot: 0,
+              link_type: 'IMAGE'
+            }
+          ]
+        }
+      },
+      {
+        change: 'a link removal between surviving nodes',
+        act: ({ sink, link }: Seeded) => {
+          sink.disconnectInput(0)
+          return [
+            { op: 'disconnect', link_id: link.id, to_node: sink.id, to_slot: 0 }
+          ]
+        }
+      },
+      {
+        change: 'a widget value',
+        act: ({ source }: Seeded) => {
+          source.widgets![0].value = 42
+          return [
+            {
+              op: 'set_widget',
+              node_id: source.id,
+              widget: 'steps',
+              value: 42,
+              old: 20
+            }
+          ]
+        }
+      },
+      {
+        change: 'a mode',
+        act: ({ source }: Seeded) => {
+          source.mode = LGraphEventMode.BYPASS
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'mode',
+              value: LGraphEventMode.BYPASS
+            }
+          ]
+        }
+      },
+      {
+        change: 'a collapse',
+        act: ({ source }: Seeded) => {
+          source.collapse()
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.collapsed',
+              value: true
+            }
+          ]
+        }
+      },
+      {
+        change: 'a pin',
+        act: ({ source }: Seeded) => {
+          source.pin(true)
+          return [
+            {
+              op: 'set_node_field',
+              node_id: source.id,
+              field: 'flags.pinned',
+              value: true
+            }
+          ]
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const expected = await restoreThrough(act)
+
+      expect(minted).toEqual(expected)
+    })
+
+    it.for([
+      { gate: 'the product is disabled', disable: () => (enabled = false) },
+      { gate: 'no document is bound', disable: () => (bound = false) },
+      { gate: 'the minter is detached', disable: () => minter.detach() }
+    ])('mints nothing while $gate', async ({ disable }) => {
+      disable()
+
+      await restoreThrough(({ sink }) => graph.remove(sink))
+
+      expect(minted).toEqual([])
+    })
+
+    function seedSubgraphInterior() {
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph)
+      const interior = seedGraph(subgraph)
+      withGraphIntentSource('load', () => graph.add(host))
+      return { subgraph, host, ...interior }
+    }
+
+    it.for([
+      {
+        change: 'an interior widget value',
+        act: ({ host, source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.widgets![0].value = 42
+          return {
+            minted: [
+              {
+                op: 'set_widget',
+                node_id: source.id,
+                widget: 'steps',
+                value: 42,
+                old: 20,
+                path: [String(host.id), String(source.id)],
+                inner_widget: 'steps'
+              }
+            ],
+            reported: []
+          }
+        }
+      },
+      {
+        change: 'an interior node removal',
+        act: ({ subgraph, sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          subgraph.remove(sink)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_node_delete']
+          }
+        }
+      },
+      {
+        change: 'an interior link removal',
+        act: ({ sink }: ReturnType<typeof seedSubgraphInterior>) => {
+          sink.disconnectInput(0)
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_disconnect']
+          }
+        }
+      },
+      {
+        change: 'an interior rename',
+        act: ({ source }: ReturnType<typeof seedSubgraphInterior>) => {
+          source.title = 'Renamed'
+          return {
+            minted: [],
+            reported: ['agent_crdt_unrepresentable_subgraph_set_node_field']
+          }
+        }
+      }
+    ])('$change', async ({ act }) => {
+      const seeded = seedSubgraphInterior()
+      const previous = await workflowJson(graph)
+      const expected = withGraphIntentSource('load', () => act(seeded))
+      emitGraphRestored({ previous, next: await workflowJson(graph) })
+      await afterFlush()
+
+      expect(minted).toEqual(expected.minted)
+      expect(
+        vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+      ).toEqual(expected.reported)
     })
   })
 
@@ -1310,44 +1550,60 @@ describe('attachDocOpMinter', () => {
       ])
     })
 
-    it('drops pending dynamic-combo state when its node is removed', async () => {
-      const { source, resize, doc, catalog, match } =
-        registeredDynamicComboScenario()
-      expect(
-        applyMinted(
-          doc,
-          [
-            {
-              op: 'set_widget',
-              node_id: resize.id,
-              widget: 'resize_type',
-              value: 'match size'
-            }
-          ],
-          catalog
-        )
-      ).toEqual(['applied'])
-      docInputNames = (nodeId) =>
-        readDocSlotNames(doc, String(nodeId), 'inputs')
-      docWidgetValue = (nodeId, widgetName) =>
-        readDocWidgetValue(doc, String(nodeId), widgetName)
+    it.for([
+      {
+        removal: 'a live removal',
+        remove: async (node: LGraphNode) => graph.remove(node)
+      },
+      {
+        removal: 'an undo/redo restore',
+        remove: async (node: LGraphNode) => {
+          const previous = await workflowJson(graph)
+          withGraphIntentSource('load', () => graph.remove(node))
+          emitGraphRestored({ previous, next: await workflowJson(graph) })
+        }
+      }
+    ])(
+      'drops pending dynamic-combo state when $removal removes its node',
+      async ({ remove }) => {
+        const { source, resize, doc, catalog, match } =
+          registeredDynamicComboScenario()
+        expect(
+          applyMinted(
+            doc,
+            [
+              {
+                op: 'set_widget',
+                node_id: resize.id,
+                widget: 'resize_type',
+                value: 'match size'
+              }
+            ],
+            catalog
+          )
+        ).toEqual(['applied'])
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        docWidgetValue = (nodeId, widgetName) =>
+          readDocWidgetValue(doc, String(nodeId), widgetName)
 
-      source.connect(0, resize, match)
-      await afterFlush()
-      minted.length = 0
-      resize.disconnectInput(match)
-      graph.remove(resize)
-      await afterFlush()
-      expect(minted).toEqual([
-        expect.objectContaining({ op: 'delete_node', node_id: resize.id })
-      ])
-      minted.length = 0
+        source.connect(0, resize, match)
+        await afterFlush()
+        minted.length = 0
+        resize.disconnectInput(match)
+        await remove(resize)
+        await afterFlush()
+        expect(minted).toEqual([
+          expect.objectContaining({ op: 'delete_node', node_id: resize.id })
+        ])
+        minted.length = 0
 
-      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
-      expect(minted).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
-    })
+        expect(minted).toEqual([])
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
