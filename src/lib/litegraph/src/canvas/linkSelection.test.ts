@@ -453,7 +453,11 @@ describe('going to the other end of a socket', () => {
   ) {
     const host = {
       graph,
-      ds: { fitToBounds: vi.fn() },
+      ds: {
+        fitToBounds: vi.fn(),
+        scale: 1,
+        getViewportSize: (): [number, number] => [800, 600]
+      },
       animateToBounds: vi.fn(),
       setDirty: vi.fn()
     }
@@ -598,14 +602,17 @@ describe('going to the other end of a socket', () => {
     expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
   })
 
-  it('goes nowhere when a link points past the subgraph inputs', () => {
+  it.for([
+    { name: 'past the subgraph inputs', originSlot: 5 },
+    { name: 'at a negative subgraph slot', originSlot: -1 }
+  ])('goes nowhere when a link points $name', ({ originSlot }) => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]
     })
     const target = createTestNode(subgraph, ['number'])
     const link = subgraph.inputNode.slots[0].connect(target.inputs[0], target)
     if (!link) throw new Error('connect failed')
-    link.origin_slot = 5
+    link.origin_slot = originSlot
     clickSocket(subgraph, target, 'input')
 
     const { host, moved } = goTo(subgraph, { id: SUBGRAPH_INPUT_ID })
@@ -613,6 +620,32 @@ describe('going to the other end of a socket', () => {
     expect(moved).toBe(false)
     expect(host.animateToBounds).not.toHaveBeenCalled()
     expect(destinationIds(subgraph)).toEqual([SUBGRAPH_INPUT_ID])
+  })
+
+  it('goes nowhere when a link points past the inputs of a node', () => {
+    const { graph, source, targets, links } = createFanOut()
+    links[0].target_slot = 3
+    clickSocket(graph, source, 'output')
+
+    const { host, moved } = goTo(graph, targets[0])
+
+    expect(moved).toBe(false)
+    expect(host.animateToBounds).not.toHaveBeenCalled()
+  })
+
+  it('centres the landing socket when the node is bigger than the view', () => {
+    const { graph, source, targets } = createFanOut()
+    targets[2].size = [300, 2000]
+    targets[2].updateArea()
+    clickSocket(graph, source, 'output')
+
+    const { host } = goTo(graph, targets[2])
+
+    const [x, y] = targets[2].getInputPos(0)
+    expect(host.animateToBounds).toHaveBeenCalledWith(
+      [x, y, 0, 0],
+      expect.anything()
+    )
   })
 
   it('leads from a node inside a subgraph to the subgraph inputs and back', () => {

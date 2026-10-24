@@ -55,7 +55,7 @@ function createWorkflow() {
   })
   const canvas = createMockCanvas({
     graph,
-    ds: { getViewportSize: () => [800, 600], fitToBounds: vi.fn() },
+    ds: { getViewportSize: () => [800, 600], fitToBounds: vi.fn(), scale: 1 },
     animateToBounds: vi.fn()
   })
   useCanvasStore().canvas = canvas
