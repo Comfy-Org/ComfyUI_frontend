@@ -116,6 +116,9 @@ describe('Toaster', () => {
       ]
     })
     await nextTick()
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added. Manage. Disable')
     await user.click(screen.getByRole('button', { name: 'Manage' }))
     expect(manage).toHaveBeenCalledOnce()
     expect(disable).not.toHaveBeenCalled()
@@ -144,6 +147,30 @@ describe('Toaster', () => {
     await user.click(actions[1])
     expect(first).toHaveBeenCalledOnce()
     expect(second).toHaveBeenCalledOnce()
+  })
+
+  it('keeps every toast rendered when an untyped caller supplies a malformed action', async () => {
+    const keep = vi.fn()
+    renderToaster()
+    const toast = useToast()
+
+    toast.info('Extension added', {
+      // Reaches the store from untyped `extensionManager.toast` callers.
+      actions: [null, { label: 'Manage' }, { label: 'Keep', onClick: keep }]
+    } as unknown as Parameters<typeof toast.info>[1])
+    toast.info('Workflow saved', {
+      // An object is easy to confuse with the singular `action`.
+      actions: { label: 'Open', onClick: vi.fn() }
+    } as unknown as Parameters<typeof toast.info>[1])
+    await nextTick()
+
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added. KeepWorkflow saved')
+    expect(screen.getAllByTestId('toast')).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Keep' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Manage' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Open' })).toBeNull()
   })
 
   it('uses caller labels for notification regions and close buttons', async () => {
