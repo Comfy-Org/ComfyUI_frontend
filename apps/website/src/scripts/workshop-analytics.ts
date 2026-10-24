@@ -8,7 +8,10 @@ import type {
 } from '@/config/workshop-playground'
 import type { WorkshopFailureStage } from '@/config/workshop-router-errors'
 import { WorkshopRouterError } from '@/config/workshop-router-errors'
-import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type {
+  WorkflowUploadStage,
+  WorkshopWorkflowError
+} from '@/config/workshop-workflow-api'
 import type { WorkflowExecutionFailure } from '@/config/workshop-workflow-response'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
@@ -151,7 +154,10 @@ export type WorkshopAnalyticsEvent =
               failed_node_id?: string
               failed_node_type?: string
               cloud_exception_type?: string
-              failure_stage?: WorkshopFailureStage | 'credential'
+              failure_stage?:
+                | WorkshopFailureStage
+                | WorkflowUploadStage
+                | 'credential'
               field_error_codes?: FieldErrorCode[]
               field_error_names?: string[]
             } & WorkshopExceptionAnalytics)
@@ -270,6 +276,11 @@ const WORKFLOW_FAILURE_REASONS: Record<
   insufficient_credits: 'noCredits',
   rate_limited: 'rateLimit',
   media_unavailable: 'upload',
+  media_download_failed: 'upload',
+  media_upload_rejected: 'upload',
+  media_upload_timeout: 'upload',
+  media_upload_network: 'network',
+  service_unavailable: 'network',
   execution_failed: 'provider',
   delivery_failed: 'upload',
   submission_unknown: 'network',
@@ -286,9 +297,14 @@ export function workshopWorkflowFailureAnalytics(
     reason: WORKFLOW_FAILURE_REASONS[failure.code],
     workflow_error_code: failure.code,
     http_status: workshopHttpStatus(failure.status),
-    ...(['not_authenticated', 'access_denied'].includes(failure.code)
-      ? { failure_stage: 'credential' as const }
-      : {}),
+    ...(failure.stage
+      ? { failure_stage: failure.stage }
+      : ['not_authenticated', 'access_denied'].includes(failure.code)
+        ? { failure_stage: 'credential' as const }
+        : {}),
+    ...(failure.cause === undefined
+      ? {}
+      : workshopExceptionAnalytics(failure.cause)),
     field_error_codes: workshopFieldErrorCodes(failure.fieldErrors),
     field_error_names: schema
       .filter((field) => Object.hasOwn(failure.fieldErrors, field.name))

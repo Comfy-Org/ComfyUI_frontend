@@ -360,6 +360,18 @@ describe('Workshop workflow HTTP client', () => {
       response: () => new Response(null, { status: 402 }),
       code: 'insufficient_credits',
       status: 402
+    },
+    {
+      label: 'plain 503',
+      response: () => new Response(null, { status: 503 }),
+      code: 'service_unavailable',
+      status: 503
+    },
+    {
+      label: 'plain 409',
+      response: () => new Response(null, { status: 409 }),
+      code: 'invalid_request',
+      status: 409
     }
   ])('classifies a $label as $code', async ({ response, code, status }) => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(response())
@@ -407,7 +419,10 @@ describe('Workshop workflow HTTP client', () => {
 
     await expect(
       api.submit(request, new AbortController().signal)
-    ).rejects.toEqual(new WorkshopWorkflowError('network'))
+    ).rejects.toMatchObject({
+      code: 'network',
+      cause: new TypeError('private transport detail')
+    })
     expect(fetch).toHaveBeenCalledOnce()
   })
 
@@ -697,8 +712,8 @@ describe('Workshop workflow HTTP client', () => {
 
   it.for([
     { status: 403, code: 'access_denied' },
-    { status: 409, code: 'execution_failed' },
-    { status: 503, code: 'execution_failed' }
+    { status: 409, code: 'invalid_request' },
+    { status: 503, code: 'service_unavailable' }
   ] as const)(
     'contains raw error bodies for HTTP $status',
     async ({ status, code }) => {

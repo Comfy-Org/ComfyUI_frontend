@@ -173,43 +173,123 @@ describe('Workflow input upload grants', () => {
 
     await expect(
       f.upload(f.file, new AbortController().signal)
-    ).rejects.toMatchObject({ status: 503 })
+    ).rejects.toMatchObject({
+      code: 'service_unavailable',
+      status: 503,
+      stage: 'mint'
+    })
     expect(f.fetch).toHaveBeenCalledOnce()
   })
 
   it.for([
     {
       name: 'a rejected PUT',
-      fail: () => Promise.resolve(new Response(null, { status: 503 }))
+      fail: () => Promise.resolve(new Response(null, { status: 404 })),
+      failure: { code: 'media_upload_rejected', status: 404, stage: 'upload' }
+    },
+    {
+      name: 'an unavailable upload service',
+      fail: () => Promise.resolve(new Response(null, { status: 503 })),
+      failure: { code: 'service_unavailable', status: 503, stage: 'upload' }
     },
     {
       name: 'a lost PUT response',
-      fail: () => Promise.reject(new TypeError('private transport detail'))
+      fail: () => Promise.reject(new TypeError('Failed to fetch')),
+      failure: {
+        code: 'media_upload_network',
+        stage: 'network',
+        cause: new TypeError('Failed to fetch')
+      }
     }
-  ])('mints a new grant when retrying after $name', async ({ fail }) => {
+  ])(
+    'mints a new grant when retrying after $name',
+    async ({ fail, failure }) => {
+      const f = fixture()
+      f.fetch
+        .mockReset()
+        .mockResolvedValueOnce(Response.json(grant))
+        .mockImplementationOnce(fail)
+        .mockResolvedValueOnce(
+          Response.json({ ...grant, upload_path: '/api/uploads/retry-grant' })
+        )
+        .mockResolvedValueOnce(Response.json(result))
+      const signal = new AbortController().signal
+
+      await expect(f.upload(f.file, signal)).rejects.toMatchObject(failure)
+      expect(await f.upload(f.file, signal)).toBe('input-hash')
+      expect(
+        f.fetch.mock.calls.map(([url, init]) => [String(url), init?.method])
+      ).toEqual([
+        [`${WORKSHOP_CLOUD_BASE_URL}/api/inputs/upload-url`, 'POST'],
+        [`${WORKSHOP_CLOUD_BASE_URL}/api/uploads/first-grant`, 'PUT'],
+        [`${WORKSHOP_CLOUD_BASE_URL}/api/inputs/upload-url`, 'POST'],
+        [`${WORKSHOP_CLOUD_BASE_URL}/api/uploads/retry-grant`, 'PUT']
+      ])
+    }
+  )
+
+  it('reports an upload that outlived its time limit as a timeout', async () => {
+    const f = fixture()
+    const timeout = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(timeout.signal)
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(Response.json(grant))
+      .mockImplementationOnce((_, init) => {
+        timeout.abort(new DOMException('Upload timed out', 'TimeoutError'))
+        return Promise.reject(init?.signal?.reason)
+      })
+
+    await expect(
+      f.upload(f.file, new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_upload_timeout',
+      stage: 'timeout',
+      cause: { name: 'TimeoutError' }
+    })
+  })
+
+  it('reports a PUT response body that outlived its time limit as a timeout', async () => {
+    const f = fixture()
+    const timeout = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(timeout.signal)
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          timeout.abort(new DOMException('Upload timed out', 'TimeoutError'))
+          controller.error(timeout.signal.reason)
+        }
+      },
+      { highWaterMark: 0 }
+    )
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(Response.json(grant))
+      .mockResolvedValueOnce(
+        new Response(body, {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+
+    await expect(
+      f.upload(f.file, new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_upload_timeout',
+      stage: 'timeout',
+      cause: { name: 'TimeoutError' }
+    })
+  })
+
+  it('attributes an unreadable PUT response to the upload stage', async () => {
     const f = fixture()
     f.fetch
       .mockReset()
       .mockResolvedValueOnce(Response.json(grant))
-      .mockImplementationOnce(fail)
-      .mockResolvedValueOnce(
-        Response.json({ ...grant, upload_path: '/api/uploads/retry-grant' })
-      )
-      .mockResolvedValueOnce(Response.json(result))
-    const signal = new AbortController().signal
+      .mockResolvedValueOnce(new Response('not json'))
 
-    await expect(f.upload(f.file, signal)).rejects.toMatchObject({
-      code: 'media_unavailable'
-    })
-    expect(await f.upload(f.file, signal)).toBe('input-hash')
-    expect(
-      f.fetch.mock.calls.map(([url, init]) => [String(url), init?.method])
-    ).toEqual([
-      [`${WORKSHOP_CLOUD_BASE_URL}/api/inputs/upload-url`, 'POST'],
-      [`${WORKSHOP_CLOUD_BASE_URL}/api/uploads/first-grant`, 'PUT'],
-      [`${WORKSHOP_CLOUD_BASE_URL}/api/inputs/upload-url`, 'POST'],
-      [`${WORKSHOP_CLOUD_BASE_URL}/api/uploads/retry-grant`, 'PUT']
-    ])
+    await expect(
+      f.upload(f.file, new AbortController().signal)
+    ).rejects.toMatchObject({ code: 'response', stage: 'upload' })
   })
 
   it('discards a PUT response after caller cancellation', async () => {
@@ -312,17 +392,30 @@ describe('Workflow input upload grants', () => {
   })
 
   it.for([
-    { name: 'a failed download', status: 403, type: 'image/png', length: 4 },
-    { name: 'a non-media download', status: 200, type: 'text/html', length: 4 },
+    {
+      name: 'a failed download',
+      status: 403,
+      type: 'image/png',
+      length: 4,
+      reported: 403
+    },
+    {
+      name: 'a non-media download',
+      status: 200,
+      type: 'text/html',
+      length: 4,
+      reported: undefined
+    },
     {
       name: 'an oversized declared download',
       status: 200,
       type: 'image/png',
-      length: WORKFLOW_FILE_BYTES + 1
+      length: WORKFLOW_FILE_BYTES + 1,
+      reported: undefined
     }
   ])(
     'rejects $name before requesting a grant',
-    async ({ status, type, length }) => {
+    async ({ status, type, length, reported }) => {
       const f = fixture()
       f.fetch.mockReset().mockResolvedValueOnce(
         new Response(bytes, {
@@ -337,11 +430,50 @@ describe('Workflow input upload grants', () => {
           new AbortController().signal
         )
       ).rejects.toMatchObject({
-        code: 'media_unavailable'
+        code: 'media_download_failed',
+        status: reported,
+        stage: 'download'
       })
       expect(f.fetch).toHaveBeenCalledOnce()
     }
   )
+
+  it('reports a source that could not be fetched as a failed download', async () => {
+    const f = fixture()
+    f.fetch.mockReset().mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    await expect(
+      f.upload('https://media.example/source.png', new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_download_failed',
+      stage: 'download',
+      cause: new TypeError('Failed to fetch')
+    })
+    expect(f.fetch).toHaveBeenCalledOnce()
+  })
+
+  it('reports a source stream that failed mid-read as a failed download', async () => {
+    const f = fixture()
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(new TypeError('network error'))
+      }
+    })
+    f.fetch
+      .mockReset()
+      .mockResolvedValueOnce(
+        new Response(body, { headers: { 'Content-Type': 'image/png' } })
+      )
+
+    await expect(
+      f.upload('https://media.example/source.png', new AbortController().signal)
+    ).rejects.toMatchObject({
+      code: 'media_download_failed',
+      stage: 'download',
+      cause: new TypeError('network error')
+    })
+    expect(f.fetch).toHaveBeenCalledOnce()
+  })
 
   it('cancels an oversized chunked source download before requesting a grant', async () => {
     const f = fixture()
