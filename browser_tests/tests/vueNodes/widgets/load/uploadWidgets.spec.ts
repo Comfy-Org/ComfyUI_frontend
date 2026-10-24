@@ -1,3 +1,5 @@
+import { copyFile } from 'node:fs/promises'
+
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import {
@@ -189,6 +191,63 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect.poll(() => videoWidget.getValue()).toBe('clip.mp4')
       expect(uploadRequests).toBe(1)
+    })
+  })
+
+  test('rejects an extensionless video that the browser gives no MIME type', async ({
+    comfyPage
+  }, testInfo) => {
+    // Browsers derive File.type from the extension, so a real video renamed
+    // without one arrives with an empty type on every upload route.
+    const extensionlessVideoPath = testInfo.outputPath('extensionless')
+    await copyFile(assetPath('plain_video.mp4'), extensionlessVideoPath)
+
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Load Video')
+
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
+    const workflowLoadErrors = comfyPage.page.getByText(
+      enMessages.toastMessages.fileLoadError.replace('{fileName}', '')
+    )
+    let uploadRequests = 0
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      uploadRequests += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ name: 'extensionless' })
+      })
+    })
+
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Video')
+
+    await test.step('reject the picked file without uploading', async () => {
+      await node
+        .locator('input[type="file"]')
+        .setInputFiles(extensionlessVideoPath)
+
+      await expect(rejectionToasts).toHaveCount(1)
+      expect(uploadRequests).toBe(0)
+    })
+
+    await test.step('reject the file dropped onto the node', async () => {
+      const box = await node.boundingBox()
+      expect(box, 'Load Video node is rendered').not.toBeNull()
+      await comfyPage.dragDrop.dragAndDropExternalResource({
+        filePath: extensionlessVideoPath,
+        fileType: '',
+        dropPosition: {
+          x: box!.x + box!.width / 2,
+          y: box!.y + box!.height / 2
+        }
+      })
+
+      await expect(rejectionToasts).toHaveCount(2)
+      await expect(workflowLoadErrors).toHaveCount(0)
+      expect(uploadRequests).toBe(0)
     })
   })
 
