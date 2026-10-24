@@ -33,7 +33,8 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     agentPanel,
     page,
     postedMessages,
-    getWebSocket
+    getWebSocket,
+    getAgentSocket
   }) => {
     // The new-test video gate runs with SLOW_MO=250; leave headroom for the
     // 13-tile expand path while retaining bounded failure reporting.
@@ -47,8 +48,9 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
       const ws = await getWebSocket()
       ws.send(JSON.stringify({ type: 'feature_flags', data: { assets: true } }))
-      pushAgentEvent(ws, agentMessageDeltaEvent(MODEL_REPLY))
-      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      const agentSocket = await getAgentSocket()
+      pushAgentEvent(agentSocket, agentMessageDeltaEvent(MODEL_REPLY))
+      pushAgentEvent(agentSocket, MESSAGE_DONE_EVENT)
     })
 
     await test.step('render only the collapsed model previews', async () => {
@@ -74,7 +76,8 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     agentPanel,
     page,
     postedMessages,
-    getWebSocket
+    getWebSocket,
+    getAgentSocket
   }) => {
     test.setTimeout(60_000)
 
@@ -105,8 +108,9 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
       const ws = await getWebSocket()
       ws.send(JSON.stringify({ type: 'feature_flags', data: { assets: true } }))
-      pushAgentEvent(ws, agentMessageDeltaEvent(reply))
-      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      const agentSocket = await getAgentSocket()
+      pushAgentEvent(agentSocket, agentMessageDeltaEvent(reply))
+      pushAgentEvent(agentSocket, MESSAGE_DONE_EVENT)
     })
 
     await test.step('the reply and every tile still render', async () => {
