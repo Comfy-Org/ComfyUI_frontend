@@ -1343,7 +1343,7 @@ export class ComfyApp implements IComfyApp {
         )
       }
 
-      useSubgraphService().loadSubgraphs(graphData)
+      useSubgraphService().loadSubgraphs(graphData, graph)
 
       await useExtensionService().invokeExtensionsAsync(
         'beforeConfigureGraph',
