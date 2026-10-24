@@ -10,7 +10,7 @@
         variant="muted-textonly"
         size="md"
         class="text-sm font-normal"
-        @click="promptPanelStore.isPromptViewShown = false"
+        @click="rightSidePanelStore.openPanel('parameters')"
       >
         <i class="icon-[lucide--arrow-left] size-4" />
         {{ $t('textEditor.nodeSettings') }}
@@ -57,7 +57,7 @@
       <Button
         variant="secondary"
         size="md"
-        @click="promptPanelStore.isPromptViewShown = false"
+        @click="rightSidePanelStore.openPanel('parameters')"
       >
         {{ $t('textEditor.nodeSettings') }}
       </Button>
@@ -152,5 +152,9 @@ function openFocusView({ node, widget }: PromptPanelTarget) {
   })
 }
 
+watch(
+  () => promptPanelStore.target,
+  () => closeFocusView?.()
+)
 onBeforeUnmount(() => closeFocusView?.())
 </script>

@@ -137,6 +137,7 @@ describe('PromptPanel', () => {
 
   it('returns to the node settings from its header', async () => {
     const { promptPanelStore } = renderOpenPanel()
+    useRightSidePanelStore().activeTab = 'errors'
 
     await userEvent.click(
       screen.getAllByRole('button', { name: 'Node settings' })[0]
@@ -144,6 +145,7 @@ describe('PromptPanel', () => {
 
     expect(promptPanelStore.isPromptViewShown).toBe(false)
     expect(promptPanelStore.isActive).toBe(true)
+    expect(useRightSidePanelStore().activeTab).toBe('parameters')
   })
 
   it('opens the prompt in the full-screen focus view', async () => {
@@ -161,6 +163,25 @@ describe('PromptPanel', () => {
       surface: 'dialog',
       trigger: 'focus_view'
     })
+  })
+
+  it('closes the focus view when the panel moves to another prompt', async () => {
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const { graph, promptPanelStore } = renderOpenPanel()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Expand to focus view' })
+    )
+    await screen.findByRole('button', { name: 'Restore dialog' })
+    const negative = addNode(graph, 'Negative', 'blurry')
+    if (!negative.widget) throw new Error('The negative node has no prompt')
+
+    promptPanelStore.follow({ node: negative.node, widget: negative.widget })
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Restore dialog' })
+      ).not.toBeInTheDocument()
+    )
   })
 
   it('opens a disabled prompt read-only in the focus view', async () => {

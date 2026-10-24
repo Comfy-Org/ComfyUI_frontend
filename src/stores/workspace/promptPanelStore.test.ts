@@ -119,6 +119,22 @@ describe('usePromptPanelStore', () => {
     )
   })
 
+  it('keeps one session when Expand opens another prompt during it', () => {
+    const store = usePromptPanelStore()
+    const { graph, target } = addTextNode()
+    const other = addTextNode(graph).target
+    store.open(target)
+
+    store.open(other)
+    store.close()
+
+    expect(store.target).toBeNull()
+    expect(telemetry.trackPromptEditorOpened).toHaveBeenCalledOnce()
+    expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ node_switch_count: 1 })
+    )
+  })
+
   it('ignores selection changes when no session is open', () => {
     const store = usePromptPanelStore()
 
@@ -176,6 +192,19 @@ describe('usePromptPanelStore', () => {
       event: 'another workflow becomes active',
       act: () => {
         useWorkflowStore().activeWorkflow = fromPartial({ path: 'other.json' })
+      }
+    },
+    {
+      event: 'a reload leaves a widget of another type under the same name',
+      act: (graph: ReturnType<typeof createTestRootGraph>) => {
+        class NumberNode extends LGraphNode {
+          constructor() {
+            super('test/prompt-node')
+            this.addWidget('number', 'text', 1, () => {})
+          }
+        }
+        LiteGraph.registerNodeType('test/prompt-node', NumberNode)
+        graph.configure(graph.serialize())
       }
     }
   ])(

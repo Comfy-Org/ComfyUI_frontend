@@ -37,8 +37,8 @@ function renderEditor(options: Record<string, unknown> = {}) {
   return target
 }
 
-async function mountEditorAfterRender() {
-  const target = createTarget()
+async function mountEditorAfterRender(options: Record<string, unknown> = {}) {
+  const target = createTarget(options)
   const isShown = ref(false)
   render(
     defineComponent(
@@ -107,6 +107,27 @@ describe('PromptEditor', () => {
     await mountEditorAfterRender()
 
     expect(screen.getByRole('textbox', { name: 'text' })).not.toHaveFocus()
+  })
+
+  it('ends the session instead of writing to a widget its node dropped', async () => {
+    const promptPanelStore = usePromptPanelStore()
+    const { node, widget } = renderEditor()
+    promptPanelStore.open({ node, widget })
+    node.widgets?.splice(node.widgets.indexOf(widget), 1)
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'text' }), 'x')
+
+    expect(widget.value).toBe('a portrait')
+    expect(promptPanelStore.isActive).toBe(false)
+  })
+
+  it('leaves focus on the canvas when Expand opens a read-only prompt', async () => {
+    const promptPanelStore = usePromptPanelStore()
+    promptPanelStore.autofocus = true
+    await mountEditorAfterRender({ read_only: true })
+
+    expect(screen.getByRole('textbox', { name: 'text' })).not.toHaveFocus()
+    expect(promptPanelStore.autofocus).toBe(false)
   })
 
   it('writes each keystroke to the widget and counts it', async () => {
