@@ -8,6 +8,11 @@ import { i18n } from '@/i18n'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { NavGroupData } from '@/types/navTypes'
 
+import {
+  consumeSettingsPanelNavigation,
+  showSettingsPanel
+} from '@/platform/settings/composables/useSettingsDialog'
+
 import SettingDialog from './SettingDialog.vue'
 
 const settingUiMocks = vi.hoisted(() => ({
@@ -66,6 +71,8 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -266,4 +273,21 @@ it('restores the collapsed header when switching sections', async () => {
   expect(
     await screen.findByRole('heading', { name: 'Acme Team' })
   ).toBeInTheDocument()
+})
+
+it('navigates to a panel requested while it is already open', async () => {
+  renderDialog()
+  expect(await screen.findByText('workspace-allowlist panel')).toBeVisible()
+
+  try {
+    // `defaultPanel` already landed, so only a live request can move this.
+    showSettingsPanel('workspace')
+
+    expect(await screen.findByText('workspace panel')).toBeVisible()
+    expect(
+      screen.queryByText('workspace-allowlist panel')
+    ).not.toBeInTheDocument()
+  } finally {
+    consumeSettingsPanelNavigation(1)
+  }
 })
