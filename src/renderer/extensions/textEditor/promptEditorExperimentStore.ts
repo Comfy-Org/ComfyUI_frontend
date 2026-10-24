@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import {
-  isAuthenticatedConfigLoaded,
+  authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
@@ -36,7 +36,7 @@ interface PromptEditorAssignment {
   isAttributed: boolean
 }
 
-function resolveAssignment(): PromptEditorAssignment {
+function resolveAssignment(served: unknown): PromptEditorAssignment {
   const qaOverride = readQaOverride()
   if (qaOverride !== undefined)
     return {
@@ -45,9 +45,6 @@ function resolveAssignment(): PromptEditorAssignment {
         : 'control',
       isAttributed: false
     }
-  const served = isAuthenticatedConfigLoaded.value
-    ? remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
-    : undefined
   return isPromptEditorSurfaceVariant(served)
     ? { variant: served, isAttributed: true }
     : { variant: 'control', isAttributed: false }
@@ -57,7 +54,22 @@ function resolveAssignment(): PromptEditorAssignment {
 export const usePromptEditorExperimentStore = defineStore(
   'promptEditorExperiment',
   () => {
-    const resolution = computed(resolveAssignment)
+    const resolution = ref(resolveAssignment(undefined))
+    const reportedExposure = ref<PromptEditorSurfaceVariant | null>(null)
+    watch(
+      [
+        authenticatedRemoteConfigState,
+        () => remoteConfig.value[PROMPT_EDITOR_SURFACE_FLAG]
+      ],
+      ([state, served]) => {
+        if (state === 'authenticated')
+          resolution.value = resolveAssignment(served)
+        if (state !== 'unloaded') return
+        resolution.value = resolveAssignment(undefined)
+        reportedExposure.value = null
+      },
+      { immediate: true }
+    )
     const assignment = computed(() => resolution.value.variant)
     const experimentProperties = computed(
       (): Pick<PromptEditorOpenedMetadata, '$feature/prompt-editor-surface'> =>
@@ -65,7 +77,6 @@ export const usePromptEditorExperimentStore = defineStore(
           ? { '$feature/prompt-editor-surface': resolution.value.variant }
           : {}
     )
-    const reportedExposure = ref<PromptEditorSurfaceVariant | null>(null)
 
     function expose(rendered: PromptEditorSurfaceVariant) {
       const { variant, isAttributed } = resolution.value

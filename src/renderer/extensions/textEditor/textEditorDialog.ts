@@ -1,6 +1,11 @@
+import { useEventListener } from '@vueuse/core'
+
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
-import type { PromptEditorOpenedMetadata } from '@/platform/telemetry/types'
+import type {
+  PromptEditorClosedMetadata,
+  PromptEditorOpenedMetadata
+} from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
 import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/TextEditorDialogHeader.vue'
@@ -36,6 +41,7 @@ export function showTextEditor({
 
   let isOpen = true
   let inputCount = 0
+  let hasReportedEnd = false
   const openedAt = performance.now()
   const openedMetadata: PromptEditorOpenedMetadata = {
     surface: 'dialog',
@@ -43,6 +49,21 @@ export function showTextEditor({
     ...usePromptEditorExperimentStore().experimentProperties
   }
   useTelemetry()?.trackPromptEditorOpened(openedMetadata)
+
+  function reportEnd(endReason: PromptEditorClosedMetadata['end_reason']) {
+    if (hasReportedEnd) return
+    hasReportedEnd = true
+    useTelemetry()?.trackPromptEditorClosed({
+      ...openedMetadata,
+      end_reason: endReason,
+      duration_ms: Math.round(performance.now() - openedAt),
+      input_count: inputCount,
+      node_switch_count: 0
+    })
+  }
+  const stopPageHideReport = useEventListener(window, 'pagehide', () =>
+    reportEnd('pagehide')
+  )
 
   dialogStore.showDialog({
     key: TEXT_EDITOR_DIALOG_KEY,
@@ -68,14 +89,10 @@ export function showTextEditor({
       maximizable: true,
       onRemoved: () => {
         isOpen = false
+        stopPageHideReport()
+        reportEnd('close')
         if (inputCount > 0)
           useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-        useTelemetry()?.trackPromptEditorClosed({
-          ...openedMetadata,
-          duration_ms: Math.round(performance.now() - openedAt),
-          input_count: inputCount,
-          node_switch_count: 0
-        })
       }
     }
   })

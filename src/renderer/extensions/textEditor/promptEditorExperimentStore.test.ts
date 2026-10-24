@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
@@ -79,12 +80,13 @@ describe('usePromptEditorExperimentStore', () => {
     })
   })
 
-  it('reports exposure again when the served arm changes', () => {
+  it('reports exposure again when the served arm changes', async () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
     experiment.expose('panel')
 
     serve('control')
+    await nextTick()
     experiment.expose('control')
 
     expect(trackPromptEditorExposure.mock.calls).toEqual([
@@ -103,6 +105,46 @@ describe('usePromptEditorExperimentStore', () => {
     experiment.expose('panel')
 
     expect(trackPromptEditorExposure).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the served arm when a config refresh fails', async () => {
+    serve('panel')
+    const experiment = usePromptEditorExperimentStore()
+
+    remoteConfig.value = {}
+    authenticatedRemoteConfigState.value = 'error'
+    await nextTick()
+
+    expect(experiment.assignment).toBe('panel')
+    expect(experiment.experimentProperties).toEqual({
+      '$feature/prompt-editor-surface': 'panel'
+    })
+  })
+
+  it('reports exposure again for the next account on the same tab', async () => {
+    serve('panel')
+    const experiment = usePromptEditorExperimentStore()
+    experiment.expose('panel')
+
+    serve(undefined, { authenticated: false })
+    await nextTick()
+    serve('panel')
+    await nextTick()
+    experiment.expose('panel')
+
+    expect(trackPromptEditorExposure).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops a QA override once the account that set it signs out', async () => {
+    localStorage.setItem('ff:prompt-editor-surface', '"panel"')
+    const experiment = usePromptEditorExperimentStore()
+    expect(experiment.assignment).toBe('panel')
+
+    localStorage.clear()
+    serve('control')
+    await nextTick()
+
+    expect(experiment.assignment).toBe('control')
   })
 
   it('follows a QA override without attributing or reporting exposure', () => {

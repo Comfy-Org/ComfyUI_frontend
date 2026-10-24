@@ -1203,6 +1203,7 @@ export interface PromptEditorOpenedMetadata
   trigger: 'expand_button' | 'focus_view'
 }
 export interface PromptEditorClosedMetadata extends PromptEditorOpenedMetadata {
+  end_reason: 'close' | 'pagehide'
   duration_ms: number
   input_count: number
   node_switch_count: number

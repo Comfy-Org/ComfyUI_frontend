@@ -1,13 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const captureCanvasState = vi.fn()
 const telemetry = vi.hoisted(() => ({
@@ -42,6 +44,10 @@ beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
     changeTracker: { captureCanvasState }
   })
+})
+
+afterEach(() => {
+  useDialogStore().closeDialog({ key: TEXT_EDITOR_DIALOG_KEY })
 })
 
 describe('showTextEditor', () => {
@@ -209,6 +215,7 @@ describe('showTextEditor', () => {
         expect(telemetry.trackPromptEditorClosed).toHaveBeenLastCalledWith({
           surface: 'dialog',
           trigger: reported,
+          end_reason: 'close',
           duration_ms: expect.any(Number),
           input_count: 3,
           node_switch_count: 0
@@ -216,6 +223,23 @@ describe('showTextEditor', () => {
       )
     }
   )
+
+  it('ends the session once when the page hides with the editor open', async () => {
+    renderDialogHost()
+    const editor = openEditor()
+    await screen.findByRole('textbox')
+
+    window.dispatchEvent(new Event('pagehide'))
+    editor.close()
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+    expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledOnce()
+    expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledWith(
+      expect.objectContaining({ end_reason: 'pagehide' })
+    )
+  })
 
   it('closes the dialog it opened, and not one opened after it', async () => {
     renderDialogHost()

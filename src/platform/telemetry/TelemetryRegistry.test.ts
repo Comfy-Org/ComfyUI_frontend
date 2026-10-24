@@ -319,6 +319,7 @@ describe('TelemetryRegistry', () => {
     }
     const closed = {
       ...opened,
+      end_reason: 'close' as const,
       duration_ms: 1200,
       input_count: 4,
       node_switch_count: 2
