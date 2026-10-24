@@ -264,6 +264,17 @@ export class AgentCrdtDocLifecycle {
     return false
   }
 
+  /**
+   * No confirm has arrived since the last subscribe was sent and no retry is
+   * scheduled, so nothing further will be attempted for this episode. Pure
+   * derivation over existing state: it adds no new state and changes no
+   * behaviour, and is read by the follower to distinguish a host that has
+   * given up from one that has simply not answered yet.
+   */
+  refusalIsFinal(): boolean {
+    return !this.confirmedSinceLastSend && this.subscribeRetryTimer === null
+  }
+
   stopProbing(): void {
     this.clearAckTimer()
     this.clearSubscribeRetry()

@@ -226,10 +226,25 @@ function hasNodes(
   return Array.isArray(canvas?.nodes) && canvas.nodes.length > 0
 }
 
+/**
+ * The follower has stopped trying, so no later frame will arrive to confirm
+ * or deny a write: either the host refused a subscribe and the retry ladder
+ * is exhausted, or the merged document failed the schema read gate. Distinct
+ * from `connected: false`, which is also the state before the first subscribe
+ * is confirmed and says nothing about whether a write will land.
+ *
+ * Release note: upstream types this as `SubscribeGiveUpReason | 'schema_error'
+ * | null` in `agentCrdtStatus.ts`. Neither that module nor that union exists
+ * on this branch, so the two values the follower actually sets are named
+ * directly.
+ */
+type AgentCrdtTerminalState = 'refused' | 'schema_error' | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   workflowId: string | null
+  terminal: AgentCrdtTerminalState
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
    * `doc_reset` / `follower_replaced`). Not interchangeable with
@@ -360,6 +375,7 @@ export function useAgentCrdtFollower(
     enabled: false,
     connected: false,
     workflowId: null,
+    terminal: null,
     updatesApplied: 0,
     lastFrameType: null,
     outcomes: {
@@ -435,6 +451,7 @@ function startAgentCrdtFollower(
   canvasFor: (workflowId: string) => Record<string, unknown> | null
 ) {
   const connected = ref(false)
+  const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -709,6 +726,7 @@ function startAgentCrdtFollower(
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
     else lifecycle.stopProbing()
+    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
   }
 
   function handleRejectedSubscription(
@@ -719,9 +737,11 @@ function startAgentCrdtFollower(
       message?: unknown
     } | null
   ) {
-    const refusal = tryReseed()
+    const reseeding = tryReseed()
+    const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
+    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -849,6 +869,7 @@ function startAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -901,6 +922,7 @@ function startAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    terminal.value = null
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.reconnect()
@@ -1121,6 +1143,7 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     workflowId: subscribedWorkflowId.value,
+    terminal: terminal.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
     outcomes: outcomes.value
