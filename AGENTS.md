@@ -12,7 +12,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns
 - `docs/guidance/design-standards.md` — Figma design-standards references
-- `docs/guidance/performance-incident-runbook.md` — staged evidence-gathering procedure for frame drops, input latency, long tasks, and unexpected redraws
+- `docs/guidance/performance-incident-runbook.md` — staged evidence-gathering procedure for frame drops, input latency, long tasks, and unexpected redraws. Unlike the others it declares no `globs` frontmatter, so it is not auto-loaded; open it deliberately
 
 ## Project Structure & Module Organization
 
@@ -73,6 +73,8 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
 - `pnpm comfy-test tags`: List test tags with their meanings
 - `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+- `pnpm comfy-test agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video]`: Replay recorded agent conversations as Playwright tests. With no flags it prompts for a recording; `--help` runs nothing. See `.claude/skills/agent-integration-replay/SKILL.md`
+- `pnpm comfy-test guide`: Print the operating manual for an agent walking a non-technical human through `record`. Non-interactive, prints text only
 
 **Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
 
@@ -88,7 +90,8 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
 
-- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
+- `pnpm lint`: Stylelint, oxlint, `architecture:check`, then ESLint — all four, in that order
+- `pnpm lint:fix`: oxlint `--fix` then ESLint `--fix` only; it does not run Stylelint or `architecture:check`
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm deps:audit`: Reject production `src/` import cycles, including type-only imports
@@ -116,8 +119,10 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 Do not run repo-wide checks to verify your work: `pnpm lint`, `pnpm typecheck`,
 `pnpm knip`, `pnpm build`, or `pnpm test:unit` without a path. They load every
 core, and chained together they take minutes. The pre-commit hook already
-formats, lints, and typechecks what you stage, the pre-push hook runs knip, and
-CI runs everything.
+formats, lints, and typechecks what you stage (plus unused-i18n-key and
+frozen-directory checks), the pre-push hook runs `deps:audit`, `knip`, and
+`fallow:audit` against your diff, and CI runs everything. The pre-push hook
+exits early when `CI` is set; the pre-commit hook has no such guard.
 
 ## Git Conventions
 

@@ -4,7 +4,16 @@ Date: 2026-09-17
 
 ## Status
 
-Proposed
+Accepted
+
+Implemented. `packages/account-ui/package.json` exports `./billing/stripe`
+from `./src/billing/stripe/index.ts` and declares `@stripe/stripe-js` an
+optional peer dependency, as rule 3 requires. The promoted component is
+`packages/account-ui/src/billing/stripe/StripePaymentForm.vue`; it mounts
+Stripe Elements and calls `createConfirmationToken`. Rule 2 is still
+outstanding — the header comment on `packages/account-ui/src/billing/index.ts`
+has not been edited and still reads "the payment provider's SDK ... stay with
+the host".
 
 ## Context
 

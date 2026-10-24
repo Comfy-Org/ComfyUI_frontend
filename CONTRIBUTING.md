@@ -155,7 +155,9 @@ If you run into issues during development (e.g. `pnpm dev` hanging, TypeScript e
 
 ### Architecture Decision Records
 
-We document significant architectural decisions using ADRs (Architecture Decision Records). See [docs/adr/](docs/adr/) for all ADRs and the template for creating new ones.
+We document significant architectural decisions using ADRs (Architecture Decision Records). There is no index file and no template file — list [docs/adr/](docs/adr/) to find existing ADRs, and model a new one on the closest existing record.
+
+Name an ADR `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`, using at most two tags ordered broad-to-narrow and the next unused four-digit sequence number. Each ADR opens with `# ADR-<IDENTIFIER>: Title`, a `Date: YYYY-MM-DD` line, and a `## Status` section (`Proposed`, `Accepted`, `Rejected`, `Deprecated`, or `Superseded`). Run `pnpm adr:check` to validate the filename, heading, date, status, and identifier uniqueness.
 
 ### Backporting Changes to Release Branches
 
