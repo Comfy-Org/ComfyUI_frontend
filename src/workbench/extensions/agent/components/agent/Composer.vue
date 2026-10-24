@@ -252,6 +252,7 @@ function onEditorSelectionChange(): void {
 }
 
 const SKILL_DESCRIPTION_ID = 'agent-skill-description'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 const {
   describedSkill,
   requestDescription,
@@ -526,7 +527,7 @@ defineExpose({
   >
     <div
       v-if="mentionVisible"
-      id="agent-reference-menu"
+      :id="REFERENCE_MENU_ID"
       ref="mentionListRef"
       data-testid="agent-reference-menu"
       role="menu"
@@ -631,6 +632,7 @@ defineExpose({
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"
+              :reference-menu-id="REFERENCE_MENU_ID"
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
