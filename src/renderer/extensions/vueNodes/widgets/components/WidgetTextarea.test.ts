@@ -49,7 +49,7 @@ function createTextareaWidget(
 
 function renderComponent(
   widget: SimplifiedWidget<string>,
-  modelValue: string | null,
+  modelValue: string | number | null,
   placeholder?: string,
   onUpdateModelValue?: (...args: unknown[]) => void
 ) {
@@ -280,6 +280,14 @@ describe('WidgetTextarea Value Binding', () => {
       expect(screen.getByRole('textbox')).toHaveValue('')
       const actions = screen.getByRole('group', { name: 'g.actions' })
       expect(within(actions).getByText('0 chars')).toBeInTheDocument()
+    })
+
+    it('shows and counts a number value as text', () => {
+      renderComponent(createTextareaWidget(''), 1024)
+
+      expect(screen.getByRole('textbox')).toHaveValue('1024')
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(within(actions).getByText('4 chars')).toBeInTheDocument()
     })
 
     it('counts the text as it is typed', async () => {

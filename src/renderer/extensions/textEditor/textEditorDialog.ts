@@ -9,7 +9,7 @@ interface TextEditorOptions {
   readText: () => string
   widgetLabel: string
   nodeTitle?: string
-  readOnly: boolean
+  readOnly: () => boolean
   onEdit: (text: string) => void
 }
 

@@ -711,13 +711,16 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
+    const isTextEditorOpen = () =>
+      dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)
+
     window.addEventListener('mouseup', () => {
-      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
+      if (isTextEditorOpen()) return
       captureState()
     })
 
-    // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
+      if (isTextEditorOpen()) return
       captureState()
     })
 

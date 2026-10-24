@@ -120,8 +120,8 @@ const {
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
-const modelValue = defineModel<string | null>({ default: '' })
-const text = computed(() => modelValue.value ?? '')
+const modelValue = defineModel<string | number | null>({ default: '' })
+const text = computed(() => String(modelValue.value ?? ''))
 
 const isFocused = ref(false)
 function trackFocus() {
@@ -177,7 +177,7 @@ function openTextEditor() {
     readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle: node?.title,
-    readOnly: isReadOnly.value,
+    readOnly: () => isReadOnly.value,
     onEdit: (text) => (modelValue.value = text)
   })
 }

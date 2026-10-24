@@ -388,6 +388,30 @@ describe('ChangeTracker', () => {
       }
     )
 
+    it('skips the promptQueued capture while the text editor dialog is open', () => {
+      ChangeTracker.init()
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      mockCanvasState(createState(2))
+      useDialogStore().showDialog({
+        key: TEXT_EDITOR_DIALOG_KEY,
+        component: {}
+      })
+      const onPromptQueued = vi
+        .mocked(api.addEventListener)
+        .mock.calls.find(([type]) => type === 'promptQueued')?.[1]
+      if (typeof onPromptQueued !== 'function')
+        throw new Error('ChangeTracker registered no promptQueued listener')
+
+      onPromptQueued(
+        new CustomEvent('promptQueued', {
+          detail: { number: 1, batchCount: 1 }
+        })
+      )
+
+      expect(tracker.activeState).toEqual(initial)
+    })
+
     it.for([
       { editor: 'INPUT', createElement: () => document.createElement('input') },
       {
