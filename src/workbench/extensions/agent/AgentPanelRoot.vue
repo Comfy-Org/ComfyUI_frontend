@@ -991,7 +991,13 @@ const {
     restored: onWorkflowRestoredAndBound,
     prepare: async () => {
       try {
-        await refreshCloudWorkflowIds()
+        const target = selectedTarget.value
+        await refreshCloudWorkflowIds({
+          force:
+            target !== null &&
+            !target.isTemporary &&
+            cloudIdFor(target) === undefined
+        })
       } finally {
         // In `finally` so a refresh that fails still reports the send, with
         // whichever id the client already had, rather than losing the event.
@@ -1305,7 +1311,7 @@ async function onNavigateToReferenceWorkflow(
     let target = openWorkflowFor(workflowId)
     if (target === null) {
       await Promise.all([
-        refreshCloudWorkflowIds(),
+        refreshCloudWorkflowIds({ force: true }),
         workflowStore.syncWorkflows()
       ])
       target = storedWorkflowFor(workflowId)
