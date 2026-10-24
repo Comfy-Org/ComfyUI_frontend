@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -136,6 +136,21 @@ describe('PromptPanel', () => {
       surface: 'dialog',
       trigger: 'focus_view'
     })
+  })
+
+  it('opens a disabled prompt read-only in the focus view', async () => {
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const { promptPanelStore } = renderOpenPanel()
+    const target = promptPanelStore.target
+    if (!target) throw new Error('The panel has no prompt')
+    target.widget.disabled = true
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Expand to focus view' })
+    )
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('textbox')).toHaveAttribute('readonly')
   })
 
   it('ends the session when the panel is closed from its toggle', async () => {

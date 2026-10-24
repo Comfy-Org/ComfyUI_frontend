@@ -21,6 +21,7 @@ import { computed, onBeforeUnmount, onMounted, useTemplateRef } from 'vue'
 
 import {
   getWidgetState,
+  isWidgetReadOnly,
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
@@ -38,15 +39,7 @@ const widgetState = computed(() => getWidgetState(target.node, target.widget))
 const widgetLabel = computed(
   () => widgetState.value?.label || target.widget.label || target.widget.name
 )
-const isReadOnly = computed(() => {
-  const options = widgetState.value?.options ?? target.widget.options
-  return Boolean(
-    options?.read_only ||
-    options?.disabled ||
-    widgetState.value?.disabled ||
-    target.widget.disabled
-  )
-})
+const isReadOnly = computed(() => isWidgetReadOnly(target.node, target.widget))
 
 let isEdited = false
 

@@ -70,6 +70,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import {
   getWidgetState,
+  isWidgetReadOnly,
   useSetWidgetValue
 } from '@/components/rightSidePanel/parameters/widgetValue'
 import PromptEditor from '@/components/rightSidePanel/promptPanel/PromptEditor.vue'
@@ -138,13 +139,12 @@ let closeFocusView: (() => void) | undefined
 
 function openFocusView({ node, widget }: PromptPanelTarget) {
   const state = getWidgetState(node, widget)
-  const options = state?.options ?? widget.options
   closeFocusView = showTextEditor({
     readText: () =>
       String(getWidgetState(node, widget)?.value ?? widget.value ?? ''),
     widgetLabel: state?.label || widget.label || widget.name,
     nodeTitle: node.title,
-    readOnly: Boolean(options.read_only || options.disabled),
+    readOnly: isWidgetReadOnly(node, widget),
     maximized: true,
     trigger: 'focus_view',
     onEdit: (text) => setWidgetValue(node, widget, text)
