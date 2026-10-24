@@ -18,6 +18,7 @@ import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
 } from '@/platform/telemetry/types'
+import { fetchWithRetry } from '@/utils/fetchWithRetry'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
@@ -152,7 +153,7 @@ export async function fetchWithUnifiedRemint(
     shouldRetryOn401 && input instanceof Request && input.body !== null
       ? input.clone()
       : input
-  const response = await fetch(input, init)
+  const response = await fetchWithRetry(input, init)
   if (response.status === 403 && isCloud) {
     await presentSsoRequired(() => presentForResponse(response))
   }
@@ -188,7 +189,7 @@ export async function fetchWithUnifiedRemint(
     ? { ...init, headers, signal: retrySignalLifecycle.createSignal() }
     : { ...init, headers }
   try {
-    const retryResponse = await fetch(retryInput, retryInit)
+    const retryResponse = await fetchWithRetry(retryInput, retryInit)
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
   } catch (error) {
