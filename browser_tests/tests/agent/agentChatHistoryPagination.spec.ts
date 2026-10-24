@@ -10,6 +10,11 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
+const expectedChatNames = [
+  ...thirtyAgentThreadPages.first.threads,
+  ...thirtyAgentThreadPages.second.threads
+].map((thread) => thread.title)
+
 test.describe(
   'Agent chat history pagination',
   {
@@ -45,6 +50,11 @@ test.describe(
       await expect(
         panel.getByRole('button', { name: /^Chat \d+$/ })
       ).toHaveCount(30)
+      await expect
+        .poll(() =>
+          panel.getByRole('button', { name: /^Chat \d+$/ }).allTextContents()
+        )
+        .toEqual(expect.arrayContaining(expectedChatNames))
       const twentyFirstChat = panel.getByRole('button', {
         name: 'Chat 21',
         exact: true
