@@ -914,17 +914,17 @@ export class ComfyApp implements IComfyApp {
   /** Make `graph` the root graph shown on the canvas. */
   activateRootGraph(graph: LGraph): void {
     const previous = this.rootGraphInternal
-    if (previous !== graph) {
-      previous?.stop()
-      if (previous) unregisterDomWidgets(previous)
-      this.rootGraphInternal = graph
-      registerDomWidgets(graph)
+    if (previous === graph) {
+      this.canvas.setGraph(graph)
+      return
     }
+    if (previous) unregisterDomWidgets(previous)
+    this.rootGraphInternal = graph
+    registerDomWidgets(graph)
+    useCanvasScheduler().cancel('graph-load-camera')
+    this.pendingCamera = undefined
     this.canvas.setGraph(graph)
-    if (previous !== graph) {
-      graph.start()
-      if (previous && !isOwnedByWorkflow(previous)) previous.clear()
-    }
+    if (previous && !isOwnedByWorkflow(previous)) previous.clear()
   }
 
   private rootGraphForLoad(workflow: ComfyWorkflow | null): LGraph {
