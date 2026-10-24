@@ -16,15 +16,6 @@
   }
 }
 
-@keyframes agent-shimmer {
-  from {
-    background-position: 150% center;
-  }
-  to {
-    background-position: -50% center;
-  }
-}
-
 @keyframes agent-row-enter {
   from {
     opacity: 0;
@@ -42,36 +33,9 @@
   animation: agent-collapsible-up 200ms ease-out;
 }
 
-.agent-shimmer-text {
-  background: linear-gradient(
-    90deg,
-    var(--muted-foreground) 35%,
-    var(--foreground) 50%,
-    var(--muted-foreground) 65%
-  );
-  background-size: 200% auto;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: agent-shimmer 1.8s linear infinite;
-}
-
-.disable-animations
-  :where(#agent-panel-root, .agent-scope)
-  .agent-shimmer-text {
-  animation: none;
-  color: var(--muted-foreground);
-  -webkit-text-fill-color: currentcolor;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .agent-work-summary {
     animation-duration: 0.001ms;
-  }
-
-  .agent-shimmer-text {
-    animation: none;
-    color: var(--muted-foreground);
-    -webkit-text-fill-color: currentcolor;
   }
 
   .agent-row-enter {
