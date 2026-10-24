@@ -15,6 +15,7 @@ test.describe(
       agentPanel,
       postedMessages
     }) => {
+      test.fail(false, 'The rejected-send regression is fixed')
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
@@ -27,10 +28,6 @@ test.describe(
       await expect(agentPanel.composer).toHaveText(prompt)
       await expect(agentPanel.sendButton).toBeEnabled()
 
-      test.fail(
-        true,
-        'Repeated Enter presses duplicate the rejected prompt and turn request'
-      )
       await agentPanel.composer.press('Enter')
       await agentPanel.composer.press('Enter')
       await expect(agentPanel.composer).toHaveText(prompt)
@@ -40,6 +37,18 @@ test.describe(
         agentPanel.root.getByTestId('user-message-bubble')
       ).toHaveText([prompt])
       await expect.poll(() => postedMessages).toHaveLength(1)
+
+      await agentPanel.sendButton.click()
+      await expect.poll(() => postedMessages).toHaveLength(2)
+      await expect(agentPanel.composer).toHaveText(prompt)
+      await agentPanel.composer.press('Enter')
+      await expect.poll(() => postedMessages).toHaveLength(2)
+
+      const editedPrompt = `${prompt} at dusk`
+      await agentPanel.composer.fill(editedPrompt)
+      await agentPanel.composer.press('Enter')
+      await expect.poll(() => postedMessages).toHaveLength(3)
+      await expect(agentPanel.composer).toHaveText(editedPrompt)
     })
   }
 )

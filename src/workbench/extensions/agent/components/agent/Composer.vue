@@ -99,6 +99,14 @@ const { t } = useI18n()
 const skills = useSkillPacksStore()
 
 const running = computed(() => streaming || submitting)
+let keyboardRetryFingerprint: string | null = null
+
+function submissionFingerprint(): string {
+  return JSON.stringify({
+    prompt: composer.prompt.value,
+    attachments: composer.attachments.value
+  })
+}
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
@@ -107,6 +115,7 @@ const composer = useComposer({
       emit('workflowTargetRequired')
       return
     }
+    keyboardRetryFingerprint = submissionFingerprint()
     const prepared = composerPromptForSubmission(composer.prompt.value)
     if (workflowReferences.value.length > 0) {
       const { text: draft, workflowReferences: references } = prepared
@@ -385,7 +394,12 @@ function openReferenceMenu(): void {
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
-  if (running.value) return
+  if (
+    running.value ||
+    keyboardRetryFingerprint === submissionFingerprint() ||
+    !composer.canSend.value
+  )
+    return
   composer.submit()
 }
 

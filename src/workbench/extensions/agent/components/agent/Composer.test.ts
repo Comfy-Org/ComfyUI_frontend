@@ -394,6 +394,27 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('requires a click or an edited draft before retrying an Enter send', async () => {
+    const { emitted } = mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.paste('make a fox')
+    await userEvent.keyboard('{Enter}{Enter}')
+    expect(emitted().send).toHaveLength(1)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(2)
+
+    await userEvent.click(box)
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(2)
+
+    await userEvent.click(box)
+    await userEvent.paste(' at dusk')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(3)
+  })
+
   it('shows Stop while streaming and emits stop instead of send', async () => {
     const { emitted } = mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
