@@ -7,9 +7,12 @@ import {
   within
 } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -79,6 +82,10 @@ vi.mock<unknown>(
   }
 )
 
+vi.mock(import('@/platform/assets/utils/assetUrlUtil'), { spy: true })
+
+vi.mock(import('@/base/common/downloadUtil'))
+
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
@@ -91,7 +98,15 @@ const i18n = createI18n({
   messages: {
     en: {
       assetBrowser: { jobId: 'Job ID' },
-      g: { copyJobId: 'Copy Job ID' },
+      g: {
+        copyJobId: 'Copy Job ID',
+        gallery: 'Gallery',
+        close: 'Close',
+        previous: 'Previous',
+        next: 'Next',
+        download: 'Download',
+        moreOptions: 'More Options'
+      },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         closeSidebar: 'Close sidebar',
@@ -116,7 +131,7 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click', 'context-menu'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
   template: `
     <div data-testid="assets-grid">
       <button
@@ -124,11 +139,17 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
+      <button
+        v-for="asset in assets"
+        :key="asset.id"
+        :aria-label="\`Preview \${asset.name}\`"
+        @click="$emit('zoom', asset)"
+      />
     </div>
   `
 }
 
-function renderTab({ realTemplate = false } = {}) {
+function renderTab({ realTemplate = false, realLightbox = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -138,7 +159,7 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: true
+        ...(realLightbox ? {} : { MediaLightbox: true })
       }
     }
   })
@@ -197,6 +218,21 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
+  it('offers inspect from the asset grid', async () => {
+    useAssetsStore().outputAssets.items = [{ ...folderAsset, name: 'a.png' }]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+
+    expect(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    ).toBeVisible()
+  })
+
   it('inspects an HDR output in the HDR viewer', async () => {
     useAssetsStore().outputAssets.items = [
       {
@@ -316,5 +352,89 @@ describe('AssetsSidebarTab tab panel', () => {
       'tabindex',
       '0'
     )
+  })
+})
+
+describe('AssetsSidebarTab gallery selection', () => {
+  const pngAsset = (id: string, name: string) => ({
+    ...folderAsset,
+    id,
+    name,
+    preview_url: `/api/assets/${id}/content`
+  })
+
+  it('stays on the viewed asset when a new output is prepended', async () => {
+    const newest = pngAsset('a', 'a.png')
+    const second = pngAsset('b', 'b.png')
+    const oldest = pngAsset('c', 'c.png')
+    useAssetsStore().outputAssets.items = [newest, second, oldest]
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    expect(await screen.findByTestId('lightbox-filename')).toHaveTextContent(
+      'b.png'
+    )
+
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent('c.png')
+
+    useAssetsStore().outputAssets.items = [
+      pngAsset('d', 'd.png'),
+      newest,
+      second,
+      oldest
+    ]
+    await nextTick()
+
+    expect(screen.getByTestId('lightbox-filename')).toHaveTextContent('c.png')
+  })
+
+  it('opens the asset menu for the viewed asset from the lightbox', async () => {
+    const first = pngAsset('a', 'a.png')
+    const second = { ...pngAsset('b', 'b.png'), name: 'b.png' }
+    useAssetsStore().outputAssets.items = [first, second]
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    await screen.findByTestId('lightbox-filename')
+
+    await userEvent.click(screen.getByLabelText('More Options'))
+    const menu = await screen.findByRole('menu')
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'mediaAsset.actions.inspect' })
+    ).not.toBeInTheDocument()
+
+    const item = await screen.findByRole('menuitem', {
+      name: 'mediaAsset.actions.download'
+    })
+
+    expect(screen.getByRole('dialog').compareDocumentPosition(menu)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+
+    await userEvent.click(item)
+
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([second])
+  })
+
+  it('downloads the asset file rather than its preview rendition', async () => {
+    const asset = {
+      ...folderAsset,
+      id: 'b',
+      name: 'b.png',
+      preview_url: '/api/assets/b/preview'
+    }
+    useAssetsStore().outputAssets.items = [asset]
+    vi.mocked(getAssetFileUrl).mockReturnValueOnce('/api/assets/b/content')
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    await userEvent.click(await screen.findByLabelText('Download'))
+
+    expect(downloadFile).toHaveBeenCalledWith('/api/assets/b/content', 'b.png')
   })
 })

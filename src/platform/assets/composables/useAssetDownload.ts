@@ -1,7 +1,9 @@
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 interface DirectAssetDownload {
@@ -19,6 +21,38 @@ export interface FetchedAssetDownload {
 }
 
 export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
+
+function isAppRoute(url: string): boolean {
+  if (url.startsWith('blob:')) return false
+  const candidate = URL.parse(url, window.location.origin)
+  const apiBase = URL.parse(api.apiURL(''), window.location.origin)
+  if (!candidate || !apiBase) return false
+  return (
+    candidate.origin === window.location.origin ||
+    candidate.origin === apiBase.origin
+  )
+}
+
+function toApiRoute(url: string): string {
+  const parsed = URL.parse(url, window.location.origin)
+  return parsed ? `${parsed.pathname}${parsed.search}` : url
+}
+
+/** A cloud download of `url`, authorized when the URL is one of our own routes. */
+export function createFileDownload(
+  url: string,
+  filename: string
+): AssetDownload {
+  if (!isCloud) return { mode: 'direct', url, filename }
+  return {
+    mode: 'fetch',
+    url,
+    filename,
+    fetch: isAppRoute(url)
+      ? (route) => api.fetchApi(toApiRoute(route))
+      : (route) => fetch(route, { credentials: 'omit' })
+  }
+}
 
 export function useAssetDownload() {
   const { t } = useI18n()
