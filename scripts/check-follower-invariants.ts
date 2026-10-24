@@ -198,7 +198,7 @@ function moduleSpecifier(node: ts.Node): string | undefined {
   if (
     ts.isCallExpression(node) &&
     node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-    node.arguments[0] &&
+    node.arguments.length > 0 &&
     ts.isStringLiteralLike(node.arguments[0])
   )
     return node.arguments[0].text

@@ -325,18 +325,18 @@ describe('checkFile (combined) — allowed follower projection', () => {
       const endpoint = isCloud
       const socket = 'wss://agent.comfy.org/ws'
     `
-    expect(
-      checkFile(FOLLOWER_FILE, fixture)
-        .map(({ rule }) => rule)
-        .sort()
-    ).toEqual([
-      'catalog-pinned-by-sha',
-      'no-hardcoded-endpoint',
-      'no-op-id-regeneration',
-      'no-outbound-update-b64',
-      'no-scattered-distribution-checks',
-      'single-applier'
-    ])
+    const rules = checkFile(FOLLOWER_FILE, fixture).map(({ rule }) => rule)
+    expect(rules).toHaveLength(6)
+    expect(rules).toEqual(
+      expect.arrayContaining([
+        'catalog-pinned-by-sha',
+        'no-hardcoded-endpoint',
+        'no-op-id-regeneration',
+        'no-outbound-update-b64',
+        'no-scattered-distribution-checks',
+        'single-applier'
+      ])
+    )
   })
 
   test('unparsable TypeScript fails closed with a syntax-error violation', () => {
