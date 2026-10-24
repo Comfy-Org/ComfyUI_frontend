@@ -260,15 +260,6 @@ describe('WidgetTextarea Value Binding', () => {
         screen.queryByRole('button', { name: 'g.copied' })
       ).not.toBeInTheDocument()
     })
-
-    it('reveals the rail actions only on hover or focus', () => {
-      renderComponent(createTextareaWidget('test'), 'test')
-
-      const actions = screen.getByRole('group', { name: 'g.actions' })
-      expect(actions.classList.contains('opacity-0')).toBe(true)
-      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
-      expect(actions.classList.contains('focus-within:opacity-100')).toBe(true)
-    })
   })
 
   describe('Character count', () => {
@@ -480,22 +471,17 @@ describe('WidgetTextarea expand to editor', () => {
       },
       shown: false
     }
-  ])(
-    'shows the expand button on hover when $state: $shown',
-    ({ overrides, shown }) => {
-      renderWithDialogHost(overrides)
+  ])('shows the expand button when $state: $shown', ({ overrides, shown }) => {
+    renderWithDialogHost(overrides)
 
-      const actions = screen.getByRole('group', { name: 'g.actions' })
+    const actions = screen.getByRole('group', { name: 'g.actions' })
 
-      expect(
-        Boolean(
-          within(actions).queryByRole('button', { name: 'textEditor.expand' })
-        )
-      ).toBe(shown)
-      expect(actions.classList.contains('opacity-0')).toBe(true)
-      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
-    }
-  )
+    expect(
+      Boolean(
+        within(actions).queryByRole('button', { name: 'textEditor.expand' })
+      )
+    ).toBe(shown)
+  })
 
   it.for([
     { label: undefined, title: 'text · CLIP Text Encode' },

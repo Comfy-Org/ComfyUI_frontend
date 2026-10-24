@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
@@ -19,7 +20,7 @@ function openEditor(
 ) {
   const onEdit = vi.fn()
   const close = showTextEditor({
-    text: 'a portrait',
+    readText: () => 'a portrait',
     widgetLabel: 'text',
     nodeTitle: 'CLIP Text Encode',
     readOnly: false,
@@ -58,7 +59,7 @@ describe('showTextEditor', () => {
   it('passes every keystroke to onEdit exactly as typed', async () => {
     const user = userEvent.setup()
     renderDialogHost()
-    const { onEdit } = openEditor({ text: '' })
+    const { onEdit } = openEditor({ readText: () => '' })
 
     await user.type(await screen.findByRole('textbox'), ' {{red|blue} ')
 
@@ -83,24 +84,40 @@ describe('showTextEditor', () => {
     expect(onEdit).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { typed: 'x', captures: 1 },
-    { typed: '', captures: 0 }
-  ])(
-    'records $captures undo steps when closed after typing "$typed"',
-    async ({ typed, captures }) => {
-      const user = userEvent.setup()
-      renderDialogHost()
-      openEditor()
+  it('records one undo step when closed after typing', async () => {
+    const user = userEvent.setup()
+    renderDialogHost()
+    openEditor()
 
-      const editor = await screen.findByRole('textbox')
-      if (typed) await user.type(editor, typed.repeat(3))
-      await user.keyboard('{Escape}')
+    await user.type(await screen.findByRole('textbox'), 'xxx')
+    await user.keyboard('{Escape}')
 
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-      expect(captureCanvasState).toHaveBeenCalledTimes(captures)
-    }
-  )
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('records no undo step when closed without typing', async () => {
+    const user = userEvent.setup()
+    renderDialogHost()
+    openEditor()
+
+    await screen.findByRole('textbox')
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(captureCanvasState).not.toHaveBeenCalled()
+  })
+
+  it('follows edits made to the text elsewhere while it is open', async () => {
+    const source = ref('a portrait')
+    renderDialogHost()
+    openEditor({ readText: () => source.value })
+    const editor = await screen.findByRole('textbox')
+
+    source.value = 'a landscape'
+
+    await waitFor(() => expect(editor).toHaveValue('a landscape'))
+  })
 
   it('closes the dialog it opened, and not one opened after it', async () => {
     renderDialogHost()

@@ -11,23 +11,29 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 const {
-  text,
+  readText,
   label,
   readOnly = false,
   onEdit
 } = defineProps<{
-  text: string
+  readText: () => string
   label: string
   readOnly?: boolean
   onEdit: (text: string) => void
 }>()
 
-const draft = ref(text)
+const draft = ref(readText())
+watch(
+  () => readText(),
+  (text) => {
+    draft.value = text
+  }
+)
 const textareaRef = useTemplateRef('textareaRef')
 
 onMounted(() => {
