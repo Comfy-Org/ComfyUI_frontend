@@ -356,7 +356,7 @@ export class AgentConversationHarness {
   /**
    * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
    * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
+   * `AgentMultiAutogrowRealignHarness` had drifted into two mutable
    * implementations of the same save/reopen round trip.
    */
   async persistSavedWorkflow(): Promise<void> {
