@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, expect, it, vi } from 'vitest'
+import { assert, beforeEach, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
@@ -280,16 +280,13 @@ it('navigates to a panel requested while it is already open', async () => {
   renderDialog()
   expect(await screen.findByText('workspace-allowlist panel')).toBeVisible()
 
-  let requestId: number | undefined
-  try {
-    showSettingsPanel('workspace')
-    requestId = settingsPanelNavigation.value?.requestId
+  showSettingsPanel('workspace')
+  const request = settingsPanelNavigation.value
+  assert.exists(request)
+  onTestFinished(() => consumeSettingsPanelNavigation(request.requestId))
 
-    expect(await screen.findByText('workspace panel')).toBeVisible()
-    expect(
-      screen.queryByText('workspace-allowlist panel')
-    ).not.toBeInTheDocument()
-  } finally {
-    if (requestId !== undefined) consumeSettingsPanelNavigation(requestId)
-  }
+  expect(await screen.findByText('workspace panel')).toBeVisible()
+  expect(
+    screen.queryByText('workspace-allowlist panel')
+  ).not.toBeInTheDocument()
 })
