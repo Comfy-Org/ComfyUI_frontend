@@ -31,7 +31,7 @@ async function addCameraAngleNode(graph: LGraph) {
     node,
     'view',
     ['CAMERA_ANGLE_VIEW', {}],
-    fromPartial<ComfyApp>({})
+    fromPartial({})
   )
 
   const view = node.widgets?.find((widget) => widget.name === 'view')
