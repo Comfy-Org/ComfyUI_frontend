@@ -255,14 +255,16 @@ export class ComfyWorkflow extends UserFile {
   /** Take ownership of `graph`, disposing any previously owned instance. */
   adoptGraph(graph: LGraph): void {
     if (this.graph === graph) return
-    this.graph?.clear()
+    const previous = this.graph
     this.graph = markRaw(graph)
+    previous?.clear()
   }
 
   /** Dispose the owned graph instance and its per-root store state. */
   releaseGraph(): void {
-    this.graph?.clear()
+    const graph = this.graph
     this.graph = null
+    graph?.clear()
   }
 
   override unload(): void {

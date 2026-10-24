@@ -145,7 +145,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["graph-model"],
+  "allowedDependencies": ["extension-runtime", "graph-model"],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
