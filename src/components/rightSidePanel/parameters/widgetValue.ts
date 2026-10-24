@@ -26,6 +26,18 @@ export function getWidgetState(
     : undefined
 }
 
+/** Whether a widget shown in the properties panel can only be read. */
+export function isWidgetReadOnly(
+  node: LGraphNode,
+  widget: IBaseWidget
+): boolean {
+  const state = getWidgetState(node, widget)
+  const options = state?.options ?? widget.options
+  return Boolean(
+    options.read_only || options.disabled || state?.disabled || widget.disabled
+  )
+}
+
 /** Writes a widget value and clears the execution errors it resolves. */
 export function useSetWidgetValue() {
   const canvasStore = useCanvasStore()
