@@ -4,7 +4,8 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   PromptEditorClosedMetadata,
-  PromptEditorOpenedMetadata
+  PromptEditorOpenedMetadata,
+  PromptEditorSurfaceVariant
 } from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
@@ -12,6 +13,12 @@ import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
+
+function experimentArmOf(
+  trigger: PromptEditorOpenedMetadata['trigger']
+): PromptEditorSurfaceVariant {
+  return trigger === 'focus_view' ? 'panel' : 'control'
+}
 
 interface TextEditorOptions {
   readText: () => string
@@ -46,7 +53,9 @@ export function showTextEditor({
   const openedMetadata: PromptEditorOpenedMetadata = {
     surface: 'dialog',
     trigger,
-    ...usePromptEditorExperimentStore().experimentProperties
+    ...usePromptEditorExperimentStore().experimentPropertiesFor(
+      experimentArmOf(trigger)
+    )
   }
   useTelemetry()?.trackPromptEditorOpened(openedMetadata)
 

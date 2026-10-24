@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 
 import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import type { PromptEditorSurfaceVariant } from '@/platform/telemetry/types'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 
 const telemetry = vi.hoisted(() => ({
@@ -49,20 +49,56 @@ describe('usePromptEditorExperimentStore', () => {
     }
   )
 
-  it.for([
-    { served: 'panel', authenticated: true, attributed: true },
-    { served: 'control', authenticated: true, attributed: true },
-    { served: 'panel', authenticated: false, attributed: false },
-    { served: 'sidebar', authenticated: true, attributed: false },
-    { served: undefined, authenticated: true, attributed: false }
+  it.for<{
+    served: string | undefined
+    rendered: PromptEditorSurfaceVariant
+    authenticated: boolean
+    attributed: boolean
+  }>([
+    {
+      served: 'panel',
+      rendered: 'panel',
+      authenticated: true,
+      attributed: true
+    },
+    {
+      served: 'control',
+      rendered: 'control',
+      authenticated: true,
+      attributed: true
+    },
+    {
+      served: 'panel',
+      rendered: 'control',
+      authenticated: true,
+      attributed: false
+    },
+    {
+      served: 'panel',
+      rendered: 'panel',
+      authenticated: false,
+      attributed: false
+    },
+    {
+      served: 'sidebar',
+      rendered: 'control',
+      authenticated: true,
+      attributed: false
+    },
+    {
+      served: undefined,
+      rendered: 'control',
+      authenticated: true,
+      attributed: false
+    }
   ])(
-    'attributes events when $served is served (authenticated: $authenticated): $attributed',
-    ({ served, authenticated, attributed }) => {
+    'attributes a $rendered session when $served is served (authenticated: $authenticated): $attributed',
+    ({ served, rendered, authenticated, attributed }) => {
       serve(served, { authenticated })
 
-      expect(usePromptEditorExperimentStore().experimentProperties).toEqual(
-        attributed ? { '$feature/prompt-editor-surface': served } : {}
-      )
+      expect(
+        usePromptEditorExperimentStore().experimentPropertiesFor(rendered)
+      ).toEqual(attributed ? { '$feature/prompt-editor-surface': served } : {})
     }
   )
 
@@ -80,13 +116,12 @@ describe('usePromptEditorExperimentStore', () => {
     })
   })
 
-  it('reports exposure again when the served arm changes', async () => {
+  it('reports exposure again when the served arm changes', () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
     experiment.expose('panel')
 
     serve('control')
-    await nextTick()
     experiment.expose('control')
 
     expect(trackPromptEditorExposure.mock.calls).toEqual([
@@ -107,42 +142,38 @@ describe('usePromptEditorExperimentStore', () => {
     expect(trackPromptEditorExposure).toHaveBeenCalledOnce()
   })
 
-  it('keeps the served arm when a config refresh fails', async () => {
+  it('keeps the served arm when a config refresh fails', () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
 
-    remoteConfig.value = {}
     authenticatedRemoteConfigState.value = 'error'
-    await nextTick()
+    remoteConfig.value = {}
 
     expect(experiment.assignment).toBe('panel')
-    expect(experiment.experimentProperties).toEqual({
+    expect(experiment.experimentPropertiesFor('panel')).toEqual({
       '$feature/prompt-editor-surface': 'panel'
     })
   })
 
-  it('reports exposure again for the next account on the same tab', async () => {
+  it('reports exposure again for the next account on the same tab', () => {
     serve('panel')
     const experiment = usePromptEditorExperimentStore()
     experiment.expose('panel')
 
     serve(undefined, { authenticated: false })
-    await nextTick()
     serve('panel')
-    await nextTick()
     experiment.expose('panel')
 
     expect(trackPromptEditorExposure).toHaveBeenCalledTimes(2)
   })
 
-  it('drops a QA override once the account that set it signs out', async () => {
+  it('drops a QA override once the account that set it signs out', () => {
     localStorage.setItem('ff:prompt-editor-surface', '"panel"')
     const experiment = usePromptEditorExperimentStore()
     expect(experiment.assignment).toBe('panel')
 
     localStorage.clear()
     serve('control')
-    await nextTick()
 
     expect(experiment.assignment).toBe('control')
   })
@@ -154,7 +185,7 @@ describe('usePromptEditorExperimentStore', () => {
     experiment.expose('panel')
 
     expect(experiment.assignment).toBe('panel')
-    expect(experiment.experimentProperties).toEqual({})
+    expect(experiment.experimentPropertiesFor('panel')).toEqual({})
     expect(trackPromptEditorExposure).not.toHaveBeenCalled()
   })
 })
