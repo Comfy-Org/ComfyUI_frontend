@@ -1,15 +1,14 @@
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { describe, expect, it, vi } from 'vitest'
 
 import { slotDefaultsExtension } from '@/extensions/core/slotDefaults'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 
-vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
-function nodeDef(name: string, image: unknown): ComfyNodeDef {
+function objectInfoEntry(name: string, image: unknown): unknown {
   return {
     name,
     display_name: name,
@@ -20,22 +19,23 @@ function nodeDef(name: string, image: unknown): ComfyNodeDef {
     output_is_list: [],
     output_name: [],
     output_node: false,
-    input: { required: { image: image as InputSpec } }
+    input: { required: { image } }
   }
-}
-
-async function register(def: ComfyNodeDef) {
-  await slotDefaultsExtension.beforeRegisterNodeDef?.(
-    LGraphNode,
-    def,
-    {} as ComfyApp
-  )
 }
 
 describe('Comfy.SlotDefaults', () => {
   it('suggests the remaining node defs when one def cannot be read', async () => {
-    await register(nodeDef('BrokenNode', null))
-    await register(nodeDef('PreviewImage', ['IMAGE', {}]))
+    respondToFetch(/\/object_info$/, () =>
+      Response.json({
+        BrokenNode: objectInfoEntry('BrokenNode', null),
+        PreviewImage: objectInfoEntry('PreviewImage', ['IMAGE', {}])
+      })
+    )
+    const defs = await app.getNodeDefs()
+
+    for (const def of Object.values(defs)) {
+      await slotDefaultsExtension.beforeRegisterNodeDef?.(LGraphNode, def, app)
+    }
 
     expect(LiteGraph.slot_types_default_out.IMAGE).toEqual([
       'Reroute',
