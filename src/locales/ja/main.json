@@ -1455,12 +1455,18 @@
     "manageDeployments": "デプロイメントを管理",
     "manageDeploymentsTooltip": "Developer Platform で Build とそのデプロイメントを管理します。",
     "membersStartOn": "独自の選択がないメンバーの開始先",
+    "missingNodesAfterReason": "また、このワークフローを実行できません。不足: {nodes}",
     "missingNodesNamed": "{deployment} ではこのワークフローを実行できません。不足: {nodes}",
     "namedDeployment": "{name}",
     "noDeployments": "このワークスペースにはまだデプロイメントがありません。",
     "notReadyTooltip": "{deployment} で実行中です。準備ができていないため、準備が整うまでジョブは実行されません。",
     "pickGone": "選択したデプロイメントはすでに存在しません。",
     "pickGoneDetail": "このブラウザは現在 Comfy Cloud で実行されています。使用するには、もう一度デプロイメントを選択してください。",
+    "reason": {
+      "notReady": "{deployment} は準備ができていません。準備ができたら選択してください。",
+      "startElsewhere": "{deployment} は実行されていません。Developer Platform で起動してから選択してください。",
+      "starting": "{deployment} は起動中です。準備ができたら選択してください。"
+    },
     "releaseChanged": "このデプロイメントは現在、別のリリースで実行されています。ノードを取得するには再読み込みしてください。",
     "reload": "再読み込み",
     "runOn": "実行先",

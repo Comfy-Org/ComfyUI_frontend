@@ -1455,12 +1455,18 @@
     "manageDeployments": "مدیریت استقرارها",
     "manageDeploymentsTooltip": "Buildها و استقرارهای آن‌ها را در پلتفرم توسعه‌دهندگان مدیریت کنید.",
     "membersStartOn": "اعضایی که انتخاب شخصی ندارند، با این مورد شروع می‌کنند",
+    "missingNodesAfterReason": "همچنین نمی‌تواند این workflow را اجرا کند. این موارد را ندارد: {nodes}.",
     "missingNodesNamed": "{deployment} نمی‌تواند این workflow را اجرا کند. این موارد را ندارد: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "این workspace هنوز هیچ deploymentی ندارد.",
     "notReadyTooltip": "در حال اجرا روی {deployment}. آماده نیست، بنابراین تا زمانی که آماده نشود، jobها اجرا نخواهند شد.",
     "pickGone": "deployment انتخاب‌شده دیگر وجود ندارد.",
     "pickGoneDetail": "این مرورگر اکنون روی Comfy Cloud اجرا می‌شود. برای استفاده از یک deployment، دوباره آن را انتخاب کنید.",
+    "reason": {
+      "notReady": "{deployment} آماده نیست. وقتی آماده شد آن را انتخاب کنید.",
+      "startElsewhere": "{deployment} در حال اجرا نیست. آن را در پلتفرم توسعه‌دهندگان شروع کنید و سپس انتخابش کنید.",
+      "starting": "{deployment} در حال شروع است. وقتی آماده شد آن را انتخاب کنید."
+    },
     "releaseChanged": "این deployment اکنون Release دیگری را اجرا می‌کند. برای دریافت nodeهای آن، دوباره بارگذاری کنید.",
     "reload": "بارگذاری مجدد",
     "runOn": "اجرا در",

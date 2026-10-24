@@ -1455,12 +1455,18 @@
     "manageDeployments": "ניהול פריסות",
     "manageDeploymentsTooltip": "נהל את ה-Builds שלך ואת הפריסות שלהם בפלטפורמת המפתחים.",
     "membersStartOn": "חברים ללא בחירה משלהם מתחילים ב־",
+    "missingNodesAfterReason": "בנוסף, הוא לא יכול להריץ את תהליך העבודה הזה. חסר בו: {nodes}.",
     "missingNodesNamed": "{deployment} לא יכול להריץ את תהליך העבודה הזה. חסר בו: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "לסביבת עבודה זו עדיין אין פריסות.",
     "notReadyTooltip": "פועל על {deployment}. הוא אינו מוכן, ולכן משימות לא יפעלו עד שיהיה מוכן.",
     "pickGone": "הפריסה שבחרת כבר אינה קיימת.",
     "pickGoneDetail": "דפדפן זה פועל כעת על Comfy Cloud. בחר שוב פריסה כדי להשתמש בה.",
+    "reason": {
+      "notReady": "{deployment} אינו מוכן. בחר בו כשיהיה מוכן.",
+      "startElsewhere": "{deployment} אינו פועל. הפעל אותו בפלטפורמת המפתחים, ואז בחר בו.",
+      "starting": "{deployment} מתחיל. בחר בו כשיהיה מוכן."
+    },
     "releaseChanged": "פריסה זו פועלת כעת עם מהדורה אחרת. טען מחדש כדי לקבל את הצמתים שלה.",
     "reload": "טען מחדש",
     "runOn": "הפעל ב-",

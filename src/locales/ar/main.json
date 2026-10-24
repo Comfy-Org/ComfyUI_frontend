@@ -1455,12 +1455,18 @@
     "manageDeployments": "إدارة عمليات النشر",
     "manageDeploymentsTooltip": "أدِر عمليات البناء (Builds) وعمليات نشرها على منصة المطورين.",
     "membersStartOn": "يبدأ الأعضاء الذين ليس لديهم اختيار خاص بهم على",
+    "missingNodesAfterReason": "ولا يمكنه تشغيل سير العمل هذا. ينقصه: {nodes}.",
     "missingNodesNamed": "لا يمكن لـ {deployment} تشغيل سير العمل هذا. ينقصه: {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "لا تحتوي مساحة العمل هذه على أي بيئات نشر بعد.",
     "notReadyTooltip": "يعمل على {deployment}. إنه غير جاهز، لذا لن تعمل المهام حتى يصبح جاهزًا.",
     "pickGone": "بيئة النشر التي اخترتها لم تعد موجودة.",
     "pickGoneDetail": "يعمل هذا المتصفح الآن على Comfy Cloud. اختر بيئة نشر مرة أخرى لاستخدام واحدة.",
+    "reason": {
+      "notReady": "{deployment} غير جاهز. اختره عندما يصبح جاهزًا.",
+      "startElsewhere": "{deployment} لا يعمل. شغّله على منصة المطورين، ثم اختره.",
+      "starting": "{deployment} قيد البدء. اختره عندما يصبح جاهزًا."
+    },
     "releaseChanged": "تشغّل بيئة النشر هذه الآن إصدارًا مختلفًا. أعد التحميل للحصول على عُقده.",
     "reload": "إعادة التحميل",
     "runOn": "تشغيل على",
