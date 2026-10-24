@@ -76,7 +76,7 @@ type ParsedSavedNode = WorkflowJSON04['nodes'][number]
 
 type SavedLinkTarget = readonly [ParsedSavedNode['id'], string]
 
-export class MultiAutogrowRealignHarness {
+export class AgentMultiAutogrowRealignHarness {
   private readonly host = new HostDoc(WORKFLOW_ID, seed, catalog)
   readonly hostSocket: AgentFollowerHostSocket
   readonly topbar: Topbar

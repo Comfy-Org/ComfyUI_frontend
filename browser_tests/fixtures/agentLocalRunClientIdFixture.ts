@@ -4,7 +4,7 @@ import type { z } from 'zod'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
-import { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
+import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   SOURCE_NODE_ID,
@@ -23,7 +23,7 @@ type TurnPostBody = z.infer<typeof turnPostBodySchema>
 
 export interface AgentLocalRunRig {
   page: Page
-  harness: MultiAutogrowRealignHarness
+  harness: AgentMultiAutogrowRealignHarness
   /** Every turn POST body the panel has sent, oldest first. */
   turnPosts: () => readonly TurnPostBody[]
   /** `client_id` on the newest turn POST, or `undefined` when absent. */
@@ -89,7 +89,7 @@ async function createAgentLocalRunRig(
     )
   }
 
-  const harness = new MultiAutogrowRealignHarness(page, { socketSid })
+  const harness = new AgentMultiAutogrowRealignHarness(page, { socketSid })
   await harness.setUp({ settings: { 'Comfy.Queue.QPOV2': false } })
 
   const turnPosts: TurnPostBody[] = []
