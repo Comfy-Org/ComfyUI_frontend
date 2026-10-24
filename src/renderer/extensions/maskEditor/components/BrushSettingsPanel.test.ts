@@ -1,4 +1,3 @@
-/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- number inputs have no aria labels */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,17 +9,14 @@ import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(
-  import('@/renderer/extensions/maskEditor/components/controls/SliderControl.vue'),
-  () => ({
-    default: {
-      name: 'SliderControlStub',
-      props: ['label', 'min', 'max', 'step', 'modelValue'],
-      emits: ['update:modelValue'],
-      template: `<button data-slider="true" @click="$emit('update:modelValue', 0.5)">{{ modelValue }}</button>`
-    }
-  })
-)
+vi.mock<unknown>(import('@/components/ui/slider/Slider.vue'), () => ({
+  default: {
+    name: 'SliderStub',
+    props: ['modelValue', 'min', 'max', 'step', 'disabled', 'ariaLabelledby'],
+    emits: ['update:modelValue'],
+    template: `<button data-slider="true" :aria-labelledby="ariaLabelledby" @click="$emit('update:modelValue', [0.5])">{{ modelValue?.[0] }}</button>`
+  }
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -32,7 +28,6 @@ const i18n = createI18n({
         brushShape: 'Brush Shape',
         brushShapeCircle: 'Circle brush',
         brushShapeSquare: 'Square brush',
-        colorSelector: 'Color Selector',
         thickness: 'Thickness',
         opacity: 'Opacity',
         hardness: 'Hardness',
@@ -45,6 +40,9 @@ const i18n = createI18n({
 
 const renderPanel = () =>
   render(BrushSettingsPanel, { global: { plugins: [i18n] } })
+
+const numberInput = (name: string): HTMLInputElement =>
+  screen.getByRole('spinbutton', { name })
 
 const setNumberInput = (input: HTMLInputElement, value: string): void => {
   input.value = value
@@ -61,28 +59,29 @@ describe('BrushSettingsPanel', () => {
         opacity: 0.7,
         hardness: 1,
         stepSize: 5
-      },
-      rgbColor: '#FF0000',
-      colorInput: null
+      }
     })
   })
 
   describe('brush shape buttons', () => {
-    it('should set brushSettings.type to Arc when arc button clicked', async () => {
+    it('should set brushSettings.type to Arc when the circle is chosen', async () => {
       mockStore.brushSettings.type = BrushShape.Rect
       renderPanel()
       const user = userEvent.setup()
 
-      await user.click(screen.getByRole('button', { name: 'Circle brush' }))
+      await user.click(screen.getByRole('radio', { name: 'Circle brush' }))
 
       expect(mockStore.brushSettings.type).toBe(BrushShape.Arc)
+      expect(
+        screen.getByRole('radio', { name: 'Circle brush' })
+      ).toHaveAttribute('aria-checked', 'true')
     })
 
-    it('should set brushSettings.type to Rect when rect button clicked', async () => {
+    it('should set brushSettings.type to Rect when the square is chosen', async () => {
       renderPanel()
       const user = userEvent.setup()
 
-      await user.click(screen.getByRole('button', { name: 'Square brush' }))
+      await user.click(screen.getByRole('radio', { name: 'Square brush' }))
 
       expect(mockStore.brushSettings.type).toBe(BrushShape.Rect)
     })
@@ -100,119 +99,92 @@ describe('BrushSettingsPanel', () => {
   })
 
   describe('numeric inputs', () => {
-    it('should call setBrushSize when size number input changes', () => {
-      const { container } = renderPanel()
-      const sizeInput = container.querySelectorAll(
-        'input[type="number"]'
-      )[0] as HTMLInputElement
+    it('should call setBrushSize when the thickness input changes', () => {
+      renderPanel()
 
-      setNumberInput(sizeInput, '50')
+      setNumberInput(numberInput('Thickness'), '50')
 
       expect(mockStore.setBrushSize).toHaveBeenCalledWith(50)
     })
 
-    it('should call setBrushOpacity when opacity number input changes', () => {
-      const { container } = renderPanel()
-      const opacityInput = container.querySelectorAll(
-        'input[type="number"]'
-      )[1] as HTMLInputElement
+    it('should show a rounded thickness when the stored size is fractional', () => {
+      mockStore.brushSettings.size = 10.6
+      renderPanel()
 
-      setNumberInput(opacityInput, '0.4')
+      expect(numberInput('Thickness').value).toBe('11')
+    })
+
+    it('should ignore a cleared thickness field', () => {
+      renderPanel()
+
+      setNumberInput(numberInput('Thickness'), '')
+
+      expect(mockStore.setBrushSize).not.toHaveBeenCalled()
+    })
+
+    it('should convert an opacity percent into the 0-1 store value', () => {
+      renderPanel()
+
+      setNumberInput(numberInput('Opacity'), '40')
 
       expect(mockStore.setBrushOpacity).toHaveBeenCalledWith(0.4)
     })
 
-    it('should call setBrushHardness when hardness number input changes', () => {
-      const { container } = renderPanel()
-      const hardnessInput = container.querySelectorAll(
-        'input[type="number"]'
-      )[2] as HTMLInputElement
+    it('should display opacity as a percent of the stored 0-1 value', () => {
+      mockStore.brushSettings.opacity = 0.7
+      renderPanel()
 
-      setNumberInput(hardnessInput, '0.6')
+      expect(numberInput('Opacity').value).toBe('70')
+    })
+
+    it('should call setBrushHardness with a 0-1 value', () => {
+      renderPanel()
+
+      setNumberInput(numberInput('Hardness'), '60')
 
       expect(mockStore.setBrushHardness).toHaveBeenCalledWith(0.6)
     })
 
-    it('should call setBrushStepSize when step number input changes', () => {
-      const { container } = renderPanel()
-      const stepInput = container.querySelectorAll(
-        'input[type="number"]'
-      )[3] as HTMLInputElement
+    it('should call setBrushStepSize when the step input changes', () => {
+      renderPanel()
 
-      setNumberInput(stepInput, '20')
+      setNumberInput(numberInput('Step Size'), '20')
 
       expect(mockStore.setBrushStepSize).toHaveBeenCalledWith(20)
     })
   })
 
-  describe('size slider (logarithmic)', () => {
-    it('should call setBrushSize with Math.round(Math.pow(250, value))', () => {
-      const { container } = renderPanel()
-      const sizeSlider = container.querySelectorAll(
-        '[data-slider="true"]'
-      )[0] as HTMLElement
+  describe('thickness slider (logarithmic)', () => {
+    it('should call setBrushSize with Math.round(Math.pow(250, value))', async () => {
+      const user = userEvent.setup()
+      renderPanel()
 
-      sizeSlider.click()
+      await user.click(screen.getAllByRole('button', { name: 'Thickness' })[0])
+
       // value = 0.5 → Math.round(Math.pow(250, 0.5)) = 16
       expect(mockStore.setBrushSize).toHaveBeenCalledWith(16)
     })
 
     it('should map size 250 to slider value 1', () => {
       mockStore.brushSettings.size = 250
-      const { container } = renderPanel()
-      const sizeSlider = container.querySelectorAll(
-        '[data-slider="true"]'
-      )[0] as HTMLElement
+      renderPanel()
 
-      // Math.log(250) / Math.log(250) = 1
-      expect(sizeSlider.textContent).toContain('1')
+      expect(
+        screen.getAllByRole('button', { name: 'Thickness' })[0].textContent
+      ).toContain('1')
     })
 
-    it('should return cached raw slider value when size matches the mapping', async () => {
+    it('should return the cached raw slider value when the size still matches', async () => {
       vi.mocked(mockStore.setBrushSize).mockImplementation((size: number) => {
         mockStore.brushSettings.size = size
       })
-      const { container } = renderPanel()
-      const sizeSlider = container.querySelectorAll(
-        '[data-slider="true"]'
-      )[0] as HTMLElement
+      const user = userEvent.setup()
+      renderPanel()
+      const slider = screen.getAllByRole('button', { name: 'Thickness' })[0]
 
-      // Click sets rawSliderValue=0.5 → setBrushSize(16) → size=16
-      // → next getter run sees cached match → returns 0.5
-      sizeSlider.click()
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await user.click(slider)
 
-      expect(sizeSlider.textContent).toContain('0.5')
-    })
-  })
-
-  describe('color input', () => {
-    it('should v-model rgbColor on the color input', () => {
-      const { container } = renderPanel()
-      const colorInput = container.querySelector(
-        'input[type="color"]'
-      ) as HTMLInputElement
-
-      colorInput.value = '#00ff00'
-      colorInput.dispatchEvent(new Event('input', { bubbles: true }))
-
-      expect(mockStore.rgbColor).toBe('#00ff00')
-    })
-
-    it('should expose color input ref to the store on mount', () => {
-      const { container } = renderPanel()
-      const colorInput = container.querySelector('input[type="color"]')
-
-      expect(mockStore.colorInput).toBe(colorInput)
-    })
-
-    it('should clear store.colorInput on unmount', () => {
-      const { unmount } = renderPanel()
-      expect(mockStore.colorInput).not.toBeNull()
-
-      unmount()
-
-      expect(mockStore.colorInput).toBeNull()
+      expect(slider.textContent).toContain('0.5')
     })
   })
 })

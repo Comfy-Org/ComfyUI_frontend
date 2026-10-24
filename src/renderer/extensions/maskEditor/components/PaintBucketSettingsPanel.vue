@@ -1,44 +1,53 @@
 <template>
-  <div class="flex flex-col gap-3 pb-3">
-    <h3 class="mt-2.5 text-center font-sans text-[15px] text-muted-foreground">
-      {{ t('maskEditor.paintBucketSettings') }}
-    </h3>
+  <SettingsSection>
+    <template #title>{{ t('maskEditor.paintBucketSettings') }}</template>
 
-    <SliderControl
+    <SliderField
       :label="t('maskEditor.tolerance')"
-      :min="0"
-      :max="255"
-      :step="1"
-      :model-value="store.paintBucketTolerance"
-      @update:model-value="onToleranceChange"
-    />
-
-    <SliderControl
-      :label="t('maskEditor.fillOpacity')"
+      :model-value="tolerancePercent"
       :min="0"
       :max="100"
       :step="1"
+      suffix="%"
+      :help-text="t('maskEditor.paintBucketToleranceHelp')"
+      @update:model-value="onToleranceChange"
+    />
+
+    <SliderField
+      :label="t('maskEditor.fillOpacity')"
       :model-value="store.fillOpacity"
+      :min="0"
+      :max="100"
+      :step="1"
+      suffix="%"
+      :help-text="t('maskEditor.fillOpacityHelp')"
       @update:model-value="onFillOpacityChange"
     />
-  </div>
+  </SettingsSection>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
-import SliderControl from './controls/SliderControl.vue'
+import SettingsSection from './controls/SettingsSection.vue'
+import SliderField from './controls/SliderField.vue'
 
 const { t } = useI18n()
 const store = useMaskEditorStore()
 
-const onToleranceChange = (value: number) => {
-  store.setPaintBucketTolerance(value)
+const tolerancePercent = computed(() =>
+  Math.round((store.paintBucketTolerance / 255) * 100)
+)
+
+function onToleranceChange(percent: number) {
+  const clamped = Math.min(100, Math.max(0, percent))
+  store.setPaintBucketTolerance(Math.round((clamped / 100) * 255))
 }
 
-const onFillOpacityChange = (value: number) => {
+function onFillOpacityChange(value: number) {
   store.setFillOpacity(value)
 }
 </script>
