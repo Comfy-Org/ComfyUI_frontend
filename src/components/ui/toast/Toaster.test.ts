@@ -117,8 +117,10 @@ describe('Toaster', () => {
     })
     await nextTick()
     await user.click(screen.getByRole('button', { name: 'Manage' }))
-    await user.click(screen.getByRole('button', { name: 'Disable' }))
+    expect(manage).toHaveBeenCalledOnce()
+    expect(disable).not.toHaveBeenCalled()
 
+    await user.click(screen.getByRole('button', { name: 'Disable' }))
     expect(manage).toHaveBeenCalledOnce()
     expect(disable).toHaveBeenCalledOnce()
   })
@@ -136,8 +138,10 @@ describe('Toaster', () => {
     await nextTick()
     const actions = screen.getAllByRole('button', { name: 'Open' })
     await user.click(actions[0])
-    await user.click(actions[1])
+    expect(first).toHaveBeenCalledOnce()
+    expect(second).not.toHaveBeenCalled()
 
+    await user.click(actions[1])
     expect(first).toHaveBeenCalledOnce()
     expect(second).toHaveBeenCalledOnce()
   })

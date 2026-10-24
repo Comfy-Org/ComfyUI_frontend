@@ -45,14 +45,10 @@ function announcement(item: Toast) {
   return [
     item.title,
     item.description,
-    ...toastActions(item).map((action) => action.label)
+    ...item.actions.map((action) => action.label)
   ]
     .filter(Boolean)
     .join('. ')
-}
-
-function toastActions(item: Toast) {
-  return [...(item.action ? [item.action] : []), ...(item.actions ?? [])]
 }
 
 let escapeToastId: ToastId | undefined
@@ -131,7 +127,7 @@ const icons = {
         class="col-span-2 col-start-2 row-start-3 mt-3 flex justify-end gap-2 empty:hidden"
       >
         <Button
-          v-for="(action, index) in toastActions(item)"
+          v-for="(action, index) in item.actions"
           :key="`${action.label}-${index}`"
           size="md"
           variant="secondary"

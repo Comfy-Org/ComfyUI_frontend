@@ -14,8 +14,7 @@ export interface Toast {
   instance: symbol
   kind: ToastKind
   title: string
-  action?: ToastAction
-  actions?: ToastAction[]
+  actions: ToastAction[]
   description?: string
 }
 
@@ -28,8 +27,12 @@ export const useToast = defineStore('toast', () => {
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        action: options.action,
-        actions: options.actions,
+        // `ToastOptions.action` stays part of the public extension API; the
+        // renderer only ever sees the one ordered list.
+        actions: [
+          ...(options.action ? [options.action] : []),
+          ...(options.actions ?? [])
+        ],
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
