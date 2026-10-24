@@ -441,6 +441,7 @@ export class LGraphNode
     output_node?: boolean
     api_node?: boolean
     name?: string
+    isCoreNode?: boolean
   }
 
   static resizeHandleSize = 15
