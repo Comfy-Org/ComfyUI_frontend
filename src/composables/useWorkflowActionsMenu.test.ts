@@ -48,6 +48,13 @@ vi.mock(
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -95,6 +102,7 @@ describe('useWorkflowActionsMenu', () => {
     vi.mocked(
       lazyDeployToComfyApiDialog.openDeployToComfyApiDialog
     ).mockResolvedValue(undefined)
+    mockDistributionState.isCloud = false
     mockMenuItemStore.hasSeenLinear = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
@@ -371,6 +379,16 @@ describe('useWorkflowActionsMenu', () => {
 
     const nested = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
     expect(menuLabels(nested.menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
+  it('does not offer Deploy to Comfy API on Cloud', () => {
+    mockDistributionState.isCloud = true
+
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    expect(menuLabels(menuItems.value)).not.toContain(
       'deployToComfyApi.buttonLabel'
     )
   })
