@@ -222,6 +222,18 @@ describe('keybindingService - Canvas Keybindings', () => {
       )
     })
 
+    it('runs once while the key is held down', async () => {
+      const event = createTestKeyboardEvent('l', {
+        target: canvasChild,
+        repeat: true
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+    })
+
     it.for(['input', 'textarea'] as const)(
       'does not run while typing in a node widget %s',
       async (tagName) => {
