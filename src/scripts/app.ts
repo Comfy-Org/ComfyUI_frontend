@@ -887,15 +887,18 @@ export class ComfyApp implements IComfyApp {
     if (previous) unregisterDomWidgets(previous)
     this.rootGraphInternal = graph
     registerDomWidgets(graph)
-    useCanvasScheduler().cancel('graph-load-camera')
     this.pendingCamera = undefined
     this.canvas.setGraph(graph)
     if (previous && !isOwnedByWorkflow(previous)) previous.clear()
   }
 
-  private rootGraphForLoad(workflow: ComfyWorkflow | null): LGraph {
+  private rootGraphForLoad(
+    workflow: ComfyWorkflow | null,
+    clean: boolean
+  ): LGraph {
     if (workflow?.graph) return workflow.graph
     const current = this.rootGraph
+    if (!clean) return current
     return isOwnedByWorkflow(current) ? this.createRootGraph() : current
   }
 
@@ -1255,19 +1258,14 @@ export class ComfyApp implements IComfyApp {
     ChangeTracker.isLoadingGraph = true
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
-    const graph = clean
-      ? this.rootGraphForLoad(
-          workflow instanceof ComfyWorkflow ? workflow : null
-        )
-      : this.rootGraph
+    const graph = this.rootGraphForLoad(
+      workflow instanceof ComfyWorkflow ? workflow : null,
+      clean
+    )
     try {
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
-        // Only reset candidates; preserve UI state (fileSizes, etc.)
-        // so cached results restored by showPendingWarnings still display sizes.
-        // Abort any in-flight verification from the outgoing workflow so a late
-        // result cannot repopulate the store after we've switched workflows.
         useMissingModelStore().createVerificationAbortController().abort()
         useMissingMediaStore().createVerificationAbortController().abort()
         useMissingModelStore().setMissingModels([])
@@ -1283,8 +1281,6 @@ export class ComfyApp implements IComfyApp {
         withGraphIntentSource('load', () => this.clean())
       }
 
-      // Use explicit validation instead of falsy check to avoid replacing
-      // valid but falsy values (empty objects, 0, false, etc.)
       if (
         !graphData ||
         typeof graphData !== 'object' ||
@@ -1414,16 +1410,6 @@ export class ComfyApp implements IComfyApp {
         }
       }
     } catch (error) {
-      // This try wraps everything between `beforeLoadGraph` and
-      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
-      // cloning, `validateWorkflow`, reroute-migration inspection, a
-      // malformed subgraph definition, a `beforeConfigureGraph` extension
-      // hook throwing, or a node-replacement load failure. Any of those
-      // happens before `rootGraph.configure` and so reaches neither the
-      // `afterConfigureGraph` success path nor the `onGraphLoadError` catch
-      // below. Left unhandled, that would both reject silently and leak any
-      // suppression/loading-state a `beforeLoadGraph` listener opened for
-      // this load, since nothing ever notifies it the load ended.
       try {
         await this.reportGraphLoadFailure(error)
         if (clean) this.disownFailedLoadGraph(workflow)
@@ -2228,7 +2214,7 @@ export class ComfyApp implements IComfyApp {
           } finally {
             useMissingNodesErrorStore().setMissingNodeTypes([])
           }
-          graph = this.rootGraphForLoad(null)
+          graph = this.rootGraphForLoad(null, true)
           this.activateRootGraph(graph)
           return graph
         })
@@ -2411,7 +2397,7 @@ export class ComfyApp implements IComfyApp {
   ): Promise<void> {
     useWorkflowService().beforeLoadNewGraph(false)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    const graph = this.rootGraphForLoad(null)
+    const graph = this.rootGraphForLoad(null, true)
     this.activateRootGraph(graph)
     withGraphIntentSource('load', () => this.clean())
 
