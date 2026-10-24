@@ -14,4 +14,26 @@ describe('SocialProofBarSection', () => {
     ).toHaveLength(4)
     expect(desktop.getAllByRole('img', { name: 'Apple' })).toHaveLength(1)
   })
+
+  it.for(['social-proof-desktop', 'social-proof-mobile'])(
+    'includes every agency once in %s without exposing repeated copies',
+    (banner) => {
+      render(SocialProofBarSection)
+
+      const agencies = [
+        'Asteria',
+        'Black Math',
+        'Brick Visual',
+        'Contender',
+        'Native Foreign',
+        'Silverside'
+      ]
+
+      const images = within(screen.getByTestId(banner))
+
+      expect(
+        agencies.map((name) => images.getAllByRole('img', { name }).length)
+      ).toEqual([1, 1, 1, 1, 1, 1])
+    }
+  )
 })
