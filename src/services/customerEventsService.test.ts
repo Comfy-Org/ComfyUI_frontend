@@ -360,7 +360,8 @@ describe('useCustomerEventsService', () => {
       api_usage_completed: 'credits.eventTypes.apiUsage',
       gpu_usage: 'credits.eventTypes.gpuUsage',
       api_node_usage: 'credits.eventTypes.apiNodeUsage',
-      agent_usage: 'credits.eventTypes.agentUsage'
+      agent_usage: 'credits.eventTypes.agentUsage',
+      router_usage: 'credits.eventTypes.routerUsage'
     }
 
     it('maps known legacy and unified event types to expected i18n keys', () => {
@@ -391,6 +392,7 @@ describe('useCustomerEventsService', () => {
       expect(service.getEventSeverity('gpu_usage')).toBe('warning')
       expect(service.getEventSeverity('api_node_usage')).toBe('warning')
       expect(service.getEventSeverity('agent_usage')).toBe('warning')
+      expect(service.getEventSeverity('router_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {
