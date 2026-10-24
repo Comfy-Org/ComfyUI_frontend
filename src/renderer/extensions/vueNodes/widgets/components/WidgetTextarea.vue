@@ -174,9 +174,8 @@ const promptEditorExperiment = usePromptEditorExperimentStore()
 const promptPanelStore = usePromptPanelStore()
 const { isBuilderMode } = useAppMode()
 const rightSidePanelStore = useRightSidePanelStore()
-const isPromptPanelArm = computed(
+const canOpenPromptPanel = computed(
   () =>
-    promptEditorExperiment.assignment === 'panel' &&
     !hideLayoutField &&
     !canvasStore.linearMode &&
     !isBuilderMode.value &&
@@ -202,13 +201,15 @@ function openTextEditor() {
     nodeId === undefined
       ? undefined
       : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
-  if (isPromptPanelArm.value && openPromptPanel()) return
-  promptEditorExperiment.expose('control')
+  const isPromptPanelArm = promptEditorExperiment.assignment === 'panel'
+  if (canOpenPromptPanel.value && isPromptPanelArm && openPromptPanel()) return
+  if (canOpenPromptPanel.value) promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle: node?.title,
     readOnly: () => isReadOnly.value,
+    isInExperiment: canOpenPromptPanel.value,
     onEdit: (text) => (modelValue.value = text)
   })
 }

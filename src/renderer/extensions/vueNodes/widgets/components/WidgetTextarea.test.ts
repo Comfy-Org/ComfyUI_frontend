@@ -532,6 +532,25 @@ describe('WidgetTextarea expand to editor', () => {
         '$feature/prompt-editor-surface': 'control'
       })
     })
+
+    it.for([
+      { context: 'app mode', inSidePanel: false, appMode: true },
+      { context: 'the side panel', inSidePanel: true, appMode: false }
+    ])(
+      'leaves the session out of the experiment in $context, where the panel could not open',
+      async ({ inSidePanel, appMode }) => {
+        useCanvasStore().linearMode = appMode
+        renderWithDialogHost({}, { inSidePanel })
+
+        await openEditor()
+
+        expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+        expect(telemetry.trackPromptEditorOpened).toHaveBeenCalledWith({
+          surface: 'dialog',
+          trigger: 'expand_button'
+        })
+      }
+    )
   })
 
   describe('with the panel arm served', () => {

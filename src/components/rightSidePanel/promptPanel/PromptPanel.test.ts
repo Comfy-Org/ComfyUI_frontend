@@ -87,6 +87,19 @@ describe('PromptPanel', () => {
     expect(promptPanelStore.target?.node).toBe(node)
   })
 
+  it('follows a selection made while hidden once the panel shows again', async () => {
+    const { graph, promptPanelStore } = renderOpenPanel()
+    const negative = addNode(graph, 'Negative', 'blurry')
+    promptPanelStore.isPanelHidden = true
+    setCanvasSelection([negative.node])
+    await nextTick()
+
+    promptPanelStore.isPanelHidden = false
+
+    expect(await screen.findByText('text · Negative')).toBeVisible()
+    expect(promptPanelStore.target?.node).toBe(negative.node)
+  })
+
   it('skips a prompt whose input is linked to another node', async () => {
     const { graph, promptPanelStore } = renderOpenPanel()
     const linked = addNode(graph, 'Linked', 'from upstream')

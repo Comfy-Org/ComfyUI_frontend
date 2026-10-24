@@ -90,6 +90,18 @@ describe('PromptEditor', () => {
     expect(screen.getByRole('textbox', { name: 'text' })).not.toHaveFocus()
   })
 
+  it('takes focus when Expand reopens the prompt it already shows', async () => {
+    const promptPanelStore = usePromptPanelStore()
+    promptPanelStore.autofocus = false
+    await mountEditorAfterRender()
+    const editor = screen.getByRole('textbox', { name: 'text' })
+
+    promptPanelStore.autofocus = true
+
+    await waitFor(() => expect(editor).toHaveFocus())
+    expect(promptPanelStore.autofocus).toBe(false)
+  })
+
   it('leaves focus on the canvas when it follows the selection', async () => {
     usePromptPanelStore().autofocus = false
     await mountEditorAfterRender()

@@ -111,6 +111,7 @@ describe('usePromptPanelStore', () => {
     store.recordInput()
 
     window.dispatchEvent(new Event('pagehide'))
+    expect(store.target).toBeNull()
     store.close()
 
     expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledExactlyOnceWith(
