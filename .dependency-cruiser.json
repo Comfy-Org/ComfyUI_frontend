@@ -14,6 +14,13 @@
       "to": { "path": "^src/platform/surveys/openTypeformDialog\\.ts$" }
     },
     {
+      "name": "agent-graph-api-not-stores",
+      "comment": "A remote agent op reaches the graph through the LGraph/LGraphNode API that humans and extensions use, never by writing the node or link stores directly. The stores are value holders; the graph API is the one place that owns link validation, widget callbacks and undo tracking, so writing them first means every one of those has to be re-derived afterwards. That re-derivation was the reconciliation layer the FE-2504 rewrite deleted (#18700), and this rule is what stops it growing back. See docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md, 'The follower writes the graph API, not the stores'. widgetValueStore is deliberately not listed: docOpMinter.ts and widgetValuesForm.ts read it to mint and project, which is not a store-first apply.",
+      "severity": "error",
+      "from": { "path": "^src/workbench/extensions/agent/" },
+      "to": { "path": "^src/stores/(nodeDataStore|linkStore)\\.ts$" }
+    },
+    {
       "name": "workspace-does-not-own-billing-or-account-ui",
       "severity": "error",
       "from": { "path": "^src/platform/workspace/" },
