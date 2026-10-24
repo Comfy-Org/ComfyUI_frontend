@@ -114,7 +114,7 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
-function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+export function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return
   const key = e.key.toUpperCase()
   if (key === 'Y' && !e.shiftKey) return 'redo'
@@ -353,6 +353,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private preview?: { interrupt: () => void }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -410,6 +411,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
+    this.preview?.interrupt()
     if (!this._restoringState) this.captureCanvasState()
     this.store()
   }
@@ -491,6 +493,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     const isInsideChangeTransaction = this.changeCount > 0
     if (
       !useApp().isGraphReady ||
+      this.preview ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -531,6 +534,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      this.preview ||
+      this.changeCount > 0 ||
       ChangeTracker.isLoadingGraph
     )
       return
@@ -562,7 +567,20 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
+  beginPreview(interrupt: () => void): () => void {
+    this.preview?.interrupt()
+    this.captureCanvasState()
+    const preview = { interrupt }
+    this.preview = preview
+    return () => {
+      if (this.preview !== preview) return
+      this.preview = undefined
+      if (isActiveTracker(this)) this.captureCanvasState()
+    }
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    this.preview?.interrupt()
     const restore = async () => {
       if (this._restoringState || source.length === 0) return
       const prevState = source.pop()

@@ -40,6 +40,62 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     }
   })
 
+  test('cancels gap previews and undoes a held nudge as one edit', async ({
+    comfyPage
+  }) => {
+    const { page } = comfyPage
+    await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
+    await comfyPage.canvasOps.pan({ x: 350, y: 250 })
+    await comfyPage.nodeOps.selectNodes(['Note', 'Markdown Note'])
+    const node = await comfyPage.nodeOps.getNodeRefByTitle('Markdown Note')
+    const position = async () =>
+      Array.from(await node.getProperty<[number, number]>('pos'))
+    const handle = page.getByRole('spinbutton', { name: 'Gap between nodes' })
+
+    await test.step('open the slider and gap handles', async () => {
+      await page.getByRole('button', { name: 'Tidy up', exact: true }).click()
+      await expect(
+        page.getByRole('slider', { name: 'Gap between nodes' })
+      ).toBeVisible()
+      await expect(handle).toBeVisible()
+    })
+
+    const before = await position()
+
+    await test.step('cancel after a modifier key cannot leave moved nodes', async () => {
+      const point = await handle.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        return {
+          x: bounds.x + bounds.width / 2,
+          y: bounds.y + bounds.height / 2
+        }
+      })
+      await handle.hover()
+      await page.mouse.down()
+      await page.mouse.move(point.x, point.y + 25, { steps: 5 })
+      await expect.poll(position).not.toEqual(before)
+      await page.keyboard.press('Shift')
+      await page.keyboard.press('Escape')
+      await page.mouse.up()
+      await expect.poll(position).toEqual(before)
+    })
+
+    await test.step('held arrow presses create one undoable edit', async () => {
+      await handle.focus()
+      await page.keyboard.down('ArrowUp')
+      await comfyPage.nextFrame()
+      await page.keyboard.down('ArrowUp')
+      await page.keyboard.down('ArrowUp')
+      await page.keyboard.up('ArrowUp')
+      const after = [before[0], before[1] + 3]
+      await expect.poll(position).toEqual(after)
+      await comfyPage.keyboard.undo()
+      await expect.poll(position).toEqual(before)
+      await comfyPage.keyboard.redo()
+      await expect.poll(position).toEqual(after)
+    })
+  })
+
   test('shows selection toolbox', async ({ comfyPage }) => {
     const selectedTitles = ['KSampler', 'CLIP Text Encode (Prompt)']
     await expect(comfyPage.selectionToolbox).toBeHidden()
