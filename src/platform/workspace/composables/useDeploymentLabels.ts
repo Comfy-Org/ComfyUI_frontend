@@ -15,11 +15,14 @@ type Translate = (
 /** The switcher's radio value for Comfy Cloud; deployment rows use their id. */
 export const COMFY_CLOUD_ROW = 'comfy-cloud'
 
-/** How a deployment's status reads at a glance: ready, stopped, or on its way. */
-export type DeploymentStatusTone = 'ready' | 'stopped' | 'pending'
+/** How a deployment's status reads at a glance. */
+export type DeploymentStatusTone = 'ready' | 'pending' | 'failed' | 'stopped'
 
 const STATUS_LABEL_KEYS = new Map([
   ['stopped', 'deploymentSwitcher.status.stopped'],
+  ['stopping', 'deploymentSwitcher.status.stopping'],
+  ['failed', 'deploymentSwitcher.status.failed'],
+  ['queued', 'deploymentSwitcher.status.starting'],
   ['starting', 'deploymentSwitcher.status.starting'],
   ['provisioning', 'deploymentSwitcher.status.provisioning']
 ])
@@ -53,10 +56,11 @@ function labelMessage(
   ]
 }
 
-const STARTING_STATUSES = new Set(['starting', 'provisioning'])
+const STARTING_STATUSES = new Set(['queued', 'starting', 'provisioning'])
 
 export function deploymentStatusTone(status: string): DeploymentStatusTone {
   if (status === 'ready') return 'ready'
+  if (status === 'failed') return 'failed'
   return STARTING_STATUSES.has(status) ? 'pending' : 'stopped'
 }
 
@@ -93,22 +97,25 @@ function deploymentNames(t: Translate) {
     )
   }
 
-  function rowSubtitle(deployment: WorkspaceDeployment): string | null {
-    const name = subtitle(deployment)
-    if (name === null || deployment.release_version === undefined) return name
-    return text('deploymentSwitcher.nameWithVersion', {
-      name,
+  function detail(deployment: WorkspaceDeployment): string | null {
+    if (deployment.status !== 'ready') return statusText(deployment.status)
+    if (deployment.release_version === undefined) return null
+    return text('deploymentSwitcher.version', {
       version: deployment.release_version
     })
   }
 
-  function meta(deployment: WorkspaceDeployment): string | null {
-    return deploymentStatusTone(deployment.status) === 'ready'
-      ? null
-      : statusText(deployment.status)
+  function rowTooltip(deployment: WorkspaceDeployment): string {
+    const label = fullLabel(deployment)
+    const rowDetail = detail(deployment)
+    if (rowDetail === null) return label
+    return text('deploymentSwitcher.labelWithDetail', {
+      label,
+      detail: rowDetail
+    })
   }
 
-  return { title, subtitle, rowSubtitle, fullLabel, meta }
+  return { title, subtitle, detail, rowTooltip, fullLabel }
 }
 
 /**
@@ -155,9 +162,10 @@ export function useDeploymentLabels() {
 
   return {
     deploymentTitle: names.title,
-    deploymentRowSubtitle: names.rowSubtitle,
+    deploymentName: names.subtitle,
+    deploymentDetail: names.detail,
+    deploymentTooltip: names.rowTooltip,
     deploymentFullLabel: names.fullLabel,
-    deploymentMeta: names.meta,
     currentLabel,
     defaultTitle
   }
