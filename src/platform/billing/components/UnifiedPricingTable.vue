@@ -943,7 +943,8 @@ function handleSubscribeTeam() {
       discountedUsd: getStopDiscountedMonthlyUsd(
         stop,
         currentBillingCycle.value
-      )
+      ),
+      periodChargeUsd: stop.periodChargeUsd
     },
     billingCycle: currentBillingCycle.value,
     isChange: isTeamPlanChange.value
