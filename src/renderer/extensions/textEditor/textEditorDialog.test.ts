@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -138,11 +138,7 @@ describe('showTextEditor', () => {
     const editor = await screen.findByRole('textbox')
 
     editor.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Escape',
-        isComposing: true,
-        bubbles: true
-      })
+      createEvent.keyDown(editor, { key: 'Escape', isComposing: true })
     )
     await nextTick()
 
