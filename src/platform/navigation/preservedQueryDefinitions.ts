@@ -39,8 +39,12 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     keys: ['topup']
   },
   {
+    // `filter` rides with `settings` so a deep link's panel and its selected
+    // filter survive the same redirect. `requiredKey` keeps an unrelated
+    // `filter` from replacing a stashed settings intent.
     namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-    keys: ['settings']
+    keys: ['settings', 'filter'],
+    requiredKey: 'settings'
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.ASSETS,

@@ -283,6 +283,8 @@ export type SettingPanelType =
   | 'workspace-allowlist'
   | 'workspace-members'
 
+export type ExtensionFilterType = 'all' | 'core' | 'custom' | 'agentCreated'
+
 export interface SettingDialogProps {
   onClose: () => void
   defaultPanel?: SettingPanelType

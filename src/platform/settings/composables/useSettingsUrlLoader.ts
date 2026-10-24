@@ -6,9 +6,11 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { requestAgentExtensionFilter } from '@/platform/settings/agentExtensionService'
-import type { SettingPanelType } from '@/platform/settings/types'
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
+import type {
+  ExtensionFilterType,
+  SettingPanelType
+} from '@/platform/settings/types'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
 
@@ -27,10 +29,13 @@ const DEEP_LINKABLE_PANELS: Record<string, SettingPanelType> = {
  * silent no-op with the param stripped. Survives the login redirect via the
  * preserved-query system, like the top-up URL loader.
  */
+const EXTENSION_FILTER_PARAMS: Record<string, ExtensionFilterType> = {
+  agent: 'agentCreated'
+}
+
 export function useSettingsUrlLoader() {
   const route = useRoute()
   const router = useRouter()
-  const settingsDialog = useSettingsDialog()
 
   async function loadSettingsFromUrl() {
     hydratePreservedQuery(NAMESPACE)
@@ -39,12 +44,15 @@ export function useSettingsUrlLoader() {
     const param = query.settings
     if (param === undefined) return
 
+    const filter = query.filter
+    const extensionFilter =
+      param === 'extension' && typeof filter === 'string'
+        ? EXTENSION_FILTER_PARAMS[filter]
+        : undefined
+
     const cleanQuery = { ...query }
     delete cleanQuery.settings
-    if (param === 'extension' && query.filter === 'agent') {
-      requestAgentExtensionFilter('agentCreated')
-      delete cleanQuery.filter
-    }
+    if (extensionFilter) delete cleanQuery.filter
     const stripped = router.replace({ query: cleanQuery }).catch((error) => {
       console.warn('[useSettingsUrlLoader] Failed to clean URL params:', error)
     })
@@ -55,7 +63,7 @@ export function useSettingsUrlLoader() {
       param &&
       Object.hasOwn(DEEP_LINKABLE_PANELS, param)
     ) {
-      settingsDialog.show(DEEP_LINKABLE_PANELS[param])
+      showSettingsPanel(DEEP_LINKABLE_PANELS[param], { extensionFilter })
     }
 
     await stripped

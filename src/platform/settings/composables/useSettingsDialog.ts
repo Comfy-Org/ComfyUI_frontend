@@ -1,14 +1,34 @@
 import type { Component } from 'vue'
+import { readonly, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
+  ExtensionFilterType,
   SettingDialogProps,
   SettingPanelType
 } from '@/platform/settings/types'
 
 const DIALOG_KEY = 'global-settings'
+
+export interface SettingsPanelNavigation {
+  panel: SettingPanelType
+  /** Which Extensions filter to select once that panel is showing. */
+  extensionFilter?: ExtensionFilterType
+  /** Distinguishes two consecutive requests for the same panel. */
+  requestId: number
+}
+
+const navigation = ref<SettingsPanelNavigation>()
+let lastRequestId = 0
+
+/**
+ * The panel the app last asked Settings to show. `defaultPanel` only reaches
+ * {@link SettingDialog} when the dialog is created, so a dialog that is
+ * already open navigates by observing this instead.
+ */
+export const settingsPanelNavigation = readonly(navigation)
 
 // The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 let settingDialogComponent: Component<SettingDialogProps> | undefined
@@ -59,4 +79,21 @@ export function useSettingsDialog() {
   }
 
   return { show, hide, showAbout }
+}
+
+/**
+ * Shows `panel`, selecting it in a Settings dialog that is already open as
+ * well as in one this call creates.
+ */
+export function showSettingsPanel(
+  panel: SettingPanelType,
+  options: Pick<SettingsPanelNavigation, 'extensionFilter'> = {}
+) {
+  navigation.value = { ...options, panel, requestId: ++lastRequestId }
+  useSettingsDialog().show(panel)
+}
+
+/** Clears a navigation request once its target has applied it. */
+export function consumeSettingsPanelNavigation(requestId: number) {
+  if (navigation.value?.requestId === requestId) navigation.value = undefined
 }

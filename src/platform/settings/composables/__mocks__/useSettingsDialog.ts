@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
-import type { useSettingsDialog as realUseSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import type {
+  SettingsPanelNavigation,
+  useSettingsDialog as realUseSettingsDialog
+} from '@/platform/settings/composables/useSettingsDialog'
 
 const settingsDialog: ReturnType<typeof realUseSettingsDialog> = {
   show: vi.fn(),
@@ -9,3 +13,7 @@ const settingsDialog: ReturnType<typeof realUseSettingsDialog> = {
 }
 
 export const useSettingsDialog = vi.fn(() => settingsDialog)
+
+export const settingsPanelNavigation = readonly(ref<SettingsPanelNavigation>())
+export const showSettingsPanel = vi.fn()
+export const consumeSettingsPanelNavigation = vi.fn()

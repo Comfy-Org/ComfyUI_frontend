@@ -3,10 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Router } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { showSettingsPanel } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 
 const STORAGE_KEY = 'Comfy.PreservedQuery.settings'
@@ -20,12 +21,9 @@ function createAppLikeRouter(): Router {
     history: createMemoryHistory(),
     routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
   })
-  installPreservedQueryTracker(router, [
-    {
-      namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-      keys: ['settings']
-    }
-  ])
+  // The production definitions, not a copy of their keys: a key this loader
+  // reads but the router never captures is exactly the failure under test.
+  installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
   return router
 }
 
@@ -58,9 +56,9 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
-      'workspace'
-    )
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('workspace', {
+      extensionFilter: undefined
+    })
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/?keep=1')
     )
@@ -79,9 +77,9 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
-      'workspace'
-    )
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('workspace', {
+      extensionFilter: undefined
+    })
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )
@@ -97,12 +95,44 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )
     firstMount.unmount()
-    vi.mocked(useSettingsDialog().show).mockClear()
+    vi.mocked(showSettingsPanel).mockClear()
 
     await testRouter.push('/')
     await mountSettingsUrlLoader().loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
+  })
+
+  it('restores the Agent-created filter through a query-dropping redirect', async () => {
+    await testRouter.push('/?settings=extension&filter=agent')
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBe(
+      JSON.stringify({ settings: 'extension', filter: 'agent' })
+    )
+
+    await testRouter.push('/cloud/login')
+    await testRouter.push('/')
+
+    const { loadSettingsFromUrl } = mountSettingsUrlLoader()
+    await loadSettingsFromUrl()
+
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('extension', {
+      extensionFilter: 'agentCreated'
+    })
+    await vi.waitFor(() =>
+      expect(testRouter.currentRoute.value.fullPath).toBe('/')
+    )
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
+  it('ignores a filter that arrives without a settings intent', async () => {
+    await testRouter.push('/?filter=agent')
+    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
+
+    await testRouter.push('/')
+    const { loadSettingsFromUrl } = mountSettingsUrlLoader()
+    await loadSettingsFromUrl()
+
+    expect(showSettingsPanel).not.toHaveBeenCalled()
   })
 
   it('strips an unrecognized value without opening or leaving a stash behind', async () => {
@@ -111,7 +141,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )

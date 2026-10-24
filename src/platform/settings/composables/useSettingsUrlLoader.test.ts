@@ -2,12 +2,8 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useSettingsDialog } from './useSettingsDialog'
+import { showSettingsPanel } from './useSettingsDialog'
 import { useSettingsUrlLoader } from './useSettingsUrlLoader'
-import {
-  agentExtensionFilterRequest,
-  consumeAgentExtensionFilterRequest
-} from '@/platform/settings/agentExtensionService'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -32,7 +28,7 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
     expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
@@ -48,7 +44,9 @@ describe('useSettingsUrlLoader', () => {
       const { loadSettingsFromUrl } = useSettingsUrlLoader()
       await loadSettingsFromUrl()
 
-      expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(panel)
+      expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith(panel, {
+        extensionFilter: undefined
+      })
       expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'settings'
@@ -68,28 +66,13 @@ describe('useSettingsUrlLoader', () => {
     })
   })
 
-  it('requests the agent filter and strips it with the extension deep link', async () => {
-    useRoute().query.settings = 'extension'
-    useRoute().query.filter = 'agent'
-
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    await loadSettingsFromUrl()
-
-    expect(agentExtensionFilterRequest.value).toBe('agentCreated')
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
-    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
-      'extension'
-    )
-    consumeAgentExtensionFilterRequest('agentCreated')
-  })
-
   it('strips but does not open for an unrecognized panel value', async () => {
     useRoute().query.settings = 'garbage'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'settings'
@@ -102,7 +85,7 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -112,7 +95,7 @@ describe('useSettingsUrlLoader', () => {
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(showSettingsPanel).not.toHaveBeenCalled()
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
@@ -127,8 +110,8 @@ describe('useSettingsUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'settings'
     )
-    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
-      'workspace'
-    )
+    expect(showSettingsPanel).toHaveBeenCalledExactlyOnceWith('workspace', {
+      extensionFilter: undefined
+    })
   })
 })
