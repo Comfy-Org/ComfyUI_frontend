@@ -245,7 +245,6 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionPackEnabled,
     isSavingExtensionPacks,
     setExtensionPackEnabled,
-    planAgentExtensionDisable,
     disableAgentExtensions,
     captureCoreExtensions,
     isCoreExtension,

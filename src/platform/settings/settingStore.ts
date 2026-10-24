@@ -42,6 +42,36 @@ type LocalSettingWrite<TValue> =
   | AppliedSetting<TValue>
   | { written: false; outcome: 'unchanged' | 'superseded' }
 
+type SettingWriteFailure = Extract<SettingWriteResult, { ok: false }>
+
+interface SettingBatchWrite<K extends keyof Settings> {
+  applied: Map<K, AppliedSetting<Settings[K]>>
+  hadValue: Map<K, boolean>
+  updatedSettings: Partial<Settings>
+}
+
+/**
+ * Sends a batch and names why the backend did not take it, or `undefined` when
+ * it did. A resolved response is not an accepted one, so the status is read
+ * rather than assumed.
+ */
+async function sendSettings(
+  settings: Partial<Settings>
+): Promise<SettingWriteFailure | undefined> {
+  let response: Response
+  try {
+    response = await api.storeSettings(settings)
+  } catch (cause) {
+    return { ok: false, reason: 'unreachable', detail: toError(cause).message }
+  }
+  if (response.ok) return undefined
+  return {
+    ok: false,
+    reason: 'refused',
+    detail: `${response.status} ${response.statusText}`
+  }
+}
+
 /** Settings with no `onChange` to undo, so a failed write can be reverted. */
 export const REVERTIBLE_SETTING_IDS = [
   'Comfy.Extension.Disabled',
@@ -288,51 +318,48 @@ export const useSettingStore = defineStore('setting', () => {
    * caller is told which of the three outcomes happened rather than inferring
    * success from the absence of a rejection.
    */
-  async function setManyOrRevert<K extends RevertibleSettingId>(
+  async function applyBatchLocally<K extends keyof Settings>(
     settings: Pick<Settings, K>
-  ): Promise<SettingWriteResult> {
-    const keys = Object.keys(settings) as K[]
-    const hadValue = new Map(keys.map((key) => [key, exists(key)]))
+  ): Promise<SettingBatchWrite<K>> {
     const applied = new Map<K, AppliedSetting<Settings[K]>>()
+    const hadValue = new Map<K, boolean>()
     const updatedSettings: Partial<Settings> = {}
 
-    for (const key of keys) {
+    for (const key of Object.keys(settings) as K[]) {
+      hadValue.set(key, exists(key))
       const local = await applySettingLocally(key, settings[key])
       if (!local.written) continue
       applied.set(key, local)
       Object.assign(updatedSettings, { [key]: local.newValue })
     }
-    if (!applied.size) return { ok: true, outcome: 'unchanged' }
+    return { applied, hadValue, updatedSettings }
+  }
 
-    let failure: SettingWriteResult | undefined
-    try {
-      const response = await api.storeSettings(updatedSettings)
-      if (!response.ok) {
-        failure = {
-          ok: false,
-          reason: 'refused',
-          detail: `${response.status} ${response.statusText}`
-        }
-      }
-    } catch (cause) {
-      failure = {
-        ok: false,
-        reason: 'unreachable',
-        detail: toError(cause).message
-      }
+  function revertBatch<K extends keyof Settings>({
+    applied,
+    hadValue
+  }: SettingBatchWrite<K>) {
+    for (const [key, local] of applied) {
+      if (latestWrite.get(key) !== local.writeToken) continue
+      if (hadValue.get(key)) settingValues.value[key] = local.previousValue
+      else delete settingValues.value[key]
     }
+  }
 
+  async function setManyOrRevert<K extends RevertibleSettingId>(
+    settings: Pick<Settings, K>
+  ): Promise<SettingWriteResult> {
+    const batch = await applyBatchLocally(settings)
+    if (!batch.applied.size) return { ok: true, outcome: 'unchanged' }
+
+    const failure = await sendSettings(batch.updatedSettings)
     if (failure) {
-      for (const [key, local] of applied) {
-        if (latestWrite.get(key) !== local.writeToken) continue
-        if (hadValue.get(key)) settingValues.value[key] = local.previousValue
-        else delete settingValues.value[key]
-      }
+      revertBatch(batch)
       return failure
     }
 
     const telemetry = useTelemetry()
-    for (const [key, local] of applied) {
+    for (const [key, local] of batch.applied) {
       const event = settingChangedEvent(settingsById.value[key], key, local)
       if (event) telemetry?.trackSettingChanged(event)
     }
