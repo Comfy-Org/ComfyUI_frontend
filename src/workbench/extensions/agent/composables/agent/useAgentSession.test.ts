@@ -2106,10 +2106,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   describe('ask_user', () => {
-    const parkedOnQuestion = async (
-      receipt: AgentAnswerReceipt = { status: 'answered' }
-    ) => {
-      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
+    const parkedOnQuestion = async (receipt?: AgentAnswerReceipt) => {
+      const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+        async (_threadId, _askId, answer) =>
+          receipt ?? { status: 'answered', ...answer }
+      )
       const { source, emit } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -2361,6 +2362,7 @@ describe('useAgentSession (v1 composition root)', () => {
       async ([, otherText, superseded]) => {
         const { session } = await parkedOnQuestion({
           status: 'answered',
+          selected: [],
           other_text: otherText
         })
 
@@ -2380,7 +2382,7 @@ describe('useAgentSession (v1 composition root)', () => {
       '%s a free-text-only frame (%s)',
       async ([, otherText, superseded]) => {
         const { session, emit } = await parkedOnQuestion()
-        await session.answerAsk('turn-1:call-1', {
+        const answered = session.answerAsk('turn-1:call-1', {
           selected: [],
           other_text: 'a LoRA'
         })
@@ -2399,6 +2401,7 @@ describe('useAgentSession (v1 composition root)', () => {
           })
         )
 
+        await answered
         expect(session.notices.value).toHaveLength(superseded ? 1 : 0)
       }
     )
@@ -2476,7 +2479,10 @@ describe('useAgentSession (v1 composition root)', () => {
     })
 
     it('reports an empty committed answer that replaced this one', async () => {
-      const { session, emit } = await parkedOnQuestion()
+      const { session, emit } = await parkedOnQuestion({
+        status: 'answered',
+        selected: []
+      })
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
       emit(askResolved('msg-1', 'turn-1:call-1', []))
@@ -2492,9 +2498,17 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     })
 
-    it('leaves a status-only 202 to the frame to report', async () => {
-      const { session, emit } = await parkedOnQuestion()
-      await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
+    it('reports a frame that arrives before the answer receipt', async () => {
+      const { session, answerAsk, emit } = await parkedOnQuestion()
+      let resolveAnswer!: (receipt: AgentAnswerReceipt) => void
+      answerAsk.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveAnswer = resolve
+        })
+      )
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
 
       expect(session.notices.value).toEqual([])
 
@@ -2506,6 +2520,9 @@ describe('useAgentSession (v1 composition root)', () => {
           text: enMessages.agent.runApproval.answerSuperseded
         }
       ])
+      resolveAnswer({ status: 'answered', selected: ['flux'] })
+      await answered
+      expect(session.notices.value).toHaveLength(1)
     })
 
     it.for([400, 500])(
@@ -2536,7 +2553,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     it.for<{
       name: string
-      committed: Pick<AgentAskResolvedData, 'selected' | 'other_text'>
+      committed: Pick<AgentAnswerReceipt, 'selected' | 'other_text'>
       expected: AskUserResolution
     }>([
       {
@@ -2575,24 +2592,26 @@ describe('useAgentSession (v1 composition root)', () => {
     ])(
       'shows the committed answer when $name won',
       async ({ committed, expected }) => {
-        const { session, emit } = await parkedOnQuestion()
+        const { session, answerAsk, emit } = await parkedOnQuestion()
+        answerAsk.mockImplementationOnce(async () => {
+          emit(
+            wire({
+              type: 'agent_ask_resolved',
+              data: {
+                thread_id: 'th-1',
+                message_id: 'msg-1',
+                ask_id: 'turn-1:call-1',
+                status: 'answered',
+                ...committed
+              }
+            })
+          )
+          return { status: 'answered', ...committed }
+        })
         await session.answerAsk('turn-1:call-1', {
           selected: ['sdxl'],
           other_text: 'a LoRA'
         })
-
-        emit(
-          wire({
-            type: 'agent_ask_resolved',
-            data: {
-              thread_id: 'th-1',
-              message_id: 'msg-1',
-              ask_id: 'turn-1:call-1',
-              status: 'answered',
-              ...committed
-            }
-          })
-        )
 
         const shown = card()
         assert(shown?.type === 'askUser')

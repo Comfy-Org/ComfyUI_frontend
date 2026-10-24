@@ -114,7 +114,10 @@ describe('zAgentConversation', () => {
 describe('zRecordedWsEvent', () => {
   const discriminators = (
     union: typeof zAgentWsEvent | typeof zRecordedWsEvent
-  ) => union.options.map((option) => option.shape.type.value)
+  ) =>
+    union.options.flatMap(({ shape: { type } }) =>
+      'value' in type ? [type.value] : type.options
+    )
 
   it('mirrors every production event type', () => {
     expect(discriminators(zRecordedWsEvent)).toEqual(
