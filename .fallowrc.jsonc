@@ -43,6 +43,7 @@
       "entryPoints": [
         "apps/website/src/**/__mocks__/**/*.ts",
         "browser_tests/global{Setup,Teardown}.ts",
+        "packages/design-system/tests/consumer/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
         "src/**/__mocks__/**/*.ts"
       ],
@@ -72,6 +73,12 @@
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
     "postcss-html",
+    // Optional peer of @vueuse/integrations/useFuse, imported by the design
+    // system's select search. Packed consumers fail to resolve it without it.
+    "fuse.js",
+    // Imported by the bundled tailwind-utils cn(), kept external so published
+    // consumers install it with its license.
+    "tailwind-merge",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
   ],

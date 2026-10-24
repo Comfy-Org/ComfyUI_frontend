@@ -45,10 +45,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NavItemData } from '@/types/navTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 

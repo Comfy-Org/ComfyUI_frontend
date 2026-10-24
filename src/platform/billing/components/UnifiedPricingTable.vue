@@ -420,9 +420,9 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName
@@ -432,9 +432,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlider.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   ENTERPRISE_URL,

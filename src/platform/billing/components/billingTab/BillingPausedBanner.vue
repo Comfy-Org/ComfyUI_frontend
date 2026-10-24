@@ -40,7 +40,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   pausedBannerCopy,
   usePausedBanner

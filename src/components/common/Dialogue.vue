@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import {
-  DialogClose,
-  DialogContent,
-  DialogOverlay,
-  DialogRoot,
-  DialogTitle,
-  DialogTrigger
-} from 'reka-ui'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { DialogRoot, DialogTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{ title?: string; to?: string | HTMLElement }>()
 
@@ -22,19 +19,14 @@ const { t } = useI18n()
       <slot name="button" />
     </DialogTrigger>
     <DialogPortal :to>
-      <DialogOverlay
-        class="fixed inset-0 z-overlay bg-black/70 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-      />
-      <DialogContent
-        v-bind="$attrs"
-        class="fixed top-[50%] left-[50%] z-overlay max-h-[85vh] w-[90vw] max-w-[450px] -translate-1/2 rounded-2xl border border-border/50 bg-background p-2 shadow-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-      >
+      <DialogOverlay />
+      <DialogContent v-bind="$attrs" size="sm" class="p-2">
         <div
           v-if="title"
           class="flex w-full items-center justify-between border-b border-border/50 px-4"
         >
           <DialogTitle class="text-sm">{{ title }}</DialogTitle>
-          <DialogClose as-child>
+          <DialogClose>
             <Button
               :aria-label="t('g.close')"
               size="icon"

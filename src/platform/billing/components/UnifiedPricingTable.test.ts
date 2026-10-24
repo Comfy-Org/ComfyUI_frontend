@@ -6,7 +6,7 @@ import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'

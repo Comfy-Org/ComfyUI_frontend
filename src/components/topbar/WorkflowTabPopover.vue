@@ -1,11 +1,9 @@
 <template>
-  <Popover v-model:open="open">
+  <PopoverRoot v-model:open="open">
     <PopoverAnchor as="template" :reference="anchor ?? undefined" />
     <PopoverContent
-      side="bottom"
       :side-offset="8"
       class="workflow-popover-fade w-fit rounded-xl border-none bg-transparent p-0 shadow-lg transition-opacity duration-150 ease-out data-[state=closed]:animate-none data-[state=open]:animate-none"
-      :collision-padding="8"
       @open-auto-focus="!clicked && $event.preventDefault()"
       @close-auto-focus.prevent="restoreFocus"
       @interact-outside="onInteractOutside"
@@ -32,18 +30,17 @@
         </div>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { ref, toRefs, watch } from 'vue'
 
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 
 const POPOVER_WIDTH = 250
 
