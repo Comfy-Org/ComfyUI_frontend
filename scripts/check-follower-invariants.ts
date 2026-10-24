@@ -192,16 +192,25 @@ export function checkNoOpIdRegeneration(
   return runAstCheck(file, source, noOpIdRegeneration)
 }
 
+function moduleSpecifier(node: ts.Node): string | undefined {
+  if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier))
+    return node.moduleSpecifier.text
+  if (
+    ts.isCallExpression(node) &&
+    node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+    node.arguments[0] &&
+    ts.isStringLiteralLike(node.arguments[0])
+  )
+    return node.arguments[0].text
+}
+
 function singleApplier(file: string, sourceFile: ts.SourceFile): Violation[] {
   const violations: Violation[] = []
   const localApplier = /(?:^|\/)(?:applier|docHost|opApplier|docApplier)$/
   visit(sourceFile, (node) => {
-    if (
-      !ts.isImportDeclaration(node) ||
-      !ts.isStringLiteral(node.moduleSpecifier)
-    )
-      return
-    const moduleName = node.moduleSpecifier.text.replace(/\.(?:m?[jt]s)$/, '')
+    const specifier = moduleSpecifier(node)
+    if (specifier === undefined) return
+    const moduleName = specifier.replace(/\.(?:m?[jt]s)$/, '')
     if (
       moduleName === '@comfyorg/comfy-multi-player' ||
       !localApplier.test(moduleName)

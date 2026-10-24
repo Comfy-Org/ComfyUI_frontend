@@ -157,6 +157,42 @@ describe('checkSingleApplier', () => {
     `
     expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toEqual([])
   })
+
+  test.for([
+    `const m = await import('./applier')`,
+    `void import('../crdt/docHost.ts')`,
+    'const m = await import(`./opApplier`)'
+  ])('fails a dynamic local applier import: %s', (fixture) => {
+    const violations = checkSingleApplier(FOLLOWER_FILE, fixture)
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('single-applier')
+  })
+
+  test('passes a dynamic import of the pinned shared package', () => {
+    expect(
+      checkSingleApplier(
+        FOLLOWER_FILE,
+        `const m = await import('@comfyorg/comfy-multi-player')`
+      )
+    ).toEqual([])
+  })
+
+  test('passes a dynamic import of an unrelated seam module', () => {
+    expect(
+      checkSingleApplier(
+        FOLLOWER_FILE,
+        `const m = await import('./useAgentCrdtFollower')`
+      )
+    ).toEqual([])
+  })
+
+  test('ignores a dynamic local-applier import inside a comment', () => {
+    const fixture = `
+      /* import('./applier') */
+      const applied = applyOps(ops)
+    `
+    expect(checkSingleApplier(FOLLOWER_FILE, fixture)).toEqual([])
+  })
 })
 
 describe('checkCatalogPinnedBySha', () => {
