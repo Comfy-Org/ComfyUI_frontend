@@ -3,7 +3,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, reactive } from 'vue'
 
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -742,6 +742,21 @@ describe('useWorkflowStore', () => {
 
       expect(workflow.graph).toBeNull()
       expect(clear).toHaveBeenCalledOnce()
+    })
+    it('detaches the graph before a node removal hook can throw during release', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      expect(() => workflow.releaseGraph()).toThrow('onRemoved failed')
+
+      expect(workflow.graph).toBeNull()
     })
     it('forgets the node histories of the closed workflow only', async () => {
       const workflow = store.createTemporary('test.json')
