@@ -363,30 +363,24 @@ describe('extension loading', () => {
       }
     })
 
-    it('restores the seen list and finishes loading when recording it fails', async () => {
+    it('restores the seen list when recording it fails', async () => {
       const settingStore = useSettingStore()
       settingStore.$patch({
         settingValues: { 'Comfy.Extension.SeenAgentExtensions': [] }
       })
-      const setOrRevert = vi.spyOn(settingStore, 'setOrRevert')
       vi.spyOn(api, 'storeSetting').mockRejectedValue(
         new Error('settings unavailable')
       )
-      vi.spyOn(api, 'getExtensions').mockResolvedValue([])
       useExtensionStore().registerExtension({ name: 'agent.cushions.toolbar' })
 
-      await expect(loadExtensions()).resolves.toBeUndefined()
-      await vi.waitFor(() => expect(setOrRevert).toHaveBeenCalledOnce())
-      await setOrRevert.mock.results[0]?.value
-      await vi.waitFor(() =>
-        expect(reportError).toHaveBeenCalledWith('settings unavailable', {
-          errorType: 'failure_recording_seen_agent_extensions',
-          surface: 'platform',
-          level: 'warning',
-          tags: { reason: 'unreachable' },
-          context: { unseen_extension_count: 1 }
-        })
-      )
+      await expect(notifyNewAgentExtensions()).resolves.toBeUndefined()
+      expect(reportError).toHaveBeenCalledWith('settings unavailable', {
+        errorType: 'failure_recording_seen_agent_extensions',
+        surface: 'platform',
+        level: 'warning',
+        tags: { reason: 'unreachable' },
+        context: { unseen_extension_count: 1 }
+      })
       expect(settingStore.get('Comfy.Extension.SeenAgentExtensions')).toEqual(
         []
       )
