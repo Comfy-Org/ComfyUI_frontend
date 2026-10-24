@@ -29,6 +29,10 @@ interface LinkSelectionHost extends LinkMutationHost {
   graph: LGraph | null
 }
 
+interface NodeLinkToggleHost extends LinkSelectionHost {
+  links_render_mode: number
+}
+
 interface MarqueeHost {
   graph: LGraph | null
   renderedPaths: Iterable<LinkSegment>
@@ -261,11 +265,12 @@ function linksOfNodes(graph: LGraph, nodes: readonly LGraphNode[]): LLink[] {
 }
 
 export function toggleNodeLinks(
-  host: LinkSelectionHost,
+  host: NodeLinkToggleHost,
   nodes: readonly LGraphNode[]
 ): boolean {
   const { graph } = host
-  if (!graph) return false
+  if (!graph || host.links_render_mode === LinkRenderType.HIDDEN_LINK)
+    return false
   const [visible, hidden] = partition(linksOfNodes(graph, nodes), (link) =>
     isLinkVisible(graph, link)
   )

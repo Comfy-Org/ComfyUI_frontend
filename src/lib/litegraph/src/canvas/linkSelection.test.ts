@@ -4,6 +4,7 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
@@ -415,6 +416,14 @@ describe('node link toggle', () => {
     )
   }
 
+  function toggleHost(
+    graph: LGraph,
+    events: string[] = [],
+    links_render_mode: number = LinkRenderType.SPLINE_LINK
+  ) {
+    return { ...createHost(graph, events), links_render_mode }
+  }
+
   function connect(origin: LGraphNode, target: LGraphNode): LLink {
     const link = origin.connect(0, target, 0)
     if (!link) throw new Error('connect failed')
@@ -426,7 +435,7 @@ describe('node link toggle', () => {
     hide(graph, [links[1]])
     const events: string[] = []
 
-    expect(toggleNodeLinks(createHost(graph, events), [graph.nodes[0]])).toBe(
+    expect(toggleNodeLinks(toggleHost(graph, events), [graph.nodes[0]])).toBe(
       true
     )
 
@@ -439,7 +448,7 @@ describe('node link toggle', () => {
     hide(graph, links)
     const events: string[] = []
 
-    expect(toggleNodeLinks(createHost(graph, events), [graph.nodes[0]])).toBe(
+    expect(toggleNodeLinks(toggleHost(graph, events), [graph.nodes[0]])).toBe(
       true
     )
 
@@ -459,7 +468,7 @@ describe('node link toggle', () => {
       createTestNode(graph, ['number'])
     )
 
-    toggleNodeLinks(createHost(graph), [first, second])
+    toggleNodeLinks(toggleHost(graph), [first, second])
 
     expect(
       [between, leaving, unrelated].map((link) => isHidden(graph, link))
@@ -471,23 +480,55 @@ describe('node link toggle', () => {
     const reroute = graph.createReroute([50, 10], links[0])
     if (!reroute) throw new Error('createReroute failed')
 
-    toggleNodeLinks(createHost(graph), [graph.nodes[1]])
+    toggleNodeLinks(toggleHost(graph), [graph.nodes[1]])
 
     expect(isHidden(graph, links[0])).toBe(true)
     expect(getVisibleRerouteLink(graph, reroute)).toBeUndefined()
   })
 
-  it('hides the link from a subgraph input in the open subgraph', () => {
+  it.for<{
+    name: string
+    wire: (subgraph: Subgraph) => { node: LGraphNode; link: LLink }
+  }>([
+    {
+      name: 'from a subgraph input',
+      wire: (subgraph) => {
+        const node = createTestNode(subgraph, ['number'])
+        const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+        if (!link) throw new Error('connect failed')
+        return { node, link }
+      }
+    },
+    {
+      name: 'to a subgraph output',
+      wire: (subgraph) => {
+        const node = createTestNode(subgraph, [], ['number'])
+        const link = subgraph.outputNode.slots[0].connect(node.outputs[0], node)
+        if (!link) throw new Error('connect failed')
+        return { node, link }
+      }
+    }
+  ])('hides the link $name in the open subgraph', ({ wire }) => {
     const subgraph = createTestSubgraph({
-      inputs: [{ name: 'value', type: 'number' }]
+      inputs: [{ name: 'value', type: 'number' }],
+      outputs: [{ name: 'value', type: 'number' }]
     })
-    const node = createTestNode(subgraph, ['number'])
-    const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
-    if (!link) throw new Error('connect failed')
+    const { node, link } = wire(subgraph)
 
-    toggleNodeLinks(createHost(subgraph), [node])
+    toggleNodeLinks(toggleHost(subgraph), [node])
 
     expect(isHidden(subgraph, link)).toBe(true)
+  })
+
+  it('changes nothing while links are hidden on the whole canvas', () => {
+    const { graph, links } = createGraphWithLinks()
+    const events: string[] = []
+    const host = toggleHost(graph, events, LinkRenderType.HIDDEN_LINK)
+
+    expect(toggleNodeLinks(host, [graph.nodes[0]])).toBe(false)
+
+    expect(links.map((link) => isHidden(graph, link))).toEqual([false, false])
+    expect(events).toEqual([])
   })
 
   it.for<{ name: string; nodes: (graph: LGraph) => LGraphNode[] }>([
@@ -500,7 +541,7 @@ describe('node link toggle', () => {
     const { graph, links } = createGraphWithLinks()
     const events: string[] = []
 
-    expect(toggleNodeLinks(createHost(graph, events), nodes(graph))).toBe(false)
+    expect(toggleNodeLinks(toggleHost(graph, events), nodes(graph))).toBe(false)
 
     expect(links.map((link) => isHidden(graph, link))).toEqual([false, false])
     expect(events).toEqual([])
