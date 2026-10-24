@@ -316,6 +316,34 @@ describe('checkFile (combined) — allowed follower projection', () => {
     `
     expect(checkFile(FOLLOWER_FILE, fixture)).toEqual([])
   })
+
+  test('a violating file reports every rule through checkFile', () => {
+    const fixture = `
+      import { applyOp } from './applier'
+      // catalog fetched from @main
+      const frame = { update_b64: encoded, op_id: mintOpId() }
+      const endpoint = isCloud
+      const socket = 'wss://agent.comfy.org/ws'
+    `
+    expect(
+      checkFile(FOLLOWER_FILE, fixture)
+        .map(({ rule }) => rule)
+        .sort()
+    ).toEqual([
+      'catalog-pinned-by-sha',
+      'no-hardcoded-endpoint',
+      'no-op-id-regeneration',
+      'no-outbound-update-b64',
+      'no-scattered-distribution-checks',
+      'single-applier'
+    ])
+  })
+
+  test('unparsable TypeScript fails closed with a syntax-error violation', () => {
+    expect(
+      checkFile(FOLLOWER_FILE, 'const = {').map(({ rule }) => rule)
+    ).toContain('syntax-error')
+  })
 })
 
 describe('checkFile against the real follower-core sources', () => {
