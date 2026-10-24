@@ -4,20 +4,9 @@
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-/**
- * Extract asset type from an asset's tags array
- * Falls back to a default type if tags are not present
- *
- * @param asset The asset to extract type from
- * @param defaultType Default type to use if tags are empty (default: 'output')
- * @returns The asset type ('input', 'output', 'temp', etc.)
- *
- * @example
- * getAssetType(asset) // Returns 'output' or first tag
- * getAssetType(asset, 'input') // Returns 'input' if no tags
- */
+/** Asset type from its preview URL, else its first tag, else `defaultType`. */
 export function getAssetType(
-  asset: AssetItem,
+  asset: Pick<AssetItem, 'preview_url' | 'tags'>,
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const urlType = new URLSearchParams(

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -11,6 +12,8 @@ import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 
 import UserMessage from './UserMessage.vue'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const clipboard = vi.hoisted(() => ({
   text: '',
@@ -279,6 +282,51 @@ describe('UserMessage', () => {
       const grid = screen.queryByTestId('reply-asset-group')
       expect(JSON.parse(grid?.dataset.assets ?? '[]')).toEqual([
         expect.objectContaining({ kind })
+      ])
+    }
+  )
+
+  it.for([
+    {
+      source: 'its asset content route when the assets API is on',
+      assetsEnabled: true,
+      url: expect.stringMatching(
+        /\/api\/assets\/asset-9\/content\?disposition=inline$/
+      )
+    },
+    {
+      source: 'its input filename when the assets API is off',
+      assetsEnabled: false,
+      url: expect.stringContaining('/view?filename=upload.png&type=input')
+    }
+  ])(
+    'previews a rehydrated attachment by $source',
+    ({ assetsEnabled, url }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
+      const persisted: AgentMessages[number] = {
+        id: 'row-1',
+        thread_id: 'thread-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn-a',
+        content: {
+          text: 'upscale this',
+          attachments: ['upload.png'],
+          attachment_refs: [
+            { name: 'upload.png', id: 'asset-9', kind: 'image' }
+          ]
+        }
+      }
+      const { userAttachments } = normalizeAgentTranscript([persisted])
+
+      renderMessage({
+        text: 'upscale this',
+        attachments: userAttachments.get(toTurnId('turn-a'))
+      })
+
+      expect(stubbedAssets()).toEqual([
+        { url, filename: 'upload.png', kind: 'image' }
       ])
     }
   )

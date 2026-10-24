@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { releaseSharedObjectUrl } from '@/utils/objectUrlUtil'
 
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -123,7 +124,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         current.previewUrl ||
         current.mediaUrl !== mediaUrl
       ) {
-        URL.revokeObjectURL(url)
+        releaseSharedObjectUrl(url)
         return
       }
       updateAttachment(id, { previewUrl: url })
@@ -437,8 +438,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   ): void {
     const retainedUrls = new Set([retained?.previewUrl, retained?.mediaUrl])
     for (const url of new Set([attachment.previewUrl, attachment.mediaUrl]))
-      if (url?.startsWith('blob:') && !retainedUrls.has(url))
-        URL.revokeObjectURL(url)
+      if (!retainedUrls.has(url)) releaseSharedObjectUrl(url)
   }
 
   function updateAttachment(
