@@ -52,6 +52,10 @@ let isEdited = false
 const text = computed({
   get: () => String(widgetState.value?.value ?? target.widget.value ?? ''),
   set: (value: string) => {
+    if (!target.node.widgets?.includes(target.widget)) {
+      promptPanelStore.close()
+      return
+    }
     isEdited = true
     setWidgetValue(target.node, target.widget, value)
     promptPanelStore.recordInput()
@@ -68,6 +72,7 @@ function endEditSession() {
 function takeRequestedFocus() {
   if (!promptPanelStore.autofocus) return
   promptPanelStore.autofocus = false
+  if (isReadOnly.value) return
   const element: unknown = textareaRef.value?.$el
   if (!(element instanceof HTMLTextAreaElement)) return
   element.setSelectionRange(0, 0)

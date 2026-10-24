@@ -72,7 +72,8 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
       rootGraph.id === graphId ? rootGraph : rootGraph.subgraphs.get(graphId)
     const node = graph?.getNodeById(current.node.id)
     const widget = node?.widgets?.find(
-      ({ name }) => name === current.widget.name
+      ({ name, type }) =>
+        name === current.widget.name && type === current.widget.type
     )
     if (!graph || !node || !widget) {
       close()
@@ -86,11 +87,14 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     const graph: LGraph | null = next.node.graph
     if (!graph || rightSidePanelStore.isLegacyMenu || isPanelHidden.value)
       return false
-    close()
-    setTarget(next, graph)
     autofocus.value = true
     isPromptViewShown.value = true
     rightSidePanelStore.openPanel()
+    if (session) {
+      moveSession(next, graph)
+      return true
+    }
+    setTarget(next, graph)
     session = {
       opened: {
         surface: 'panel',
@@ -105,13 +109,20 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     return true
   }
 
+  function moveSession(next: PromptPanelTarget, graph: LGraph) {
+    if (!session || next.widget === target.value?.widget) return
+    const isOtherNode = next.node !== target.value?.node
+    setTarget(next, graph)
+    if (isOtherNode)
+      session = { ...session, nodeSwitchCount: session.nodeSwitchCount + 1 }
+  }
+
   /** Moves the open panel to another widget, as when its node is selected. */
   function follow(next: PromptPanelTarget) {
     const graph: LGraph | null = next.node.graph
     if (!session || !graph || next.node === target.value?.node) return
-    setTarget(next, graph)
     autofocus.value = false
-    session = { ...session, nodeSwitchCount: session.nodeSwitchCount + 1 }
+    moveSession(next, graph)
   }
 
   function recordInput() {
