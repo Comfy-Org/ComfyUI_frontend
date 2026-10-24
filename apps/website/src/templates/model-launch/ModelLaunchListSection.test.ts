@@ -126,6 +126,63 @@ describe('ModelLaunchListSection', () => {
     )
   })
 
+  it('keeps the toggle mounted and focused while a long prompt is expanded (#20976, #20977)', async () => {
+    // While expanded the clamp is gone, so the prompt measures no overflow;
+    // the toggle must stay mounted (latched overflow) instead of unmounting
+    // the focused button and dropping keyboard focus to <body>.
+    const observers: ResizeObserverCallback[] = []
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: ResizeObserverCallback) {
+          observers.push(cb)
+        }
+        observe() {}
+        disconnect() {}
+        unobserve() {}
+      }
+    )
+    try {
+      mockPromptHeight(120, 60)
+      render(ModelLaunchListSection, { props: { list: list([item('long')]) } })
+      await nextTick()
+
+      const more = screen.getByRole('button', { name: 'Read more' })
+      more.focus()
+      await userEvent.click(more)
+      // Expanded: unclamped text now measures equal heights, and the
+      // observer fires - the moment the live check used to unmount the
+      // focused button.
+      mockPromptHeight(60, 60)
+      for (const cb of observers) cb([], {} as ResizeObserver)
+      await nextTick()
+
+      const less = screen.getByRole('button', { name: 'Read less' })
+      expect(less).toBeTruthy()
+      expect(document.activeElement).toBe(less)
+
+      await userEvent.click(less)
+      mockPromptHeight(120, 60)
+      for (const cb of observers) cb([], {} as ResizeObserver)
+      await nextTick()
+      // Collapsed and still overflowing: the "Read more" button remains for
+      // the next round trip instead of vanishing with the visitor's focus.
+      expect(screen.getByRole('button', { name: 'Read more' })).toBeTruthy()
+      expect(document.activeElement).not.toBe(document.body)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('never shows a toggle for a prompt that fits in three lines', async () => {
+    mockPromptHeight(60, 60)
+    render(ModelLaunchListSection, { props: { list: list([item('short')]) } })
+    await nextTick()
+
+    expect(screen.queryByRole('button', { name: 'Read more' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Read less' })).toBeNull()
+  })
+
   it('pauses every other row when one starts playing', async () => {
     const pause = mockMedia()
     render(ModelLaunchListSection, {
