@@ -1,0 +1,119 @@
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { partition } from 'es-toolkit'
+import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import type { DeploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
+import {
+  COMFY_CLOUD_ROW,
+  deploymentStatusTone,
+  useDeploymentLabels
+} from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+/** One row of the Run on menu, ready to render. */
+interface DeploymentRow {
+  value: string
+  deploymentId: string | null
+  title: string
+  name: string | null
+  detail: string | null
+  tooltip: string
+  tone?: DeploymentStatusTone
+  missingNodes: string | null
+}
+
+interface DeploymentSection {
+  key: 'all' | 'runs' | 'others'
+  label: string
+  rows: DeploymentRow[]
+}
+
+/**
+ * The Run on menu's rows, Comfy Cloud first. Once a compatibility check
+ * answers, rows that run the open workflow come first under their own label.
+ */
+export function useDeploymentRows() {
+  const { t, locale } = useI18n()
+  const { deployments } = storeToRefs(useDeploymentPickStore())
+  const {
+    deploymentTitle,
+    deploymentName,
+    deploymentDetail,
+    deploymentTooltip,
+    deploymentFullLabel
+  } = useDeploymentLabels()
+  const { markFor } = useDeploymentCompatibility()
+
+  function missingNodesText(
+    deploymentId: string | null,
+    label: string
+  ): string | null {
+    const mark = markFor(deploymentId)
+    if (mark?.kind !== 'missing') return null
+    return t(
+      'deploymentSwitcher.missingNodesNamed',
+      {
+        deployment: label,
+        nodes: new Intl.ListFormat(locale.value).format(mark.nodeTypes)
+      },
+      { escapeParameter: false }
+    )
+  }
+
+  function cloudRow(): DeploymentRow {
+    const title = t('deploymentSwitcher.comfyCloud')
+    return {
+      value: COMFY_CLOUD_ROW,
+      deploymentId: null,
+      title,
+      name: null,
+      detail: null,
+      tooltip: title,
+      missingNodes: missingNodesText(null, title)
+    }
+  }
+
+  function deploymentRow(deployment: WorkspaceDeployment): DeploymentRow {
+    return {
+      value: deployment.deployment_id,
+      deploymentId: deployment.deployment_id,
+      title: deploymentTitle(deployment),
+      name: deploymentName(deployment),
+      detail: deploymentDetail(deployment),
+      tooltip: deploymentTooltip(deployment),
+      tone: deploymentStatusTone(deployment.status),
+      missingNodes: missingNodesText(
+        deployment.deployment_id,
+        deploymentFullLabel(deployment)
+      )
+    }
+  }
+
+  const sections = computed<DeploymentSection[]>(() => {
+    const rows = [cloudRow(), ...deployments.value.map(deploymentRow)]
+    const [runs, others] = partition(
+      rows,
+      (row) => markFor(row.deploymentId)?.kind === 'runs'
+    )
+    if (runs.length === 0 || others.length === 0) {
+      return [{ key: 'all', label: t('deploymentSwitcher.runOn'), rows }]
+    }
+    return [
+      {
+        key: 'runs',
+        label: t('deploymentSwitcher.runsThisWorkflow'),
+        rows: runs
+      },
+      {
+        key: 'others',
+        label: t('deploymentSwitcher.otherDeployments'),
+        rows: others
+      }
+    ]
+  })
+
+  return { sections }
+}
