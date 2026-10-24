@@ -97,14 +97,14 @@ function parse(file: string, source: string) {
     true,
     ts.ScriptKind.TS
   )
-  const parseDiagnostics = (
-    sourceFile as ts.SourceFile & {
-      parseDiagnostics: readonly ts.DiagnosticWithLocation[]
-    }
-  ).parseDiagnostics
-  const violations = parseDiagnostics.map((diagnostic) => ({
+  const { diagnostics = [] } = ts.transpileModule(source, {
+    fileName: file,
+    reportDiagnostics: true
+  })
+  const violations = diagnostics.map((diagnostic) => ({
     file,
-    line: sourceFile.getLineAndCharacterOfPosition(diagnostic.start).line + 1,
+    line:
+      sourceFile.getLineAndCharacterOfPosition(diagnostic.start ?? 0).line + 1,
     rule: 'syntax-error',
     message: `cannot inspect invalid TypeScript: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`
   }))
