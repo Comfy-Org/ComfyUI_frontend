@@ -107,13 +107,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
     pushEvent(ws, THINKING_EVENT)
-    // Located by the text the user reads, not by the class under test, so the
-    // class assertion below is not circular.
+    // Located by the text the user reads rather than by the styling class, so
+    // this fails if either half breaks: the component dropping the class and
+    // the stylesheet losing the rule both resolve to `animationName: 'none'`.
     const streamingLabel = agentPanel.root.getByText(THINKING_TEXT, {
       exact: true
     })
     await expect(streamingLabel).toBeVisible()
-    await expect(streamingLabel).toHaveClass(/agent-shimmer-text/)
 
     await expect
       .poll(() =>
