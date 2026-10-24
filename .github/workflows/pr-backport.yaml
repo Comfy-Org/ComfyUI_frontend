@@ -594,3 +594,69 @@ jobs:
             echo "::error::Backport branches were pushed but PR creation failed: ${PR_CREATE_FAILED}"
           fi
           exit 1
+
+  # Only needs-backport starts the job above; release labels alone do not.
+  warn-missing-needs-backport:
+    if: >
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-backport')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Comment when release labels lack needs-backport
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # The event payload is a snapshot; labels may have changed while
+          # this run waited in the per-PR concurrency queue.
+          LABELS=$(gh api --paginate \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+          if grep -qx 'needs-backport' <<<"${LABELS}"; then
+            echo "PR #${PR_NUMBER} now has needs-backport; the backport job handles it."
+            exit 0
+          fi
+
+          WARNED=$(gh api --paginate \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
+              | select(.user.login == "github-actions[bot]")
+              | .body
+              | capture("^<!-- pr-backport:missing-needs-backport (?<labels>[^>]*) -->").labels
+              | split(" ")[]')
+
+          PENDING=()
+          while IFS= read -r label; do
+            if [[ ! "${label}" =~ ^(core|cloud)/[0-9]+\.[0-9]+$ ]] ||
+              grep -qxF -- "${label}" <<<"${WARNED}"; then
+              continue
+            fi
+            BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${label//\//-}"
+            BACKPORT_PRS=$(gh api \
+              "repos/${GH_REPO}/pulls?state=all&base=${label}&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
+              --jq 'length')
+            if [ "${BACKPORT_PRS}" -eq 0 ]; then
+              PENDING+=("${label}")
+            fi
+          done <<<"${LABELS}"
+
+          if [ "${#PENDING[@]}" -eq 0 ]; then
+            echo "No unwarned release labels without a backport on PR #${PR_NUMBER}."
+            exit 0
+          fi
+
+          LABEL_LIST=$(printf '`%s` ' "${PENDING[@]}")
+          BODY="<!-- pr-backport:missing-needs-backport ${PENDING[*]} -->
+          **Backport did not run.** This PR has release labels with no backport (${LABEL_LIST% }) and no \`needs-backport\` label, which is what starts the PR Backport workflow.
+
+          To backport, add the \`needs-backport\` label. If the backport is intentionally on hold, ignore this comment."
+
+          if ! gh api --silent --method POST \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" -f "body=${BODY}"; then
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
+          fi
