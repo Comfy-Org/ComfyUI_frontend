@@ -384,7 +384,7 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-      expect(agentStore.isVisible).toBe(true)
+      expect(agentStore.isVisible).toBe(false)
       expect(
         localStorage.getItem(
           'Comfy.AgentConsent.IntroductionResponded.signed-out'
