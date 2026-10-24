@@ -266,8 +266,14 @@ function linkEndNode(graph: LGraph, nodeId: NodeId): LinkEndNode | undefined {
 }
 
 function slotCount(end: LinkEndNode, type: SlotType): number {
-  if (end.kind !== 'node') return end.node.slots.length
-  return type === 'input' ? end.node.inputs.length : end.node.outputs.length
+  switch (end.kind) {
+    case 'subgraphInputs':
+      return type === 'output' ? end.node.slots.length : 0
+    case 'subgraphOutputs':
+      return type === 'input' ? end.node.slots.length : 0
+    case 'node':
+      return type === 'input' ? end.node.inputs.length : end.node.outputs.length
+  }
 }
 
 function isSlotIndex(end: LinkEndNode, type: SlotType, slot: number): boolean {
@@ -288,14 +294,21 @@ function socketPosition(end: LinkEndNode, type: SlotType, slot: number): Point {
 export function getSelectedLinkDestinations(graph: LGraph): LinkDestination[] {
   const socketType = useLinkSelectionStore().selection?.socketType
   if (!socketType) return []
+  const arrivalType = oppositeSlotType(socketType)
   const linksByNode = new Map<NodeId, LLink[]>()
   for (const link of getSelectedLinks(graph)) {
     const { nodeId } = farEnd(link, socketType)
-    linksByNode.set(nodeId, [...(linksByNode.get(nodeId) ?? []), link])
+    const reaching = linksByNode.get(nodeId)
+    if (reaching) reaching.push(link)
+    else linksByNode.set(nodeId, [link])
   }
   const destinations = [...linksByNode].flatMap(([nodeId, links]) => {
     const end = linkEndNode(graph, nodeId)
-    return end ? [{ ...end, nodeId, links }] : []
+    if (!end) return []
+    const arriving = links.filter((link) =>
+      isSlotIndex(end, arrivalType, farEnd(link, socketType).slot)
+    )
+    return arriving.length ? [{ ...end, nodeId, links: arriving }] : []
   })
   return sortBy(destinations, [
     (destination) => destination.node.boundingRect[1],
@@ -335,11 +348,9 @@ function selectArrivalSocket(
   destination: LinkDestination
 ): Point | undefined {
   const arrivalType = oppositeSlotType(departureType)
-  const arrivalSlots = destination.links
-    .map((link) => farEnd(link, departureType).slot)
-    .filter((slot) => isSlotIndex(destination, arrivalType, slot))
-  if (!arrivalSlots.length) return undefined
-  const arrivalSlot = Math.min(...arrivalSlots)
+  const arrivalSlot = Math.min(
+    ...destination.links.map((link) => farEnd(link, departureType).slot)
+  )
   const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
   if (!links.length) return undefined
   const position = socketPosition(destination, arrivalType, arrivalSlot)
