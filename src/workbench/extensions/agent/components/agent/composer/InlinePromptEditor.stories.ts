@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect } from 'storybook/test'
 
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import '@/workbench/extensions/agent/agentPanel.css'
 
 import InlinePromptEditor from './InlinePromptEditor.vue'
@@ -59,4 +61,54 @@ export const Default: Story = {}
 
 export const References: Story = {
   args: { modelValue: prompt }
+}
+
+const oneNodeChip: ComposerPrompt = {
+  text: ' ',
+  references: [
+    {
+      kind: 'node',
+      node: { id: '5', title: 'KSampler' },
+      scope: 'story-workflow',
+      textOffset: 0
+    }
+  ]
+}
+
+export const OneNodeChip: Story = {
+  args: { modelValue: oneNodeChip }
+}
+
+export const MultipleNodeChips: Story = {
+  args: {
+    modelValue: {
+      text: '  ',
+      references: [
+        {
+          kind: 'node',
+          node: { id: '5', title: 'KSampler' },
+          scope: 'story-workflow',
+          textOffset: 0
+        },
+        {
+          kind: 'node',
+          node: { id: '12', title: 'VAE Decode' },
+          scope: 'story-workflow',
+          textOffset: 1
+        }
+      ]
+    }
+  }
+}
+
+export const FocusedAfterChip: Story = {
+  args: { modelValue: oneNodeChip },
+  play: async ({ canvas }) => {
+    const composer = useAgentComposerStore()
+    composer.restorePrompt({ text: '', references: [] })
+    composer.setNodeScope('story-workflow')
+    composer.setNodes([{ id: '5', title: 'KSampler' }])
+    composer.requestEditorFocus()
+    await expect(await canvas.findByRole('textbox')).toHaveFocus()
+  }
 }
