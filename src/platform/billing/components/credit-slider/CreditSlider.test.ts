@@ -123,6 +123,27 @@ describe('CreditSlider', () => {
     )
   })
 
+  it('bills the yearly total the server charges, not 12x the monthly price', async () => {
+    renderSlider({
+      modelValue: 700,
+      stops: [
+        {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountPercentYearly: 10,
+          periodChargeUsd: { monthly: 665, yearly: 7560.01 }
+        }
+      ]
+    })
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$630')
+    expect(screen.getByTestId('credit-slider-billed-yearly')).toHaveTextContent(
+      /^\$7,560\.01 Billed yearly$/
+    )
+  })
+
   it('halves the discount and reads "billed monthly" when cycle=monthly (PRD)', async () => {
     renderSlider({ cycle: 'monthly' }) // default $700 stop → 10% yearly → 5% monthly
     await flush()
@@ -138,6 +159,32 @@ describe('CreditSlider', () => {
       'Billed monthly'
     )
   })
+
+  it.for([
+    ['monthly', '$390'],
+    ['yearly', '$378']
+  ] as const)(
+    'shows the served %s price, not the rounded discount applied to the list price',
+    async ([cycle, price]) => {
+      renderSlider({
+        modelValue: 400,
+        cycle,
+        stops: [
+          {
+            id: 'team_400',
+            usd: 400,
+            credits: 84_400,
+            discountPercentYearly: 6,
+            priceUsd: { monthly: 390, yearly: 378 },
+            periodChargeUsd: { monthly: 390, yearly: 4536 }
+          }
+        ]
+      })
+      await flush()
+
+      expect(screen.getByTestId('credit-slider-price')).toHaveTextContent(price)
+    }
+  )
 
   it('applies the fractional monthly discount at $400 (2.5%)', async () => {
     renderSlider({ modelValue: 400, cycle: 'monthly' })

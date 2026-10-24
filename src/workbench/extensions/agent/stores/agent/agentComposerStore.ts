@@ -72,6 +72,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
+  const hasDraft = computed(
+    () =>
+      draft.value.trim() !== '' ||
+      attachments.value.length > 0 ||
+      prompt.value.references.length > 0
+  )
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
@@ -552,6 +558,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    hasDraft,
     nodeScope,
     promptEpoch,
     promptOrigin,

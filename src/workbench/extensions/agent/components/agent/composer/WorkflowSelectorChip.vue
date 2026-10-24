@@ -16,6 +16,7 @@ import MenuContent from '@/components/ui/menu/MenuContent.vue'
 import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
@@ -38,6 +39,7 @@ const {
 
 const { t } = useI18n()
 const tabActivity = useWorkflowTabActivityStore()
+const conversation = useAgentConversationStore()
 
 const current = computed(() => (detached ? null : activeTab))
 const workflowTooltipText = computed(() =>
@@ -128,7 +130,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           "
         >
           <span
-            v-if="tabActivity.editingTabPath === current?.path"
+            v-if="conversation.activeTurnTabPath === current?.path"
             role="img"
             :aria-label="t('g.agentWorking')"
             class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
@@ -208,7 +210,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
                 </span>
                 <span
-                  v-else-if="tabActivity.editingTabPath === tab.path"
+                  v-else-if="conversation.activeTurnTabPath === tab.path"
                   role="img"
                   :aria-label="t('g.agentWorking')"
                   class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"

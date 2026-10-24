@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { useTimeout, useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -77,6 +77,7 @@ const {
   sessionId = null,
   currentChatReady = false,
   customTitle,
+  openingWorkflowName,
   historyGroups,
   selectHistory = async () => false,
   editableTurnId = null,
@@ -120,6 +121,7 @@ const {
   sessionId?: string | null
   currentChatReady?: boolean
   customTitle?: string
+  openingWorkflowName?: string
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
@@ -165,7 +167,26 @@ const emit = defineEmits<{
   starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
+const openingChat = computed(() => openingWorkflowName !== undefined)
+const {
+  ready: loadingDelayReady,
+  start: startLoadingDelay,
+  stop: stopLoadingDelay
+} = useTimeout(120, { controls: true, immediate: false })
+watch(
+  openingChat,
+  (opening) => {
+    if (opening) startLoadingDelay()
+    else stopLoadingDelay()
+  },
+  { immediate: true, flush: 'sync' }
+)
+const showChatLoading = computed(
+  () => openingChat.value && loadingDelayReady.value
+)
+
 const targetNotice = computed(() => {
+  if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
@@ -301,6 +322,9 @@ function onWorkflowTargetRequired(): void {
 const { t } = useI18n()
 
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
+const displayTitle = computed(
+  () => sessionTitle.value || t('agent.newChatTitle')
+)
 
 const renaming = ref(false)
 const renameDraft = ref('')
@@ -444,9 +468,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
-            <span class="min-w-0 truncate">{{
-              sessionTitle || t('agent.newChatTitle')
-            }}</span>
+            <span class="min-w-0 truncate">{{ displayTitle }}</span>
           </Button>
           <Menu
             v-if="sessionId"
@@ -472,9 +494,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         </div>
       </div>
 
-      <div class="min-h-0 flex-1">
+      <div class="relative min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
+          :aria-busy="openingChat"
+          :inert="openingChat"
           :user-name
           :assignment="starterPromptAssignment"
           :attribute-experiment="attributeStarterPromptExperiment"
@@ -487,6 +511,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         />
         <ConversationView
           v-else
+          :aria-busy="openingChat"
+          :inert="openingChat"
           :entries
           :conversation-id="sessionId"
           :editable-turn-id
@@ -511,12 +537,35 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           "
           @paywall-action="emit('paywallAction', $event, 'refused_send')"
         />
+        <div
+          v-if="showChatLoading"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          :aria-label="
+            t('agent.openingWorkflowChat', {
+              workflowName: openingWorkflowName
+            })
+          "
+          class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
+        >
+          <span
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+          />
+          {{
+            t('agent.openingWorkflowChat', {
+              workflowName: openingWorkflowName
+            })
+          }}
+        </div>
       </div>
-    </template>
-
-    <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+      <footer
+        data-testid="agent-panel-footer"
+        :inert="openingChat"
+        class="shrink-0 py-3 inert:opacity-50"
+      >
         <div
           data-testid="agent-composer-stack"
           class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
@@ -544,6 +593,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             ref="composerRef"
             :streaming
             :submitting
+            :opening-chat
             :can-attach
             :can-open-assets
             :selection-tags
