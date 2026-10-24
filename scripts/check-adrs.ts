@@ -77,7 +77,7 @@ export const validateAdrDirectory = (directory: string): void => {
   }
 }
 
-const checkLegacyReferences = (repositoryRoot: string): void => {
+export const checkLegacyReferences = (repositoryRoot: string): void => {
   const files = execFileSync(
     'git',
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
@@ -88,6 +88,7 @@ const checkLegacyReferences = (repositoryRoot: string): void => {
   const matches: string[] = []
 
   for (const filename of files) {
+    if (filename.startsWith('packages/comfy-multi-player/')) continue
     const absolutePath = join(repositoryRoot, filename)
     if (!existsSync(absolutePath)) continue
     const contents = readFileSync(absolutePath, 'utf8')

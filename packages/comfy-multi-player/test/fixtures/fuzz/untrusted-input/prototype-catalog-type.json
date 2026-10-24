@@ -1,0 +1,19 @@
+{
+  "name": "inherited catalog key is treated as a catalog entry",
+  "issue": 13,
+  "op": {
+    "op": "add_node",
+    "op_id": "13000000000000000000000000000002",
+    "actor": "attacker",
+    "base_version": 0,
+    "stamp": [0, "attacker"],
+    "node_id": 14,
+    "class_type": "__proto__",
+    "pos": [0, 0],
+    "node": {
+      "id": 14,
+      "type": "__proto__",
+      "widgets_values": { "payload": "accepted-via-inherited-property" }
+    }
+  }
+}

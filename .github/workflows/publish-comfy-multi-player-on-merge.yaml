@@ -1,0 +1,155 @@
+# Description: Tags and publishes @comfyorg/comfy-multi-player when a version-bump
+# PR carrying the `Release` label merges, imported from the standalone
+# repository's auto-tag-release.yml. Merging is not publishing: the deliberate
+# act is a maintainer applying `Release` to a PR that bumps
+# packages/comfy-multi-player/package.json and approving it. See the amendments
+# in packages/comfy-multi-player/docs/decisions/ADR-006-publish-to-npm-pin-exact-versions.md.
+#
+# WHY IT DISPATCHES INSTEAD OF RELYING ON THE TAG PUSH: a ref created with the
+# default GITHUB_TOKEN never raises `push`, so the publish workflow would not
+# start from the tag alone. The job creates the tag AND calls the publish
+# workflow's `workflow_dispatch`, which the same token is allowed to do.
+#
+# WHY IT DISPATCHES AT THE TAG REF, NOT AT main: scripts/release-retry.mjs
+# requires GITHUB_REF/GITHUB_REF_NAME/GITHUB_WORKFLOW_REF to be the release tag,
+# and npm records that same ref inside the SLSA provenance it verifies.
+name: 'Publish: comfy-multi-player on PR merge'
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - 'packages/comfy-multi-player/package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel a run that may already have tagged.
+  group: publish-comfy-multi-player-on-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: tag and dispatch release
+    # Label-only on purpose: a title convention could be satisfied by accident.
+    # Forgetting the label degrades to the manual process, the safe direction.
+    # The head-repo check is a TOKEN guard: a fork's `pull_request` run gets a
+    # read-only GITHUB_TOKEN, so tagging would 403.
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create refs/tags/comfy-multi-player-v<version>
+      actions: write # dispatch publish-comfy-multi-player.yaml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+          sparse-checkout: packages/comfy-multi-player/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve the released version
+        id: version
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PACKAGE_JSON: packages/comfy-multi-player/package.json
+        run: |
+          set -euo pipefail
+
+          test -n "$MERGE_SHA" || { echo "::error::no merge_commit_sha on the merged PR payload"; exit 1; }
+          test "$(git rev-parse HEAD)" = "$MERGE_SHA"
+
+          # The import of the standalone repository creates this manifest; that
+          # merge must never publish.
+          base_entry="$(git ls-tree HEAD^1 -- "$PACKAGE_JSON")"
+          if [ -z "$base_entry" ]; then
+            echo "::notice::$PACKAGE_JSON did not exist before this merge. Nothing tagged."
+            exit 0
+          fi
+
+          read_version() {
+            git show "$1:$PACKAGE_JSON" | jq -er '.version'
+          }
+          merged_version="$(read_version HEAD)"
+          base_version="$(read_version HEAD^1)"
+
+          # `Release` is shared with frontend releases; an unchanged version
+          # means this merge is not a comfy-multi-player release.
+          if [ "$merged_version" = "$base_version" ]; then
+            echo "::notice::$PACKAGE_JSON version is unchanged at $merged_version. Nothing tagged."
+            exit 0
+          fi
+
+          if ! printf '%s' "$merged_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::refusing to tag unexpected version string '$merged_version'"
+            exit 1
+          fi
+
+          echo "tag=comfy-multi-player-v$merged_version" >> "$GITHUB_OUTPUT"
+          echo "Release PR bumped $base_version -> $merged_version at $MERGE_SHA"
+
+      - name: Create the release tag
+        if: steps.version.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # Create first, inspect second. POST /git/refs is atomic: GitHub
+          # rejects it with 422 "Reference already exists", so there is no
+          # check-then-create window. This step never moves or deletes a tag.
+          if output="$(gh api --method POST "repos/$REPO/git/refs" \
+              -f "ref=refs/tags/$TAG" -f "sha=$MERGE_SHA" 2>&1)"; then
+            echo "Created refs/tags/$TAG at $MERGE_SHA"
+          else
+            case "$output" in
+              *"Reference already exists"*) ;;
+              *) echo "$output" >&2; exit 1 ;;
+            esac
+
+            existing="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')"
+            existing_type="$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type')"
+            if [ "$existing_type" = "tag" ]; then
+              existing="$(gh api "repos/$REPO/git/tags/$existing" --jq '.object.sha')"
+            fi
+
+            if [ "$existing" != "$MERGE_SHA" ]; then
+              echo "::error::$TAG already exists at $existing, not $MERGE_SHA. Refusing to touch it; resolve by hand."
+              exit 1
+            fi
+            echo "refs/tags/$TAG already points at $MERGE_SHA; leaving it alone"
+          fi
+
+      - name: Run the publish workflow at the tag
+        if: steps.version.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # Retried only for ref propagation right after the tag was created.
+          # The publish workflow re-verifies everything and
+          # scripts/release-retry.mjs is idempotent, so a duplicate run cannot
+          # double-publish.
+          for attempt in 1 2 3; do
+            if gh workflow run publish-comfy-multi-player.yaml --repo "$REPO" --ref "$TAG"; then
+              echo "Dispatched publish-comfy-multi-player.yaml at $TAG"
+              exit 0
+            fi
+            echo "dispatch attempt $attempt failed; retrying"
+            sleep 10
+          done
+
+          echo "::error::$TAG was created but publish-comfy-multi-player.yaml could not be dispatched. Start it by hand: gh workflow run publish-comfy-multi-player.yaml --ref $TAG"
+          exit 1

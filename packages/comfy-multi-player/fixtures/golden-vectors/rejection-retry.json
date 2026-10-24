@@ -1,0 +1,101 @@
+{
+  "format_version": 1,
+  "base_workflow": {
+    "nodes": [],
+    "links": [],
+    "last_node_id": 0,
+    "last_link_id": 0
+  },
+  "cases": [
+    {
+      "name": "malformed-envelope-aborts-remainder",
+      "batches": [[
+        { "op": "add_node", "op_id": "", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } },
+        { "op": "add_node", "op_id": "00000000000000000000000000000001", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } }
+      ]],
+      "expected": [{ "applied": [], "skipped": [], "failed": { "index": 0, "code": "malformed_op", "op_id": "" }, "applied_count": 0, "version": 0, "document_unchanged": true }],
+      "final_node_ids": []
+    },
+    {
+      "name": "deferred-op-rejected",
+      "batches": [[
+        { "op": "reset_doc", "op_id": "00000000000000000000000000000002", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "workflow": { "nodes": [], "links": [] } }
+      ]],
+      "expected": [{ "applied": [], "skipped": [], "failed": { "index": 0, "code": "op_deferred", "op_id": "00000000000000000000000000000002" }, "applied_count": 0, "version": 0, "document_unchanged": true }],
+      "final_node_ids": []
+    },
+    {
+      "name": "unknown-op-rejected",
+      "batches": [[
+        { "op": "future_op", "op_id": "00000000000000000000000000000003", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"] }
+      ]],
+      "expected": [{ "applied": [], "skipped": [], "failed": { "index": 0, "code": "unknown_op", "op_id": "00000000000000000000000000000003" }, "applied_count": 0, "version": 0, "document_unchanged": true }],
+      "final_node_ids": []
+    },
+    {
+      "name": "same-op-id-retry-cross-batch",
+      "batches": [
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000004", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 4, "class_type": "Note", "pos": [4, 4], "node": { "id": 4, "type": "Note" } }],
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000004", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 4, "class_type": "Note", "pos": [4, 4], "node": { "id": 4, "type": "Note" } }]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000004"], "skipped": [], "failed": null, "applied_count": 1, "version": 1, "document_unchanged": false },
+        { "applied": [], "skipped": ["00000000000000000000000000000004"], "failed": null, "applied_count": 0, "version": 1, "document_unchanged": true }
+      ],
+      "final_node_ids": [4]
+    },
+    {
+      "name": "rejection-cross-batch-does-not-poison-retry",
+      "batches": [
+        [{ "op": "add_node", "op_id": "", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 5, "class_type": "Note", "pos": [5, 5], "node": { "id": 5, "type": "Note" } }],
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000005", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 5, "class_type": "Note", "pos": [5, 5], "node": { "id": 5, "type": "Note" } }]
+      ],
+      "expected": [
+        { "applied": [], "skipped": [], "failed": { "index": 0, "code": "malformed_op", "op_id": "" }, "applied_count": 0, "version": 0, "document_unchanged": true },
+        { "applied": ["00000000000000000000000000000005"], "skipped": [], "failed": null, "applied_count": 1, "version": 1, "document_unchanged": false }
+      ],
+      "final_node_ids": [5]
+    },
+    {
+      "name": "lww-losing-write-is-applied-without-clobbering",
+      "batches": [
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000006", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 6, "class_type": "KSampler", "pos": [6, 6], "node": { "id": 6, "type": "KSampler", "widgets_values": [1, "fixed", 10, 1, "euler", "normal", 1] } }],
+        [{ "op": "set_widget", "op_id": "00000000000000000000000000000007", "actor": "agent:z", "base_version": 2, "stamp": [2, "agent:z"], "node_id": 6, "widget": "steps", "value": 30 }],
+        [{ "op": "set_widget", "op_id": "00000000000000000000000000000008", "actor": "agent:a", "base_version": 1, "stamp": [1, "agent:a"], "node_id": 6, "widget": "steps", "value": 20 }]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000006"], "skipped": [], "failed": null, "applied_count": 1, "version": 1, "document_unchanged": false },
+        { "applied": ["00000000000000000000000000000007"], "skipped": [], "failed": null, "applied_count": 1, "version": 2, "document_unchanged": false },
+        { "applied": ["00000000000000000000000000000008"], "skipped": [], "failed": null, "applied_count": 1, "version": 3, "document_unchanged": false }
+      ],
+      "final_node_ids": [6],
+      "final_widget_values": [1, "fixed", 30, 1, "euler", "normal", 1]
+    },
+    {
+      "name": "uncatalogued-named-widget-write-refused-on-set-widget",
+      "batches": [
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000a01", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } }],
+        [{ "op": "set_widget", "op_id": "00000000000000000000000000000a02", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "widget": "text", "value": "hello" }]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000a01"], "skipped": [], "failed": null, "applied_count": 1, "version": 1, "document_unchanged": false },
+        { "applied": [], "skipped": [], "failed": { "index": 0, "code": "uncatalogued_widget_write", "op_id": "00000000000000000000000000000a02" }, "applied_count": 0, "version": 1, "document_unchanged": true }
+      ],
+      "final_node_ids": [1]
+    },
+    {
+      "name": "uncatalogued-named-widget-write-aborts-remainder-after-valid-prefix",
+      "batches": [
+        [
+          { "op": "add_node", "op_id": "00000000000000000000000000000b01", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } },
+          { "op": "add_node", "op_id": "00000000000000000000000000000b02", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 2, "class_type": "TotallyUnknownClass", "pos": [0, 0], "node": { "id": 2, "type": "TotallyUnknownClass", "widgets_values": { "some_widget": 1 } } },
+          { "op": "add_node", "op_id": "00000000000000000000000000000b03", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 3, "class_type": "Note", "pos": [0, 0], "node": { "id": 3, "type": "Note" } }
+        ]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000b01"], "skipped": [], "failed": { "index": 1, "code": "uncatalogued_widget_write", "op_id": "00000000000000000000000000000b02" }, "applied_count": 1, "version": 1, "document_unchanged": false }
+      ],
+      "final_node_ids": [1]
+    }
+  ]
+}
