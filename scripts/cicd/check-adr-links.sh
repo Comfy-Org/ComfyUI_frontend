@@ -11,7 +11,7 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 # git grep exit code 1 means "no matches", which is success for this check.
-if refs=$(git grep -nEo 'docs/adr/[A-Za-z0-9._/-]+\.md' -- .); then
+if refs=$(git grep -nEo '(^|[^/A-Za-z0-9])docs/adr/[A-Za-z0-9._/-]+\.md' -- .); then
   :
 else
   grep_status=$?
@@ -32,7 +32,7 @@ while IFS= read -r ref; do
   src="${ref%%:*}"
   rest="${ref#*:}"
   lineno="${rest%%:*}"
-  target="${rest#*:}"
+  target="docs/adr/${rest#*docs/adr/}"
   if [ ! -f "$target" ]; then
     echo "ERROR: dangling docs/adr reference in $src:$lineno -> $target" >&2
     fail=1

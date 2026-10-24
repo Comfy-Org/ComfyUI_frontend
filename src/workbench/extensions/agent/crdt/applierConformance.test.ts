@@ -32,7 +32,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 
 import type { GraphOperation } from './graphOperations'
-import { mintOpId, mintWireOps } from './opEnvelope'
+import { mintWireOps } from './opEnvelope'
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -73,7 +73,7 @@ function seedDoc() {
 
 function envelope(actor = 'human:u1:tab', baseVersion = 1) {
   return {
-    op_id: mintOpId(),
+    op_id: crypto.randomUUID().replaceAll('-', ''),
     actor,
     base_version: baseVersion,
     stamp: [baseVersion, actor] as [number, string]

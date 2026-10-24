@@ -100,9 +100,10 @@ Alternatives considered:
   unmounts.
 - The eager abort on a null subscription is kept for the refusal path, so a
   refused resubscribe on return still drops the held batch.
-- A delayed batch carries the `base_version` it was minted with. The applier
+- A delayed batch carries the creator-owned Lamport counter it was minted
+  with in both `base_version` and `stamp[0]`. The applier
   orders a delete against the node's stamp, so a node another actor touched
-  at a higher version while the tab was away can win and the delete is
+  at a higher Lamport counter while the tab was away can win and the delete is
   dropped as `lww-dropped`; the follower then converges to the host's view.
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the catch-up consults local
@@ -116,3 +117,30 @@ Alternatives considered:
 
 The backend can also re-project a document over a human draft at turn start;
 that is a separate, per-turn cause of the same symptom, tracked internally.
+
+### `base_version` is the creator-owned Lamport counter
+
+As of 2026-10-12, [FE-3399](https://linear.app/comfyorg/issue/FE-3399)
+uses the package's `observedDocCounter` and `tickLamport` for human ops.
+The envelope puts the same creator-owned Lamport counter in `base_version` and
+`stamp[0]`. Before the first document update, the observed counter is zero.
+After an update, the package reads both winning stamps and clock reservations.
+
+The package's accepted [Lamport ordering decision](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/docs/adr/0005-lamport-ordering-v1-migration.md#L5-L16)
+defines the winner key as `[counter, actor, op_id]`.
+[`freezeLamportEnvelope`](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/src/clock.ts#L147-L162)
+writes one counter into both fields.
+[`stampKey`](https://github.com/Comfy-Org/comfy-multi-player/blob/86aecb931b4ec1662bf29aef24fb90af645a1536/src/stamps.ts#L44-L70)
+uses a present valid stamp as the ordering authority, with `base_version` and
+`actor` as the fallback. The document-version wording in the README and
+`OpBase` declaration is stale and superseded by that accepted decision.
+
+Cloud [pins package 0.3.10](https://github.com/Comfy-Org/cloud/blob/9695d6d85581de548c22755205722ef13e59e319/services/agent/dochost/package.json#L14-L17)
+and [passes inbound ops to `applyOps` unchanged](https://github.com/Comfy-Org/cloud/blob/9695d6d85581de548c22755205722ef13e59e319/services/agent/dochost/src/server.ts#L606-L649).
+Go checks [`op_id` for dedupe and actor fields for authorization](https://github.com/Comfy-Org/cloud/blob/9695d6d85581de548c22755205722ef13e59e319/common/websocket/messages/crdt.go#L563-L649).
+The separate [`workflow_docs.seq` compare-and-swap](https://github.com/Comfy-Org/cloud/blob/9695d6d85581de548c22755205722ef13e59e319/services/agent/internal/docstore/docstore.go#L194-L224)
+guards persistence, not semantic ordering.
+Cloud's [authority ADR](https://github.com/Comfy-Org/cloud/blob/9695d6d85581de548c22755205722ef13e59e319/services/agent/docs/adr/0001-crdt-authority-and-replication-boundary.md#L68-L79)
+forbids a Go applier and server sequence as the conflict-ordering authority.
+These package and host contracts establish the counter definition; no further
+host confirmation is required.

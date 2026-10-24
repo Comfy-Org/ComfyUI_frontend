@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { createOpCoalescer } from './opCoalescer'
-import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpSender, OpsResultView } from './opSender'
 
@@ -55,7 +54,7 @@ describe('createOpCoalescer over the op sender', () => {
       workflowId: () => boundWorkflow,
       tab: 'tab-1',
       actor: () => 'human:test-user:tab-1',
-      baseVersion: () => 41,
+      observedCounter: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     coalescer = createOpCoalescer(sender.admit, sender.flush)
@@ -119,13 +118,13 @@ describe('createOpCoalescer over the op sender', () => {
   })
 
   it('splits a same-tick batch at the wire cap into independent serialized batches', async () => {
-    const total = WIRE_MAX_OPS_PER_BATCH + 1
+    const total = 257
     for (let id = 1; id <= total; id++) coalescer.enqueue([deleteNode(id)])
 
     await flushMicrotasks()
 
     expect(sent).toHaveLength(1)
-    expect(sent[0]).toHaveLength(WIRE_MAX_OPS_PER_BATCH)
+    expect(sent[0]).toHaveLength(256)
     expect(sender.pending()).toBe(2)
     ackInFlight()
     expect(sent).toHaveLength(2)
