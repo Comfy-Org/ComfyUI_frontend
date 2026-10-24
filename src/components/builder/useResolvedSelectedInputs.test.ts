@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
@@ -82,8 +83,14 @@ function dispatchRootGraphEvent(type: string) {
 }
 
 describe('useResolvedSelectedInputs', () => {
+  const initialRootGraph = rootGraphRef.value
+
   beforeEach(() => {
     setRootGraphNodes([])
+  })
+
+  afterEach(() => {
+    rootGraphRef.value = initialRootGraph
   })
 
   it('re-resolves selections after a convert-to-subgraph event removes nodes from the root graph', () => {
@@ -118,7 +125,7 @@ describe('useResolvedSelectedInputs', () => {
     expect(resolved.value[0]?.status).toBe('unknown')
   })
 
-  it('re-resolves selections against the new root after the active root graph changes', () => {
+  it('re-resolves selections against the new root after the active root graph changes', async () => {
     setRootGraphNodes([])
     useAppModeStore().selectedInputs = [[entitySeed, 'seed']]
 
@@ -126,8 +133,14 @@ describe('useResolvedSelectedInputs', () => {
     expect(resolved.value[0]?.status).toBe('unknown')
 
     rootGraphRef.value = makeRootGraph([makeNode(1, ['seed'])])
+    await nextTick()
 
     expect(resolved.value[0]?.status).toBe('resolved')
+
+    setRootGraphNodes([])
+    dispatchRootGraphEvent('configured')
+
+    expect(resolved.value[0]?.status).toBe('unknown')
   })
 
   it('resolves promoted subgraph inputs from their host input widgetId', () => {
