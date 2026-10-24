@@ -1043,7 +1043,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Manager.CustomNodesManager.ShowCustomNodesMenu',
       icon: 'pi pi-puzzle',
-      label: 'Custom Nodes Manager',
+      label: 'Show Custom Nodes',
       versionAdded: '1.12.10',
       function: async () => {
         await useManagerDialog().openManager({
@@ -1185,7 +1185,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.OpenManagerDialog',
       icon: 'mdi mdi-puzzle-outline',
-      label: 'Manager',
+      label: 'Open Custom Nodes',
       function: async () => {
         await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
