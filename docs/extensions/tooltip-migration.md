@@ -13,5 +13,7 @@ open. Extensions that hide tooltips during their own UI should target
 `[data-slot="tooltip-content"]` instead of `.p-tooltip`.
 
 The `--node-component-tooltip*` CSS variables are also removed from the design
-system stylesheet. Use the tooltip surface tokens instead:
-`--base-background`, `--base-foreground` and `--border-default`.
+system stylesheet. Use the theme variables instead:
+`--background`, `--foreground` and `--border`. The names these notes gave
+before, `--base-background`, `--base-foreground` and `--border-default`, are
+deprecated and will be removed in a future release.

@@ -236,9 +236,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {
-    const composer = panel.getByRole('textbox', {
-      name: /^Describe ideas/
-    })
+    const composer = agentPanel.composer
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect(panel.getByText('hello').first()).toBeVisible()

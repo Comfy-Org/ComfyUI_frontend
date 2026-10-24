@@ -30,7 +30,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -39,30 +39,33 @@ import {
   zAttachmentRejection,
   zDisownedWorkflowError,
   zTurnInProgressError
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
   OpenTabsSnapshot,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AskUserResolution,
   AssistantMessage
-} from '../../services/agent/agentMessageParts'
-import { toAskResolution } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
-import type { LiveTurn } from '../../stores/agent/agentConversationStore'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { WorkflowReference } from '../../types/workflowReference'
-import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  isAttachmentKind,
+  normalizeAgentTranscript
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { serializeWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -76,7 +79,7 @@ interface SessionNotice {
 
 type SentAttachment = Pick<
   ComposerAttachment,
-  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl' | 'mediaKind'
 >
 
 interface SentTag {
@@ -115,6 +118,7 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
   /**
@@ -343,12 +347,23 @@ function isRetryableAnswerFailure(error: unknown): boolean {
   return error instanceof TypeError || error instanceof DOMException
 }
 
+type CommittedAnswerSource = Parameters<typeof toAskResolution>[0]
+
+function namesCommittedAnswer({
+  selected,
+  other_text
+}: CommittedAnswerSource): boolean {
+  return Array.isArray(selected) || Boolean(other_text)
+}
+
 function isSupersededAnswer(
   submitted: AgentAnswerRequest,
-  committed: Extract<AskUserResolution, { status: 'answered' }>
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
 ): boolean {
   return (
-    xor(submitted.selected, committed.selected).length > 0 ||
+    (selectionKnown &&
+      xor(submitted.selected, committed.selected).length > 0) ||
     (submitted.other_text || undefined) !== committed.otherText
   )
 }
@@ -434,6 +449,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onAgentEvent,
     onThreadActivated,
     onAskResolved,
     refreshCredentialDuringTurns = false,
@@ -1117,11 +1133,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
         name,
         previewUrl,
         mediaUrl,
-        ref
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
@@ -1251,7 +1268,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1282,7 +1300,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      if (generation !== loadGeneration) return false
+      if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
         ack,
         text,
@@ -1310,6 +1328,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function observeAcceptedTurn(
+    generation: number,
+    onAccepted?: () => void
+  ): boolean {
+    onAccepted?.()
+    return generation === loadGeneration
+  }
+
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
@@ -1324,7 +1350,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1346,7 +1373,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        onAccepted
       )
       if (!sent) stopPendingAck = null
       return sent
@@ -1516,8 +1544,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     try {
       const receipt = await sendAnswer(currentThreadId, askId, answer)
       const committed = toAskResolution(receipt)
-      if (receipt.selected !== undefined)
-        reportSupersededAnswer(askId, committed)
+      reportSupersededAnswer(askId, receipt)
       conversationStore.commitAsk(askId, currentThreadId, committed)
       return true
     } catch (error) {
@@ -1533,11 +1560,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string
   ): void {
     if (error instanceof AgentApiError && error.status === 409) {
-      const committed = toAskResolution(
-        zAgentAskConflict.safeParse(error.body).data ?? {}
-      )
-      reportSupersededAnswer(askId, committed)
-      conversationStore.retireAsk(askId, committed, threadId)
+      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
+      reportSupersededAnswer(askId, conflict)
+      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
       return
     }
     const failure = classifyAnswerFailure(error)
@@ -1568,11 +1593,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportSupersededAnswer(
     askId: string,
-    committed: AskUserResolution
+    source: CommittedAnswerSource
   ): void {
+    if (!namesCommittedAnswer(source)) return
+    const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
-    if (submitted === undefined || !isSupersededAnswer(submitted, committed))
+    if (
+      submitted === undefined ||
+      !isSupersededAnswer(submitted, committed, Array.isArray(source.selected))
+    )
       return
     reportError(
       new Error(
@@ -1623,10 +1653,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
     pendingThreadSource.value = source ?? null
-  }
-
-  function listThreads() {
-    return rest.listThreads()
   }
 
   async function loadThread(
@@ -1789,7 +1815,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') {
       const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, resolution)
+      reportSupersededAnswer(event.data.ask_id, event.data)
       conversationStore.retireAsk(
         event.data.ask_id,
         resolution,
@@ -1819,6 +1845,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
+    onAgentEvent?.(parsed.data)
     handleAgentEvent(parsed.data)
   }
 
@@ -2012,7 +2039,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
-    listThreads,
     loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),

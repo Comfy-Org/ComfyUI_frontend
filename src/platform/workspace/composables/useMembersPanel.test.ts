@@ -1,4 +1,4 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { getActivePinia } from 'pinia'
@@ -9,8 +9,8 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -245,8 +245,6 @@ const {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }),
     mockUiConfig: ref({
@@ -258,7 +256,6 @@ const {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     }),
@@ -341,15 +338,15 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
@@ -442,8 +439,6 @@ describe('useMembersPanel', () => {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
     mockUiConfig.value = {
@@ -455,7 +450,6 @@ describe('useMembersPanel', () => {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null
     }
@@ -1004,6 +998,23 @@ describe('useMembersPanel', () => {
         panel.memberMenuItems(createMember({ id: 'creator-1', role: 'owner' }))
       ).toEqual([])
     })
+  })
+
+  describe('workspace menu placement', () => {
+    it.for([
+      { inHeader: false, shown: true },
+      { inHeader: true, shown: false }
+    ])(
+      'keeps the menu in the Members controls: $shown (in header: $inHeader)',
+      async ({ inHeader, shown }) => {
+        vi.mocked(useWorkspaceUI()).isWorkspaceMenuInHeader = computed(
+          () => inHeader
+        )
+        const panel = await setup()
+
+        expect(panel.showWorkspaceMenu.value).toBe(shown)
+      }
+    )
   })
 
   describe('isOriginalOwner', () => {

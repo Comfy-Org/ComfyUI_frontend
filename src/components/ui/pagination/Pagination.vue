@@ -12,17 +12,13 @@
         class="mr-2 flex items-center gap-2"
       >
         <span class="text-sm text-muted-foreground">
-          {{ $t('g.itemsPerPage') }}
+          {{ itemsPerPageLabel }}
         </span>
         <Select
           :model-value="itemsPerPage"
           @update:model-value="updateItemsPerPage"
         >
-          <SelectTrigger
-            size="md"
-            class="w-20"
-            :aria-label="$t('g.itemsPerPage')"
-          >
+          <SelectTrigger size="md" class="w-20" :aria-label="itemsPerPageLabel">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -41,10 +37,10 @@
           variant="muted-textonly"
           size="md"
           class="text-sm"
-          :aria-label="$t('g.previous')"
+          :aria-label="previousLabel"
         >
           <i class="icon-[lucide--chevron-left] size-4" />
-          {{ $t('g.previous') }}
+          {{ previousLabel }}
         </Button>
       </PaginationPrev>
       <PaginationList v-slot="{ items }" class="flex items-center gap-1">
@@ -57,7 +53,7 @@
             <Button
               :variant="item.value === page ? 'secondary' : 'muted-textonly'"
               size="icon"
-              :aria-label="$t('g.pageNumber', { page: item.value })"
+              :aria-label="formatPageLabel(item.value)"
             >
               {{ item.value }}
             </Button>
@@ -72,9 +68,9 @@
           variant="muted-textonly"
           size="md"
           class="text-sm"
-          :aria-label="$t('g.next')"
+          :aria-label="nextLabel"
         >
-          {{ $t('g.next') }}
+          {{ nextLabel }}
           <i class="icon-[lucide--chevron-right] size-4" />
         </Button>
       </PaginationNext>
@@ -102,6 +98,10 @@ import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 const { total, itemsPerPageOptions } = defineProps<{
   total: number
+  itemsPerPageLabel: string
+  previousLabel: string
+  nextLabel: string
+  formatPageLabel: (page: number) => string
   itemsPerPageOptions?: number[]
 }>()
 

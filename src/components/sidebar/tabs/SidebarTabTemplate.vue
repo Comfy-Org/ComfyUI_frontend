@@ -8,9 +8,7 @@
     "
   >
     <div class="comfy-vue-side-bar-header flex flex-col">
-      <div
-        class="flex min-h-16 items-center justify-between border-b border-interface-stroke px-4"
-      >
+      <div class="flex min-h-16 items-center justify-between border-b px-4">
         <div class="flex min-w-0 flex-1 items-center overflow-hidden">
           <span class="truncate font-bold" :title="title">
             {{ title }}

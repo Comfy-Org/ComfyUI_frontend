@@ -14,43 +14,12 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { subscribeAgentWorkflow } from '@e2e/fixtures/utils/subscribeAgentWorkflow'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(agentTest, webSocketFixture)
-
-/**
- * Repro for the Memie Osuga / stagingcloud in-app-agent report: asking the
- * agent for "a z-turbo image workflow" made it call `insert_workflow` TWICE
- * with two different op ids, landing two perfectly-overlapping copies of the
- * same template (confirmed via the report's own CRDT debug log: two disjoint
- * `insert:<opId>:root:node:<id>` namespaces sharing the same three local
- * node ids). Duplicate-insert-with-no-dedup is intentional frontend behavior
- * (`agentInsertWorkflow.templates.test.ts`'s "the same template inserted
- * twice produces two independent, fully-wired pipelines"), so this repro
- * does not treat that half as a defect -- it documents the VISUAL overlap
- * that duplication produces on a real canvas, which no test asserted before,
- * and then the FRONTEND-observable half of the actual complaint: a widget
- * write the doc host rejects with an `opaque_widgets`-shaped failure
- * (`<node> is absent from the pinned catalog, so its widgets_values is
- * stored opaquely (schema §1.2) and is not name-addressable`). The follower
- * now puts the refused register back from the document
- * (`AgentCrdtProjection.revertRejected`), so the widget no longer keeps
- * showing a value the shared document never took. The rejection notifier
- * also tells the human that the write was refused.
- *
- * PM-1716 made that divergence VISIBLE rather than silent: `rejectedOpNotice`
- * matches the host's `code` against the applier's rejection vocabulary and
- * raises a toast. The divergence itself is unchanged and is still pinned
- * below -- a rejected write is not rolled back on the canvas.
- *
- * `opaque_widgets` is a cloud doc-host error code the frontend never
- * produces, so this repro injects the host's raw wire response directly
- * rather than trying to make the real `comfy-multi-player` applier produce
- * it -- exactly what a real doc host running this rejection logic would put
- * on the wire.
- */
 
 const WORKFLOW_ID = 'b3f1c4a2-0000-4000-8000-000000000030'
 const MESSAGE_ID = 'b3f1c4a2-0000-4000-8000-000000000031'
@@ -193,9 +162,9 @@ function insertWorkflowOp(
 ): Extract<Op, { op: 'insert_workflow' }> {
   return {
     op_id: opId.padEnd(32, '0'),
-    actor: 'agent:e2e',
+    actor: 'agent:e2e:turn-1',
     base_version: 1,
-    stamp: [1, 'agent:e2e'],
+    stamp: [1, 'agent:e2e:turn-1'],
     op: 'insert_workflow',
     workflow: templateWorkflow()
   }
@@ -235,12 +204,6 @@ async function ksamplerNodeIds(page: Page): Promise<string[]> {
   )
 }
 
-/**
- * Boots the agent-enabled app, sends one turn, and lands two `insert_workflow`
- * ops with different op ids -- each carrying its own fresh copy of the same
- * three-node template, exactly like the two disjoint `insert:<opId>:...`
- * namespaces in the report's CRDT debug log.
- */
 async function driveThroughDuplicateInsert(
   page: Page,
   getAgentSocket: () => Promise<WebSocketRoute>
@@ -250,7 +213,6 @@ async function driveThroughDuplicateInsert(
     localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
   })
   await bootAgentApp(page, true, {
-    settings: { 'Comfy.VueNodes.Enabled': true },
     objectInfo: nodeDefs,
     beforeNavigate: async (page) => {
       await mockAgentTurnApi(page, {
@@ -266,20 +228,12 @@ async function driveThroughDuplicateInsert(
   const agentPanel = new AgentPanel(page)
   await agentPanel.open()
   const socket = await getAgentSocket()
-  const outboundFrames: string[] = []
-  socket.onMessage((message) => outboundFrames.push(String(message)))
-  await agentPanel.selectWorkflow()
-  await agentPanel.sendMessage('Create a z-turbo image workflow')
-
-  await expect
-    .poll(() => outboundFrames, { timeout: 15_000 })
-    .toContainEqual(
-      expect.stringMatching(
-        new RegExp(
-          `doc_subscribe.*${WORKFLOW_ID}|${WORKFLOW_ID}.*doc_subscribe`
-        )
-      )
-    )
+  const outboundFrames = await subscribeAgentWorkflow({
+    agentPanel,
+    socket,
+    workflowId: WORKFLOW_ID,
+    prompt: 'Create a z-turbo image workflow'
+  })
 
   const host = new HostDoc(WORKFLOW_ID, { nodes: [], links: [] }, catalog)
   for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
@@ -288,14 +242,10 @@ async function driveThroughDuplicateInsert(
     .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
     .toBe(0)
 
-  // First `insert_workflow`: the agent's own first (unnecessary) tool call.
   socket.send(JSON.stringify(applyInsertWorkflow(host, 'insert-zturbo-op-a')))
   await expect.poll(() => ksamplerNodeIds(page)).toHaveLength(1)
   const [copyANodeId] = await ksamplerNodeIds(page)
 
-  // Second `insert_workflow`, a DIFFERENT op id, the SAME template -- the
-  // duplicate call the report's debug log caught (two disjoint
-  // `insert:<opId>:root:node:<id>` namespaces holding the same 3 node ids).
   socket.send(JSON.stringify(applyInsertWorkflow(host, 'insert-zturbo-op-b')))
   await expect.poll(() => ksamplerNodeIds(page)).toHaveLength(2)
   const copyBNodeId = (await ksamplerNodeIds(page)).find(
@@ -316,14 +266,6 @@ interface RejectedWidgetEditHandles extends DuplicateInsertHandles {
   seedInput: Locator
 }
 
-/**
- * Extends {@link driveThroughDuplicateInsert} with a human edit of copy B's
- * `seed` widget, then answers the client's `doc_ops` batch with a raw
- * `doc_ops_result` the way a real doc host would for a node whose class is
- * absent from its pinned catalog -- `ok: false`, a `failed` entry naming the
- * rejected op, and (per the applier's contract) no accompanying `doc_update`,
- * since nothing landed.
- */
 async function driveThroughRejectedWidgetEdit(
   page: Page,
   getAgentSocket: () => Promise<WebSocketRoute>
@@ -331,22 +273,6 @@ async function driveThroughRejectedWidgetEdit(
   const handles = await driveThroughDuplicateInsert(page, getAgentSocket)
   const { vueNodes, socket, outboundFrames, copyBNodeId } = handles
 
-  // The two copies sit at IDENTICAL canvas coordinates (the overlap under
-  // test in the other spec), which a real human could not click through
-  // either -- move copy B's node clear of copy A's before driving a normal,
-  // pointer-based edit, so this edit deterministically lands on the specific
-  // node id under test rather than whichever copy happens to render on top.
-  await page.evaluate(
-    ({ nodeId, dy }) => {
-      const node = window.app!.graph.nodes.find(
-        (candidate) => String(candidate.id) === nodeId
-      )
-      if (!node) throw new Error(`node ${nodeId} not found`)
-      node.pos = [node.pos[0], node.pos[1] + dy]
-      window.app!.graph.setDirtyCanvas(true, true)
-    },
-    { nodeId: copyBNodeId, dy: 600 }
-  )
   await page.getByRole('button', { name: 'Fit View (.)', exact: true }).click()
   const seedInput = vueNodes
     .getNodeLocator(copyBNodeId)
@@ -392,10 +318,6 @@ async function driveThroughRejectedWidgetEdit(
     })
   )
 
-  // Give the browser's own event loop a couple of turns to run the
-  // `doc_ops_result` listener the injected WS message wakes -- it is a
-  // synchronous handler (`useAgentCrdtFollower.ts`'s `onOpsResult`), so by
-  // the time these resolve it has already run, without an arbitrary sleep.
   await nextFrame(page)
   await nextFrame(page)
 
@@ -404,12 +326,14 @@ async function driveThroughRejectedWidgetEdit(
 
 test.describe(
   'Agent duplicate insert_workflow + opaque widget-write rejection',
-  { tag: ['@cloud', '@agent', '@canvas', '@node', '@widget'] },
+  {
+    tag: ['@cloud', '@agent', '@canvas', '@node', '@widget', '@vue-nodes']
+  },
   () => {
     test.use({ connectWebSocketToServer: false })
     test.describe.configure({ timeout: 60_000 })
 
-    test('two insert_workflow calls with different op ids leave two fully overlapping, visually indistinguishable copies of the template', async ({
+    test('two insert_workflow calls with different op ids leave two copies of the template side by side', async ({
       page,
       getAgentSocket
     }) => {
@@ -435,10 +359,6 @@ test.describe(
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
 
-      // `Fit View` pans/zooms with a brief transition; wait for copy A's box
-      // to stop moving (two consecutive identical reads) before comparing it
-      // to copy B's, or the comparison below races the animation instead of
-      // measuring the settled overlap.
       let previousBoxA: Awaited<ReturnType<Locator['boundingBox']>> = null
       await expect
         .poll(async () => {
@@ -452,13 +372,13 @@ test.describe(
         })
         .toBe(true)
 
-      // Nobody previously asserted the resulting VISUAL overlap: the same
-      // template inserted twice renders both copies at pixel-identical
-      // positions, so a human cannot tell them apart on canvas.
       const boxA = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
       const boxB = await vueNodes.getNodeLocator(copyBNodeId).boundingBox()
       expect(boxA).not.toBeNull()
-      expect(boxB).toEqual(boxA)
+      expect(boxB).not.toBeNull()
+      expect(boxB!.width).toBeCloseTo(boxA!.width, 0)
+      expect(boxB!.y).toBeCloseTo(boxA!.y, 0)
+      expect(boxB!.x).toBeGreaterThan(boxA!.x + boxA!.width)
     })
 
     test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({

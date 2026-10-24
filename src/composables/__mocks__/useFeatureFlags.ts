@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, watchEffect } from 'vue'
 
-import type { useFeatureFlags as realUseFeatureFlags } from '../useFeatureFlags'
+import type { useFeatureFlags as realUseFeatureFlags } from '@/composables/useFeatureFlags'
 
 export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
@@ -11,6 +11,7 @@ const defaultFlags: FeatureFlags = {
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
+  agent: undefined,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
@@ -21,9 +22,11 @@ const defaultFlags: FeatureFlags = {
   partnerNodeTokenEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
+  deployToCloud: false,
   nodeLibraryEssentialsEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
+  deploymentCompatibilityMarksEnabled: false,
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
@@ -33,7 +36,6 @@ const defaultFlags: FeatureFlags = {
   localWebSsoEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
-  legacyBillingMigrationEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,
@@ -41,7 +43,6 @@ const defaultFlags: FeatureFlags = {
   autoTopUpEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
-  freeTierJobAllowanceEnabled: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,

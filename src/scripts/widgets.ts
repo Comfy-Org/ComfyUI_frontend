@@ -32,7 +32,6 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
 
 import './domWidget'
-import './errorNodeWidgets'
 
 /**
  * Transforms a V2 widget constructor to a V1 widget constructor.

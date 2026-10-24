@@ -5,15 +5,15 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { narrowServerFact } from '@/platform/serverFacts/serverFact'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
-import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
+import { useTeamPlan } from '@/platform/billing/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,
@@ -122,15 +122,18 @@ export function useMembersPanel() {
     () => activeWorkspace.value?.totalMembers ?? members.value.length
   )
   const { resendInvite } = workspaceStore
-  const { permissions: workspacePermissions, uiConfig: workspaceUiConfig } =
-    useWorkspaceUI()
+  const {
+    permissions: workspacePermissions,
+    uiConfig: workspaceUiConfig,
+    isWorkspaceMenuInHeader
+  } = useWorkspaceUI()
   const { hasTeamPlan, isOnTeamPlan, hasMemberSeats, isPlanLoading } =
     useTeamPlan()
   const subscriptionDialog = useSubscriptionDialog()
   const { maxSeats } = useBillingContext()
   const { canManageMembers, canInviteMembers } = useBillingCapabilities()
 
-  const { isPlanEnded, isSalesManagedPlan, isEnterprisePlan } = usePlanEnded()
+  const { isPlanEnded, isSalesManagedPlan } = usePlanEnded()
 
   const permissions = computed((): MembersPanelPermissions => {
     const canManage = canManageMembers.value
@@ -213,6 +216,7 @@ export function useMembersPanel() {
   )
 
   const showInviteButton = computed(() => canInviteMembers.value)
+  const showWorkspaceMenu = computed(() => !isWorkspaceMenuInHeader.value)
 
   function handleInviteMember() {
     if (canInviteMembers.value) void showInviteMemberDialog()
@@ -364,13 +368,13 @@ export function useMembersPanel() {
     isOnTeamPlan,
     isPlanEnded,
     isSalesManagedPlan,
-    isEnterprisePlan,
     hasMemberSeats,
     isPlanLoading,
     hasMultipleMembers,
     showSearch,
     showViewTabs,
     showInviteButton,
+    showWorkspaceMenu,
     handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,

@@ -9,7 +9,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 test(
   'keeps repeated file drops in one tray item while pending and after uploading',
   { tag: '@cloud' },
-  async ({ page, assetUpload }) => {
+  async ({ page, assetUpload, toast }) => {
     await bootAgentApp(page, true)
     const panel = new AgentPanel(page)
     await panel.open()
@@ -23,9 +23,9 @@ test(
     ).toBeVisible()
     await drops.dropFilesOn(panel.root, [file])
     await expect(panel.attachmentChips).toHaveCount(1)
-    const notice = page
-      .getByRole('alert')
-      .filter({ hasText: 'test_upload_image.png is already in the asset tray' })
+    const notice = toast.withText(
+      'test_upload_image.png is already in the asset tray'
+    )
     await expect(notice).toHaveCount(1)
     await expect(panel.composer).toBeFocused()
     await expect(panel.composer).toContainText('Keep this draft')
@@ -71,7 +71,7 @@ test(
 test(
   'shows one plural duplicate notice while continuing a mixed pending batch',
   { tag: '@cloud' },
-  async ({ page, assetUpload }) => {
+  async ({ page, assetUpload, toast }) => {
     await bootAgentApp(page, true)
     const panel = new AgentPanel(page)
     await panel.open()
@@ -84,9 +84,7 @@ test(
     await expect(panel.attachmentChips).toHaveCount(2)
     await expect(panel.attachmentChip('test_upload_image.png')).toBeVisible()
     await expect(panel.attachmentChip('silence.wav')).toBeVisible()
-    await expect(
-      page.getByRole('alert').filter({ hasText: 'Skipped 2 duplicate assets' })
-    ).toHaveCount(1)
+    await expect(toast.withText('Skipped 2 duplicate assets')).toHaveCount(1)
     await expect(
       panel.root.getByRole('status', { name: 'Uploading', exact: true })
     ).toHaveCount(2)

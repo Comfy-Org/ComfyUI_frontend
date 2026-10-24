@@ -83,6 +83,10 @@ set -euo pipefail
 if [[ "$1" == "--remove" ]]; then
   exit 0
 fi
+if [[ " $* " != *" --ignore-errors inconsistent,corrupt "* ]]; then
+  echo 'missing function-metadata error allowance' >&2
+  exit 64
+fi
 inputs=()
 output=''
 while [[ $# -gt 0 ]]; do
@@ -193,6 +197,18 @@ describe('package-e2e-coverage.sh', () => {
     expect(result.output).not.toContain('::warning::')
   })
 
+  it('preserves line coverage when function metadata is inconsistent', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+
+    const result = fixture.run(true)
+
+    expect(result.status).toBe(0)
+    expect(
+      readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
+    ).toContain('SF:src/file 0.ts')
+  })
+
   // Preserves #15342: a flaky shard must not discard every other shard's real
   // coverage. It stays published for Codecov and the PR comment, but flagged.
   it('publishes a run with a whitespace path but flags a red matrix', () => {
@@ -258,9 +274,6 @@ describe('package-e2e-coverage.sh', () => {
   })
 })
 
-// The sidecar only reaches the notifier because the whole coverage directory
-// is uploaded. Narrowing either upload to coverage.lcov would strand it, and
-// consumers treat absent metadata as an incomplete merge.
 describe('e2e-coverage artifact contract', () => {
   it.for([
     '.github/workflows/ci-tests-e2e-coverage-package.yaml',
@@ -268,6 +281,63 @@ describe('e2e-coverage artifact contract', () => {
   ])('uploads the coverage directory in %s', (file) => {
     expect(uploadedCoveragePaths(file)).toEqual(['coverage/playwright'])
   })
+
+  it('publishes Pages through one job with artifact download permissions', () => {
+    const dashboard = readWorkflow('.github/workflows/ci-dashboard-deploy.yaml')
+    const coverage = readWorkflow(
+      '.github/workflows/ci-tests-e2e-coverage.yaml'
+    )
+    const publishers = [...jobSteps(dashboard), ...jobSteps(coverage)].filter(
+      (step) => String(field(step, 'uses')).startsWith('actions/deploy-pages@')
+    )
+
+    expect(publishers).toHaveLength(1)
+    expect(field(dashboard, 'jobs', 'deploy', 'permissions')).toMatchObject({
+      actions: 'read',
+      contents: 'read',
+      pages: 'write',
+      'id-token': 'write'
+    })
+  })
+
+  it.for([
+    { reports: [], found: false },
+    { reports: ['playwright-report'], found: false },
+    { reports: ['coverage'], found: false },
+    { reports: ['playwright-report', 'coverage'], found: true }
+  ])(
+    'deploys reports $reports only when the site is complete',
+    (testCase, ctx) => {
+      const root = mkdtempSync(join(tmpdir(), 'dashboard-site-'))
+      ctx.onTestFinished(() => rmSync(root, { recursive: true, force: true }))
+      testCase.reports.forEach((report) => {
+        const directory = join(root, 'dashboard-site', report)
+        mkdirSync(directory, { recursive: true })
+        writeFileSync(join(directory, 'index.html'), report)
+      })
+      const steps = jobSteps(
+        readWorkflow('.github/workflows/ci-dashboard-deploy.yaml')
+      )
+      const detect = steps.find((step) => field(step, 'id') === 'report')
+      const output = join(root, 'output')
+      const result = spawnSync(
+        'bash',
+        ['-e', '-c', String(field(detect, 'run'))],
+        {
+          cwd: root,
+          env: {
+            ...process.env,
+            GITHUB_OUTPUT: output,
+            GITHUB_STEP_SUMMARY: join(root, 'summary')
+          },
+          encoding: 'utf8'
+        }
+      )
+
+      expect(result.status).toBe(0)
+      expect(readFileSync(output, 'utf8')).toBe(`found=${testCase.found}\n`)
+    }
+  )
 })
 
 // actionlint is not wired into CI, so these assertions are the only automated

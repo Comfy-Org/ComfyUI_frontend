@@ -8,7 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -92,7 +92,7 @@ function copy(obj: unknown) {
 </script>
 <template>
   <section class="flex h-full flex-col items-center justify-center gap-2 px-4">
-    <i class="icon-[lucide--circle-alert] size-6 bg-error" />
+    <i class="icon-[lucide--circle-alert] size-6 bg-destructive" />
     {{ t('linearMode.error.header') }}
     <div class="p-1 text-muted-foreground">
       <i18n-t
@@ -138,7 +138,7 @@ function copy(obj: unknown) {
                 <div
                   v-for="error in allErrors"
                   :key="error"
-                  class="w-full rounded-lg bg-secondary-background p-2 text-muted-foreground"
+                  class="w-full rounded-lg bg-secondary p-2 text-muted-foreground"
                   v-text="error"
                 />
               </section>
@@ -158,7 +158,7 @@ function copy(obj: unknown) {
     </div>
     <div
       v-if="accessibleErrors.length"
-      class="my-8 w-full rounded-lg bg-secondary-background text-muted-foreground"
+      class="my-8 w-full rounded-lg bg-secondary text-muted-foreground"
     >
       <ul>
         <li

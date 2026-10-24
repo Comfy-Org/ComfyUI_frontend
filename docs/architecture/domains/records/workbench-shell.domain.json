@@ -166,7 +166,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Splitter overlay and top menu arrange workbench regions from layout settings",
