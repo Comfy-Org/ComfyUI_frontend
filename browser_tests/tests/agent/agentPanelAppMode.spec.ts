@@ -106,6 +106,12 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
     const storedOpenState = () =>
       page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
 
+    await page.evaluate(
+      ([key, value]) => localStorage.setItem(key, value),
+      [OPEN_STORAGE_KEY, 'false']
+    )
+    await comfyPage.workflow.reloadAndWaitForApp()
+
     await expect(dockedPanel).toBeVisible({ timeout: 8_000 })
     await expect.poll(storedOpenState).toBe('true')
 
