@@ -748,4 +748,14 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByTestId('plans-credits-menu-item')
     ).not.toBeInTheDocument()
   })
+
+  it('hides the processing line while unified billing settings are off', () => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    renderComponent()
+
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+    expect(
+      screen.queryByText("Payment processing. You don't need to pay again.")
+    ).not.toBeInTheDocument()
+  })
 })
