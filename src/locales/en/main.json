@@ -4109,6 +4109,12 @@
     "notChecked": "Not checked"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "Go to {node}",
+      "goToLinkedNode": "Go to a linked node",
+      "subgraphInputs": "Subgraph Inputs",
+      "subgraphOutputs": "Subgraph Outputs"
+    },
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
       "disabledTooltip": "No output nodes selected"

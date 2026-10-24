@@ -8,7 +8,7 @@ interface LinkSelection {
   readonly links: readonly LLink[]
   readonly marquee: Bounds
   readonly anchorX: number
-  readonly includesHidden?: boolean
+  readonly socketType?: 'input' | 'output'
 }
 
 export const useLinkSelectionStore = defineStore('linkSelection', () => {

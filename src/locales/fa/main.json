@@ -4288,6 +4288,12 @@
     "uploadJsonFile": "بارگذاری فایل JSON"
   },
   "selectionToolbox": {
+    "linkDestinations": {
+      "goTo": "رفتن به {node}",
+      "goToLinkedNode": "رفتن به یک node متصل",
+      "subgraphInputs": "ورودی‌های subgraph",
+      "subgraphOutputs": "خروجی‌های subgraph"
+    },
     "Bypass Group Nodes": "عبور از نودهای گروه",
     "Set Group Nodes to Always": "تنظیم نودهای گروه روی همیشه",
     "Set Group Nodes to Never": "تنظیم نودهای گروه روی هرگز",
