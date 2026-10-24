@@ -1,11 +1,3 @@
-/**
- * Deterministic guards for the syntax-checkable CRDT follower invariants in
- * `.agents/checks/follower-boundary.md`.
- *
- * The file roster is deliberately explicit. Adding or moving a runtime seam
- * file requires updating this list and the tests; a missing listed file fails
- * closed instead of silently shrinking coverage.
- */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -18,10 +10,6 @@ export interface Violation {
   message: string
 }
 
-/**
- * Runtime files that receive document frames, project them through the graph
- * API, or mint and send local semantic operations on current `main`.
- */
 export const FOLLOWER_CORE_FILES = [
   'src/workbench/extensions/agent/crdt/agentCrdtProjection.ts',
   'src/workbench/extensions/agent/crdt/agentCrdtTransport.ts',
