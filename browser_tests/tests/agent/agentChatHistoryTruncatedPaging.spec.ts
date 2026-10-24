@@ -7,7 +7,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { firstAgentThreadPage } from '@e2e/fixtures/data/agent/agentThreadList'
+import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -24,7 +24,7 @@ test.describe(
     // Every page, cursor or not, answers with page 1 and the same next cursor.
     test.beforeEach(async ({ page }) => {
       await page.route('**/api/agent/threads?*', (route) =>
-        route.fulfill(jsonRoute(firstAgentThreadPage))
+        route.fulfill(jsonRoute(thirtyAgentThreadPages.first))
       )
     })
 
@@ -48,7 +48,7 @@ test.describe(
       // more than once, and strict mode would fail here on a duplicate.
       await expect(
         panel.getByRole('button', {
-          name: firstAgentThreadPage.threads[0].title,
+          name: thirtyAgentThreadPages.first.threads[0].title,
           exact: true
         })
       ).toBeVisible()
