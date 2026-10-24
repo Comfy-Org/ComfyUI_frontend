@@ -23,7 +23,7 @@ function openEditor(
     readText: () => 'a portrait',
     widgetLabel: 'text',
     nodeTitle: 'CLIP Text Encode',
-    readOnly: false,
+    readOnly: () => false,
     onEdit,
     ...overrides
   })
@@ -70,7 +70,7 @@ describe('showTextEditor', () => {
   it('opens read-only with the text still selectable', async () => {
     const user = userEvent.setup()
     renderDialogHost()
-    const { onEdit } = openEditor({ readOnly: true })
+    const { onEdit } = openEditor({ readOnly: () => true })
 
     const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
     await user.type(editor, 'more')
@@ -106,6 +106,30 @@ describe('showTextEditor', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
     expect(captureCanvasState).not.toHaveBeenCalled()
+  })
+
+  it('locks the editor when the widget becomes read-only while it is open', async () => {
+    const readOnly = ref(false)
+    renderDialogHost()
+    openEditor({ readOnly: () => readOnly.value })
+    const editor = await screen.findByRole('textbox')
+
+    readOnly.value = true
+
+    await waitFor(() => expect(editor).toHaveAttribute('readonly'))
+  })
+
+  it('keeps the selection when the text changes elsewhere', async () => {
+    const source = ref('a portrait at dusk')
+    renderDialogHost()
+    openEditor({ readText: () => source.value })
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
+    editor.setSelectionRange(2, 10)
+
+    source.value = 'a portrait at dawn'
+
+    await waitFor(() => expect(editor).toHaveValue('a portrait at dawn'))
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([2, 10])
   })
 
   it('follows edits made to the text elsewhere while it is open', async () => {
