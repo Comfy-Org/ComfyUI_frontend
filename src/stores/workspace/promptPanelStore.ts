@@ -95,7 +95,7 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
       opened: {
         surface: 'panel',
         trigger: 'expand_button',
-        ...promptEditorExperiment.experimentProperties
+        ...promptEditorExperiment.experimentPropertiesFor('panel')
       },
       openedAt: performance.now(),
       inputCount: 0,
