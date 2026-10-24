@@ -910,9 +910,12 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it('falls back to statusText and undefined body for a non-JSON error response', async () => {
+  it('uses bounded request context instead of an unhelpful status text', async () => {
     respond(
-      new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
+      new Response('gateway boom', {
+        status: 502,
+        statusText: 'No error message'
+      })
     )
 
     const error = await makeClient()
@@ -920,12 +923,14 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     if (!(error instanceof AgentApiError)) throw error
-    expect(error.message).toBe('Bad Gateway')
+    expect(error.message).toBe(
+      'Agent request failed (HTTP 502, get_thread_messages)'
+    )
     expect(error.status).toBe(502)
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error body or status text', async () => {
+  it('falls back to the HTTP status and operation when the response has no error body', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
@@ -934,7 +939,7 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(AgentApiError)
     expect((error as AgentApiError).message).toBe(
-      'Agent request failed (HTTP 503)'
+      'Agent request failed (HTTP 503, get_thread_messages)'
     )
   })
 
