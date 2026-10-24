@@ -158,11 +158,13 @@ addCustomNodeDefs
 getCustomWidgets
 beforeRegisterNodeDef    [repeated multiple times]
 registerCustomNodes
+setup
+beforeLoadGraph
 beforeConfigureGraph
 nodeCreated
 loadedGraphNode
 afterConfigureGraph
-setup
+afterLoadGraph
 ```
 
 #### Late Extension (deployments with late custom nodes on)
@@ -186,11 +188,13 @@ extension's per-node hooks run on its nodes.
 #### Loading Workflow
 
 ```
+beforeLoadGraph
 beforeConfigureGraph
 beforeRegisterNodeDef   [zero, one, or multiple times]
 nodeCreated             [repeated multiple times]
 loadedGraphNode         [repeated multiple times]
 afterConfigureGraph
+afterLoadGraph
 ```
 
 #### Switching Workflow Tab
@@ -206,6 +210,12 @@ is already loaded shows that instance without rebuilding its nodes. The
 `loadedGraphNode`, `afterConfigureGraph`) do not run. Extensions that refresh
 per-graph DOM or Vue state when the visible graph changes should do so in
 `afterLoadGraph`, which runs on both the first load and every later switch.
+
+Because each workflow owns a separate `LGraph`, patching `app.graph` in
+`setup` (for example, replacing `app.graph.onNodeAdded` or wrapping
+`app.graph.add`) only affects the graph of the first tab. Patch
+`LGraph.prototype` instead, or re-apply the patch to the current `app.graph`
+in `afterLoadGraph`.
 
 #### Adding New Node
 
