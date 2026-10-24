@@ -43,10 +43,6 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
-    // Let the active menu own Escape without also triggering the global shortcut.
-    // `target` is usually the focused element, but when nothing has focus some
-    // browsers (e.g. Safari) target the event at `document` instead of
-    // `document.body`, which has no `closest` method.
     if (
       event.key === 'Escape' &&
       target instanceof Element &&
@@ -79,23 +75,24 @@ export function useKeybindingService() {
         }
       }
       if (isModalOpen(dialogStore.dialogStack.length)) {
-        // Bare keys still have to reach inputs inside the dialog.
         if (keyCombo.ctrl) {
           event.preventDefault()
         }
         return
       }
 
-      // A registered override (e.g. the agent composer owning Escape while a
-      // turn is running) wins over the default keybinding, but only once an
-      // open menu or dialog has already had first refusal above - those are
-      // more specific to the moment than "some feature elsewhere is running".
       if (event.key === 'Escape' && consultEscapeOverride(event)) {
         if (!event.defaultPrevented) event.preventDefault()
         return
       }
 
       event.preventDefault()
+      if (
+        event.repeat &&
+        keybinding.targetElementId === 'graph-canvas-container'
+      ) {
+        return
+      }
       const runCommandIds = new Set([
         'Comfy.QueuePrompt',
         'Comfy.QueuePromptFront',

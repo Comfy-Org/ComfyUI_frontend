@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Colapsar/Expandir nodos seleccionados"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Ocultar/mostrar conexiones de los nodos seleccionados"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenciar/desilenciar nodos seleccionados"
   },

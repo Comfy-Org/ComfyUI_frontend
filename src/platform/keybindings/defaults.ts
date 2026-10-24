@@ -169,6 +169,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'l'
+    },
+    commandId: 'Comfy.Canvas.ToggleSelectedNodes.Links',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
       key: '`',
       ctrl: true
     },

@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Ausgewählte Nodes einklappen/ausklappen"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Verbindungen der ausgewählten Nodes ausblenden/anzeigen"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Ausgewählte Nodes stummschalten/Stummschaltung aufheben"
   },

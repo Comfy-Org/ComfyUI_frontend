@@ -107,6 +107,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "收合／展開選取的節點"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "隱藏/顯示選取節點的連線"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "停用/啟用選取的節點"
   },
