@@ -88,7 +88,7 @@ vi.mock<unknown>(
 )
 
 const { getNodeByLocatorIdMock, rootGraph } = vi.hoisted(() => ({
-  getNodeByLocatorIdMock: vi.fn(() => ({ id: 7 })),
+  getNodeByLocatorIdMock: vi.fn<() => { id: number } | null>(() => ({ id: 7 })),
   rootGraph: { events: new EventTarget() }
 }))
 
@@ -189,6 +189,16 @@ describe('CameraAngle', () => {
     await nextTick()
 
     expect(api().initialize).toHaveBeenCalledTimes(2)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    renderComponent()
+    getNodeByLocatorIdMock.mockReturnValueOnce(null)
+
+    rootGraph.events.dispatchEvent(new Event('configured'))
+    await nextTick()
+
+    expect(api().cleanup).toHaveBeenCalledOnce()
   })
 
   it('switches to object view from the toolbar', async () => {

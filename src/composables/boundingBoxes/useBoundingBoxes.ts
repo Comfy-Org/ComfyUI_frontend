@@ -703,7 +703,7 @@ export function useBoundingBoxes(
     () => requestDraw()
   )
   watch([isNodeSelected, activeIndex], () => requestDraw())
-  watch([widthValue, heightValue], () => syncState())
+  watch([widthValue, heightValue], () => syncState(), { flush: 'post' })
 
   watch(
     litegraphNode,

@@ -1,28 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useLiveGraphNode } from './useLiveGraphNode'
 
-const rootGraph = vi.hoisted(() => ({ events: new EventTarget() }))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    get rootGraphOrUndefined() {
-      return rootGraph
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 function configureRootGraph() {
-  rootGraph.events.dispatchEvent(new Event('configured'))
+  app.rootGraph.events.dispatch('configured')
 }
-
-beforeEach(() => {
-  rootGraph.events = new EventTarget()
-})
 
 describe(useLiveGraphNode, () => {
   it('resolves the node immediately', () => {

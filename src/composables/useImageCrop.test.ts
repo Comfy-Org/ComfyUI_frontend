@@ -39,15 +39,17 @@ vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/scripts/app'))
 
 const liveGraphNodes = vi.hoisted(() => ({
-  reloads: [] as Array<() => void>
+  reloads: new Set<() => void>()
 }))
 
-vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
-  const { computed, shallowRef } = await import('vue')
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
-    useLiveGraphNode: (resolve: () => unknown) => {
+    useLiveGraphNode: (resolve) => {
       const node = shallowRef(resolve() ?? null)
-      liveGraphNodes.reloads.push(() => (node.value = resolve() ?? null))
+      const reload = () => (node.value = resolve() ?? null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
     }
   }
@@ -500,6 +502,15 @@ describe('useImageCrop', () => {
     vm.isLockEnabled = true
     await nextTick()
     expect((vm.resizeHandles as unknown[]).length).toBe(4)
+  })
+
+  it('is loading the upstream image it mounts with until the image loads', async () => {
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    expect(vm.isLoading).toBe(true)
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
   })
 
   it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {

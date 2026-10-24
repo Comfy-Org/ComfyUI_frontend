@@ -62,24 +62,28 @@ vi.mock(import('@/scripts/app'), () => ({
 }))
 
 const liveGraphNodes = vi.hoisted(() => ({
-  current: { id: 7 } as object,
-  reloads: [] as Array<() => void>
+  reloads: new Set<(nodeKept: boolean) => void>()
 }))
 
-vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
-  const { computed, shallowRef } = await import('vue')
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
+  const { fromPartial } = await import('@total-typescript/shoehorn')
   return {
-    useLiveGraphNode: () => {
-      const node = shallowRef(liveGraphNodes.current)
-      liveGraphNodes.reloads.push(() => (node.value = liveGraphNodes.current))
+    useLiveGraphNode: (resolve) => {
+      const freshNode = () =>
+        fromPartial<NonNullable<ReturnType<typeof resolve>>>({})
+      const node = shallowRef<ReturnType<typeof freshNode> | null>(freshNode())
+      const reload = (nodeKept: boolean) =>
+        (node.value = nodeKept ? freshNode() : null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
     }
   }
 })
 
-function reloadGraphWithNewNode() {
-  liveGraphNodes.current = { id: 7 }
-  for (const reload of liveGraphNodes.reloads) reload()
+function reloadGraph(nodeKept: boolean) {
+  for (const reload of liveGraphNodes.reloads) reload(nodeKept)
 }
 
 const i18n = createI18n({
@@ -138,11 +142,21 @@ describe('LightInfo lifecycle', () => {
     vi.mocked(state.initialize).mockClear()
     vi.mocked(state.setCameraLocked).mockClear()
 
-    reloadGraphWithNewNode()
+    reloadGraph(true)
     await nextTick()
 
     expect(state.initialize).toHaveBeenCalledOnce()
     expect(state.setCameraLocked).toHaveBeenCalledWith(true)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    const state = lightState()
+    renderComponent()
+
+    reloadGraph(false)
+    await nextTick()
+
+    expect(state.cleanup).toHaveBeenCalledOnce()
   })
 
   it('invites adding a light when there are none', () => {

@@ -203,12 +203,16 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     { immediate: true }
   )
 
-  watch(imageUrl, (url, previous) => {
-    const next = imageCropLoadingAfterUrlChange(url, previous)
-    if (next !== null) {
-      isLoading.value = next
-    }
-  })
+  watch(
+    imageUrl,
+    (url, previous) => {
+      const next = imageCropLoadingAfterUrlChange(url, previous)
+      if (next !== null) {
+        isLoading.value = next
+      }
+    },
+    { immediate: true }
+  )
 
   const updateDisplayedDimensions = () => {
     if (!imageEl.value || !containerEl.value) return

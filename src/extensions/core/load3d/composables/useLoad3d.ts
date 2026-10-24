@@ -221,7 +221,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       load3d = createLoad3d(containerRef, load3dHost, {
         width: widthWidget?.value as number | undefined,
         height: heightWidget?.value as number | undefined,
-        // Provide dynamic dimension getter for reactive updates
         getDimensions:
           widthWidget && heightWidget
             ? () => ({
@@ -242,7 +241,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       })
 
+      const viewer = load3d
       await restoreConfigurationsFromNode(node)
+      if (load3d !== viewer) return
 
       node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
@@ -297,7 +298,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const restoreConfigurationsFromNode = async (node: LGraphNode) => {
     if (!load3d) return
 
-    // Restore configs - watchers will handle applying them to the Three.js scene
     const savedSceneConfig = node.properties['Scene Config'] as
       | Partial<SceneConfig>
       | undefined
@@ -720,7 +720,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       return
     }
 
-    // Re-validate: node may have been removed during upload
     if (load3d !== capturedLoad3d) return
 
     const hdriUrl = api.apiURL(
@@ -1113,13 +1112,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const cleanup = () => releaseLoad3d(toRaw(nodeRef.value))
 
   watch(nodeRef, (node, previous) => {
-    if (!node || !previous || !viewerContainer) return
-    releaseLoad3d(toRaw(previous))
-    void initializeLoad3d(viewerContainer)
+    if (previous) releaseLoad3d(toRaw(previous))
+    if (!node) viewerContainer = null
+    else if (viewerContainer) void initializeLoad3d(viewerContainer)
   })
 
   return {
-    // state
     load3d,
     sceneConfig,
     modelConfig,
@@ -1148,7 +1146,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     loading,
     loadingMessage,
 
-    // Methods
     initializeLoad3d,
     waitForLoad3d,
     onLoad3dReady,

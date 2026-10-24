@@ -497,6 +497,66 @@ describe('useLoad3d', () => {
       expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
       expect(nodeToLoad3dMap.get(replacement)).toBe(mockLoad3d)
     })
+
+    it('releases the viewer when the node goes away', async () => {
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      nodeRef.value = null
+      await nextTick()
+
+      expect(mockLoad3d.remove).toHaveBeenCalledOnce()
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
+      nodeRef.value = mockNode
+      await nextTick()
+      expect(createLoad3d).toHaveBeenCalledOnce()
+    })
+
+    it('drops an initialization the node replacement overtook', async () => {
+      let finishHdriLoad!: () => void
+      vi.mocked(mockLoad3d.loadHDRI!).mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishHdriLoad = resolve))
+      )
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'env.hdr'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view?env.hdr')
+      vi.mocked(api.apiURL).mockReturnValue('http://localhost/view?env.hdr')
+      mockNode.properties['Light Config'] = {
+        intensity: 5,
+        hdri: {
+          enabled: false,
+          hdriPath: '3d/env.hdr',
+          showAsBackground: false,
+          intensity: 1
+        }
+      }
+      const replacementViewer = { ...mockLoad3d }
+      vi.mocked(createLoad3d)
+        .mockImplementationOnce(() => mockLoad3d as Load3d)
+        .mockImplementationOnce(() => replacementViewer as Load3d)
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      const overtaken = composable.initializeLoad3d(
+        document.createElement('div')
+      )
+      await vi.waitFor(() => expect(finishHdriLoad).toBeTypeOf('function'))
+      const replacement = createMockLGraphNode({
+        properties: {},
+        widgets: mockNode.widgets,
+        graph: mockNode.graph,
+        flags: {}
+      })
+
+      nodeRef.value = replacement
+      await vi.waitFor(() =>
+        expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
+      )
+      finishHdriLoad()
+      await overtaken
+
+      expect(nodeToLoad3dMap.has(mockNode)).toBe(false)
+      expect(nodeToLoad3dMap.get(replacement)).toBe(replacementViewer)
+    })
   })
 
   describe('waitForLoad3d', () => {

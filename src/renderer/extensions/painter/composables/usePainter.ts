@@ -713,6 +713,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   watch(litegraphNode, () => {
     registerWidgetSerialization()
+    restoreSettingsFromProperties()
     updateInputImageUrl()
   })
   watch(() => nodeOutputStore.nodeOutputs, updateInputImageUrl, { deep: true })

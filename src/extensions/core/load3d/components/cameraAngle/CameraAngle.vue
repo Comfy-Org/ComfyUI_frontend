@@ -237,7 +237,9 @@ onMounted(() => {
     node,
     (current) => {
       const container = shell.value?.container
-      if (current && container) initialize(container)
+      if (!container) return
+      if (current) initialize(container)
+      else cleanup()
     },
     { immediate: true }
   )

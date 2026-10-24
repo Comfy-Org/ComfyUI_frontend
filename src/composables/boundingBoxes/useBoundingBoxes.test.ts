@@ -270,6 +270,18 @@ describe('useBoundingBoxes after the graph is reloaded', () => {
 
     expect(modelBoxes(c)[0]).toMatchObject({ width: 512, height: 256 })
   })
+
+  it('keeps the boxes the reload restored along with a new size', async () => {
+    const c = setup([box({ x: 0, y: 0, width: 256, height: 256 })])
+    const restored = [box({ x: 512, y: 0, width: 512, height: 256 })]
+
+    reloadGraphWithWidth(1024)
+    c.modelValue.value = restored
+    await flush()
+
+    expect(modelBoxes(c)).toEqual(restored)
+    expect(c.regions.value[0]).toMatchObject({ x: 0.5, w: 0.5 })
+  })
 })
 
 describe('useBoundingBoxes in app mode', () => {

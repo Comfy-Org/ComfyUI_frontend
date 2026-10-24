@@ -18,15 +18,17 @@ import WidgetResolutionPreview from './WidgetResolutionPreview.vue'
 vi.mock(import('@/utils/litegraphUtil'))
 
 const liveGraphNodes = vi.hoisted(() => ({
-  reloads: [] as Array<() => void>
+  reloads: new Set<() => void>()
 }))
 
-vi.mock<unknown>(import('@/composables/useLiveGraphNode'), async () => {
-  const { computed, shallowRef } = await import('vue')
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
-    useLiveGraphNode: (resolve: () => unknown) => {
+    useLiveGraphNode: (resolve) => {
       const node = shallowRef(resolve() ?? null)
-      liveGraphNodes.reloads.push(() => (node.value = resolve() ?? null))
+      const reload = () => (node.value = resolve() ?? null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)
     }
   }
@@ -156,7 +158,7 @@ describe('WidgetResolutionPreview', () => {
     expect(displayedValue()).toBe('1368 × 768')
   })
 
-  it('keeps previewing after a reload replaces the node', async () => {
+  it('follows sibling changes on the node a reload put in place', async () => {
     registerDefaultSiblings('16:9 (Widescreen)', 1.0, 8)
     renderPreview()
     const staleNode = resolveNode(NODE_ID)
@@ -168,11 +170,16 @@ describe('WidgetResolutionPreview', () => {
     graph.add(reloadedNode)
     registerDefaultSiblings('16:9 (Widescreen)', 1.0, 8)
     vi.mocked(resolveNode).mockReturnValue(reloadedNode)
-
     reloadGraph()
     await nextTick()
 
-    expect(displayedValue()).toBe('1368 × 768')
+    useWidgetValueStore().setValue(
+      widgetId(GRAPH_ID, NODE_ID, 'aspect_ratio'),
+      '1:1 (Square)'
+    )
+    await nextTick()
+
+    expect(displayedValue()).toBe('1024 × 1024')
   })
 
   it('reads siblings through the configured widget names', () => {

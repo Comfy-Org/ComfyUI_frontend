@@ -195,10 +195,10 @@ function initializeViewport(viewportContainer: HTMLElement) {
 onMounted(() => {
   watch(
     node,
-    (_, previous) => {
+    (current) => {
       if (!container.value) return
-      if (previous) initializeViewport(container.value)
-      else initialize(container.value)
+      if (current) initializeViewport(container.value)
+      else cleanup()
     },
     { immediate: true }
   )

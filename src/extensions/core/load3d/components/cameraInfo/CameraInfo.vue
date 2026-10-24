@@ -204,11 +204,11 @@ function initializeViewport(container: HTMLElement) {
 onMounted(() => {
   watch(
     node,
-    (_, previous) => {
+    (current) => {
       const container = shell.value?.container
       if (!container) return
-      if (previous) initializeViewport(container)
-      else initialize(container)
+      if (current) initializeViewport(container)
+      else cleanup()
     },
     { immediate: true }
   )

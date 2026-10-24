@@ -448,6 +448,20 @@ describe('usePainter', () => {
       expect(painter.canvasWidth.value).toBe(256)
     })
 
+    it('takes the brush settings stored on the reloaded node', async () => {
+      makePaintNode()
+      const { painter } = mountPainter()
+      painter.brushSize.value = 40
+      await nextTick()
+
+      const { node } = makePaintNode()
+      node.properties.painterBrushSize = 12
+      app.rootGraph.events.dispatch('configured')
+      await nextTick()
+
+      expect(painter.brushSize.value).toBe(12)
+    })
+
     it('attaches serializeValue to the mask widget of the reloaded node', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
       mountPainter()
