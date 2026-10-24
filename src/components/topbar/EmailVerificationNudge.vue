@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isNudgeVisible"
-    class="mr-2 inline-flex shrink-0 items-center gap-1 rounded-lg bg-secondary-background py-1 pr-1 pl-3"
+    class="mr-2 inline-flex shrink-0 items-center gap-1 rounded-lg bg-secondary py-1 pr-1 pl-3"
     role="status"
     aria-live="polite"
     data-testid="email-verification-nudge"
@@ -10,7 +10,7 @@
       class="icon-[lucide--mail-warning] size-4 shrink-0 text-muted-foreground"
       aria-hidden="true"
     />
-    <span class="text-xs whitespace-nowrap text-base-foreground">
+    <span class="text-xs whitespace-nowrap text-foreground">
       {{ t('auth.emailVerification.genericMessage') }}
     </span>
     <Button
