@@ -504,10 +504,14 @@ function handleAssetSelectionToggle(asset: AssetItem) {
 
 function handleLightboxContextMenu(event: MouseEvent) {
   const asset = previewableVisibleAssets.value[galleryActiveIndex.value]
-  if (asset) handleAssetContextMenu(event, asset)
+  if (asset) handleAssetContextMenu(event, asset, { inViewer: true })
 }
 
-function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+function handleAssetContextMenu(
+  event: MouseEvent,
+  asset: AssetItem,
+  { inViewer = false }: { inViewer?: boolean } = {}
+) {
   const assetType = getAssetType(asset.tags)
   const canDelete =
     shouldShowDeleteButton.value &&
@@ -558,8 +562,9 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
         label: t('mediaAsset.actions.inspect'),
         icon: 'icon-[lucide--zoom-in]',
         visible:
-          isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
-          isHdrImageFilename(asset.name),
+          !inViewer &&
+          (isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
+            isHdrImageFilename(asset.name)),
         command: () => handleZoomClick(asset)
       },
       {
