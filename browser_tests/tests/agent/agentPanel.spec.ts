@@ -657,8 +657,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const label = longestItem.getByText(enMessages.agent.addFromAssets, {
       exact: true
     })
+    const items = menu.getByRole('menuitem')
 
     await expect(longestItem).toBeVisible()
+    await expect(items.nth(0)).toHaveAccessibleName(
+      enMessages.agent.addFromAssets
+    )
+    await expect(items.nth(1)).toHaveAccessibleName(enMessages.agent.nodes)
+    await expect(items.nth(2)).toHaveAccessibleName(enMessages.agent.workflows)
     await expect
       .poll(() => menu.boundingBox().then((box) => box?.width))
       .toBeGreaterThan(186)
