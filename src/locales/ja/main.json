@@ -1168,6 +1168,7 @@
     "eventType": "イベントタイプ",
     "eventTypes": {
       "accountCreated": "アカウント作成",
+      "agentUsage": "エージェント使用量",
       "apiNodeUsage": "パートナーノード利用",
       "apiUsage": "API利用",
       "creditAdded": "クレジット追加",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "全メンバー数 {maxSeats} 人中 {count} 人。",
       "totalMembersUnlimited": "合計 {count} 人のメンバー。 | 合計 {count} 人のメンバー。",
       "upgradeToTeam": "チームにアップグレード",
-      "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。",
-      "upsellBannerEnterpriseEnded": "Enterpriseプランを再有効化するには営業担当者にお問い合わせください。",
-      "upsellBannerPlanEnded": "プランを再有効化するには営業担当者にお問い合わせください。",
-      "upsellBannerReactivate": "さらにメンバーを追加するには、プランを再有効化してください。"
+      "upsellBanner": "チームメンバーを追加するには、プランをアップグレードしてください。"
     },
     "menu": {
       "creatorCannotLeave": "ワークスペースの作成者は、自分が作成したワークスペースを退出できません",

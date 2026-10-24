@@ -1168,6 +1168,7 @@
     "eventType": "Etkinlik Türü",
     "eventTypes": {
       "accountCreated": "Hesap Oluşturuldu",
+      "agentUsage": "Ajan Kullanımı",
       "apiNodeUsage": "Partner Node Kullanımı",
       "apiUsage": "API Kullanımı",
       "creditAdded": "Kredi Eklendi",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "Toplam {maxSeats} üyenin {count} kadarı.",
       "totalMembersUnlimited": "Toplam {count} üye. | Toplam {count} üye.",
       "upgradeToTeam": "Takıma Yükselt",
-      "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin.",
-      "upsellBannerEnterpriseEnded": "Enterprise planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
-      "upsellBannerPlanEnded": "Planınızı yeniden etkinleştirmek için satış ekibiyle iletişime geçin.",
-      "upsellBannerReactivate": "Daha fazla takım arkadaşı eklemek için planınızı yeniden etkinleştirin."
+      "upsellBanner": "Takım arkadaşları eklemek için planınızı yükseltin."
     },
     "menu": {
       "creatorCannotLeave": "Çalışma alanını oluşturan kişi, oluşturduğu çalışma alanından ayrılamaz",

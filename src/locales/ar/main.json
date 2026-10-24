@@ -1168,6 +1168,7 @@
     "eventType": "نوع الحدث",
     "eventTypes": {
       "accountCreated": "تم إنشاء الحساب",
+      "agentUsage": "استخدام الوكيل",
       "apiNodeUsage": "استخدام عقدة الشريك",
       "apiUsage": "استخدام API",
       "creditAdded": "تمت إضافة أرصدة",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} من أصل {maxSeats} عضوًا إجمالًا.",
       "totalMembersUnlimited": "{count} عضو إجمالًا. | {count} أعضاء إجمالًا.",
       "upgradeToTeam": "الترقية إلى فريق",
-      "upsellBanner": "لإضافة زملاء، قم بترقية خطتك.",
-      "upsellBannerEnterpriseEnded": "تواصل مع المبيعات لإعادة تفعيل خطة المؤسسات الخاصة بك.",
-      "upsellBannerPlanEnded": "تواصل مع المبيعات لإعادة تفعيل خطتك.",
-      "upsellBannerReactivate": "لإضافة المزيد من الزملاء، فعّل خطتك من جديد."
+      "upsellBanner": "لإضافة زملاء، قم بترقية خطتك."
     },
     "menu": {
       "creatorCannotLeave": "لا يمكن لمنشئ مساحة العمل مغادرة المساحة التي أنشأها",

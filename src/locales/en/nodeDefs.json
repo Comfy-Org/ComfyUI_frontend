@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "display_name": "Branch",
+    "description": "Select from connected inputs by name. Inputs can be renamed by double clicking them.",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "display_name": "Bria Add Object",
     "description": "Insert an object described in plain text into an image using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
@@ -25320,7 +25341,7 @@
   },
   "TextEncodeMOSSImageEdit": {
     "display_name": "Text Encode MOSS-Image Edit",
-    "description": "Encodes an edit instruction with reference images for a MOSS-Image edit LoRA, use it for the negative prompt too. The references are used at the size they come in, scale them first.",
+    "description": "Encodes an edit instruction with reference images for a MOSS-Image edit LoRA, use it for the negative prompt too. The references are used at the size they come in, scale them first. Without a VAE, the images only go to the text encoder.",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -25328,15 +25349,20 @@
       "prompt": {
         "name": "prompt"
       },
-      "vae": {
-        "name": "vae"
-      },
       "edit_format": {
         "name": "edit_format",
         "tooltip": "The layout the edit LoRA was trained with: ai-toolkit's MOSS-Image Edit Training (its kv_cache option on or off) or Moss-Image-Edit. With kv_cache off the references also attend to the image being generated, so they are recomputed every step."
       },
       "images": {
         "name": "images"
+      },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Scales how much the model attends to the images the text encoder sees (ai-toolkit formats, or no VAE): 0 ignores them, 1 is unchanged, above 1 emphasizes them."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Encodes the images as reference latents for the edit LoRA."
       }
     },
     "outputs": {

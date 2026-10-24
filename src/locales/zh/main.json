@@ -1168,6 +1168,7 @@
     "eventType": "事件类型",
     "eventTypes": {
       "accountCreated": "账户已创建",
+      "agentUsage": "代理使用情况",
       "apiNodeUsage": "合作节点使用",
       "apiUsage": "API 使用",
       "creditAdded": "已添加积分",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} / {maxSeats} 名成员。",
       "totalMembersUnlimited": "{count} 名成员。 | {count} 名成员。",
       "upgradeToTeam": "升级到团队版",
-      "upsellBanner": "如需添加队友，请升级您的套餐。",
-      "upsellBannerEnterpriseEnded": "请联系销售团队以重新激活你的企业套餐。",
-      "upsellBannerPlanEnded": "请联系销售团队以重新激活你的套餐。",
-      "upsellBannerReactivate": "如需添加更多队友，请重新激活您的套餐。"
+      "upsellBanner": "如需添加队友，请升级您的套餐。"
     },
     "menu": {
       "creatorCannotLeave": "工作区创建者无法离开他们创建的工作区",

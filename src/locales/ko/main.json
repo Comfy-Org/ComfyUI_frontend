@@ -1168,6 +1168,7 @@
     "eventType": "이벤트 유형",
     "eventTypes": {
       "accountCreated": "계정 생성됨",
+      "agentUsage": "에이전트 사용량",
       "apiNodeUsage": "파트너 노드 사용",
       "apiUsage": "API 사용",
       "creditAdded": "크레딧 추가됨",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "전체 멤버 {maxSeats}명 중 {count}명.",
       "totalMembersUnlimited": "총 멤버 {count}명 | 총 멤버 {count}명",
       "upgradeToTeam": "팀으로 업그레이드",
-      "upsellBanner": "팀원을 추가하려면 요금제를 업그레이드하세요.",
-      "upsellBannerEnterpriseEnded": "Enterprise 요금제를 다시 활성화하려면 영업팀에 문의하세요.",
-      "upsellBannerPlanEnded": "요금제를 다시 활성화하려면 영업팀에 문의하세요.",
-      "upsellBannerReactivate": "더 많은 팀원을 추가하려면 요금제를 재활성화하세요."
+      "upsellBanner": "팀원을 추가하려면 요금제를 업그레이드하세요."
     },
     "menu": {
       "creatorCannotLeave": "워크스페이스 생성자는 자신이 만든 워크스페이스를 떠날 수 없습니다",

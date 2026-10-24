@@ -1168,6 +1168,7 @@
     "eventType": "Tipo de evento",
     "eventTypes": {
       "accountCreated": "Cuenta creada",
+      "agentUsage": "Uso del agente",
       "apiNodeUsage": "Uso de nodo asociado",
       "apiUsage": "Uso de API",
       "creditAdded": "Créditos añadidos",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} de {maxSeats} miembros en total.",
       "totalMembersUnlimited": "{count} miembro en total. | {count} miembros en total.",
       "upgradeToTeam": "Actualizar a Team",
-      "upsellBanner": "Para agregar compañeros de equipo, actualiza tu plan.",
-      "upsellBannerEnterpriseEnded": "Contacta con ventas para reactivar tu plan Enterprise.",
-      "upsellBannerPlanEnded": "Contacta con ventas para reactivar tu plan.",
-      "upsellBannerReactivate": "Para agregar más compañeros de equipo, reactiva tu plan."
+      "upsellBanner": "Para agregar compañeros de equipo, actualiza tu plan."
     },
     "menu": {
       "creatorCannotLeave": "El creador del espacio de trabajo no puede abandonar el espacio que creó",

@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "依名稱從已連接的輸入中選擇。可透過按兩下輸入來重新命名。",
+    "display_name": "分支",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "使用 Bria 將以純文字描述的物件插入影像中。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
     "display_name": "Bria 新增物件",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "使用參考圖片為 MOSS-Image 編輯 LoRA 編碼編輯指令；負面提示詞也請使用此節點。參考圖片會依其輸入時的尺寸使用，請先進行縮放。",
+    "description": "使用參考影像為 MOSS-Image 編輯 LoRA 編碼編輯指令，負面提示詞也請使用此節點。參考影像會以輸入時的尺寸使用，請先將其縮放。若沒有 VAE，影像只會傳送至文字編碼器。",
     "display_name": "文字編碼 MOSS-Image 編輯",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "編輯格式",
         "tooltip": "編輯 LoRA 訓練時採用的版面配置：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 選項開啟或關閉）或 Moss-Image-Edit。若 kv_cache 關閉，參考圖片也會對正在生成的圖片進行注意力運算，因此每一步都會重新計算。"
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "調整模型對文字編碼器所見影像的關注程度（ai-toolkit 格式或沒有 VAE 時）：0 會忽略它們，1 維持不變，大於 1 則加強它們。"
+      },
       "images": {
         "name": "圖片"
       },
@@ -25265,7 +25290,8 @@
         "name": "提示詞"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "將影像編碼為編輯 LoRA 的參考潛在空間資料。"
       }
     },
     "outputs": {

@@ -1168,6 +1168,7 @@
     "eventType": "نوع رویداد",
     "eventTypes": {
       "accountCreated": "حساب کاربری ایجاد شد",
+      "agentUsage": "استفاده از عامل",
       "apiNodeUsage": "استفاده از Node شریک",
       "apiUsage": "استفاده از API",
       "creditAdded": "اعتبار افزوده شد",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} از {maxSeats} عضو در مجموع.",
       "totalMembersUnlimited": "{count} عضو در مجموع. | {count} عضو در مجموع.",
       "upgradeToTeam": "ارتقاء به تیم",
-      "upsellBanner": "برای افزودن همکاران، پلن خود را ارتقاء دهید.",
-      "upsellBannerEnterpriseEnded": "برای فعال‌سازی دوباره طرح Enterprise خود با بخش فروش تماس بگیرید.",
-      "upsellBannerPlanEnded": "برای فعال‌سازی دوباره طرحتان با بخش فروش تماس بگیرید.",
-      "upsellBannerReactivate": "برای افزودن همکاران بیشتر، پلن خود را فعال‌سازی مجدد کنید."
+      "upsellBanner": "برای افزودن همکاران، پلن خود را ارتقاء دهید."
     },
     "menu": {
       "creatorCannotLeave": "سازنده workspace نمی‌تواند workspace ایجادشده را ترک کند.",

@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "이름으로 연결된 입력 중에서 선택합니다. 입력은 더블 클릭하여 이름을 변경할 수 있습니다.",
+    "display_name": "분기",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria를 사용하여 일반 텍스트로 설명한 객체를 이미지에 삽입합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
     "display_name": "Bria 객체 추가",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image 편집 LoRA용으로 참조 이미지와 함께 편집 지시를 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기로 사용되므로 먼저 크기를 조정하세요.",
+    "description": "참조 이미지와 함께 편집 지시문을 MOSS-Image 편집 LoRA용으로 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기 그대로 사용되므로 먼저 크기를 조정하세요. VAE가 없으면 이미지는 텍스트 인코더로만 전달됩니다.",
     "display_name": "텍스트 인코드 MOSS-Image 편집",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "편집 LoRA가 학습된 레이아웃입니다: ai-toolkit의 MOSS-Image Edit Training(kv_cache 옵션 켜짐 또는 꺼짐) 또는 Moss-Image-Edit. kv_cache가 꺼져 있으면 참조 이미지도 생성되는 이미지에 어텐션하므로 매 단계마다 다시 계산됩니다."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "텍스트 인코더가 보는 이미지에 모델이 얼마나 주의를 기울일지 조절합니다(ai-toolkit 형식 또는 VAE 없음). 0이면 무시하고, 1이면 변경되지 않으며, 1보다 크면 더 강조합니다."
+      },
       "images": {
         "name": "이미지"
       },
@@ -25265,7 +25290,8 @@
         "name": "프롬프트"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "편집 LoRA용 참조 latent로 이미지를 인코딩합니다."
       }
     },
     "outputs": {

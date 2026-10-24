@@ -1168,6 +1168,7 @@
     "eventType": "Тип события",
     "eventTypes": {
       "accountCreated": "Аккаунт создан",
+      "agentUsage": "Использование агента",
       "apiNodeUsage": "Использование партнерского узла",
       "apiUsage": "Использование API",
       "creditAdded": "Кредиты добавлены",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} из {maxSeats} участников всего.",
       "totalMembersUnlimited": "Всего участников: {count}. | Всего участников: {count}.",
       "upgradeToTeam": "Обновить до Team",
-      "upsellBanner": "Чтобы добавить участников, обновите ваш тарифный план.",
-      "upsellBannerEnterpriseEnded": "Свяжитесь с отделом продаж, чтобы повторно активировать ваш план Enterprise.",
-      "upsellBannerPlanEnded": "Свяжитесь с отделом продаж, чтобы повторно активировать ваш план.",
-      "upsellBannerReactivate": "Чтобы добавить больше участников, активируйте ваш тарифный план."
+      "upsellBanner": "Чтобы добавить участников, обновите ваш тарифный план."
     },
     "menu": {
       "creatorCannotLeave": "Создатель рабочей области не может покинуть созданную им рабочую область",
