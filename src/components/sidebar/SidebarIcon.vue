@@ -18,7 +18,7 @@
         <div class="sidebar-icon-wrapper relative">
           <i
             v-if="typeof icon === 'string'"
-            :class="icon + ' side-bar-button-icon'"
+            :class="[icon, 'side-bar-button-icon']"
           />
           <component
             :is="icon"
