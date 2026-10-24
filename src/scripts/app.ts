@@ -1240,6 +1240,9 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow,
     options: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
+    if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
+      return false
+    }
     const canvasScheduler = useCanvasScheduler()
     const loadId = ++this.graphLoadSequence
 
