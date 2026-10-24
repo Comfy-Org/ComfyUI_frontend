@@ -4667,6 +4667,37 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     }
     expect(session.isStreaming.value).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
+    })
+  })
+
+  it('tags a send failure with its status and operation so a thin alert stays diagnosable (PM-2103)', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('', 503, undefined, undefined, 'post_thread_message')
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('boom again')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: {
+        status: 503,
+        operation: 'post_thread_message',
+        retryAfterSeconds: undefined
+      }
+    })
   })
 
   it('(l) newChat keeps the active turn running instead of cancelling it', async () => {
@@ -5875,7 +5906,8 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
     })
   })
 
