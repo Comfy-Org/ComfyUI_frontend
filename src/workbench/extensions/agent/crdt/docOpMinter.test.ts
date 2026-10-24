@@ -1344,9 +1344,12 @@ describe('attachDocOpMinter', () => {
       expect(applyMinted(doc, minted, catalog)).toEqual([
         'applied',
         'applied',
-        'applied',
         'applied'
       ])
+      minted.length = 0
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog, 2)).toEqual(['applied'])
 
       expect(docInputs(doc, resize.id, catalog)).toEqual([
         { name: 'resize_type.multiplier', link: null },

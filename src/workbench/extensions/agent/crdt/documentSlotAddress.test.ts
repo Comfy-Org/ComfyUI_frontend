@@ -26,7 +26,11 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { toRootGraphId } from '@/types/graphScopeId'
 
 import { DocChangeCollector } from './docChangeCollector'
-import { attachDocOpMinter } from './docOpMinter'
+import {
+  PROMOTED_WRITE_CATCH_UP_DEADLINE_MS,
+  PROMOTED_WRITE_RETRY_MS,
+  attachDocOpMinter
+} from './docOpMinter'
 import type { DocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import {
@@ -272,13 +276,12 @@ describe('a local link edit lands on the document slot that carries its input', 
     onTestFinished(() => doc.destroy())
     const unsent: GraphOperation[] = []
     const outcomes: string[] = []
-    let boundRootGraphId = toRootGraphId(graph.id)
     minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
       enqueue: (operations) => unsent.push(...operations),
       getGraph: () => graph,
-      boundRootGraphId: () => boundRootGraphId,
+      boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs'),
       docWidgetValue: (nodeId, widgetName) =>
@@ -299,16 +302,6 @@ describe('a local link edit lands on the document slot that carries its input', 
       const result = applyOps(doc, ops, CATALOG)
       outcomes.push(...result.outcomes.map(({ outcome }) => outcome))
     }
-    function refuseAfterRebinding() {
-      boundRootGraphId = toRootGraphId(new LGraph().id)
-      minter?.forgetUnappliedGrows(
-        mintWireOps(unsent.splice(0), {
-          actor: 'human:user:tab',
-          baseVersion: ++stampCounter
-        })
-      )
-      boundRootGraphId = toRootGraphId(graph.id)
-    }
     function foreignAppend(name: string) {
       assert.exists(sink)
       applyOps(doc, remoteGrow(sink, sources[0], name, 9001, 1), CATALOG)
@@ -321,7 +314,6 @@ describe('a local link edit lands on the document slot that carries its input', 
       unsent,
       outcomes,
       echo,
-      refuseAfterRebinding,
       foreignAppend
     }
   }
@@ -359,6 +351,7 @@ describe('a local link edit lands on the document slot that carries its input', 
     shapeDoc?: (workflow: WorkflowJSON) => WorkflowJSON
     act: (bench: Bench) => Promise<void>
     sent: string[]
+    released?: string[]
     docSlots: [string, number | null][]
     reported: string[]
   }>([
@@ -445,7 +438,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21250: a disconnect before the grow echoes targets the pending slot',
+      name: 'a disconnect before the grow echoes waits for the grown slot',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
@@ -457,7 +450,8 @@ describe('a local link edit lands on the document slot that carries its input', 
         sink.disconnectInput(2)
         await afterFlush()
       },
-      sent: [`connect grow ${IMAGES}.image_3`, 'disconnect 2'],
+      sent: [`connect grow ${IMAGES}.image_3`],
+      released: ['disconnect 2'],
       docSlots: [
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
@@ -466,7 +460,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21250: a replacing link before the echo wires into the pending slot instead of growing again',
+      name: 'a replacing link before the echo waits for the grown slot instead of growing again',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
@@ -478,7 +472,8 @@ describe('a local link edit lands on the document slot that carries its input', 
         sources[0].connect(0, sink, 2)
         await afterFlush()
       },
-      sent: [`connect grow ${IMAGES}.image_3`, 'connect 2'],
+      sent: [`connect grow ${IMAGES}.image_3`],
+      released: ['connect 2'],
       docSlots: [
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
@@ -509,7 +504,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21250: two unechoed grows on one node address the later one after the earlier',
+      name: 'two unechoed grows on one node release an edit on the later one once it lands',
       sink: 'TestAutogrowSink',
       seed: noLinks,
       act: async ({ sources, sink }) => {
@@ -523,9 +518,9 @@ describe('a local link edit lands on the document slot that carries its input', 
       sent: [
         'connect 0',
         `connect grow ${IMAGES}.image_2`,
-        `connect grow ${IMAGES}.image_3`,
-        'disconnect 2'
+        `connect grow ${IMAGES}.image_3`
       ],
+      released: ['disconnect 2'],
       docSlots: [
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
@@ -534,7 +529,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21250: a foreign slot landing first drops the prediction and reports instead of mis-targeting',
+      name: 'a foreign slot landing first does not move a waiting disconnect off the grown slot',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, foreignAppend }) => {
@@ -548,16 +543,17 @@ describe('a local link edit lands on the document slot that carries its input', 
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
+      released: ['disconnect 3'],
       docSlots: [
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_4`, 0],
-        [`${IMAGES}.image_3`, 2]
+        [`${IMAGES}.image_3`, null]
       ],
-      reported: ['agent_crdt_link_slot_not_in_doc']
+      reported: []
     },
     {
-      name: '#21250: a replacing link after a foreign slot lands is reported, not grown a second time',
+      name: 'a replacing link after a foreign slot lands wires into the grown slot, not a second grow',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, foreignAppend }) => {
@@ -571,25 +567,27 @@ describe('a local link edit lands on the document slot that carries its input', 
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
+      released: ['connect 3'],
       docSlots: [
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_4`, 0],
-        [`${IMAGES}.image_3`, 2]
+        [`${IMAGES}.image_3`, 0]
       ],
-      reported: ['agent_crdt_link_slot_not_in_doc']
+      reported: []
     },
     {
-      name: 'a grow the host never applies frees its name for a fresh grow, even when it settles after the binding moved',
+      name: 'a grow the host never lands stops holding its input at the deadline, so the next link grows it again',
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
-      act: async ({ sources, sink, echo, refuseAfterRebinding }) => {
+      act: async ({ sources, sink, echo, unsent }) => {
         sources[1].connect(0, sink, 1)
         await afterFlush()
         echo()
         sources[2].connect(0, sink, 2)
         await afterFlush()
-        refuseAfterRebinding()
+        unsent.splice(0)
+        await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
         sources[0].connect(0, sink, 2)
         await afterFlush()
       },
@@ -599,7 +597,7 @@ describe('a local link edit lands on the document slot that carries its input', 
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 0]
       ],
-      reported: []
+      reported: ['agent_crdt_link_slot_not_in_doc']
     },
     {
       name: '#21250: a grow cancelled with its unsent source leaves the slot to the next grow',
@@ -625,7 +623,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
-      name: '#21250: a queued disconnect follows its grow when an earlier grow is cancelled',
+      name: 'a grow connected and disconnected in the tick an earlier grow is cancelled sends nothing',
       sink: 'TestAutogrowSink',
       seed: noLinks,
       act: async ({ graph, sources, sink, echo }) => {
@@ -639,11 +637,8 @@ describe('a local link edit lands on the document slot that carries its input', 
         graph.remove(unsentSource)
         await afterFlush()
       },
-      sent: [`connect grow ${IMAGES}.image_3`, 'disconnect 1'],
-      docSlots: [
-        [`${IMAGES}.image_1`, 0],
-        [`${IMAGES}.image_3`, null]
-      ],
+      sent: [],
+      docSlots: [[`${IMAGES}.image_1`, 0]],
       reported: []
     }
   ])(
@@ -655,16 +650,22 @@ describe('a local link edit lands on the document slot that carries its input', 
       shapeDoc,
       act,
       sent,
+      released = [],
       docSlots,
       reported
     }) => {
+      vi.useFakeTimers()
       const bench = bind(sinkType, source, seed, shapeDoc)
 
       await act(bench)
       const unacknowledged = bench.unsent.map(describeOp)
       bench.echo()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      const afterEcho = bench.unsent.map(describeOp)
+      bench.echo()
 
       expect(unacknowledged).toEqual(sent)
+      expect(afterEcho).toEqual(released)
       expect(bench.outcomes.filter((outcome) => outcome !== 'applied')).toEqual(
         []
       )
