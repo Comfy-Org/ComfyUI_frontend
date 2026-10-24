@@ -36,6 +36,23 @@ describe('useToast', () => {
     ])
   })
 
+  it('changes a notification text in place, keeping the same instance', () => {
+    const toast = useToast()
+    const id = toast.loading('Starting... 2 s', { description: 'Waiting' })
+    const [before] = toast.toasts
+
+    toast.update(id, { title: 'Starting... 3 s' })
+
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        id,
+        instance: before.instance,
+        title: 'Starting... 3 s',
+        description: 'Waiting'
+      })
+    ])
+  })
+
   it('reports whether dismissing removed a notification', () => {
     const toast = useToast()
     const id = toast.info('Saved')

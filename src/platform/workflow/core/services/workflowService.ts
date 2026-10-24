@@ -27,6 +27,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { isHoldingExtensions } from '@/services/extensionService'
 import { useAppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -971,8 +972,10 @@ export const useWorkflowService = () => {
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
       wf.pendingWarnings ?? {}
 
-    // Always sync missing nodes store (clear when empty).
+    // Always sync missing nodes store (clear when empty), except while late
+    // custom node packs may still add the types; their rebuild syncs it.
     if (
+      !isHoldingExtensions() &&
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {

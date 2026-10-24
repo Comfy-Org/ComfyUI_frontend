@@ -64,6 +64,34 @@ function createGraphLoadHookApp(app: ComfyApp) {
   }
 }
 
+type StartupHook = 'init' | 'registerCustomNodes' | 'setup'
+
+let heldExtensions: ComfyExtension[] | undefined
+
+/** From now on `registerExtension` keeps new extensions aside, calling none of their functions. */
+export function holdNewExtensions() {
+  heldExtensions ??= []
+}
+
+/** The extensions kept aside so far, in registration order; holding goes on. */
+export function takeHeldExtensions(): ComfyExtension[] {
+  const taken = heldExtensions ?? []
+  if (heldExtensions) heldExtensions = []
+  return taken
+}
+
+/** Whether new extensions are being held for a late batch. */
+export function isHoldingExtensions(): boolean {
+  return heldExtensions !== undefined
+}
+
+/** Ends holding and returns any still held; later extensions register as they always have. */
+export function stopHoldingExtensions(): ComfyExtension[] {
+  const leftover = heldExtensions ?? []
+  heldExtensions = undefined
+  return leftover
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -79,6 +107,17 @@ export const useExtensionService = () => {
    * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
+    if (!heldExtensions) return registerExtensionNow(extension)
+    const held = heldExtensions
+    held.push(extension)
+    return once(() => {
+      const index = held.indexOf(extension)
+      if (index !== -1) held.splice(index, 1)
+    })
+  }
+
+  /** Registers an extension even while new ones are being held. */
+  const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
@@ -286,10 +325,40 @@ export const useExtensionService = () => {
     }
   }
 
+  /**
+   * Calls one startup step on the given extensions only, one after another in
+   * their order, the way startup calls it on every extension.
+   */
+  const invokeStartupHook = async (
+    extensions: ComfyExtension[],
+    method: StartupHook
+  ) => {
+    for (const ext of extensions) {
+      if (!extensionStore.isExtensionEnabled(ext.name)) continue
+      const fn = ext[method]
+      if (typeof fn !== 'function') continue
+      if (method === 'setup') legacyMenuCompat.setCurrentExtension(ext.name)
+      try {
+        await fn.call(ext, useApp())
+      } catch (error) {
+        console.error(
+          `Error calling extension '${ext.name}' method '${method}'`,
+          {
+            error
+          }
+        )
+      } finally {
+        if (method === 'setup') legacyMenuCompat.setCurrentExtension(null)
+      }
+    }
+  }
+
   return {
     registerExtension,
+    registerExtensionNow,
     invokeExtensions,
-    invokeExtensionsAsync
+    invokeExtensionsAsync,
+    invokeStartupHook
   }
 }
 
