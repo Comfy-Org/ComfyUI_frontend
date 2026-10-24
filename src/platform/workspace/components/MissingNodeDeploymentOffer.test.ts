@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +13,10 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   DeploymentCompatibility,
   WorkspaceDeployment
@@ -20,12 +25,15 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
 
 import MissingNodeDeploymentOffer from './MissingNodeDeploymentOffer.vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 const hoisted = vi.hoisted(() => ({
@@ -164,6 +172,71 @@ describe('MissingNodeDeploymentOffer', () => {
       deployment_id: agencyA.deployment_id
     })
     expect(reload).toHaveBeenCalledOnce()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+  })
+
+  describe('with unsaved workflows', () => {
+    const portrait = fromPartial<ComfyWorkflow>({
+      path: 'workflows/portrait.json',
+      isLoaded: true,
+      isModified: true
+    })
+    const offeredAgencyA = () =>
+      screen.findByRole('button', { name: 'Agency A krea · dep-agency-a' })
+
+    beforeEach(() => {
+      takeLeavePromptSkip()
+      Object.assign(useWorkflowStore(), { modifiedWorkflows: [portrait] })
+      vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValue(true)
+      useDeploymentPickStore().state = readyOn([plain, agencyA])
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        answer([agencyA], [plain])
+      )
+    })
+
+    it('asks to save them first, the same as the Run-bar switcher, and changes nothing on Cancel', async () => {
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      renderOffer()
+
+      await userEvent.click(await offeredAgencyA())
+
+      await waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message:
+              "Switching to Agency A krea · dep-agency-a reloads the tab. These workflows have changes that aren't saved yet.",
+            itemList: ['workflows/portrait.json']
+          })
+        )
+      )
+      expect(workspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+      expect(takeLeavePromptSkip()).toBe(false)
+    })
+
+    it.for([
+      { choice: 'Save and switch', answer: true, saved: [portrait] },
+      { choice: 'Switch without saving', answer: false, saved: [] }
+    ])(
+      'switches on $choice, and that reload skips the leave prompt',
+      async ({ answer, saved }) => {
+        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        renderOffer()
+
+        await userEvent.click(await offeredAgencyA())
+
+        await waitFor(() => expect(reload).toHaveBeenCalledOnce())
+        expect(
+          vi
+            .mocked(useWorkflowService().saveWorkflow)
+            .mock.calls.map(([workflow]) => workflow)
+        ).toEqual(saved)
+        expect(workspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+          deployment_id: agencyA.deployment_id
+        })
+        expect(takeLeavePromptSkip()).toBe(true)
+      }
+    )
   })
 
   it('offers Comfy Cloud when it has every node, and never the deployment this browser runs on', async () => {

@@ -69,6 +69,7 @@ import {
   deploymentStatusTone,
   useDeploymentLabels
 } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import {
   confirmUnsavedWorkBeforeSwitch,
@@ -80,7 +81,6 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 const { t } = useI18n()
 const store = useDeploymentPickStore()
 const {
-  deployments,
   pickedDeployment,
   isVisible,
   isSwitching,
@@ -88,7 +88,8 @@ const {
   switcherOpenAsks
 } = storeToRefs(store)
 const isOffered = useDeploymentSwitcherOffered()
-const { currentLabel, deploymentFullLabel } = useDeploymentLabels()
+const { currentLabel } = useDeploymentLabels()
+const { targetLabel, withoutLeavePrompt } = useDeploymentSwitchGuard()
 
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
@@ -165,26 +166,9 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-function targetLabel(deploymentId: string | null): string {
-  return deploymentFullLabel(
-    deployments.value.find(
-      (deployment) => deployment.deployment_id === deploymentId
-    ) ?? null
-  )
-}
-
 async function confirmSwitchTo(deployment: string): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
   return confirmUnsavedWorkBeforeSwitch(deployment)
-}
-
-async function withoutLeavePrompt(
-  start: () => Promise<string | null>
-): Promise<string | null> {
-  const keepLeavePrompt = skipLeavePromptOnce()
-  const refusal = await start()
-  if (!isSwitching.value) keepLeavePrompt()
-  return refusal
 }
 
 async function choose(deploymentId: string | null) {
