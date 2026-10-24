@@ -13,10 +13,12 @@ import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/sta
 
 const {
   userName,
+  hasSelection = false,
   assignment = 'control',
   attributeExperiment = false
 } = defineProps<{
   userName?: string
+  hasSelection?: boolean
   assignment?: AgentStarterPromptAssignment
   attributeExperiment?: boolean
 }>()
@@ -41,9 +43,26 @@ const selectedPromptKey = computed(() =>
     ? treatmentPromptKey
     : promptKey
 )
-const prompts = computed(() => {
-  return tm(selectedPromptKey.value) as string[]
-})
+const SELECTED_NODE_PROMPT_INDEX = 2
+const COMPACT_PROMPT_COUNT = 3
+const promptIcons = [
+  'icon-[lucide--image]',
+  'icon-[lucide--video]',
+  'icon-[lucide--message-circle-question-mark]',
+  isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
+  'icon-[lucide--message-circle-warning]'
+]
+const prompts = computed(() => tm(selectedPromptKey.value) as string[])
+const suggestions = computed(() =>
+  prompts.value
+    .map((text, index) => ({
+      text,
+      index,
+      icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
+      requiresSelection: index === SELECTED_NODE_PROMPT_INDEX
+    }))
+    .filter(({ requiresSelection }) => !requiresSelection || hasSelection)
+)
 const effectiveAssignment = computed<AgentStarterPromptAssignment>(() =>
   selectedPromptKey.value === treatmentPromptKey ? 'test' : 'control'
 )
@@ -65,30 +84,20 @@ onMounted(() => {
 
 const promptList = useTemplateRef<HTMLElement>('promptList')
 
-/**
- * Suggestions the viewer could actually see. A narrow panel hides the overflow
- * with a container query, so the set's length overstates what was on screen.
- * Reported alongside the set size, never instead of it: the set experiment
- * reads the set size, and one field cannot carry both facts.
- */
 function visiblePromptCount(): number {
   const buttons = promptList.value?.querySelectorAll('button')
-  if (!buttons) return prompts.value.length
+  if (!buttons) return suggestions.value.length
   return Array.from(buttons).filter(
     (button) => getComputedStyle(button).display !== 'none'
   ).length
 }
 
-/**
- * One emit per click, carrying the slot's stable id rather than its text. Fires
- * on click only — not on render or focus — so the count is a count of choices.
- */
-function onPromptClick(prompt: string, index: number): void {
+function onPromptClick(text: string, index: number): void {
   emit(
     'insert',
-    prompt,
+    text,
     starterPromptAttribution(
-      prompt,
+      text,
       index,
       prompts.value.length,
       promptLocale.value,
@@ -97,16 +106,6 @@ function onPromptClick(prompt: string, index: number): void {
     )
   )
 }
-
-const COMPACT_PROMPT_COUNT = 3
-
-const promptIcons = [
-  'icon-[lucide--image]',
-  'icon-[lucide--video]',
-  'icon-[lucide--message-circle-question-mark]',
-  isCloud ? 'icon-[lucide--scan-search]' : 'icon-[lucide--puzzle]',
-  'icon-[lucide--message-circle-warning]'
-]
 </script>
 
 <template>
@@ -128,29 +127,26 @@ const promptIcons = [
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
       >
         <Button
-          v-for="(prompt, index) in prompts"
-          :key="index"
+          v-for="(suggestion, displayIndex) in suggestions"
+          :key="suggestion.index"
           type="button"
           variant="secondary"
           size="md"
           :class="
             cn(
               'w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto',
-              index >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
+              displayIndex >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
             )
           "
-          @click="onPromptClick(prompt, index)"
+          @click="onPromptClick(suggestion.text, suggestion.index)"
         >
           <span
             :class="
-              cn(
-                'size-3 shrink-0 text-muted-foreground',
-                promptIcons[index] ?? 'icon-[lucide--sparkles]'
-              )
+              cn('size-3 shrink-0 text-muted-foreground', suggestion.icon)
             "
             aria-hidden="true"
           />
-          <span class="truncate">{{ prompt }}</span>
+          <span class="truncate">{{ suggestion.text }}</span>
         </Button>
       </div>
     </div>

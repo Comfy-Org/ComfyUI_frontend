@@ -500,6 +500,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :has-selection="selectionTags.length > 0"
           :assignment="starterPromptAssignment"
           :attribute-experiment="attributeStarterPromptExperiment"
           @rendered="emit('starterPromptRendered', $event)"
