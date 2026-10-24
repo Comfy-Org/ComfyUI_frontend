@@ -100,6 +100,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import { usePromptPanelStore } from '@/stores/workspace/promptPanelStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
@@ -176,17 +177,21 @@ const canvasStore = useCanvasStore()
 const promptEditorExperiment = usePromptEditorExperimentStore()
 const promptPanelStore = usePromptPanelStore()
 const { isBuilderMode } = useAppMode()
+const rightSidePanelStore = useRightSidePanelStore()
 const isPromptPanelArm = computed(
   () =>
     promptEditorExperiment.assignment === 'panel' &&
     !canvasStore.linearMode &&
-    !isBuilderMode.value
+    !isBuilderMode.value &&
+    !promptPanelStore.isPanelHidden &&
+    !rightSidePanelStore.isLegacyMenu
 )
 let closeTextEditor: (() => void) | undefined
 
 function openPromptPanel(node: LGraphNode | undefined): boolean {
   const target = node?.widgets?.find(({ name }) => name === widget.name)
   if (!node || !target) return false
+  promptEditorExperiment.expose('panel')
   canvasStore.canvas?.selectItems([node])
   return promptPanelStore.open({ node, widget: target })
 }
@@ -196,10 +201,7 @@ function openTextEditor() {
     nodeId === undefined
       ? undefined
       : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
-  if (isPromptPanelArm.value && openPromptPanel(node)) {
-    promptEditorExperiment.expose('panel')
-    return
-  }
+  if (isPromptPanelArm.value && openPromptPanel(node)) return
   promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,

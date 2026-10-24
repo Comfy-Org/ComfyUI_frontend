@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   authenticatedRemoteConfigState,
@@ -12,7 +12,8 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const telemetry = vi.hoisted(() => ({
   trackPromptEditorOpened: vi.fn(),
-  trackPromptEditorClosed: vi.fn()
+  trackPromptEditorClosed: vi.fn(),
+  trackNamedValuesShadowDiffSummary: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -98,7 +99,11 @@ describe('usePromptPanelStore', () => {
         useRightSidePanelStore().closePanel()
     },
     {
-      event: 'the graph reloads',
+      event: 'the workflow is cleared',
+      act: (graph: ReturnType<typeof createTestRootGraph>) => graph.clear()
+    },
+    {
+      event: 'a reload drops its widget',
       act: (graph: ReturnType<typeof createTestRootGraph>) =>
         graph.configure(graph.serialize())
     }
@@ -113,21 +118,58 @@ describe('usePromptPanelStore', () => {
     expect(telemetry.trackPromptEditorClosed).toHaveBeenCalledOnce()
   })
 
+  it('follows its node through an undo that reloads the graph', () => {
+    class PromptNode extends LGraphNode {
+      constructor() {
+        super('test/prompt-node')
+        this.serialize_widgets = true
+        this.addWidget('textarea', 'text', 'a portrait', () => {})
+      }
+    }
+    LiteGraph.registerNodeType('test/prompt-node', PromptNode)
+    const graph = createTestRootGraph()
+    const node = LiteGraph.createNode('test/prompt-node')
+    if (!node) throw new Error('The prompt node type is not registered')
+    graph.add(node)
+    const [widget] = node.widgets ?? []
+    const store = usePromptPanelStore()
+    store.open({ node, widget })
+
+    graph.configure(graph.serialize())
+
+    expect(store.target?.node).not.toBe(node)
+    expect(store.target?.node.id).toBe(node.id)
+    expect(store.target?.widget.name).toBe('text')
+    expect(telemetry.trackPromptEditorClosed).not.toHaveBeenCalled()
+  })
+
+  it('does not open while the workspace hides its panels', () => {
+    const store = usePromptPanelStore()
+    store.isPanelHidden = true
+
+    expect(store.open(addTextNode().target)).toBe(false)
+    expect(store.isActive).toBe(false)
+  })
+
   it.for([
     { removed: 'the edited node', closes: true },
     { removed: 'another node', closes: false }
-  ])('closes when $removed is removed: $closes', ({ removed, closes }) => {
-    const store = usePromptPanelStore()
-    const { graph, target } = addTextNode()
-    const bystander = addTextNode(graph).target
-    store.open(target)
+  ])(
+    'closes when $removed is removed: $closes',
+    async ({ removed, closes }) => {
+      const store = usePromptPanelStore()
+      const { graph, target } = addTextNode()
+      const bystander = addTextNode(graph).target
+      store.open(target)
 
-    graph.remove(removed === 'the edited node' ? target.node : bystander.node)
+      graph.remove(removed === 'the edited node' ? target.node : bystander.node)
+      await Promise.resolve()
 
-    expect(store.target === null).toBe(closes)
-  })
+      expect(store.target === null).toBe(closes)
+    }
+  )
 
-  it('stops watching a node once the panel follows another one', () => {
+  it('stops watching a node once the panel follows another one', async () => {
     const store = usePromptPanelStore()
     const { graph, target: first } = addTextNode()
     const second = addTextNode(graph).target
@@ -135,6 +177,7 @@ describe('usePromptPanelStore', () => {
     store.follow(second)
 
     graph.remove(first.node)
+    await Promise.resolve()
 
     expect(store.target).toEqual(second)
   })

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import {
   getWidgetState,
@@ -108,30 +108,40 @@ const selectedNode = computed(() => {
   return nodes.length === 1 ? nodes[0] : null
 })
 
-function isMultilineText(widget: IBaseWidget) {
-  return getComponent(widget.type) === getComponent('textarea')
+function isEditablePrompt(node: LGraphNode, widget: IBaseWidget) {
+  return (
+    getComponent(widget.type) === getComponent('textarea') &&
+    !widget.hidden &&
+    !node.inputs.some(
+      (input) => input.widget?.name === widget.name && input.link != null
+    )
+  )
 }
 
 watch(
   selectedNode,
   (node) => {
-    if (!node) return
-    if (node === promptPanelStore.target?.node) {
+    if (!node || node === promptPanelStore.target?.node) {
       promptlessNode.value = null
       return
     }
-    const widget = node.widgets?.find(isMultilineText)
+    const widget = node.widgets?.find((candidate) =>
+      isEditablePrompt(node, candidate)
+    )
     promptlessNode.value = widget ? null : node
     if (widget) promptPanelStore.follow({ node, widget })
   },
   { immediate: true }
 )
 
+let closeFocusView: (() => void) | undefined
+
 function openFocusView({ node, widget }: PromptPanelTarget) {
   const state = getWidgetState(node, widget)
   const options = state?.options ?? widget.options
-  showTextEditor({
-    text: String(state?.value ?? widget.value ?? ''),
+  closeFocusView = showTextEditor({
+    readText: () =>
+      String(getWidgetState(node, widget)?.value ?? widget.value ?? ''),
     widgetLabel: state?.label || widget.label || widget.name,
     nodeTitle: node.title,
     readOnly: Boolean(options.read_only || options.disabled),
@@ -140,4 +150,6 @@ function openFocusView({ node, widget }: PromptPanelTarget) {
     onEdit: (text) => setWidgetValue(node, widget, text)
   })
 }
+
+onBeforeUnmount(() => closeFocusView?.())
 </script>

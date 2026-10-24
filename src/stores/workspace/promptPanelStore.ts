@@ -33,6 +33,7 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
   const isPromptViewShown = ref(false)
   const isEditorFocused = ref(false)
   const autofocus = ref(true)
+  const isPanelHidden = ref(false)
   const isActive = computed(() => target.value !== null)
 
   let session: PromptPanelSession | undefined
@@ -41,22 +42,43 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
   function setTarget(next: PromptPanelTarget, graph: LGraph) {
     releaseTarget?.()
     const onNodeRemoved = ({ detail }: CustomEvent<{ node: LGraphNode }>) => {
-      if (detail.node === target.value?.node) close()
+      if (detail.node !== target.value?.node) return
+      queueMicrotask(() => {
+        if (target.value?.node === detail.node) close()
+      })
     }
-    const rootEvents = graph.rootGraph.events
-    graph.events.addEventListener('node:removed', onNodeRemoved)
-    rootEvents.addEventListener('configured', close)
+    const rootGraph = graph.rootGraph
+    const onConfigured = () => findTargetAgain(rootGraph, graph.id)
+    graph.events.addEventListener('node:before-removed', onNodeRemoved)
+    rootGraph.events.addEventListener('configured', onConfigured)
     releaseTarget = () => {
-      graph.events.removeEventListener('node:removed', onNodeRemoved)
-      rootEvents.removeEventListener('configured', close)
+      graph.events.removeEventListener('node:before-removed', onNodeRemoved)
+      rootGraph.events.removeEventListener('configured', onConfigured)
     }
     target.value = next
+  }
+
+  function findTargetAgain(rootGraph: LGraph, graphId: LGraph['id']) {
+    const current = target.value
+    if (!current) return
+    const graph: LGraph | undefined =
+      rootGraph.id === graphId ? rootGraph : rootGraph.subgraphs.get(graphId)
+    const node = graph?.getNodeById(current.node.id)
+    const widget = node?.widgets?.find(
+      ({ name }) => name === current.widget.name
+    )
+    if (!graph || !node || !widget) {
+      close()
+      return
+    }
+    setTarget({ node, widget }, graph)
   }
 
   /** Opens the panel on a widget from its Expand button; false when there is no panel to open. */
   function open(next: PromptPanelTarget): boolean {
     const graph: LGraph | null = next.node.graph
-    if (!graph || rightSidePanelStore.isLegacyMenu) return false
+    if (!graph || rightSidePanelStore.isLegacyMenu || isPanelHidden.value)
+      return false
     close()
     setTarget(next, graph)
     autofocus.value = true
@@ -117,6 +139,7 @@ export const usePromptPanelStore = defineStore('promptPanel', () => {
     isPromptViewShown,
     isEditorFocused,
     autofocus,
+    isPanelHidden,
     isActive,
     open,
     follow,
