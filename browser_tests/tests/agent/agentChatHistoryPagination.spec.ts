@@ -10,6 +10,12 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
+// Derived from the fixture rather than restated, so the two cannot drift.
+const expectedChatNames = [
+  ...thirtyAgentThreadPages.first.threads,
+  ...thirtyAgentThreadPages.second.threads
+].map((thread) => thread.title)
+
 test.describe(
   'Agent chat history pagination',
   {
@@ -45,6 +51,15 @@ test.describe(
       await expect(
         panel.getByRole('button', { name: /^Chat \d+$/ })
       ).toHaveCount(30)
+      // The count alone passes when one chat is rendered twice and another is
+      // dropped, which is the shape a page-merge bug takes. Assert each of the
+      // 30 names appears exactly once so duplicates and omissions both fail.
+      // Order is deliberately not asserted.
+      for (const name of expectedChatNames) {
+        await expect(
+          panel.getByRole('button', { name, exact: true })
+        ).toHaveCount(1)
+      }
       const twentyFirstChat = panel.getByRole('button', {
         name: 'Chat 21',
         exact: true
