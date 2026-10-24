@@ -230,7 +230,19 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-async function onSelectHistory(id: string): Promise<void> {
+/**
+ * `onFailure: 'leave'` is for Back, the only way out of history that does not
+ * abandon the chat. The row the user picked reports its own failure and keeps
+ * the list on screen to retry, but Back has to end on the chat screen even
+ * when the chat it reopens cannot be read: a chat that fails every attempt
+ * otherwise answers Back with another failed attempt and strands the user in
+ * history, with New Chat - which costs them the chat - as the only exit
+ * (PM-2044).
+ */
+async function openHistoryChat(
+  id: string,
+  onFailure: 'stay' | 'leave'
+): Promise<void> {
   if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
   const opening: AgentPanelView = {
     ...view.value,
@@ -243,10 +255,15 @@ async function onSelectHistory(id: string): Promise<void> {
     opened = await selectHistory(id, isCurrent)
   } finally {
     if (isCurrent())
-      view.value = opened
-        ? { screen: 'chat' }
-        : { ...opening, selection: { status: 'failed', id } }
+      view.value =
+        opened || onFailure === 'leave'
+          ? { screen: 'chat' }
+          : { ...opening, selection: { status: 'failed', id } }
   }
+}
+
+function onSelectHistory(id: string): Promise<void> {
+  return openHistoryChat(id, 'stay')
 }
 
 function onBackFromHistory(): void {
@@ -257,7 +274,7 @@ function onBackFromHistory(): void {
   )
     view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()
-  else void onSelectHistory(view.value.previousThreadId)
+  else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
 function onDeleteHistory(id: string): void {
