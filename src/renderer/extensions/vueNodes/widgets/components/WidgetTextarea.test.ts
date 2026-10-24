@@ -1,7 +1,21 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { i18n } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -35,7 +49,7 @@ function createTextareaWidget(
 
 function renderComponent(
   widget: SimplifiedWidget<string>,
-  modelValue: string,
+  modelValue: string | number | null,
   placeholder?: string,
   onUpdateModelValue?: (...args: unknown[]) => void
 ) {
@@ -49,6 +63,7 @@ function renderComponent(
         : {})
     },
     global: {
+      plugins: [i18n],
       mocks: {
         $t: (msg: string) => msg
       }
@@ -192,31 +207,100 @@ describe('WidgetTextarea Value Binding', () => {
     })
   })
   describe('Copy Button Behavior', () => {
-    it('hides copy button when not read-only', async () => {
-      const widget = createTextareaWidget('test')
-      renderComponent(widget, 'test')
+    it.for([
+      { state: 'editable', options: {} },
+      { state: 'read-only', options: { read_only: true } }
+    ])('copies the text from the rail when $state', async ({ options }) => {
+      renderComponent(createTextareaWidget('test value', options), 'test value')
 
-      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      await userEvent.click(
+        within(actions).getByRole('button', { name: 'g.copyToClipboard' })
+      )
+
+      expect(mockCopyToClipboard).toHaveBeenLastCalledWith('test value', {
+        toastOnSuccess: false
+      })
     })
 
-    it('copy button has invisible class by default when read-only', () => {
-      const widget = createTextareaWidget('test', { read_only: true })
-      renderComponent(widget, 'test')
+    it('marks the button as copied for two seconds instead of showing a toast', async () => {
+      vi.useFakeTimers()
+      try {
+        mockCopyToClipboard.mockResolvedValue(true)
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+        renderComponent(createTextareaWidget('test value'), 'test value')
 
-      const button = screen.getByRole('button')
-      expect(button.classList.contains('invisible')).toBe(true)
+        await user.click(
+          screen.getByRole('button', { name: 'g.copyToClipboard' })
+        )
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(screen.getByRole('button', { name: 'g.copied' })).toBeVisible()
+
+        await vi.advanceTimersByTimeAsync(2000)
+
+        expect(
+          screen.getByRole('button', { name: 'g.copyToClipboard' })
+        ).toBeVisible()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
-    it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
-      const widget = createTextareaWidget('test value', { read_only: true })
-      renderComponent(widget, 'test value')
+    it('keeps the copy label when copying fails', async () => {
+      mockCopyToClipboard.mockResolvedValue(false)
+      renderComponent(createTextareaWidget('test value'), 'test value')
 
-      const button = screen.getByRole('button')
-      expect(button.classList.contains('group-hover:visible')).toBe(true)
+      await userEvent.click(
+        screen.getByRole('button', { name: 'g.copyToClipboard' })
+      )
 
-      await userEvent.click(button)
+      expect(mockCopyToClipboard).toHaveBeenCalled()
+      expect(
+        screen.queryByRole('button', { name: 'g.copied' })
+      ).not.toBeInTheDocument()
+    })
+  })
 
-      expect(mockCopyToClipboard).toHaveBeenCalledWith('test value')
+  describe('Character count', () => {
+    it.for([
+      { value: '', count: '0 chars' },
+      { value: 'a', count: '1 char' },
+      { value: 'a'.repeat(6644), count: '6,644 chars' }
+    ])('shows "$count" in the rail', ({ value, count }) => {
+      renderComponent(createTextareaWidget(value), value)
+
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(within(actions).getByText(count)).toBeInTheDocument()
+    })
+
+    it('treats a null value as empty text', () => {
+      renderComponent(createTextareaWidget(''), null)
+
+      expect(screen.getByRole('textbox')).toHaveValue('')
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(within(actions).getByText('0 chars')).toBeInTheDocument()
+    })
+
+    it('shows and counts a number value as text', () => {
+      renderComponent(createTextareaWidget(''), 1024)
+
+      expect(screen.getByRole('textbox')).toHaveValue('1024')
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(within(actions).getByText('4 chars')).toBeInTheDocument()
+    })
+
+    it('counts the text as it is typed', async () => {
+      const { rerender } = renderComponent(
+        createTextareaWidget('abc'),
+        'abc',
+        undefined,
+        (value) => rerender({ modelValue: value })
+      )
+
+      await userEvent.type(screen.getByRole('textbox'), 'de')
+
+      expect(screen.getByText('5 chars')).toBeInTheDocument()
     })
   })
 
@@ -331,5 +415,132 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea expand to editor', () => {
+  const captureCanvasState = vi.fn()
+
+  beforeEach(() => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: { captureCanvasState }
+    })
+  })
+
+  function renderWithDialogHost(
+    widgetOverrides: Partial<SimplifiedWidget<string>> = {}
+  ) {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('CLIP Text Encode')
+    graph.add(node)
+    useCanvasStore().currentGraph = graph
+    const onUpdateModelValue = vi.fn()
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const view = render(WidgetTextarea, {
+      props: {
+        widget: createMockWidget({
+          value: 'a portrait',
+          name: 'text',
+          ...widgetOverrides
+        }),
+        nodeId: node.id,
+        modelValue: 'a portrait',
+        'onUpdate:modelValue': onUpdateModelValue
+      },
+      global: { plugins: [i18n], mocks: { $t: (msg: string) => msg } }
+    })
+    return { onUpdateModelValue, view }
+  }
+
+  async function openEditor() {
+    await userEvent.click(
+      screen.getByRole('button', { name: 'textEditor.expand' })
+    )
+    const dialog = await screen.findByRole('dialog')
+    return { dialog, editor: within(dialog).getByRole('textbox') }
+  }
+
+  it.for<{
+    state: string
+    overrides: Partial<SimplifiedWidget<string>>
+    shown: boolean
+  }>([
+    { state: 'editable', overrides: {}, shown: true },
+    {
+      state: 'read-only',
+      overrides: { options: { read_only: true } },
+      shown: true
+    },
+    {
+      state: 'linked',
+      overrides: {
+        options: { disabled: true },
+        linkedUpstream: { nodeId: toNodeId('upstream') }
+      },
+      shown: false
+    }
+  ])('shows the expand button when $state: $shown', ({ overrides, shown }) => {
+    renderWithDialogHost(overrides)
+
+    const actions = screen.getByRole('group', { name: 'g.actions' })
+
+    expect(
+      Boolean(
+        within(actions).queryByRole('button', { name: 'textEditor.expand' })
+      )
+    ).toBe(shown)
+  })
+
+  it.for([
+    { label: undefined, title: 'text · CLIP Text Encode' },
+    { label: 'Prompt', title: 'Prompt · CLIP Text Encode' }
+  ])('opens a dialog titled "$title"', async ({ label, title }) => {
+    renderWithDialogHost({ label })
+
+    await openEditor()
+
+    expect(screen.getByRole('dialog', { name: title })).toBeVisible()
+  })
+
+  it('writes each keystroke to the widget value while the dialog is open', async () => {
+    const { onUpdateModelValue } = renderWithDialogHost()
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, ' at dusk')
+
+    expect(onUpdateModelValue).toHaveBeenCalledTimes(' at dusk'.length)
+    expect(onUpdateModelValue).toHaveBeenLastCalledWith('a portrait at dusk')
+  })
+
+  it('opens a read-only widget in a read-only editor', async () => {
+    const { onUpdateModelValue } = renderWithDialogHost({
+      options: { read_only: true }
+    })
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, 'more')
+
+    expect(editor).toHaveAttribute('readonly')
+    expect(onUpdateModelValue).not.toHaveBeenCalled()
+  })
+
+  it('records one undo step when the dialog closes after an edit', async () => {
+    renderWithDialogHost()
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, 'abc')
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('closes the dialog when the widget unmounts', async () => {
+    const { view } = renderWithDialogHost()
+
+    await openEditor()
+    view.unmount()
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })

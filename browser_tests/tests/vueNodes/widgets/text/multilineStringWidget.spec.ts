@@ -66,6 +66,42 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await expect(textarea).toHaveValue('Keep me around')
   })
 
+  test('keeps the text in place when the pointer moves onto it at a fractional zoom', async ({
+    comfyPage
+  }) => {
+    const textarea = getFirstMultilineStringWidget(comfyPage)
+    await textarea.fill(
+      Array.from(
+        { length: 30 },
+        (_, i) => `Line ${i + 1} of a long prompt`
+      ).join('\n')
+    )
+    await textarea.blur()
+    await comfyPage.canvasOps.setScale(0.83)
+    await comfyPage.canvasOps.moveMouseToEmptyArea()
+    await comfyPage.canvasOps.waitForViewToSettle()
+    const box = await textarea.boundingBox()
+    if (!box) throw new Error('The textarea has no bounding box')
+    const textOnly = {
+      x: box.x + 2,
+      y: box.y + 2,
+      width: box.width - 4,
+      height: box.height - 4
+    }
+    const atRest = await comfyPage.page.screenshot({
+      clip: textOnly,
+      animations: 'disabled'
+    })
+
+    await textarea.hover()
+    const hovered = await comfyPage.page.screenshot({
+      clip: textOnly,
+      animations: 'disabled'
+    })
+
+    expect(hovered.equals(atRest), 'text moved when hovered').toBe(true)
+  })
+
   test('should use native context menu when focused', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
     const vueContextMenu = comfyPage.page.getByRole('menu')

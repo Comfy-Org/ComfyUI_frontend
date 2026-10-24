@@ -18,8 +18,7 @@
           :maximized="!!item.dialogComponentProps.maximized"
           :data-dialog-key="item.key"
           @escape-key-down="
-            (e) =>
-              item.dialogComponentProps.closable === false && e.preventDefault()
+            (e) => onRekaEscapeKeyDown(item.dialogComponentProps, e)
           "
           @pointer-down-outside="
             (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
@@ -109,7 +108,10 @@ import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import {
+  onRekaEscapeKeyDown,
+  onRekaPointerDownOutside
+} from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
