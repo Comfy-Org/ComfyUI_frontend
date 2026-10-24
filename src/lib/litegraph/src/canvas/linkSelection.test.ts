@@ -583,6 +583,38 @@ describe('going to the other end of a socket', () => {
     ).toEqual([[target.id, 2]])
   })
 
+  it('lands on the lowest input when several links reach one node', () => {
+    const graph = new LGraph()
+    const source = createTestNode(graph, [], ['number'])
+    const target = createTestNode(graph, ['number', 'number'])
+    connect(source, target, 1)
+    const lowest = connect(source, target, 0)
+    clickSocket(graph, source, 'output')
+
+    goTo(graph, target)
+
+    const [x, y] = target.getInputPos(0)
+    expect(getSelectedLinkIds(graph)).toEqual([lowest.id])
+    expect(getSelectedLinksAnchor(graph)).toEqual({ x, y })
+  })
+
+  it('goes nowhere when a link points past the subgraph inputs', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'number' }]
+    })
+    const target = createTestNode(subgraph, ['number'])
+    const link = subgraph.inputNode.slots[0].connect(target.inputs[0], target)
+    if (!link) throw new Error('connect failed')
+    link.origin_slot = 5
+    clickSocket(subgraph, target, 'input')
+
+    const { host, moved } = goTo(subgraph, { id: SUBGRAPH_INPUT_ID })
+
+    expect(moved).toBe(false)
+    expect(host.animateToBounds).not.toHaveBeenCalled()
+    expect(destinationIds(subgraph)).toEqual([SUBGRAPH_INPUT_ID])
+  })
+
   it('leads from a node inside a subgraph to the subgraph inputs and back', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]

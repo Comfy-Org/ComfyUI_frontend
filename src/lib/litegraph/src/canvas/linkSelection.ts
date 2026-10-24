@@ -263,14 +263,18 @@ function linkEndNode(graph: LGraph, nodeId: NodeId): LinkEndNode | undefined {
   return node ? { kind: 'node', node } : undefined
 }
 
-function socketPosition(end: LinkEndNode, type: SlotType, slot: number): Point {
-  const [x, y] =
+function socketPosition(
+  end: LinkEndNode,
+  type: SlotType,
+  slot: number
+): Point | undefined {
+  const pos =
     end.kind !== 'node'
-      ? end.node.slots[slot].pos
+      ? end.node.slots.at(slot)?.pos
       : type === 'input'
         ? end.node.getInputPos(slot)
         : end.node.getOutputPos(slot)
-  return { x, y }
+  return pos && { x: pos[0], y: pos[1] }
 }
 
 /** The nodes at the far end of a socket's selected links, top to bottom; none for a marquee. */
@@ -304,8 +308,8 @@ export function goToLinkDestination(
   const destination = getSelectedLinkDestinations(graph).find(
     (candidate) => candidate.nodeId === nodeId
   )
-  if (!destination) return false
-  selectArrivalSocket(graph, socketType, destination)
+  if (!destination || !selectArrivalSocket(graph, socketType, destination))
+    return false
   panToBounds(host, destination.node.boundingRect, options)
   return true
 }
@@ -314,14 +318,16 @@ function selectArrivalSocket(
   graph: LGraph,
   departureType: SlotType,
   destination: LinkDestination
-): void {
+): boolean {
   const arrivalType = oppositeSlotType(departureType)
-  const arrivalSlot = farEnd(destination.links[0], departureType).slot
-  selectSocketLinks(
-    slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot),
-    arrivalType,
-    socketPosition(destination, arrivalType, arrivalSlot)
+  const arrivalSlot = Math.min(
+    ...destination.links.map((link) => farEnd(link, departureType).slot)
   )
+  const links = slotLinks(graph, destination.nodeId, arrivalType, arrivalSlot)
+  const position = socketPosition(destination, arrivalType, arrivalSlot)
+  if (!links.length || !position) return false
+  selectSocketLinks(links, arrivalType, position)
+  return true
 }
 
 function panToBounds(
