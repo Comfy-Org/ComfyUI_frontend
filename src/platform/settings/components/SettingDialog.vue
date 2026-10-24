@@ -7,7 +7,7 @@
     header-padding="symmetric"
   >
     <template #leftPanelHeaderTitle>
-      <i class="icon-[lucide--settings]" />
+      <i class="icon-[lucide--settings] size-4" />
       <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
@@ -18,6 +18,7 @@
           :clear-label="$t('g.clear')"
           :accessible-label="$t('g.search')"
           size="md"
+          class="rounded-lg ring-1 ring-border/50"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
           :autofocus="activeCategoryKey !== 'keybinding'"
@@ -27,7 +28,7 @@
 
       <nav
         ref="navRef"
-        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 pt-1 pb-4"
       >
         <div
           v-for="(group, index) in navGroups"
