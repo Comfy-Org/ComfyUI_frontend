@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { isEqual } from 'es-toolkit'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -42,19 +43,22 @@ export function useSavedWorkflowUrlLoader() {
   const workflowService = useWorkflowService()
   let pending: Promise<SavedWorkflowUrlLoadStatus> | null = null
   let pendingController: AbortController | null = null
-  tryOnScopeDispose(() => pendingController?.abort())
+  let disposed = false
+  let retryWhenReady = false
+  tryOnScopeDispose(() => {
+    disposed = true
+    retryWhenReady = false
+    pendingController?.abort()
+  })
 
   function linkQuery() {
     hydratePreservedQuery(NAMESPACE)
     return mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
   }
 
-  async function clearIntent(workflowId?: string) {
-    if (workflowId) {
-      const current = readSavedWorkflowLink(linkQuery())
-      if (current.status !== 'valid' || current.workflowId !== workflowId)
-        return
-    }
+  async function clearIntent(expected?: ValidSavedWorkflowLink) {
+    if (expected && !isEqual(readSavedWorkflowLink(linkQuery()), expected))
+      return
     clearPreservedQuery(NAMESPACE)
     if (!('workflow' in route.query)) return
     const query = { ...route.query }
@@ -99,6 +103,15 @@ export function useSavedWorkflowUrlLoader() {
     if (link.deploymentId)
       return link.deploymentId === deploymentStore.bootDeployment?.deployment_id
     return !link.environment || deploymentStore.bootDeployment === null
+  }
+
+  function canReplayDeploymentChange(link: ValidSavedWorkflowLink) {
+    return (
+      link.deploymentId === null &&
+      link.environment === null &&
+      deploymentStore.changeSinceBoot === 'deployment' &&
+      !deploymentStore.isSwitching
+    )
   }
 
   async function openSavedDocument(
@@ -153,18 +166,23 @@ export function useSavedWorkflowUrlLoader() {
     const isCurrent = () => {
       const current = readSavedWorkflowLink(linkQuery())
       return (
+        !disposed &&
         !controller.signal.aborted &&
         hasSameIdentity(context) &&
         matchesTarget(link, context.workspaceId) &&
         hasSameBootEnvironment(bootDeploymentId) &&
-        current.status === 'valid' &&
-        current.workflowId === link.workflowId
+        isEqual(current, link)
       )
     }
-    if (!isCurrent()) {
-      toast.error(t('workflowService.privateLinkTargetMismatch'))
-      await clearIntent(link.workflowId)
-      return 'failed'
+    const preserveForDeploymentReload = () => {
+      return (
+        !disposed &&
+        !controller.signal.aborted &&
+        hasSameIdentity(context) &&
+        matchesTarget(link, context.workspaceId) &&
+        isEqual(readSavedWorkflowLink(linkQuery()), link) &&
+        canReplayDeploymentChange(link)
+      )
     }
     pendingController = controller
     const stopContextWatcher = watch(
@@ -179,6 +197,10 @@ export function useSavedWorkflowUrlLoader() {
       { flush: 'sync' }
     )
     try {
+      if (!isCurrent()) {
+        toast.error(t('workflowService.privateLinkTargetMismatch'))
+        return 'failed'
+      }
       return await readAndOpen(link.workflowId, controller, isCurrent)
     } catch (error) {
       toast.error(t('workflowService.privateLinkUnavailable'))
@@ -190,16 +212,36 @@ export function useSavedWorkflowUrlLoader() {
     } finally {
       stopContextWatcher()
       pendingController = null
-      await clearIntent(link.workflowId)
+      if (!preserveForDeploymentReload()) await clearIntent(link)
     }
   }
 
   function openSavedWorkflowFromUrl(): Promise<SavedWorkflowUrlLoadStatus> {
-    pending ??= load().finally(() => {
-      pending = null
-    })
+    if (disposed) return Promise.resolve('failed')
+    pending ??= load()
+      .then((status) => {
+        retryWhenReady = status === 'deferred'
+        return status
+      })
+      .finally(() => {
+        pending = null
+        resumeDeferred()
+      })
     return pending
   }
+
+  function resumeDeferred() {
+    if (!retryWhenReady || pending || disposed || !readyContext()) return
+    retryWhenReady = false
+    void openSavedWorkflowFromUrl().catch((error) => {
+      toast.error(t('workflowService.privateLinkUnavailable'))
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'error_loading_saved_workflow_link'
+      })
+    })
+  }
+  watch(readyContext, resumeDeferred, { flush: 'post' })
   return { openSavedWorkflowFromUrl }
 }
 import { tryOnScopeDispose } from '@vueuse/core'

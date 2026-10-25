@@ -141,7 +141,9 @@ test.describe(
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual(expect.arrayContaining([unsavedName, 'Private workflow']))
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(0)
       expect(state.browserClears).toBe(1)
       expect(state.readAuthorizations).toEqual([
         'Bearer mock-workspace-token-ws-personal',

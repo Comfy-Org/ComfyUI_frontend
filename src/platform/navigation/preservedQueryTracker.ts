@@ -3,6 +3,7 @@ import type { LocationQuery, Router } from 'vue-router'
 import {
   capturePreservedQuery,
   clearPreservedQuery,
+  getPreservedQueryParam,
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
@@ -20,6 +21,11 @@ export interface PreservedQueryDefinition {
    * replace-on-capture semantics.
    */
   stripAfterCapture?: boolean
+  replaceOnChange?: {
+    key: string
+    targetKeys: string[]
+    namespaces: string[]
+  }
   /**
    * When set, a key present as a repeated (array) value, or present with no
    * value at all (`?key`, which the router reads as `null`, in a single
@@ -53,6 +59,36 @@ function withAmbiguityMarked(
   return result
 }
 
+function hasChangedQueryValue(
+  namespace: string,
+  key: string,
+  query: LocationQuery
+) {
+  if (!Object.hasOwn(query, key)) return false
+  const incoming = query[key]
+  const value = Array.isArray(incoming) ? incoming[0] : incoming
+  return value !== getPreservedQueryParam(namespace, key)
+}
+
+function clearReplacedIntent(
+  query: LocationQuery,
+  { namespace, rejectRepeated, replaceOnChange }: PreservedQueryDefinition
+) {
+  if (!replaceOnChange || !Object.hasOwn(query, replaceOnChange.key)) return
+  const { key, targetKeys, namespaces } = replaceOnChange
+  const intentKeys = [key, ...targetKeys]
+  const incoming = rejectRepeated
+    ? withAmbiguityMarked(query, intentKeys)
+    : query
+  if (!intentKeys.some((key) => hasChangedQueryValue(namespace, key, incoming)))
+    return
+
+  for (const targetNamespace of [namespace, ...namespaces]) {
+    hydratePreservedQuery(targetNamespace)
+    clearPreservedQuery(targetNamespace)
+  }
+}
+
 export const installPreservedQueryTracker = (
   router: Router,
   definitions: PreservedQueryDefinition[]
@@ -60,6 +96,9 @@ export const installPreservedQueryTracker = (
   router.beforeEach((to) => {
     const queryKeys = new Set(Object.keys(to.query))
     const keysToStrip = new Set<string>()
+    definitions.forEach((definition) =>
+      clearReplacedIntent(to.query, definition)
+    )
 
     definitions.forEach(
       ({ namespace, keys, requiredKey, stripAfterCapture, rejectRepeated }) => {

@@ -28,6 +28,12 @@ workspace switches and deployment reloads. Resolve workspace/environment first,
 then fetch through the authenticated API. A late response cannot open after the
 identity, workspace or requested environment changes.
 
+A new workflow or changed explicit target replaces the previous intent; redirects
+that continue the same intent retain it. Only a deferred startup attempt arms a
+readiness retry. An unchanged plain link may survive a late deployment listing
+for replay after reload; sign-out, workspace changes and replaced links cannot
+resume the old request or consume a newer intent.
+
 Open through the normal workflow service after verifying the record's candidate
 userdata path and exact saved content. This preserves the saved document identity,
 existing dirty drafts and other open tabs. Until the server supplies a durable

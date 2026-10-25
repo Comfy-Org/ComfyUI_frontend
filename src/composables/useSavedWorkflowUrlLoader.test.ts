@@ -4,17 +4,23 @@ import type {
 } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import {
+  capturePreservedQuery,
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { api } from '@/scripts/api'
 import '@/scripts/changeTracker'
 
@@ -26,6 +32,7 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 const workflowId = 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
 const path = 'workflows/My private workflow.json'
@@ -65,9 +72,14 @@ function useSavedWorkflowUrlLoader() {
   )
   app.use(i18n)
   app.mount(document.createElement('div'))
-  onTestFinished(() => app.unmount())
+  let unmount = () => app.unmount()
+  function dispose() {
+    unmount()
+    unmount = () => {}
+  }
+  onTestFinished(dispose)
   if (!loader) throw new Error('Saved workflow loader not initialized')
-  return loader
+  return { ...loader, dispose }
 }
 
 function deferredResponse() {
@@ -76,6 +88,42 @@ function deferredResponse() {
     resolve = complete
   })
   return { promise, resolve }
+}
+
+function preserveLink(query: {
+  workflow: string
+  workspace?: string
+  deployment?: string
+  environment?: string
+}) {
+  delete useRoute().query.workflow
+  delete useRoute().query.workspace
+  capturePreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOW, query, [
+    'workflow',
+    'workspace',
+    'deployment',
+    'environment'
+  ])
+}
+
+async function loadLateDeployment() {
+  vi.mocked(workspaceApi.listDeployments).mockResolvedValue({
+    builds_visible: true,
+    picked_deployment_id: 'dep-late',
+    pick_source: 'browser',
+    items: [
+      {
+        deployment_id: 'dep-late',
+        release_id: 'release-late',
+        build_id: 'build-late',
+        build_name: 'Late deployment',
+        release_version: 1,
+        status: 'ready',
+        created_at: '2026-10-24T00:00:00Z'
+      }
+    ]
+  })
+  await useDeploymentPickStore().load()
 }
 
 describe('private saved workflow navigation', () => {
@@ -165,6 +213,77 @@ describe('private saved workflow navigation', () => {
     expect(useRoute().query.workflow).toBe(workflowId)
   })
 
+  it('resumes a deferred link once auth and workspace readiness settle', async () => {
+    const loggedIn = ref(false)
+    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      loggedIn.value ? { id: 'user-1' } : null
+    )
+    useTeamWorkspaceStore().initState = 'loading'
+    const loader = useSavedWorkflowUrlLoader()
+
+    expect(await loader.openSavedWorkflowFromUrl()).toBe('deferred')
+    loggedIn.value = true
+    await nextTick()
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    useTeamWorkspaceStore().initState = 'ready'
+
+    await vi.waitFor(() =>
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(path)
+    )
+    useTeamWorkspaceStore().initState = 'loading'
+    useTeamWorkspaceStore().initState = 'ready'
+    await nextTick()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+  })
+
+  it('coalesces readiness changes while its deferred attempt is settling', async () => {
+    const loggedIn = ref(false)
+    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    const loader = useSavedWorkflowUrlLoader()
+    const pending = loader.openSavedWorkflowFromUrl()
+    loggedIn.value = true
+
+    expect(await pending).toBe('deferred')
+    await vi.waitFor(() =>
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(path)
+    )
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not start early when readiness settles before its startup step', async () => {
+    const loggedIn = ref(false)
+    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    const loader = useSavedWorkflowUrlLoader()
+    loggedIn.value = true
+    await nextTick()
+    expect(api.fetchApi).not.toHaveBeenCalled()
+
+    expect(await loader.openSavedWorkflowFromUrl()).toBe('loaded')
+  })
+
+  it('does not resume a deferred link after scope disposal', async () => {
+    const loggedIn = ref(false)
+    useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+    const loader = useSavedWorkflowUrlLoader()
+    expect(await loader.openSavedWorkflowFromUrl()).toBe('deferred')
+    loader.dispose()
+    loggedIn.value = true
+    await nextTick()
+
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('refuses a startup continuation after its scope was disposed', async () => {
+    const loader = useSavedWorkflowUrlLoader()
+    loader.dispose()
+
+    expect(await loader.openSavedWorkflowFromUrl()).toBe('failed')
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
   it('does not open in another workspace after a refused workspace switch', async () => {
     Object.assign(useRoute().query, { workspace: 'ws-2' })
 
@@ -233,6 +352,128 @@ describe('private saved workflow navigation', () => {
     expect(
       useWorkflowStore().openWorkflows.map((workflow) => workflow.path)
     ).toEqual([path])
+  })
+
+  it.for([
+    { label: 'workspace', target: { workspace: 'ws-2' } },
+    {
+      label: 'standard environment',
+      target: { workspace: 'ws-1', environment: 'standard' }
+    },
+    {
+      label: 'custom environment',
+      target: { workspace: 'ws-1', deployment: 'dep-next' }
+    }
+  ])(
+    'does not apply or consume the same workflow with a replacement $label target',
+    async ({ target }) => {
+      preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+      const response = deferredResponse()
+      vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
+      const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
+      await nextTick()
+      preserveLink({ workflow: workflowId, ...target })
+      response.resolve(Response.json(metadata))
+
+      expect(await pending).toBe('failed')
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+      expect(
+        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workspace')
+      ).toBe(target.workspace)
+      expect(
+        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      ).toBe(workflowId)
+    }
+  )
+
+  it('preserves a plain link when a late listing requires a deployment reload', async () => {
+    preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+    const response = deferredResponse()
+    vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
+    const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
+    await nextTick()
+    await loadLateDeployment()
+    expect(useDeploymentPickStore().changeSinceBoot).toBe('deployment')
+    response.resolve(Response.json(metadata))
+
+    expect(await pending).toBe('failed')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+    ).toBe(workflowId)
+  })
+
+  it('keeps a plain link for reload when the late listing arrived before its startup step', async () => {
+    preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+    await loadLateDeployment()
+
+    expect(await useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()).toBe(
+      'failed'
+    )
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+    ).toBe(workflowId)
+  })
+
+  it.for([
+    {
+      label: 'sign-out',
+      change: (loggedIn: Ref<boolean>) => {
+        loggedIn.value = false
+      }
+    },
+    {
+      label: 'workspace change',
+      change: (_loggedIn: Ref<boolean>) => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspace: {
+            ...useTeamWorkspaceStore().activeWorkspace,
+            id: 'ws-other'
+          }
+        })
+      }
+    }
+  ])(
+    'clears the old replay intent after $label despite a late deployment listing',
+    async ({ change }) => {
+      const loggedIn = ref(true)
+      useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+      preserveLink({ workflow: workflowId, workspace: 'ws-1' })
+      const response = deferredResponse()
+      vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
+      const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
+      await nextTick()
+      await loadLateDeployment()
+      change(loggedIn)
+      response.resolve(Response.json(metadata))
+
+      expect(await pending).toBe('failed')
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+      expect(
+        getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+      ).toBeUndefined()
+    }
+  )
+
+  it('does not replay a standard-environment link onto a late custom deployment', async () => {
+    preserveLink({
+      workflow: workflowId,
+      workspace: 'ws-1',
+      environment: 'standard'
+    })
+    const response = deferredResponse()
+    vi.mocked(api.fetchApi).mockReturnValueOnce(response.promise)
+    const pending = useSavedWorkflowUrlLoader().openSavedWorkflowFromUrl()
+    await nextTick()
+    await loadLateDeployment()
+    response.resolve(Response.json(metadata))
+
+    expect(await pending).toBe('failed')
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
+    ).toBeUndefined()
   })
 
   it('keeps cancellation final when identity leaves and returns during graph preparation', async () => {

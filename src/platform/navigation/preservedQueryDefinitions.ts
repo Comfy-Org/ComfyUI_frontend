@@ -70,6 +70,15 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOW,
     keys: ['workflow', 'workspace', 'deployment', 'environment'],
     requiredKey: 'workflow',
+    replaceOnChange: {
+      key: 'workflow',
+      targetKeys: ['workspace', 'deployment', 'environment'],
+      namespaces: [
+        PRESERVED_QUERY_NAMESPACES.WORKSPACE,
+        PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
+        PRESERVED_QUERY_NAMESPACES.ENVIRONMENT
+      ]
+    },
     stripAfterCapture: true,
     rejectRepeated: true
   },
