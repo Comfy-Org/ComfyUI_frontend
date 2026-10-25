@@ -69,6 +69,7 @@ const {
   selectTab = async () => false,
   workflowDetached = false,
   targetUnavailable = false,
+  canvasEmptyAfterTurn = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
@@ -106,6 +107,7 @@ const {
   selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   targetUnavailable?: boolean
+  canvasEmptyAfterTurn?: boolean
   getMentionNodes?: () => SelectedNode[]
   paywallPresentation?: AgentPaywallPresentation
   /**
@@ -162,6 +164,7 @@ const emit = defineEmits<{
 }>()
 
 const targetNotice = computed(() => {
+  if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
