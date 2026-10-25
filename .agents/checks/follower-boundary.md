@@ -12,9 +12,7 @@ layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layo
 
 **Mechanical subset now machine-checked (FE-1968):** the production TypeScript files under
 the CRDT and Agent transport seams are checked for outbound `update_b64` construction,
-`op_id` regeneration, branch-pinned catalog citations, scattered distribution checks,
-and hardcoded endpoints. The installed shared op layer's manifest and built JavaScript
-are checked directly for `yjs`-only runtime dependencies. Run
+branch-pinned catalog citations, and hardcoded endpoints. Run
 `pnpm follower-invariants:check` (`scripts/check-follower-invariants.ts`, tested by
 `scripts/check-follower-invariants.test.ts`). CI runs it through the required repository
 checks. Treat a failure there as the same `issue:` severity as a manual finding of the
@@ -23,64 +21,11 @@ semantic/data-flow judgment calls the script cannot make (e.g. "is this really t
 shared doc", "does this new path count as a second writer/applier").
 
 **What is _not_ machine-checked, stated so a green check is not over-read.** The
-single-applier invariant below — "op-to-doc / conflict-resolution logic reimplemented in
-the frontend" — is enforced by this review pass only. A filename denylist over
-`applier|docHost|opApplier|docApplier` was tried and dropped: it is bypassed by naming
-the file anything else, and a guard that can be renamed around is worse than none
-because it reads as coverage. Deciding whether a new path is a second applier needs to
-know what the code _means_, which is this profile's job, not the script's. The same holds
-for the Priority 1 and Priority 2 flags: the script covers outbound `update_b64`
-construction specifically, not "does this write the shared doc".
-
-**Two deliberate limits inside the rules that are machine-checked.**
-
-- `no-op-id-regeneration` follows supported same-file variable initializers, local
-  function returns and callable aliases such as `const next = crypto.randomUUID`
-  and a `.bind` of one. Minted values are tracked by their declarations. It does
-  not resolve cross-file minters, destructured callable aliases, assignments after
-  declaration or calls through type-wrapped callees. Same-file minter names are
-  still matched by spelling, so an unrelated non-minter shadow can be classified
-  as a minter. These syntax limits require manual review. Flagging every call on
-  an `op_id` right-hand side instead would also reject legitimate preserved-id
-  reads such as `{ op_id: String(op.op_id) }`.
-- `op-layer-yjs-only` reads the installed `@comfyorg/comfy-multi-player`, so its input can
-  change with no pull request touching it. That is intentional: invariant #3 is asserted
-  on every run rather than sampled at dependency-bump time. The cost is that a bad release
-  reddens open pull requests indiscriminately, so the violation message names the installed
-  version and says the cause is the dependency and not the diff. It inspects every
-  `.js`/`.mjs`/`.cjs` file under `dist/`, every path the manifest nominates as runtime
-  code (`main`, `module`, `browser`, browser-map targets, and the string leaves of
-  `exports`), and every local runtime module reachable from those roots. Out-of-package
-  and unsupported entries are rejected rather than dropped. It recognises `require(...)`
-  as well as static and dynamic `import`, resolves a specifier held in an immutable local
-  string binding, and reports a mutable, shadowed, or otherwise unverifiable load instead
-  of passing it.
-
-### Suppressing a rule that is wrong
-
-The escape hatch for a false positive must not be "edit the checker". Put a directive
-immediately above the offending line, carrying the same four fields an architecture
-exception requires. They are validated by `architectureExceptionSchema` itself
-(`tools/architecture/src/schema.ts`), picked from it rather than restated here, so this
-surface cannot drift from the ledger's owner, date and removal-criteria contract:
-
-```ts
-// follower-invariant-allow-next-line no-scattered-distribution-checks
-// owner: @handle; rationale: why the rule is wrong here;
-// sunset: 2026-12-31; removalCriteria: what makes this deletable
-const enabled = isCloud
-```
-
-Only real comment trivia is parsed; marker-shaped strings and templates have no effect.
-It fails closed. An incomplete, duplicate, unparsable or past-sunset directive suppresses nothing
-and reports itself as `suppression-invalid` — including a bare marker that names no rule
-at all, and a `sunset` that is well-formed but not a real calendar date; a directive that
-matches no violation reports itself as `suppression-unused`. So an exception cannot go quiet once merged, and
-it cannot outlive its own sunset date. Reviewers should read a new directive as the
-exception it is: an unexplained `rationale` or a far-future `sunset` is an `issue:`.
-The three architectural exemptions in Priority 4 (`agentAuth.ts`, `crdtDebugGate.ts`,
-`crdtDebugReport.ts`) stay in the script, because they are stated in the ADR and are not
-expected to sunset.
+single-applier rule, `op_id` retry identity, distribution-branch ownership, and installed
+op-layer purity remain reviewer-owned. Deterministic designs for those checks are separate
+policy decisions; this subset does not approximate them with name-based or syntax-limited
+rules. The same holds for the Priority 1 and Priority 2 flags: the script covers outbound
+`update_b64` construction specifically, not "does this write the shared doc".
 
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, reintroduce a second model of the
@@ -199,17 +144,7 @@ Flag:
 - **`DISTRIBUTION` / `isCloud` / `isDesktop` checks scattered through follower core** —
   distribution conditionals inside the CRDT apply seam, `DocFrameClient`, the agent
   socket transport, or rendering. They belong only in the credential branch in
-  `agentAuth.ts`. The machine-checked rule flags a _branch_, not a _name_: importing
-  `@/platform/distribution/*` — statically, dynamically, or by re-export — reading a
-  binding that came from it, reading `import.meta.env` in either `.env` or `['env']`
-  spelling, or reading an ambient `__DISTRIBUTION__` / `isCloud` that **no declaration in
-  scope at that read** introduces. A field, local, parameter or type member that happens to
-  be spelled `isCloud` is a name and passes. Each reference is resolved lexically, so a
-  declaration in some _other_ scope does not exempt an ambient read elsewhere in the file;
-  a bracket read (`x['isCloud']`) is a branch only when `x` itself carries distribution
-  provenance, so a locally bound object passes exactly as its dot-access form does.
-  Evasion closes back on itself — writing `const isCloud = DISTRIBUTION === 'cloud'`
-  clears the local and flags `DISTRIBUTION`.
+  `agentAuth.ts`.
 - **A credential path other than the one `isCloud` branch** — in the cloud, agent REST
   requests authenticate through `fetchApi` alone and the socket takes
   `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own

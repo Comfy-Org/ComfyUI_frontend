@@ -58,19 +58,21 @@ export const domainRecordSchema = z
   })
   .strict()
 
-export const architectureExceptionSchema = z
-  .object({
-    id: z.string().regex(/^DDD-EX-\d{3}$/),
-    owner: z.string().regex(/^@\S+$/),
-    rationale: text,
-    sunset: z.iso.date(),
-    removalCriteria: text,
-    exactFingerprints: uniqueList(text, 1)
-  })
-  .strict()
-
 export const exceptionLedgerSchema = z
-  .object({ exceptions: z.array(architectureExceptionSchema) })
+  .object({
+    exceptions: z.array(
+      z
+        .object({
+          id: z.string().regex(/^DDD-EX-\d{3}$/),
+          owner: z.string().regex(/^@\S+$/),
+          rationale: text,
+          sunset: z.iso.date(),
+          removalCriteria: text,
+          exactFingerprints: uniqueList(text, 1)
+        })
+        .strict()
+    )
+  })
   .strict()
 
 export type DomainRecord = z.infer<typeof domainRecordSchema>
