@@ -260,6 +260,10 @@ export function registerAgentPanelExtension(): void {
       }
 
       function prepareStartupPanel(): boolean {
+        if (!introductionOwed()) {
+          dropHold()
+          return false
+        }
         if (!launchInActivationWindow) {
           reportOfferExit('activation_window_complete', 'startup')
           dropHold()
@@ -319,10 +323,19 @@ export function registerAgentPanelExtension(): void {
           })
       }
 
+      let signedInThisPage = false
+      watch(
+        isLoggedIn,
+        (loggedIn) => {
+          if (loggedIn) signedInThisPage = true
+        },
+        { immediate: true, flush: 'sync' }
+      )
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !isAuthInitialized.value) return
         if (!isLoggedIn.value) {
-          offerWhenStartupDecided()
+          if (!signedInThisPage) offerWhenStartupDecided()
           return
         }
         if (!resolvedUserInfo.value) return

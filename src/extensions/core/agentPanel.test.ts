@@ -297,6 +297,60 @@ describe('AgentPanel extension flag gate', () => {
       expect(canShow).toBe(false)
     })
 
+    it('reports nothing after the panel-opening launches for a scope that already answered', async () => {
+      currentUser.value = { id: 'account-a' }
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await offerExited()).not.toHaveBeenCalled()
+    })
+
+    it('does not introduce the agent after the user signs out during the page', async () => {
+      currentUser.value = { id: 'account-a' }
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+
+      currentUser.value = null
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it('drops a held offer once its scope has answered', async () => {
+      currentUser.value = { id: 'account-a' }
+      activeTour.value = 'appMode'
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(consentStore.load).toHaveBeenCalledOnce()
+
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+      setAgentReady(false)
+      await nextTick()
+      setAgentReady(true)
+      await flush()
+      vi.mocked(consentStore.load).mockClear()
+
+      activeTour.value = null
+      await flush()
+
+      expect(consentStore.load).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
     it('shows no startup card after the panel-opening launches, even with the panel left open', async () => {
       currentUser.value = { id: 'account-a' }
       localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
