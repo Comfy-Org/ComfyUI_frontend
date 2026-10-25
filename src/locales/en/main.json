@@ -6179,6 +6179,7 @@
     "starting": "Custom nodes are starting... {seconds} s",
     "startingDetail": "Usually about 20 s. Their buttons and menus will show up here on their own.",
     "waitingFor": "Waiting for: {packs}",
+    "waitingBadge": "Waiting for its pack",
     "ready": "Custom nodes are ready",
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
