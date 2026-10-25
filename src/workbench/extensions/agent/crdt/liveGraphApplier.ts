@@ -606,7 +606,6 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
-/** The DynamicGroup controller with the longest name that prefixes `name`. */
 function closestController(
   node: LGraphNode,
   name: string
@@ -621,11 +620,6 @@ function closestController(
   return controller
 }
 
-/**
- * The DynamicGroup controller of a row at or above its live row count that
- * `name` is a field of. The document keeps those values so a regrow can
- * restore them.
- */
 function hiddenRowController(
   node: LGraphNode,
   name: string
@@ -641,10 +635,6 @@ function hiddenRowController(
     : undefined
 }
 
-/**
- * Whether `name` is a field of a row a count change in `names` may regrow. A
- * regrown row shows the value the document kept for it while hidden.
- */
 function regrownRow(
   node: LGraphNode,
   name: string,
