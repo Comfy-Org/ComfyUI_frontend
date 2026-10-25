@@ -50,11 +50,11 @@ test.describe(
         await page.clock.fastForward(STALE_AFTER_MS + 1)
 
         await expect(agent.node(missedNodeId)).toBeVisible()
-        await expect(
-          page.locator(
-            `[data-node-id="${retainedNodeId}"][data-stall-identity="retained"]`
-          )
-        ).toBeVisible()
+        await expect(agent.node(retainedNodeId)).toBeVisible()
+        await expect(agent.node(retainedNodeId)).toHaveAttribute(
+          'data-stall-identity',
+          'retained'
+        )
         await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
         await expect(agent.node(retainedNodeId)).toHaveClass(
           /outline-foreground/
