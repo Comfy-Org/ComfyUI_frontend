@@ -160,7 +160,7 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
   })
 
-  it('PM-1895 keeps the playing tile badge-free when another tile pauses', async () => {
+  it('PM-1895 shows a tile badge while that tile buffers or pauses, not on loop restarts or another tile', async () => {
     const second: ReplyAsset = {
       url: 'https://x/clip2.mp4',
       filename: 'clip2.mp4',
@@ -178,6 +178,28 @@ describe('ReplyAssetGroup', () => {
     ).toBeNull()
 
     await fireEvent(other, new Event('pause'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(other, new Event('waiting'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    Object.defineProperty(first, 'seeking', { value: true, configurable: true })
+    await fireEvent(first, new Event('waiting'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    Object.defineProperty(first, 'seeking', { value: false })
+    await fireEvent(first, new Event('waiting'))
+    expect(
+      within(playingTile).getByTestId('reply-video-affordance')
+    ).toBeInTheDocument()
+
+    await fireEvent(first, new Event('playing'))
     expect(
       within(playingTile).queryByTestId('reply-video-affordance')
     ).toBeNull()
