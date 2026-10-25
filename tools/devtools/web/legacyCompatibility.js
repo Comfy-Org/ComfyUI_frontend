@@ -155,3 +155,104 @@ function installPreviewBridgeSetter(node) {
     }
   })
 }
+
+if (
+  localStorage.getItem('Comfy.DevTools.LegacyGraphInstancePatches') === 'true'
+) {
+  const fired = {
+    bootOnNodeAdded: [],
+    overwriteOnNodeRemoved: [],
+    configure: 0,
+    serialize: 0,
+    clear: 0,
+    beforeChange: 0,
+    afterChange: 0,
+    add: [],
+    remove: [],
+    stackedAfterChange: [],
+    safeOnNodeAdded: []
+  }
+  window.__legacyGraphInstancePatches = fired
+  const safelyHookedGraphs = new WeakSet()
+
+  function hookGraphOnce(graph) {
+    if (safelyHookedGraphs.has(graph)) return
+    safelyHookedGraphs.add(graph)
+    const previous = graph.onNodeAdded
+    graph.onNodeAdded = function (node) {
+      previous?.call(this, node)
+      fired.safeOnNodeAdded.push(String(node.id))
+    }
+  }
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches',
+    setup() {
+      const graph = app.graph
+      const previousOnNodeAdded = graph.onNodeAdded
+      graph.onNodeAdded = function (node) {
+        previousOnNodeAdded?.call(this, node)
+        fired.bootOnNodeAdded.push(String(node.id))
+      }
+      graph.onNodeRemoved = function (node) {
+        fired.overwriteOnNodeRemoved.push(String(node.id))
+      }
+      for (const name of [
+        'configure',
+        'serialize',
+        'clear',
+        'beforeChange',
+        'afterChange'
+      ]) {
+        const previous = graph[name]
+        graph[name] = function (...args) {
+          fired[name]++
+          return previous.apply(this, args)
+        }
+      }
+      for (const name of ['add', 'remove']) {
+        const previous = graph[name]
+        graph[name] = function (item, ...args) {
+          if (item?.id !== undefined) fired[name].push(String(item.id))
+          return previous.call(this, item, ...args)
+        }
+      }
+      hookGraphOnce(graph)
+      if (
+        localStorage.getItem('Comfy.DevTools.ReplayGraphPatches') === 'true'
+      ) {
+        const createRootGraph = app.createRootGraph
+        app.createRootGraph = function () {
+          const next = createRootGraph.call(this)
+          for (const name of [
+            'onNodeAdded',
+            'onNodeRemoved',
+            'configure',
+            'serialize',
+            'clear',
+            'beforeChange',
+            'afterChange',
+            'add',
+            'remove'
+          ]) {
+            next[name] = graph[name]
+          }
+          return next
+        }
+      }
+    },
+    nodeCreated(node) {
+      if (node.comfyClass !== 'ConditioningZeroOut') return
+      const graph = app.graph
+      const previous = graph.afterChange
+      graph.afterChange = function (...args) {
+        const result = previous.apply(this, args)
+        fired.stackedAfterChange.push(String(node.id))
+        return result
+      }
+    },
+    afterLoadGraph() {
+      hookGraphOnce(app.graph)
+    }
+  })
+}
