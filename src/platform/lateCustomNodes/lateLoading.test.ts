@@ -404,6 +404,28 @@ describe('late custom node loading', () => {
     )
   })
 
+  it('owes every extension the next node definitions fetched when the late ones cannot be fetched', async () => {
+    vi.mocked(app.getNodeDefs).mockRejectedValueOnce(
+      new TypeError('Failed to fetch')
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(true)
+  })
+
+  it('owes no extension node definitions when the late ones were fetched', async () => {
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toContain('reloadNodeDefs')
+    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+  })
+
   it('counts node types as still arriving until the late extensions have finished starting', async () => {
     let finishInit = () => {}
     const initDone = new Promise<void>((resolve) => {

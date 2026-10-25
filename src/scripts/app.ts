@@ -2632,10 +2632,15 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * Reload node definitions, or register `given` ones, and refresh combo lists on all nodes.
+   * Reload node definitions, or register `given` ones, and refresh combo lists on all nodes; definitions owed to `addCustomNodeDefs` go through it first.
    */
   async reloadNodeDefs(given?: Record<string, ComfyNodeDefV1>) {
     const defs = given ?? (await this.getNodeDefs())
+    if (useExtensionStore().takeOwedNodeDefHooks())
+      await useExtensionService().invokeExtensionsAsync(
+        'addCustomNodeDefs',
+        defs
+      )
     for (const nodeId in defs) {
       await this.registerNodeDef(nodeId, defs[nodeId])
     }

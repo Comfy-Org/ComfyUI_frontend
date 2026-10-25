@@ -40,7 +40,9 @@ scripts and then stops waiting.
    definitions are registered again so every extension's per-definition hooks
    see the new types, then the held extensions' `setup` runs. When that fetch
    fails it is reported, and `registerCustomNodes` and `setup` still run; the
-   next definition refresh picks the new types up.
+   next definitions fetched by a successful refresh go through every
+   extension's `addCustomNodeDefs` first, so the types an extension adds there
+   register then.
 3. **Rebuild.** The open workflow is rebuilt once so every extension's per-node
    functions run on its nodes, even when no late extension arrived. The rebuild keeps the saved baseline and the
    unsaved mark, and adds no undo entry.

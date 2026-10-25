@@ -103,6 +103,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -3822,6 +3823,33 @@ describe('ComfyApp', () => {
 
       expect(getNodeDefs).not.toHaveBeenCalled()
       expect(registerNodeDef).toHaveBeenCalledWith('Custom', defs.Custom)
+    })
+
+    it('gives the next fetched definitions to addCustomNodeDefs once when late extensions are owed them, and registers what they add', async () => {
+      const custom = fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      vi.spyOn(app, 'getNodeDefs').mockImplementation(async () => ({
+        Server: fromPartial<ComfyNodeDef>({ name: 'Server' })
+      }))
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (method: string, defs: Record<string, ComfyNodeDef>) => {
+          if (method === 'addCustomNodeDefs') defs.Custom = custom
+        }
+      )
+      useExtensionStore().oweNodeDefHooks()
+
+      await app.reloadNodeDefs()
+      await app.reloadNodeDefs()
+
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', custom)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toHaveLength(1)
     })
   })
 

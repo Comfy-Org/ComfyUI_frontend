@@ -120,6 +120,20 @@ export const useExtensionStore = defineStore('extension', () => {
     registration.value = { mode: 'immediate' }
   }
 
+  const nodeDefHooksOwed = ref(false)
+
+  /** The next node definitions fetched go through every extension's `addCustomNodeDefs` before they register. */
+  function oweNodeDefHooks() {
+    nodeDefHooksOwed.value = true
+  }
+
+  /** Whether fetched node definitions are owed to `addCustomNodeDefs`; settles the debt. */
+  function takeOwedNodeDefHooks(): boolean {
+    const owed = nodeDefHooksOwed.value
+    nodeDefHooksOwed.value = false
+    return owed
+  }
+
   function unregisterExtension(name: string) {
     delete extensionByName.value[name]
   }
@@ -167,6 +181,8 @@ export const useExtensionStore = defineStore('extension', () => {
     releaseHeldExtension,
     stopHoldingExtensions,
     finishLateExtensions,
+    oweNodeDefHooks,
+    takeOwedNodeDefHooks,
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,

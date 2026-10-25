@@ -159,6 +159,7 @@ async function startLateExtensions(extensions: ComfyExtension[]) {
         defs
       ))
     )
+  else useExtensionStore().oweNodeDefHooks()
   failures.push(
     ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
   )
