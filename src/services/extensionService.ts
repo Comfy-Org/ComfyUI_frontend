@@ -64,6 +64,14 @@ function createGraphLoadHookApp(app: ComfyApp) {
   }
 }
 
+type StartupHook = 'init' | 'registerCustomNodes' | 'setup'
+
+export interface StartupHookFailure {
+  extension: ComfyExtension
+  method: StartupHook
+  error: unknown
+}
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -79,6 +87,15 @@ export const useExtensionService = () => {
    * @returns A disposer that stops the extension's auth hooks and unregisters it.
    */
   const registerExtension = (extension: ComfyExtension) => {
+    if (extensionStore.isHoldingExtensions) {
+      extensionStore.holdExtension(extension)
+      return once(() => extensionStore.releaseHeldExtension(extension))
+    }
+    return registerExtensionNow(extension)
+  }
+
+  /** Registers an extension even while new ones are held. */
+  const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
@@ -286,10 +303,38 @@ export const useExtensionService = () => {
     }
   }
 
+  /** Runs one startup step on the given extensions only, in order; returns the ones that threw. */
+  const invokeStartupHook = async (
+    extensions: ComfyExtension[],
+    method: StartupHook
+  ): Promise<StartupHookFailure[]> => {
+    const failures: StartupHookFailure[] = []
+    for (const extension of extensions) {
+      const fn = extension[method]
+      if (
+        typeof fn !== 'function' ||
+        !extensionStore.isExtensionEnabled(extension.name)
+      )
+        continue
+      if (method === 'setup')
+        legacyMenuCompat.setCurrentExtension(extension.name)
+      try {
+        await fn.call(extension, useApp())
+      } catch (error) {
+        failures.push({ extension, method, error })
+      } finally {
+        if (method === 'setup') legacyMenuCompat.setCurrentExtension(null)
+      }
+    }
+    return failures
+  }
+
   return {
     registerExtension,
+    registerExtensionNow,
     invokeExtensions,
-    invokeExtensionsAsync
+    invokeExtensionsAsync,
+    invokeStartupHook
   }
 }
 

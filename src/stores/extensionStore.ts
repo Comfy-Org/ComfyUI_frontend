@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, shallowRef } from 'vue'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -22,6 +22,10 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   'pysssss.FaviconStatus',
   'KJNodes.browserstatus'
 ]
+
+type Registration =
+  | { mode: 'immediate' }
+  | { mode: 'holding'; held: readonly ComfyExtension[] }
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
@@ -71,6 +75,42 @@ export const useExtensionStore = defineStore('extension', () => {
     extensionByName.value[extension.name] = markRaw(extension)
   }
 
+  const registration = shallowRef<Registration>({ mode: 'immediate' })
+  const isHoldingExtensions = computed(
+    () => registration.value.mode === 'holding'
+  )
+
+  /** From now on the extension service holds new extensions instead of registering them. */
+  function holdNewExtensions() {
+    if (registration.value.mode === 'immediate')
+      registration.value = { mode: 'holding', held: [] }
+  }
+
+  function holdExtension(extension: ComfyExtension) {
+    const current = registration.value
+    if (current.mode === 'holding')
+      registration.value = {
+        mode: 'holding',
+        held: [...current.held, extension]
+      }
+  }
+
+  function releaseHeldExtension(extension: ComfyExtension) {
+    const current = registration.value
+    if (current.mode === 'holding')
+      registration.value = {
+        mode: 'holding',
+        held: current.held.filter((held) => held !== extension)
+      }
+  }
+
+  /** Ends holding and returns the extensions still held. */
+  function stopHoldingExtensions(): ComfyExtension[] {
+    const current = registration.value
+    registration.value = { mode: 'immediate' }
+    return current.mode === 'holding' ? [...current.held] : []
+  }
+
   function unregisterExtension(name: string) {
     delete extensionByName.value[name]
   }
@@ -111,6 +151,11 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionReadOnly,
     registerExtension,
     unregisterExtension,
+    isHoldingExtensions,
+    holdNewExtensions,
+    holdExtension,
+    releaseHeldExtension,
+    stopHoldingExtensions,
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,

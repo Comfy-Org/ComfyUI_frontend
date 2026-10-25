@@ -89,6 +89,7 @@ const actions = vi.mockObject<
     | 'refreshMissingModels'
     | 'registerExtension'
     | 'registerNodeDef'
+    | 'reloadNodeDefs'
     | 'setup'
     | 'showErrorOnFileLoad'
   >
@@ -106,6 +107,7 @@ const actions = vi.mockObject<
     },
     registerExtension() {},
     async registerNodeDef() {},
+    async reloadNodeDefs() {},
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
