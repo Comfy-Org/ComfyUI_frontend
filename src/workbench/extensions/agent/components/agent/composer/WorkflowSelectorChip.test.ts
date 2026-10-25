@@ -1,4 +1,5 @@
 import { getActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { Pinia } from 'pinia'
@@ -8,8 +9,12 @@ import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import WorkflowSelectorChip from './WorkflowSelectorChip.vue'
 
 const i18n = createI18n({
@@ -284,8 +289,28 @@ describe('WorkflowSelectorChip', () => {
     expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
   })
 
+  function startOpenChatTurn(tabPath: string) {
+    const workflowStore = useWorkflowStore()
+    for (const tab of tabs)
+      workflowStore.attachWorkflow(
+        fromPartial<LoadedComfyWorkflow>({
+          path: tab.path,
+          instanceId: tab.path
+        }),
+        workflowStore.openWorkflows.length
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-open')
+    conversation.setTurnTabResolver(() => ({
+      status: 'known',
+      workflowInstanceId: tabPath
+    }))
+    conversation.startTurn(toTurnId('turn-open'))
+    return conversation
+  }
+
   it('marks the row the agent is editing with a spinner', async () => {
-    useWorkflowTabActivityStore().setEditing('workflows/upscale.json')
+    startOpenChatTurn('workflows/upscale.json')
     const { user } = renderChip()
     await user.click(trigger())
 
@@ -296,8 +321,7 @@ describe('WorkflowSelectorChip', () => {
   })
 
   it('keeps the active workflow selector usable while showing its spinner', async () => {
-    const activity = useWorkflowTabActivityStore()
-    activity.setEditing('workflows/portrait.json')
+    const conversation = startOpenChatTurn('workflows/portrait.json')
     const { user } = renderChip()
     const selector = trigger()
 
@@ -312,10 +336,30 @@ describe('WorkflowSelectorChip', () => {
     expect(await screen.findAllByRole('menuitemradio')).toHaveLength(2)
     await user.keyboard('{Escape}')
 
-    activity.setEditing(null)
+    conversation.abortActiveTurn()
     expect(
       await within(selector).findByTestId('workflow-selector-icon')
     ).toBeInTheDocument()
+  })
+
+  it('does not spin for a turn running in a chat that is not open', async () => {
+    const conversation = startOpenChatTurn('workflows/portrait.json')
+    conversation.stashActiveTurn()
+    expect(conversation.turnTabs).toEqual([
+      { path: 'workflows/portrait.json', awaitingApproval: false }
+    ])
+    useWorkflowTabActivityStore().setAgentTurnTabs(conversation.turnTabs)
+    const { user } = renderChip()
+    const selector = trigger()
+
+    expect(
+      within(selector).getByTestId('workflow-selector-icon')
+    ).toBeInTheDocument()
+    await user.click(selector)
+    const row = await screen.findByRole('menuitemradio', { name: /portrait/ })
+    expect(
+      within(row).queryByRole('img', { name: enMessages.g.agentWorking })
+    ).toBeNull()
   })
 
   it('marks an unseen agent-modified row with the blue dot', async () => {

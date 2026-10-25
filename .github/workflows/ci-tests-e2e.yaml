@@ -469,7 +469,7 @@ jobs:
       }}
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
-      source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      source_sha: ${{ github.sha }}
       # A shard that died partway still uploads a tracefile, and one that
       # produced none fails its own upload, so the matrix verdict is what
       # makes the merge trustworthy for trend reporting.

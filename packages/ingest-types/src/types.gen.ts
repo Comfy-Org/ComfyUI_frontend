@@ -4994,6 +4994,37 @@ export type Cccjson = {
   [key: string]: unknown
 }
 
+export type CccCreatorsPage = {
+  items: Array<CccCreatorSummary>
+  next_cursor?: string
+}
+
+export type CccCreatorSummary = {
+  avatar_url: string
+  display_name: string
+  username: string
+  workflow_count: number
+}
+
+export type CccCreatorProfile = {
+  /**
+   * Empty when the creator has no safe https avatar
+   */
+  avatar_url: string
+  bio: string
+  display_name: string
+  links: Array<CccCreatorLink>
+  username: string
+}
+
+export type CccCreatorLink = {
+  label: string
+  /**
+   * An https URL
+   */
+  url: string
+}
+
 export type CccCheckedReviewReceipt = {
   publish_enabled: boolean
   receipt_version: 1
@@ -16044,6 +16075,10 @@ export type ListCccWebsiteCardsData = {
     modality?: Array<string>
     provider?: Array<string>
     capability?: Array<string>
+    /**
+     * Only Live public cards credited to this creator username (case-insensitive)
+     */
+    author?: string
   }
   url: '/api/v1/catalog/cards'
 }
@@ -16076,6 +16111,71 @@ export type ListCccWebsiteCardsResponses = {
 
 export type ListCccWebsiteCardsResponse =
   ListCccWebsiteCardsResponses[keyof ListCccWebsiteCardsResponses]
+
+export type ListCccCreatorsData = {
+  body?: never
+  path?: never
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/creators'
+}
+
+export type ListCccCreatorsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type ListCccCreatorsResponses = {
+  /**
+   * One page of creators
+   */
+  200: CccCreatorsPage
+}
+
+export type ListCccCreatorsResponse =
+  ListCccCreatorsResponses[keyof ListCccCreatorsResponses]
+
+export type GetCccCreatorData = {
+  body?: never
+  path: {
+    username: string
+  }
+  query?: never
+  url: '/api/v1/catalog/creators/{username}'
+}
+
+export type GetCccCreatorErrors = {
+  /**
+   * Unsupported query parameter
+   */
+  400: unknown
+  /**
+   * No creator with a Live public workflow has this username
+   */
+  404: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccCreatorResponses = {
+  /**
+   * Public creator profile
+   */
+  200: CccCreatorProfile
+}
+
+export type GetCccCreatorResponse =
+  GetCccCreatorResponses[keyof GetCccCreatorResponses]
 
 export type GetCatalogDocsData = {
   body?: never

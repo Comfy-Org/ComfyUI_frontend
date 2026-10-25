@@ -257,6 +257,29 @@ describe('expected failure baseline comparison', () => {
     expect(compareBaseline(inventory, entries, ceiling).errors).toEqual(errors)
   })
 
+  const liveDefects = (count: number) => {
+    const ids = Array.from({ length: count }, (_, index) => `live-${index}`)
+    return { inventory: ids.map(pin), entries: ids.map((id) => entry(id)) }
+  }
+
+  it.for([
+    { name: 'accepts', count: 16, errors: [] },
+    {
+      name: 'rejects',
+      count: 17,
+      errors: [
+        'Live-defect count 17 must equal LIVE_DEFECT_CEILING (16); lower it when a pin is fixed or raise it to admit a new live defect.'
+      ]
+    }
+  ])(
+    '$name $count live defects against the default ceiling the CLI uses',
+    ({ count, errors }) => {
+      const { inventory, entries } = liveDefects(count)
+
+      expect(compareBaseline(inventory, entries).errors).toEqual(errors)
+    }
+  )
+
   it('rejects duplicate baseline IDs', () => {
     expect(() =>
       compareBaseline([pin('a')], [entry('a'), entry('a')], 2)
