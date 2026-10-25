@@ -31,6 +31,7 @@ import {
 import { activateBillingScope } from '@/platform/billing/composables/activateBillingScope.testUtils'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from './BillingTab.vue'
 
@@ -1054,6 +1055,88 @@ describe('BillingTab', () => {
       expect(reportError).toHaveBeenCalledWith(
         unavailable,
         expect.objectContaining({ errorType: 'topup_checkout_read_failed' })
+      )
+    })
+
+    it('keeps Payment received and keeps polling when a credits_applying read fails once', async () => {
+      servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
+      arrange()
+      await screen.findByTestId('billing-topup-checkout-banner')
+
+      vi.mocked(workspaceApi.getTopupCheckout).mockRejectedValueOnce(
+        new WorkspaceApiError('Bad gateway', 502)
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
+      vi.mocked(workspaceApi.getTopupCheckout).mockClear()
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      await vi.waitFor(() =>
+        expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_1')
+      )
+      expect(
+        screen.getByTestId('billing-topup-checkout-banner')
+      ).toHaveTextContent('Payment received')
+    })
+
+    it('drops a checkout read that started in the previous workspace', async () => {
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [
+          {
+            session_id: 'cs_a',
+            amount_cents: 2500,
+            created_at: '2026-10-20T00:00:00Z'
+          }
+        ],
+        next_cursor: null
+      })
+      const settleDetail: Array<(checkout: HostedTopupCheckout) => void> = []
+      vi.mocked(workspaceApi.getTopupCheckout).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            settleDetail.push(resolve)
+          })
+      )
+      arrange({ autoTopUpFlag: false })
+      await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
+      await nextTick()
+      vi.mocked(workspaceApi.listTopupCheckouts).mockClear()
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [],
+        next_cursor: null
+      })
+      settleDetail[0](checkout('failed', { session_id: 'cs_a' }))
+
+      await vi.waitFor(() =>
+        expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledOnce()
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      expect(
+        screen.queryByTestId('billing-topup-checkout-banner')
+      ).not.toBeInTheDocument()
+    })
+
+    it("clears the previous workspace's checkout banner on a workspace switch", async () => {
+      servedCheckouts(checkout('payment_processing'))
+      arrange()
+      await screen.findByTestId('billing-topup-checkout-banner')
+
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [],
+        next_cursor: null
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByTestId('billing-topup-checkout-banner')
+        ).not.toBeInTheDocument()
       )
     })
 

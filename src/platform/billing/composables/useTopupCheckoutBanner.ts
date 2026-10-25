@@ -14,6 +14,7 @@ import {
   topupCheckoutBannerKey
 } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
 import type { TopupCheckoutSnapshot } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const CREDITS_APPLYING_POLL_MS = 5_000
 
@@ -23,6 +24,9 @@ const NO_CHECKOUTS: TopupCheckoutSnapshot = {
 }
 
 export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
+  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceScope = () =>
+    `${workspaceStore.workspaceTransitionGeneration}:${workspaceStore.activeWorkspaceId}`
   const reportedSessions = new Set<string>()
   let listFailureOpen = false
   let refreshQueued = false
@@ -43,6 +47,7 @@ export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
   }
 
   async function readTopupCheckouts(): Promise<TopupCheckoutSnapshot> {
+    const launchedScope = workspaceScope()
     let listed: Awaited<ReturnType<typeof workspaceApi.listTopupCheckouts>>
     try {
       listed = await workspaceApi.listTopupCheckouts()
@@ -57,13 +62,19 @@ export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
         workspaceApi.getTopupCheckout(session_id)
       )
     )
+    if (workspaceScope() !== launchedScope) return read.state.value
+    const lastKnown = new Map(
+      read.state.value.checkouts.map((known) => [known.session_id, known])
+    )
     return {
       newestSessionId: checkouts[0]?.session_id ?? null,
-      checkouts: reads.flatMap((read, index): HostedTopupCheckout[] => {
-        if (read.status === 'fulfilled') return [read.value]
+      checkouts: reads.flatMap((result, index): HostedTopupCheckout[] => {
+        if (result.status === 'fulfilled') return [result.value]
         const sessionId = checkouts[index]?.session_id
-        if (sessionId) reportCheckoutReadFailure(read.reason, sessionId)
-        return []
+        if (!sessionId) return []
+        reportCheckoutReadFailure(result.reason, sessionId)
+        const known = lastKnown.get(sessionId)
+        return known ? [known] : []
       })
     }
   }
@@ -115,6 +126,11 @@ export function useTopupCheckoutBanner(enabled: MaybeRefOrGetter<boolean>) {
     (applying) => (applying ? poll.resume() : poll.pause())
   )
 
+  watch(workspaceScope, () => {
+    read.state.value = NO_CHECKOUTS
+    dismissed.value = new Set()
+    executeRead()
+  })
   watch(() => toValue(enabled), executeRead, { immediate: true })
   watch(useDocumentVisibility(), (visibility) => {
     if (visibility === 'visible') executeRead()
