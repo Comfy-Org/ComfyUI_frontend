@@ -1084,7 +1084,9 @@ describe('naming the CPU server step', () => {
       })
   }
 
-  const startingText = () => useToast().toasts[0]?.description ?? ''
+  function startingText() {
+    return useToast().toasts[0]?.description ?? ''
+  }
 
   beforeEach(async () => {
     vi.useFakeTimers()
