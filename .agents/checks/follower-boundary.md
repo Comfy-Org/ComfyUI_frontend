@@ -22,6 +22,53 @@ same kind. This review pass still owns files outside those TypeScript seams and 
 semantic/data-flow judgment calls the script cannot make (e.g. "is this really the
 shared doc", "does this new path count as a second writer/applier").
 
+**What is _not_ machine-checked, stated so a green check is not over-read.** The
+single-applier invariant below — "op-to-doc / conflict-resolution logic reimplemented in
+the frontend" — is enforced by this review pass only. A filename denylist over
+`applier|docHost|opApplier|docApplier` was tried and dropped: it is bypassed by naming
+the file anything else, and a guard that can be renamed around is worse than none
+because it reads as coverage. Deciding whether a new path is a second applier needs to
+know what the code _means_, which is this profile's job, not the script's. The same holds
+for the Priority 1 and Priority 2 flags: the script covers outbound `update_b64`
+construction specifically, not "does this write the shared doc".
+
+**Two deliberate limits inside the rules that are machine-checked.**
+
+- `no-op-id-regeneration` resolves minters within one file, following them through local
+  variables _and_ through local function returns, so extracting a mint into a helper does
+  not defeat it. It has no cross-file resolution, so a minter imported from another
+  module is not recognised. Closing that needs either type information or the blunter
+  inversion — flag every `op_id` whose right-hand side is a call — and the inversion
+  flags legitimate reads like `{ op_id: String(op.op_id) }`. On a required check a false
+  positive costs more than this residue.
+- `op-layer-yjs-only` reads the installed `@comfyorg/comfy-multi-player`, so its input can
+  change with no pull request touching it. That is intentional: invariant #3 is asserted
+  on every run rather than sampled at dependency-bump time. The cost is that a bad release
+  reddens open pull requests indiscriminately, so the violation message names the installed
+  version and says the cause is the dependency and not the diff.
+
+### Suppressing a rule that is wrong
+
+The escape hatch for a false positive must not be "edit the checker". Put a directive
+immediately above the offending line, carrying the same four fields
+`tools/architecture`'s `exceptionLedgerSchema` requires:
+
+```ts
+// follower-invariant-allow-next-line no-scattered-distribution-checks
+// owner: @handle; rationale: why the rule is wrong here;
+// sunset: 2026-12-31; removal: what makes this deletable
+const isCloud = readSomethingUnrelated()
+```
+
+It fails closed. An incomplete, unparsable or past-sunset directive suppresses nothing
+and reports itself as `suppression-invalid`; a directive that matches no violation
+reports itself as `suppression-unused`. So an exception cannot go quiet once merged, and
+it cannot outlive its own sunset date. Reviewers should read a new directive as the
+exception it is: an unexplained `rationale` or a far-future `sunset` is an `issue:`.
+The three architectural exemptions in Priority 4 (`agentAuth.ts`, `crdtDebugGate.ts`,
+`crdtDebugReport.ts`) stay in the script, because they are stated in the ADR and are not
+expected to sunset.
+
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, reintroduce a second model of the
 graph that then needs reconciling, or ship a follower that renders in one distribution and
@@ -139,7 +186,12 @@ Flag:
 - **`DISTRIBUTION` / `isCloud` / `isDesktop` checks scattered through follower core** —
   distribution conditionals inside the CRDT apply seam, `DocFrameClient`, the agent
   socket transport, or rendering. They belong only in the credential branch in
-  `agentAuth.ts`.
+  `agentAuth.ts`. The machine-checked rule flags a _branch_, not a _name_: importing
+  `@/platform/distribution/*`, reading a binding that came from it, reading
+  `import.meta.env`, or reading an ambient `__DISTRIBUTION__` / `isCloud` the file never
+  declared. A field, local, parameter or type member that happens to be spelled
+  `isCloud` is a name and passes. Evasion closes back on itself — writing
+  `const isCloud = DISTRIBUTION === 'cloud'` clears the local and flags `DISTRIBUTION`.
 - **A credential path other than the one `isCloud` branch** — in the cloud, agent REST
   requests authenticate through `fetchApi` alone and the socket takes
   `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own

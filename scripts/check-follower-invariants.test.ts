@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import {
+  applySuppressions,
   checkCatalogPinnedBySha,
   checkFile,
   checkFollowerFiles,
@@ -12,10 +13,10 @@ import {
   checkOpLayerPurity,
   checkOpLayerRuntimeImports,
   findFollowerFiles,
-  FOLLOWER_CORE_FILES
+  findSuppressions
 } from './check-follower-invariants'
 
-const FOLLOWER_FILE = FOLLOWER_CORE_FILES[0]
+const FOLLOWER_FILE = findFollowerFiles(process.cwd())[0]
 
 describe('checkNoOutboundUpdateB64', () => {
   test('fails a forbidden mutation fixture: constructing an outbound update_b64 frame', () => {
@@ -167,6 +168,78 @@ describe('checkNoOpIdRegeneration', () => {
     )
   })
 
+  // The bypass dante01yoon measured: `mintedOpIdIdentifiers` propagated through
+  // variable aliases but not through function returns, so every one of these was
+  // clean on f6ea459daf while the inline form was flagged.
+  test.for([
+    {
+      name: 'an arrow helper',
+      fixture: [
+        'const nextOpId = () => crypto.randomUUID()',
+        'const env = { op_id: nextOpId() }'
+      ].join('\n')
+    },
+    {
+      name: 'a function declaration helper',
+      fixture: [
+        'function nextOpId() { return crypto.randomUUID() }',
+        'const env = { op_id: nextOpId() }'
+      ].join('\n')
+    },
+    {
+      name: 'a chain of helpers',
+      fixture: [
+        'const mint = () => crypto.randomUUID()',
+        'const nextOpId = () => mint()',
+        'const env = { op_id: nextOpId() }'
+      ].join('\n')
+    },
+    {
+      name: 'a helper reached as a member',
+      fixture: [
+        'const minters = { nextOpId: () => createUuidv4() }',
+        'const env = { op_id: minters.nextOpId() }'
+      ].join('\n')
+    },
+    {
+      name: 'a helper with an early return',
+      fixture: [
+        'function nextOpId(existing?: string) {',
+        '  if (existing) return existing',
+        '  return uuidv4()',
+        '}',
+        'const env = { op_id: nextOpId() }'
+      ].join('\n')
+    }
+  ])('fails a mint extracted into $name', ({ fixture }) => {
+    const violations = checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('no-op-id-regeneration')
+  })
+
+  test.for([
+    {
+      name: 'defines a minter without minting an op_id with it',
+      fixture: [
+        'const nextOpId = () => crypto.randomUUID()',
+        'export { nextOpId }'
+      ].join('\n')
+    },
+    {
+      name: 'passes an existing id through a helper',
+      fixture: [
+        'function keepOpId(op: Op) { return op.op_id }',
+        'const env = { op_id: keepOpId(op) }'
+      ].join('\n')
+    },
+    {
+      name: 'reads the id off the envelope it is resending',
+      fixture: 'const env = { ...op, op_id: op.op_id }'
+    }
+  ])('passes a file that $name', ({ fixture }) => {
+    expect(checkNoOpIdRegeneration(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
   test('ignores op_id examples in comments', () => {
     const fixture = `
       /* retry = { op_id: createUuidv4() } */
@@ -315,6 +388,92 @@ describe('checkNoScatteredDistributionChecks', () => {
     ).toEqual([])
   })
 
+  // The two false positives dante01yoon measured on f6ea459daf, verbatim. Both were
+  // FLAGGED before the rule distinguished a distribution branch from a name.
+  test.for([
+    {
+      name: 'a type-only interface property',
+      fixture: 'export interface AgentFlags { isCloud: boolean }'
+    },
+    {
+      name: 'a locally declared boolean',
+      fixture: "const isDesktop = session.kind === 'desktop'"
+    },
+    {
+      name: 'a type alias member',
+      fixture: 'type Flags = { isNightly: boolean; DISTRIBUTION: string }'
+    },
+    {
+      name: 'a declared class property',
+      fixture: 'class Session { isCloud = false }'
+    },
+    {
+      name: 'a field read off an unrelated object',
+      fixture: 'const target = flags.isCloud'
+    },
+    {
+      name: 'an object literal key',
+      fixture: 'const flags = { isCloud: false, isDesktop: false }'
+    },
+    {
+      name: 'a destructured local binding',
+      fixture: 'const { isCloud } = props; const target = isCloud'
+    },
+    {
+      name: 'a parameter named after a flag',
+      fixture: 'function render(isDesktop: boolean) { return isDesktop }'
+    }
+  ])('passes $name — a name is not a branch', ({ fixture }) => {
+    expect(checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture)).toEqual(
+      []
+    )
+  })
+
+  test('still fails the real import, which is the case the rule is for', () => {
+    const violations = checkNoScatteredDistributionChecks(
+      FOLLOWER_FILE,
+      "import { isCloud } from '@/platform/distribution/types'"
+    )
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('no-scattered-distribution-checks')
+    expect(violations[0].message).toContain('imports the distribution module')
+  })
+
+  test('fails both the import and the branch it feeds', () => {
+    const fixture = [
+      "import { isCloud } from '@/platform/distribution/types'",
+      '',
+      'const endpoint = isCloud ? cloudEndpoint : localEndpoint'
+    ].join('\n')
+    expect(
+      checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture).map(
+        ({ line }) => line
+      )
+    ).toEqual([1, 3])
+  })
+
+  test('fails a namespaced distribution import and its member read', () => {
+    const fixture = [
+      "import * as distribution from '@/platform/distribution/types'",
+      '',
+      'const endpoint = distribution.isCloud ? cloudEndpoint : localEndpoint'
+    ].join('\n')
+    expect(
+      checkNoScatteredDistributionChecks(FOLLOWER_FILE, fixture)
+    ).toHaveLength(2)
+  })
+
+  // Narrowing to declaration-vs-reference is only safe if evasion closes back on
+  // itself: clearing the local name re-exposes the flag it was derived from.
+  test('fails the ambient flag a local alias would be derived from', () => {
+    const violations = checkNoScatteredDistributionChecks(
+      FOLLOWER_FILE,
+      "const isCloud = DISTRIBUTION === 'cloud'"
+    )
+    expect(violations).toHaveLength(1)
+    expect(violations[0].message).toContain('DISTRIBUTION')
+  })
+
   test('ignores distribution names in comments and strings', () => {
     const fixture = `
       // isCloud ? cloudEndpoint : localEndpoint
@@ -376,6 +535,165 @@ describe('checkNoHardcodedEndpoint', () => {
     "const socket = new WebSocket(api.apiURL('/api/agent/events'))"
   ])('passes the shared event endpoint: %s', (fixture) => {
     expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+})
+
+describe('suppression path', () => {
+  const BRANCH = 'const endpoint = isCloud ? cloudEndpoint : localEndpoint'
+  const directive = (fields: string) =>
+    [
+      '// follower-invariant-allow-next-line no-scattered-distribution-checks',
+      `// ${fields}`,
+      BRANCH
+    ].join('\n')
+  const COMPLETE =
+    'owner: @christian-byrne; rationale: measured false positive; sunset: 2099-01-01; removal: when the rule models this shape'
+
+  test('a complete, unexpired directive suppresses the violation it names', () => {
+    expect(
+      checkNoScatteredDistributionChecks(FOLLOWER_FILE, directive(COMPLETE))
+    ).toEqual([])
+  })
+
+  test('parses the directive and binds it to the next non-comment line', () => {
+    const [suppression] = findSuppressions(directive(COMPLETE))
+    expect(suppression).toMatchObject({
+      rule: 'no-scattered-distribution-checks',
+      directiveLine: 1,
+      targetLine: 3
+    })
+    expect(suppression.fields.get('owner')).toBe('@christian-byrne')
+    expect(suppression.fields.get('sunset')).toBe('2099-01-01')
+  })
+
+  // Fail-closed: a directive that is wrong in any way must not quietly suppress.
+  test.for([
+    {
+      name: 'an expired sunset',
+      fields:
+        'owner: @christian-byrne; rationale: stale; sunset: 2020-01-01; removal: already due',
+      problem: 'expired on 2020-01-01'
+    },
+    {
+      name: 'a missing removal criterion',
+      fields:
+        'owner: @christian-byrne; rationale: measured false positive; sunset: 2099-01-01',
+      problem: 'missing required field(s) removal'
+    },
+    {
+      name: 'a missing owner',
+      fields:
+        'rationale: measured false positive; sunset: 2099-01-01; removal: later',
+      problem: 'missing required field(s) owner'
+    },
+    {
+      name: 'an owner that is not a handle',
+      fields:
+        'owner: christian-byrne; rationale: x; sunset: 2099-01-01; removal: later',
+      problem: 'not an @handle'
+    },
+    {
+      name: 'an unparsable sunset',
+      fields:
+        'owner: @christian-byrne; rationale: x; sunset: someday; removal: later',
+      problem: 'not a YYYY-MM-DD date'
+    }
+  ])(
+    'does not suppress with $name, and reports itself',
+    ({ fields, problem }) => {
+      const violations = checkNoScatteredDistributionChecks(
+        FOLLOWER_FILE,
+        directive(fields)
+      )
+      expect(violations.map(({ rule }) => rule)).toEqual([
+        'no-scattered-distribution-checks',
+        'suppression-invalid'
+      ])
+      expect(violations[1].message).toContain(problem)
+    }
+  )
+
+  test('reports a directive naming a rule that does not exist', () => {
+    const fixture = [
+      '// follower-invariant-allow-next-line no-such-rule',
+      `// ${COMPLETE}`,
+      BRANCH
+    ].join('\n')
+    const violations = checkNoScatteredDistributionChecks(
+      FOLLOWER_FILE,
+      fixture
+    )
+    expect(violations.map(({ rule }) => rule)).toEqual([
+      'no-scattered-distribution-checks',
+      'suppression-invalid'
+    ])
+    expect(violations[1].message).toContain('names unknown rule "no-such-rule"')
+  })
+
+  // An exception that outlives the violation it covered becomes invisible, which is
+  // the failure mode tools/architecture's stale-fingerprint check exists for.
+  test('reports a valid directive that matches no violation', () => {
+    const fixture = [
+      '// follower-invariant-allow-next-line no-scattered-distribution-checks',
+      `// ${COMPLETE}`,
+      'const endpoint = resolveAgentBaseUrl()'
+    ].join('\n')
+    const violations = checkNoScatteredDistributionChecks(
+      FOLLOWER_FILE,
+      fixture
+    )
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('suppression-unused')
+  })
+
+  test('a directive for one rule does not suppress another', () => {
+    const fixture = [
+      '// follower-invariant-allow-next-line no-hardcoded-endpoint',
+      `// ${COMPLETE}`,
+      BRANCH
+    ].join('\n')
+    expect(checkFile(FOLLOWER_FILE, fixture).map(({ rule }) => rule)).toEqual([
+      'no-scattered-distribution-checks',
+      'suppression-unused'
+    ])
+  })
+
+  test('suppresses through checkFile, the path CI runs', () => {
+    expect(checkFile(FOLLOWER_FILE, directive(COMPLETE))).toEqual([])
+  })
+
+  test('judges the sunset against the date it is given, not the clock', () => {
+    const violations = [
+      {
+        file: FOLLOWER_FILE,
+        line: 3,
+        rule: 'no-hardcoded-endpoint',
+        message: ''
+      }
+    ]
+    const fixture = [
+      '// follower-invariant-allow-next-line no-hardcoded-endpoint',
+      '// owner: @christian-byrne; rationale: x; sunset: 2026-06-01; removal: later',
+      "const socket = new WebSocket('wss://agent.comfy.org/ws')"
+    ].join('\n')
+    expect(
+      applySuppressions(
+        FOLLOWER_FILE,
+        fixture,
+        violations,
+        undefined,
+        '2026-05-31'
+      )
+    ).toEqual([])
+    expect(
+      applySuppressions(
+        FOLLOWER_FILE,
+        fixture,
+        violations,
+        undefined,
+        '2026-06-02'
+      ).map(({ rule }) => rule)
+    ).toEqual(['no-hardcoded-endpoint', 'suppression-invalid'])
   })
 })
 
@@ -469,6 +787,22 @@ describe('checkFile against the real follower-core sources', () => {
     expect(files).not.toContain(
       'src/workbench/extensions/agent/crdt/opEnvelope.test.ts'
     )
+  })
+
+  // The count in the success message is now derived from the set that was scanned,
+  // rather than from a module-import-time glob against process.cwd().
+  test('exposes no import-time filesystem snapshot of the seam', async () => {
+    const module = await import('./check-follower-invariants')
+    expect(Object.keys(module)).not.toContain('FOLLOWER_CORE_FILES')
+  })
+
+  test('scans exactly the files it is given', () => {
+    const files = findFollowerFiles(process.cwd())
+    expect(files.length).toBeGreaterThan(1)
+    expect(checkFollowerFiles(process.cwd(), files)).toEqual([])
+    expect(
+      checkFollowerFiles('/definitely-not-a-repository', files.slice(0, 2))
+    ).toHaveLength(2)
   })
 
   test('an empty discovered scope fails closed', () => {
