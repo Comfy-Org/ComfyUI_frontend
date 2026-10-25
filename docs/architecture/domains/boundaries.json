@@ -6,10 +6,6 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
-        "name": "dialog-host/presentation/public",
-        "patterns": ["src/components/dialog/useDialogHostState.ts"]
-      },
-      {
         "name": "keybindings/integration/public",
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
@@ -3986,16 +3982,6 @@
         ]
       },
       {
-        "from": "dialog-host/presentation/public",
-        "allow": [
-          "dialog-host/presentation/public",
-          "dialog-host/domain",
-          "dialog-host/application",
-          "dialog-host/presentation/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "keybindings/integration/public",
         "allow": [
           "keybindings/integration/public",
@@ -4107,7 +4093,6 @@
       {
         "from": "agent/presentation",
         "allow": [
-          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/presentation",
@@ -4143,7 +4128,6 @@
       {
         "from": "agent/integration",
         "allow": [
-          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4491,7 +4475,6 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
-          "dialog-host/presentation/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4518,7 +4501,6 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
-          "dialog-host/presentation/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4807,7 +4789,6 @@
       {
         "from": "dialog-host/integration",
         "allow": [
-          "dialog-host/presentation/public",
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/integration",
@@ -6108,7 +6089,6 @@
       {
         "from": "settings/presentation",
         "allow": [
-          "dialog-host/presentation/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -6125,7 +6105,6 @@
       {
         "from": "settings/integration",
         "allow": [
-          "dialog-host/presentation/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6765,7 +6744,6 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
-          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7048,7 +7026,6 @@
       {
         "from": "dialog-host/presentation/outer-1",
         "allow": [
-          "dialog-host/presentation/public",
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/presentation/outer-1",
@@ -7724,7 +7701,6 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
-          "dialog-host/presentation/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
           "webcam-capture/integration/public",

@@ -48,7 +48,7 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": ["src/components/dialog/useDialogHostState.ts"],
+  "publicEntryPoints": [],
   "allowedDependencies": [],
   "allowedConsumers": ["agent", "bounding-boxes", "settings"],
   "characterizationScenarios": [
@@ -86,7 +86,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior; the supported read-only host-state entry point is available to approved consumers, while dialog-host internals remain subject to cross-domain rules."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }
