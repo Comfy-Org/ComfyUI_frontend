@@ -330,6 +330,7 @@ async function retryFetchFailures(
   )
   if (!waited) return []
   if (isSettingUp(server.step())) await server.ready
+  if (signal.aborted) return []
   const retries = await Promise.all(
     failures.map(({ ext }) =>
       loader

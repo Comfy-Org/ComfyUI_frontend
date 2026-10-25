@@ -1215,6 +1215,26 @@ describe('naming the CPU server step', () => {
     expect(api.fileURL).toHaveBeenCalledTimes(2)
   })
 
+  it('does not try a script again once the editor is gone while the retry waits on a server being built', async () => {
+    const editor = new AbortController()
+    vi.mocked(workspaceApi.getDeploymentCpuServer)
+      .mockRejectedValueOnce(cpuServerUnknown())
+      .mockResolvedValue({ cpu_server: 'building' })
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+    })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(7_000)
+    expect(api.fileURL).toHaveBeenCalledOnce()
+
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fileURL).toHaveBeenCalledOnce()
+    expect(isRegistered('A')).toBe(false)
+  })
+
   it('moves the toast on from Creating to the next step while the scripts wait', async () => {
     cpuServerAnswers('creating', 'building', 'created')
     serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
