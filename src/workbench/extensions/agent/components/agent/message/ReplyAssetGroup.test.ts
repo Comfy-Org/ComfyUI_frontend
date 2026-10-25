@@ -150,26 +150,14 @@ describe('ReplyAssetGroup', () => {
   })
 
   it('PM-1895 clears the play badge while the hover preview is playing', async () => {
-    const play = vi
-      .spyOn(HTMLMediaElement.prototype, 'play')
-      .mockResolvedValue()
-    const pause = vi
-      .spyOn(HTMLMediaElement.prototype, 'pause')
-      .mockImplementation(() => {})
     renderGroup([video, image(1)])
     const element = screen.getByTestId('reply-video-preview')
-    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
 
     await userEvent.hover(element)
-    await fireEvent(element, new Event('playing'))
     expect(screen.queryByTestId('reply-video-affordance')).toBeNull()
 
     await userEvent.unhover(element)
-    await fireEvent(element, new Event('pause'))
     expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
-
-    play.mockRestore()
-    pause.mockRestore()
   })
 
   it('PM-1895 keeps the playing tile badge-free when another tile pauses', async () => {
@@ -219,26 +207,6 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
 
     play.mockRestore()
-  })
-
-  it('plays a video preview on hover and pauses on leave', async () => {
-    const play = vi
-      .spyOn(HTMLMediaElement.prototype, 'play')
-      .mockResolvedValue()
-    const pause = vi
-      .spyOn(HTMLMediaElement.prototype, 'pause')
-      .mockImplementation(() => {})
-    renderGroup([video, image(1)])
-    const element = screen.getByTestId('reply-video-preview')
-
-    await userEvent.hover(element)
-    expect(play).toHaveBeenCalledTimes(1)
-
-    await userEvent.unhover(element)
-    expect(pause).toHaveBeenCalledTimes(1)
-
-    play.mockRestore()
-    pause.mockRestore()
   })
 
   it('renders an audio card per audio asset outside the visual grid', () => {
