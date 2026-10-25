@@ -58,21 +58,24 @@ export const domainRecordSchema = z
   })
   .strict()
 
-export const exceptionLedgerSchema = z
+/**
+ * The metadata every architecture exception carries. Exported on its own so a second
+ * exception surface can `.pick()` the fields it shares instead of restating the owner,
+ * date and removal-criteria contract and drifting from it.
+ */
+export const architectureExceptionSchema = z
   .object({
-    exceptions: z.array(
-      z
-        .object({
-          id: z.string().regex(/^DDD-EX-\d{3}$/),
-          owner: z.string().regex(/^@\S+$/),
-          rationale: text,
-          sunset: z.iso.date(),
-          removalCriteria: text,
-          exactFingerprints: uniqueList(text, 1)
-        })
-        .strict()
-    )
+    id: z.string().regex(/^DDD-EX-\d{3}$/),
+    owner: z.string().regex(/^@\S+$/),
+    rationale: text,
+    sunset: z.iso.date(),
+    removalCriteria: text,
+    exactFingerprints: uniqueList(text, 1)
   })
+  .strict()
+
+export const exceptionLedgerSchema = z
+  .object({ exceptions: z.array(architectureExceptionSchema) })
   .strict()
 
 export type DomainRecord = z.infer<typeof domainRecordSchema>

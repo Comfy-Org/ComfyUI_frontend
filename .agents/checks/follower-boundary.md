@@ -35,34 +35,48 @@ construction specifically, not "does this write the shared doc".
 **Two deliberate limits inside the rules that are machine-checked.**
 
 - `no-op-id-regeneration` resolves minters within one file, following them through local
-  variables _and_ through local function returns, so extracting a mint into a helper does
-  not defeat it. It has no cross-file resolution, so a minter imported from another
-  module is not recognised. Closing that needs either type information or the blunter
-  inversion — flag every `op_id` whose right-hand side is a call — and the inversion
-  flags legitimate reads like `{ op_id: String(op.op_id) }`. On a required check a false
-  positive costs more than this residue.
+  variables, local function returns, and callable aliases (`const next = crypto.randomUUID`,
+  or a `.bind` of one), so extracting a mint into a helper does not defeat it. A minted
+  **value** is tracked by its declaration, not its spelling, so a minted local in one
+  scope does not condemn an unrelated local of the same name in another. Two residues
+  remain, stated so a pass is not over-read: there is no cross-file resolution, so a
+  minter imported from another module is not recognised; and a minter reached by a
+  same-file _name_ is still matched by spelling, so a non-minter shadowing that name in
+  another scope could be read as one. Closing the first needs either type information or
+  the blunter inversion — flag every `op_id` whose right-hand side is a call — and the
+  inversion flags legitimate reads like `{ op_id: String(op.op_id) }`. On a required check
+  a false positive costs more than this residue.
 - `op-layer-yjs-only` reads the installed `@comfyorg/comfy-multi-player`, so its input can
   change with no pull request touching it. That is intentional: invariant #3 is asserted
   on every run rather than sampled at dependency-bump time. The cost is that a bad release
   reddens open pull requests indiscriminately, so the violation message names the installed
-  version and says the cause is the dependency and not the diff.
+  version and says the cause is the dependency and not the diff. It inspects every
+  `.js`/`.mjs`/`.cjs` file under `dist/` **and** every path the manifest nominates as
+  runtime code (`main`, `module`, `browser`, and the string leaves of `exports`), so an
+  entry outside the glob is not skipped; an entry whose extension it cannot parse is
+  reported rather than ignored. It recognises `require(...)` as well as static and dynamic
+  `import`, resolves a specifier held in a local string constant, and reports a load whose
+  specifier it cannot resolve as unverifiable instead of passing it.
 
 ### Suppressing a rule that is wrong
 
 The escape hatch for a false positive must not be "edit the checker". Put a directive
-immediately above the offending line, carrying the same four fields
-`tools/architecture`'s `exceptionLedgerSchema` requires:
+immediately above the offending line, carrying the same four fields an architecture
+exception requires. They are validated by `architectureExceptionSchema` itself
+(`tools/architecture/src/schema.ts`), picked from it rather than restated here, so this
+surface cannot drift from the ledger's owner, date and removal-criteria contract:
 
 ```ts
 // follower-invariant-allow-next-line no-scattered-distribution-checks
 // owner: @handle; rationale: why the rule is wrong here;
-// sunset: 2026-12-31; removal: what makes this deletable
+// sunset: 2026-12-31; removalCriteria: what makes this deletable
 const isCloud = readSomethingUnrelated()
 ```
 
 It fails closed. An incomplete, unparsable or past-sunset directive suppresses nothing
-and reports itself as `suppression-invalid`; a directive that matches no violation
-reports itself as `suppression-unused`. So an exception cannot go quiet once merged, and
+and reports itself as `suppression-invalid` — including a bare marker that names no rule
+at all, and a `sunset` that is well-formed but not a real calendar date; a directive that
+matches no violation reports itself as `suppression-unused`. So an exception cannot go quiet once merged, and
 it cannot outlive its own sunset date. Reviewers should read a new directive as the
 exception it is: an unexplained `rationale` or a far-future `sunset` is an `issue:`.
 The three architectural exemptions in Priority 4 (`agentAuth.ts`, `crdtDebugGate.ts`,
@@ -187,11 +201,16 @@ Flag:
   distribution conditionals inside the CRDT apply seam, `DocFrameClient`, the agent
   socket transport, or rendering. They belong only in the credential branch in
   `agentAuth.ts`. The machine-checked rule flags a _branch_, not a _name_: importing
-  `@/platform/distribution/*`, reading a binding that came from it, reading
-  `import.meta.env`, or reading an ambient `__DISTRIBUTION__` / `isCloud` the file never
-  declared. A field, local, parameter or type member that happens to be spelled
-  `isCloud` is a name and passes. Evasion closes back on itself — writing
-  `const isCloud = DISTRIBUTION === 'cloud'` clears the local and flags `DISTRIBUTION`.
+  `@/platform/distribution/*` — statically, dynamically, or by re-export — reading a
+  binding that came from it, reading `import.meta.env` in either `.env` or `['env']`
+  spelling, or reading an ambient `__DISTRIBUTION__` / `isCloud` that **no declaration in
+  scope at that read** introduces. A field, local, parameter or type member that happens to
+  be spelled `isCloud` is a name and passes. Each reference is resolved lexically, so a
+  declaration in some _other_ scope does not exempt an ambient read elsewhere in the file;
+  a bracket read (`x['isCloud']`) is a branch only when `x` itself carries distribution
+  provenance, so a locally bound object passes exactly as its dot-access form does.
+  Evasion closes back on itself — writing `const isCloud = DISTRIBUTION === 'cloud'`
+  clears the local and flags `DISTRIBUTION`.
 - **A credential path other than the one `isCloud` branch** — in the cloud, agent REST
   requests authenticate through `fetchApi` alone and the socket takes
   `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own

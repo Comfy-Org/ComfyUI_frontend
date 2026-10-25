@@ -3,6 +3,8 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
+import { architectureExceptionSchema } from '@comfyorg/architecture/src/schema'
+
 export interface Violation {
   file: string
   line: number
@@ -73,33 +75,245 @@ function visit(sourceFile: ts.SourceFile, inspect: (node: ts.Node) => void) {
   walk(sourceFile)
 }
 
+function isFunctionLike(node: ts.Node) {
+  return (
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node)
+  )
+}
+
+const SIGNATURE_KINDS = [
+  ts.SyntaxKind.FunctionDeclaration,
+  ts.SyntaxKind.FunctionExpression,
+  ts.SyntaxKind.ArrowFunction,
+  ts.SyntaxKind.MethodDeclaration,
+  ts.SyntaxKind.Constructor,
+  ts.SyntaxKind.GetAccessor,
+  ts.SyntaxKind.SetAccessor
+] as const
+
+/** Kinds whose `var` declarations belong to them rather than to a nested block. */
+const VAR_OWNER_KINDS: ReadonlySet<ts.SyntaxKind> = new Set([
+  ...SIGNATURE_KINDS,
+  ts.SyntaxKind.SourceFile,
+  ts.SyntaxKind.ModuleBlock
+])
+
+const SCOPE_KINDS: ReadonlySet<ts.SyntaxKind> = new Set([
+  ...VAR_OWNER_KINDS,
+  ts.SyntaxKind.Block,
+  ts.SyntaxKind.CaseBlock,
+  ts.SyntaxKind.ForStatement,
+  ts.SyntaxKind.ForInStatement,
+  ts.SyntaxKind.ForOfStatement,
+  ts.SyntaxKind.CatchClause,
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.ClassExpression
+])
+
+const introducesScope = (node: ts.Node): boolean => SCOPE_KINDS.has(node.kind)
+
+const isSignature = (node: ts.Node): node is ts.SignatureDeclaration =>
+  (SIGNATURE_KINDS as readonly ts.SyntaxKind[]).includes(node.kind)
+
+function eachBoundName(
+  name: ts.BindingName,
+  yieldName: (identifier: ts.Identifier, declaration: ts.Node) => void,
+  declaration: ts.Node
+): void {
+  if (ts.isIdentifier(name)) {
+    yieldName(name, declaration)
+    return
+  }
+  for (const element of name.elements)
+    if (ts.isBindingElement(element))
+      eachBoundName(element.name, yieldName, element)
+}
+
+function isVarDeclaration(node: ts.VariableDeclaration): boolean {
+  const list = node.parent
+  return (
+    ts.isVariableDeclarationList(list) &&
+    (list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const)) === 0
+  )
+}
+
+type AddBinding = (identifier: ts.Identifier, declaration: ts.Node) => void
+
+function addVariableList(
+  list: ts.VariableDeclarationList,
+  add: AddBinding
+): void {
+  for (const declaration of list.declarations)
+    eachBoundName(declaration.name, add, declaration)
+}
+
+function addSignatureBindings(
+  scope: ts.SignatureDeclaration,
+  add: AddBinding
+): void {
+  for (const parameter of scope.parameters)
+    eachBoundName(parameter.name, add, parameter)
+  for (const typeParameter of scope.typeParameters ?? [])
+    add(typeParameter.name, typeParameter)
+  // A function expression's own name is bound inside its own body, not outside.
+  if (ts.isFunctionExpression(scope) && scope.name) add(scope.name, scope)
+}
+
+function addClassBindings(
+  scope: ts.ClassDeclaration | ts.ClassExpression,
+  add: AddBinding
+): void {
+  if (scope.name) add(scope.name, scope)
+  for (const typeParameter of scope.typeParameters ?? [])
+    add(typeParameter.name, typeParameter)
+}
+
+/** The statements a scope owns directly, flattened across a switch's clauses. */
+function scopeStatements(scope: ts.Node): readonly ts.Statement[] {
+  if (ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope))
+    return scope.statements
+  if (ts.isCaseBlock(scope))
+    return scope.clauses.flatMap((clause) => [...clause.statements])
+  return []
+}
+
+const isNamedDeclarationStatement = (
+  node: ts.Node
+): node is ts.DeclarationStatement =>
+  ts.isFunctionDeclaration(node) ||
+  ts.isClassDeclaration(node) ||
+  ts.isEnumDeclaration(node) ||
+  ts.isModuleDeclaration(node) ||
+  ts.isTypeAliasDeclaration(node)
+
+function addStatementBindings(scope: ts.Node, add: AddBinding): void {
+  for (const statement of scopeStatements(scope)) {
+    if (ts.isVariableStatement(statement))
+      addVariableList(statement.declarationList, add)
+    else if (ts.isImportDeclaration(statement))
+      for (const binding of importedBindingNodes(statement))
+        add(binding.name, binding.declaration)
+    else if (ts.isImportEqualsDeclaration(statement))
+      add(statement.name, statement)
+    else if (
+      isNamedDeclarationStatement(statement) &&
+      statement.name &&
+      ts.isIdentifier(statement.name)
+    )
+      add(statement.name, statement)
+  }
+}
+
+/** A `catch (error)` binding, or the `let`/`const` a `for` header introduces. */
+function addLoopAndCatchBindings(scope: ts.Node, add: AddBinding): void {
+  if (ts.isCatchClause(scope)) {
+    const declaration = scope.variableDeclaration
+    if (declaration) eachBoundName(declaration.name, add, declaration)
+    return
+  }
+  const isLoop =
+    ts.isForStatement(scope) ||
+    ts.isForInStatement(scope) ||
+    ts.isForOfStatement(scope)
+  if (!isLoop) return
+  const { initializer } = scope
+  if (initializer && ts.isVariableDeclarationList(initializer))
+    addVariableList(initializer, add)
+}
+
 /**
- * Suppression path for the residue these rules get wrong.
- *
- * A rule tight enough to be useful still mis-fires eventually, and the only escape
- * hatch for a required check must not be "edit the checker". A directive comment keeps
- * the exception in the source it suppresses, with the same four fields
- * `tools/architecture`'s `exceptionLedgerSchema` requires of an architecture exception:
- *
- *   // follower-invariant-allow-next-line no-scattered-distribution-checks
- *   // owner: @handle; rationale: why the rule is wrong here;
- *   // sunset: 2026-12-31; removal: what makes this deletable
- *   const isCloud = readSomethingElse()
- *
- * Fail-closed in all three degenerate cases: an incomplete, unparsable or past-sunset
- * directive suppresses nothing and reports itself, and a directive that matches no
- * violation reports itself too, so an exception cannot go quiet after it is merged.
+ * `var` ignores block scope, so a function body owns the `var`s of its nested blocks.
+ * Without this a `var` read beside its block reads as unbound.
  */
-const SUPPRESSION_DIRECTIVE =
-  /follower-invariant-allow-next-line\s+([a-z0-9-]+)/
-const SUPPRESSION_FIELD = /\b(owner|rationale|sunset|removal)\s*:\s*([^;]+)/g
+function addHoistedVars(scope: ts.Node, add: AddBinding): void {
+  if (!VAR_OWNER_KINDS.has(scope.kind)) return
+  const collect = (node: ts.Node): void => {
+    if (node !== scope && (isSignature(node) || ts.isClassDeclaration(node)))
+      return
+    if (ts.isVariableDeclaration(node) && isVarDeclaration(node))
+      eachBoundName(node.name, add, node)
+    ts.forEachChild(node, collect)
+  }
+  ts.forEachChild(scope, collect)
+}
+
+/**
+ * Names declared *directly* in one scope, so a reference can be resolved by walking
+ * ancestors instead of consulting a file-wide set. The file-wide set is what let an
+ * out-of-scope declaration exempt an ambient read and let one function's local poison
+ * another's — both measured false results rather than theoretical ones.
+ */
+function ownDeclarations(scope: ts.Node): Map<string, ts.Node> {
+  const declarations = new Map<string, ts.Node>()
+  const add: AddBinding = (identifier, declaration) => {
+    if (!declarations.has(identifier.text))
+      declarations.set(identifier.text, declaration)
+  }
+
+  if (isSignature(scope)) addSignatureBindings(scope, add)
+  if (ts.isClassDeclaration(scope) || ts.isClassExpression(scope))
+    addClassBindings(scope, add)
+  addLoopAndCatchBindings(scope, add)
+  addStatementBindings(scope, add)
+  addHoistedVars(scope, add)
+  return declarations
+}
+
+export interface ScopeIndex {
+  /** The declaration a reference resolves to, or undefined when it is unbound. */
+  resolve: (node: ts.Identifier) => ts.Node | undefined
+}
+
+function scopeIndex(): ScopeIndex {
+  const cache = new Map<ts.Node, Map<string, ts.Node>>()
+  const declarationsOf = (scope: ts.Node): Map<string, ts.Node> => {
+    let own = cache.get(scope)
+    if (!own) {
+      own = ownDeclarations(scope)
+      cache.set(scope, own)
+    }
+    return own
+  }
+  return {
+    resolve: (node) => {
+      // Every node sits under a SourceFile, which always introduces a scope, so the
+      // walk terminates there rather than on a nullish parent.
+      for (let current: ts.Node = node; ; current = current.parent) {
+        if (!introducesScope(current)) continue
+        const declaration = declarationsOf(current).get(node.text)
+        if (declaration !== undefined && declaration !== node)
+          return declaration
+        if (ts.isSourceFile(current)) return undefined
+      }
+    }
+  }
+}
+
+/**
+ * The four metadata fields are `architectureExceptionSchema`'s, picked from it rather
+ * than restated, so this surface cannot drift from the ledger it claims to follow.
+ */
+const suppressionMetadataSchema = architectureExceptionSchema.pick({
+  owner: true,
+  rationale: true,
+  sunset: true,
+  removalCriteria: true
+})
+
+const SUPPRESSION_MARKER = /follower-invariant-allow-next-line\b[ \t]*(\S*)/
 const REQUIRED_SUPPRESSION_FIELDS = [
   'owner',
   'rationale',
   'sunset',
-  'removal'
+  'removalCriteria'
 ] as const
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const SUPPRESSION_FIELD = new RegExp(
+  `\\b(${REQUIRED_SUPPRESSION_FIELDS.join('|')})\\s*:\\s*([^;]+)`,
+  'g'
+)
 
 export interface Suppression {
   rule: string
@@ -124,12 +338,15 @@ export function findSuppressions(source: string): Suppression[] {
   const lines = source.split('\n')
   const suppressions: Suppression[] = []
   lines.forEach((line, index) => {
-    const directive = SUPPRESSION_DIRECTIVE.exec(line)
-    if (!directive) return
+    const marker = SUPPRESSION_MARKER.exec(line)
+    if (!marker) return
     let cursor = index + 1
     while (cursor < lines.length && isCommentLine(lines[cursor])) cursor += 1
     suppressions.push({
-      rule: directive[1],
+      // A marker with no rule argument is recorded with an empty rule so it reaches
+      // the invalid-directive path. Requiring the argument to parse before recording
+      // left a bare marker completely undiagnosed.
+      rule: marker[1],
       directiveLine: index + 1,
       targetLine: cursor + 1,
       fields: suppressionFields(lines.slice(index, cursor))
@@ -142,11 +359,25 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** Phrase a schema rejection in the vocabulary of the directive, not of zod. */
+function metadataProblem(
+  fields: ReadonlyMap<string, string>,
+  issue: { path: PropertyKey[]; message: string }
+): string {
+  const field = String(issue.path[0] ?? '')
+  const value = fields.get(field) ?? ''
+  if (field === 'owner') return `names owner "${value}", not an @handle`
+  if (field === 'sunset')
+    return `has sunset "${value}", which is not a YYYY-MM-DD date`
+  return `has an invalid ${field} "${value}": ${issue.message}`
+}
+
 function suppressionProblem(
   suppression: Suppression,
   now: string
 ): string | undefined {
   const { rule, fields } = suppression
+  if (!rule) return 'does not name a rule'
   if (!(RULE_NAMES as readonly string[]).includes(rule))
     return `names unknown rule "${rule}"`
   const missing = REQUIRED_SUPPRESSION_FIELDS.filter(
@@ -154,12 +385,9 @@ function suppressionProblem(
   )
   if (missing.length)
     return `is missing required field(s) ${missing.join(', ')}`
-  const owner = fields.get('owner') ?? ''
-  if (!/^@\S+$/.test(owner)) return `names owner "${owner}", not an @handle`
-  const sunset = fields.get('sunset') ?? ''
-  if (!ISO_DATE.test(sunset) || Number.isNaN(Date.parse(sunset)))
-    return `has sunset "${sunset}", which is not a YYYY-MM-DD date`
-  if (sunset < now) return `expired on ${sunset}`
+  const parsed = suppressionMetadataSchema.safeParse(Object.fromEntries(fields))
+  if (!parsed.success) return metadataProblem(fields, parsed.error.issues[0])
+  if (parsed.data.sunset < now) return `expired on ${parsed.data.sunset}`
 }
 
 export function applySuppressions(
@@ -238,19 +466,6 @@ const OP_ID_MINTERS = new Set<string>([
   'mintOpId'
 ])
 
-function isFunctionLike(node: ts.Node): boolean {
-  return (
-    ts.isFunctionDeclaration(node) ||
-    ts.isFunctionExpression(node) ||
-    ts.isArrowFunction(node) ||
-    ts.isMethodDeclaration(node)
-  )
-}
-
-/**
- * The name a function-like node is reachable by from a call site: its own name, or
- * the variable/property it is assigned to.
- */
 function functionLikeName(node: ts.Node): string | undefined {
   if (ts.isFunctionDeclaration(node)) return node.name?.text
   if (ts.isMethodDeclaration(node)) return propertyName(node.name)
@@ -262,36 +477,83 @@ function functionLikeName(node: ts.Node): string | undefined {
 }
 
 /**
- * Whether evaluating this expression mints a fresh id. A nested function body is
- * skipped: defining a minter is not calling one, and conflating the two is what let
- * `const nextOpId = () => crypto.randomUUID()` read as a minted value rather than as
- * a minter, leaving its call sites unrecognised.
+ * Whether this node by itself yields a fresh id. A reference to a value that already
+ * holds a minted id carries that provenance through any wrapper, which is what makes
+ * `return String(id)` mint while `String(op.op_id)` does not.
  */
+function nodeMintsOpId(
+  node: ts.Node,
+  root: ts.Expression,
+  minted: MintedOpIds
+): boolean {
+  if (ts.isCallExpression(node)) return callMintsOpId(node, minted)
+  if (node === root || !ts.isIdentifier(node)) return false
+  return !isDeclarationName(node) && referencesMintedValue(node, minted)
+}
+
 function expressionMintsOpId(
   expression: ts.Expression,
-  minters: ReadonlySet<string>
+  minted: MintedOpIds
 ): boolean {
   if (isFunctionLike(expression)) return false
-  let minted = false
+  let mints = false
   const walk = (node: ts.Node): void => {
-    if (minted || (node !== expression && isFunctionLike(node))) return
-    if (ts.isCallExpression(node)) {
-      const name = ts.isIdentifier(node.expression)
-        ? node.expression.text
-        : memberName(node.expression)
-      if (name && minters.has(name)) minted = true
-    }
-    if (!minted) ts.forEachChild(node, walk)
+    if (mints || (node !== expression && isFunctionLike(node))) return
+    if (nodeMintsOpId(node, expression, minted)) mints = true
+    else ts.forEachChild(node, walk)
   }
   walk(expression)
-  return minted
+  return mints
+}
+
+/** The receiver of an `X.bind(…)` call, which names a callable without invoking it. */
+function boundReceiver(expression: ts.Expression): ts.Expression | undefined {
+  if (!ts.isCallExpression(expression)) return
+  const callee = expression.expression
+  if (
+    (ts.isPropertyAccessExpression(callee) ||
+      ts.isElementAccessExpression(callee)) &&
+    memberName(callee) === 'bind'
+  )
+    return callee.expression
+}
+
+/** A minter named without being called: `crypto.randomUUID`, or `X.bind(…)` of one. */
+function minterReferenceName(
+  expression: ts.Expression,
+  minted: MintedOpIds
+): string | undefined {
+  if (ts.isParenthesizedExpression(expression))
+    return minterReferenceName(expression.expression, minted)
+  const bound = boundReceiver(expression)
+  if (bound) return minterReferenceName(bound, minted)
+  const name = ts.isIdentifier(expression)
+    ? expression.text
+    : memberName(expression)
+  return name !== undefined && minted.functions.has(name) ? name : undefined
+}
+
+function callMintsOpId(node: ts.CallExpression, minted: MintedOpIds): boolean {
+  const callee = ts.isParenthesizedExpression(node.expression)
+    ? node.expression.expression
+    : node.expression
+  const name = ts.isIdentifier(callee) ? callee.text : memberName(callee)
+  return Boolean(name && minted.functions.has(name))
+}
+
+function referencesMintedValue(
+  node: ts.Identifier,
+  minted: MintedOpIds
+): boolean {
+  const declaration = minted.scopes.resolve(node)
+  return declaration !== undefined && minted.values.has(declaration)
 }
 
 function functionReturnsMintedOpId(
-  node: ts.Node,
+  node: ts.FunctionLikeDeclaration,
   minted: MintedOpIds
 ): boolean {
-  const { body } = node as ts.FunctionLikeDeclaration
+  const { body } = node
   if (!body) return false
   if (!ts.isBlock(body)) return isFreshOpId(body, minted)
   let mints = false
@@ -312,31 +574,34 @@ function functionReturnsMintedOpId(
 }
 
 interface MintedOpIds {
-  /** Callables that yield a fresh id, seeded with the known uuid primitives. */
   functions: ReadonlySet<string>
-  /** Variables that hold an already-minted id. */
-  values: ReadonlySet<string>
+  /**
+   * Declarations — not spellings — that hold an already-minted id. Keying on the
+   * declaration is what stops one function's minted local from condemning an
+   * unrelated local of the same name in another scope.
+   */
+  values: ReadonlySet<ts.Node>
+  scopes: ScopeIndex
 }
 
 /**
- * Both sets grow to a fixpoint together, so a minter reached through a chain of local
- * helpers is still recognised as one.
- *
- * Accepted limit: this is one file at a time, with no type information, so a minter
- * that lives in *another* module and is imported here is not recognised. Closing that
- * needs either cross-file resolution or the blunter inversion — flagging every `op_id`
- * whose right-hand side is a call — and the inversion flags legitimate reads such as
- * `{ op_id: String(op.op_id) }`. On a required check, a false positive costs more than
- * this residue does: see `no-scattered-distribution-checks` below, which was reported
- * for exactly that. The in-file helper closed here is the refactor that actually
- * happens to a line that mints an id.
+ * Accepted limit: one file at a time with no type information, so a minter imported
+ * from another module is not recognised. The alternative — flagging every `op_id`
+ * whose right-hand side is a call — rejects legitimate reads such as
+ * `{ op_id: String(op.op_id) }`, and on a required check a false positive costs more
+ * than this residue. A minter reached by a same-file name is still resolved by
+ * spelling rather than by declaration, so a shadowing non-minter of the same name in
+ * another scope remains possible.
  */
-function mintedOpIds(sourceFile: ts.SourceFile): MintedOpIds {
+function mintedOpIds(
+  sourceFile: ts.SourceFile,
+  scopes: ScopeIndex
+): MintedOpIds {
   const functions = new Set<string>(OP_ID_MINTERS)
-  const values = new Set<string>()
-  const minted: MintedOpIds = { functions, values }
+  const values = new Set<ts.Node>()
+  const minted: MintedOpIds = { functions, values, scopes }
 
-  const learnMinter = (node: ts.Node): boolean => {
+  const learnMinter = (node: ts.FunctionLikeDeclaration): boolean => {
     const name = functionLikeName(node)
     if (!name || functions.has(name)) return false
     if (!functionReturnsMintedOpId(node, minted)) return false
@@ -344,11 +609,20 @@ function mintedOpIds(sourceFile: ts.SourceFile): MintedOpIds {
     return true
   }
 
+  const learnMinterAlias = (node: ts.VariableDeclaration): boolean => {
+    if (!ts.isIdentifier(node.name) || functions.has(node.name.text))
+      return false
+    if (!node.initializer || isFunctionLike(node.initializer)) return false
+    if (!minterReferenceName(node.initializer, minted)) return false
+    functions.add(node.name.text)
+    return true
+  }
+
   const learnMintedValue = (node: ts.VariableDeclaration): boolean => {
-    if (!ts.isIdentifier(node.name) || values.has(node.name.text)) return false
+    if (!ts.isIdentifier(node.name) || values.has(node)) return false
     if (!node.initializer || !isFreshOpId(node.initializer, minted))
       return false
-    values.add(node.name.text)
+    values.add(node)
     return true
   }
 
@@ -358,7 +632,7 @@ function mintedOpIds(sourceFile: ts.SourceFile): MintedOpIds {
     visit(sourceFile, (node) => {
       if (isFunctionLike(node)) changed = learnMinter(node) || changed
       else if (ts.isVariableDeclaration(node))
-        changed = learnMintedValue(node) || changed
+        changed = learnMinterAlias(node) || learnMintedValue(node) || changed
     })
   }
   return minted
@@ -366,8 +640,8 @@ function mintedOpIds(sourceFile: ts.SourceFile): MintedOpIds {
 
 function isFreshOpId(expression: ts.Expression, minted: MintedOpIds): boolean {
   return (
-    expressionMintsOpId(expression, minted.functions) ||
-    (ts.isIdentifier(expression) && minted.values.has(expression.text))
+    expressionMintsOpId(expression, minted) ||
+    (ts.isIdentifier(expression) && referencesMintedValue(expression, minted))
   )
 }
 
@@ -378,7 +652,9 @@ function isFreshOpIdAssignment(node: ts.Node, minted: MintedOpIds): boolean {
       isFreshOpId(node.initializer, minted)
     )
   if (ts.isShorthandPropertyAssignment(node))
-    return node.name.text === 'op_id' && minted.values.has(node.name.text)
+    return (
+      node.name.text === 'op_id' && referencesMintedValue(node.name, minted)
+    )
   return (
     ts.isBinaryExpression(node) &&
     node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
@@ -490,7 +766,7 @@ function noOpIdRegeneration(
 ): Violation[] {
   if (file.endsWith('/opEnvelope.ts')) return []
   const violations: Violation[] = []
-  const minted = mintedOpIds(sourceFile)
+  const minted = mintedOpIds(sourceFile, scopeIndex())
   visit(sourceFile, (node) => {
     if (!isFreshOpIdAssignment(node, minted)) return
     violations.push(
@@ -554,11 +830,6 @@ function moduleSpecifier(node: ts.Node): string | undefined {
 const OP_LAYER_PACKAGE_PATH =
   'node_modules/@comfyorg/comfy-multi-player' as const
 
-/**
- * This rule reads the installed package rather than the repository's own sources, so
- * its input can change without any pull request touching it. Name the cause in the
- * message: the person who sees it red is usually not the person who moved the pin.
- */
 function opLayerPurityViolation(
   file: string,
   line: number,
@@ -628,6 +899,53 @@ export function checkOpLayerManifest(
     .map((dependency) => opLayerPurityViolation(file, 1, dependency, installed))
 }
 
+const isLocalOrYjs = (specifier: string): boolean =>
+  specifier.startsWith('.') ||
+  specifier.startsWith('/') ||
+  specifier === 'yjs' ||
+  specifier.startsWith('yjs/')
+
+/** A `require(…)` or `import(…)` whose argument is not a bare string literal. */
+function isRuntimeLoad(node: ts.Node): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false
+  if (node.expression.kind === ts.SyntaxKind.ImportKeyword) return true
+  return ts.isIdentifier(node.expression) && node.expression.text === 'require'
+}
+
+function constantStrings(sourceFile: ts.SourceFile): Map<string, string> {
+  const constants = new Map<string, string>()
+  visit(sourceFile, (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isStringLiteralLike(node.initializer)
+    )
+      constants.set(node.name.text, node.initializer.text)
+  })
+  return constants
+}
+
+/** The specifier a runtime load names, or the reason it could not be determined. */
+function loadedSpecifier(
+  node: ts.CallExpression,
+  sourceFile: ts.SourceFile,
+  constants: ReadonlyMap<string, string>
+): string {
+  const argument = node.arguments.at(0)
+  if (argument && ts.isStringLiteralLike(argument)) return argument.text
+  if (argument && ts.isIdentifier(argument)) {
+    const resolved = constants.get(argument.text)
+    if (resolved !== undefined) return resolved
+  }
+  return `an unverifiable runtime load (${node.getText(sourceFile).slice(0, 80)})`
+}
+
+/**
+ * Fail closed on a load this classifier cannot resolve. A package can reach forbidden
+ * runtime code without declaring a manifest dependency, and treating an unresolvable
+ * `import(name)` like an ordinary non-import node reported nothing at all.
+ */
 export function checkOpLayerRuntimeImports(
   file: string,
   source: string,
@@ -639,17 +957,15 @@ export function checkOpLayerRuntimeImports(
       opLayerPurityViolation(file, 1, 'invalid built JavaScript', installed)
     ]
   const { sourceFile } = parsed
+  const constants = constantStrings(sourceFile)
   const violations: Violation[] = []
   visit(sourceFile, (node) => {
-    const specifier = moduleSpecifier(node)
-    if (
-      specifier === undefined ||
-      specifier.startsWith('.') ||
-      specifier.startsWith('/') ||
-      specifier === 'yjs' ||
-      specifier.startsWith('yjs/')
-    )
-      return
+    const specifier =
+      moduleSpecifier(node) ??
+      (isRuntimeLoad(node)
+        ? loadedSpecifier(node, sourceFile, constants)
+        : undefined)
+    if (specifier === undefined || isLocalOrYjs(specifier)) return
     violations.push(
       opLayerPurityViolation(
         file,
@@ -660,6 +976,38 @@ export function checkOpLayerRuntimeImports(
     )
   })
   return violations
+}
+
+const RUNTIME_EXTENSIONS = ['.js', '.mjs', '.cjs'] as const
+
+/**
+ * Every path the manifest nominates as runtime code: `main`, `module`, `browser` and
+ * every string leaf of `exports`. Globbing `dist/**` alone passed a package whose
+ * declared entry was `./dist/entry.mjs` and whose only `.js` file was unrelated.
+ */
+function declaredEntryPoints(manifest: unknown): string[] {
+  if (typeof manifest !== 'object' || manifest === null) return []
+  const entries = new Set<string>()
+  const record = manifest as Record<string, unknown>
+  for (const field of ['main', 'module', 'browser', 'types'] as const) {
+    const value = record[field]
+    if (typeof value === 'string' && field !== 'types') entries.add(value)
+  }
+  const collect = (value: unknown): void => {
+    if (typeof value === 'string') {
+      entries.add(value)
+      return
+    }
+    if (typeof value !== 'object' || value === null) return
+    for (const [key, nested] of Object.entries(value)) {
+      if (key === 'types') continue
+      collect(nested)
+    }
+  }
+  collect(record['exports'])
+  return [...entries]
+    .map((entry) => entry.replace(/^\.\//, '').replaceAll('\\', '/'))
+    .filter((entry) => entry.length > 0 && !entry.startsWith('..'))
 }
 
 export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
@@ -679,13 +1027,42 @@ export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
   }
 
   const violations = checkOpLayerManifest(manifestFile, manifestSource)
-  let installed: string | undefined
+  let manifest: unknown
   try {
-    installed = installedLabel(JSON.parse(manifestSource))
+    manifest = JSON.parse(manifestSource)
   } catch {
-    installed = undefined
+    manifest = undefined
   }
-  const runtimeFiles = globSync('dist/**/*.js', { cwd: packageRoot }).sort()
+  const installed = installedLabel(manifest)
+  const glob = globSync(
+    RUNTIME_EXTENSIONS.map((extension) => `dist/**/*${extension}`),
+    { cwd: packageRoot }
+  ).map((file) => file.replaceAll('\\', '/'))
+
+  const entryPoints = declaredEntryPoints(manifest)
+  const unsupported = entryPoints.filter(
+    (entry) =>
+      !RUNTIME_EXTENSIONS.some((extension) => entry.endsWith(extension))
+  )
+  for (const entry of unsupported)
+    violations.push(
+      opLayerPurityViolation(
+        `${OP_LAYER_PACKAGE_PATH}/${entry}`,
+        1,
+        `an unsupported runtime layout: entry "${entry}" is not one of ${RUNTIME_EXTENSIONS.join(', ')}`,
+        installed
+      )
+    )
+
+  const runtimeFiles = [
+    ...new Set([
+      ...glob,
+      ...entryPoints.filter((entry) =>
+        RUNTIME_EXTENSIONS.some((extension) => entry.endsWith(extension))
+      )
+    ])
+  ].sort()
+
   if (runtimeFiles.length === 0) {
     violations.push(
       opLayerPurityViolation(
@@ -719,31 +1096,60 @@ export function checkOpLayerPurity(repositoryRoot: string): Violation[] {
   return violations
 }
 
+const CATALOG_KEYWORD = /\b(?:catalog|vocabulary)\b/i
+const MOVING_REFERENCE =
+  /(?:refs\/heads\/[\w.-]+|@(?:main|master|develop|HEAD)\b|\/(?:blob|tree)\/(?:main|master|develop|HEAD)(?:\/|\b)|raw\.githubusercontent\.com\/[^\s/]+\/[^\s/]+\/(?:main|master|develop|HEAD)(?:\/|\b)|[?&]ref=(?:main|master|develop|HEAD)\b)/i
+const HOSTED_CITATION =
+  /^https?:\/\/(?:github\.com|raw\.githubusercontent\.com)\//i
+const PINNED_SHA = /\b[0-9a-f]{40}\b/i
+
+const HOSTED_URL = /https?:\/\/[^\s'"`)\]}]+/gi
+const BARE_MOVING_REFERENCE =
+  /@(?:main|master|develop|HEAD)\b|refs\/heads\/[\w.-]+|[?&]ref=(?:main|master|develop|HEAD)\b/gi
+
+const citesMovingTarget = (url: string): boolean =>
+  MOVING_REFERENCE.test(url) ||
+  (HOSTED_CITATION.test(url) && !PINNED_SHA.test(url))
+
+/**
+ * Scan the references, then ask whether a catalog keyword sits beside one. Scanning
+ * from the keyword forward missed every bare URL, because in
+ * `https://…/blob/main/catalog.json` the keyword is in the filename — after the branch
+ * it needed to see.
+ */
 function catalogPinnedBySha(file: string, source: string): Violation[] {
   if (!isFollowerSeamFile(file)) return []
-  const violations: Violation[] = []
-  const citation = /\b(catalog|vocabulary)\b/gi
-  const movingReference =
-    /(?:refs\/heads\/[\w.-]+|@(main|master|develop|HEAD)\b|\/(?:blob|tree)\/(?:main|master|develop|HEAD)(?:\/|\b)|raw\.githubusercontent\.com\/[^\s/]+\/[^\s/]+\/(?:main|master|develop|HEAD)(?:\/|\b)|[?&]ref=(?:main|master|develop|HEAD)\b)/i
-  for (const match of source.matchAll(citation)) {
-    const start = match.index
-    const window = source.slice(start, start + 240)
-    const hostedCitation =
-      /https?:\/\/(?:github\.com|raw\.githubusercontent\.com)\//i.test(window)
-    if (
-      !movingReference.test(window) &&
-      (!hostedCitation || /\b[0-9a-f]{40}\b/i.test(window))
+  const nearbyKeyword = (start: number, end: number): boolean =>
+    CATALOG_KEYWORD.test(
+      source.slice(Math.max(0, start - 240), Math.min(source.length, end + 240))
     )
-      continue
-    violations.push({
-      file,
-      line: source.slice(0, start).split('\n').length,
-      rule: 'catalog-pinned-by-sha',
-      message:
-        'cites the widget catalog or vocabulary without a pinned commit SHA'
-    })
+
+  const offsets: number[] = []
+  const urlSpans: [number, number][] = []
+  for (const match of source.matchAll(HOSTED_URL)) {
+    const end = match.index + match[0].length
+    urlSpans.push([match.index, end])
+    if (nearbyKeyword(match.index, end) && citesMovingTarget(match[0]))
+      offsets.push(match.index)
   }
-  return violations
+
+  // A moving reference cited without a URL at all — `catalog @main`. Skip the ones
+  // already inside a matched URL so one citation reports once.
+  for (const match of source.matchAll(BARE_MOVING_REFERENCE)) {
+    const end = match.index + match[0].length
+    const insideUrl = urlSpans.some(
+      ([from, to]) => match.index >= from && end <= to
+    )
+    if (!insideUrl && nearbyKeyword(match.index, end)) offsets.push(match.index)
+  }
+
+  return offsets.map((start) => ({
+    file,
+    line: source.slice(0, start).split('\n').length,
+    rule: 'catalog-pinned-by-sha',
+    message:
+      'cites the widget catalog or vocabulary without a pinned commit SHA'
+  }))
 }
 
 export function checkCatalogPinnedBySha(
@@ -766,7 +1172,6 @@ const DISTRIBUTION_FLAGS: readonly string[] = [
   'isNightly'
 ]
 
-/** The architectural exemptions, stated in CRDT-FOLLOWER-0025 rather than per-site. */
 function ownsADistributionBranch(file: string): boolean {
   return (
     file.endsWith('/services/agent/agentAuth.ts') ||
@@ -790,7 +1195,6 @@ function isTypePosition(node: ts.Node, sourceFile: ts.SourceFile): boolean {
   return false
 }
 
-/** Declarations whose own `name` introduces a binding rather than reading one. */
 const BINDING_DECLARATIONS: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.VariableDeclaration,
   ts.SyntaxKind.Parameter,
@@ -799,7 +1203,6 @@ const BINDING_DECLARATIONS: ReadonlySet<ts.SyntaxKind> = new Set([
   ts.SyntaxKind.ClassDeclaration
 ])
 
-/** Those, plus the positions that name a type member, a key, or an import binding. */
 const NAME_POSITIONS: ReadonlySet<ts.SyntaxKind> = new Set([
   ...BINDING_DECLARATIONS,
   ts.SyntaxKind.PropertySignature,
@@ -819,64 +1222,50 @@ function namedNode(node: ts.Node): ts.Node | undefined {
   return (node as { name?: ts.Node }).name
 }
 
-/**
- * Whether this identifier *introduces* a name rather than reading one — a declared
- * binding, a type member, or the member half of `flags.isCloud`. A shorthand property
- * (`{ isCloud }`) is deliberately absent: that one does read a binding.
- */
+/** A shorthand property (`{ isCloud }`) is deliberately absent: that one reads a binding. */
 function isDeclarationName(node: ts.Identifier): boolean {
   const { parent } = node
   return NAME_POSITIONS.has(parent.kind) && namedNode(parent) === node
 }
 
-function declaredBindingName(node: ts.Node): string | undefined {
-  if (!BINDING_DECLARATIONS.has(node.kind)) return
-  const name = namedNode(node)
-  return name && ts.isIdentifier(name) ? name.text : undefined
-}
-
-function importedBindings(node: ts.ImportDeclaration): string[] {
+function importedBindingNodes(
+  node: ts.ImportDeclaration
+): { name: ts.Identifier; declaration: ts.Node }[] {
   const clause = node.importClause
   if (!clause) return []
-  const names = clause.name ? [clause.name.text] : []
+  const bound = clause.name
+    ? [{ name: clause.name, declaration: clause as ts.Node }]
+    : []
   const bindings = clause.namedBindings
-  if (bindings && ts.isNamespaceImport(bindings)) names.push(bindings.name.text)
+  if (bindings && ts.isNamespaceImport(bindings))
+    bound.push({ name: bindings.name, declaration: bindings })
   if (bindings && ts.isNamedImports(bindings))
-    for (const element of bindings.elements) names.push(element.name.text)
-  return names
+    for (const element of bindings.elements)
+      bound.push({ name: element.name, declaration: element })
+  return bound
 }
+
+const importedBindings = (node: ts.ImportDeclaration): string[] =>
+  importedBindingNodes(node).map(({ name }) => name.text)
 
 /**
- * Split the file's names into the ones that came from the distribution module and the
- * ones it declared itself. This is the distinction the rule is actually about: a
- * reference to an imported `isCloud` is a distribution branch, while a field or local
- * that happens to be *spelled* `isCloud` is a name, and `CRDT-FOLLOWER-0025` protects
- * the former. Declaration-vs-reference is also why evasion closes back on itself —
- * writing `const isCloud = DISTRIBUTION === 'cloud'` clears the local but flags
- * `DISTRIBUTION`.
+ * Names the file took from the distribution module. Everything else is resolved
+ * lexically at each reference, because a file-wide "declared" set answers the wrong
+ * question: it reports whether the spelling exists somewhere, not whether a
+ * declaration is in scope at the read.
  */
-function distributionBindings(sourceFile: ts.SourceFile): {
-  imported: ReadonlySet<string>
-  declared: ReadonlySet<string>
-} {
+function distributionImports(sourceFile: ts.SourceFile): ReadonlySet<string> {
   const imported = new Set<string>()
-  const declared = new Set<string>()
   visit(sourceFile, (node) => {
-    if (ts.isImportDeclaration(node)) {
-      const specifier = staticModuleSpecifier(node) ?? ''
-      const target = DISTRIBUTION_MODULE.test(specifier) ? imported : declared
-      for (const name of importedBindings(node)) target.add(name)
-      return
-    }
-    const declaration = declaredBindingName(node)
-    if (declaration) declared.add(declaration)
+    if (!ts.isImportDeclaration(node)) return
+    const specifier = staticModuleSpecifier(node) ?? ''
+    if (DISTRIBUTION_MODULE.test(specifier))
+      for (const name of importedBindings(node)) imported.add(name)
   })
-  return { imported, declared }
+  return imported
 }
 
-/** `import … from '@/platform/distribution/*'`, which is the unambiguous case. */
 function distributionModuleImport(node: ts.Node): string | undefined {
-  if (!ts.isImportDeclaration(node) && !ts.isExportDeclaration(node)) return
   const specifier = moduleSpecifier(node)
   if (specifier === undefined || !DISTRIBUTION_MODULE.test(specifier)) return
   return `imports the distribution module "${specifier}"`
@@ -884,16 +1273,24 @@ function distributionModuleImport(node: ts.Node): string | undefined {
 
 function buildEnvironmentRead(node: ts.Node): string | undefined {
   if (
-    ts.isPropertyAccessExpression(node) &&
-    node.name.text === 'env' &&
+    (ts.isPropertyAccessExpression(node) ||
+      ts.isElementAccessExpression(node)) &&
+    memberName(node) === 'env' &&
     ts.isMetaProperty(node.expression)
   )
     return 'reads a build-time environment flag'
 }
 
+/**
+ * `x['isCloud']`, but only where `x` itself carries distribution provenance. Keyed on
+ * the member name alone it rejected `const flags = { isCloud: false }; flags['isCloud']`
+ * while allowing the identical dot access.
+ */
 function keyedDistributionRead(
   node: ts.Node,
-  sourceFile: ts.SourceFile
+  sourceFile: ts.SourceFile,
+  imported: ReadonlySet<string>,
+  scopes: ScopeIndex
 ): string | undefined {
   if (
     !ts.isElementAccessExpression(node) ||
@@ -902,18 +1299,19 @@ function keyedDistributionRead(
     isTypePosition(node, sourceFile)
   )
     return
+  const receiver = node.expression
+  if (!ts.isIdentifier(receiver)) return
+  const locallyBound =
+    !imported.has(receiver.text) && scopes.resolve(receiver) !== undefined
+  if (locallyBound) return
   return `reads the distribution flag "${node.argumentExpression.text}"`
 }
 
-/**
- * The narrowed case: a *reference* to a flag, either imported from the distribution
- * module or ambient. A declared binding, type member or key of the same spelling is a
- * name rather than a branch, and passes.
- */
 function distributionFlagRead(
   node: ts.Node,
   sourceFile: ts.SourceFile,
-  bindings: { imported: ReadonlySet<string>; declared: ReadonlySet<string> }
+  imported: ReadonlySet<string>,
+  scopes: ScopeIndex
 ): string | undefined {
   if (
     !ts.isIdentifier(node) ||
@@ -921,11 +1319,11 @@ function distributionFlagRead(
     isTypePosition(node, sourceFile)
   )
     return
-  if (bindings.imported.has(node.text))
+  if (imported.has(node.text))
     return `branches on the imported distribution flag "${node.text}"`
   if (
     DISTRIBUTION_FLAGS.includes(node.text) &&
-    !bindings.declared.has(node.text)
+    scopes.resolve(node) === undefined
   )
     return `branches on the ambient distribution flag "${node.text}"`
 }
@@ -935,14 +1333,15 @@ function noScatteredDistributionChecks(
   sourceFile: ts.SourceFile
 ): Violation[] {
   if (ownsADistributionBranch(file)) return []
-  const bindings = distributionBindings(sourceFile)
+  const imported = distributionImports(sourceFile)
+  const scopes = scopeIndex()
   const violations: Violation[] = []
   visit(sourceFile, (node) => {
     const detail =
       distributionModuleImport(node) ??
       buildEnvironmentRead(node) ??
-      keyedDistributionRead(node, sourceFile) ??
-      distributionFlagRead(node, sourceFile, bindings)
+      keyedDistributionRead(node, sourceFile, imported, scopes) ??
+      distributionFlagRead(node, sourceFile, imported, scopes)
     if (detail === undefined) return
     violations.push(
       violation(
@@ -1093,8 +1492,6 @@ export function checkFollowerFiles(
 
 function main(): void {
   const repositoryRoot = process.cwd()
-  // Discover once and pass the result through, so the count in the success message
-  // describes the set that was actually scanned.
   const files = findFollowerFiles(repositoryRoot)
   const violations = [
     ...checkFollowerFiles(repositoryRoot, files),
