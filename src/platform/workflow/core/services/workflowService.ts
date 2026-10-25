@@ -2,11 +2,8 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
-import type {
-  LGraph,
-  Point,
-  SerialisableGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {

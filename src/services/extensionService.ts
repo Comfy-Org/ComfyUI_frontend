@@ -47,16 +47,18 @@ function rejectNestedGraphLoad() {
   )
 }
 
-function createGraphLoadHookApp(app: ComfyApp) {
-  let dispatching = true
-  const hookApp = new Proxy(app, {
-    get(target, property) {
-      if (dispatching && graphLoadEntrypoints.has(property))
-        return rejectNestedGraphLoad
-      const value: unknown = Reflect.get(target, property, target)
-      return typeof value === 'function' ? value.bind(target) : value
-    }
-  })
+function createGraphLoadHookApp(app: ComfyApp, method: string) {
+  let dispatching = graphLoadLifecycleHooks.has(method)
+  const hookApp = dispatching
+    ? new Proxy(app, {
+        get(target, property) {
+          if (dispatching && graphLoadEntrypoints.has(property))
+            return rejectNestedGraphLoad
+          const value: unknown = Reflect.get(target, property, target)
+          return typeof value === 'function' ? value.bind(target) : value
+        }
+      })
+    : app
   return {
     hookApp,
     endDispatch: () => {
@@ -221,10 +223,8 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const graphLoadHook = graphLoadLifecycleHooks.has(method)
-      ? createGraphLoadHookApp(useApp())
-      : undefined
-    const app = graphLoadHook?.hookApp ?? useApp()
+    const graphLoadHook = createGraphLoadHookApp(useApp(), method)
+    const app = graphLoadHook.hookApp
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -276,7 +276,7 @@ export const useExtensionService = () => {
     try {
       return await Promise.all(pending)
     } finally {
-      graphLoadHook?.endDispatch()
+      graphLoadHook.endDispatch()
     }
   }
 

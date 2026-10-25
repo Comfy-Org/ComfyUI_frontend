@@ -93,12 +93,11 @@ import type {
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import {
-  ComponentWidgetImpl,
-  DOMWidgetImpl,
   registerDomWidgets,
   unregisterDomWidgets
-} from '@/scripts/domWidget'
+} from '@/scripts/rootGraphDomWidgets'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
