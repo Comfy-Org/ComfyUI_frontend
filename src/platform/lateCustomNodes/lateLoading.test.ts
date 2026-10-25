@@ -117,6 +117,7 @@ function swallowedByPreloadHelper(
 
 function preloadHelperLoader(attempts: Record<string, Attempt[]>) {
   const runs: Record<string, number> = {}
+  const imported: string[] = []
   const tries = new Map<string, number>()
   const settleTogether = new Promise((resolve) => setTimeout(resolve, 100))
   async function evaluate(ext: string, attempt: Attempt) {
@@ -128,13 +129,20 @@ function preloadHelperLoader(attempts: Record<string, Attempt[]>) {
   }
   return {
     runs,
+    imported,
     loader: {
       importScript: async (ext: string, { retry = false } = {}) => {
         const tried = tries.get(ext) ?? 0
         tries.set(ext, tried + 1)
         try {
-          await importNoticingFetchFailure(retry ? `${ext}?retry=1` : ext, () =>
-            swallowedByPreloadHelper(() => evaluate(ext, attempts[ext][tried]))
+          await importNoticingFetchFailure(
+            retry ? `${ext}?retry=1` : ext,
+            (url) => {
+              imported.push(url)
+              return swallowedByPreloadHelper(() =>
+                evaluate(ext, attempts[ext][tried])
+              )
+            }
           )
           return undefined
         } catch (error) {
@@ -854,6 +862,30 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(10_000)
 
     expect(runs).toEqual(expectedRuns)
+  })
+
+  it('imports a healthy main.js once beside a main.js.backup.js that could not be fetched, and tries only the backup again', async () => {
+    const main = '/extensions/pack/main.js'
+    const backup = '/extensions/pack/main.js.backup.js'
+    const { runs, imported, loader } = preloadHelperLoader({
+      [main]: ['evaluates', 'evaluates'],
+      [backup]: [
+        {
+          fetchFails: `Failed to fetch dynamically imported module: ${absolute(backup)}`
+        },
+        'evaluates'
+      ]
+    })
+
+    void loadCustomExtensionsWithDeadline(
+      [main, backup],
+      loader,
+      new AbortController().signal
+    )
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(imported).toEqual([main, backup, `${backup}?retry=1`])
+    expect(runs).toEqual({ [main]: 1, [backup]: 1 })
   })
 
   it('treats a script that could not be fetched within the wait as late', async () => {
