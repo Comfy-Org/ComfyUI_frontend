@@ -176,7 +176,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -213,7 +213,8 @@ import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
   getAssetSubfolder,
-  getAssetViewUrl
+  getAssetViewUrl,
+  resolveMediaSrc
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -231,7 +232,7 @@ import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 
 const { t } = useI18n()
@@ -469,7 +470,7 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
+      url: resolveMediaSrc(asset.preview_url)
     }
   })
 })

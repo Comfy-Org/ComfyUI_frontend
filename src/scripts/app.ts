@@ -134,6 +134,7 @@ import type {
   ComfyWidgetConstructor,
   CustomComfyWidgetConstructor,
   LoadGraphDataOptions,
+  NodeDefsFetch,
   QueuePromptOptions
 } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -303,6 +304,39 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
+  const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+    return {
+      ...def,
+      category: (typeof def.category === 'string' ? def.category : '')
+        .split('/')
+        .map((category: string) =>
+          st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+        )
+        .join('/')
+    }
+  }
+
+  const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string'
+
+  const entries =
+    typeof response === 'object' &&
+    response !== null &&
+    !Array.isArray(response)
+      ? Object.entries(response)
+      : []
+  const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+    entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+      isNodeDef(entry[1])
+    )
+  )
+  setBackendNodeText(Object.values(defs))
+  return _.mapValues(defs, (def) => translateNodeDef(def))
 }
 
 export class ComfyApp implements IComfyApp {
@@ -1025,37 +1059,14 @@ export class ComfyApp implements IComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      return {
-        ...def,
-        category: (typeof def.category === 'string' ? def.category : '')
-          .split('/')
-          .map((category: string) =>
-            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
-          )
-          .join('/')
-      }
-    }
+    return toNodeDefs(await api.getNodeDefs())
+  }
 
-    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
-      typeof value === 'object' &&
-      value !== null &&
-      typeof (value as { name?: unknown }).name === 'string'
-
-    const response: unknown = await api.getNodeDefs()
-    const entries =
-      typeof response === 'object' &&
-      response !== null &&
-      !Array.isArray(response)
-        ? Object.entries(response)
-        : []
-    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
-      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
-        isNodeDef(entry[1])
-      )
-    )
-    setBackendNodeText(Object.values(defs))
-    return _.mapValues(defs, (def) => translateNodeDef(def))
+  /** Fetches the node definitions, or the HTTP status when the server refused, instead of reading the refusal as definitions. */
+  async fetchNodeDefs(): Promise<NodeDefsFetch> {
+    const response = await api.fetchNodeDefs()
+    if (!response.ok) return { ok: false, status: response.status }
+    return { ok: true, defs: toNodeDefs(await response.json()) }
   }
 
   /**
@@ -1674,7 +1685,11 @@ export class ComfyApp implements IComfyApp {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
       reloadNodeDefs:
-        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
+        options.reloadDefs === false
+          ? undefined
+          : async () => {
+              await this.reloadNodeDefs()
+            },
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
@@ -1964,12 +1979,6 @@ export class ComfyApp implements IComfyApp {
             // Account preconditions (sign-in, subscription, credits) open their
             // own modal and must stay out of the error panel and error count.
             if (promptPrecondition) {
-              // A precondition rejection (e.g. FREE_TIER_EXHAUSTED) never
-              // becomes a job, so it never sets app.lastExecutionError -
-              // the signal auto-queue checks before re-submitting. Without
-              // this, auto-queue would immediately resubmit the same
-              // request it just saw rejected, hammering the endpoint until
-              // the user notices and turns it off.
               useQueueSettingsStore().mode = 'disabled'
               useAccountPreconditionDialog().open(promptPrecondition)
               console.error(error)
@@ -2640,10 +2649,19 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * Reload node definitions and refresh combo lists on all nodes.
+   * Reload node definitions, or register `given` ones, and refresh combo lists on all nodes; definitions owed to `addCustomNodeDefs` go through it first.
+   * Resolves false, changing nothing, when the server refuses the definitions while they are owed.
    */
-  async reloadNodeDefs() {
-    const defs = await this.getNodeDefs()
+  async reloadNodeDefs(
+    given?: Record<string, ComfyNodeDefV1>
+  ): Promise<boolean> {
+    const defs = given ?? (await this.fetchReloadedNodeDefs())
+    if (!defs) return false
+    if (useExtensionStore().takeOwedNodeDefHooks())
+      await useExtensionService().invokeExtensionsAsync(
+        'addCustomNodeDefs',
+        defs
+      )
     for (const nodeId in defs) {
       await this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -2693,6 +2711,23 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    return true
+  }
+
+  private async fetchReloadedNodeDefs(): Promise<
+    Record<string, ComfyNodeDefV1> | undefined
+  > {
+    if (!useExtensionStore().areNodeDefHooksOwed())
+      return await this.getNodeDefs()
+    const fetched = await this.fetchNodeDefs()
+    if (fetched.ok) return fetched.defs
+    reportError(new Error(`GET /object_info answered ${fetched.status}`), {
+      errorType: 'late_extension_failed',
+      surface: 'platform',
+      level: 'warning',
+      tags: { step: 'reloadNodeDefs' }
+    })
+    return undefined
   }
 
   /**
@@ -2706,12 +2741,16 @@ export class ComfyApp implements IComfyApp {
       : undefined
 
     try {
-      await this.reloadNodeDefs()
+      const reloaded = await this.reloadNodeDefs()
 
-      if (this.vueAppReady) {
+      if (this.vueAppReady && reloaded) {
         useToast().success(t('g.updated'), {
           description: t('toastMessages.nodeDefinitionsUpdated'),
           duration: 1000
+        })
+      } else if (this.vueAppReady) {
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
     } catch (error) {
