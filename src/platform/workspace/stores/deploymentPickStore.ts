@@ -156,6 +156,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (boot === undefined || !isVisible.value) return null
     return changeBetween(boot, pickedDeployment.value)
   })
+  const switcherOpenAsks = shallowRef(0)
+
+  function requestSwitcherOpen() {
+    switcherOpenAsks.value++
+  }
 
   /**
    * Orders the answers. Each `load()` takes the next number (`latestRequest`);
@@ -503,6 +508,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     listingRefused,
     bootDeployment,
     changeSinceBoot,
+    switcherOpenAsks,
     load,
     loadOnce,
     bootOnComfyCloud,
@@ -510,7 +516,8 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     pickFromLink,
     followWorkspace,
     setDefault,
-    defaultMovesThisBrowser
+    defaultMovesThisBrowser,
+    requestSwitcherOpen
   }
 })
 

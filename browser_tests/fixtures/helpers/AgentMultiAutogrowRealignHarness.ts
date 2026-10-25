@@ -76,7 +76,7 @@ type ParsedSavedNode = WorkflowJSON04['nodes'][number]
 
 type SavedLinkTarget = readonly [ParsedSavedNode['id'], string]
 
-export class MultiAutogrowRealignHarness {
+export class AgentMultiAutogrowRealignHarness {
   private readonly host = new HostDoc(WORKFLOW_ID, seed, catalog)
   readonly hostSocket: AgentFollowerHostSocket
   readonly topbar: Topbar
@@ -107,13 +107,18 @@ export class MultiAutogrowRealignHarness {
       .locator('img[src*="/api/view"]')
   }
 
-  constructor(private readonly page: Page) {
+  constructor(
+    private readonly page: Page,
+    options: { socketSid?: string } = {}
+  ) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
       WORKFLOW_ID,
       this.host,
       'apply'
     )
+    if (options.socketSid !== undefined)
+      this.hostSocket.reportSocketSid(options.socketSid)
     this.topbar = new Topbar(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.agentPanel = new AgentPanel(page)

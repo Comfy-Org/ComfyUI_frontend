@@ -563,6 +563,83 @@ describe('useDeploymentCompatibility', () => {
     expect(markFor('dep-plain')).toEqual({ kind: 'runs' })
   })
 
+  it('keeps the newest answer when an older check of the same workflow answers last', async () => {
+    const answers: ((value: DeploymentCompatibility) => void)[] = []
+    const checks: Promise<DeploymentCompatibility>[] = []
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockImplementation(
+      () => {
+        const check = new Promise<DeploymentCompatibility>((resolve) => {
+          answers.push(resolve)
+        })
+        checks.push(check)
+        return check
+      }
+    )
+    const { markFor } = setup()
+
+    hoisted.rootGraph = graph({ type: 'KSampler' })
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/core-only.json'
+    })
+    await nextTick()
+    hoisted.rootGraph = rgthreeWorkflow()
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/rgthree.json'
+    })
+    await nextTick()
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(3)
+
+    answers[2](answer)
+    await checks[2]
+    expect(markFor('dep-rgthree')).toEqual({ kind: 'runs' })
+
+    answers[0]({
+      deployments: [
+        { deployment_id: 'dep-rgthree', missing_node_types: [], unknown: true }
+      ],
+      cloud: { missing_node_types: [] }
+    })
+    await checks[0]
+
+    expect(markFor('dep-rgthree')).toEqual({ kind: 'runs' })
+  })
+
+  it('shows no old marks when a workflow comes back and its new check fails', async () => {
+    const { markFor } = setup()
+    await vi.waitFor(() =>
+      expect(markFor('dep-rgthree')).toEqual({ kind: 'runs' })
+    )
+
+    hoisted.rootGraph = graph()
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/empty.json'
+    })
+    await nextTick()
+    expect(markFor('dep-rgthree')).toBeNull()
+
+    let fail: (error: Error) => void = () => {}
+    const failure = new Promise<DeploymentCompatibility>((_, reject) => {
+      fail = reject
+    })
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockReturnValueOnce(
+      failure
+    )
+    hoisted.rootGraph = rgthreeWorkflow()
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/rgthree.json'
+    })
+    await nextTick()
+    expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledTimes(2)
+    expect(markFor('dep-rgthree')).toBeNull()
+    expect(markFor(null)).toBeNull()
+
+    fail(new Error('503'))
+    await failure.catch(() => {})
+
+    expect(markFor('dep-rgthree')).toBeNull()
+    expect(markFor(null)).toBeNull()
+  })
+
   it('starts the deployment listing when nothing has loaded it yet', async () => {
     useDeploymentPickStore().state = { phase: 'idle' }
     vi.mocked(workspaceApi.listDeployments).mockResolvedValue({

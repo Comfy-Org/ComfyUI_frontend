@@ -495,6 +495,31 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
+  it.for([false, true])(
+    'keeps composer commands idle while opening a chat with streaming=%s',
+    async (streaming) => {
+      useAgentComposerStore().setText('Keep this draft')
+      const { emitted } = mount({ openingChat: true, streaming })
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true
+      })
+
+      expect(consultEscapeOverride(event)).toBe(false)
+      const action = screen.getByRole('button', {
+        name: streaming ? 'Stop' : 'Send'
+      })
+      expect(action).toBeDisabled()
+      await userEvent.click(action)
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.keyboard('{Enter}{Escape}')
+
+      expect(emitted().send).toBeUndefined()
+      expect(emitted().stop).toBeUndefined()
+      expect(useAgentComposerStore().draft).toBe('Keep this draft')
+    }
+  )
+
   it('does not stop the run on Escape once focus has left the composer entirely', async () => {
     const onStop = vi.fn()
     const Host = defineComponent({
@@ -1842,6 +1867,7 @@ describe('Composer', () => {
     const { emitted } = mount({ canAttach: true })
 
     await openAddMenu()
+    expect(screen.getByRole('separator')).toBeVisible()
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'Upload images or files' })
     )
@@ -1853,6 +1879,9 @@ describe('Composer', () => {
     const { emitted } = mount({ canOpenAssets: true })
 
     await openAddMenu()
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+    ).toEqual(['Drag in asset from asset panel', 'Nodes', 'Workflows'])
     await userEvent.click(
       await screen.findByRole('menuitem', {
         name: 'Drag in asset from asset panel'
