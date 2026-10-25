@@ -68,13 +68,9 @@ function renderGroup(assets: ReplyAsset[]) {
       plugins: [i18n],
       stubs: {
         MediaLightbox: {
-          props: {
-            allGalleryItems: Array,
-            activeIndex: Number,
-            autoplayVideo: Boolean
-          },
+          props: ['allGalleryItems', 'activeIndex'],
           template:
-            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" :data-autoplay-video="String(autoplayVideo)" />'
+            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
         },
         ReplyAudioCard: {
           props: ['asset', 'title'],
