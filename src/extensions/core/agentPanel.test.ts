@@ -93,7 +93,6 @@ vi.mock(
           hooks?: ConsentOfferHooks
         ) => {
           if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
           onAccept()
         }
       )
@@ -276,7 +275,6 @@ describe('AgentPanel extension flag gate', () => {
       vi.mocked(useAgentConsent().withConsent).mockImplementation(
         async (_trigger, _onAccept, hooks) => {
           if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
         }
       )
     })
@@ -483,7 +481,6 @@ describe('AgentPanel extension flag gate', () => {
         vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
           async (_trigger, _onAccept, hooks) => {
             if (hooks?.canShow?.() === false) return
-            hooks?.onShown?.()
             useAgentConsentIntroductionStore().markResponded()
           }
         )
@@ -535,14 +532,11 @@ describe('AgentPanel extension flag gate', () => {
 
     it('offers again on a later startup when the earlier card was only dismissed', async () => {
       currentUser.value = null
-      vi.mocked(useAgentConsent().withConsent).mockImplementation(
-        async (_trigger, _onAccept, hooks) => {
-          hooks?.onShown?.()
-          openDialog(CONSENT_DIALOG_KEY)
-          await nextTick()
-          closeDialog(CONSENT_DIALOG_KEY)
-        }
-      )
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(async () => {
+        openDialog(CONSENT_DIALOG_KEY)
+        await nextTick()
+        closeDialog(CONSENT_DIALOG_KEY)
+      })
 
       await loadEntryAndSetup()
       await flush()
@@ -659,8 +653,7 @@ describe('AgentPanel extension flag gate', () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, onAccept, hooks) => {
-        hooks?.onShown?.()
+      async (_trigger, onAccept) => {
         await Promise.resolve().then(() => {
           Object.assign(consentStore, { accepted: true })
         })
@@ -690,7 +683,6 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = user
     Object.assign(consentStore, { accepted: false, isChecking: false })
     agentStore.isOpen = false
-    // The card stays up unanswered, as it does until the user clicks.
     vi.mocked(useAgentConsent().withConsent).mockImplementation(
       () => new Promise(() => {})
     )
@@ -702,7 +694,6 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(agentStore.isVisible).toBe(true)
     expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('1')
-    // The launches that open the panel by themselves carry the card.
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledWith(
         'first_load',
@@ -1070,7 +1061,6 @@ describe('AgentPanel extension flag gate', () => {
         activeTour.value = 'appMode'
         await flush()
         if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
       }
     )
 
@@ -1205,7 +1195,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     })
 
-    it('reports an in-flight tour against the workspace the offer was made for', async () => {
+    it('reports an in-flight tour against the current consent scope', async () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
@@ -1612,7 +1602,6 @@ describe('AgentPanel extension flag gate', () => {
         openDialog()
         await flush()
         if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
       }
     )
 
@@ -1804,8 +1793,7 @@ describe('AgentPanel extension flag gate', () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_trigger, _onAccept, hooks) => {
-          hooks?.onShown?.()
+        async () => {
           openDialog(CONSENT_DIALOG_KEY)
           await flush()
           closeDialog(CONSENT_DIALOG_KEY)
@@ -1829,6 +1817,25 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it.for(['getItem', 'setItem'] as const)(
+    'skips the automatic offer when storage %s fails',
+    async (method) => {
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.spyOn(localStorage, method).mockImplementation(() => {
+        throw new Error('Storage unavailable')
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'storage_unavailable'
+      })
     }
   )
 

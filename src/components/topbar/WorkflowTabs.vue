@@ -180,7 +180,7 @@ async function onAgentEntryClick(): Promise<void> {
   try {
     if (agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
+        resulting_state: 'closed'
       })
       agentPanelStore.toggle()
       return

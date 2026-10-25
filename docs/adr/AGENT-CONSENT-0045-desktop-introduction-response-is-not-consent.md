@@ -1,6 +1,6 @@
 # ADR-AGENT-CONSENT-0045: Agent Introduction Response Is Not Consent
 
-Date: 2026-10-20 (revised 2026-10-24: one policy for Cloud and Desktop)
+Date: 2026-10-20
 
 ## Status
 
@@ -16,8 +16,8 @@ used to follow different onboarding policies, chosen from the host at runtime.
 
 ## Decision
 
-Cloud and Desktop share one onboarding policy, and no module checks the host
-for it.
+Revised 2026-10-24: Cloud and Desktop share one onboarding policy, and no
+module checks the host for it.
 
 Keep an introduction-response marker separate from the existing
 account/workspace consent setting. Only Agree or Skip sets this marker; display

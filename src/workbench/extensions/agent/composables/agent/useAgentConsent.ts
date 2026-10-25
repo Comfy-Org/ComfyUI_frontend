@@ -37,7 +37,6 @@ const AgentConsentCard = defineAsyncComponent(
 )
 
 export interface ConsentOfferHooks {
-  onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
 }
@@ -90,7 +89,7 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { onShown, canShow }: ConsentOfferHooks = {}
+    { canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       if (canShow && !canShow()) {
@@ -200,8 +199,6 @@ export function useAgentConsent() {
           onVnodeMounted: () => {
             shown = true
             useTelemetry()?.trackAgentConsentShown({ trigger })
-            if (expectedIdentity && identity.value !== expectedIdentity) return
-            onShown?.()
           },
           onAccept: () => void accept(),
           onReject: () => {

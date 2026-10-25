@@ -66,6 +66,18 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
+function activationVisitsWritable(): boolean {
+  try {
+    const storedVisits = localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, storedVisits ?? '0')
+    if (storedVisits === null)
+      localStorage.removeItem(ACTIVATION_VISITS_STORAGE_KEY)
+    return true
+  } catch {
+    return false
+  }
+}
+
 let registered = false
 
 export function registerAgentPanelExtension(): void {
@@ -164,8 +176,6 @@ export function registerAgentPanelExtension(): void {
       }
 
       const consentCardSeenIn = new Set<string>()
-      // The automatic card belongs to the launches that open the panel by
-      // themselves. Read once, before this launch claims its visit.
       const launchInActivationWindow = !automaticActivationVisitsComplete()
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
@@ -250,6 +260,11 @@ export function registerAgentPanelExtension(): void {
       }
 
       function prepareStartupPanel(): boolean {
+        if (!activationVisitsWritable()) {
+          withholdOffer('storage_unavailable')
+          dropHold()
+          return false
+        }
         if (launchInActivationWindow) return true
         reportOfferExit('activation_window_complete', 'startup')
         dropHold()

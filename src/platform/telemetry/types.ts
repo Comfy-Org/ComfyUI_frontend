@@ -684,8 +684,13 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * are losses (it was owed and did not happen), so **a query over this event
  * must split by `exit`; a total is not a quantity.**
  *
- * Correctly not needed: `consent_already_accepted`, `card_already_seen`.
+ * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
+ * `activation_window_complete`.
  * Owed and not made: everything else.
+ *
+ * A scope that already answered the card (Agree or Skip) ends the attempt with
+ * no event: the offer is not owed, and reporting it would emit once per page
+ * load for every user who has answered.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
  * is downstream of that check, so reporting it would emit once per page load
@@ -754,7 +759,8 @@ export type AgentConsentOfferStage =
    *
    * The only stage that is **not** deduplicated, because it cannot inflate:
    * the automatic path reaches it at most once per consent scope per page load
-   * (the one-shot auto-show key is burned first) and the button path reaches it
+   * (a scope whose card has been on screen is not offered again) and the button
+   * path reaches it
    * once per click, so a repeat here is a repeated attempt rather than a
    * measure of how long the tab was open.
    */

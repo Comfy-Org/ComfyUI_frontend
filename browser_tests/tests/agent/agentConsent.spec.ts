@@ -26,7 +26,8 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     agentConsentAccepted: false,
     initialLocalStorage: {
-      'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true'
+      'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+        'true'
     }
   })
 
@@ -624,7 +625,8 @@ test.describe(
       agentConsentAccepted: false,
       agentConsentWebSession: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
       }
     })
 
@@ -658,7 +660,7 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
-      agentAutoShownReadProbe: true,
+      agentResponseMarkerReadProbe: true,
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
@@ -689,7 +691,7 @@ test.describe(
 
       await test.step('The automatic offer waits behind Getting Started', async () => {
         await expect
-          .poll(() => page.evaluate(() => window.__autoShownReads ?? 0), {
+          .poll(() => page.evaluate(() => window.__responseMarkerReads ?? 0), {
             message: 'the held-offer decision reads the response marker',
             timeout: 15_000
           })

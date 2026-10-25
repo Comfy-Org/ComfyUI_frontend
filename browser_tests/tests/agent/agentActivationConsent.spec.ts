@@ -11,7 +11,8 @@ test.describe(
     test.use({
       agentConsentAccepted: false,
       initialLocalStorage: {
-        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true',
         'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal': 'true'
       }
     })
@@ -278,7 +279,8 @@ test.describe(
       agentConsentAccepted: false,
       agentPanelInitiallyOpen: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
       }
     })
 
