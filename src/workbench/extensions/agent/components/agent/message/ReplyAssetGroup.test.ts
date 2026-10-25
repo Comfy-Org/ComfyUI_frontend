@@ -189,15 +189,13 @@ describe('ReplyAssetGroup', () => {
   })
 
   it('PM-1895 keeps the play badge when the browser refuses the preview', async () => {
-    const play = vi
-      .spyOn(HTMLMediaElement.prototype, 'play')
-      .mockRejectedValue(new Error('NotAllowedError'))
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+      new Error('NotAllowedError')
+    )
     renderGroup([video])
 
     await userEvent.hover(screen.getByTestId('reply-video-preview'))
     expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
-
-    play.mockRestore()
   })
 
   it('renders an audio card per audio asset outside the visual grid', () => {
