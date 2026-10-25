@@ -287,7 +287,7 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, SUBSCRIBE_ACK_TIMEOUT_MS)
   }
 
@@ -376,12 +376,11 @@ export class AgentCrdtDocLifecycle {
       this.staleProbeTimer = null
       if (this.gaveUp) return
       this.armStaleProbe()
-      // A probe that is still awaiting its own answer is the ack timer's job.
       if (this.ackTimer !== null) return
       recordDevEvent(isCatchUpProbe ? 'catchup_probe' : 'stale_probe', {
         workflowId: this.workflowId()
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delayMs)
   }
 
@@ -492,7 +491,13 @@ export class AgentCrdtDocLifecycle {
         attempt: this.subscribeRetryAttempt,
         workflowId: target
       })
-      this.resubscribe()
+      this.resubscribeOrScheduleRetry()
     }, delay)
+  }
+
+  private resubscribeOrScheduleRetry(): void {
+    if (this.resubscribe() !== false) return
+    this.clearStaleProbe()
+    this.scheduleSubscribeRetry()
   }
 }

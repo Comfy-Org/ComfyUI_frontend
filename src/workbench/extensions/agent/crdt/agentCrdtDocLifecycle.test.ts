@@ -85,6 +85,25 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
     ])
   })
 
+  it('keeps retrying when an ack-timeout resubscribe cannot leave the transport', () => {
+    const resubscribe = vi.fn(() => false)
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      vi.fn()
+    )
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(999)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+  })
+
   it('a confirm disarms the ack timer and hands the channel to the recency probe', () => {
     // A bare resubscribe double (not `wire()`'s auto-chaining one) isolates
     // the catch-up-grace-probe/recency-probe handoff from the ack-timeout
@@ -122,6 +141,25 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
       kind: 'stale_probe',
       detail: { workflowId: WORKFLOW_ID }
     })
+  })
+
+  it('keeps retrying when a stale probe cannot leave the transport', () => {
+    const resubscribe = vi.fn(() => false)
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      vi.fn()
+    )
+    lifecycle.onSubscribeConfirmed()
+
+    vi.advanceTimersByTime(SUBSCRIBE_CATCHUP_GRACE_MS)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(499)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
   })
 
   it('PM-1405: an acked-but-contentless resubscribe gets one fast probe per gap, then the full budget', () => {
@@ -531,6 +569,25 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     expect(resubscribe).toHaveBeenCalledTimes(1)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps retrying when a backoff resubscribe cannot leave the transport', () => {
+    const resubscribe = vi.fn(() => false)
+    const lifecycle = new AgentCrdtDocLifecycle(
+      () => WORKFLOW_ID,
+      resubscribe,
+      vi.fn()
+    )
+    lifecycle.onSubscribeRefused('doc_not_found')
+
+    vi.advanceTimersByTime(500)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(999)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
   })
 
   it('notifies once when a permanent refusal supersedes exhaustion', () => {
