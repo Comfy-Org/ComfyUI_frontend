@@ -1,23 +1,22 @@
 <template>
-  <ContextMenu
-    ref="contextMenu"
-    :model="menuItems"
+  <Menu
+    v-bind="menuProps"
+    :items="menuItems"
     :reference="menuReference"
-    @show="onMenuShow"
-    @hide="onMenuHide"
+    update-position-strategy="always"
   >
     <template #item="{ item, hasSubmenu }">
       <div class="flex w-full items-center gap-2">
         <span
           v-if="getItemColor(item)"
-          class="size-5 rounded-full border border-border-default"
+          class="size-5 rounded-full border"
           :style="{ backgroundColor: getItemColor(item) }"
         />
         <i v-else-if="item.icon" :class="cn(item.icon, 'size-4')" />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"
-          class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted-foreground"
+          class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
         >
           {{ item.shortcut }}
         </span>
@@ -27,15 +26,16 @@
         />
       </div>
     </template>
-  </ContextMenu>
+  </Menu>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
+import { usePointMenu } from '@/components/ui/menu/usePointMenu'
 import type {
   MenuItem,
   MenuItemAction,
@@ -50,9 +50,6 @@ import {
 import type { MenuOption } from '@/composables/graph/menuOption'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-const contextMenu = ref<InstanceType<typeof ContextMenu>>()
-const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
 const { getCurrentShape } = useNodeCustomization()
@@ -145,7 +142,8 @@ const menuItems = computed<MenuItem[]>(() =>
   menuOptions.value.map(convertToMenuItem)
 )
 
-function prepareMenu(event: Event) {
+function placeAtEvent(event: Event) {
+  if (event.type === 'contextmenu') event.preventDefault()
   bump()
 
   const { x, y } = getMenuAnchorPosition(event)
@@ -157,29 +155,13 @@ function prepareMenu(event: Event) {
   }
 }
 
-function show(event: MouseEvent) {
-  prepareMenu(event)
-  contextMenu.value?.show(event)
-}
-
-function hide() {
-  contextMenu.value?.hide()
-}
-
-function toggle(event: Event) {
-  prepareMenu(event)
-  contextMenu.value?.toggle(event)
-}
-
-defineExpose({ toggle, hide, isOpen, show })
-
-function onMenuShow() {
-  isOpen.value = true
-}
-
-function onMenuHide() {
-  isOpen.value = false
-}
+const {
+  open: isOpen,
+  menuProps,
+  show,
+  hide,
+  toggle
+} = usePointMenu(placeAtEvent)
 
 onMounted(() => {
   registerNodeOptionsInstance({ toggle, show, hide, isOpen })

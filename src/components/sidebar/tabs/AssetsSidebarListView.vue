@@ -81,6 +81,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -142,9 +143,8 @@ function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
   if (asset.preview_id && isHdrImageFilename(asset.name))
     return hdrPreviewAssetUrl(asset.preview_id)
-  if (mediaType === 'image' || mediaType === 'video') {
-    return asset.preview_url || ''
-  }
+  if (mediaType === 'image' || mediaType === 'video')
+    return resolveMediaSrc(asset.preview_url)
   return ''
 }
 
@@ -181,10 +181,9 @@ function getStackCount(asset: AssetItem): number | undefined {
 
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+    'w-full text-foreground transition-colors hover:bg-accent',
     'cursor-pointer',
-    selected &&
-      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
+    selected && 'bg-accent ring-1 ring-muted-foreground ring-inset'
   )
 }
 

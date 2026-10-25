@@ -7,11 +7,9 @@
     data-testid="apps-sidebar"
   >
     <template #alt-title>
-      <span
-        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
-      >
+      <Badge variant="pill" severity="default" class="ml-2 px-1.5 uppercase">
         {{ $t('g.beta') }}
-      </span>
+      </Badge>
     </template>
     <template #header-actions="{ hasResults }">
       <Button
@@ -38,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'

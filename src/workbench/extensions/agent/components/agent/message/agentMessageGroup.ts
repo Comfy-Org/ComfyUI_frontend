@@ -9,7 +9,7 @@ import type {
   RunApprovalPart,
   TabLinkPart,
   TextPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 export type AgentMessageGroup =
   | { kind: 'text'; parts: TextPart[] }

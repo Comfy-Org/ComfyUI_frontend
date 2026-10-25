@@ -1,4 +1,4 @@
-import type { NodeAddSource } from '../types'
+import type { NodeAddSource } from '@/platform/telemetry/types'
 
 let currentSource: NodeAddSource = 'unknown'
 

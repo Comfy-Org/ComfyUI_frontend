@@ -14,18 +14,19 @@
  */
 import {
   zBillingCapabilities,
+  zBillingCapabilitiesResponse,
   zBillingCapabilityRolloutDefaults,
   zBillingCapabilityScope
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { BillingResult, BillingTransport } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
-import type { CapabilityDenials } from './capabilityDenials.js'
-import { decodeCapabilityDenials } from './capabilityDenials.js'
-import { createScopedReader } from './scopedReader.js'
-import type { ValidatedBillingResponse } from './sharedRead.js'
+import type { BillingResult, BillingTransport } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { sameBillingScope } from './billingScope'
+import type { CapabilityDenials } from './capabilityDenials'
+import { decodeCapabilityDenials } from './capabilityDenials'
+import { createScopedReader } from './scopedReader'
+import type { ValidatedBillingResponse } from './sharedRead'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -59,6 +60,10 @@ export type CapabilityRolloutDefaults = z.infer<
 const CapabilitiesBodySchema = z.object({
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
+  has_parked_billing_operation:
+    zBillingCapabilitiesResponse.shape.has_parked_billing_operation,
+  payment_recovery_available:
+    zBillingCapabilitiesResponse.shape.payment_recovery_available,
   resolved_for: zBillingCapabilityScope,
   revision: z.number(),
   rollout_defaults_applied: zBillingCapabilityRolloutDefaults
@@ -75,6 +80,11 @@ export interface CapabilitiesSnapshot {
    * key never implies the capability was granted — read `capabilities`.
    */
   readonly denials: CapabilityDenials
+  /**
+   * As received. Absent when the server omits it: unknown, not a refusal.
+   */
+  readonly hasParkedBillingOperation?: boolean
+  readonly paymentRecoveryAvailable?: boolean
   /** True values are rollout guidance, not evidence a write will succeed. */
   readonly rolloutDefaultsApplied: CapabilityRolloutDefaults
   readonly revision: number
@@ -179,6 +189,8 @@ export function createCapabilitiesReader(
       value: {
         capabilities: data.capabilities,
         denials,
+        hasParkedBillingOperation: data.has_parked_billing_operation,
+        paymentRecoveryAvailable: data.payment_recovery_available,
         rolloutDefaultsApplied: data.rollout_defaults_applied,
         revision: data.revision,
         scope,

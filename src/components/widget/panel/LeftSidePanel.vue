@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex min-h-0 scrollbar-hide w-full flex-auto flex-col gap-1 overflow-y-auto bg-modal-panel-background px-3"
+    class="flex min-h-0 scrollbar-hide w-full flex-auto flex-col gap-1 overflow-y-auto bg-card px-3"
   >
     <template
       v-for="item in navItems"

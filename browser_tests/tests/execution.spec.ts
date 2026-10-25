@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -79,9 +80,13 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
       await errorOverlay.waitFor({ state: 'hidden' })
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'execution-error-unconnected-slot.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        ...(await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('execution-error-unconnected-slot.png')
     }
   )
 })

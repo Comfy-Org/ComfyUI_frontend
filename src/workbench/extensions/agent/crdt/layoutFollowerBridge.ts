@@ -19,13 +19,13 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
-/**
- * Outbound frames are advisory: the follower's correctness never depends on one
- * arriving. A transport that cannot carry a frame reports `false`; one that
- * throws (the shape `apiTransport` had before this seam was fixed, and the shape
- * any future transport might regress to) is contained here rather than being
- * allowed to abort a Vue watcher or an unmount hook.
- */
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
+}
+
 function trySend(send: () => boolean): boolean {
   try {
     return send()
@@ -196,14 +196,14 @@ export class LayoutFollowerBridge extends EventTarget {
   }
 
   /** Drive intent at the transport. Idempotent and safe to call at any time. */
-  reconcile(): void {
+  reconcile(): boolean {
     const desired = this.desiredWorkflowId
     if (this.sentWorkflowId !== null && this.sentWorkflowId !== desired) {
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (desired === null || this.sentWorkflowId === desired) return false
     if (
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
     ) {
@@ -217,12 +217,14 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: desired }
         })
       )
+      return true
     }
+    return false
   }
 
-  resubscribe(): void {
+  resubscribe(): boolean {
     this.sentWorkflowId = null
-    this.reconcile()
+    return this.reconcile()
   }
 
   reconnect(): void {

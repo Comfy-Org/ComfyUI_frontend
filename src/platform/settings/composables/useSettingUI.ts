@@ -136,7 +136,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/platform/billing/components/settings/CreditsPanel.vue')
     )
   }
 
@@ -164,6 +164,17 @@ export function useSettingUI(
     },
     component: workspaceSettingsPanelComponent,
     props: { section: 'planCredits' }
+  }
+
+  const billingPanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Billing',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/billing/components/billingTab/BillingTab.vue')
+    )
   }
 
   const membersPanel: SettingPanelItem = {
@@ -197,9 +208,10 @@ export function useSettingUI(
 
   const visibleWorkspacePanels = computed<SettingPanelItem[]>(() => {
     if (!shouldShowWorkspacePanel.value) return []
-    const workspacePanels = isCloud
-      ? [planCreditsPanel, membersPanel]
-      : [planCreditsPanel]
+    const planPanel = flags.unifiedBillingSettingsEnabled
+      ? billingPanel
+      : planCreditsPanel
+    const workspacePanels = isCloud ? [planPanel, membersPanel] : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -243,7 +255,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+      () => import('@/platform/keybindings/components/KeybindingPanel.vue')
     )
   }
 
@@ -399,6 +411,10 @@ export function useSettingUI(
     void skillPacksStore.startFlagGate()
   })
 
+  const unifiedBillingSettingsEnabled = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
+
   return {
     panels,
     activeCategory,
@@ -406,6 +422,7 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
+    unifiedBillingSettingsEnabled,
     findCategoryByKey,
     findPanelByKey
   }
