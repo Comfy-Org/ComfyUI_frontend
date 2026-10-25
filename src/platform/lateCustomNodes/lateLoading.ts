@@ -15,6 +15,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
+import { showReadyToast, showStartingToast } from './lateToasts'
+
 interface LateScriptFailure {
   ext: string
   error: unknown
@@ -113,19 +115,19 @@ function reportStartupHookFailures(failures: StartupHookFailure[]) {
     reportLateExtensionFailure(extension, method, error)
 }
 
-function registerHeldExtensions(): ComfyExtension[] {
+function registerHeldExtensions() {
   const service = useExtensionService()
-  return useExtensionStore()
-    .stopHoldingExtensions()
-    .filter((extension) => {
-      try {
-        service.registerExtensionNow(extension)
-        return true
-      } catch (error) {
-        reportLateExtensionFailure(extension, 'register', error)
-        return false
-      }
-    })
+  const held = useExtensionStore().stopHoldingExtensions()
+  const registered = held.filter((extension) => {
+    try {
+      service.registerExtensionNow(extension)
+      return true
+    } catch (error) {
+      reportLateExtensionFailure(extension, 'register', error)
+      return false
+    }
+  })
+  return { registered, allRegistered: registered.length === held.length }
 }
 
 function keepHeldExtensionsForNextEditor() {
@@ -155,7 +157,9 @@ async function fetchNodeDefs() {
   return undefined
 }
 
-async function startLateExtensions(extensions: ComfyExtension[]) {
+async function startLateExtensions(
+  extensions: ComfyExtension[]
+): Promise<boolean> {
   const service = useExtensionService()
   const failures = await service.invokeStartupHook(extensions, 'init')
   const defs = await fetchNodeDefs()
@@ -174,38 +178,71 @@ async function startLateExtensions(extensions: ComfyExtension[]) {
   if (defs) await useApp().reloadNodeDefs(defs)
   failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
   reportStartupHookFailures(failures)
+  return (
+    defs !== undefined &&
+    failures.every(({ extension }) => !extensions.includes(extension))
+  )
 }
 
-async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
+interface BatchOutcome {
+  turnedOn: boolean
+  allStarted: boolean
+}
+
+async function runLateBatch(
+  work: ReturnType<typeof watchLateWork>
+): Promise<BatchOutcome> {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
     timeout: ARTIST_PAUSE_TIMEOUT_MS
   })
-  if (work.isAborted()) return
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
 
-  const extensions = registerHeldExtensions()
-  if (extensions.length > 0) await startLateExtensions(extensions)
-  if (work.isAborted()) return
+  const { registered, allRegistered } = registerHeldExtensions()
+  const allHooksRan =
+    registered.length === 0 || (await startLateExtensions(registered))
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
   useExtensionStore().finishLateExtensions()
   await rebuildOpenWorkflow()
+  return {
+    turnedOn: registered.length > 0,
+    allStarted: allRegistered && allHooksRan
+  }
 }
 
-async function turnOnLateExtensions(
-  firstTries: Promise<(LateScriptFailure | undefined)[]>,
-  loader: ScriptLoader,
+interface LateRun {
+  firstTries: Promise<(LateScriptFailure | undefined)[]>
+  waiting: Set<string>
+  loader: ScriptLoader
   signal: AbortSignal
-) {
-  const work = watchLateWork(signal, keepHeldExtensionsForNextEditor)
+}
+
+async function turnOnLateExtensions(run: LateRun, startedAt: number) {
+  const starting = showStartingToast(startedAt, run.waiting)
+  const work = watchLateWork(run.signal, () => {
+    starting.dismiss()
+    keepHeldExtensionsForNextEditor()
+  })
   try {
-    loader.reportFailures((await firstTries).filter(isNonNullish))
-    await runLateBatch(work)
+    const scriptFailures = (await run.firstTries).filter(isNonNullish)
+    run.loader.reportFailures(scriptFailures)
+    const batch = await runLateBatch(work)
+    if (
+      !work.isAborted() &&
+      batch.turnedOn &&
+      batch.allStarted &&
+      scriptFailures.length === 0
+    )
+      showReadyToast()
   } catch (error) {
-    reportError(error, {
-      errorType: LATE_EXTENSION_ERROR_TYPE,
-      surface: 'platform',
-      level: 'warning'
-    })
+    if (!run.signal.aborted)
+      reportError(error, {
+        errorType: LATE_EXTENSION_ERROR_TYPE,
+        surface: 'platform',
+        level: 'warning'
+      })
   } finally {
+    starting.dismiss()
     work.stop()
     if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   }
@@ -217,8 +254,12 @@ export async function loadCustomExtensionsWithDeadline(
   loader: ScriptLoader,
   signal: AbortSignal
 ) {
+  const startedAt = Date.now()
+  const waiting = new Set(extensions)
   const firstTries = Promise.all(
-    extensions.map((ext) => loader.importScript(ext))
+    extensions.map((ext) =>
+      loader.importScript(ext).finally(() => waiting.delete(ext))
+    )
   )
   const settledInTime = await Promise.race([
     firstTries.then(() => true),
@@ -229,5 +270,5 @@ export async function loadCustomExtensionsWithDeadline(
     return
   }
   useExtensionStore().holdNewExtensions()
-  void turnOnLateExtensions(firstTries, loader, signal)
+  void turnOnLateExtensions({ firstTries, waiting, loader, signal }, startedAt)
 }

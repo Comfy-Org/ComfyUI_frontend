@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -555,5 +556,142 @@ describe('late custom node loading', () => {
     expect(isRegistered('A')).toBe(true)
     expect(log).toEqual([])
     expect(nodeTypesMayStillArrive()).toBe(false)
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('shows a starting toast that counts the seconds and names the packs still loading, then says they are ready', async () => {
+    serve({
+      '/extensions/fast/main.js': { ms: 500, extension: 'Fast' },
+      '/extensions/slow-pack/main.js': { ms: 15_000, extension: 'Slow' }
+    })
+
+    await startEditor()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'loading',
+        title: 'Custom nodes are starting... 2 s',
+        description: expect.stringContaining('Waiting for: slow-pack')
+      })
+    ])
+
+    await vi.advanceTimersByTimeAsync(3_000)
+    expect(useToast().toasts[0].title).toBe('Custom nodes are starting... 5 s')
+
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'info', title: 'Custom nodes are ready' })
+    ])
+  })
+
+  it('drops a pack from the waiting list once it arrives, while another is still loading', async () => {
+    serve({
+      '/extensions/pack-a/main.js': { ms: 5_000, extension: 'A' },
+      '/extensions/pack-b/main.js': { ms: 15_000, extension: 'B' }
+    })
+
+    await startEditor()
+    expect(useToast().toasts[0].description).toContain(
+      'Waiting for: pack-a, pack-b'
+    )
+
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(useToast().toasts[0].description).toContain('Waiting for: pack-b')
+    expect(useToast().toasts[0].description).not.toContain('pack-a')
+  })
+
+  it.for<{ name: string; packs: Record<string, Pack> }>([
+    {
+      name: 'a late script failed while another arrived',
+      packs: {
+        '/extensions/a/main.js': { ms: 3_000, extension: 'A' },
+        '/extensions/b/main.js': { ms: 3_000, fails: true }
+      }
+    },
+    {
+      name: 'a late extension cannot register',
+      packs: {
+        '/extensions/early/main.js': { ms: 500, extension: 'Twin' },
+        '/extensions/late/main.js': { ms: 3_000, extension: 'Twin' },
+        '/extensions/b/main.js': { ms: 3_000, extension: 'B' }
+      }
+    }
+  ])(
+    'takes the starting toast down without saying ready when $name',
+    async ({ packs }) => {
+      serve(packs)
+
+      await startEditor()
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(log).toContain('reloadCurrentWorkflow')
+      expect(useToast().toasts).toEqual([])
+    }
+  )
+
+  it('takes the starting toast down without saying ready when the only late extension fails to set up', async () => {
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        setup: () => {
+          throw new Error('setup failed')
+        }
+      })
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toContain('reloadCurrentWorkflow')
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('takes the starting toast down without saying ready when the node definitions cannot be fetched again', async () => {
+    vi.mocked(app.getNodeDefs).mockRejectedValueOnce(new TypeError('offline'))
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toContain('A:setup')
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('takes the starting toast down without saying ready, and reports it, when the node definitions answer with an HTTP error', async () => {
+    vi.mocked(app.getNodeDefs).mockResolvedValue({})
+    vi.mocked(app.fetchNodeDefs).mockResolvedValue({ ok: false, status: 401 })
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toContain('A:setup')
+    expect(useToast().toasts).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'GET /object_info answered 401' }),
+      expect.objectContaining({ tags: { step: 'getNodeDefs' } })
+    )
+  })
+
+  it('takes the starting toast down and stops counting as soon as the editor is gone, while a script is still loading', async () => {
+    const editor = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 20_000, extension: 'A' } })
+
+    await startEditor(editor.signal)
+    const update = vi.spyOn(useToast(), 'update')
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(useToast().toasts).toEqual([])
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('takes the starting toast down without saying ready when no late extension arrived', async () => {
+    serve({ '/extensions/a/main.js': { ms: 3_000, fails: true } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(useToast().toasts).toEqual([])
   })
 })
