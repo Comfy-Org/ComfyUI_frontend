@@ -5488,7 +5488,11 @@ describe('useAgentSession (v1 composition root)', () => {
       rest: fakeRest({ postMessage }),
       events: source,
       workflow: {
-        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        current: () => ({
+          tabPath: 'workflows/scratch.json',
+          instanceId: 'instance-scratch',
+          isTemporary: true
+        }),
         adopted: vi.fn(),
         draft
       }
