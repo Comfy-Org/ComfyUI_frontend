@@ -2,7 +2,15 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -437,6 +445,40 @@ describe('MediaAssetCard', () => {
         expect(screen.getByText('0:00 / 0:10')).toBeInTheDocument()
       }
     )
+
+    function recordPointerDownsReachingHost() {
+      const reachedHost = vi.fn()
+      document.addEventListener('pointerdown', reachedHost)
+      onTestFinished(() =>
+        document.removeEventListener('pointerdown', reachedHost)
+      )
+      return reachedHost
+    }
+
+    it.for(selectionModifiers)(
+      'lets a $modifier press on the waveform reach the host for marquee selection',
+      async ({ keyDown, keyUp }) => {
+        const user = userEvent.setup()
+        const { waveform } = await renderAudioCard()
+        const reachedHost = recordPointerDownsReachingHost()
+
+        await user.keyboard(keyDown)
+        await user.pointer({ keys: '[MouseLeft>]', target: waveform })
+        await user.keyboard(keyUp)
+
+        expect(reachedHost).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it('keeps a plain press on the waveform from reaching the host', async () => {
+      const user = userEvent.setup()
+      const { waveform } = await renderAudioCard()
+      const reachedHost = recordPointerDownsReachingHost()
+
+      await user.pointer({ keys: '[MouseLeft>]', target: waveform })
+
+      expect(reachedHost).not.toHaveBeenCalled()
+    })
 
     it('seeks without selecting from a plain click on the waveform', async () => {
       const user = userEvent.setup()
