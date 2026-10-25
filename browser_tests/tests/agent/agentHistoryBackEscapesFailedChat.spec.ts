@@ -11,14 +11,6 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// PM-2044: a beta tester could not open any saved chat, and then could not
-// leave Chat history at all - Back retried the chat that had just failed, that
-// retry failed again, and the history screen stayed on screen. New Chat was the
-// only way out, which costs the user the chat they were in. The exit path is a
-// separate defect from whatever makes the open fail, so this spec makes the
-// open fail in the simplest durable way (the transcript request never
-// succeeds) and asserts only that the user can still get back to their chat.
-
 const WORKSPACE_ID = 'personal'
 const THREAD_ID = 'thread-history-back-escape-e2e'
 const THREAD_TITLE = 'Dreamy pastel landscape'
