@@ -2,7 +2,11 @@
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import {
+  useClipboard,
+  useEventListener,
+  useMutationObserver
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -556,18 +560,18 @@ function hasOpenGlobalDialog(): boolean {
   )
 }
 const globalDialogOpen = ref(hasOpenGlobalDialog())
-const globalDialogObserver = new MutationObserver(() => {
-  globalDialogOpen.value = hasOpenGlobalDialog()
-})
-onMounted(() => {
-  globalDialogObserver.observe(document.body, {
+useMutationObserver(
+  document.body,
+  () => {
+    globalDialogOpen.value = hasOpenGlobalDialog()
+  },
+  {
     childList: true,
     subtree: true,
     attributes: true,
     attributeFilter: ['data-state', 'hidden', 'aria-hidden']
-  })
-})
-onBeforeUnmount(() => globalDialogObserver.disconnect())
+  }
+)
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
