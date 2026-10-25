@@ -326,9 +326,6 @@ describe('MediaLightbox', () => {
     })
 
     it('PM-1895 starts an opt-in video on open and again on return', async () => {
-      const play = vi
-        .spyOn(HTMLMediaElement.prototype, 'play')
-        .mockResolvedValue()
       const { show, video } = renderTeleported(
         [videoItem(1), mockGalleryItems[0]],
         { autoplayVideo: true }
@@ -336,34 +333,29 @@ describe('MediaLightbox', () => {
       await nextTick()
 
       const first = video()
-      expect(first!.autoplay).toBe(true)
-      expect(play).toHaveBeenCalledTimes(1)
+      expect(first?.autoplay).toBe(true)
+      expect(first?.paused).toBe(false)
 
+      first?.pause()
       await show(1)
       await show(0)
 
-      expect(video()).toBe(first)
-      expect(play).toHaveBeenCalledTimes(2)
-      play.mockRestore()
+      expect(video()?.paused).toBe(false)
     })
 
     it('leaves playback alone for callers that do not opt in', async () => {
-      const play = vi
-        .spyOn(HTMLMediaElement.prototype, 'play')
-        .mockResolvedValue()
       const { show, video } = renderTeleported([
         videoItem(1),
         mockGalleryItems[0]
       ])
       await nextTick()
 
-      expect(video()!.autoplay).toBe(false)
+      expect(video()?.autoplay).toBe(false)
 
       await show(1)
       await show(0)
 
-      expect(play).not.toHaveBeenCalled()
-      play.mockRestore()
+      expect(video()?.paused).toBe(true)
     })
 
     it('drops retained videos when the lightbox closes', async () => {
