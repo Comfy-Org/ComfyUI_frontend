@@ -25,6 +25,7 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
+  agentMessageDeltaEvent,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -200,16 +201,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect.poll(() => postedMessages.length).toBe(1)
 
     const ws = await getAgentSocket()
-    assert.equal(MESSAGE_DELTA_EVENT.type, 'agent_message_delta')
-    pushEvent(ws, {
-      ...MESSAGE_DELTA_EVENT,
-      data: {
-        ...MESSAGE_DELTA_EVENT.data,
-        delta:
-          '![generated_still.png](https://media.comfy.org/website/comfy-agent/generated_still.png)\n\n' +
+    pushEvent(
+      ws,
+      agentMessageDeltaEvent(
+        '![generated_still.png](https://media.comfy.org/website/comfy-agent/generated_still.png)\n\n' +
           '[generated_clip.mp4](https://media.comfy.org/website/comfy-agent/generated_clip.mp4)'
-      }
-    })
+      )
+    )
 
     await agentPanel.root
       .getByRole('button', { name: 'generated_still.png', exact: true })
