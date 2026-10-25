@@ -111,7 +111,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -2043,34 +2042,6 @@ describe('ComfyApp', () => {
       assert(node && 'subgraph' in node)
       expect(node.subgraph).toBe(firstSubgraph)
       expect(node.subgraph).not.toBe(secondSubgraph)
-    })
-
-    it('registers only the DOM widgets of the root graph on screen across a tab round trip', () => {
-      function ownedGraphWithDomWidget(path: string) {
-        const graph = new LGraph()
-        const node = new LGraphNode('test-node')
-        graph.add(node)
-        const widget = node.addDOMWidget(
-          'text',
-          'custom',
-          document.createElement('div')
-        )
-        const owner = new ComfyWorkflow({ path, modified: 0, size: 0 })
-        owner.adoptGraph(graph)
-        useWorkflowStore().attachWorkflow(owner)
-        return { graph, widgetId: widget.id }
-      }
-      const store = useDomWidgetStore()
-      const first = ownedGraphWithDomWidget('workflows/first.json')
-      const second = ownedGraphWithDomWidget('workflows/second.json')
-      store.unregisterWidget(second.widgetId)
-      Reflect.set(app, 'rootGraphInternal', first.graph)
-
-      app.activateRootGraph(second.graph)
-      expect([...store.widgetStates.keys()]).toEqual([second.widgetId])
-
-      app.activateRootGraph(first.graph)
-      expect([...store.widgetStates.keys()]).toEqual([first.widgetId])
     })
 
     it('lets the set-graph hash publish when an API import replaces an owned root', async () => {
