@@ -276,7 +276,22 @@ function parseErrorBody(text: string): unknown {
   }
 }
 
-function getErrorMessage(body: unknown, fallback: string): string {
+function getBackendErrorMessage(body: unknown): string | undefined {
+  const plain = zAgentError.safeParse(body)
+  if (plain.success) {
+    return typeof plain.data.error === 'string'
+      ? plain.data.error
+      : plain.data.error.message
+  }
+  return isIngestErrorBody(body) ? body.error.message : undefined
+}
+
+function getErrorMessage(
+  body: unknown,
+  status: number,
+  operation: AgentApiOperation,
+  statusText: string
+): string {
   const refused = zAttachmentRejection.safeParse(body)
   if (refused.success) {
     return refusedAttachmentsMessage(
@@ -285,13 +300,16 @@ function getErrorMessage(body: unknown, fallback: string): string {
     )
   }
 
-  const plain = zAgentError.safeParse(body)
-  if (plain.success) {
-    return typeof plain.data.error === 'string'
-      ? plain.data.error
-      : plain.data.error.message
-  }
-  return isIngestErrorBody(body) ? body.error.message : fallback
+  const backendMessage = getBackendErrorMessage(body)
+  const normalizedStatusText = statusText.trim().slice(0, 80)
+  const statusTextSuffix =
+    !normalizedStatusText ||
+    normalizedStatusText.toLowerCase() === 'no error message'
+      ? ''
+      : ` ${normalizedStatusText}`
+  return backendMessage?.trim()
+    ? backendMessage
+    : `Agent request failed (HTTP ${status}${statusTextSuffix}, ${operation})`
 }
 
 const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
@@ -516,7 +534,13 @@ export function createAgentRestClient() {
     credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
-    const message = getErrorMessage(body, response.statusText)
+    const backendMessage = getBackendErrorMessage(body)
+    const message = getErrorMessage(
+      body,
+      response.status,
+      operation,
+      response.statusText
+    )
     const retryAfterSeconds = parseRetryAfter(
       response.headers.get('Retry-After')
     )
@@ -539,7 +563,7 @@ export function createAgentRestClient() {
         authScheme,
         credential,
         body,
-        message
+        message: backendMessage ?? ''
       })
     ) {
       // Callers still receive the backend text for the UI, but their generic
@@ -640,9 +664,10 @@ export function createAgentRestClient() {
     const seenCursors = new Set<string>()
     do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const separator = path.includes('?') ? '&' : '?'
       const result = await requestResult(
         operation,
-        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        `${path}${separator}limit=${LIST_PAGE_SIZE}${after}`,
         { method: 'GET', signal },
         schema
       )
@@ -706,12 +731,19 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(
-    options: { signal?: AbortSignal } = {}
+    options: {
+      signal?: AbortSignal
+      workflowId?: string
+    } = {}
   ): Promise<ThreadListing> {
     if (options.signal?.aborted) return { status: 'aborted' }
+    const workflowQuery =
+      options.workflowId === undefined
+        ? ''
+        : `?workflow_id=${encodeURIComponent(options.workflowId)}`
     const result = await listAllPages(
       'list_threads',
-      '/agent/threads',
+      `/agent/threads${workflowQuery}`,
       zAgentThreads,
       (page) => page.threads,
       options.signal

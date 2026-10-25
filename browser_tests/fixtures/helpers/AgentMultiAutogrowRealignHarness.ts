@@ -25,6 +25,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
@@ -75,7 +76,7 @@ type ParsedSavedNode = WorkflowJSON04['nodes'][number]
 
 type SavedLinkTarget = readonly [ParsedSavedNode['id'], string]
 
-export class MultiAutogrowRealignHarness {
+export class AgentMultiAutogrowRealignHarness {
   private readonly host = new HostDoc(WORKFLOW_ID, seed, catalog)
   readonly hostSocket: AgentFollowerHostSocket
   readonly topbar: Topbar
@@ -106,13 +107,18 @@ export class MultiAutogrowRealignHarness {
       .locator('img[src*="/api/view"]')
   }
 
-  constructor(private readonly page: Page) {
+  constructor(
+    private readonly page: Page,
+    options: { socketSid?: string } = {}
+  ) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
       WORKFLOW_ID,
       this.host,
       'apply'
     )
+    if (options.socketSid !== undefined)
+      this.hostSocket.reportSocketSid(options.socketSid)
     this.topbar = new Topbar(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.agentPanel = new AgentPanel(page)
@@ -392,6 +398,15 @@ export class MultiAutogrowRealignHarness {
             .nodes.find((node) => node.id === TARGET_NODE_ID)?.widgets_values
       )
       .toEqual([SENTINEL_PROMPT, SENTINEL_WIDTH, SENTINEL_HEIGHT])
+  }
+
+  async duplicateWorkflowIntoNewTab(): Promise<void> {
+    await expect(this.topbar.tabs).toHaveCount(1)
+    await new CommandHelper(this.page).executeCommand('Comfy.DuplicateWorkflow')
+    await expect(this.topbar.tabs).toHaveCount(2)
+    await expect(
+      this.topbar.getTab(1).and(this.topbar.getActiveTab())
+    ).toBeVisible()
   }
 
   async switchTabsAwayAndBack(): Promise<void> {

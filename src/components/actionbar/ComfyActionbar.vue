@@ -34,9 +34,9 @@
         <Button
           :tooltip="t('menu.interrupt')"
           tooltip-side="bottom"
-          :variant="isExecutionIdle ? 'secondary' : 'destructive'"
+          :variant="canInterrupt ? 'destructive' : 'secondary'"
           size="icon"
-          :disabled="isExecutionIdle"
+          :disabled="!canInterrupt"
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
@@ -109,6 +109,7 @@ import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -144,7 +145,7 @@ const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
 const { t, n } = useI18n()
-const { isIdle: isExecutionIdle } = storeToRefs(executionStore)
+const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 
@@ -407,8 +408,9 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
 ])
 
 const cancelCurrentJob = async () => {
-  if (isExecutionIdle.value) return
-  await commandStore.execute('Comfy.Interrupt')
+  const jobId = interruptibleJobId.value
+  if (!jobId) return
+  await commandStore.execute('Comfy.Interrupt', { metadata: { jobId } })
 }
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {

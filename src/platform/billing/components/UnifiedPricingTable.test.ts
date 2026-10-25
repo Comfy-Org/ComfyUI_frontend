@@ -707,6 +707,52 @@ describe('UnifiedPricingTable team plan CTA', () => {
       ]
     ])
   })
+  it('checks out a monthly team stop at its served price', async () => {
+    const user = userEvent.setup()
+    useBillingContext().teamCreditStops = computed(() => ({
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_400',
+          credits: 84_400,
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 40_000,
+            price_cents: 39_000,
+            period_charge_cents: 39_000
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 40_000,
+            price_cents: 37_800,
+            period_charge_cents: 453_600
+          }
+        }
+      ]
+    }))
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
+    )
+    expect(emitted('subscribeTeam')).toEqual([
+      [
+        {
+          stop: {
+            id: 'team_400',
+            usd: 400,
+            credits: 84_400,
+            discountedUsd: 390,
+            periodChargeUsd: { monthly: 390, yearly: 4536 }
+          },
+          billingCycle: 'monthly',
+          isChange: false
+        }
+      ]
+    ])
+  })
 })
 
 describe('UnifiedPricingTable outside Cloud', () => {

@@ -1,5 +1,9 @@
 [
   {
+    "id": "playwright:browser_tests/tests/agent/agentJobReopenedAsWorkflow.spec.ts:says why it cannot, when the agent ran a graph it cannot rebuild:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "playwright:browser_tests/tests/agent/agentLayoutQuality.spec.ts:draws every node without overlapping another:1",
     "classification": "live-defect"
   },

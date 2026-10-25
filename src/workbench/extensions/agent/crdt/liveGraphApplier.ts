@@ -73,6 +73,9 @@ export interface FrameChanges {
   interiors?: InteriorChanges
 
   interiorDefinitions?: ReadonlySet<string>
+
+  /** Root group ids the document's `meta.groups` held and no longer does. */
+  removedGroups?: ReadonlySet<string>
 }
 
 export interface RemoteApplyContext {
@@ -758,6 +761,8 @@ export class LiveGraphApplier {
           })
         }
 
+        this.deleteGroups(graph, changes.removedGroups, context)
+
         for (const id of changes.resyncNodes) {
           if (touchedNodes.has(id)) continue
           this.try(context, () => this.syncFields(graph, doc, id))
@@ -916,6 +921,19 @@ export class LiveGraphApplier {
   private deleteNode(graph: LGraph, id: string): void {
     const node = graph.getNodeById(toNodeId(id))
     if (node) graph.remove(node)
+  }
+
+  private deleteGroups(
+    graph: LGraph,
+    ids: ReadonlySet<string> | undefined,
+    context: RemoteApplyContext
+  ): void {
+    for (const id of ids ?? []) {
+      this.try(context, () => {
+        const group = graph.groups.find((group) => String(group.id) === id)
+        if (group) graph.remove(group)
+      })
+    }
   }
 
   private upsertNode(
