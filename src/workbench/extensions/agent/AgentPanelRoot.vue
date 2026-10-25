@@ -548,9 +548,19 @@ const settingStore = useSettingStore()
 // Detects any other open global dialog (e.g. the desktop sign-in confirm
 // shown by desktopLoginRedemption) without depending on the dialog-host
 // domain: reka-ui dialogs render `[role="dialog"][data-state="open"]`, which
-// this component's own coach card never sets.
+// this component's own coach card never sets. Mirrors modalUtil.ts's
+// hasOpenRekaDialog/isRendered (duplicated, not imported, since that file
+// belongs to the keybindings domain) to skip popper-wrapped and hidden
+// dialogs.
 function hasOpenGlobalDialog(): boolean {
-  return document.querySelector('[role="dialog"][data-state="open"]') !== null
+  return Array.from(
+    document.querySelectorAll('[role="dialog"][data-state="open"]')
+  ).some(
+    (dialog) =>
+      dialog.closest('[data-reka-popper-content-wrapper]') === null &&
+      dialog.closest('[hidden], [aria-hidden="true"]') === null &&
+      dialog.checkVisibility({ visibilityProperty: true })
+  )
 }
 // Computed eagerly (not in onMounted) so a dialog already open when this
 // component mounts defers the coach from its very first render, instead of
@@ -564,7 +574,7 @@ onMounted(() => {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['data-state']
+    attributeFilter: ['data-state', 'hidden', 'aria-hidden']
   })
 })
 onBeforeUnmount(() => globalDialogObserver.disconnect())
