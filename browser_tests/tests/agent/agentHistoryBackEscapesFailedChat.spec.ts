@@ -39,18 +39,10 @@ test.describe(
   'Agent chat history exit path',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test('returns to the chat from history after the chat fails to open', async ({
-      page,
-      agentFlagEnabled
-    }) => {
-      test.setTimeout(60_000)
-
+    test.beforeEach(async ({ page, agentFlagEnabled }) => {
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )
-      // The transcript never loads, so neither the stored chat at startup nor
-      // the row the user picks can open. A 500 rather than a 404 keeps the
-      // chat in the list: a 404 would retire it and remove the Back target.
       await page.route('**/api/agent/threads/*/messages', async (route) => {
         if (route.request().method() !== 'GET') return route.fallback()
         await route.fulfill({ status: 500, body: 'transcript unavailable' })
@@ -61,13 +53,18 @@ test.describe(
       await page.route('**/api/experiment/models', (route) =>
         route.fulfill(jsonRoute([]))
       )
-
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         { key: StorageKeys.agentThread(WORKSPACE_ID), threadId: THREAD_ID }
       )
-
       await bootAgentApp(page, agentFlagEnabled)
+    })
+
+    test('returns to the chat from history after the chat fails to open', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+
       const panel = new AgentPanel(page)
       await panel.open(PANEL_MOUNT_TIMEOUT)
 
