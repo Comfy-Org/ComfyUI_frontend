@@ -105,6 +105,7 @@ import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatal
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -874,6 +875,7 @@ export class ComfyApp implements IComfyApp {
     })
     this.addAfterConfigureHandler(graph)
     installNodeAddedTelemetry(graph)
+    applyLegacyGraphPatches(this, graph)
     return graph
   }
 
