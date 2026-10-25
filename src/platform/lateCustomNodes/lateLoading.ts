@@ -429,7 +429,7 @@ function startLateRun(
   )
 }
 
-/** Imports every custom script at once but waits for them only two seconds, and on a first open only once the CPU server exists; extensions registered later, and scripts that could not be fetched, are turned on after startup, until `signal` aborts. */
+/** Loads custom scripts with a two-second wait; later arrivals are turned on until `signal` aborts. */
 export async function loadCustomExtensionsWithDeadline(
   extensions: string[],
   loader: ScriptLoader,
