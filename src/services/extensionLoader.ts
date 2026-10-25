@@ -1,5 +1,9 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import { t } from '@/i18n'
+import {
+  lateLoadingApplies,
+  loadCustomExtensionsWithDeadline
+} from '@/platform/lateCustomNodes/lateLoading'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -184,9 +188,11 @@ export async function notifyNewAgentExtensions() {
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
- * on them.
+ * on them. Late custom extensions stop turning on when `signal` aborts.
  */
-export async function loadExtensions() {
+export async function loadExtensions(
+  signal: AbortSignal = new AbortController().signal
+) {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   extensionStore.loadBootDisabledExtensionNames(
@@ -219,22 +225,32 @@ export async function loadExtensions() {
     await registerCoreExtensions()
   })
   extensionStore.captureCoreExtensions()
-  const outcomes = await bootstrapTracer.settle(
-    'bootstrap/extensions-load-custom',
-    () =>
-      Promise.all(
-        extensions
-          .filter((extension) =>
-            shouldLoadExtension(extension, {
-              isCloudBuild: __DISTRIBUTION__ === 'cloud',
-              disabledPackPaths,
-              disableAllCustomExtensions
-            })
-          )
-          .map((ext) => importCustomExtension(ext))
-      )
+  const customExtensions = extensions.filter((extension) =>
+    shouldLoadExtension(extension, {
+      isCloudBuild: __DISTRIBUTION__ === 'cloud',
+      disabledPackPaths,
+      disableAllCustomExtensions
+    })
   )
-  reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
+  if (lateLoadingApplies()) {
+    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+      loadCustomExtensionsWithDeadline(
+        customExtensions,
+        {
+          importScript: importCustomExtension,
+          reportFailures: reportExtensionLoadFailures
+        },
+        signal
+      )
+    )
+  } else {
+    const outcomes = await bootstrapTracer.settle(
+      'bootstrap/extensions-load-custom',
+      () =>
+        Promise.all(customExtensions.map((ext) => importCustomExtension(ext)))
+    )
+    reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
+  }
   void notifyNewAgentExtensions().catch((cause) => {
     reportError(cause, {
       errorType: 'failure_recording_seen_agent_extensions',

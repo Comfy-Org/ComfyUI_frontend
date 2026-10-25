@@ -55,7 +55,7 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
-import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -353,12 +353,6 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText(name)
   }
 
-  /**
-   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
-   * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
-   * implementations of the same save/reopen round trip.
-   */
   async persistSavedWorkflow(): Promise<void> {
     this.savedWorkflow = await mockSavedWorkflowPersistence(
       this.page,
@@ -718,9 +712,7 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads?*', (route) =>
-      route.fulfill(jsonRoute(emptyAgentThreadList()))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {
@@ -955,11 +947,9 @@ export class AgentConversationHarness {
 
     const canvasBounds = await this.comfyPage.canvas.boundingBox()
     if (!canvasBounds) throw new Error('the graph canvas is not visible')
-    await this.comfyPage.canvas.click({
-      position: {
-        x: position.x - canvasBounds.x,
-        y: position.y - canvasBounds.y
-      }
+    await this.comfyPage.canvasOps.click({
+      x: position.x - canvasBounds.x,
+      y: position.y - canvasBounds.y
     })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
