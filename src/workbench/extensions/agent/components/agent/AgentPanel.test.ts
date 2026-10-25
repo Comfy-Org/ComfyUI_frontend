@@ -376,6 +376,30 @@ describe('AgentPanel', () => {
     ).toBeVisible()
   })
 
+  it('leaves history on Back even when reopening the previous chat keeps failing', async () => {
+    const select = vi.fn().mockResolvedValue(false)
+    mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.historyOpenFailed')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(select.mock.calls.map(([id]) => id)).toEqual(['first', 'previous'])
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
   it.for([true, false])(
     'ignores an older opening that resolves to %s',
     async (result) => {

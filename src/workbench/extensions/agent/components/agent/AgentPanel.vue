@@ -230,7 +230,10 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-async function onSelectHistory(id: string): Promise<void> {
+async function openHistoryChat(
+  id: string,
+  onFailure: 'stay' | 'leave'
+): Promise<void> {
   if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
   const opening: AgentPanelView = {
     ...view.value,
@@ -243,10 +246,15 @@ async function onSelectHistory(id: string): Promise<void> {
     opened = await selectHistory(id, isCurrent)
   } finally {
     if (isCurrent())
-      view.value = opened
-        ? { screen: 'chat' }
-        : { ...opening, selection: { status: 'failed', id } }
+      view.value =
+        opened || onFailure === 'leave'
+          ? { screen: 'chat' }
+          : { ...opening, selection: { status: 'failed', id } }
   }
+}
+
+function onSelectHistory(id: string): Promise<void> {
+  return openHistoryChat(id, 'stay')
 }
 
 function onBackFromHistory(): void {
@@ -257,7 +265,7 @@ function onBackFromHistory(): void {
   )
     view.value = { screen: 'chat' }
   else if (view.value.previousThreadId === null) onNewChat()
-  else void onSelectHistory(view.value.previousThreadId)
+  else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
 function onDeleteHistory(id: string): void {
