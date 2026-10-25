@@ -1020,6 +1020,115 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  describe('terminal follower state', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    function refuse(): void {
+      dispatchFrame('doc_subscribed', { ok: false, workflow_id: 'wf-1' })
+    }
+
+    function refuseForGood(): void {
+      dispatchFrame('doc_subscribed', {
+        ok: false,
+        workflow_id: 'wf-1',
+        code: 'schema_version_mismatch'
+      })
+    }
+
+    it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      refuse()
+
+      expect(status().connected).toBe(false)
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('reports a permanent refusal as terminal, and clears it on the next confirmed subscribe', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      refuseForGood()
+
+      expect(status().terminal).toBe('refused')
+      expect(status().connected).toBe(false)
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      expect(status().terminal).toBeNull()
+      expect(status().connected).toBe(true)
+      unmount()
+    })
+
+    it('reports a schema error as terminal, cleared by the next confirmed subscribe', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+      expect(status().terminal).toBe('schema_error')
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 2 })
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('a retarget clears the terminal state', async () => {
+      const { unmount, status, workflowId } = mountFollower('wf-1')
+      refuseForGood()
+      expect(status().terminal).toBe('refused')
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+      expect(status().terminal).toBeNull()
+
+      vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+      expect(status().terminal).toBe('timeout')
+      unmount()
+    })
+
+    it('a reconnect clears a terminal refusal while the new subscribe is in flight', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      refuseForGood()
+      expect(status().terminal).toBe('refused')
+
+      apiState.target.dispatchEvent(new Event('reconnected'))
+
+      expect(status().terminal).toBeNull()
+      expect(status().connected).toBe(false)
+      unmount()
+    })
+
+    it('reports a refusal terminal once the retry budget is spent', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      for (let attempt = 0; attempt < 6; attempt++) {
+        refuse()
+        vi.advanceTimersByTime(500 * 2 ** attempt)
+      }
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+      expect(status().terminal).toBeNull()
+
+      refuse()
+
+      expect(status().terminal).toBe('refused')
+      unmount()
+    })
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
