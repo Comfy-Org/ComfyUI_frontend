@@ -26,6 +26,20 @@ export interface TabSwitchLens {
   removed: string[]
 }
 
+export interface LegacyGraphInstancePatches {
+  bootOnNodeAdded: string[]
+  overwriteOnNodeRemoved: string[]
+  configure: number
+  serialize: number
+  clear: number
+  beforeChange: number
+  afterChange: number
+  add: string[]
+  remove: string[]
+  stackedAfterChange: string[]
+  safeOnNodeAdded: string[]
+}
+
 interface CapturedMessages {
   clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
   serverFeatureFlags: Record<string, unknown> | null
@@ -61,6 +75,7 @@ declare global {
     __autoShownReads?: number
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
+    __legacyGraphInstancePatches?: LegacyGraphInstancePatches
     __captureHostTelemetry?: (captured: {
       event: string
       properties: Record<string, unknown>
