@@ -196,10 +196,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
 
-    await agentPanel.composer.fill('Generate a short video')
-    await agentPanel.root
-      .getByRole('button', { name: enMessages.agent.send })
-      .click()
+    await agentPanel.sendMessage('Generate a short video')
     await expect.poll(() => postedMessages.length).toBe(1)
 
     const ws = await getAgentSocket()
