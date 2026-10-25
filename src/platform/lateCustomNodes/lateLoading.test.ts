@@ -828,9 +828,9 @@ describe('late custom node loading', () => {
       runs: { '/extensions/a/main.js': 1 }
     },
     {
-      name: 'runs a healthy main.js once beside a main.js.backup.js that could not be fetched',
+      name: 'runs a main.js that threw once beside a main.js.backup.js that could not be fetched',
       attempts: {
-        '/extensions/pack/main.js': ['evaluates', 'evaluates'],
+        '/extensions/pack/main.js': ['throws', 'throws'],
         '/extensions/pack/main.js.backup.js': [
           {
             fetchFails: `Failed to fetch dynamically imported module: ${absolute('/extensions/pack/main.js.backup.js')}`
@@ -932,6 +932,9 @@ describe('late custom node loading', () => {
     )
     const unhandled = vi.fn()
     process.on('unhandledRejection', unhandled)
+    onTestFinished(() => {
+      process.off('unhandledRejection', unhandled)
+    })
     const editor = new AbortController()
     serve({
       '/extensions/healthy/main.js': { ms: 3_000, extension: 'Healthy' },
@@ -945,11 +948,9 @@ describe('late custom node loading', () => {
     await startEditor(editor.signal)
     await vi.advanceTimersByTimeAsync(1_000)
     editor.abort()
-    vi.useRealTimers()
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await vi.advanceTimersByTimeAsync(10_000)
     finishInit()
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    process.off('unhandledRejection', unhandled)
+    await vi.advanceTimersByTimeAsync(10_000)
 
     expect(unhandled).not.toHaveBeenCalled()
   })

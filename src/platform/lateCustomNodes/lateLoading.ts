@@ -89,7 +89,7 @@ function swallowedFailure(url: string, swallowed: unknown[]): Error {
     : new ScriptNotFetched(named)
 }
 
-/** Imports `url` through `load`; rejects as not fetched only when its failure names exactly `url`, so a script that ran is never tried again. */
+/** Imports `url` through `load`; a failure counts as not fetched only when it names exactly `url`. */
 export async function importNoticingFetchFailure(
   url: string,
   load: (url: string) => Promise<unknown>
@@ -391,7 +391,7 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
   }
 }
 
-/** Imports every custom script at once but waits for them only two seconds; extensions registered later, and scripts that could not be fetched, are turned on after startup, until `signal` aborts. */
+/** Imports every custom script, waits two seconds, then turns on what arrives later until `signal` aborts. */
 export async function loadCustomExtensionsWithDeadline(
   extensions: string[],
   loader: ScriptLoader,
