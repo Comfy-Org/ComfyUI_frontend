@@ -1190,6 +1190,23 @@ describe('naming the CPU server step', () => {
     expect(api.fileURL).toHaveBeenCalledTimes(2)
   })
 
+  it('imports nothing when the editor is gone before the first answer about the server', async () => {
+    const editor = new AbortController()
+    vi.mocked(workspaceApi.getDeploymentCpuServer).mockReturnValueOnce(
+      new Promise((answer) =>
+        setTimeout(() => answer({ cpu_server: 'created' }), 500)
+      )
+    )
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    void loadExtensions(editor.signal)
+    await vi.advanceTimersByTimeAsync(200)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fileURL).not.toHaveBeenCalled()
+  })
+
   it('imports nothing after the editor that started the wait is gone', async () => {
     const editor = new AbortController()
     cpuServerAnswers('creating', 'created')

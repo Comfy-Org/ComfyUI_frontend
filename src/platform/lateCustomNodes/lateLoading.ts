@@ -440,8 +440,12 @@ export async function loadCustomExtensionsWithDeadline(
     )
   const readingInTime = await Promise.race([
     firstReading,
-    delay(CPU_SERVER_FIRST_ANSWER_WAIT_MS).then(() => undefined)
+    delay(CPU_SERVER_FIRST_ANSWER_WAIT_MS, { signal }).then(
+      () => undefined,
+      () => undefined
+    )
   ])
+  if (signal.aborted) return
   if (isBeingSetUp(readingInTime)) {
     startLateRun(
       { waiting, loader, signal },
