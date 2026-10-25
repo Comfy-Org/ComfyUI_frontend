@@ -150,6 +150,14 @@ function handleSubscribeRefusal(
   }
 }
 
+function markFinalRefusal(
+  terminal: Ref<AgentCrdtTerminalState>,
+  lifecycle: AgentCrdtDocLifecycle
+): void {
+  if (terminal.value !== null) return
+  if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   nodes: DocNodeDelta,
@@ -349,6 +357,7 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
+    retrySubscription: () => follower.value?.retrySubscription(),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
     docWidgetValue: (nodeId: NodeId, widgetName: string) =>
@@ -718,7 +727,7 @@ function startAgentCrdtFollower(
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
     else lifecycle.stopProbing()
-    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    markFinalRefusal(terminal, lifecycle)
   }
 
   function handleRejectedSubscription(
@@ -733,7 +742,7 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    if (!reseeding) markFinalRefusal(terminal, lifecycle)
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -1198,6 +1207,11 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    retrySubscription: () => {
+      connected.value = false
+      terminal.value = null
+      lifecycle.retry()
+    },
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()
       for (const operation of operations)

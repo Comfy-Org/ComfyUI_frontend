@@ -43,7 +43,7 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
-export type SubscribeGiveUpReason = 'refused' | 'timeout'
+export type SubscribeGiveUpReason = 'refused' | 'retry_exhausted' | 'timeout'
 
 const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
   new Set(['unsupported'])
@@ -267,7 +267,7 @@ export class AgentCrdtDocLifecycle {
         this.ackTimeouts >= SUBSCRIBE_ACK_MAX_TIMEOUTS ||
         this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS
       ) {
-        this.giveUp(workflowId)
+        this.giveUp(workflowId, 'timeout')
         return
       }
       this.subscribeRetryAttempt += 1
@@ -317,6 +317,11 @@ export class AgentCrdtDocLifecycle {
   clearForRetarget(): void {
     this.resetForNewAttempt()
     this.resetNotifiedGiveUp()
+  }
+
+  retry(): void {
+    this.clearForRetarget()
+    this.resubscribe()
   }
 
   /**
@@ -411,16 +416,23 @@ export class AgentCrdtDocLifecycle {
     return true
   }
 
-  private giveUp(workflowId: string): void {
+  private giveUp(
+    workflowId: string,
+    reason: Extract<SubscribeGiveUpReason, 'retry_exhausted' | 'timeout'>
+  ): void {
     this.clearStaleProbe()
     this.gaveUp = true
     recordDevEvent(
-      'subscribe_ack_timeout',
+      reason === 'timeout' ? 'subscribe_ack_timeout' : 'subscribe_retry',
       { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
     reportError(
-      new Error('agent doc subscribe was sent but never acknowledged'),
+      new Error(
+        reason === 'timeout'
+          ? 'agent doc subscribe was sent but never acknowledged'
+          : 'agent doc subscription retries were exhausted'
+      ),
       {
         surface: 'agent',
         errorType: 'failure_confirming_agent_doc_subscribe',
@@ -428,7 +440,7 @@ export class AgentCrdtDocLifecycle {
         tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
       }
     )
-    this.onGaveUp('timeout')
+    this.onGaveUp(reason)
   }
 
   private clearSubscribeRetry(): void {
@@ -442,9 +454,12 @@ export class AgentCrdtDocLifecycle {
 
   private scheduleSubscribeRetry(): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      this.giveUp(target, 'retry_exhausted')
+      return
+    }
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {

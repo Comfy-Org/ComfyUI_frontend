@@ -354,6 +354,32 @@ describe('AgentPanel', () => {
     expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
+  it('shows a recoverable workflow sync failure and emits retry', async () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        syncRetryAvailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.workflowSyncFailedTitle')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('g.retry')
+      })
+    )
+
+    expect(emitted('retrySync')).toHaveLength(1)
+  })
+
   it('keeps a failed opening in history and lets the user retry that row', async () => {
     const select = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
     mountHistory(select)

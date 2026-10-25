@@ -366,14 +366,10 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     })
   })
 
-  it('six consecutive refusals stop retrying with no further subscribe, event, or report', () => {
+  it('reports exhaustion after six retryable refusals and restarts on retry', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
-    // Advance to each backoff boundary in two steps so both sides are
-    // checked: the retry fires exactly at the boundary, and the 15 s ack
-    // timeout it arms is cleared by the next refusal before it can add an
-    // ack-path resubscribe.
     lifecycle.onSubscribeRefused()
     vi.advanceTimersByTime(499)
     expect(resubscribe).toHaveBeenCalledTimes(0)
@@ -415,22 +411,55 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
 
     expect(resubscribe).toHaveBeenCalledTimes(6)
     expect(lifecycle.refusalIsFinal()).toBe(true)
-    expect(onGaveUp).not.toHaveBeenCalled()
-    expect(reportError).not.toHaveBeenCalled()
-    expect(devEvents().map(({ kind }) => kind)).toEqual([
-      'subscribe_retry',
-      'subscribe_retry',
-      'subscribe_retry',
-      'subscribe_retry',
-      'subscribe_retry',
-      'subscribe_retry'
+    expect(onGaveUp).toHaveBeenCalledExactlyOnceWith('retry_exhausted')
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(devEvents()).toEqual([
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 1, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 2, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 3, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 4, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 5, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: { attempt: 6, workflowId: WORKFLOW_ID }
+      },
+      {
+        kind: 'subscribe_retry',
+        detail: {
+          attempt: 6,
+          workflowId: WORKFLOW_ID,
+          terminal: true
+        }
+      }
     ])
 
-    lifecycle.onSubscribeSent(WORKFLOW_ID)
-    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+    lifecycle.retry()
+    expect(resubscribe).toHaveBeenCalledTimes(7)
 
-    expect(resubscribe).toHaveBeenCalledTimes(6)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(500)
+    expect(resubscribe).toHaveBeenCalledTimes(8)
     expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(
+      devEvents()
+        .slice(-2)
+        .map(({ kind }) => kind)
+    ).toEqual(['subscribe_retry', 'subscribe_retry'])
   })
 })
 

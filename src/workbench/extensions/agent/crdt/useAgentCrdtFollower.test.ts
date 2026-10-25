@@ -229,24 +229,38 @@ function mountFollower(
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
   enqueue: (operations: GraphOperation[]) => void
+  retry: () => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
   let enqueue!: (operations: GraphOperation[]) => void
+  let retry!: () => void
   const host = defineComponent({
     setup() {
-      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        { transport, isTargetActive, getGraph, events, canvasFor }
-      )
+      const { status, enqueueHumanOperations, retrySubscription } =
+        useAgentCrdtFollower(workflowId, {
+          transport,
+          isTargetActive,
+          getGraph,
+          events,
+          canvasFor
+        })
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
+      retry = retrySubscription
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue,
+    retry
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -1064,18 +1078,31 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a refusal terminal once the retry budget is spent', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      for (let attempt = 0; attempt < 6; attempt++) {
-        refuse()
-        vi.advanceTimersByTime(500 * 2 ** attempt)
-      }
+    it('reports exhausted retries as recoverable and retries on request', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      refuse()
+      vi.advanceTimersByTime(500)
+      refuse()
+      vi.advanceTimersByTime(1_000)
+      refuse()
+      vi.advanceTimersByTime(2_000)
+      refuse()
+      vi.advanceTimersByTime(4_000)
+      refuse()
+      vi.advanceTimersByTime(8_000)
+      refuse()
+      vi.advanceTimersByTime(16_000)
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 
       refuse()
 
-      expect(status().terminal).toBe('refused')
+      expect(status().terminal).toBe('retry_exhausted')
+
+      retry()
+
+      expect(status().terminal).toBeNull()
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(7)
       unmount()
     })
   })

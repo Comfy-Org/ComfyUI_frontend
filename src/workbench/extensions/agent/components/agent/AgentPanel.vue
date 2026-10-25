@@ -38,6 +38,7 @@ import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/a
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -84,7 +85,8 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false
+  attributeStarterPromptExperiment = false,
+  syncRetryAvailable = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -129,6 +131,7 @@ const {
   freeUsePlacement?: FreeUseVariant
   starterPromptAssignment?: AgentStarterPromptAssignment
   attributeStarterPromptExperiment?: boolean
+  syncRetryAvailable?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -165,6 +168,7 @@ const emit = defineEmits<{
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   starterPromptRendered: [assignment: AgentStarterPromptAssignment]
+  retrySync: []
 }>()
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
@@ -578,6 +582,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           data-testid="agent-composer-stack"
           class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
         >
+          <AgentSyncRetryAlert
+            :visible="syncRetryAvailable"
+            @retry="emit('retrySync')"
+          />
           <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
