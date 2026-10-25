@@ -21,11 +21,13 @@ import {
   AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
   AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
   AGENT_SUBGRAPH_LINK_ID,
+  AGENT_SUBGRAPH_REUSED_HOST_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
   agentOutOfOrderSubgraphFrames,
   agentSubgraphNodeDefs,
   agentSubgraphFrames,
   agentSubgraphInteriorFrames,
+  agentSubgraphReuseFrames,
   agentSubgraphWidgetDriftFrames
 } from '@e2e/fixtures/data/agent/agentSubgraphFollower'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -262,6 +264,76 @@ test.describe(
           path: test.info().outputPath('subgraph-text-edited.png')
         })
       })
+    })
+
+    test('reuses one subgraph definition as an independent second instance', async ({
+      page,
+      getAgentSocket
+    }) => {
+      await page.setViewportSize({ width: 1920, height: 1280 })
+      await bootAgentApp(page, true, {
+        onboardingCompleted: true,
+        settings: { 'Comfy.VueNodes.Enabled': true },
+        objectInfo: agentSubgraphNodeDefs,
+        beforeNavigate: async (page) => {
+          await mockAgentTurnApi(page, {
+            message_id: '824a0b17-5bdc-4410-83d0-e630a2639a12',
+            thread_id: 'fe42337e-7510-45ce-be47-cddc1944eb82',
+            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+          })
+          await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+        }
+      })
+
+      const outboundFrames: string[] = []
+      await loadSeedIntoActiveTab(page, subgraphWorkflow)
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const socket = await getAgentSocket()
+      socket.onMessage((message) => outboundFrames.push(String(message)))
+      await agentPanel.selectWorkflow()
+      await agentPanel.composer.fill('Create a second copy of this module')
+      await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+
+      await expect
+        .poll(() => outboundFrames, { timeout: 15_000 })
+        .toContainEqual(
+          expect.stringMatching(
+            new RegExp(
+              `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+            )
+          )
+        )
+
+      const frames = agentSubgraphReuseFrames()
+      for (const frame of frames.initial) socket.send(JSON.stringify(frame))
+      socket.send(JSON.stringify(frames.reuse))
+
+      await page
+        .getByRole('button', { name: 'Fit View (.)', exact: true })
+        .click()
+      const nodes = new VueNodeHelpers(page)
+      const original = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+      const reused = nodes.getNodeLocator(String(AGENT_SUBGRAPH_REUSED_HOST_ID))
+      await expect(original).toBeVisible()
+      await expect(reused).toBeVisible()
+      await expect(original.getByRole('textbox')).toHaveValue(
+        AGENT_SUBGRAPH_INITIAL_TEXT
+      )
+      await expect(reused.getByRole('textbox')).toHaveValue(
+        AGENT_SUBGRAPH_INITIAL_TEXT
+      )
+      await expect(
+        reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+      ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
+
+      const secondInstanceText = 'a photo of a lighthouse'
+      await reused.getByRole('textbox').fill(secondInstanceText)
+      await reused.getByRole('textbox').blur()
+      await expect(reused.getByRole('textbox')).toHaveValue(secondInstanceText)
+      await expect(original.getByRole('textbox')).toHaveValue(
+        AGENT_SUBGRAPH_INITIAL_TEXT
+      )
     })
 
     test('applies interior widget edits to the subgraph and its host', async ({
