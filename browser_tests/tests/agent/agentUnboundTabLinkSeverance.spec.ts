@@ -131,7 +131,7 @@ test.describe(
         const second = sentTurn(postedMessages, 1)
         expect(second.workflow_id).toBeUndefined()
         test.fail(
-          true,
+          second.draft === undefined,
           'PM-1410: a continuing turn on a still-unbound tab drops its updated draft'
         )
         expect(
