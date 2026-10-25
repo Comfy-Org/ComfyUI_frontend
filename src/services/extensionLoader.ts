@@ -1,5 +1,6 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import { t } from '@/i18n'
+import { askCpuServer } from '@/platform/lateCustomNodes/cpuServerStep'
 import {
   importNoticingFetchFailure,
   lateLoadingApplies,
@@ -213,6 +214,9 @@ export async function loadExtensions(
     window.location.search
   ).has('safe')
 
+  const firstCpuServerReading = lateLoadingApplies()
+    ? askCpuServer()
+    : undefined
   const extensions = await api.getExtensions()
   extensionStore.loadExtensionPackPaths(
     extensions
@@ -243,7 +247,7 @@ export async function loadExtensions(
     })
   )
   const scheduleAgentExtensionDiscovery = createAgentExtensionDiscoveryQueue()
-  if (lateLoadingApplies()) {
+  if (firstCpuServerReading) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
       loadCustomExtensionsWithDeadline(
         customExtensions,
@@ -253,7 +257,8 @@ export async function loadExtensions(
           reportFailures: reportExtensionLoadFailures,
           afterLateRegistration: scheduleAgentExtensionDiscovery
         },
-        signal
+        signal,
+        firstCpuServerReading
       )
     )
   } else {

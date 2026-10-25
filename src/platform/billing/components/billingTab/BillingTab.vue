@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-6" data-testid="billing-tab">
+  <div class="flex flex-col gap-12" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
     <BillingPausedBanner
       :can-manage-billing="capabilities.canManageBilling.value"
@@ -8,36 +8,52 @@
       :banner="planCheckout.banner.value"
       @dismiss="planCheckout.dismiss"
     />
+    <BillingParkedBanner
+      :parked="capabilities.hasParkedBillingOperation.value"
+    />
     <BillingLocalCreditBanner :suppressed="suppressCreditBanner" />
-    <div
-      v-if="load === 'loading'"
-      class="flex flex-col gap-2"
-      data-testid="billing-plan-skeleton"
-      aria-busy="true"
-    >
-      <Skeleton class="h-6 w-1/3" />
-      <Skeleton class="h-4 w-2/3" />
-    </div>
-    <div
-      v-else-if="load === 'error'"
-      class="flex items-center justify-between gap-4"
-      role="alert"
-      data-testid="billing-load-error"
-    >
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.billingTab.loadError') }}
-      </p>
-      <Button variant="secondary" class="shrink-0" @click="retry">
-        {{ $t('workspacePanel.billingTab.tryAgain') }}
-      </Button>
-    </div>
-    <template v-else>
+    <section class="flex flex-col gap-3" data-testid="billing-plan-section">
+      <h2 class="m-0 text-base font-medium text-foreground">
+        {{ $t('workspacePanel.billingTab.credits.plan') }}
+      </h2>
+      <div
+        v-if="load === 'loading'"
+        class="rounded-xl border border-card px-5 py-4"
+        data-testid="billing-plan-skeleton"
+        aria-busy="true"
+      >
+        <div class="flex flex-col gap-2">
+          <Skeleton class="h-6 w-1/3" />
+          <Skeleton class="h-4 w-2/3" />
+        </div>
+      </div>
+      <div
+        v-else-if="load === 'error'"
+        class="flex items-center justify-between gap-4 rounded-xl border border-card px-5 py-4"
+        role="alert"
+        data-testid="billing-load-error"
+      >
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('workspacePanel.billingTab.loadError') }}
+        </p>
+        <Button variant="secondary" size="md" class="shrink-0" @click="retry">
+          {{ $t('workspacePanel.billingTab.tryAgain') }}
+        </Button>
+      </div>
       <BillingPlanRow
+        v-else
         :state="planRow"
         :action="action"
         :can-manage-subscription="capabilities.canManageSubscription.value"
         @open-plan="openPlan"
       />
+    </section>
+
+    <section
+      v-if="load === 'ready'"
+      class="flex flex-col gap-3"
+      data-testid="billing-credits-section"
+    >
       <BillingCreditsCard
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
@@ -50,32 +66,38 @@
           <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
         </template>
       </template>
-    </template>
+    </section>
 
-    <section
-      class="flex items-center justify-between gap-4"
-      data-testid="billing-handoff"
-    >
-      <span class="text-sm wrap-break-word text-muted-foreground">
+    <section class="flex flex-col gap-3" data-testid="billing-handoff">
+      <h2 class="m-0 text-base font-medium text-foreground">
         {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
-      </span>
-      <Button
-        as="a"
-        :href="handoffHref"
-        target="_blank"
-        rel="noopener"
-        variant="secondary"
-        class="shrink-0"
-        @click="trackHandoff"
+      </h2>
+      <div
+        class="flex items-center justify-end rounded-xl border border-card px-5 py-4"
+        data-testid="billing-handoff-card"
       >
-        {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`) }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
-      </Button>
+        <Button
+          as="a"
+          :href="handoffHref"
+          target="_blank"
+          rel="noopener"
+          variant="secondary"
+          size="md"
+          class="shrink-0"
+          @click="trackHandoff"
+        >
+          {{
+            $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
+          }}
+          <i :class="cn(handoffIcon, 'size-4')" aria-hidden="true" />
+        </Button>
+      </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -89,6 +111,7 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingLocalCreditBanner from '@/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
 import BillingPlanCheckoutBanner from '@/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue'
+import BillingParkedBanner from '@/platform/billing/components/billingTab/BillingParkedBanner.vue'
 import BillingPausedBanner from '@/platform/billing/components/billingTab/BillingPausedBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
@@ -147,6 +170,12 @@ const action = computed(() =>
 const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
+)
+
+const handoffIcon = computed(() =>
+  handoffAudience.value === 'owner'
+    ? 'icon-[lucide--arrow-up-right]'
+    : 'icon-[lucide--external-link]'
 )
 
 async function retryBalance() {

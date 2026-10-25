@@ -1,10 +1,10 @@
 <template>
   <section
-    class="flex items-start justify-between gap-4"
+    class="flex items-start justify-between gap-4 rounded-xl border border-card px-5 py-4"
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">
-      <h3 class="m-0 text-base font-semibold wrap-break-word text-foreground">
+      <h3 class="m-0 text-sm font-semibold wrap-break-word text-foreground">
         {{ title }}
       </h3>
       <p
@@ -20,6 +20,7 @@
       <Button
         v-if="action"
         :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        size="md"
         class="shrink-0"
         @click="emit('openPlan')"
       >
