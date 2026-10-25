@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
 
 import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
@@ -572,6 +573,7 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+      expect(useApp().loadGraphData).not.toHaveBeenCalled()
     })
   })
 
