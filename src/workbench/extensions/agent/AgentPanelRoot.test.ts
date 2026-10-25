@@ -34,7 +34,6 @@ vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { useDialogHostState } from '@/components/dialog/useDialogHostState'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
@@ -65,6 +64,7 @@ import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -118,9 +118,6 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
-vi.mock(import('@/components/dialog/useDialogHostState'), { spy: true })
-
-const dialogHostOpen = ref(false)
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -337,10 +334,6 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
-  dialogHostOpen.value = false
-  vi.mocked(useDialogHostState).mockReturnValue({
-    hasOpenDialog: computed(() => dialogHostOpen.value)
-  })
   distribution.isCloud = true
   distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
@@ -907,7 +900,10 @@ describe('AgentPanelRoot onboarding', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-dialog'
     })
-    dialogHostOpen.value = true
+    const dialogStore = useDialogStore()
+    const dialog = dialogStore.showDialog({
+      component: defineComponent({})
+    })
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -918,7 +914,7 @@ describe('AgentPanelRoot onboarding', () => {
       useTelemetry()!.trackAgentOnboardingNotShown
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
 
-    dialogHostOpen.value = false
+    dialogStore.closeDialog({ key: dialog.key })
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
