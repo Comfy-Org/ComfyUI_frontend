@@ -11,6 +11,7 @@ const path = 'workflows/native-draft-readiness.json'
 const pointerKey = 'Comfy.Workflow.ActivePath:draft-readiness-test'
 const payloadKey = `Comfy.Workflow.Draft.v2:personal:${hashPath(path)}`
 const otherPayloadKey = `Comfy.Workflow.Draft.v2:personal:${hashPath('workflows/other.json')}`
+const subjectPayloadKey = `Comfy.Workflow.Draft.v2:user-1:personal:${hashPath(path)}`
 
 function captureDraftReadiness() {
   const expected = zComfyWorkflow.parse(nativeWorkflow)
@@ -39,6 +40,17 @@ describe('native LoRA draft widget readiness', () => {
     sessionStorage.removeItem(pointerKey)
     localStorage.removeItem(payloadKey)
     localStorage.removeItem(otherPayloadKey)
+    localStorage.removeItem(subjectPayloadKey)
+  })
+
+  it('accepts the edited values from a subject-scoped cloud draft', () => {
+    const { expected, isReady } = captureDraftReadiness()
+    localStorage.setItem(
+      subjectPayloadKey,
+      JSON.stringify({ data: JSON.stringify(expected), updatedAt: 1 })
+    )
+
+    expect(isReady()).toBe(true)
   })
 
   it('does not accept another workflow draft with the same edited values', () => {
