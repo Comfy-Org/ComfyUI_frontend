@@ -1684,7 +1684,11 @@ export class ComfyApp implements IComfyApp {
     return refreshMissingModelPipeline({
       graph: this.rootGraph,
       reloadNodeDefs:
-        options.reloadDefs === false ? undefined : () => this.reloadNodeDefs(),
+        options.reloadDefs === false
+          ? undefined
+          : async () => {
+              await this.reloadNodeDefs()
+            },
       missingModelStore: useMissingModelStore(),
       silent: options.silent ?? true
     })
@@ -2644,9 +2648,13 @@ export class ComfyApp implements IComfyApp {
 
   /**
    * Reload node definitions, or register `given` ones, and refresh combo lists on all nodes; definitions owed to `addCustomNodeDefs` go through it first.
+   * Resolves false, changing nothing, when the server refuses the definitions while they are owed.
    */
-  async reloadNodeDefs(given?: Record<string, ComfyNodeDefV1>) {
-    const defs = given ?? (await this.getNodeDefs())
+  async reloadNodeDefs(
+    given?: Record<string, ComfyNodeDefV1>
+  ): Promise<boolean> {
+    const defs = given ?? (await this.fetchReloadedNodeDefs())
+    if (!defs) return false
     if (useExtensionStore().takeOwedNodeDefHooks())
       await useExtensionService().invokeExtensionsAsync(
         'addCustomNodeDefs',
@@ -2701,6 +2709,23 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    return true
+  }
+
+  private async fetchReloadedNodeDefs(): Promise<
+    Record<string, ComfyNodeDefV1> | undefined
+  > {
+    if (!useExtensionStore().areNodeDefHooksOwed())
+      return await this.getNodeDefs()
+    const fetched = await this.fetchNodeDefs()
+    if (fetched.ok) return fetched.defs
+    reportError(new Error(`GET /object_info answered ${fetched.status}`), {
+      errorType: 'late_extension_failed',
+      surface: 'platform',
+      level: 'warning',
+      tags: { step: 'reloadNodeDefs' }
+    })
+    return undefined
   }
 
   /**
@@ -2714,12 +2739,16 @@ export class ComfyApp implements IComfyApp {
       : undefined
 
     try {
-      await this.reloadNodeDefs()
+      const reloaded = await this.reloadNodeDefs()
 
-      if (this.vueAppReady) {
+      if (this.vueAppReady && reloaded) {
         useToast().success(t('g.updated'), {
           description: t('toastMessages.nodeDefinitionsUpdated'),
           duration: 1000
+        })
+      } else if (this.vueAppReady) {
+        useToast().error(t('g.error'), {
+          description: t('toastMessages.nodeDefinitionsUpdateFailed')
         })
       }
     } catch (error) {

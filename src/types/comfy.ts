@@ -212,7 +212,7 @@ export interface ComfyApp {
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
-  reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<void>
+  reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
   refreshComboInNodes(): Promise<void>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2

@@ -101,6 +101,7 @@ describe('late custom node loading', () => {
     }))
     vi.mocked(app.reloadNodeDefs).mockImplementation(async () => {
       log.push('reloadNodeDefs')
+      return true
     })
     vi.mocked(useWorkflowService().reloadCurrentWorkflow).mockImplementation(
       async () => {

@@ -127,6 +127,11 @@ export const useExtensionStore = defineStore('extension', () => {
     nodeDefHooksOwed.value = true
   }
 
+  /** Whether the next node definitions fetched are owed to `addCustomNodeDefs`, without settling the debt. */
+  function areNodeDefHooksOwed(): boolean {
+    return nodeDefHooksOwed.value
+  }
+
   /** Whether fetched node definitions are owed to `addCustomNodeDefs`; settles the debt. */
   function takeOwedNodeDefHooks(): boolean {
     const owed = nodeDefHooksOwed.value
@@ -182,6 +187,7 @@ export const useExtensionStore = defineStore('extension', () => {
     stopHoldingExtensions,
     finishLateExtensions,
     oweNodeDefHooks,
+    areNodeDefHooksOwed,
     takeOwedNodeDefHooks,
     loadDisabledExtensionNames,
     captureCoreExtensions,

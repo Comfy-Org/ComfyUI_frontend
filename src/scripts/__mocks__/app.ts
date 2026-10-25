@@ -115,7 +115,9 @@ const actions = vi.mockObject<
       return { ok: true, defs: {} }
     },
     async registerNodeDef() {},
-    async reloadNodeDefs() {},
+    async reloadNodeDefs() {
+      return true
+    },
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
