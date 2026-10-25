@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Seleciona entre entradas conectadas pelo nome. As entradas podem ser renomeadas clicando duas vezes nelas.",
+    "display_name": "Ramificação",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Insira em uma imagem um objeto descrito em texto simples usando Bria. O Bria renderiza novamente todo o quadro com cerca de 1 megapixel, portanto o resultado não fica alinhado em pixels com a entrada.",
     "display_name": "Bria Adicionar Objeto",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Codifica uma instrução de edição com imagens de referência para uma LoRA de edição MOSS-Image; use-a também para o prompt negativo. As referências são usadas no tamanho em que são fornecidas; dimensione-as primeiro.",
+    "description": "Codifica uma instrução de edição com imagens de referência para uma LoRA de edição MOSS-Image; use-a também para o prompt negativo. As referências são usadas no tamanho em que são fornecidas; redimensione-as antes. Sem um VAE, as imagens vão apenas para o codificador de texto.",
     "display_name": "Codificar Texto MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "O layout com o qual a LoRA de edição foi treinada: MOSS-Image Edit Training do ai-toolkit (com a opção kv_cache ativada ou desativada) ou Moss-Image-Edit. Com kv_cache desativado, as referências também aplicam atenção à imagem que está sendo gerada, portanto são recalculadas a cada etapa."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Define a escala de quanto o modelo presta atenção às imagens que o codificador de texto vê (formatos do ai-toolkit ou sem VAE): 0 as ignora, 1 não as altera, acima de 1 as enfatiza."
+      },
       "images": {
         "name": "imagens"
       },
@@ -25265,7 +25290,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Codifica as imagens como latents de referência para a LoRA de edição."
       }
     },
     "outputs": {

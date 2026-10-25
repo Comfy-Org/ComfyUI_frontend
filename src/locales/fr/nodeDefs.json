@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Sélectionne parmi les entrées connectées selon leur nom. Les entrées peuvent être renommées en double-cliquant dessus.",
+    "display_name": "Branche",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sortie",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Insère dans une image, à l’aide de Bria, un objet décrit en texte brut. Bria restitue à nouveau l’image entière à environ 1 mégapixel ; le résultat n’est donc pas aligné au pixel près avec l’entrée.",
     "display_name": "Bria Ajouter un objet",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Encode une instruction d'édition avec des images de référence pour une LoRA d'édition MOSS-Image ; utilisez-le également pour le prompt négatif. Les références sont utilisées à leur taille d'origine ; mettez-les d'abord à l'échelle.",
+    "description": "Encode une instruction de modification avec des images de référence pour un LoRA de modification MOSS-Image ; utilisez-le également pour le prompt négatif. Les références sont utilisées à leur taille d’origine ; mettez-les d’abord à l’échelle. Sans VAE, les images sont uniquement envoyées à l’encodeur de texte.",
     "display_name": "Encodage de texte pour édition MOSS-Image",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "La mise en page avec laquelle la LoRA d'édition a été entraînée : MOSS-Image Edit Training de ai-toolkit (avec son option kv_cache activée ou désactivée) ou Moss-Image-Edit. Lorsque kv_cache est désactivé, les références prêtent également attention à l'image générée ; elles sont donc recalculées à chaque étape."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Détermine dans quelle mesure le modèle prête attention aux images vues par l’encodeur de texte (formats ai-toolkit ou sans VAE) : 0 les ignore, 1 ne les modifie pas, et une valeur supérieure à 1 les met davantage en avant."
+      },
       "images": {
         "name": "images"
       },
@@ -25265,7 +25290,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Encode les images comme latents de référence pour le LoRA de modification."
       }
     },
     "outputs": {

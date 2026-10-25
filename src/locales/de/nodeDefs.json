@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Wählen Sie anhand des Namens aus den verbundenen Eingängen aus. Eingänge können per Doppelklick umbenannt werden.",
+    "display_name": "Verzweigung",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ausgabe",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Fügen Sie mit Bria ein in Klartext beschriebenes Objekt in ein Bild ein. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
     "display_name": "Bria Objekt hinzufügen",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Kodiert eine Bearbeitungsanweisung mit Referenzbildern für eine MOSS-Image-Edit-LoRA; verwenden Sie sie auch für den negativen Prompt. Die Referenzen werden in ihrer Eingangsgröße verwendet; skalieren Sie sie zuerst.",
+    "description": "Kodiert eine Bearbeitungsanweisung mit Referenzbildern für eine MOSS-Image-Bearbeitungs-LoRA; verwenden Sie sie auch für den negativen Prompt. Die Referenzen werden in der Größe verwendet, in der sie eingehen; skalieren Sie sie zuerst. Ohne VAE werden die Bilder nur an den Text-Encoder weitergegeben.",
     "display_name": "Textkodierung MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "Das Layout, mit dem die Edit-LoRA trainiert wurde: MOSS-Image Edit Training von ai-toolkit (mit aktivierter oder deaktivierter Option kv_cache) oder Moss-Image-Edit. Bei deaktiviertem kv_cache berücksichtigen die Referenzen auch das zu generierende Bild; daher werden sie bei jedem Schritt neu berechnet."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Skaliert, wie stark das Modell die Bilder berücksichtigt, die der Text-Encoder sieht (ai-toolkit-Formate oder kein VAE): 0 ignoriert sie, 1 lässt sie unverändert, über 1 hebt sie hervor."
+      },
       "images": {
         "name": "Bilder"
       },
@@ -25265,7 +25290,8 @@
         "name": "Prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Kodiert die Bilder als Referenz-Latents für die Bearbeitungs-LoRA."
       }
     },
     "outputs": {

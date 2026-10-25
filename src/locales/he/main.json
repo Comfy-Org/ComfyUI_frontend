@@ -1168,6 +1168,7 @@
     "eventType": "סוג האירוע",
     "eventTypes": {
       "accountCreated": "חשבון נוצר",
+      "agentUsage": "שימוש בסוכן",
       "apiNodeUsage": "שימוש בצומת שותף",
       "apiUsage": "שימוש ב-API",
       "creditAdded": "קרדיטים נוספו",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "{count} מתוך {maxSeats} חברים בסך הכול.",
       "totalMembersUnlimited": "{count} חבר בסך הכול. | {count} חברים בסך הכול.",
       "upgradeToTeam": "שדרג ל-Team",
-      "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך.",
-      "upsellBannerEnterpriseEnded": "צור קשר עם מחלקת המכירות כדי להפעיל מחדש את תוכנית ה־Enterprise שלך.",
-      "upsellBannerPlanEnded": "צור קשר עם מחלקת המכירות כדי להפעיל מחדש את התוכנית שלך.",
-      "upsellBannerReactivate": "להוספת חברי צוות נוספים, הפעל מחדש את התוכנית שלך."
+      "upsellBanner": "להוספת חברי צוות, שדרג את התוכנית שלך."
     },
     "menu": {
       "creatorCannotLeave": "יוצר סביבת העבודה לא יכול לעזוב את סביבת העבודה שיצר",

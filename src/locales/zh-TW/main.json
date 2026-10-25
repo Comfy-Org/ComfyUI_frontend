@@ -1168,6 +1168,7 @@
     "eventType": "事件類型",
     "eventTypes": {
       "accountCreated": "帳號已建立",
+      "agentUsage": "代理使用量",
       "apiNodeUsage": "合作夥伴節點使用量",
       "apiUsage": "API 使用量",
       "creditAdded": "已新增點數",
@@ -5797,10 +5798,7 @@
       "totalMembersCount": "共 {maxSeats} 位成員，目前有 {count} 位。",
       "totalMembersUnlimited": "共 {count} 位成員。|共 {count} 位成員。",
       "upgradeToTeam": "升級為團隊方案",
-      "upsellBanner": "若要新增團隊成員，請升級您的方案。",
-      "upsellBannerEnterpriseEnded": "請聯絡業務團隊以重新啟用您的 Enterprise 方案。",
-      "upsellBannerPlanEnded": "請聯絡業務團隊以重新啟用您的方案。",
-      "upsellBannerReactivate": "若要新增更多團隊成員，請重新啟用您的方案。"
+      "upsellBanner": "若要新增團隊成員，請升級您的方案。"
     },
     "menu": {
       "creatorCannotLeave": "工作區建立者無法離開自己建立的工作區",

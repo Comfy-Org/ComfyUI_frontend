@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "Seleziona dagli input collegati in base al nome. Gli input possono essere rinominati facendo doppio clic su di essi.",
+    "display_name": "Diramazione",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Inserisce in un'immagine un oggetto descritto in testo semplice usando Bria. Bria renderizza nuovamente l'intero fotogramma a circa 1 megapixel, quindi il risultato non è allineato a livello di pixel con l'input.",
     "display_name": "Bria Aggiungi oggetto",
@@ -25248,7 +25269,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "Codifica un'istruzione di modifica con immagini di riferimento per un LoRA MOSS-Image Edit; usalo anche per il prompt negativo. I riferimenti vengono utilizzati nelle dimensioni in cui arrivano, quindi ridimensionali prima.",
+    "description": "Codifica un'istruzione di modifica con immagini di riferimento per una LoRA di modifica MOSS-Image; usala anche per il prompt negativo. Le immagini di riferimento vengono usate alle dimensioni in cui arrivano, ridimensionali prima. Senza un VAE, le immagini vengono inviate solo al codificatore di testo.",
     "display_name": "Codifica testo MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25258,6 +25279,10 @@
         "name": "edit_format",
         "tooltip": "Il layout con cui è stato addestrato il LoRA di modifica: MOSS-Image Edit Training di ai-toolkit (con l'opzione kv_cache attivata o disattivata) oppure Moss-Image-Edit. Con kv_cache disattivato, anche i riferimenti partecipano all'attenzione sull'immagine generata, quindi vengono ricalcolati a ogni passaggio."
       },
+      "image_strength": {
+        "name": "image_strength",
+        "tooltip": "Regola quanto il modello presta attenzione alle immagini visualizzate dal codificatore di testo (formati ai-toolkit o nessun VAE): 0 le ignora, 1 non le modifica, oltre 1 le enfatizza."
+      },
       "images": {
         "name": "immagini"
       },
@@ -25265,7 +25290,8 @@
         "name": "prompt"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "Codifica le immagini come latent di riferimento per la LoRA di modifica."
       }
     },
     "outputs": {
