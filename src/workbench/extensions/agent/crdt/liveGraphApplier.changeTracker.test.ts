@@ -34,6 +34,8 @@ import { toNodeId } from '@/types/nodeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { reportError } from '@/platform/telemetry/reportError'
+import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -196,6 +198,33 @@ function restoredAboveMaxDoc() {
     applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
   ).toEqual(['applied'])
   return { doc, collector, node }
+}
+
+function twoRowFollower() {
+  const graph = new LGraph()
+  const node = LiteGraph.createNode('DynamicGroupTest')
+  assert.exists(node)
+  graph.add(node)
+  node.configure({
+    ...node.serialize(),
+    widgets_values: ['head', 2, 0.5, 0.7, 'tail']
+  })
+  const { flags, ...serialized } = node.serialize()
+  const { doc, collector } = followedDoc(
+    { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
+    CATALOG
+  )
+  return { graph, node, doc, collector }
+}
+
+function applyRowCount(doc: Y.Doc, value: number, seq: number) {
+  const write: Op = {
+    ...op({ op: 'set_widget', node_id: 1, widget: 'rows', value }),
+    op_id: `op-rows-${seq}`.padEnd(32, '0'),
+    base_version: seq,
+    stamp: [seq, 'agent:test']
+  }
+  expect(applyOps(doc, [write], CATALOG).outcomes[0].outcome).toBe('applied')
 }
 
 async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
@@ -467,6 +496,52 @@ describe('LiveGraphApplier with the real change tracker', () => {
         }
       ])
     )
+  })
+
+  it('regrows a remotely hidden DynamicGroup row with the value the document kept', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.5, 'tail'])
+
+    applyRowCount(doc, 2, 3)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+  })
+
+  it('does not report a hidden DynamicGroup row the document kept as a missing widget', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const catchUp = new Y.Doc()
+    const catchUpCollector = new DocChangeCollector(catchUp)
+    onTestFinished(() => {
+      catchUpCollector.destroy()
+      catchUp.destroy()
+    })
+    Y.applyUpdate(catchUp, Y.encodeStateAsUpdate(doc))
+    const result = applier.applyChanges(
+      catchUp,
+      catchUpCollector.take(),
+      CONTEXT
+    )
+
+    expect(result.failureCount).toBe(0)
+    expect(reportError).not.toHaveBeenCalled()
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.5, 'tail'])
   })
 
   it('creates a restored DynamicGroup holding more rows than its max on a follower', () => {
