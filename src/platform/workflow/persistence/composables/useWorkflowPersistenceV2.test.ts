@@ -316,9 +316,7 @@ describe('useWorkflowPersistenceV2', () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
       const pending = initializeWorkflow()
 
-      await Promise.resolve()
-
-      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      await vi.waitFor(() => expect(loadWorkflowsSpy).toHaveBeenCalledOnce())
       expect(openWorkflowMock).not.toHaveBeenCalled()
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
 
@@ -439,6 +437,42 @@ describe('useWorkflowPersistenceV2', () => {
       await pending
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('does not open the previous account tabs after a switch during metadata loading', async () => {
+      distributionMocks.isCloud = true
+      Object.assign(useTeamWorkspaceStore(), {
+        initState: 'ready',
+        activeWorkspaceId: 'personal'
+      })
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const accountAWorkflow = workflowStore.createTemporary('AccountA.json')
+      localStorage.setItem(
+        StorageKeys.lastOpenPaths('personal'),
+        JSON.stringify({
+          workspaceId: 'personal',
+          paths: [accountAWorkflow.path],
+          activeIndex: 0
+        })
+      )
+      const gate = createDeferred()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      const pending = restoreWorkflowTabsState()
+      await vi.waitFor(() => expect(loadWorkflowsSpy).toHaveBeenCalledOnce())
+
+      onUserResolved({ id: 'user-b' })
+      gate.resolve()
+      await pending
+      await vi.runAllTimersAsync()
+      localStorage.removeItem(StorageKeys.lastOpenPaths('personal'))
+
+      expect(openWorkflowMock).not.toHaveBeenCalled()
     })
 
     it('falls back to the default workflow when metadata loading fails', async () => {

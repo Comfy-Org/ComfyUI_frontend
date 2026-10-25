@@ -169,8 +169,16 @@ export function useWorkflowPersistenceV2() {
     )
   }
 
-  async function waitForAuthResolution(): Promise<void> {
-    await until(isAuthInitialized).toBe(true)
+  /**
+   * Waits until restore can read a settled cloud identity. The returned check
+   * reports whether a later account switch has taken over the canvas.
+   */
+  async function waitForRestoreIdentity(): Promise<() => boolean> {
+    if (isCloud && !isAuthInitialized.value)
+      await until(isAuthInitialized).toBe(true)
+    const restoreVersion = authTransitionVersion
+    if (isCloud) await authTransition
+    return () => restoreVersion !== authTransitionVersion
   }
 
   async function waitForWorkspaceInitialization(): Promise<void> {
@@ -193,13 +201,14 @@ export function useWorkflowPersistenceV2() {
     stopPendingWorkspaceReadinessWatcher()
     const previousSubject = resolvedAuthSubject
     resolvedAuthSubject = user.id
-    const transitionVersion = ++authTransitionVersion
 
     if (!previousSubject || previousSubject === user.id) {
       draftStore.setAuthSubject(user.id)
       resumePersistenceWhenWorkspaceIsReady()
       return
     }
+
+    const transitionVersion = ++authTransitionVersion
 
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
@@ -319,7 +328,7 @@ export function useWorkflowPersistenceV2() {
       return await resolveStartupOutcome()
     }
 
-    if (isCloud && !isAuthInitialized.value) await waitForAuthResolution()
+    const isRestoreStale = await waitForRestoreIdentity()
 
     try {
       if (getRestorableTabState()) {
@@ -329,6 +338,8 @@ export function useWorkflowPersistenceV2() {
       }
 
       await workflowStore.loadWorkflows()
+      // An account switch during the load owns the canvas from here on.
+      if (isRestoreStale()) return 'restored'
       const restored = await loadPreviousWorkflowFromStorage()
       return restored ? 'restored' : await resolveStartupOutcome()
     } catch (err) {
@@ -419,7 +430,7 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    if (isCloud && !isAuthInitialized.value) await waitForAuthResolution()
+    const isRestoreStale = await waitForRestoreIdentity()
 
     try {
       await workflowStore.loadWorkflows()
@@ -430,7 +441,7 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    const restorableTabState = getRestorableTabState()
+    const restorableTabState = isRestoreStale() ? null : getRestorableTabState()
     if (!restorableTabState) {
       tabStateRestored = true
       return
