@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -9,31 +8,8 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { agentHistoryBackFailure } from '@e2e/fixtures/data/agent/agentHistoryBackFailure'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-
-const WORKSPACE_ID = 'personal'
-const THREAD_ID = 'thread-history-back-escape-e2e'
-const THREAD_TITLE = 'Dreamy pastel landscape'
-const SEEDED_AT = new Date(0).toISOString()
-
-const threadList: AgentThreadListResponse = {
-  pagination: { has_more: false, limit: 100, offset: 0, total: 1 },
-  threads: [
-    {
-      id: THREAD_ID,
-      title: THREAD_TITLE,
-      preview: THREAD_TITLE,
-      status: 'active',
-      message_count: 2,
-      created_at: SEEDED_AT,
-      updated_at: SEEDED_AT,
-      last_message_at: SEEDED_AT,
-      workflow_id: ''
-    }
-  ]
-}
-
-const PANEL_MOUNT_TIMEOUT = 30_000
 
 test.describe(
   'Agent chat history exit path',
@@ -43,7 +19,7 @@ test.describe(
       test.setTimeout(60_000)
 
       await page.route('**/api/agent/threads?*', (route) =>
-        route.fulfill(jsonRoute(threadList))
+        route.fulfill(jsonRoute(agentHistoryBackFailure.threadList))
       )
       await page.route('**/api/agent/threads/*/messages', async (route) => {
         if (route.request().method() !== 'GET') return route.fallback()
@@ -57,7 +33,10 @@ test.describe(
       )
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
-        { key: StorageKeys.agentThread(WORKSPACE_ID), threadId: THREAD_ID }
+        {
+          key: StorageKeys.agentThread(agentHistoryBackFailure.workspaceId),
+          threadId: agentHistoryBackFailure.threadId
+        }
       )
       await bootAgentApp(page, agentFlagEnabled)
     })
@@ -66,13 +45,13 @@ test.describe(
       page
     }) => {
       const panel = new AgentPanel(page)
-      await panel.open(PANEL_MOUNT_TIMEOUT)
+      await panel.open(30_000)
 
       const historyHeading = panel.root.getByRole('heading', {
         name: enMessages.agent.history
       })
       const savedChatRow = panel.root.getByRole('button', {
-        name: THREAD_TITLE,
+        name: agentHistoryBackFailure.threadTitle,
         exact: true
       })
       const backButton = panel.root.getByRole('button', {
