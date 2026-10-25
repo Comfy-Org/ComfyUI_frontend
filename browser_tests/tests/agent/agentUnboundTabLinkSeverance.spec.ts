@@ -16,6 +16,26 @@ import {
 
 const test = mergeTests(agentTest, webSocketFixture)
 
+type WorkflowLink = {
+  originId: number
+  originSlot: number
+  targetId: number
+  targetSlot: number
+}
+
+function carriesLink(body: AgentPostMessageRequest, linkToFind: WorkflowLink) {
+  const links = body.draft?.content?.links
+  if (!Array.isArray(links)) return null
+  return links.some(
+    (link) =>
+      Array.isArray(link) &&
+      link[1] === linkToFind.originId &&
+      link[2] === linkToFind.originSlot &&
+      link[3] === linkToFind.targetId &&
+      link[4] === linkToFind.targetSlot
+  )
+}
+
 test.describe(
   'A continuing Agent thread on a selected unsaved tab',
   { tag: ['@cloud', '@agent', '@canvas', '@node'] },
@@ -41,18 +61,6 @@ test.describe(
         originSlot: 1,
         targetId: 6,
         targetSlot: 0
-      }
-      const carriesSeveredLink = (body: AgentPostMessageRequest) => {
-        const links = body.draft?.content?.links
-        if (!Array.isArray(links)) return null
-        return links.some(
-          (link) =>
-            Array.isArray(link) &&
-            link[1] === severedLink.originId &&
-            link[2] === severedLink.originSlot &&
-            link[3] === severedLink.targetId &&
-            link[4] === severedLink.targetSlot
-        )
       }
 
       await test.step('another tab owns the workflow id the server remembers', async () => {
@@ -91,7 +99,7 @@ test.describe(
         expect(first.open_tabs?.map((tab) => tab.workflow_id)).toContain(
           WORKFLOW_ID
         )
-        expect(carriesSeveredLink(first)).toBe(true)
+        expect(carriesLink(first, severedLink)).toBe(true)
         expect(acceptedTurns).toHaveLength(1)
         expect(acceptedTurns[0].workflow_id).toBe(WORKFLOW_ID)
         const socket = await getAgentSocket()
@@ -117,20 +125,28 @@ test.describe(
           .toBe(false)
       })
 
-      test.fail(
-        true,
-        'PM-1410: a continuing turn on a still-unbound tab drops its updated draft'
-      )
-
       await test.step('the continuing turn carries the updated canvas without the phantom link', async () => {
         await agentPanel.sendMessage(secondPrompt)
         await expect.poll(() => postedMessages.length).toBe(2)
         const second = sentTurn(postedMessages, 1)
         expect(second.workflow_id).toBeUndefined()
+        test.fail(
+          true,
+          'PM-1410: a continuing turn on a still-unbound tab drops its updated draft'
+        )
         expect(
-          carriesSeveredLink(second),
+          carriesLink(second, severedLink),
           'the continuing turn must carry the updated draft without the severed link'
         ).toBe(false)
+        expect(
+          second.draft?.content?.nodes,
+          'the continuing turn must carry the selected tab nodes'
+        ).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: severedLink.originId }),
+            expect.objectContaining({ id: severedLink.targetId })
+          ])
+        )
       })
     })
   }
