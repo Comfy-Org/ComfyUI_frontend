@@ -12,6 +12,7 @@ import {
 const CPU_SERVER_ASK_EVERY_MS = 5000
 const CPU_SERVER_ASK_FOR_MS = 30 * 60_000
 const CPU_SERVER_READ_ERROR_TYPE = 'cpu_server_step_read_failed'
+const CPU_SERVER_UNKNOWN = 'cpu_server_unknown'
 
 type CpuServerAnswer = WorkspaceDeploymentCpuServer['cpu_server'] | 'unknown'
 
@@ -25,7 +26,8 @@ export interface CpuServerReading {
 function readingOfFailure(error: unknown): CpuServerReading {
   if (!(error instanceof WorkspaceApiError)) return { answer: 'unknown', error }
   if (error.status === 404) return { answer: 'none' }
-  if (error.status === 502) return { answer: 'unknown' }
+  if (error.status === 502 && error.code === CPU_SERVER_UNKNOWN)
+    return { answer: 'unknown' }
   return { answer: 'unknown', error }
 }
 

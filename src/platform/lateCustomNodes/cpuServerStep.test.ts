@@ -75,12 +75,23 @@ describe('askCpuServer', () => {
     )
   })
 
-  it('reads a 404 as no CPU server, and a 502 as a step it could not tell', async () => {
+  it('reads a 404 as no CPU server, and a cpu_server_unknown 502 as a step it could not tell', async () => {
     await signIn()
     answers(new WorkspaceApiError('not found', 404), cpuServerUnknown())
 
     await expect(askCpuServer()).resolves.toEqual({ answer: 'none' })
     await expect(askCpuServer()).resolves.toEqual({ answer: 'unknown' })
+  })
+
+  it('keeps a 502 that is not cpu_server_unknown to report', async () => {
+    await signIn()
+    const failure = new WorkspaceApiError('bad gateway', 502)
+    answers(failure)
+
+    await expect(askCpuServer()).resolves.toEqual({
+      answer: 'unknown',
+      error: failure
+    })
   })
 
   it('keeps any other failure to report', async () => {
