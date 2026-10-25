@@ -549,11 +549,15 @@ describe('useAgentCrdtFollower', () => {
       })
     }
 
-    function exhaustRetryBudget(): void {
+    function spendRetryBudget(): void {
       for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
         refuse()
         vi.advanceTimersByTime(delay)
       }
+    }
+
+    function exhaustRetryBudget(): void {
+      spendRetryBudget()
       refuse()
     }
 
@@ -1088,10 +1092,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('reports exhausted retries as recoverable and retries on request', () => {
       const { unmount, status, retry } = mountFollower('wf-1')
-      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
-        refuse()
-        vi.advanceTimersByTime(delay)
-      }
+      spendRetryBudget()
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 

@@ -53,6 +53,16 @@ function devEvents(): { kind: string; detail: unknown }[] {
     .mock.calls.map(([kind, detail]) => ({ kind, detail }))
 }
 
+function refuseWithDelays(
+  lifecycle: AgentCrdtDocLifecycle,
+  delays: readonly number[]
+): void {
+  for (const delay of delays) {
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(delay)
+  }
+}
+
 describe('AgentCrdtDocLifecycle ack timeout', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -462,10 +472,7 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
         .map(({ kind }) => kind)
     ).toEqual(['subscribe_retry', 'subscribe_retry'])
 
-    for (const delay of [1_000, 2_000, 4_000, 8_000, 16_000]) {
-      lifecycle.onSubscribeRefused()
-      vi.advanceTimersByTime(delay)
-    }
+    refuseWithDelays(lifecycle, [1_000, 2_000, 4_000, 8_000, 16_000])
     lifecycle.onSubscribeRefused()
 
     expect(onGaveUp).toHaveBeenCalledTimes(2)
@@ -476,10 +483,7 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     const { lifecycle, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
-    for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
-      lifecycle.onSubscribeRefused()
-      vi.advanceTimersByTime(delay)
-    }
+    refuseWithDelays(lifecycle, [500, 1_000, 2_000, 4_000, 8_000, 16_000])
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(onGaveUp).toHaveBeenCalledExactlyOnceWith('retry_exhausted')
@@ -533,10 +537,7 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     const { lifecycle, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
-    for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
-      lifecycle.onSubscribeRefused()
-      vi.advanceTimersByTime(delay)
-    }
+    refuseWithDelays(lifecycle, [500, 1_000, 2_000, 4_000, 8_000, 16_000])
     lifecycle.onSubscribeRefused()
     lifecycle.onSubscribeRefused('schema_version_mismatch')
     lifecycle.onSubscribeRefused('schema_version_mismatch')
