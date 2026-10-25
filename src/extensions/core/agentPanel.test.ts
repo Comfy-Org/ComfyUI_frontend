@@ -868,6 +868,39 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
+  it('opens the panel on Agree when the second-visit card first appears over a closed panel', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = true
+    let show = () => {}
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, onAccept, hooks) => {
+        await new Promise<void>((resolve) => {
+          show = () => {
+            if (hooks?.canShow?.() !== false) onAccept()
+            resolve()
+          }
+        })
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    agentStore.close('close_button')
+    show()
+    await flush()
+
+    expect(agentStore.open).toHaveBeenCalledWith('automatic_consent')
+    expect(agentStore.isOpen).toBe(true)
+  })
+
   it('does not reopen a dismissed activation panel after flag synchronization', async () => {
     setAgentReady(true)
     agentStore.isOpen = false

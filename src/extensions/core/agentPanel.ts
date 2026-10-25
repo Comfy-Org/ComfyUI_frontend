@@ -238,14 +238,12 @@ export function registerAgentPanelExtension(): void {
         autoShowInFlight = true
         dropHold()
         agentPanelStore.suppressRestoredOpen()
+        let shownOverClosedPanel = false
         void withConsent(
           'first_load',
           () => {
-            if (
-              !agentPanelStore.enabled ||
-              automaticActivationVisitsComplete() ||
-              agentPanelStore.isOpen
-            )
+            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (automaticActivationVisitsComplete() && !shownOverClosedPanel)
               return
             agentPanelStore.open('automatic_consent')
           },
@@ -253,7 +251,9 @@ export function registerAgentPanelExtension(): void {
             canShow: () => {
               const held = screenHolder()
               if (held) holdOffer(held)
-              return held === null && agentPanelStore.enabled
+              const showing = held === null && agentPanelStore.enabled
+              if (showing) shownOverClosedPanel = !agentPanelStore.isOpen
+              return showing
             }
           }
         ).finally(() => finishAutomaticOffer(offeredIdentity))
