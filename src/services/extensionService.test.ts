@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
 
@@ -405,6 +406,138 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
+  })
+})
+
+describe('holding new extensions', () => {
+  it('keeps extensions registered while holding aside, in order, without calling them', () => {
+    const init = vi.fn()
+    useExtensionStore().holdNewExtensions()
+
+    useExtensionService().registerExtension({ name: 'a', init })
+    useExtensionService().registerExtension({ name: 'b' })
+
+    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+    expect(useExtensionStore().isExtensionInstalled('a')).toBe(false)
+    expect(
+      useExtensionStore()
+        .stopHoldingExtensions()
+        .map(({ name }) => name)
+    ).toEqual(['a', 'b'])
+    expect(init).not.toHaveBeenCalled()
+  })
+
+  it('drops a held extension whose disposer runs before holding stops', () => {
+    useExtensionStore().holdNewExtensions()
+    const dispose = useExtensionService().registerExtension({ name: 'gone' })
+
+    dispose()
+
+    expect(useExtensionStore().stopHoldingExtensions()).toEqual([])
+  })
+
+  it('registers as always once holding stops', () => {
+    useExtensionStore().holdNewExtensions()
+    useExtensionStore().stopHoldingExtensions()
+
+    useExtensionService().registerExtension({ name: 'after' })
+
+    expect(useExtensionStore().isHoldingExtensions).toBe(false)
+    expect(useExtensionStore().isExtensionInstalled('after')).toBe(true)
+  })
+
+  it('registers an extension on demand while holding goes on', () => {
+    useExtensionStore().holdNewExtensions()
+
+    useExtensionService().registerExtensionNow({ name: 'now' })
+
+    expect(useExtensionStore().isExtensionInstalled('now')).toBe(true)
+    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+  })
+})
+
+describe('invokeStartupHook', () => {
+  it('runs one startup step on the given extensions only, one after another, with the app', async () => {
+    const events: string[] = []
+    const a = {
+      name: 'a',
+      init: async () => {
+        await Promise.resolve()
+        events.push('a')
+      }
+    }
+    const b = { name: 'b', init: vi.fn(() => void events.push('b')) }
+    const other = { name: 'other', init: vi.fn() }
+    useExtensionStore().registerExtension(other)
+
+    await useExtensionService().invokeStartupHook([a, b], 'init')
+
+    expect(events).toEqual(['a', 'b'])
+    expect(b.init).toHaveBeenCalledWith(useApp())
+    expect(other.init).not.toHaveBeenCalled()
+  })
+
+  it('skips a disabled extension', async () => {
+    const setup = vi.fn()
+    useExtensionStore().loadDisabledExtensionNames(['off'])
+
+    await useExtensionService().invokeStartupHook(
+      [{ name: 'off', setup }],
+      'setup'
+    )
+
+    expect(setup).not.toHaveBeenCalled()
+  })
+
+  it('returns a throwing step and runs the rest', async () => {
+    const error = new Error('boom')
+    const after = vi.fn()
+    const bad = {
+      name: 'bad',
+      setup: () => {
+        throw error
+      }
+    }
+
+    const failures = await useExtensionService().invokeStartupHook(
+      [bad, { name: 'after', setup: after }],
+      'setup'
+    )
+
+    expect(after).toHaveBeenCalledOnce()
+    expect(failures).toEqual([{ extension: bad, method: 'setup', error }])
+  })
+
+  it('returns an extension whose step cannot be read and runs the rest', async () => {
+    const error = new Error('getter')
+    const after = vi.fn()
+    const bad: ComfyExtension = {
+      name: 'bad',
+      get init(): never {
+        throw error
+      }
+    }
+
+    const failures = await useExtensionService().invokeStartupHook(
+      [bad, { name: 'after', init: after }],
+      'init'
+    )
+
+    expect(after).toHaveBeenCalledOnce()
+    expect(failures).toEqual([{ extension: bad, method: 'init', error }])
+  })
+
+  it('passes the step its arguments before the app', async () => {
+    const addCustomNodeDefs = vi.fn()
+    const defs = {}
+
+    await useExtensionService().invokeStartupHook(
+      [{ name: 'a', addCustomNodeDefs }],
+      'addCustomNodeDefs',
+      defs
+    )
+
+    expect(addCustomNodeDefs).toHaveBeenCalledWith(defs, useApp())
   })
 })
 

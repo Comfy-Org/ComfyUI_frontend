@@ -1,4 +1,8 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import {
+  lateLoadingApplies,
+  loadCustomExtensionsWithDeadline
+} from '@/platform/lateCustomNodes/lateLoading'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -109,9 +113,11 @@ export function reportExtensionLoadFailures(
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
- * on them.
+ * on them. Late custom extensions stop turning on when `signal` aborts.
  */
-export async function loadExtensions() {
+export async function loadExtensions(
+  signal: AbortSignal = new AbortController().signal
+) {
   const extensionStore = useExtensionStore()
   extensionStore.loadDisabledExtensionNames(
     useSettingStore().get('Comfy.Extension.Disabled')
@@ -126,16 +132,25 @@ export async function loadExtensions() {
     await registerCoreExtensions()
   })
   extensionStore.captureCoreExtensions()
+  const customExtensions = extensions.filter((extension) =>
+    shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
+  )
+  if (lateLoadingApplies()) {
+    await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
+      loadCustomExtensionsWithDeadline(
+        customExtensions,
+        {
+          importScript: importCustomExtension,
+          reportFailures: reportExtensionLoadFailures
+        },
+        signal
+      )
+    )
+    return
+  }
   const outcomes = await bootstrapTracer.settle(
     'bootstrap/extensions-load-custom',
-    () =>
-      Promise.all(
-        extensions
-          .filter((extension) =>
-            shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
-          )
-          .map((ext) => importCustomExtension(ext))
-      )
+    () => Promise.all(customExtensions.map((ext) => importCustomExtension(ext)))
   )
   reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
 }
