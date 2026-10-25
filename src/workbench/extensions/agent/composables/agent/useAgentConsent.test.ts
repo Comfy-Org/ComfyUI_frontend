@@ -229,11 +229,12 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
-  it.for([false, true])(
-    'records Skip as an introduction response and writes no consent (isCloud=%s)',
-    async (cloud) => {
-      distribution.isCloud = cloud
-      if (cloud) {
+  it.for([
+    { host: 'Local', cloud: false, arrange: () => {} },
+    {
+      host: 'Cloud',
+      cloud: true,
+      arrange: () => {
         vi.mocked(api.apiURL).mockImplementation(
           (path) => `https://api.comfy.test/api${path}`
         )
@@ -241,6 +242,12 @@ describe('useAgentConsent', () => {
           Authorization: 'Bearer workspace-a-token'
         })
       }
+    }
+  ])(
+    'records Skip as an introduction response and writes no consent on $host',
+    async ({ cloud, arrange }) => {
+      distribution.isCloud = cloud
+      arrange()
       const request = useAgentConsent().withConsent('first_load', vi.fn())
       const dialog = await waitForConsentDialog()
       await renderConsentCard(dialog)
