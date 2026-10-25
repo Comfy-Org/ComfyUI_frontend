@@ -16,7 +16,7 @@ const CPU_SERVER_UNKNOWN = 'cpu_server_unknown'
 
 type CpuServerAnswer = WorkspaceDeploymentCpuServer['cpu_server'] | 'unknown'
 
-type CpuServerStep = 'creating' | 'building' | 'starting'
+export type CpuServerStep = 'creating' | 'building' | 'starting'
 
 export interface CpuServerReading {
   answer: CpuServerAnswer
@@ -69,6 +69,15 @@ function stepAfter(
     case 'unknown':
       return step
   }
+}
+
+function stepRead(
+  step: CpuServerStep | undefined,
+  answer: CpuServerAnswer,
+  onUnreadable: () => void
+): CpuServerStep | undefined {
+  if (answer === 'unknown' && step !== undefined) onUnreadable()
+  return stepAfter(step, answer)
 }
 
 async function waitUnlessStopped(
@@ -130,7 +139,8 @@ function unlessStopped<T>(
 async function askUntilSettled(
   firstReading: Promise<CpuServerReading>,
   signal: AbortSignal,
-  step: { value: CpuServerStep | undefined }
+  step: { value: CpuServerStep | undefined },
+  onUnreadable: () => void
 ) {
   const stopAt = Date.now() + CPU_SERVER_ASK_FOR_MS
   let asking = firstReading
@@ -142,7 +152,7 @@ async function askUntilSettled(
       reportReadFailure(reading.error)
       failureReported = true
     }
-    step.value = stepAfter(step.value, reading.answer)
+    step.value = stepRead(step.value, reading.answer, onUnreadable)
     if (reading.answer === 'created' || reading.answer === 'none') return
     if (Date.now() + CPU_SERVER_ASK_EVERY_MS >= stopAt) break
     if (!(await waitUnlessStopped(CPU_SERVER_ASK_EVERY_MS, signal))) break
@@ -156,12 +166,17 @@ export interface CpuServerWatch {
   ready: Promise<void>
 }
 
-/** Follows the CPU server's step from `firstReading`, asking every five seconds until it exists or will not come, for at most half an hour or until `signal` aborts. */
+/** Follows the CPU server's step from `firstReading`, asking every five seconds until it exists or will not come, for at most half an hour or until `signal` aborts; `ready` settles then, or once a step it named can no longer be read. */
 export function watchCpuServer(
   firstReading: Promise<CpuServerReading>,
   signal: AbortSignal
 ): CpuServerWatch {
   const step = shallowRef<CpuServerStep | undefined>()
-  const ready = askUntilSettled(firstReading, signal, step)
+  const ready = new Promise<void>((resolve, reject) => {
+    void askUntilSettled(firstReading, signal, step, resolve).then(
+      resolve,
+      reject
+    )
+  })
   return { step: () => step.value, ready }
 }
