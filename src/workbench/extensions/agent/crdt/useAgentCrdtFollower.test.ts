@@ -52,7 +52,7 @@ const bridgeState = (() => {
     unsubscribe = vi.fn(() => {
       liveSubscriptions.delete(this)
     })
-    resubscribe = vi.fn()
+    resubscribe = vi.fn(() => true)
     reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn(() => {
@@ -547,6 +547,14 @@ describe('useAgentCrdtFollower', () => {
         workflow_id: 'wf-1',
         code: 'schema_version_mismatch'
       })
+    }
+
+    function exhaustRetryBudget(): void {
+      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+        refuse()
+        vi.advanceTimersByTime(delay)
+      }
+      refuse()
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
@@ -1080,18 +1088,10 @@ describe('useAgentCrdtFollower', () => {
 
     it('reports exhausted retries as recoverable and retries on request', () => {
       const { unmount, status, retry } = mountFollower('wf-1')
-      refuse()
-      vi.advanceTimersByTime(500)
-      refuse()
-      vi.advanceTimersByTime(1_000)
-      refuse()
-      vi.advanceTimersByTime(2_000)
-      refuse()
-      vi.advanceTimersByTime(4_000)
-      refuse()
-      vi.advanceTimersByTime(8_000)
-      refuse()
-      vi.advanceTimersByTime(16_000)
+      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+        refuse()
+        vi.advanceTimersByTime(delay)
+      }
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 
@@ -1099,10 +1099,31 @@ describe('useAgentCrdtFollower', () => {
 
       expect(status().terminal).toBe('retry_exhausted')
 
+      bridge().resubscribe.mockReturnValueOnce(false)
+      retry()
+
+      expect(status().terminal).toBe('retry_exhausted')
+
       retry()
 
       expect(status().terminal).toBeNull()
-      expect(bridge().resubscribe).toHaveBeenCalledTimes(7)
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(8)
+      unmount()
+    })
+
+    it('does not retry a permanent refusal that supersedes exhaustion', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      exhaustRetryBudget()
+      expect(status().terminal).toBe('retry_exhausted')
+
+      refuseForGood()
+      expect(status().terminal).toBe('refused')
+      const attempts = bridge().resubscribe.mock.calls.length
+
+      retry()
+
+      expect(status().terminal).toBe('refused')
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
       unmount()
     })
   })

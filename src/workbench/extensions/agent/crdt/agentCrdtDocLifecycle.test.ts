@@ -30,6 +30,7 @@ function wire() {
   const onGaveUp = vi.fn()
   const resubscribe = vi.fn(() => {
     if (workflowId !== null) lifecycle.onSubscribeSent(workflowId)
+    return true
   })
   const lifecycle = new AgentCrdtDocLifecycle(
     () => workflowId,
@@ -460,6 +461,28 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
         .slice(-2)
         .map(({ kind }) => kind)
     ).toEqual(['subscribe_retry', 'subscribe_retry'])
+
+    for (const delay of [1_000, 2_000, 4_000, 8_000, 16_000]) {
+      lifecycle.onSubscribeRefused()
+      vi.advanceTimersByTime(delay)
+    }
+    lifecycle.onSubscribeRefused()
+
+    expect(onGaveUp).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the exhausted-retry reason when the final attempt times out', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+      lifecycle.onSubscribeRefused()
+      vi.advanceTimersByTime(delay)
+    }
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(onGaveUp).toHaveBeenCalledExactlyOnceWith('retry_exhausted')
   })
 })
 

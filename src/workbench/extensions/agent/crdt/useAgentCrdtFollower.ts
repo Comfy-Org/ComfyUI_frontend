@@ -39,7 +39,11 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
+import {
+  RESEED_CONFLICT,
+  isPermanentSubscribeRefusalCode,
+  isRetryableReseedCode
+} from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
@@ -142,20 +146,12 @@ function handleSubscribeRefusal(
   lifecycle: AgentCrdtDocLifecycle
 ): SubscribeRefusalOutcome {
   const code = typeof detail?.code === 'string' ? detail.code : undefined
-  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  const shouldNotify = lifecycle.onSubscribeRefused(code)
   return {
-    shouldNotify: true,
+    shouldNotify,
     message: typeof detail?.message === 'string' ? detail.message : undefined,
     code
   }
-}
-
-function markFinalRefusal(
-  terminal: Ref<AgentCrdtTerminalState>,
-  lifecycle: AgentCrdtDocLifecycle
-): void {
-  if (terminal.value !== null) return
-  if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
 }
 
 function notifyAgentMaterialization(
@@ -726,8 +722,10 @@ function startAgentCrdtFollower(
     const code = typeof detail.code === 'string' ? detail.code : undefined
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
-    else lifecycle.stopProbing()
-    markFinalRefusal(terminal, lifecycle)
+    else {
+      lifecycle.stopProbing()
+      terminal.value = 'refused'
+    }
   }
 
   function handleRejectedSubscription(
@@ -742,7 +740,13 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding) markFinalRefusal(terminal, lifecycle)
+    if (
+      !reseeding &&
+      refusal.code !== undefined &&
+      isPermanentSubscribeRefusalCode(refusal.code) &&
+      lifecycle.refusalIsFinal()
+    )
+      terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -1208,9 +1212,9 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     retrySubscription: () => {
+      if (!lifecycle.retry()) return
       connected.value = false
       terminal.value = null
-      lifecycle.retry()
     },
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()

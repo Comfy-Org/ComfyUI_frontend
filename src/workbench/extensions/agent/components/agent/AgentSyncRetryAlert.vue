@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
-defineProps<{ visible: boolean }>()
+const { visible } = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ retry: [] }>()
 const { t } = useI18n()
 </script>
