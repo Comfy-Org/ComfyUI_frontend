@@ -657,6 +657,22 @@ describe('late custom node loading', () => {
     expect(useToast().toasts).toEqual([])
   })
 
+  it('takes the starting toast down without saying ready, and reports it, when the node definitions answer with an HTTP error', async () => {
+    vi.mocked(app.getNodeDefs).mockResolvedValue({})
+    vi.mocked(app.fetchNodeDefs).mockResolvedValue({ ok: false, status: 401 })
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toContain('A:setup')
+    expect(useToast().toasts).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'GET /object_info answered 401' }),
+      expect.objectContaining({ tags: { step: 'getNodeDefs' } })
+    )
+  })
+
   it('takes the starting toast down and stops counting as soon as the editor is gone, while a script is still loading', async () => {
     const editor = new AbortController()
     serve({ '/extensions/a/main.js': { ms: 20_000, extension: 'A' } })
