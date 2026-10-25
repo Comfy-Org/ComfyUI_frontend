@@ -611,13 +611,28 @@ function dynamicGroupRow(
   node: LGraphNode,
   name: string
 ): { controller: IBaseWidget; index: number } | undefined {
+  let row: { controller: IBaseWidget; index: number } | undefined
   for (const controller of node.widgets ?? []) {
     if (!isDynamicGroupController(controller)) continue
     if (!name.startsWith(`${controller.name}.`)) continue
+    if (row && row.controller.name.length >= controller.name.length) continue
     const [index] = name.slice(controller.name.length + 1).split('.')
-    if (/^\d+$/.test(index)) return { controller, index: Number(index) }
+    if (/^(0|[1-9]\d*)$/.test(index)) row = { controller, index: Number(index) }
   }
-  return undefined
+  return row
+}
+
+/**
+ * Whether `name` is a row field of a DynamicGroup whose count is in `names`. A
+ * regrown row shows the value the document kept for it while hidden.
+ */
+function regrownRow(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  const row = dynamicGroupRow(node, name)
+  return row !== undefined && names.has(row.controller.name)
 }
 
 /**
@@ -1221,7 +1236,9 @@ export class LiveGraphApplier {
       return
     }
     const filtered = Object.fromEntries(
-      Object.entries(widgets).filter(([name]) => names.has(name))
+      Object.entries(widgets).filter(
+        ([name]) => names.has(name) || regrownRow(live, name, names)
+      )
     )
     if (Object.keys(filtered).length === 0) return
     this.applyWidgets(live, filtered, mode, {
@@ -1693,10 +1710,7 @@ function changed(
   name: string,
   names: ReadonlySet<string>
 ): boolean {
-  if (names.has(name)) return true
-  // A regrown row shows the value the document kept for it while hidden.
-  const row = dynamicGroupRow(node, name)
-  if (row !== undefined && names.has(row.controller.name)) return true
+  if (names.has(name) || regrownRow(node, name, names)) return true
   const positional = overflowWidget(node, name)
   return positional !== undefined && names.has(positional.name)
 }
