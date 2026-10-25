@@ -3,6 +3,10 @@ import { toRerouteId } from '@/types/rerouteId'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/linkVisibilityFixture'
+import {
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
@@ -62,28 +66,30 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     comfyPage,
     linkVisibility
   }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+    const region = await screenshotRegion(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs()
+    )
+    await region.expectScreenshot('link-visible.png')
 
     await test.step('Hide the link', async () => {
       await linkVisibility.hideFirstLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await region.expectScreenshot('link-hidden.png')
     })
 
     await test.step('Hovering the badge reveals the hidden link', async () => {
       await linkVisibility.hoverFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-hidden-revealed.png'
-      )
+      await region.expectScreenshot('link-hidden-revealed.png')
     })
 
     await test.step('Leaving the badge hides the link again', async () => {
       await linkVisibility.parkPointer()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await region.expectScreenshot('link-hidden.png')
     })
 
     await test.step('Show the link', async () => {
       await linkVisibility.showFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+      await region.expectScreenshot('link-visible.png')
     })
   })
 
@@ -101,7 +107,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
         )
       )
       .toEqual([{ hidden: true }])
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'link-hidden.png'
+    )
   })
 
   test('persists a hidden renamed link through graph load and browser reload', async ({
@@ -123,7 +133,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.nextFrame()
 
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'link-hidden.png'
+    )
 
     await linkVisibility.openRenamePrompt()
 
@@ -168,14 +182,14 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-collapsed.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('link-stack-collapsed.png')
 
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-hover-reveals-all.png'
-      )
+      await region.expectScreenshot('link-stack-hover-reveals-all.png')
     })
 
     test('expands on click and hovering one label reveals only that link', async ({
@@ -185,7 +199,12 @@ test.describe(
       await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [
+          await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+          ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+        ],
         'link-stack-expanded-hover-one.png'
       )
     })
@@ -248,6 +267,18 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
+      const outputBox = (await outputSlot.boundingBox())!
+      const start = {
+        x: outputBox.x + outputBox.width / 2,
+        y: outputBox.y + outputBox.height / 2
+      }
+      const dragTo = { x: start.x + 160, y: start.y + 120 }
+      const region = await screenshotRegion(comfyPage.page, [
+        sourceNode.root,
+        targetNode.root,
+        dragTo
+      ])
+
       await test.step('Hide the link', async () => {
         await linkVisibility.hideLinkBetween({
           sourceTitle: 'Load Checkpoint',
@@ -255,58 +286,36 @@ test.describe(
           targetTitle: 'VAE Decode',
           inputName: 'vae'
         })
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
 
       await test.step('Input hover reveals the hidden link', async () => {
         await inputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-input.png'
-        )
+        await region.expectScreenshot('vue-link-revealed-from-input.png')
       })
 
       await test.step('Leaving the input hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
 
       await test.step('Output hover reveals the hidden link', async () => {
         await outputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-output.png'
-        )
+        await region.expectScreenshot('vue-link-revealed-from-output.png')
       })
 
       await test.step('Leaving the output hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
-
-      const outputBox = (await outputSlot.boundingBox())!
-      const inputBox = (await inputSlot.boundingBox())!
-      const start = {
-        x: outputBox.x + outputBox.width / 2,
-        y: outputBox.y + outputBox.height / 2
-      }
-      const dragTo = { x: start.x + 160, y: start.y + 120 }
-      const margin = 40
-      const left = Math.min(start.x, inputBox.x) - margin
-      const top = Math.min(start.y, inputBox.y) - margin
-      const linkRegion = {
-        x: left,
-        y: top,
-        width: Math.max(dragTo.x, inputBox.x + inputBox.width) + margin - left,
-        height: Math.max(dragTo.y, inputBox.y + inputBox.height) + margin - top
-      }
 
       await test.step('Dragging away from the output keeps the link revealed', async () => {
         await comfyMouse.move(start)
         await comfyMouse.drag(dragTo)
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-link-revealed-while-dragging-output.png',
-          { clip: linkRegion }
+        await region.expectScreenshot(
+          'vue-link-revealed-while-dragging-output.png'
         )
       })
 
@@ -314,7 +323,7 @@ test.describe(
         await comfyMouse.move(start)
         await comfyMouse.drop()
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await region.expectScreenshot('vue-link-hidden.png')
       })
     })
   }

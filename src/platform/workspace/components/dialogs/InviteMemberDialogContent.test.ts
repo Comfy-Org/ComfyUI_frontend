@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -19,7 +19,7 @@ import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWor
 const mockMaxSeats = ref<number | null>(73)
 const mockOccupiedSeats = ref<number | null>(0)
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 

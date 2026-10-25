@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { WatchHandle } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('invokeExtensionsAsync', () => {
   const HOOK = 'addCustomNodeDefs'
@@ -401,5 +406,191 @@ describe('invokeExtensionsAsync', () => {
       expect(setup).toHaveBeenCalledOnce()
       expect(setup.mock.calls[0]).toHaveLength(1)
     })
+  })
+})
+
+describe('holding new extensions', () => {
+  it('keeps extensions registered while holding aside, in order, without calling them', () => {
+    const init = vi.fn()
+    useExtensionStore().holdNewExtensions()
+
+    useExtensionService().registerExtension({ name: 'a', init })
+    useExtensionService().registerExtension({ name: 'b' })
+
+    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+    expect(useExtensionStore().isExtensionInstalled('a')).toBe(false)
+    expect(
+      useExtensionStore()
+        .stopHoldingExtensions()
+        .map(({ name }) => name)
+    ).toEqual(['a', 'b'])
+    expect(init).not.toHaveBeenCalled()
+  })
+
+  it('drops a held extension whose disposer runs before holding stops', () => {
+    useExtensionStore().holdNewExtensions()
+    const dispose = useExtensionService().registerExtension({ name: 'gone' })
+
+    dispose()
+
+    expect(useExtensionStore().stopHoldingExtensions()).toEqual([])
+  })
+
+  it('registers as always once holding stops', () => {
+    useExtensionStore().holdNewExtensions()
+    useExtensionStore().stopHoldingExtensions()
+
+    useExtensionService().registerExtension({ name: 'after' })
+
+    expect(useExtensionStore().isHoldingExtensions).toBe(false)
+    expect(useExtensionStore().isExtensionInstalled('after')).toBe(true)
+  })
+
+  it('registers an extension on demand while holding goes on', () => {
+    useExtensionStore().holdNewExtensions()
+
+    useExtensionService().registerExtensionNow({ name: 'now' })
+
+    expect(useExtensionStore().isExtensionInstalled('now')).toBe(true)
+    expect(useExtensionStore().isHoldingExtensions).toBe(true)
+  })
+})
+
+describe('invokeStartupHook', () => {
+  it('runs one startup step on the given extensions only, one after another, with the app', async () => {
+    const events: string[] = []
+    const a = {
+      name: 'a',
+      init: async () => {
+        await Promise.resolve()
+        events.push('a')
+      }
+    }
+    const b = { name: 'b', init: vi.fn(() => void events.push('b')) }
+    const other = { name: 'other', init: vi.fn() }
+    useExtensionStore().registerExtension(other)
+
+    await useExtensionService().invokeStartupHook([a, b], 'init')
+
+    expect(events).toEqual(['a', 'b'])
+    expect(b.init).toHaveBeenCalledWith(useApp())
+    expect(other.init).not.toHaveBeenCalled()
+  })
+
+  it('skips a disabled extension', async () => {
+    const setup = vi.fn()
+    useExtensionStore().loadDisabledExtensionNames(['off'])
+
+    await useExtensionService().invokeStartupHook(
+      [{ name: 'off', setup }],
+      'setup'
+    )
+
+    expect(setup).not.toHaveBeenCalled()
+  })
+
+  it('returns a throwing step and runs the rest', async () => {
+    const error = new Error('boom')
+    const after = vi.fn()
+    const bad = {
+      name: 'bad',
+      setup: () => {
+        throw error
+      }
+    }
+
+    const failures = await useExtensionService().invokeStartupHook(
+      [bad, { name: 'after', setup: after }],
+      'setup'
+    )
+
+    expect(after).toHaveBeenCalledOnce()
+    expect(failures).toEqual([{ extension: bad, method: 'setup', error }])
+  })
+
+  it('returns an extension whose step cannot be read and runs the rest', async () => {
+    const error = new Error('getter')
+    const after = vi.fn()
+    const bad: ComfyExtension = {
+      name: 'bad',
+      get init(): never {
+        throw error
+      }
+    }
+
+    const failures = await useExtensionService().invokeStartupHook(
+      [bad, { name: 'after', init: after }],
+      'init'
+    )
+
+    expect(after).toHaveBeenCalledOnce()
+    expect(failures).toEqual([{ extension: bad, method: 'init', error }])
+  })
+
+  it('passes the step its arguments before the app', async () => {
+    const addCustomNodeDefs = vi.fn()
+    const defs = {}
+
+    await useExtensionService().invokeStartupHook(
+      [{ name: 'a', addCustomNodeDefs }],
+      'addCustomNodeDefs',
+      defs
+    )
+
+    expect(addCustomNodeDefs).toHaveBeenCalledWith(defs, useApp())
+  })
+})
+
+describe('registerExtension auth hooks', () => {
+  function createAuthEvents() {
+    const listeners = {
+      resolved: new Set<(user: { id: string }) => void>(),
+      refreshed: new Set<() => void>(),
+      logout: new Set<() => void>()
+    }
+    function subscribe<T>(set: Set<T>, callback: T): WatchHandle {
+      set.add(callback)
+      const stop = () => void set.delete(callback)
+      return Object.assign(stop, { stop, pause: vi.fn(), resume: vi.fn() })
+    }
+    const currentUser = useCurrentUser()
+    vi.mocked(currentUser.onUserResolved).mockImplementation((callback) =>
+      subscribe(listeners.resolved, callback)
+    )
+    vi.mocked(currentUser.onTokenRefreshed).mockImplementation((callback) =>
+      subscribe(listeners.refreshed, callback)
+    )
+    vi.mocked(currentUser.onUserLogout).mockImplementation((callback) =>
+      subscribe(listeners.logout, callback)
+    )
+    return {
+      emit() {
+        listeners.resolved.forEach((callback) => callback({ id: 'user-1' }))
+        listeners.refreshed.forEach((callback) => callback())
+        listeners.logout.forEach((callback) => callback())
+      }
+    }
+  }
+
+  it('keeps exactly one of each auth hook after dispose, re-registration and a stale dispose', () => {
+    const authEvents = createAuthEvents()
+    const extension = {
+      name: 'auth-hooks',
+      onAuthUserResolved: vi.fn(),
+      onAuthTokenRefreshed: vi.fn(),
+      onAuthUserLogout: vi.fn()
+    }
+    const service = useExtensionService()
+
+    const dispose = service.registerExtension(extension)
+    dispose()
+    service.registerExtension(extension)
+    dispose()
+    authEvents.emit()
+
+    expect(extension.onAuthUserResolved).toHaveBeenCalledOnce()
+    expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
+    expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
+    expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
   })
 })

@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@/types/nodeId'

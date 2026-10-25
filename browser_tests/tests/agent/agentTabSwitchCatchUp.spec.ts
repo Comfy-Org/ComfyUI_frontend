@@ -26,11 +26,7 @@ test.describe(
       test.setTimeout(90_000)
       const panel = page.getByTestId('docked-agent-panel')
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
@@ -142,11 +138,7 @@ test.describe(
       const panel = agentConversation.panel
       const nodes = agentConversation.vueNodes
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
       const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
