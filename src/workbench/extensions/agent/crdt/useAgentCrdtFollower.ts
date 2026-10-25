@@ -27,6 +27,7 @@ import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
+import type { SubscribeGiveUpReason } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
@@ -232,13 +233,8 @@ function hasNodes(
  * is exhausted, or the merged document failed the schema read gate. Distinct
  * from `connected: false`, which is also the state before the first subscribe
  * is confirmed and says nothing about whether a write will land.
- *
- * Release note: upstream types this as `SubscribeGiveUpReason | 'schema_error'
- * | null` in `agentCrdtStatus.ts`. Neither that module nor that union exists
- * on this branch, so the two values the follower actually sets are named
- * directly.
  */
-type AgentCrdtTerminalState = 'refused' | 'schema_error' | null
+type AgentCrdtTerminalState = SubscribeGiveUpReason | 'schema_error' | null
 
 export interface AgentCrdtStatus {
   enabled: boolean
@@ -471,8 +467,9 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    () => {
+    (reason) => {
       connected.value = false
+      terminal.value = reason
     }
   )
   const tabId = createUuidv4()
@@ -761,6 +758,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
@@ -1093,6 +1091,7 @@ function startAgentCrdtFollower(
       const justActivated = isActivationEdge(active, previous)
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
+      terminal.value = null
       connected.value = false
       pendingLiveNodeIds.clear()
       if (!active) {

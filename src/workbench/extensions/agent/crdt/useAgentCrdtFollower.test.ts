@@ -861,7 +861,7 @@ describe('useAgentCrdtFollower', () => {
   it('PM-1604 / BE-11437: does not retry schema_version_mismatch and surfaces it', () => {
     vi.useFakeTimers()
     const onSyncError = vi.fn()
-    const { unmount } = mountFollower('wf-1', true, () => null, {
+    const { unmount, status } = mountFollower('wf-1', true, () => null, {
       onSyncError
     })
 
@@ -880,6 +880,27 @@ describe('useAgentCrdtFollower', () => {
       'Expected schema 2, found 1',
       'schema_version_mismatch'
     )
+    expect(status().terminal).toBe('refused')
+
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(status().terminal).toBeNull()
+    unmount()
+  })
+
+  it('clears a terminal refusal when the bound workflow changes', async () => {
+    const { unmount, status, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch'
+    })
+    expect(status().terminal).toBe('refused')
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(status().terminal).toBeNull()
+    expect(status().workflowId).toBe('wf-2')
     unmount()
   })
 
@@ -2845,6 +2866,7 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(status().connected).toBe(false)
+    expect(status().terminal).toBe('timeout')
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
     expect(telemetryState.reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
@@ -2864,6 +2886,7 @@ describe('useAgentCrdtFollower', () => {
 
     apiState.target.dispatchEvent(new Event('reconnected'))
     expect(bridge().reconnect).toHaveBeenCalledOnce()
+    expect(status().terminal).toBeNull()
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
