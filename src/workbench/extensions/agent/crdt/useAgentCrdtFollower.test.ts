@@ -52,7 +52,7 @@ const bridgeState = (() => {
     unsubscribe = vi.fn(() => {
       liveSubscriptions.delete(this)
     })
-    resubscribe = vi.fn()
+    resubscribe = vi.fn(() => true)
     reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn(() => {
@@ -229,24 +229,38 @@ function mountFollower(
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
   enqueue: (operations: GraphOperation[]) => void
+  retry: () => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
   let enqueue!: (operations: GraphOperation[]) => void
+  let retry!: () => void
   const host = defineComponent({
     setup() {
-      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        { transport, isTargetActive, getGraph, events, canvasFor }
-      )
+      const { status, enqueueHumanOperations, retrySubscription } =
+        useAgentCrdtFollower(workflowId, {
+          transport,
+          isTargetActive,
+          getGraph,
+          events,
+          canvasFor
+        })
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
+      retry = retrySubscription
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue,
+    retry
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -533,6 +547,18 @@ describe('useAgentCrdtFollower', () => {
         workflow_id: 'wf-1',
         code: 'schema_version_mismatch'
       })
+    }
+
+    function spendRetryBudget(): void {
+      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+        refuse()
+        vi.advanceTimersByTime(delay)
+      }
+    }
+
+    function exhaustRetryBudget(): void {
+      spendRetryBudget()
+      refuse()
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
@@ -1064,18 +1090,41 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a refusal terminal once the retry budget is spent', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      for (let attempt = 0; attempt < 6; attempt++) {
-        refuse()
-        vi.advanceTimersByTime(500 * 2 ** attempt)
-      }
+    it('reports exhausted retries as recoverable and retries on request', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      spendRetryBudget()
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 
       refuse()
 
+      expect(status().terminal).toBe('retry_exhausted')
+
+      bridge().resubscribe.mockReturnValueOnce(false)
+      retry()
+
+      expect(status().terminal).toBe('retry_exhausted')
+
+      retry()
+
+      expect(status().terminal).toBeNull()
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(8)
+      unmount()
+    })
+
+    it('does not retry a permanent refusal that supersedes exhaustion', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      exhaustRetryBudget()
+      expect(status().terminal).toBe('retry_exhausted')
+
+      refuseForGood()
       expect(status().terminal).toBe('refused')
+      const attempts = bridge().resubscribe.mock.calls.length
+
+      retry()
+
+      expect(status().terminal).toBe('refused')
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
       unmount()
     })
   })

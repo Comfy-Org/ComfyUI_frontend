@@ -93,6 +93,7 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -107,8 +108,16 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { AgentActiveTabData, AgentWsEvent } from './schemas/agentApiSchema'
-import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import type {
+  AgentActiveTabData,
+  AgentWsEvent,
+  TurnId
+} from './schemas/agentApiSchema'
+import { toTurnId } from './schemas/agentApiSchema'
+import type {
+  ConversationEntry,
+  TurnTab
+} from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
   TurnOrigin,
@@ -128,6 +137,7 @@ import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmis
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
+import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
@@ -512,6 +522,7 @@ const {
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
+  adoptTarget: adoptWorkflowTarget,
   requestReferences: onRequestWorkflowReferences,
   cancelSelection: cancelWorkflowSelection
 } = useAgentWorkflowSelection({
@@ -857,8 +868,6 @@ function onWorkflowAdopted(
   previousWorkflowId: string | null
 ): void {
   if (sent === undefined) return
-  // An unbound tab adopts a workflow only when it was minted for this turn:
-  // an id that already resolves to an open tab belongs to that tab.
   const adoptable =
     sent.id === undefined
       ? bindingStore.tabPathFor(workflowId) === undefined &&
@@ -866,7 +875,6 @@ function onWorkflowAdopted(
       : sent.id === workflowId
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
-    tabActivity.setEditing(sent.tabPath)
     reportWorkflowBound(
       workflowId,
       previousWorkflowId,
@@ -988,7 +996,7 @@ const {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestoredAndBound,
+    restored: restoreChatWorkflow,
     prepare: async () => {
       try {
         await refreshCloudWorkflowIds()
@@ -1041,6 +1049,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  retrySubscription,
   docInputNames,
   docWidgetValue,
   docPromotedWidgets,
@@ -1153,25 +1162,62 @@ conversationStore.setCanvasSyncGate(
   () => crdtStatus.value.outcomes.appliedLive
 )
 
-// The resumed turn's own workflow outlives a panel remount (the session
-// binds it at ack; only newChat/loadThread reset it), while the active tab
-// may have changed since - prefer the bound tab over active-tab derivation.
-function resumedTurnTabPath(): string | null {
-  if (workflowDetached.value) return null
-  const bound = boundWorkflowId.value
-  if (bound === null) {
-    // An id-less context means the turn has no workflow at all: attributing
-    // it to whatever tab happens to be active lights the editing spinner on
-    // that tab and markModifieds it on completion. Only a context carrying a
-    // real workflow id may be attributed.
-    const context = targetWorkflowTurnContext()
-    return context?.id !== undefined ? context.tabPath : null
-  }
-  const boundPath = bindingStore.tabPathFor(bound)
-  if (boundPath !== undefined) return boundPath
-  const context = targetWorkflowTurnContext()
-  return context?.id === bound ? context.tabPath : null
+function tabAt(path: string | undefined, status: 'guessed' | 'known'): TurnTab {
+  const workflow =
+    path === undefined ? undefined : workflowStore.getWorkflowByPath(path)
+  return workflow
+    ? { status, workflowInstanceId: workflow.instanceId }
+    : { status: 'unknown' }
 }
+
+function turnTab(): TurnTab {
+  if (workflowDetached.value)
+    return {
+      status: agentPanelStore.canRestoreWorkflow ? 'unknown' : 'none'
+    }
+  const bound = boundWorkflowId.value
+  const context = targetWorkflowTurnContext()
+  if (bound === null)
+    return tabAt(
+      context?.id === undefined ? undefined : context.tabPath,
+      'guessed'
+    )
+  return tabAt(
+    bindingStore.tabPathFor(bound) ??
+      (context?.id === bound ? context.tabPath : undefined),
+    'known'
+  )
+}
+
+function adoptRestoredWorkflowTab(workflowId: string): void {
+  const restored = selectedTarget.value
+  const threadId = conversationStore.threadId
+  if (
+    restored !== null &&
+    threadId !== null &&
+    bindingStore.tabPathFor(workflowId) === restored.path
+  )
+    conversationStore.adoptThreadTab(threadId, restored.instanceId)
+}
+
+async function restoreThreadWorkflow(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const restoring = agentPanelStore.canRestoreWorkflow
+  const ready = await onWorkflowRestoredAndBound(workflowId, isCurrent)
+  if (ready && restoring && workflowId !== undefined)
+    adoptRestoredWorkflowTab(workflowId)
+  return ready
+}
+
+conversationStore.setTurnTabResolver(turnTab)
+conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
+watch(
+  () => conversationStore.turnTabs,
+  (tabs) => tabActivity.setAgentTurnTabs(tabs),
+  { immediate: true, flush: 'sync' }
+)
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1239,17 +1285,12 @@ watch(
     wasTurnActive = active
     if (active) {
       graphActivity.startTurn(turnId)
-      if (tabActivity.editingTabPath === null)
-        tabActivity.setEditing(resumedTurnTabPath())
       return
     }
     if (completedTurn) {
       graphActivity.finishTurn()
       refreshBillingAfterTurn()
     }
-    const completedPath = tabActivity.editingTabPath
-    tabActivity.setEditing(null)
-    if (completedPath !== null) tabActivity.markModified(completedPath)
   },
   { immediate: true, flush: 'sync' }
 )
@@ -1283,7 +1324,13 @@ let activeTabChain: Promise<void> = Promise.resolve()
 
 function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
-  const result = activeTabChain.then(() => onAgentActiveTab(data, generation))
+  const turnId =
+    data.message_id === undefined
+      ? conversationTurnId.value
+      : toTurnId(data.message_id)
+  const result = activeTabChain.then(() =>
+    onAgentActiveTab(data, generation, turnId)
+  )
   activeTabChain = result.then(() => undefined)
   return result
 }
@@ -1354,18 +1401,36 @@ function agentTabFilename(name: string | undefined): string | undefined {
   return cleaned.length === 0 ? undefined : `${cleaned}.json`
 }
 
+interface ActiveTabActivation {
+  stale: () => boolean
+  showTurnOn: (tab: ComfyWorkflow) => void
+}
+
 async function onAgentActiveTab(
   data: AgentActiveTabData,
-  generation: number
+  generation: number,
+  turnId: TurnId | null
 ): Promise<boolean> {
   const previousWorkflowId = boundWorkflowId.value
   const stale = () => generation !== activeTabGeneration
   if (stale()) return false
+  const activation: ActiveTabActivation = {
+    stale,
+    showTurnOn: (tab) => {
+      if (turnId !== null)
+        conversationStore.moveTurnToTab(turnId, tab.instanceId)
+    }
+  }
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
     return bound
-      ? await activateExistingAgentTab(data, bound, previousWorkflowId, stale)
-      : await createAndActivateAgentTab(data, previousWorkflowId, stale)
+      ? await activateExistingAgentTab(
+          data,
+          bound,
+          previousWorkflowId,
+          activation
+        )
+      : await createAndActivateAgentTab(data, previousWorkflowId, activation)
   } catch (error) {
     if (stale()) return false
     bindWorkflow(data.workflow_id)
@@ -1388,7 +1453,7 @@ async function activateExistingAgentTab(
   data: AgentActiveTabData,
   bound: ComfyWorkflow,
   previousWorkflowId: string | null,
-  stale: () => boolean
+  { stale, showTurnOn }: ActiveTabActivation
 ): Promise<boolean> {
   const opened = await workflowService.openWorkflow(bound)
   if (stale()) return false
@@ -1398,7 +1463,7 @@ async function activateExistingAgentTab(
     return false
   }
   bindingStore.bind(data.workflow_id, bound.path)
-  if (status.value !== 'idle') tabActivity.setEditing(bound.path)
+  showTurnOn(bound)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
   useTelemetry()?.trackAgentWorkflowApplied({
@@ -1411,7 +1476,7 @@ async function activateExistingAgentTab(
 async function createAndActivateAgentTab(
   data: AgentActiveTabData,
   previousWorkflowId: string | null,
-  stale: () => boolean
+  { stale, showTurnOn }: ActiveTabActivation
 ): Promise<boolean> {
   const creatingStartedAt = Date.now()
   tabActivity.setCreating(true)
@@ -1440,7 +1505,7 @@ async function createAndActivateAgentTab(
     }
     return false
   }
-  if (status.value !== 'idle') tabActivity.setEditing(tab.path)
+  showTurnOn(tab)
   bindingStore.bind(data.workflow_id, tab.path)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
@@ -1530,17 +1595,15 @@ onBeforeUnmount(() => {
     invalidateActiveTabGeneration: () => {
       ++activeTabGeneration
     },
-    clearEditingTab: () => {
-      tabActivity.setEditing(null)
+    clearAgentTurnTabs: () => {
+      tabActivity.setAgentTurnTabs([])
+    },
+    resetTurnTabResolver: () => {
+      conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
     },
     clearCreatingTab: () => {
       tabActivity.setCreating(false)
     },
-    // PM-1575: the store singleton outlives this component. Without resetting
-    // the gate here, a remount's own setCanvasSyncGate() call is the only
-    // thing standing between the old (now torn-down) follower's gate and a
-    // turn resumed in the meantime reading it -- reset to the always-safe
-    // default instead of leaving whatever this instance last set.
     resetCanvasSyncGate: () => {
       conversationStore.setCanvasSyncGate(() => 'none')
     }
@@ -1594,68 +1657,53 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
-/**
- * Reasons already reported for a truncated chat list. A server paging bug is
- * persistent, and every mount, history open and chat selection refreshes, so
- * without this each one would stack another identical toast and error report.
- */
-const reportedPartialReasons = new Set<string>()
+const warnedIncompleteReasons = new Set<string>()
+
+function warnIncompleteHistory(reason: string, announce: boolean): void {
+  if (warnedIncompleteReasons.has(reason)) return
+  reportError(new Error('Agent thread list ended before its last page'), {
+    surface: 'agent',
+    errorType: 'agent_thread_list_load_failed',
+    tags: { reason }
+  })
+  if (announce) {
+    warnedIncompleteReasons.add(reason)
+    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
+  }
+  trackAgentError(
+    'thread_list_load_failed',
+    'pre_acceptance',
+    announce ? 'toast' : 'none',
+    { retryable: false }
+  )
+}
 
 const { refreshHistory } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
-  onFailure: (failure) => {
+  onFailure: (failure, uiTreatment) => {
+    if (failure.status === 'incomplete') {
+      warnIncompleteHistory(failure.reason, uiTreatment === 'error_overlay')
+      return
+    }
     const error = failure.cause
     reportError(error, {
       surface: 'agent',
       errorType: 'agent_thread_list_load_failed'
     })
-    surfaceAgentError(
-      'agent_api_failed',
-      error instanceof Error ? error.message : String(error)
-    )
-    trackAgentError(
-      'thread_list_load_failed',
-      'pre_acceptance',
-      'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
-    )
-  },
-  // A truncated listing still shows the chats it reached, so it gets a toast
-  // rather than the blocking error overlay: a user with more than one page of
-  // chats was losing the whole history to a server paging bug (OBL-287).
-  onPartial: (partial) => {
-    if (reportedPartialReasons.has(partial.reason)) return
-    reportedPartialReasons.add(partial.reason)
-    reportError(new Error('Agent thread list ended before its last page'), {
-      surface: 'agent',
-      errorType: 'agent_thread_list_load_failed',
-      tags: { reason: partial.reason }
-    })
-    toast.warning(t('agent.historyIncomplete'), { duration: 5000 })
-    trackAgentError('thread_list_load_failed', 'pre_acceptance', 'toast', {
-      retryable: false
+    if (uiTreatment === 'error_overlay')
+      surfaceAgentError(
+        'agent_api_failed',
+        error instanceof Error ? error.message : String(error)
+      )
+    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
+      retryable: isRetryableRequestFailure(error, false)
     })
   }
 })
 
 const provisionalTitle = ref<string>()
-
-watch(
-  threadId,
-  (id, previousId) => {
-    if (
-      id === null ||
-      previousId !== null ||
-      provisionalTitle.value === undefined
-    )
-      return
-    history.rename(id, provisionalTitle.value)
-    provisionalTitle.value = undefined
-  },
-  { immediate: true }
-)
 
 void refreshHistory()
 
@@ -1676,10 +1724,60 @@ const historyGroups = computed(() => {
   )
 })
 
+const workflowChatFollow = useAgentWorkflowChatFollow({
+  activeWorkflow: () => workflowStore.activeWorkflow,
+  selectedTarget: () => selectedTarget.value,
+  currentThreadId: () => threadId.value,
+  sessions: () => history.sessions,
+  followsVisibleWorkflow: () => agentPanelStore.followsVisibleWorkflow,
+  hasDraft: () => composerStore.hasDraft,
+  userEngaged,
+  cloudIdFor,
+  refreshCloudWorkflowIds,
+  refreshHistory,
+  loadThread,
+  clearDraft: () => composerStore.setText(''),
+  trackThreadStarted: () =>
+    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
+  restoreThreadWorkflow,
+  adoptWorkflowTarget,
+  adoptRestoredWorkflowTab
+})
+
+const {
+  failure: followFailure,
+  openingWorkflowName,
+  followTab,
+  retireFollow,
+  retryFollow: onRetryFollow
+} = workflowChatFollow
+
+watch(
+  threadId,
+  (id, previousId) => {
+    if (
+      id === null ||
+      previousId !== null ||
+      provisionalTitle.value === undefined
+    )
+      return
+    if (!workflowChatFollow.isOpeningThread(id))
+      history.rename(id, provisionalTitle.value)
+    provisionalTitle.value = undefined
+  },
+  { immediate: true, flush: 'sync' }
+)
+
+function onOpenHistory(): void {
+  retireFollow()
+  void refreshHistory()
+}
+
 async function onSelectHistory(
   id: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
+  retireFollow()
   provisionalTitle.value = undefined
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
@@ -1693,6 +1791,36 @@ async function onSelectHistory(
   void refreshHistory()
   return opened
 }
+
+function userEngaged(): boolean {
+  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+}
+
+function restoreChatWorkflow(
+  workflowId: string | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> | boolean {
+  return workflowChatFollow.restoreChatWorkflow(workflowId, isCurrent)
+}
+
+onBeforeUnmount(retireFollow)
+
+watch(
+  () => workflowStore.activeWorkflow,
+  workflowChatFollow.activeWorkflowChanged
+)
+
+workflowStore.onUserActivation((workflow) => void followTab(workflow))
+
+watch(userEngaged, workflowChatFollow.userEngagementChanged)
+
+const mountedOn = workflowStore.activeWorkflow
+if (
+  mountedOn !== null &&
+  selectedTarget.value !== null &&
+  selectedTarget.value.path !== mountedOn.path
+)
+  void followTab(mountedOn)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
@@ -1874,6 +2002,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+  retireFollow()
   provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
@@ -2211,10 +2340,13 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :history-groups="historyGroups"
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
+      :opening-workflow-name="openingWorkflowName"
       :session-id="threadId"
       :custom-title="
+        history.titleFor(threadId) ??
         historyGroups.current.find((session) => session.id === threadId)
-          ?.title ?? provisionalTitle
+          ?.title ??
+        provisionalTitle
       "
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
@@ -2234,6 +2366,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :sync-retry-available="
+        crdtStatus.terminal === 'retry_exhausted' ||
+        crdtStatus.terminal === 'timeout'
+      "
       :free-use-placement="freeUsePlacement"
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
@@ -2258,11 +2394,12 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
+      @retry-sync="retrySubscription"
       @new-chat="onNewChat('new_chat_button')"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
-      @open-history="refreshHistory()"
+      @open-history="onOpenHistory"
       @delete-history="onDeleteHistory"
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
@@ -2272,6 +2409,12 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
+        <RunNoticeBanner
+          v-if="followFailure"
+          context="followFailed"
+          :workflow-name="followFailure.filename"
+          @retry="onRetryFollow"
+        />
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"

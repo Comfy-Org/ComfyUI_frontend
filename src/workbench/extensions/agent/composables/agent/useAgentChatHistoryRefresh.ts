@@ -10,14 +10,13 @@ import type {
   useAgentChatHistoryStore
 } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
-type HistoryRefreshFailure = Extract<ThreadListing, { status: 'failed' }>
-
-type HistoryRefreshPartial = Extract<ThreadListing, { status: 'incomplete' }>
-
-type HistoryListing = Extract<
+type HistoryRefreshFailure = Extract<
   ThreadListing,
-  { status: 'complete' | 'incomplete' }
+  { status: 'incomplete' | 'failed' }
 >
+
+type HistoryFailureTreatment = 'error_overlay' | 'none'
+type HistoryRefreshOutcome = ThreadListing['status'] | 'superseded'
 
 type HistoryRefreshDeps = {
   listThreads: AgentRestClient['listThreads']
@@ -26,96 +25,172 @@ type HistoryRefreshDeps = {
     'replaceAll' | 'sessions'
   >
   untitledChat: () => string
-  /** The listing could not be read at all; nothing was fetched. */
-  onFailure: (failure: HistoryRefreshFailure) => void
-  /**
-   * The listing stopped before its last page. The threads it did reach are
-   * already applied, so this is a notice, not an error.
-   */
-  onPartial: (partial: HistoryRefreshPartial) => void
+  onFailure: (
+    failure: HistoryRefreshFailure,
+    uiTreatment: HistoryFailureTreatment
+  ) => void
 }
 
 export function useAgentChatHistoryRefresh({
   listThreads,
   history,
   untitledChat,
-  onFailure,
-  onPartial
+  onFailure
 }: HistoryRefreshDeps) {
   let latestStartedRefresh = 0
   let latestAppliedRefresh = 0
-  /**
-   * Ids this hook instance has already applied. Retention is scoped to them so
-   * a truncated listing cannot pull in sessions left in the store by whoever
-   * was signed in before: the panel remounts on an account change, so a fresh
-   * instance starts with nothing to retain.
-   */
-  const appliedIds = new Set<string>()
+  let latestSurfacedRefresh = 0
+  const newestSighting = new Map<
+    string,
+    { generation: number; session: ChatSession }
+  >()
+  const coveredAt = new Map<string | undefined, number>()
   const controller = new AbortController()
 
   onScopeDispose(() => controller.abort())
 
   function toChatSession(thread: AgentThreadSummary): ChatSession {
-    const stamp = thread.last_message_at
-    const updatedAt = stamp ? Date.parse(stamp) : Date.now()
+    const lastActivityAt = [
+      thread.last_message_at,
+      thread.updated_at,
+      thread.created_at
+    ]
+      .map((stamp) => Date.parse(stamp))
+      .find((time) => !Number.isNaN(time))
     return {
       id: thread.id,
       title: thread.title || thread.preview || untitledChat(),
-      updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
-      titleSource: thread.title ? 'server' : 'fallback'
+      updatedAt: lastActivityAt ?? Date.now(),
+      lastActivityAt,
+      titleSource: thread.title ? 'server' : 'fallback',
+      workflowId: thread.workflow_id || undefined
     }
   }
 
-  /**
-   * A truncated listing cannot speak for the threads its missing pages would
-   * have carried, so keep the sessions already on screen instead of letting a
-   * partial page set delete them. Only sessions this instance applied are kept,
-   * and only while they are still in the store, so a locally deleted chat is
-   * not resurrected. Sessions deleted elsewhere do linger until a listing
-   * completes, which is the price of not wiping a history we cannot account for.
-   */
-  function withRetainedSessions(fetched: ChatSession[]): ChatSession[] {
-    const fetchedIds = new Set(fetched.map(({ id }) => id))
-    return [
-      ...fetched,
-      ...history.sessions.filter(
-        ({ id }) => appliedIds.has(id) && !fetchedIds.has(id)
-      )
-    ]
+  function ownsFailure(
+    generation: number,
+    uiTreatment: HistoryFailureTreatment
+  ): boolean {
+    const failureOwner =
+      uiTreatment === 'error_overlay'
+        ? latestSurfacedRefresh
+        : latestStartedRefresh
+    return generation === failureOwner && generation > latestAppliedRefresh
   }
 
-  /**
-   * Applies a listing unless a later refresh already won. A stale listing is
-   * dropped rather than applied, so it can neither re-add a deleted chat nor
-   * trim a newer list.
-   */
-  function applyListing(listing: HistoryListing, generation: number): void {
-    if (generation < latestAppliedRefresh) return
-    const fetched = listing.threads.map(toChatSession)
-    const next =
-      listing.status === 'complete' ? fetched : withRetainedSessions(fetched)
-    history.replaceAll(next)
-    for (const { id } of next) appliedIds.add(id)
-    latestAppliedRefresh = generation
+  function coverage(workflowId?: string): number {
+    const full = coveredAt.get(undefined) ?? 0
+    return workflowId ? Math.max(full, coveredAt.get(workflowId) ?? 0) : full
   }
 
-  async function refreshHistory(): Promise<void> {
-    if (controller.signal.aborted) return
+  function record(generation: number, sessions: ChatSession[]): void {
+    for (const session of sessions) {
+      if (generation > (newestSighting.get(session.id)?.generation ?? 0))
+        newestSighting.set(session.id, { generation, session })
+    }
+  }
+
+  function cover(generation: number, workflowId?: string): void {
+    coveredAt.set(
+      workflowId,
+      Math.max(coveredAt.get(workflowId) ?? 0, generation)
+    )
+  }
+
+  function visibleSessions(candidates: ChatSession[]): ChatSession[] {
+    const visible = new Map<
+      string,
+      { generation: number; session: ChatSession }
+    >()
+    for (const cached of candidates) {
+      const sighting = newestSighting.get(cached.id) ?? {
+        generation: 0,
+        session: cached
+      }
+      const shown =
+        !visible.has(cached.id) &&
+        sighting.generation >= coverage(sighting.session.workflowId)
+      if (shown) visible.set(cached.id, sighting)
+    }
+    return [...visible.values()]
+      .sort((a, b) => b.generation - a.generation)
+      .map(({ session }) => session)
+  }
+
+  function pruneCovered(): void {
+    const full = coveredAt.get(undefined) ?? 0
+    for (const [id, { generation }] of newestSighting) {
+      if (generation < full) newestSighting.delete(id)
+    }
+    for (const [key, covered] of coveredAt) {
+      if (key !== undefined && covered <= full) coveredAt.delete(key)
+    }
+  }
+
+  function applyListing(
+    generation: number,
+    sessions: ChatSession[],
+    retained: ChatSession[]
+  ): void {
+    record(generation, sessions)
+    history.replaceAll(visibleSessions([...sessions, ...retained]))
+    pruneCovered()
+  }
+
+  function applyPartialListing(
+    generation: number,
+    uiTreatment: HistoryFailureTreatment,
+    listing: Extract<ThreadListing, { status: 'incomplete' }>
+  ): HistoryRefreshOutcome {
+    const ownsNotice = ownsFailure(generation, uiTreatment)
+    applyListing(
+      generation,
+      listing.threads.map(toChatSession),
+      history.sessions.filter(({ id }) => newestSighting.has(id))
+    )
+    latestAppliedRefresh = Math.max(latestAppliedRefresh, generation)
+    if (!ownsNotice) return 'superseded'
+    onFailure(listing, uiTreatment)
+    return 'incomplete'
+  }
+
+  function applyRefreshResult(
+    result: ThreadListing,
+    generation: number,
+    uiTreatment: HistoryFailureTreatment,
+    workflowId?: string
+  ): HistoryRefreshOutcome {
+    if (controller.signal.aborted || result.status === 'aborted')
+      return 'aborted'
+    if (result.status === 'incomplete')
+      return applyPartialListing(generation, uiTreatment, result)
+    if (result.status === 'failed') {
+      if (!ownsFailure(generation, uiTreatment)) return 'superseded'
+      onFailure(result, uiTreatment)
+      return result.status
+    }
+    if (generation < (coveredAt.get(undefined) ?? 0)) return 'superseded'
+    const superseded = generation < coverage(workflowId)
+    cover(generation, workflowId)
+    applyListing(
+      generation,
+      result.threads.map(toChatSession),
+      history.sessions
+    )
+    latestAppliedRefresh = Math.max(latestAppliedRefresh, generation)
+    return superseded ? 'superseded' : 'complete'
+  }
+
+  async function refreshHistory(
+    uiTreatment: HistoryFailureTreatment = 'error_overlay',
+    workflowId?: string
+  ): Promise<HistoryRefreshOutcome> {
+    if (controller.signal.aborted) return 'aborted'
     const { signal } = controller
     const generation = ++latestStartedRefresh
-    const result = await listThreads({ signal })
-    if (signal.aborted || result.status === 'aborted') return
-    const isLatest = generation === latestStartedRefresh
-    if (result.status === 'failed') {
-      if (isLatest) onFailure(result)
-      return
-    }
-    // A superseded listing is dropped rather than applied when it is truncated:
-    // it knows less than the refresh that overtook it, so applying it could
-    // trim chats that refresh had already shown.
-    if (result.status === 'incomplete' && !isLatest) return
-    applyListing(result, generation)
-    if (result.status === 'incomplete') onPartial(result)
+    if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
+    const result = await listThreads({ signal, workflowId })
+    return applyRefreshResult(result, generation, uiTreatment, workflowId)
   }
 
   return { refreshHistory }

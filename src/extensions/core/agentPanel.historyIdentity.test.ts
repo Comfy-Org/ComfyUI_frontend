@@ -48,9 +48,7 @@ vi.mock(
   import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({ registerWorkflowTabActivityTracker: vi.fn(() => () => {}) })
 )
-const mocks = vi.hoisted(() => ({
-  capturedExtensions: [] as ComfyExtension[]
-}))
+const mocks = vi.hoisted(() => ({ capturedExtensions: [] as ComfyExtension[] }))
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial({
@@ -128,9 +126,7 @@ describe('AgentPanel history during account transitions', () => {
         api.serverFeatureFlags.value = oldFeatures
         api.serverFeatureFlagsSettled.value = oldFlagsSettled
       })
-      api.serverFeatureFlags.value = {
-        agent: { state: 'ready', reason: null }
-      }
+      api.serverFeatureFlags.value = { agent: { state: 'ready', reason: null } }
       vi.stubGlobal(
         'WebSocket',
         vi.fn(function () {
@@ -146,8 +142,11 @@ describe('AgentPanel history during account transitions', () => {
       const resetSocket = vi.spyOn(api, 'resetSocket')
       const history = useAgentChatHistoryStore()
       const onFailure = vi.fn()
-      const onPartial = vi.fn()
-      let refreshPromise: Promise<void> | undefined
+      let refreshPromise:
+        | ReturnType<
+            ReturnType<typeof useAgentChatHistoryRefresh>['refreshHistory']
+          >
+        | undefined
       let secondPageSignal: AbortSignal | null | undefined
       let resolveSecondPage!: (response: Response) => void
       const secondPage = new Promise<Response>((resolve) => {
@@ -173,8 +172,7 @@ describe('AgentPanel history during account transitions', () => {
             listThreads: rest.listThreads,
             history,
             untitledChat: () => 'Untitled',
-            onFailure,
-            onPartial
+            onFailure
           })
           refreshPromise = refreshHistory()
           return () => h('div', { 'data-testid': 'history-owner' })
