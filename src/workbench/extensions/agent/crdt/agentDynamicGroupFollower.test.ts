@@ -158,7 +158,7 @@ function startFollower(instances: number, promoteFirstRow = false) {
   return { graph, hostDoc, follower, adapter }
 }
 
-function deliver(state: ReturnType<typeof startFollower>, ops: Op[]) {
+function deliver(state: ReturnType<typeof startFollower>, ops: Op[], seq = 2) {
   const vector = Y.encodeStateVector(state.hostDoc)
   const result = applyOps(state.hostDoc, ops, CATALOG)
   expect(result.outcomes.map(({ outcome }) => outcome)).toEqual(
@@ -169,7 +169,7 @@ function deliver(state: ReturnType<typeof startFollower>, ops: Op[]) {
   expect(
     state.adapter.applyFrame({
       workflowId: 'workflow',
-      seq: 2,
+      seq,
       update,
       actor: 'agent:test',
       opIds: ops.map(({ op_id }) => op_id)
@@ -222,6 +222,24 @@ describe('agent CRDT follower on a DynamicGroup inside a subgraph', () => {
     ])
 
     expect(host.widgets.map((widget) => widget.value)).toEqual([0.9])
+  })
+
+  it('regrows a remotely hidden interior DynamicGroup row with the value the document kept', () => {
+    const state = startFollower(1)
+    deliver(state, [interiorWrite(2, 'rows', 2)], 2)
+    deliver(state, [interiorWrite(3, 'rows.1.strength', 0.7)], 3)
+    deliver(state, [interiorWrite(4, 'rows', 1)], 4)
+    expect(interiorValues(state.graph, 1)).toEqual(['head', 1, 0.5, 'tail'])
+
+    deliver(state, [interiorWrite(5, 'rows', 2)], 5)
+
+    expect(interiorValues(state.graph, 1)).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
   })
 
   it('refuses an interior DynamicGroup resize on a definition shared by several instances', () => {
