@@ -92,8 +92,8 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   correct across switches without a restore step.
 - Node and widget objects survive a switch. Extensions that hold node or
   widget references keep working after the user changes tabs.
-- Switching is a pointer swap, the same mechanism subgraph navigation already
-  uses.
+- Switching preserves the incoming graph instance. Activation also serializes
+  and re-registers its subgraph definitions in the global node-type registry.
 
 ### Negative
 
