@@ -75,39 +75,29 @@ export class CommandHelper {
     )
   }
 
-  async registerKeybinding(
-    keyCombo: KeyCombo,
-    command: () => void
-  ): Promise<void> {
-    // SECURITY: eval() is intentionally used here to deserialize/execute functions
-    // passed from controlled test code across the Node/Playwright browser boundary.
-    // Execution happens in isolated Playwright browser contexts with test-only data.
-    // This pattern is unsafe for production and must not be copied elsewhere.
-    await this.page.evaluate(
-      ({ keyCombo, commandStr }) => {
-        const app = window.app!
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const extensionName = `TestExtension_${randomSuffix}`
-        const commandId = `TestCommand_${randomSuffix}`
+  async registerKeybinding(keyCombo: KeyCombo): Promise<string> {
+    return await this.page.evaluate((keyCombo) => {
+      const app = window.app!
+      const randomSuffix = Math.random().toString(36).substring(2, 8)
+      const extensionName = `TestExtension_${randomSuffix}`
+      const commandId = `TestCommand_${randomSuffix}`
 
-        app.registerExtension({
-          name: extensionName,
-          keybindings: [
-            {
-              combo: keyCombo,
-              commandId: commandId
-            }
-          ],
-          commands: [
-            {
-              id: commandId,
-              // oxlint-disable-next-line no-eval -- intentional: eval reconstructs a serialized function inside Playwright's page context
-              function: eval(commandStr)
-            }
-          ]
-        })
-      },
-      { keyCombo, commandStr: command.toString() }
-    )
+      app.registerExtension({
+        name: extensionName,
+        keybindings: [
+          {
+            combo: keyCombo,
+            commandId: commandId
+          }
+        ],
+        commands: [
+          {
+            id: commandId,
+            function: () => {}
+          }
+        ]
+      })
+      return commandId
+    }, keyCombo)
   }
 }

@@ -48,9 +48,7 @@ vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: { id: 'root', _nodes: [] }, nodePreviewImages: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
 function seedShaderThroughWidget(nodeId: number, value: string): void {
   const node = createMockDOMWidgetNode({

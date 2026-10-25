@@ -1,3 +1,4 @@
+import type { SubgraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -8,7 +9,7 @@ import type {
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'

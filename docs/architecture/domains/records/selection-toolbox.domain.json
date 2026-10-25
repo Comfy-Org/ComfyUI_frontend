@@ -1,0 +1,307 @@
+{
+  "id": "selection-toolbox",
+  "capability": "Selection toolbox",
+  "description": "Canvas selection actions and their context menus: toolbox state and placement, node and group actions, arrangement, framing, deletion, and subgraph conversion. The selection store and graph mutations remain separate.",
+  "modules": [
+    {
+      "path": "src/components/graph/NodeContextMenu.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeContextMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionToolbox.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionToolbox.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ArrangeButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/BypassButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/BypassButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ColorPickerButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ConfigureSubgraph.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ConvertToSubgraphButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/DeleteButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ExecuteButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/ExtensionCommandButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/FrameNodes.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/InfoButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/InfoButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/Load3DViewerButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/MaskEditorButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionToolbox/VerticalDivider.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/canvas/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/contextMenuConverter.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/graph/contextMenuConverter.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/graph/useArrangeNodes.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useArrangeNodes.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useArrangeSession.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useArrangeSession.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useCanvasRefresh.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useFrameNodes.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useGroupContextMenu.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useGroupContextMenu.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useGroupMenuOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useGroupMenuOptions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useImageMenuOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useImageMenuOptions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useMoreOptionsMenu.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeArrangement.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeCustomization.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeMenuOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useNodeMenuOptions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectedNodeActions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionMenuOptions.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionMenuOptions.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionOperations.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionState.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSelectionState.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSubgraphOperations.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/graph/useSubgraphOperations.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useContextMenuTranslation.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useContextMenuTranslation.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useRefreshableSelection.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/coreMediaMenuActionUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/coreMediaMenuActionUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeFilterUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeFilterUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Selection toolbox shows actions that apply to the current selection",
+      "checks": [
+        "src/components/graph/SelectionToolbox.test.ts",
+        "src/components/graph/selectionToolbox/ExecuteButton.test.ts",
+        "src/components/graph/selectionToolbox/BypassButton.test.ts",
+        "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
+        "src/components/graph/selectionToolbox/InfoButton.test.ts",
+        "src/components/graph/selectionToolbox/MaskEditorButton.test.ts"
+      ]
+    },
+    {
+      "name": "Node context menu renders node options for the selection",
+      "checks": ["src/components/graph/NodeContextMenu.test.ts"]
+    },
+    {
+      "name": "Node, group, image, and selection menus offer the right actions and convert to LiteGraph menus",
+      "checks": [
+        "src/composables/graph/useNodeMenuOptions.test.ts",
+        "src/composables/graph/useGroupMenuOptions.test.ts",
+        "src/composables/graph/useImageMenuOptions.test.ts",
+        "src/composables/graph/useSelectionMenuOptions.test.ts",
+        "src/composables/graph/contextMenuConverter.test.ts",
+        "src/composables/graph/useGroupContextMenu.test.ts",
+        "src/composables/useContextMenuTranslation.test.ts",
+        "src/utils/coreMediaMenuActionUtils.test.ts"
+      ]
+    },
+    {
+      "name": "Selection state and toolbox position follow the canvas selection",
+      "checks": [
+        "src/composables/graph/useSelectionState.test.ts",
+        "src/composables/canvas/useSelectedLiteGraphItems.test.ts",
+        "src/composables/canvas/useSelectionToolboxPosition.test.ts",
+        "src/utils/nodeFilterUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Selection operations arrange nodes, guard deletes, and convert or unpack subgraphs",
+      "checks": [
+        "src/composables/graph/useArrangeNodes.test.ts",
+        "src/composables/graph/useArrangeSession.test.ts",
+        "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
+        "src/composables/graph/useSubgraphOperations.test.ts"
+      ]
+    }
+  ],
+  "adrs": ["docs/adr/CANVAS-SELECTION-0028-single-selection-store.md"],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

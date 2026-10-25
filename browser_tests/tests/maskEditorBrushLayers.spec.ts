@@ -9,6 +9,10 @@ test.describe(
   'Mask Editor brush adjustment and layer management',
   { tag: '@vue-nodes' },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    })
+
     test.describe('Brush settings interaction', () => {
       test('Adjusting brush thickness slider changes stroke output', async ({
         comfyPage,

@@ -1,11 +1,10 @@
-// @vitest-environment happy-dom
 import { describe, it, expect } from 'vitest'
 import {
   getWhatIsDescription,
   getPageDescription,
   getFaqPricingAnswer
 } from './modelSeoCopy'
-import type { Model } from '../config/models'
+import type { Model } from '@/config/models'
 
 describe('modelSeoCopy', () => {
   const localModel: Model = {

@@ -1,66 +1,76 @@
 <template>
   <div>
-    <Dialog
-      v-model:visible="visible"
-      modal
-      :dismissable-mask="dismissable"
-      :pt="{
-        root: {
-          class: useSearchBoxV2
-            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
-            : 'invisible-dialog-root'
-        },
-        mask: {
-          class: useSearchBoxV2 ? 'items-start' : 'node-search-box-dialog-mask'
-        },
-        transition: {
-          enterFromClass: 'opacity-0 scale-75',
-          // 100ms is the duration of the transition in the dialog component
-          enterActiveClass: 'transition-all duration-100 ease-out',
-          leaveActiveClass: 'transition-all duration-100 ease-in',
-          leaveToClass: 'opacity-0 scale-75'
-        }
-      }"
-      @hide="clearFilters"
-    >
-      <template #container>
-        <div v-if="useSearchBoxV2" role="search" class="relative">
-          <NodeSearchContent
+    <Dialog v-model:open="visible">
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogContent
+          :class="
+            cn(
+              'border-0 bg-transparent p-0 shadow-none duration-100',
+              useSearchBoxV2
+                ? 'w-full max-w-4xl min-w-lg overflow-visible max-md:min-w-0 sm:max-w-4xl'
+                : 'top-1/4 ml-[200px] w-3/5 max-w-3xl min-w-96 translate-y-0 max-md:ml-0 sm:max-w-3xl'
+            )
+          "
+          @pointer-down-outside="
+            (e) =>
+              onRekaPointerDownOutside(
+                { dismissOnPointerDownOutside: dismissable },
+                e
+              )
+          "
+          @escape-key-down="
+            (filterVisible || $event.isComposing) && $event.preventDefault()
+          "
+        >
+          <DialogTitle class="sr-only">{{ $t('g.searchNodes') }}</DialogTitle>
+          <div v-if="useSearchBoxV2" role="search" class="relative">
+            <NodeSearchContent
+              :filters="nodeFilters"
+              @add-filter="addFilter"
+              @remove-filter="removeFilter"
+              @add-node="addNode"
+              @hover-node="hoveredNodeDef = $event"
+            />
+            <NodePreviewCard
+              v-if="hoveredNodeDef && enableNodePreview"
+              :key="hoveredNodeDef.name"
+              :node-def="hoveredNodeDef"
+              :scale-factor="0.625"
+              show-category-path
+              inert
+              class="absolute top-0 left-full ml-3"
+            />
+          </div>
+          <NodeSearchBox
+            v-else
+            v-model:filter-visible="filterVisible"
             :filters="nodeFilters"
+            @keydown.escape="!$event.isComposing && closeDialog()"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
-            @hover-node="hoveredNodeDef = $event"
           />
-          <NodePreviewCard
-            v-if="hoveredNodeDef && enableNodePreview"
-            :key="hoveredNodeDef.name"
-            :node-def="hoveredNodeDef"
-            :scale-factor="0.625"
-            show-category-path
-            inert
-            class="absolute top-0 left-full ml-3"
-          />
-        </div>
-        <NodeSearchBox
-          v-else
-          :filters="nodeFilters"
-          @add-filter="addFilter"
-          @remove-filter="removeFilter"
-          @add-node="addNode"
-        />
-      </template>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useWindowSize } from '@vueuse/core'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
+import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -70,7 +80,7 @@ import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -93,6 +103,7 @@ const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
   storeToRefs(searchBoxStore)
 const dismissable = ref(true)
+const filterVisible = ref(false)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
 // Minimum viewport width for the preview panel to fit beside the dialog
@@ -122,8 +133,10 @@ function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
 }
 function clearFilters() {
   nodeFilters.value = []
+  filterVisible.value = false
   hoveredNodeDef.value = null
 }
+
 function closeDialog() {
   visible.value = false
 }
@@ -141,6 +154,7 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   if (!node) return
 
   if (disconnectOnReset && triggerEvent) {
+    revealSlotForDroppedLink(node)
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
   } else if (!triggerEvent) {
     console.warn('The trigger event was undefined when addNode was called.')
@@ -169,6 +183,20 @@ function showSearchBox(e: CanvasPointerEvent | null) {
 
 function getFirstLink() {
   return canvasStore.getCanvas().linkConnector.renderLinks.at(0)
+}
+
+/**
+ * Node search offers nodes whose socket for the dragged type only exists under
+ * an unselected DynamicCombo option. Both link-release paths -- the search box
+ * and the context menu -- must ask for that option before connecting, or the
+ * link is dropped with only a console warning.
+ */
+function revealSlotForDroppedLink(node: LGraphNode) {
+  const link = getFirstLink()
+  const droppedType = link?.fromSlot.type?.toString()
+  if (link?.toType === 'input' && droppedType) {
+    revealDynamicInputSlot(node, droppedType)
+  }
 }
 
 const nodeDefStore = useNodeDefStore()
@@ -251,6 +279,7 @@ function showContextMenu(e: CanvasPointerEvent) {
 
       disconnectOnReset = false
       createEvent.preventDefault()
+      revealSlotForDroppedLink(node)
       canvas.linkConnector.connectToNode(node, e)
     },
     options
@@ -352,30 +381,11 @@ function reset() {
 
 // Reset connecting links when the search box is closed
 watch(visible, () => {
-  if (!visible.value) reset()
+  if (visible.value) return
+  clearFilters()
+  reset()
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 defineExpose({ showSearchBox })
 </script>
-
-<style>
-.invisible-dialog-root {
-  width: 60%;
-  min-width: 24rem;
-  max-width: 48rem;
-  border: 0 !important;
-  background-color: transparent !important;
-  margin-top: 25vh;
-  margin-left: 400px;
-}
-@media all and (max-width: 768px) {
-  .invisible-dialog-root {
-    margin-left: 0;
-  }
-}
-
-.node-search-box-dialog-mask {
-  align-items: flex-start !important;
-}
-</style>

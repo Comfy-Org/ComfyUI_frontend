@@ -1,5 +1,3 @@
-// @vitest-environment happy-dom
-
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -47,7 +45,8 @@ describe('SafeRichText', () => {
     ['protocol-relative URL', '//evil.example'],
     ['backslash URL', '/\\evil.example'],
     ['tab-smuggled URL', '/\t//evil.example'],
-    ['HTTP URL', 'http://evil.example']
+    ['HTTP URL', 'http://evil.example'],
+    ['credentialed HTTPS URL', 'https://user:pass@evil.example']
   ] as const)('drops a %s', ([, href]) => {
     render(SafeRichText, { props: { html: `<a href="${href}">Link</a>` } })
 

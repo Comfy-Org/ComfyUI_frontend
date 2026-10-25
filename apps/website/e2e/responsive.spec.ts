@@ -84,6 +84,36 @@ test.describe('Desktop SocialProofBar @smoke', () => {
     )
     expectSeamlessForwardLoop(geometry)
   })
+
+  test('desktop marquee still fills ultra-wide viewports late in the cycle', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 2600, height: 900 })
+    const selector = '[data-testid="social-proof-desktop"] .animate-marquee'
+    await page.locator(selector).first().waitFor()
+    const { rightEdge, viewportWidth } = await page.evaluate((sel) => {
+      const tracks = Array.from(document.querySelectorAll<HTMLElement>(sel))
+      const duration = tracks[0]
+        ?.getAnimations()
+        .at(0)
+        ?.effect?.getTiming().duration
+      if (typeof duration !== 'number' || duration <= 1) {
+        throw new Error(`Animation on ${sel} has unusable duration`)
+      }
+      for (const track of tracks) {
+        for (const anim of track.getAnimations()) {
+          anim.currentTime = duration - 0.1
+        }
+      }
+      void document.body.offsetWidth
+      const last = tracks[tracks.length - 1]
+      return {
+        rightEdge: last.getBoundingClientRect().right,
+        viewportWidth: window.innerWidth
+      }
+    }, selector)
+    expect(rightEdge).toBeGreaterThanOrEqual(viewportWidth)
+  })
 })
 
 type MarqueeGeometry = {
@@ -101,7 +131,7 @@ async function measureMarqueeLoopGeometry(
     const tracks = Array.from(
       document.querySelectorAll<HTMLElement>(sel)
     ).slice(0, 2)
-    const firstAnimation = tracks[0]?.getAnimations()[0]
+    const firstAnimation = tracks[0]?.getAnimations().at(0)
     if (!firstAnimation) {
       throw new Error(`No CSS animation found on ${sel}`)
     }

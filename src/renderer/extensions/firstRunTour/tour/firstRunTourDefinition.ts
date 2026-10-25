@@ -13,10 +13,10 @@ import type {
 } from '@/platform/onboarding/onboardingTours'
 import { app } from '@/scripts/app'
 
-import { resolveTourRoles } from '../roles/resolveTourRoles'
-import type { ResolvedRoles } from '../roles/resolveTourRoles'
-import { sequenceBuilder } from '../roles/tourSequence'
-import type { TourStep } from '../roles/tourSequence'
+import { resolveTourRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
+import type { ResolvedRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
+import { sequenceBuilder } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
+import type { TourStep } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
 import { frameNode } from './cameraFraming'
 import { canvasNodeTarget } from './canvasCoachTarget'
 

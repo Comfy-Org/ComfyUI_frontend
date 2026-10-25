@@ -7,10 +7,11 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
+import { consolidateConflictsByPackage } from '@/workbench/extensions/manager/utils/conflictUtils'
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility
@@ -49,18 +50,11 @@ vi.mock(
   })
 )
 
-vi.mock(
-  import('@/workbench/extensions/manager/utils/conflictUtils'),
-
-  async () => {
-    const actual = await vi.importActual<typeof ConflictUtils>(
-      '@/workbench/extensions/manager/utils/conflictUtils'
-    )
-    return {
-      ...actual,
-      consolidateConflictsByPackage: vi.fn((results) => results)
-    }
-  }
+vi.mock(import('@/workbench/extensions/manager/utils/conflictUtils'), {
+  spy: true
+})
+vi.mocked(consolidateConflictsByPackage).mockImplementation(
+  (results) => results
 )
 
 vi.mock(
@@ -79,15 +73,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
-
-  () => ({
-    useManagerState: vi.fn(() => ({
-      isNewManagerUI: { value: true }
-    }))
-  })
-)
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 describe('useConflictDetection', () => {
   const mockComfyManagerService = {
@@ -171,6 +157,7 @@ describe('useConflictDetection', () => {
 
   beforeEach(() => {
     // Setup mocks
+    vi.mocked(useManagerState()).isNewManagerUI = computed(() => true)
     vi.mocked(useComfyManagerService).mockReturnValue(mockComfyManagerService)
     vi.mocked(useComfyRegistryService).mockReturnValue(mockRegistryService)
     vi.mocked(useConflictAcknowledgment).mockReturnValue(mockAcknowledgment)

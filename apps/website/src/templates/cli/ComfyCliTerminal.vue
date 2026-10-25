@@ -3,13 +3,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useElementVisibility } from '@vueuse/core'
 import { computed, onUnmounted, ref, useTemplateRef, watchEffect } from 'vue'
 
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type { TerminalLine } from './cliTerminalSequences'
 import { cliTerminalSequences } from './cliTerminalSequences'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const START_DELAY_MS = 1200
 const TYPE_MIN_MS = 14
@@ -132,8 +133,8 @@ onUnmounted(() => clearTimeout(timer))
     ref="root"
     data-testid="cli-terminal"
     role="img"
-    :aria-label="t('cli.hero.terminalAria', locale)"
-    class="rounded-5xl flex flex-col overflow-hidden bg-white/4"
+    :aria-label="t('cli.hero.terminalAria')"
+    class="flex flex-col overflow-hidden rounded-5xl bg-white/4"
   >
     <div class="flex items-center gap-2 border-b border-white/10 px-5 py-4">
       <span class="size-2.5 rounded-full bg-white/15" />

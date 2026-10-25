@@ -1,18 +1,21 @@
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LinkId } from '@/types/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-
-import type { Subgraph } from './Subgraph'
-import type { SubgraphNode } from './SubgraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 export type ExecutionId = string
 
@@ -45,8 +48,8 @@ type ResolvedInput = {
  */
 export class ExecutableNodeDTO implements ExecutableLGraphNode {
   applyToGraph?(
-    ...args: Parameters<NonNullable<typeof this.node.applyToGraph>>
-  ): ReturnType<NonNullable<typeof this.node.applyToGraph>>
+    ...args: Parameters<NonNullable<LGraphNode['applyToGraph']>>
+  ): ReturnType<NonNullable<LGraphNode['applyToGraph']>>
 
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
@@ -83,6 +86,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
   get comfyClass() {
     return this.node.comfyClass
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  get properties() {
+    return this.node.properties
   }
 
   get isVirtualNode() {
@@ -361,8 +369,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Prefer input with the same slot ID
     if (
       oppositeInput &&
-      LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
-      LiteGraph.isValidConnection(oppositeInput.type, type)
+      litegraph().isValidConnection(oppositeInput.type, outputType) &&
+      litegraph().isValidConnection(oppositeInput.type, type)
     ) {
       return slot
     }
@@ -374,8 +382,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Find first matching slot - prefer exact type
     return inputs.findIndex(
       (input) =>
-        LiteGraph.isValidConnection(input.type, outputType) &&
-        LiteGraph.isValidConnection(input.type, type)
+        litegraph().isValidConnection(input.type, outputType) &&
+        litegraph().isValidConnection(input.type, type)
     )
   }
 
@@ -427,5 +435,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type,
       visited
     )
+  }
+}
+
+type RegisteredExecutableLGraphNode = ExecutableLGraphNode
+type RegisteredExecutionId = ExecutionId
+
+declare module '../types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    ExecutableLGraphNode: RegisteredExecutableLGraphNode
+    ExecutionId: RegisteredExecutionId
   }
 }

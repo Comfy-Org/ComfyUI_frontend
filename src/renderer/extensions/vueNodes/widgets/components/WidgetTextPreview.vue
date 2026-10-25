@@ -6,27 +6,25 @@
       <Button
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.copyToClipboard')"
         :aria-label="$t('g.copyToClipboard')"
         @click="handleCopy"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--copy] size-4 text-component-node-foreground" />
+        <i class="icon-[lucide--copy] size-4 text-foreground" />
       </Button>
       <Button
         v-if="downloadUrl"
         variant="textonly"
         size="icon"
-        class="hover:bg-base-foreground/10"
+        class="hover:bg-foreground/10"
         :title="$t('g.download')"
         :aria-label="$t('g.download')"
         @click="handleDownload"
         @pointerdown.capture.stop
       >
-        <i
-          class="icon-[lucide--download] size-4 text-component-node-foreground"
-        />
+        <i class="icon-[lucide--download] size-4 text-foreground" />
       </Button>
     </div>
 
@@ -47,10 +45,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
-          // Keep overflow stable so the scrollbar-gutter (from the base
-          // Textarea) stays reserved; a hover overflow toggle would reflow the
-          // content when the gutter appears.
+          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           'overflow-y-auto'
         )
       "
@@ -70,11 +65,14 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -158,11 +156,7 @@ function handleDownload() {
   try {
     downloadFile(downloadUrl.value, savedFile.value?.filename)
   } catch {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 </script>

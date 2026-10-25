@@ -1,24 +1,24 @@
 <template>
-  <div
-    class="bg-base-raised-surface flex items-center justify-between rounded-lg border border-border-default p-4"
-  >
+  <Card surface="secondary" class="flex items-center justify-between p-4">
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
-        <span class="font-medium text-base-foreground">{{ secret.name }}</span>
+        <span class="font-medium text-foreground">{{ secret.name }}</span>
         <img
           v-if="providerLogo"
           :src="providerLogo"
           :alt="providerLabel"
           class="size-5"
         />
-        <span
+        <Badge
           v-else-if="secret.provider"
-          class="bg-base-surface rounded-sm px-2 py-0.5 text-xs text-muted"
+          variant="square"
+          severity="muted"
+          class="px-2"
         >
           {{ providerLabel }}
-        </span>
+        </Badge>
       </div>
-      <div class="flex gap-3 text-xs text-muted">
+      <div class="flex gap-3 text-xs text-muted-foreground">
         <span v-if="createdAtLabel">{{ createdAtLabel }}</span>
         <span v-if="lastUsedLabel">
           {{ lastUsedLabel }}
@@ -26,10 +26,10 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
+      <i v-if="loading" class="pi pi-spinner pi-spin text-muted-foreground" />
       <template v-else>
         <Button
-          v-tooltip="{ value: editLabel, showDelay: 300 }"
+          :tooltip="editLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="editLabel"
@@ -39,7 +39,7 @@
           <i class="pi pi-pen-to-square" />
         </Button>
         <Button
-          v-tooltip="{ value: deleteLabel, showDelay: 300 }"
+          :tooltip="deleteLabel"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="deleteLabel"
@@ -50,18 +50,20 @@
         </Button>
       </template>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
-import { getProviderLabel, getProviderLogo } from '../providers'
-import type { SecretMetadata } from '../types'
+import { getProviderLabel, getProviderLogo } from '@/platform/secrets/providers'
+import type { SecretMetadata } from '@/platform/secrets/types'
 
 const {
   secret,

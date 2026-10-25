@@ -1,6 +1,6 @@
 import { z } from 'astro/zod'
 
-import type { WorkshopCreatorForm } from '../src/config/workshop-creator-form'
+import type { WorkshopCreatorForm } from '@/config/workshop-creator-form'
 import type { createCreatorFields } from './workshop-creator-fields'
 import { schemaAt } from './workshop-creator-fields'
 
@@ -117,8 +117,11 @@ export function wanCreatorRequest(
       options.mode === 'reference' ? 'Reference image' : 'Source image',
       true
     )
-  if (['reference-video', 'edit'].includes(String(options.mode)))
+  if (['reference-video', 'edit'].includes(String(options.mode))) {
     url('video_url', 'Source video', true, 'video')
+    if (['wan/wan2.6-r2v', 'wan/wan2.7-videoedit'].includes(id))
+      rules.video_url = { ...rules.video_url, maxUploadBytes: 100_000_000 }
+  }
   if (
     options.mode === 'reference' &&
     (id.includes('wan3.0') || id === 'wan/wan2.7-r2v')

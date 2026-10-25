@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <TagsInput
+    <TagEditor
       always-editing
       add-on-paste
       add-on-blur
@@ -8,33 +8,31 @@
       :convert-value="normalizeEmail"
       :model-value="emails"
       :class="cn('max-h-48 overflow-y-auto', tagsInputClass)"
+      :item-class="
+        (email) =>
+          cn(
+            'rounded-full',
+            !isValidEmail(email) && 'bg-destructive/20 text-destructive'
+          )
+      "
       @update:model-value="onEmailsUpdate"
     >
-      <TagsInputItem
-        v-for="email in emails"
-        :key="email"
-        :value="email"
-        :class="
-          cn('rounded-full', !isValidEmail(email) && 'bg-danger/20 text-danger')
-        "
-      >
-        <TagsInputItemText />
-        <TagsInputItemDelete />
-      </TagsInputItem>
-      <TagsInputInput
-        :auto-focus="autoFocus"
-        class="min-w-0 text-sm"
-        :aria-label="placeholder"
-        :aria-describedby="describedBy"
-        :placeholder="emails.length === 0 ? placeholder : undefined"
-      />
-    </TagsInput>
+      <template #input>
+        <TagsInputInput
+          :auto-focus
+          class="min-w-0 text-sm"
+          :aria-label="placeholder"
+          :aria-describedby="describedBy"
+          :placeholder="emails.length === 0 ? placeholder : undefined"
+        />
+      </template>
+    </TagEditor>
 
     <p
       v-if="invalidEmails.length > 0"
       :id="invalidEmailsHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t(
@@ -47,7 +45,7 @@
       v-if="alreadyInvitedEmails.length > 0"
       :id="pendingInvitesHintId"
       aria-live="polite"
-      class="m-0 text-xs text-warning-background"
+      class="m-0 text-xs text-warning"
     >
       <template v-if="alreadyInvitedEmails.length === 1">
         {{ $t('workspacePanel.inviteMemberDialog.pendingInviteSingle') }}
@@ -64,7 +62,7 @@
       v-if="seatOverage > 0"
       :id="seatLimitHintId"
       role="alert"
-      class="text-danger m-0 text-xs"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
@@ -106,17 +104,14 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -126,7 +121,7 @@ import {
   isValidEmail,
   normalizeEmail,
   sanitizeInviteEmails
-} from '@/platform/workspace/utils/inviteEmails'
+} from '@comfyorg/account-ui/billing/checkout'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const MAX_INVITES_PER_BATCH = 30
@@ -140,7 +135,7 @@ const {
   occupiedSeats = 0,
   showSubmit = true,
   autoFocus = false,
-  tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
+  tagsInputClass = 'min-h-10 w-full bg-muted px-3 focus-within:bg-muted hover:bg-muted/80'
 } = defineProps<{
   submitLabel: string
   placeholder: string
@@ -158,7 +153,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  submitted: [emails: string[]]
+  submitted: [emails: string[], invites: WorkspacePendingInvite[]]
   cancel: []
 }>()
 
@@ -170,6 +165,7 @@ const { fetchStatus } = useBillingContext()
 
 const emails = ref<string[]>([])
 const invitedEmails = ref<string[]>([])
+const invitedInvites = ref<WorkspacePendingInvite[]>([])
 const loading = ref(false)
 
 const { state: pendingInvites, execute: refreshPendingInvites } = useAsyncState<
@@ -258,8 +254,12 @@ async function onSubmit() {
       (_, index) => results[index].status === 'fulfilled'
     )
 
+    const createdInvites = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : []
+    )
     if (successfulEmails.length > 0) {
       invitedEmails.value.push(...successfulEmails)
+      invitedInvites.value.push(...createdInvites)
       telemetry?.trackWorkspaceInviteSent({
         source,
         count: successfulEmails.length
@@ -268,7 +268,7 @@ async function onSubmit() {
     }
 
     if (failedEmails.length === 0) {
-      emit('submitted', [...invitedEmails.value])
+      emit('submitted', [...invitedEmails.value], [...invitedInvites.value])
       return
     }
 
@@ -279,14 +279,10 @@ async function onSubmit() {
     })
 
     emails.value = failedEmails
-    toast.add({
-      severity: 'error',
-      summary: t(
-        'workspacePanel.inviteMemberDialog.failedCount',
-        failedEmails.length
-      ),
-      life: 5000
-    })
+    toast.error(
+      t('workspacePanel.inviteMemberDialog.failedCount', failedEmails.length),
+      { duration: 5000 }
+    )
   } finally {
     loading.value = false
   }

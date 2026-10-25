@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { prefersReducedMotion } from '../../../composables/useReducedMotion'
-import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
-import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 import DownloadLocalButton from './DownloadLocalButton.vue'
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 const svgRef = ref<SVGSVGElement>()
 let animationId: number | null = null
@@ -165,7 +166,7 @@ onUnmounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
+    class="relative mx-auto flex max-w-9xl flex-col items-center overflow-visible lg:flex-row lg:items-center lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (hidden below lg, left on lg) -->
     <div
@@ -289,32 +290,38 @@ onUnmounted(() => {
       <h1
         class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
-        {{ t('download.hero.heading', locale) }}
+        {{ t('download.hero.heading') }}
       </h1>
 
       <p
         class="mt-6 max-w-md text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
-        {{ t('download.hero.subtitle', locale) }}
+        {{ t('download.hero.subtitle') }}
       </p>
 
       <div class="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end">
         <MobileDownloadEmailForm :locale />
-        <DownloadLocalButton :locale class="lg:min-w-60 lg:p-4" />
-        <BrandButton
-          :href="externalLinks.githubInstall"
-          variant="outline"
-          size="lg"
-          class="lg:min-w-60 lg:p-4"
-        >
-          <span class="ppformula-text-center inline-flex items-center gap-2">
-            <i
-              class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"
-              aria-hidden="true"
-            />
-            {{ t('download.hero.installGithub', locale) }}
-          </span>
-        </BrandButton>
+        <div class="flex flex-col gap-4 lg:flex-row">
+          <DownloadLocalButton
+            :locale
+            show-installer-menu
+            class="lg:min-w-60 lg:p-4"
+          />
+          <BrandButton
+            :href="externalLinks.githubInstall"
+            variant="outline"
+            size="lg"
+            class="lg:min-w-60 lg:p-4"
+          >
+            <span class="inline-flex items-center gap-2">
+              <i
+                class="size-5 icon-mask mask-[url('/icons/social/github.svg')]"
+                aria-hidden="true"
+              />
+              {{ t('download.hero.installGithub') }}
+            </span>
+          </BrandButton>
+        </div>
       </div>
     </div>
   </section>

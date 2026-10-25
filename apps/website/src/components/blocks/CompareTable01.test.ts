@@ -1,5 +1,5 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
+import { h } from 'vue'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -71,5 +71,27 @@ describe('CompareTable01', () => {
         'Builder is self-serve for packaging and testing your own environment.'
       )
     ).toBeTruthy()
+  })
+
+  it('lets slots replace the subtitle, headers and cells, and add a footer', () => {
+    render(CompareTable01, {
+      props: requiredProps,
+      slots: {
+        subtitle: () => h('em', 'Rich subtitle'),
+        feature: ({ row }: { row: { feature: string } }) =>
+          h('a', { href: '#' }, row.feature),
+        cell: ({ cell, index }: { cell: string; index: number }) =>
+          h('span', `${index}:${cell}`),
+        column: ({ column }: { column: string }) =>
+          h('img', { alt: column, src: '/logo.svg' }),
+        footer: () => h('p', 'Footer note')
+      }
+    })
+
+    expect(screen.getByText('Rich subtitle').tagName).toBe('EM')
+    expect(screen.getByRole('link', { name: 'Team sharing' })).toBeTruthy()
+    expect(screen.getByRole('cell', { name: '1:Enterprise only' })).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'BUILDER' })).toBeTruthy()
+    expect(screen.getByText('Footer note')).toBeTruthy()
   })
 })

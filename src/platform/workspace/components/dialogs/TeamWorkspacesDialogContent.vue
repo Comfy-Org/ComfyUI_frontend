@@ -1,19 +1,17 @@
 <template>
-  <section
-    class="flex w-full max-w-[480px] flex-col rounded-2xl border border-border-default bg-base-background"
-  >
+  <Card class="flex w-full max-w-[480px] flex-col">
     <!-- Header -->
     <header class="flex items-start gap-3 p-5 pb-0">
       <div
-        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-background text-white"
+        class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white"
         aria-hidden="true"
       >
         <i class="icon-[lucide--users] text-lg" />
       </div>
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="m-0 text-lg font-semibold text-base-foreground">
+        <DialogTitle class="m-0 text-lg">
           {{ $t('teamWorkspacesDialog.title') }}
-        </h2>
+        </DialogTitle>
         <p class="m-0 text-sm text-muted-foreground">
           {{
             ownedTeamWorkspaces.length > 0
@@ -23,7 +21,7 @@
         </p>
       </div>
       <button
-        class="focus-visible:ring-secondary-foreground -mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="-mt-1 cursor-pointer rounded-sm border-none bg-transparent p-2 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -46,7 +44,7 @@
       >
         <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
           <button
-            class="focus-visible:ring-secondary-foreground flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-transparent px-4 py-3 transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
           >
             <WorkspaceProfilePic
@@ -56,20 +54,18 @@
             />
             <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
               <div class="flex items-center gap-1.5">
-                <span
-                  class="truncate text-left text-sm font-medium text-base-foreground"
-                >
+                <span class="truncate text-left text-sm font-medium">
                   {{ workspace.name }}
                 </span>
                 <span
                   v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                  class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
                 >
                   {{ tierLabels.get(workspace.id) }}
                 </span>
               </div>
             </div>
-            <span class="text-primary-foreground shrink-0 text-sm font-medium">
+            <span class="shrink-0 text-sm font-medium">
               {{ $t('teamWorkspacesDialog.switch') }}
               <i class="pi pi-arrow-right text-xs" aria-hidden="true" />
             </span>
@@ -79,10 +75,7 @@
     </section>
 
     <!-- Divider -->
-    <hr
-      v-if="ownedTeamWorkspaces.length > 0"
-      class="mx-5 my-4 border-border-default"
-    />
+    <hr v-if="ownedTeamWorkspaces.length > 0" class="mx-5 my-4" />
 
     <!-- New workspace section -->
     <section
@@ -95,14 +88,14 @@
         {{ $t('teamWorkspacesDialog.newWorkspace') }}
       </h3>
       <div class="flex flex-col gap-2">
-        <label for="workspace-name-input" class="text-sm text-base-foreground">
+        <label for="workspace-name-input" class="text-sm">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           id="workspace-name-input"
           v-model="workspaceName"
           type="text"
-          class="focus:ring-secondary-foreground w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:outline-none"
+          class="w-full rounded-lg border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
           :placeholder="$t('teamWorkspacesDialog.namePlaceholder')"
           :aria-invalid="workspaceName.length > 0 && !isValidName"
           :aria-describedby="
@@ -115,7 +108,7 @@
         <p
           v-if="workspaceName.length > 0 && !isValidName"
           id="workspace-name-error"
-          class="text-danger m-0 text-xs"
+          class="m-0 text-xs text-destructive"
         >
           {{ $t('teamWorkspacesDialog.nameValidationError') }}
         </p>
@@ -132,21 +125,24 @@
         {{ $t('teamWorkspacesDialog.createWorkspace') }}
       </Button>
     </section>
-  </section>
+  </Card>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import Card from '@/components/ui/card/Card.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 const { onConfirm } = defineProps<{
   onConfirm?: (name: string) => void | Promise<void>
@@ -191,10 +187,8 @@ async function handleSwitch(workspaceId: string) {
     await switchWorkspace(workspaceId)
     dialogStore.closeDialog({ key: DIALOG_KEY })
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspaceSwitcher.failedToSwitch'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspaceSwitcher.failedToSwitch'), {
+      description: getErrorMessage(error) ?? t('g.unknownError')
     })
   }
 }
@@ -207,20 +201,16 @@ async function onCreate() {
     try {
       await workspaceStore.createWorkspace(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('workspacePanel.toast.failedToCreateWorkspace'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
       return
     }
     try {
       await onConfirm?.(name)
     } catch (error) {
-      toast.add({
-        severity: 'error',
-        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-        detail: error instanceof Error ? error.message : t('g.unknownError')
+      toast.error(t('teamWorkspacesDialog.confirmCallbackFailed'), {
+        description: getErrorMessage(error) ?? t('g.unknownError')
       })
     }
     dialogStore.closeDialog({ key: DIALOG_KEY })

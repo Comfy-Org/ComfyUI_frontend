@@ -213,6 +213,8 @@ Commands:
          [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
          [--description <text>] [--name <slug>] [--pr <number>]
               Record a browser test; supplied answers skip setup prompts
+              --backend <url> points the dev server at any backend host, such
+              as a nightly environment, instead of a named distribution
   add-workflow <file> [--name <n>]
               Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
@@ -220,9 +222,10 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
-  agent-replay [--case <id>] [--url <dev server>] [--headed] [--video] [--help]
+  agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video] [--help]
               Replay the recorded agent conversations as tests against a
-              running dev server (see .claude/skills/agent-integration-replay)
+              running dev server; --spec replays them through another spec
+              (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings
@@ -230,6 +233,12 @@ Commands:
 
 Options:
   --help      Show help
+
+Environment:
+  DEV_SERVER_CF_ACCESS_CLIENT_ID, DEV_SERVER_CF_ACCESS_CLIENT_SECRET
+              Cloudflare Access service token forwarded to a gated backend.
+              Without it, a gated host bounces every request to the Access
+              login page and the app never finishes loading.
 
 If you are an agent helping a HUMAN record a test: run 'comfy-test guide'
 first and follow it — it tells you what to say and what never to say.

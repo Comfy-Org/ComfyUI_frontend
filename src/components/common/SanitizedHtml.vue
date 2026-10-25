@@ -13,10 +13,32 @@ const purifier = createDOMPurify(window)
 
 defineOptions({ inheritAttrs: false })
 
-const { html, as = 'div' } = defineProps<{
+const {
+  html,
+  as = 'div',
+  profile = 'default'
+} = defineProps<{
   html: string
   as?: 'div' | 'span'
+  profile?: 'default' | 'highlighted-code'
 }>()
+
+purifier.addHook('uponSanitizeAttribute', (node, data) => {
+  if (data.attrName !== 'style') return
+  if (profile !== 'highlighted-code' || !(node instanceof HTMLSpanElement)) {
+    data.keepAttr = false
+    return
+  }
+
+  const source = document.createElement('span').style
+  const allowed = document.createElement('span').style
+  source.cssText = data.attrValue
+  for (const property of ['color', 'font-style', 'font-weight']) {
+    allowed.setProperty(property, source.getPropertyValue(property))
+  }
+  data.attrValue = allowed.cssText
+  data.keepAttr = data.attrValue.length > 0
+})
 
 const sanitizedHtml = computed(() =>
   purifier.sanitize(html, {
@@ -30,7 +52,9 @@ const sanitizedHtml = computed(() =>
       'poster',
       'target',
       'rel'
-    ]
+    ],
+    FORBID_TAGS: ['form', 'input', 'button'],
+    FORBID_ATTR: profile === 'highlighted-code' ? [] : ['style']
   })
 )
 </script>

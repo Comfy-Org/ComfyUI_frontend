@@ -11,6 +11,7 @@ import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
 } from '@e2e/fixtures/utils/slotBoundsUtil'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const RENAMED_INPUT_NAME = 'renamed_input'
 const RENAMED_SLOT_NAME = 'renamed_slot_name'
@@ -405,7 +406,9 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     () => {
       test.use({
         initialSettings: {
-          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+          'Comfy.UseNewMenu': 'Disabled',
+          'Comfy.NodeSearchBoxImpl': 'v1 (legacy)',
+          'Comfy.VueNodes.Enabled': false
         }
       })
 
@@ -432,21 +435,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBe(true)
         await comfyPage.nextFrame()
 
-        const subgraphNode = comfyPage.vueNodes.getNodeLocator('19')
-        await expect(subgraphNode).toBeVisible()
-
-        const seedWidget = subgraphNode
-          .getByTestId('widget-layout-field-label')
-          .filter({ hasText: /^renamed_seed$/ })
-        await expect(seedWidget).toBeVisible()
-        await SubgraphHelper.expectWidgetBelowHeader(subgraphNode, seedWidget)
-
-        // Switch to the legacy canvas first, then enter through setGraph:
-        // after the disconnect above, the legacy node body shows an
-        // interactive seed widget that swallows coordinate-based navigation
-        // clicks, and entering while Vue nodes are enabled leaves a stale
-        // active canvas that breaks the rename prompt.
-        await comfyPage.menu.topbar.setVueNodesEnabled(false)
         await comfyPage.subgraph.enterSubgraphWithFallback('19')
 
         // The rename prompt reads LGraphCanvas.active_canvas, which only real
@@ -486,7 +474,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
         ).toBeHidden()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.menu.topbar.setVueNodesEnabled(true)
+        await comfyPage.vueNodes.setEnabled(true)
 
         const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
         await expect(subgraphNodeAfter).toBeVisible()
@@ -664,7 +652,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
 test(
   'link interactions',
-  { tag: ['@vue-nodes', '@subgraph'] },
+  { tag: ['@vue-nodes', '@subgraph', '@screenshot'] },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     await comfyPage.vueNodes.enterSubgraph('2')
@@ -694,11 +682,13 @@ test(
       await comfyPage.page.mouse.down()
       await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
 
-      await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
-        clip
-      })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [clip],
+        'vue-io-highlight.png',
+        { padding: 0 }
+      )
 
-      //cancel link operation
       await stepsSlot.hover()
       await comfyPage.page.mouse.up()
     })

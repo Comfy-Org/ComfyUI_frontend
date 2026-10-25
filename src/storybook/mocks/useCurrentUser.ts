@@ -1,19 +1,13 @@
 import { computed, ref } from 'vue'
 
-/**
- * Storybook mock for `useCurrentUser`.
- *
- * The real composable reads the Firebase-backed `authStore`, whose setup calls
- * `setPersistence` and crashes in the Storybook environment (no Firebase). This
- * static stub presents a signed-in user so components that only need the
- * display name / email (e.g. WorkspaceActivityContent's member self-scope)
- * render without any auth.
- */
+/** Storybook mock for `useCurrentUser` that presents a static signed-in user. */
 export function useCurrentUser() {
   return {
     userDisplayName: ref('Ada Lovelace'),
     userEmail: ref('ada@example.com'),
     resolvedUserInfo: ref({ id: 'user-ada' }),
-    isLoggedIn: computed(() => true)
+    isAuthInitialized: computed(() => true),
+    isLoggedIn: computed(() => true),
+    isApiKeyLogin: computed(() => false)
   }
 }

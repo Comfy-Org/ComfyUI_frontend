@@ -1,4 +1,5 @@
-import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'

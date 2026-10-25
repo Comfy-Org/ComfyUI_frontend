@@ -1,20 +1,7 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-const { state } = vi.hoisted(() => ({
-  state: {
-    extension: null as { nodeCreated: (node: unknown) => void } | null
-  }
-}))
-
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (ext: { nodeCreated: (node: unknown) => void }) => {
-      state.extension = ext
-    }
-  })
-}))
-
-await import('./createBoundingBoxes')
+import { createBoundingBoxesExtension } from './createBoundingBoxes'
 
 interface MockWidget {
   name: string
@@ -23,57 +10,35 @@ interface MockWidget {
   widgetId?: string
 }
 
-function makeNode(connected: boolean, comfyClass = 'CreateBoundingBoxes') {
+function makeNode(comfyClass = 'CreateBoundingBoxes') {
   const widgets: MockWidget[] = [
     { name: 'width', hidden: false, options: {} },
-    { name: 'height', hidden: false, options: {} },
-    { name: 'other', hidden: false, options: {} },
     { name: 'last_incoming', hidden: false, options: {} }
   ]
   return {
     constructor: { comfyClass },
     size: [100, 100] as [number, number],
     setSize: vi.fn(),
-    findInputSlot: () => 0,
-    isInputConnected: () => connected,
-    widgets,
-    onConnectionsChange: undefined as unknown
+    widgets
   }
 }
 
+const hiddenOf = (node: ReturnType<typeof makeNode>, name: string) =>
+  node.widgets.find((w) => w.name === name)!.hidden
+
 describe('Comfy.CreateBoundingBoxes extension', () => {
   it('ignores nodes of other classes', () => {
-    const node = makeNode(true, 'SomethingElse')
-    state.extension!.nodeCreated(node)
+    const node = makeNode('SomethingElse')
+    createBoundingBoxesExtension.nodeCreated?.(fromAny(node), fromAny({}))
     expect(node.setSize).not.toHaveBeenCalled()
+    expect(hiddenOf(node, 'last_incoming')).toBe(false)
   })
 
-  it('enlarges the node and hides width/height when a background is connected', () => {
-    const node = makeNode(true)
-    state.extension!.nodeCreated(node)
+  it('enlarges the node and hides only the internal last_incoming widget', () => {
+    const node = makeNode()
+    createBoundingBoxesExtension.nodeCreated?.(fromAny(node), fromAny({}))
     expect(node.setSize).toHaveBeenCalledWith([420, 560])
-    expect(node.widgets[0].hidden).toBe(true)
-    expect(node.widgets[1].hidden).toBe(true)
-    expect(node.widgets[2].hidden).toBe(false)
-  })
-
-  it('shows width/height when no background is connected', () => {
-    const node = makeNode(false)
-    state.extension!.nodeCreated(node)
-    expect(node.widgets[0].hidden).toBe(false)
-  })
-
-  it('always hides the internal last_incoming widget', () => {
-    for (const connected of [true, false]) {
-      const node = makeNode(connected)
-      state.extension!.nodeCreated(node)
-      expect(node.widgets[3].hidden).toBe(true)
-    }
-  })
-
-  it('chains a connections-change handler that re-syncs visibility', () => {
-    const node = makeNode(false)
-    state.extension!.nodeCreated(node)
-    expect(typeof node.onConnectionsChange).toBe('function')
+    expect(hiddenOf(node, 'width')).toBe(false)
+    expect(hiddenOf(node, 'last_incoming')).toBe(true)
   })
 })

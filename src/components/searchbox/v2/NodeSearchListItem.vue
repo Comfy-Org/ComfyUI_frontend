@@ -1,10 +1,10 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
+    class="option-container flex w-full items-center justify-between overflow-hidden"
   >
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
-      <div class="text-foreground flex items-center gap-2 text-sm">
+      <div class="flex items-center gap-2 text-sm">
         <span
           v-if="isBookmarked && !hideBookmarkIcon"
           role="img"
@@ -15,13 +15,15 @@
         <span class="truncate">
           <HighlightedText :text="nodeDef.display_name" :query="currentQuery" />
         </span>
-        <span
+        <Badge
           v-if="showIdName"
           data-testid="node-id-badge"
-          class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+          variant="square"
+          severity="secondary"
+          class="text-muted-foreground"
         >
           <HighlightedText :text="nodeDef.name" :query="currentQuery" />
-        </span>
+        </Badge>
 
         <template v-if="showDescription">
           <div class="flex-1" />
@@ -51,7 +53,7 @@
             >
               <i
                 aria-hidden="true"
-                class="icon-[lucide--coins] size-3 text-amber-400"
+                class="icon-[lucide--coins] size-3 text-credit"
               />
               <i
                 aria-hidden="true"
@@ -75,42 +77,43 @@
         </span>
         <span
           v-if="nodeDef.description && showCategory"
-          class="h-3 w-px shrink-0 bg-border-default"
+          class="h-3 w-px shrink-0 bg-border"
         />
         <TextTicker v-if="nodeDef.description" class="min-w-0 flex-1">
           {{ nodeDef.description }}
         </TextTicker>
       </div>
     </div>
-    <div v-if="!showDescription" class="flex items-center gap-1">
-      <span
+    <div
+      v-if="!showDescription"
+      class="flex items-center gap-1 text-xs text-muted-foreground"
+    >
+      <Badge
         v-if="nodeDef.deprecated"
-        class="rounded-sm bg-red-500/20 px-1.5 py-0.5 text-xs text-red-400"
+        variant="square"
+        class="bg-destructive/20 text-destructive"
       >
         {{ $t('g.deprecated') }}
-      </span>
-      <span
-        v-if="nodeDef.experimental"
-        class="rounded-sm bg-blue-500/20 px-1.5 py-0.5 text-xs text-blue-400"
-      >
+      </Badge>
+      <Badge v-if="nodeDef.experimental" variant="square" severity="info">
         {{ $t('g.experimental') }}
-      </span>
+      </Badge>
       <span
         v-if="nodeDef.dev_only"
-        class="rounded-sm bg-cyan-500/20 px-1.5 py-0.5 text-xs text-cyan-400"
+        class="rounded-sm bg-cyan-500/20 px-1.5 py-0.5 text-cyan-400"
       >
         {{ $t('g.devOnly') }}
       </span>
       <span
         v-if="showNodeFrequency && nodeFrequency > 0"
         data-testid="frequency-badge"
-        class="rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+        class="rounded-sm bg-secondary px-1.5 py-0.5"
       >
         {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
       </span>
       <span
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
-        class="rounded-sm bg-secondary-background px-2 py-0.5 text-sm text-muted-foreground"
+        class="rounded-sm bg-secondary px-2 py-0.5 text-sm"
       >
         {{ nodeDef.nodeSource.displayText }}
       </span>
@@ -119,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
@@ -128,8 +132,8 @@ import HighlightedText from '@/components/searchbox/HighlightedText.vue'
 import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { CORE_NODE_MODULES, NodeSourceType } from '@/types/nodeSource'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
@@ -150,7 +154,7 @@ const {
 }>()
 
 const badgePillClass =
-  'flex h-[18px] max-w-28 shrink-0 items-center justify-center gap-1 rounded-full bg-secondary-background-hover/80 px-2'
+  'flex h-[18px] max-w-28 shrink-0 items-center justify-center gap-1 rounded-full bg-accent/80 px-2'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>

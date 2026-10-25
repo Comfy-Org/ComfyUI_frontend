@@ -7,13 +7,16 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { StatusWsMessageStatus, TaskOutput } from '@/schemas/apiSchema'
+import type {
+  StatusWsMessageStatus,
+  TaskOutput
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
-import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyApp } from '@/types/comfy'
+import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -26,6 +29,16 @@ enum TaskItemDisplayStatus {
   Completed = 'Completed',
   Failed = 'Failed',
   Cancelled = 'Cancelled'
+}
+
+function toAugmentedPreviewOutput(
+  previewOutput: NonNullable<JobListItem['preview_output']>
+): AugmentedResultItem {
+  return {
+    ...previewOutput,
+    filename: previewOutput.filename ?? '',
+    subfolder: previewOutput.subfolder ?? ''
+  }
 }
 
 export class TaskItemImpl {
@@ -51,7 +64,11 @@ export class TaskItemImpl {
           }
         : {})
     this.outputs = effectiveOutputs
-    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
+    this.flatOutputs =
+      flatOutputs ??
+      (!outputs && job.preview_output?.mediaType === 'text'
+        ? [toAugmentedPreviewOutput(job.preview_output)]
+        : this.calculateFlatOutputs())
   }
 
   calculateFlatOutputs(): ReadonlyArray<AugmentedResultItem> {
@@ -229,7 +246,7 @@ export class TaskItemImpl {
         rawOutputs[rawNodeExecutionId]
       )
     }
-    useExtensionService().invokeExtensions(
+    useExtensionServiceAccess().invokeExtensions(
       'onNodeOutputsUpdated',
       app.nodeOutputs
     )
@@ -298,12 +315,26 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  let currentUpdate: Promise<void> = Promise.resolve()
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
       return
     }
+    currentUpdate = fetchQueueAndHistory()
+    await currentUpdate
+  }
 
+  /** Like `update()`, but a coalesced call also waits for the trailing re-fetch. */
+  async function updateFresh() {
+    if (!updateState.inFlight) return update()
+    updateState.dirty = true
+    await currentUpdate
+    await currentUpdate
+  }
+
+  async function fetchQueueAndHistory() {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
@@ -419,6 +450,7 @@ export const useQueueStore = defineStore('queue', () => {
     activeJobsCount,
 
     update,
+    updateFresh,
     clear,
     delete: deleteTask
   }
@@ -432,7 +464,8 @@ export const useQueuePendingTaskCountStore = defineStore(
     }),
     actions: {
       update(e: CustomEvent<StatusWsMessageStatus | null>) {
-        this.count = e.detail?.exec_info.queue_remaining || 0
+        const queueRemaining = e.detail?.exec_info?.queue_remaining
+        if (queueRemaining != null) this.count = queueRemaining
       }
     }
   }

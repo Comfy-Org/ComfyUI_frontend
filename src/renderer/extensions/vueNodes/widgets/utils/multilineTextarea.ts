@@ -3,9 +3,9 @@ import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
@@ -64,7 +64,7 @@ export function bindMultilineTextareaWidget(
       if (event.ctrlKey) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -78,7 +78,7 @@ export function bindMultilineTextareaWidget(
       if (gesturesEnabled && isLikelyTrackpad) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -86,7 +86,7 @@ export function bindMultilineTextareaWidget(
       if (isHorizontal) {
         event.preventDefault()
         event.stopPropagation()
-        app.canvas.processMouseWheel(event)
+        useApp().canvas.processMouseWheel(event)
         return
       }
 
@@ -98,7 +98,7 @@ export function bindMultilineTextareaWidget(
 
       // If textarea can't scroll vertically, pass to canvas
       event.preventDefault()
-      app.canvas.processMouseWheel(event)
+      useApp().canvas.processMouseWheel(event)
     },
     { signal }
   )

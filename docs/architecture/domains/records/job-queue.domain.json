@@ -1,0 +1,230 @@
+{
+  "id": "job-queue",
+  "capability": "Job queue",
+  "description": "Queued and historical jobs: the jobs API client and job schemas, queue polling, the queue store and result-item parsing, auto-queue settings, job list grouping, filtering, estimates, menus, actions, notification banners, result gallery, clear-history dialog, and the queue progress overlay and job details UI. Live execution state, wire contracts, asset records, and the media lightbox are separate.",
+  "modules": [
+    {
+      "path": "src/components/actionbar/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/queue/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/queue/job/useJobErrorReporting.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/queue/job/useJobErrorReporting.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/queue/job/useQueueEstimates.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/queue/job/useQueueEstimates.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/components/sidebar/tabs/JobHistorySidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/queue/**",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/queue/jobTabs.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/queue/jobTabs.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useReconnectQueueRefresh.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useReconnectQueueRefresh.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remote/comfyui/jobs/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/platform/remote/comfyui/jobs/jobTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/comfyui/useQueuePolling.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/remote/comfyui/useQueuePolling.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/cloud/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/autoQueueService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/autoQueueService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/jobOutputCache.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/jobOutputCache.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/queueSettingsStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/queueStore.loadWorkflow.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/queueStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/queueStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/resultItemParsing.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/stores/resultItemParsing.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/storybook/mocks/useJobList.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/queue.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/queueDisplay.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/queueDisplay.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/queueUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItem.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItemUrl.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/resultItemUrl.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
+      "checks": [
+        "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
+        "src/stores/resultItemParsing.test.ts"
+      ]
+    },
+    {
+      "name": "Queue store merges running, pending, and history jobs and reloads their workflows",
+      "checks": [
+        "src/stores/queueStore.test.ts",
+        "src/stores/queueStore.loadWorkflow.test.ts",
+        "src/platform/remote/comfyui/useQueuePolling.test.ts"
+      ]
+    },
+    {
+      "name": "Job list groups, filters, estimates, and exposes job menu actions",
+      "checks": [
+        "src/composables/queue/useJobList.test.ts",
+        "src/composables/queue/jobTabs.test.ts",
+        "src/composables/queue/useJobMenu.test.ts",
+        "src/components/queue/job/useQueueEstimates.test.ts",
+        "src/components/queue/job/useJobErrorReporting.test.ts"
+      ]
+    },
+    {
+      "name": "Queue overlay, notification banners, and progress render active and finished jobs",
+      "checks": [
+        "src/components/queue/QueueProgressOverlay.test.ts",
+        "src/composables/queue/useQueueNotificationBanners.test.ts",
+        "src/composables/queue/useQueueProgress.test.ts",
+        "src/components/queue/job/JobAssetsList.test.ts"
+      ]
+    },
+    {
+      "name": "Actionbar run button queues prompts with batch count and run modes and shows queue progress",
+      "checks": [
+        "src/components/actionbar/ComfyActionbar.test.ts",
+        "src/components/actionbar/ComfyRunButton/ComfyQueueButton.test.ts",
+        "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.test.ts",
+        "src/components/actionbar/BatchCountEdit.test.ts"
+      ]
+    },
+    {
+      "name": "Auto-queue requeues on change or instant mode and respects the partner-node run gate",
+      "checks": ["src/services/autoQueueService.test.ts"]
+    },
+    {
+      "name": "Job detail, outputs, assets, and workflows are fetched and cached per job",
+      "checks": [
+        "src/services/jobOutputCache.test.ts",
+        "src/platform/workflow/cloud/getWorkflowFromHistory.test.ts"
+      ]
+    },
+    {
+      "name": "Job display state, reconnect refresh, and job-history sidebar registration follow queue state",
+      "checks": [
+        "src/utils/queueDisplay.test.ts",
+        "src/composables/useReconnectQueueRefresh.test.ts",
+        "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+        "src/stores/queueStore.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "useQueueStore and useQueueSettingsStore keep their store ids and exports because assets, linear mode, the action bar, auto-queue, and extensions read them.",
+    "The queue store depending on execution and node-output stores, job menus calling workflowService, litegraph, and dialog services, presentation components reading asset, command, and sidebar stores, and the dialog launcher that loads presentation remain visible as coupling and role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

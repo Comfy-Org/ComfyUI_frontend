@@ -1,21 +1,92 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useDeleteWorkspaceGate } from '@/platform/workspace/composables/useDeleteWorkspaceGate'
+import { useLeaveWorkspaceGate } from '@/platform/workspace/composables/useLeaveWorkspaceGate'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
+
+interface GatedItem {
+  label: string
+  tooltip: string | undefined
+  command: () => void
+  variant?: 'destructive'
+}
+
+function gatedItem(status: 'enabled' | 'disabled', item: GatedItem): MenuItem {
+  return {
+    ...item,
+    disabled: status === 'disabled',
+    focusableWhenDisabled: true
+  }
+}
+
+/** Edit, Leave and Delete workspace: the one source for every workspace ⋯ menu. */
+export function useWorkspaceActionMenuItems() {
+  const { t } = useI18n()
+  const { canEditWorkspace } = useBillingCapabilities()
+  const { gate: leaveGate, tooltip: leaveTooltip } = useLeaveWorkspaceGate()
+  const { gate: deleteGate, tooltip: deleteTooltip } = useDeleteWorkspaceGate()
+  const {
+    showEditWorkspaceDialog,
+    showDeleteWorkspaceDialog,
+    showLeaveWorkspaceDialog
+  } = useWorkspaceDialogs()
+
+  function leaveWorkspace() {
+    if (leaveGate.value.status !== 'enabled') return
+    void showLeaveWorkspaceDialog()
+  }
+
+  function deleteWorkspace() {
+    if (deleteGate.value.status !== 'enabled') return
+    void showDeleteWorkspaceDialog()
+  }
+
+  return computed<MenuItem[]>(() => {
+    const items: MenuItem[] = []
+    if (canEditWorkspace.value) {
+      items.push({
+        label: t('workspacePanel.menu.editWorkspace'),
+        command: () => void showEditWorkspaceDialog()
+      })
+    }
+    const leave = leaveGate.value
+    if (leave.status !== 'hidden') {
+      items.push(
+        gatedItem(leave.status, {
+          label: t('workspacePanel.menu.leaveWorkspace'),
+          tooltip: leaveTooltip.value,
+          command: leaveWorkspace
+        })
+      )
+    }
+    const remove = deleteGate.value
+    if (remove.status !== 'hidden') {
+      items.push(
+        gatedItem(remove.status, {
+          label: t('workspacePanel.menu.deleteWorkspace'),
+          tooltip: deleteTooltip.value,
+          command: deleteWorkspace,
+          variant: 'destructive'
+        })
+      )
+    }
+    return items
+  })
+}
 
 /**
- * Builds the Plan & Credits overflow-menu model for the workspace subscription
- * panel. Visibility and the Delete enable/disable policy are derived from the
- * shared useWorkspaceUI state so this menu can't desync with the sibling
- * Plan & Credits panel menu.
+ * Builds the Plan & Credits overflow-menu model: Cancel plan followed by the
+ * shared workspace actions.
  */
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
@@ -24,23 +95,11 @@ export function useWorkspaceMenuItems() {
   const { canCancel } = useBillingCapabilities()
   const {
     permissions,
-    uiConfig,
-    isInPersonalWorkspace,
     canAccessSubscriptionFeatures,
-    isSubscriptionCancelled,
-    isDeleteDisabled,
-    deleteDisabledTooltipKey
+    isSubscriptionCancelled
   } = useWorkspaceUI()
-  const {
-    showCancelSubscriptionFlow,
-    showEditWorkspaceDialog,
-    showDeleteWorkspaceDialog,
-    showLeaveWorkspaceDialog
-  } = useDialogService()
-
-  function editWorkspace() {
-    void showEditWorkspaceDialog()
-  }
+  const workspaceActionItems = useWorkspaceActionMenuItems()
+  const { showCancelSubscriptionFlow } = useBillingDialogs()
 
   function cancelSubscription() {
     if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) return
@@ -48,26 +107,7 @@ export function useWorkspaceMenuItems() {
     void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
   }
 
-  function deleteWorkspace() {
-    if (
-      !permissions.value.canManageSubscription ||
-      isInPersonalWorkspace.value ||
-      isDeleteDisabled.value
-    ) {
-      return
-    }
-    void showDeleteWorkspaceDialog()
-  }
-
-  function leaveWorkspace() {
-    if (!permissions.value.canLeaveWorkspace) return
-    void showLeaveWorkspaceDialog()
-  }
-
   const canCancelPlan = computed(() => {
-    // can_cancel already encodes role, subscription presence/status and a
-    // scheduled cancellation, but not tier: it stays true for an active FREE
-    // plan, so the free-tier guard has to remain client-side.
     if (isCloud && shouldUseWorkspaceBilling.value)
       return canCancel.value && !isFreeTier.value
     return (
@@ -82,61 +122,13 @@ export function useWorkspaceMenuItems() {
     )
   })
 
-  // Deleting a workspace requires cancelling its plan first, and an Enterprise
-  // plan only ends through sales — so Delete would be a permanently disabled
-  // dead end. Hidden entirely per DES-782.
-  const canDeleteWorkspace = computed(
-    () =>
-      permissions.value.canManageSubscription &&
-      !isInPersonalWorkspace.value &&
-      subscription.value?.tier !== 'ENTERPRISE'
-  )
+  const menuItems = computed<MenuItem[]>(() => [
+    ...(canCancelPlan.value
+      ? [{ label: t('subscription.cancelPlan'), command: cancelSubscription }]
+      : []),
+    ...workspaceActionItems.value
+  ])
 
-  const deleteTooltip = computed(() => {
-    const key = deleteDisabledTooltipKey.value
-    return key ? t(key) : undefined
-  })
-
-  const menuItems = computed<MenuItem[]>(() => {
-    const items: MenuItem[] = []
-
-    if (uiConfig.value.showEditWorkspaceMenuItem) {
-      items.push({
-        label: t('workspacePanel.menu.editWorkspace'),
-        command: editWorkspace
-      })
-    }
-
-    if (canCancelPlan.value) {
-      items.push({
-        label: t('subscription.cancelPlan'),
-        command: cancelSubscription
-      })
-    }
-
-    if (canDeleteWorkspace.value) {
-      items.push({
-        label: t('workspacePanel.menu.deleteWorkspace'),
-        class: isDeleteDisabled.value
-          ? 'data-disabled:cursor-not-allowed data-disabled:text-destructive-background/50 data-disabled:pointer-events-auto'
-          : 'text-destructive-background',
-        disabled: isDeleteDisabled.value,
-        tooltip: deleteTooltip.value,
-        command: isDeleteDisabled.value ? undefined : deleteWorkspace
-      })
-    }
-
-    if (permissions.value.canLeaveWorkspace) {
-      items.push({
-        label: t('workspacePanel.menu.leaveWorkspace'),
-        command: leaveWorkspace
-      })
-    }
-
-    return items
-  })
-
-  // Figma 3343-25140 renders a divider between every menu option.
   const menuEntries = computed<MenuItem[]>(() =>
     menuItems.value.flatMap((item, index) =>
       index === 0 ? [item] : [{ separator: true }, item]

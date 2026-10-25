@@ -1,9 +1,12 @@
+import type {
+  LGraph,
+  LGraphCanvas
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import type { LGraph } from '../LGraph'
-import type { LinkSegment } from '../interfaces'
-import type { LGraphCanvas } from '../LGraphCanvas'
-import { Reroute } from '../Reroute'
+import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 
 /**
  * Resolves the reroute under a canvas-space point, preferring the layout store
@@ -38,14 +41,18 @@ export function queryRenderedLinkSegmentsAtPoint(
   const hits = new Set<LinkSegment>()
   ctx.lineWidth = canvas.connections_width + 7
   try {
-    const layoutHit = layoutStore.queryLinkSegmentAtPoint({ x, y }, ctx)
-    const dpi = Math.max(window.devicePixelRatio, 1)
+    const layoutHit = layoutStore.queryLinkSegmentAtPoint(
+      { x, y },
+      ctx,
+      canvas.dpr
+    )
+    const { dpr } = canvas
     for (const segment of renderedPaths) {
       const layoutId =
         segment instanceof Reroute ? layoutHit?.rerouteId : layoutHit?.linkId
       if (
         segment.id === layoutId ||
-        (segment.path && ctx.isPointInStroke(segment.path, x * dpi, y * dpi))
+        (segment.path && ctx.isPointInStroke(segment.path, x * dpr, y * dpr))
       ) {
         hits.add(segment)
       }

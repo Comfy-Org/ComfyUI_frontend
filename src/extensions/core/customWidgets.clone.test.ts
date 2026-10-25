@@ -1,21 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
-await import('./customWidgets')
-const extension = extensions.getExtension('Comfy.CustomWidgets')
+import { customWidgetsExtension } from './customWidgets'
+
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboCopyPaste'
 
 class TestCustomComboNode extends LGraphNode {
@@ -37,7 +27,7 @@ function findWidget(node: LGraphNode, name: string) {
 
 describe('CustomCombo copy/paste', () => {
   beforeAll(async () => {
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNode,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app

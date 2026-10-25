@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { externalLinks } from '../../../config/routes'
-import { t } from '../../../i18n/translations'
-import BrandButton from '../../common/BrandButton.vue'
-import ProductHeroBadge from '../../common/ProductHeroBadge.vue'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto mb-12 flex flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
+    class="relative mx-auto mb-12 flex max-w-9xl flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div class="pointer-events-none mx-auto w-full flex-1 md:-translate-x-20">
@@ -382,13 +383,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <h1
         class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
-        {{ t('cloud.hero.heading', locale) }}
+        {{ t('cloud.hero.heading') }}
       </h1>
 
       <p
         class="mt-6 max-w-lg text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
-        {{ t('cloud.hero.subtitle', locale) }}
+        {{ t('cloud.hero.subtitle') }}
       </p>
 
       <div class="mt-8">
@@ -397,7 +398,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           size="lg"
           class="text-center lg:min-w-60 lg:p-4"
         >
-          {{ t('cloud.hero.cta', locale) }}
+          {{ t('cloud.hero.cta') }}
         </BrandButton>
       </div>
     </div>

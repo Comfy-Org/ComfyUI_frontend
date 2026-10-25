@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import RadioButton from 'primevue/radiobutton'
-import Button from '@/components/ui/button/Button.vue'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
+import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
+import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 
@@ -15,6 +15,7 @@ type ControlOption = {
 }
 
 const settingStore = useSettingStore()
+const radioIdPrefix = useId()
 
 const controlOptions: ControlOption[] = [
   {
@@ -54,7 +55,7 @@ const controlMode = defineModel<ControlOptions>()
   <div class="w-113 max-w-md space-y-4 p-4">
     <div class="text-sm/tight text-muted-foreground">
       {{ $t('widgets.valueControl.header.prefix') }}
-      <span class="font-medium text-base-foreground">
+      <span class="font-medium text-foreground">
         {{
           widgetControlMode === 'before'
             ? $t('widgets.valueControl.header.before')
@@ -64,52 +65,52 @@ const controlMode = defineModel<ControlOptions>()
       {{ $t('widgets.valueControl.header.postfix') }}
     </div>
 
-    <div class="space-y-2">
-      <Button
+    <RadioGroup v-model="controlMode" class="flex-col space-y-2">
+      <div
         v-for="option in controlOptions"
         :key="option.mode"
-        as="label"
-        variant="textonly"
-        size="lg"
         class="flex h-[unset] w-full items-center justify-between gap-7 py-2 text-left"
-        :for="option.mode"
       >
-        <div class="flex min-w-0 flex-1 items-center gap-2 text-wrap">
+        <label
+          :for="`${radioIdPrefix}-${option.mode}`"
+          class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-wrap"
+        >
           <div
-            class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-secondary-background"
+            class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-secondary"
           >
             <i
               v-if="option.icon"
               :class="option.icon"
-              class="text-base text-base-foreground"
+              class="text-base text-foreground"
             />
             <span
               v-if="option.text"
-              class="text-xs font-normal text-base-foreground"
+              class="text-xs font-normal text-foreground"
             >
               {{ option.text }}
             </span>
           </div>
 
-          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div class="text-sm/tight font-normal text-base-foreground">
+          <div
+            class="flex min-w-0 flex-1 flex-col gap-0.5 text-sm/tight font-normal"
+          >
+            <div class="text-foreground">
               <span>
                 {{ $t(`widgets.valueControl.${option.title}`) }}
               </span>
             </div>
-            <div class="text-sm/tight font-normal text-muted-foreground">
+            <div class="text-muted-foreground">
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>
-        </div>
+        </label>
 
-        <RadioButton
-          v-model="controlMode"
+        <RadioGroupItem
+          :id="`${radioIdPrefix}-${option.mode}`"
           class="shrink"
-          :input-id="option.mode"
           :value="option.mode"
         />
-      </Button>
-    </div>
+      </div>
+    </RadioGroup>
   </div>
 </template>

@@ -1,0 +1,62 @@
+{
+  "1": {
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "Source video"
+    },
+    "inputs": {
+      "file": "input.mp4"
+    }
+  },
+  "2": {
+    "class_type": "CrossViewPrepareClip",
+    "_meta": {
+      "title": "Prepare clip (24 fps, whole clip, aspect, size)"
+    },
+    "inputs": {
+      "video": ["1", 0],
+      "duration": 5.0,
+      "aspect_ratio": "source",
+      "megapixels": 0.5,
+      "multiple": 32
+    }
+  },
+  "3": {
+    "class_type": "LoadMoGeModel",
+    "_meta": {
+      "title": "MoGe model"
+    },
+    "inputs": {
+      "model_name": "moge_2_vitl_normal_fp16.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "MoGeInference",
+    "_meta": {
+      "title": "Depth estimation (MoGe)"
+    },
+    "inputs": {
+      "moge_model": ["3", 0],
+      "image": ["2", 0],
+      "resolution_level": 2,
+      "fov_x_degrees": 0,
+      "batch_size": 4,
+      "force_projection": true,
+      "apply_mask": true,
+      "refine_steps": 3
+    }
+  },
+  "5": {
+    "class_type": "CrossViewGeometryExport",
+    "_meta": {
+      "title": "Geometry for the browser preview"
+    },
+    "inputs": {
+      "frames": ["2", 0],
+      "moge_geometry": ["4", 0],
+      "preview_size": 384,
+      "jpeg_quality": 88,
+      "filename_prefix": "crossview/geometry"
+    }
+  }
+}

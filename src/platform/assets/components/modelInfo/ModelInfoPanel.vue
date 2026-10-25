@@ -3,11 +3,9 @@
     data-component-id="ModelInfoPanel"
     class="flex scrollbar-custom h-full flex-col"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.basicInfo') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.basicInfo') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
         <div class="group flex justify-between">
@@ -44,7 +42,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -64,20 +62,18 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelTagging') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelTagging') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
         <Select v-if="isModelTypeEditable" v-model="selectedModelType">
-          <SelectTrigger class="w-full">
+          <SelectTrigger>
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
           </SelectTrigger>
-          <SelectContent :style="selectContentStyle">
+          <SelectContent>
             <SelectItem
               v-for="option in modelTypes"
               :key="option.value"
@@ -91,7 +87,7 @@
           <div
             aria-disabled="true"
             :aria-describedby="modelTypeReadonlyReasonId"
-            class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+            class="cursor-not-allowed p-2 text-muted-foreground"
           >
             {{
               modelTypes.find((o) => o.value === selectedModelType)?.name ??
@@ -104,56 +100,32 @@
         </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="baseModels"
           :disabled="isImmutable"
-        >
-          <TagsInputItem
-            v-for="model in baseModels"
-            :key="model"
-            :value="model"
-          >
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.baseModelUnknown')
-                : t('assetBrowser.modelInfo.addBaseModel')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.baseModelUnknown')
+              : t('assetBrowser.modelInfo.addBaseModel')
+          "
+        />
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="additionalTags"
           :disabled="isImmutable"
-        >
-          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.noAdditionalTags')
-                : t('assetBrowser.modelInfo.addTag')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.noAdditionalTags')
+              : t('assetBrowser.modelInfo.addTag')
+          "
+        />
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelDescription') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelDescription') }}
       </template>
       <ModelInfoField
         v-if="triggerPhrases.length > 0"
@@ -165,7 +137,6 @@
             size="icon-sm"
             :title="t('g.copyAll')"
             :aria-label="t('g.copyAll')"
-            class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
             <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
@@ -190,7 +161,7 @@
         v-if="description"
         :label="t('assetBrowser.modelInfo.description')"
       >
-        <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
+        <p class="whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.description')">
         <textarea
@@ -205,7 +176,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 transition-colors outline-none focus:bg-input',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -219,7 +190,6 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
-import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -232,11 +202,7 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'
@@ -266,14 +232,9 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
 )
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
-
-const { asset, cacheKey, selectContentStyle } = defineProps<{
+const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem
   cacheKey?: string
-  selectContentStyle?: StyleValue
 }>()
 
 const assetsStore = useAssetsStore()
@@ -325,7 +286,7 @@ const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
   assetsStore.updateAssetMetadata(
     asset,
-    { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
+    { ...asset.user_metadata, ...pendingUpdates.value },
     cacheKey
   )
 }, 500)

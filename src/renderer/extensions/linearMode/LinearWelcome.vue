@@ -3,15 +3,17 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
 import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { t } = useI18n()
 const { setMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const { enterBuilder } = useEnterBuilder()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
@@ -37,12 +39,12 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       <p class="mt-0">{{ t('linearMode.welcome.controls') }}</p>
       <p class="mt-0">{{ t('linearMode.welcome.sharing') }}</p>
     </div>
-    <div v-if="hasOutputs" class="flex flex-row gap-2 text-[14px]">
-      <p class="mt-0 text-base-foreground">
+    <div v-if="hasOutputs" class="flex gap-2 text-[14px]">
+      <p class="mt-0 text-foreground">
         <i18n-t keypath="linearMode.welcome.getStarted" tag="span">
           <template #runButton>
             <span
-              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-primary-background px-3.5 py-0.5 text-2xs font-medium text-base-foreground"
+              class="mx-0.5 inline-flex -translate-y-0.5 transform cursor-default items-center rounded-sm bg-foreground px-3.5 py-0.5 text-2xs font-medium text-background"
             >
               {{ t('menu.run') }}
             </span>
@@ -54,23 +56,23 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       <p
         v-if="!hasNodes"
         data-testid="linear-welcome-empty-workflow"
-        class="mt-0 max-w-md text-sm text-base-foreground"
+        class="mt-0 max-w-md text-sm text-foreground"
       >
         {{ t('linearMode.emptyWorkflowExplanation') }}
       </p>
       <p
         v-if="hasNodes && isAppDefault"
-        class="mt-0 max-w-md text-sm text-base-foreground"
+        class="mt-0 max-w-md text-sm text-foreground"
       >
         <i18n-t keypath="linearMode.welcome.noOutputs" tag="span">
           <template #count>
-            <span class="font-bold text-warning-background">{{
+            <span class="font-bold text-warning">{{
               t('linearMode.welcome.oneOutput')
             }}</span>
           </template>
         </i18n-t>
       </p>
-      <div class="flex flex-row gap-2">
+      <div class="flex gap-2">
         <Button
           data-testid="linear-welcome-back-to-workflow"
           variant="textonly"
@@ -93,12 +95,12 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
           data-testid="linear-welcome-build-app"
           variant="primary"
           size="lg"
-          @click="appModeStore.enterBuilder()"
+          @click="enterBuilder"
         >
           <i class="icon-[lucide--hammer]" />
           {{ t('linearMode.welcome.buildApp') }}
           <div
-            class="absolute -top-2 -right-2 rounded-full bg-base-foreground px-1 text-2xs text-base-background"
+            class="absolute -top-2 -right-2 rounded-full bg-foreground px-1 text-2xs text-background"
           >
             {{ t('g.experimental') }}
           </div>

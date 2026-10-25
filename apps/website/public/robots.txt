@@ -26,8 +26,6 @@ User-agent: Meta-ExternalAgent
 User-agent: Meta-ExternalFetcher
 User-agent: Diffbot
 Allow: /
-Disallow: /_astro/
-Disallow: /_website/
 Disallow: /_vercel/
 
 # Content Signals (contentsignals.org): this content may be used for search,

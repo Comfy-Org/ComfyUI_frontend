@@ -1,84 +1,27 @@
-import type * as DistributionModule from '@/platform/distribution/types'
-import type * as I18nModule from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
-/**
- * Settings dialog migration regression net: `useSettingsDialog().show()` must
- * open the Reka-renderer path with sizing that matches the previous
- * `BaseModalLayout size="sm"` (960px × 80vh). Catches accidental reverts of
- * the Phase 3 renderer flip.
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
-const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
-  get isCloud() {
-    return isCloudRef.value
-  }
-}))
+import {
+  registerSettingDialogComponent,
+  useSettingsDialog
+} from '@/platform/settings/composables/useSettingsDialog'
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  t: (k: string) => k
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
-
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+const SettingDialogStub = { name: 'SettingDialogStub' }
 
 beforeEach(() => {
   useDialogStore().showDialog = showDialog
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+  registerSettingDialogComponent(SettingDialogStub)
 })
 
 describe('useSettingsDialog', () => {
-  beforeEach(() => {
-    isCloudRef.value = false
-  })
-
-  it("show() opens the Reka renderer with size 'full' and 1280px content sizing", () => {
+  it('show() opens the registered dialog component', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
-    expect(args.dialogComponentProps.size).toBe('full')
-    expect(args.dialogComponentProps.contentClass).toContain('max-w-[1280px]')
-    expect(args.dialogComponentProps.contentClass).not.toContain(
-      'max-w-[960px]'
-    )
-    expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')
-  })
-
-  it('show() uses non-modal Reka so nested PrimeVue dialogs keep focus and pointer events', () => {
-    useSettingsDialog().show()
-    const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.modal).toBe(false)
-  })
-
-  it('show() omits overlayClass when not in workspace mode', () => {
-    useSettingsDialog().show()
-    const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.overlayClass).toBeUndefined()
-  })
-
-  it("show() sets overlayClass 'p-8' on Cloud", () => {
-    isCloudRef.value = true
-
-    useSettingsDialog().show()
-    const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.overlayClass).toBe('p-8')
+    expect(args.component).toBe(SettingDialogStub)
   })
 
   it('show(panel) forwards defaultPanel to the dialog props', () => {

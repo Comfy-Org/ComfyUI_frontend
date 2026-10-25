@@ -29,19 +29,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          PACKED=$(pnpm -C packages/design-system pack --dry-run --json)
+          jq -e --slurpfile manifest packages/design-system/package.json '
+            [.files[].path] as $packed
+            | [$manifest[0].exports[] | objects | .types | ltrimstr("./")]
+              - $packed
+            | if length == 0 then true
+              else error("Missing declarations in tarball: " + join(", "))
+              end
+          ' <<< "$PACKED" > /dev/null
           UNEXPECTED=$(
-            pnpm -C packages/design-system pack --dry-run --json |
-              jq -r '
+            jq -r '
                 .files[].path
                 | select(
                     . != "package.json"
                     and . != "LICENSE"
                     and . != "README.md"
                     and . != "src/workspaceAvatar.ts"
+                    and . != "src/button.variants.ts"
+                    and . != "src/select.variants.ts"
+                    and . != "src/tag.variants.ts"
+                    and . != "dist-types/workspaceAvatar.d.ts"
+                    and . != "dist-types/button.variants.d.ts"
+                    and . != "dist-types/select.variants.d.ts"
+                    and . != "dist-types/tag.variants.d.ts"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )
-              '
+              ' <<< "$PACKED"
           )
           if [ -n "$UNEXPECTED" ]; then
             echo "::error title=Unexpected files in tarball::Packed tarball contains files outside the public design system files:" >&2

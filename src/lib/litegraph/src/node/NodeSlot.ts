@@ -1,29 +1,43 @@
+import type {
+  LGraphNode,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  ISubgraphInput,
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISubgraphInput
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { getCentre } from '@/lib/litegraph/src/measure'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+
 import {
   LinkDirection,
   RenderShape
 } from '@/lib/litegraph/src/types/globalEnums'
 
-import { NodeInputSlot } from './NodeInputSlot'
 import { SlotBase } from './SlotBase'
+
+let isNodeInputSlot: (slot: NodeSlot) => boolean
+
+export function provideNodeInputSlotGuard(
+  guard: (slot: NodeSlot) => boolean
+): void {
+  isNodeInputSlot = guard
+}
 
 export interface IDrawOptions {
   colorContext: DefaultConnectionColors
@@ -70,17 +84,14 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   abstract get isWidgetInputSlot(): boolean
 
   constructor(
-    slot: OptionalProps<INodeSlot, 'boundingRect'>,
+    slot:
+      | OptionalProps<INodeSlot, 'boundingRect'>
+      | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
     node: LGraphNode
   ) {
-    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
-    const maybeSubgraphSlot: OptionalProps<
-      ISubgraphInput,
-      'link' | 'boundingRect'
-    > = slot
-    const { boundingRect, name, type, _listenerController, ...rest } =
-      maybeSubgraphSlot
+    const { boundingRect, name, type, ...rest } = slot
+    if ('_listenerController' in rest) delete rest._listenerController
     const rectangle = boundingRect
       ? Rectangle.ensureRect(boundingRect)
       : new Rectangle()
@@ -293,7 +304,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
     } else if (this.shape === RenderShape.ARROW) {
       // Adjust arrow direction based on whether this is an input or output slot
-      const isInput = this instanceof NodeInputSlot
+      const isInput = isNodeInputSlot(this)
       if (isInput) {
         ctx.moveTo(x + 8, y)
         ctx.lineTo(x - 4, y - 4)

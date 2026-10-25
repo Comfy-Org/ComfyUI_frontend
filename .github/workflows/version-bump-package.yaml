@@ -1,0 +1,113 @@
+name: Version Bump Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to bump'
+        required: true
+        type: 'choice'
+        options: [account-core, account-ui, billing-contract, ingest-types]
+      version_type:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: 'choice'
+        options: [patch, minor, major, prepatch, preminor, premajor, prerelease]
+      pre_release:
+        description: Pre-release ID (suffix)
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  bump-version-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Resolve package
+        id: resolve
+        env:
+          PACKAGE: ${{ github.event.inputs.package }}
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
+          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ALPHA_GATED marks the hand-written packages ADR-RELEASES-PACKAGES-0033
+          # holds on 1.0.0-alpha.N. ingest-types is outside that gate.
+          case "$PACKAGE" in
+            account-core) NPM_NAME='@comfyorg/account-core'; ALPHA_GATED=true ;;
+            account-ui) NPM_NAME='@comfyorg/account-ui'; ALPHA_GATED=true ;;
+            billing-contract) NPM_NAME='@comfyorg/billing-contract'; ALPHA_GATED=true ;;
+            ingest-types) NPM_NAME='@comfyorg/ingest-types'; ALPHA_GATED=false ;;
+            *)
+              echo "::error title=Unknown package::'$PACKAGE' is not a releasable package" >&2
+              exit 1
+              ;;
+          esac
+          if [ "$ALPHA_GATED" = 'true' ]; then
+            case "$VERSION_TYPE" in
+              prerelease | prepatch | preminor | premajor) ;;
+              *)
+                echo "::error title=Prerelease gate::'$VERSION_TYPE' takes $NPM_NAME off its 1.0.0-alpha.N line, and the merge path publishes a non-prerelease version to 'latest'. ADR-RELEASES-PACKAGES-0033 ('Versioning policy') holds this package on a prerelease until the Phase 7 host proof; promoting it means amending that ADR and this gate, not picking a different increment here." >&2
+                exit 1
+                ;;
+            esac
+            if [ "$PRE_RELEASE" != 'alpha' ]; then
+              echo "::error title=Prerelease gate::$NPM_NAME uses the 'alpha' pre-release id, not '$PRE_RELEASE' (ADR-RELEASES-PACKAGES-0033, 'Versioning policy')." >&2
+              exit 1
+            fi
+          fi
+          DIRECTORY="packages/$PACKAGE"
+          if [ ! -f "$DIRECTORY/package.json" ]; then
+            echo "::error title=Missing package::$DIRECTORY/package.json does not exist on main" >&2
+            exit 1
+          fi
+          echo "npm_name=$NPM_NAME" >> "$GITHUB_OUTPUT"
+          echo "directory=$DIRECTORY" >> "$GITHUB_OUTPUT"
+
+      - name: Bump package version
+        id: bump-version
+        env:
+          DIRECTORY: ${{ steps.resolve.outputs.directory }}
+          VERSION_TYPE: ${{ github.event.inputs.version_type }}
+          PRE_RELEASE: ${{ github.event.inputs.pre_release }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm -C "$DIRECTORY" version "$VERSION_TYPE" --preid "$PRE_RELEASE" --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./$DIRECTORY/package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[release] Increment ${{ github.event.inputs.package }} to ${{ steps.bump-version.outputs.NEW_VERSION }}'
+          title: ${{ github.event.inputs.package }} ${{ steps.bump-version.outputs.NEW_VERSION }}
+          body: |
+            ${{ github.event.inputs.version_type }} version increment for ${{ steps.resolve.outputs.npm_name }} to ${{ steps.bump-version.outputs.NEW_VERSION }}
+          branch: ${{ github.event.inputs.package }}-version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
+          base: main
+          labels: |
+            Release

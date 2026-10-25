@@ -2,30 +2,21 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { MissingNodeType } from '@/types/comfy'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useErrorGroups } from './useErrorGroups'
-vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useComfyRegistryService: () => ({
-      ...actual.useComfyRegistryService(),
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
       inferPackFromNodeName: vi.fn(async () => null),
-      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
     })
-  }
-})
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
 }))
+
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),

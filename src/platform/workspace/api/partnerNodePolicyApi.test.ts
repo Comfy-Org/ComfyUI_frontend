@@ -6,14 +6,9 @@ import {
   PartnerNodePolicyApiError,
   updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
+import { api } from '@/scripts/api'
 
-const mockFetchApi = vi.fn()
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), init)
@@ -21,7 +16,7 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 
 describe('partnerNodePolicyApi', () => {
   it('normalizes the provider catalog', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({
         providers: [
           {
@@ -40,13 +35,13 @@ describe('partnerNodePolicyApi', () => {
         nodeCategories: ['OpenAI', 'Sora']
       }
     ])
-    expect(mockFetchApi).toHaveBeenCalledWith('/providers', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/providers', {
       cache: 'no-store'
     })
   })
 
   it('normalizes the configured policy response', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({
         enforcement_enabled: true,
         providers: [{ provider_id: 'openai', enabled: false }]
@@ -57,13 +52,13 @@ describe('partnerNodePolicyApi', () => {
       enforcementEnabled: true,
       providers: [{ providerId: 'openai', enabled: false }]
     })
-    expect(mockFetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
       cache: 'no-store'
     })
   })
 
   it('maps 404 to an unconfigured policy', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({}, { status: 404, statusText: 'Not Found' })
     )
 
@@ -71,7 +66,7 @@ describe('partnerNodePolicyApi', () => {
   })
 
   it('serializes and normalizes a replacement policy', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({
         enforcement_enabled: false,
         providers: [{ provider_id: 'openai', enabled: true }]
@@ -87,7 +82,7 @@ describe('partnerNodePolicyApi', () => {
       enforcementEnabled: false,
       providers: [{ providerId: 'openai', enabled: true }]
     })
-    expect(mockFetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,7 +93,7 @@ describe('partnerNodePolicyApi', () => {
   })
 
   it('preserves response status codes for policy decisions', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({}, { status: 403, statusText: 'Forbidden' })
     )
 
@@ -108,7 +103,7 @@ describe('partnerNodePolicyApi', () => {
   })
 
   it('rejects malformed policy responses', async () => {
-    mockFetchApi.mockResolvedValue(
+    vi.mocked(api.fetchApi).mockResolvedValue(
       jsonResponse({ enforcement_enabled: 'yes', providers: [] })
     )
 

@@ -2,13 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
-const hoisted = vi.hoisted(() => ({
-  trackSearchQuery: vi.fn()
-}))
+import { useTelemetry } from '@/platform/telemetry'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackSearchQuery: hoisted.trackSearchQuery })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { useSearchQueryTracking } from './useSearchQueryTracking'
 
@@ -42,7 +38,7 @@ describe('useSearchQueryTracking', () => {
     track(query, results)
     query.value = '  hello  '
     await vi.advanceTimersByTimeAsync(500)
-    expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'hello',
       query_length: 5,
@@ -57,7 +53,7 @@ describe('useSearchQueryTracking', () => {
     track(query, results)
     query.value = 'nothingmatches'
     await vi.advanceTimersByTimeAsync(500)
-    expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'nothingmatches',
       query_length: 14,
@@ -72,7 +68,7 @@ describe('useSearchQueryTracking', () => {
     track(query, results)
     query.value = '   '
     await vi.advanceTimersByTimeAsync(500)
-    expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackSearchQuery).not.toHaveBeenCalled()
   })
 
   it('cancels a pending debounced call when the scope is disposed', async () => {
@@ -82,7 +78,7 @@ describe('useSearchQueryTracking', () => {
     query.value = 'hello'
     scope.stop()
     await vi.advanceTimersByTimeAsync(500)
-    expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackSearchQuery).not.toHaveBeenCalled()
   })
 
   it('truncates query to 100 chars while preserving original length', async () => {
@@ -92,7 +88,7 @@ describe('useSearchQueryTracking', () => {
     const long = 'x'.repeat(250)
     query.value = long
     await vi.advanceTimersByTimeAsync(500)
-    expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
       surface: 'node_sidebar',
       query: 'x'.repeat(100),
       query_length: 250,

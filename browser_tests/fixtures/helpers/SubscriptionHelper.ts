@@ -4,8 +4,9 @@ import type { Page, Route } from '@playwright/test'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,
   createSubscriptionStatus,
@@ -18,12 +19,14 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export interface SubscriptionConfig {
   status: BillingStatusResponse
   balance: BalanceResponse
+  features: RemoteConfig
 }
 
 function emptyConfig(): SubscriptionConfig {
   return {
     status: createSubscriptionStatus(UNSUBSCRIBED),
-    balance: createBalance(ZERO_BALANCE)
+    balance: createBalance(ZERO_BALANCE),
+    features: { subscription_required: true }
   }
 }
 
@@ -57,6 +60,20 @@ export function withFreeTier(): SubscriptionOperator {
   })
 }
 
+export function withFreeTierEnabled(): SubscriptionOperator {
+  return (config) => ({
+    ...config,
+    features: {
+      ...config.features,
+      free_tier_balance: {
+        allowance: 100,
+        used: 0,
+        remaining: 100
+      }
+    }
+  })
+}
+
 export function withUnsubscribed(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: false,
@@ -67,6 +84,7 @@ export function withUnsubscribed(): SubscriptionOperator {
 export class SubscriptionHelper {
   private statusResponse: BillingStatusResponse
   private balanceResponse: BalanceResponse
+  private featuresResponse: RemoteConfig
   private routeHandlers: Array<{
     pattern: string
     handler: (route: Route) => Promise<void>
@@ -78,6 +96,7 @@ export class SubscriptionHelper {
   ) {
     this.statusResponse = { ...config.status }
     this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
   }
 
   async mock(): Promise<void> {
@@ -93,7 +112,7 @@ export class SubscriptionHelper {
     // `subscription_required: true` after that fetch resolves.
     const featuresPattern = '**/api/features'
     const featuresHandler = async (route: Route) => {
-      await route.fulfill({ json: { subscription_required: true } })
+      await route.fulfill({ json: this.featuresResponse })
     }
     this.routeHandlers.push({
       pattern: featuresPattern,
@@ -146,10 +165,12 @@ export class SubscriptionHelper {
   configure(...operators: SubscriptionOperator[]): void {
     const config = operators.reduce<SubscriptionConfig>((cfg, op) => op(cfg), {
       status: { ...this.statusResponse },
-      balance: { ...this.balanceResponse }
+      balance: { ...this.balanceResponse },
+      features: { ...this.featuresResponse }
     })
     this.statusResponse = { ...config.status }
     this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
   }
 
   setStatus(overrides: Partial<BillingStatusResponse>): void {
@@ -234,7 +255,7 @@ export class SubscriptionHelper {
    */
   async dismissSubscriptionDialogIfOpen(): Promise<void> {
     const dialog = this.page.locator(
-      '[aria-labelledby="subscription-required"]'
+      '[data-dialog-key="subscription-required"]'
     )
     // `expect().toBeVisible()` throws a Playwright AssertionError (not
     // errors.TimeoutError) when the element is absent — both cases mean
@@ -260,6 +281,7 @@ export class SubscriptionHelper {
     this.routeHandlers = []
     this.statusResponse = { ...UNSUBSCRIBED }
     this.balanceResponse = { ...ZERO_BALANCE }
+    this.featuresResponse = { subscription_required: true }
   }
 }
 

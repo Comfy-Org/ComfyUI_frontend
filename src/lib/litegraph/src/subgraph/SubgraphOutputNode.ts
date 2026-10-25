@@ -1,17 +1,26 @@
+import type {
+  LGraphNode,
+  LLink,
+  LinkConnector,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+
+import type { RerouteId } from '@/types/rerouteId'
+
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   ISlotType,
   Positionable
 } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
@@ -19,8 +28,8 @@ import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+
+import { provideSubgraphOutputGuard } from './subgraphTypeGuards'
 
 export class SubgraphOutputNode
   extends SubgraphIONodeBase<SubgraphOutput>
@@ -158,4 +167,21 @@ export class SubgraphOutputNode
 
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
+}
+
+function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
+    slot.parent instanceof SubgraphOutputNode
+  )
+}
+
+provideSubgraphOutputGuard(isSubgraphOutput)
+
+type RegisteredSubgraphOutputNode = SubgraphOutputNode
+
+declare module '../types/entityRegistry' {
+  interface SubgraphOutputNode extends RegisteredSubgraphOutputNode {}
 }

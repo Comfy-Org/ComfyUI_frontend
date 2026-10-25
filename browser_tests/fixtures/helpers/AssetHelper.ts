@@ -182,7 +182,7 @@ export class AssetHelper {
   }
   async fetch(
     path: string,
-    init?: RequestInit
+    init?: { method?: string; headers?: Record<string, string>; body?: string }
   ): Promise<{ status: number; body: unknown }> {
     return this.page.evaluate(
       async ([fetchUrl, fetchInit]) => {
@@ -267,7 +267,7 @@ export class AssetHelper {
     if (asset) {
       const updated = {
         ...asset,
-        ...(body ?? {}),
+        ...body,
         updated_at: new Date().toISOString()
       }
       this.store.set(id, updated)

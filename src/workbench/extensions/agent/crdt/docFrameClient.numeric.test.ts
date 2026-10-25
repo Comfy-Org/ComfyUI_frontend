@@ -24,16 +24,24 @@ const awarenessFrame = (expiresAt: unknown) => ({
 
 const sequencedFrame = (
   type: 'doc_subscribed' | 'doc_reset',
-  seq?: unknown
+  seq: unknown
 ) => ({
   type,
   data: {
     v: 1,
     workflow_id: 'wf-1',
-    ...(seq !== undefined && { seq }),
-    ...(type === 'doc_subscribed' && { ok: true })
+    seq,
+    ...(type === 'doc_subscribed' && { ok: true }),
+    ...(type === 'doc_reset' && { lineage_seq: seq })
   }
 })
+
+function unsequencedSubscribedFrame() {
+  return {
+    type: 'doc_subscribed',
+    data: { v: 1, workflow_id: 'wf-1', ok: true }
+  }
+}
 
 const docOpsResultFrame = (seq?: unknown) => ({
   type: 'doc_ops_result',
@@ -77,6 +85,43 @@ describe('doc frame numeric domains', () => {
     })
   })
 
+  describe('doc_reset lineage_seq', () => {
+    it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
+      'rejects an invalid value: %s',
+      (lineageSeq) => {
+        expect(
+          parseServerDocFrame({
+            type: 'doc_reset',
+            data: {
+              v: 1,
+              workflow_id: 'wf-1',
+              seq: 43,
+              lineage_seq: lineageSeq
+            }
+          })
+        ).toBeNull()
+      }
+    )
+
+    it('rejects a reset event with no lineage_seq at all, rather than falling back to seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43 }
+        })
+      ).toBeNull()
+    })
+
+    it('accepts zero, distinct from seq', () => {
+      expect(
+        parseServerDocFrame({
+          type: 'doc_reset',
+          data: { v: 1, workflow_id: 'wf-1', seq: 43, lineage_seq: 0 }
+        })?.data
+      ).toMatchObject({ seq: 43, lineageSeq: 0 })
+    })
+  })
+
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
     'omits an invalid doc_subscribed seq while preserving the ack: %s',
     (seq) => {
@@ -90,10 +135,12 @@ describe('doc frame numeric domains', () => {
   )
 
   it('accepts doc_subscribed without seq', () => {
-    expect(parseServerDocFrame(sequencedFrame('doc_subscribed'))).toEqual({
+    const frame = parseServerDocFrame(unsequencedSubscribedFrame())
+    expect(frame).toEqual({
       type: 'doc_subscribed',
       data: { workflowId: 'wf-1', ok: true }
     })
+    expect(frame?.data).not.toHaveProperty('seq')
   })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(

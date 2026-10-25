@@ -1,9 +1,9 @@
 {
   "files": {
-    "commands.json": "ab7d7a14617b71a70e0ad2a98eb4cbf367ca823b",
-    "main.json": "c54a0614c4b7574ca4bc715edf17c0f2cbca2dae",
-    "nodeDefs.json": "55cc12c93f9c2695a3f9c239c8a4b1dbde644cd5",
-    "settings.json": "d98b3a74e42f6295680a656e0c20f1c075a07911"
+    "commands.json": "412dbd0f40df89c671599f5ce9600cf4bc8aea6e",
+    "main.json": "610ee772517bd1ca9ad37b8aa38be52b2083da4b",
+    "nodeDefs.json": "a7df0d83add0d4463426e165315040f472d30a00",
+    "settings.json": "fa408f5854298650d119a8c6d3183b64025f98c5"
   },
   "version": 1
 }

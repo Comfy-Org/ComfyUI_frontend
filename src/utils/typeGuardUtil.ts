@@ -1,10 +1,10 @@
 import type {
-  INodeSlot,
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import type { ResultItemType } from '@/schemas/apiSchema'
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`

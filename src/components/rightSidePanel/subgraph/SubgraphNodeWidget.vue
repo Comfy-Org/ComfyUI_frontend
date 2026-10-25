@@ -36,8 +36,8 @@ const icon = computed(() =>
     :class="
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
-        'bg-node-component-surface',
-        isDraggable && 'ring-accent-background hover:ring-1',
+        'bg-node',
+        isDraggable && 'ring-accent hover:ring-1',
         className
       )
     "
@@ -45,7 +45,7 @@ const icon = computed(() =>
   >
     <div class="pointer-events-none flex-1">
       <div
-        class="line-clamp-1 text-xs text-text-secondary"
+        class="line-clamp-1 text-xs text-muted-foreground"
         data-testid="subgraph-widget-node-name"
       >
         {{ nodeTitle }}

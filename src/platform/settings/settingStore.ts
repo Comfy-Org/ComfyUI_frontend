@@ -1,18 +1,16 @@
 import { retry } from 'es-toolkit'
 import { cloneDeep } from 'es-toolkit/compat'
-import { until, useAsyncState } from '@vueuse/core'
+import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams, Settings } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
-import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -22,8 +20,10 @@ export const getSettingInfo = (setting: SettingParams) => {
   }
 }
 
-export interface SettingTreeNode extends TreeNode {
-  data?: SettingParams
+interface SettingChange {
+  id: string
+  value: unknown
+  oldValue: unknown
 }
 
 interface AppliedSetting<TValue> {
@@ -67,17 +67,16 @@ async function callHandler(
 async function onChange(
   setting: SettingParams | undefined,
   newValue: unknown,
-  oldValue: unknown
+  oldValue: unknown,
+  notify: (change: SettingChange) => void
 ) {
-  // Started before dispatchChange so extensions keep observing the change at
-  // the same point, but awaited afterwards: a handler that cascades into other
+  // Started before notifying so extensions keep observing the change at the
+  // same point, but awaited afterwards: a handler that cascades into other
   // settings must finish writing them before the caller writes this one, or
   // the two requests race in the backend's read-modify-write.
   const handled = callHandler(setting, newValue, oldValue)
-  // Backward compatibility with old settings dialog.
-  // Some extensions still listens event emitted by the old settings dialog.
   if (setting) {
-    app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+    notify({ id: setting.id, value: newValue, oldValue })
   }
   await handled
 }
@@ -123,9 +122,10 @@ function settingChangedEvent<K extends keyof Settings>(
 }
 
 export const useSettingStore = defineStore('setting', () => {
-  const settingValues = ref<Partial<Settings>>({})
+  const settingValues: Ref<Partial<Settings>> = ref({})
   const settingsById = ref<Record<string, SettingParams>>({})
   const latestWrite = new Map<keyof Settings, number>()
+  const settingChanged = createEventHook<SettingChange>()
 
   const {
     isReady,
@@ -196,7 +196,12 @@ export const useSettingStore = defineStore('setting', () => {
     const write = (latestWrite.get(key) ?? 0) + 1
     latestWrite.set(key, write)
 
-    await onChange(settingsById.value[key], newValue, oldValue)
+    await onChange(
+      settingsById.value[key],
+      newValue,
+      oldValue,
+      settingChanged.trigger
+    )
 
     // Handlers are awaited, so a slow one lets a later change to this key land
     // first. That change owns the value now; persisting ours would revert it.
@@ -232,7 +237,7 @@ export const useSettingStore = defineStore('setting', () => {
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
       const applied = await applySettingLocally(key, settings[key])
       if (applied !== undefined) {
-        updatedSettings[key] = applied.newValue
+        Object.assign(updatedSettings, { [key]: applied.newValue })
         const event = settingChangedEvent(settingsById.value[key], key, applied)
         if (event) telemetryEvents.push(event)
       }
@@ -341,12 +346,14 @@ export const useSettingStore = defineStore('setting', () => {
     settingsById.value[setting.id] = setting
 
     if (settingValues.value[setting.id] !== undefined) {
-      settingValues.value[setting.id] = tryMigrateDeprecatedValue(
-        setting,
-        settingValues.value[setting.id]
-      )
+      Object.assign(settingValues.value, {
+        [setting.id]: tryMigrateDeprecatedValue(
+          setting,
+          settingValues.value[setting.id]
+        )
+      })
     }
-    void onChange(setting, get(setting.id), undefined)
+    void onChange(setting, get(setting.id), undefined, settingChanged.trigger)
   }
 
   /**
@@ -433,6 +440,7 @@ export const useSettingStore = defineStore('setting', () => {
     setMany,
     get,
     exists,
-    getDefaultValue
+    getDefaultValue,
+    onSettingChanged: settingChanged.on
   }
 })

@@ -5,7 +5,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
@@ -13,6 +13,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   mockWorkspaceTokenMint,
@@ -137,6 +138,9 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
+  )
 
   return billingRequests
 }
@@ -207,7 +211,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     expect(billingRequests.legacyBalance).toBeGreaterThan(0)
   })
 
-  test('rollout flag migrates a legacy Stripe workspace to workspace billing', async ({
+  test('legacy Stripe workspaces retain legacy billing with stale config', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -226,10 +230,13 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
     await bootApp(page)
 
     await expect
-      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
+      .poll(() => billingRequests.legacyBalance, { timeout: 30_000 })
       .toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const popover = page.locator('.current-user-popover')
+    await expect(popover.getByText('12,660')).toBeVisible()
+    await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     expect(billingRequests.legacyStatus).toBe(0)
-    expect(billingRequests.legacyBalance).toBe(0)
   })
 
   test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
@@ -270,15 +277,10 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
   test('keeps the free-tier quota inside the top action bars', async ({
     page
   }) => {
-    test.fixme(
-      true,
-      'Activates after slice PR 16185 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16185'
-    )
     test.setTimeout(60_000)
 
     const freeTierRemoteConfig = {
       subscription_required: true,
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
     } satisfies RemoteConfig
 

@@ -1,18 +1,17 @@
-// @vitest-environment happy-dom
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   setAllIntersecting,
   stubIntersectionObserver
-} from '../../test/fakeIntersectionObserver'
+} from '@/test/fakeIntersectionObserver'
 import type * as LottieModule from 'lottie-web'
 
 import LottieScene from './LottieScene.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock(import('../../composables/useReducedMotion'), () => ({
+vi.mock(import('@/composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 

@@ -1,0 +1,108 @@
+import { onMounted, onUnmounted } from 'vue'
+
+import { isDesktop } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useCloudNotificationDialog } from '@/platform/cloud/notification/composables/useCloudNotificationDialog'
+import { electronAPI } from '@/utils/envUtil'
+
+/** Shows the one-time macOS desktop cloud notification after the host component mounts. */
+export function useDesktopCloudNotification(): void {
+  const settingStore = useSettingStore()
+  const { showCloudNotification } = useCloudNotificationDialog()
+
+  let disposed = false
+  const isDisposed = (): boolean => disposed
+  let cloudNotificationTimer: ReturnType<typeof setTimeout> | undefined
+
+  function reportNotificationFailure(
+    errorType:
+      | 'cloud_notification_state_save_failed'
+      | 'cloud_notification_show_failed'
+      | 'cloud_notification_state_reset_failed',
+    operation: 'save' | 'render',
+    cause: unknown,
+    platform: string
+  ) {
+    reportError(cause, {
+      surface: 'platform',
+      errorType,
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'cloud',
+        operation,
+        outcome: 'failed',
+        assert_mode: 'soft'
+      },
+      context: { platform, is_disposed: disposed },
+      level: 'error'
+    })
+  }
+
+  async function resetNotificationState(platform: string) {
+    try {
+      await settingStore.set('Comfy.Desktop.CloudNotificationShown', false)
+    } catch (error) {
+      reportNotificationFailure(
+        'cloud_notification_state_reset_failed',
+        'save',
+        error,
+        platform
+      )
+    }
+  }
+
+  async function scheduleCloudNotification() {
+    if (!isDesktop) return
+    const platform = electronAPI().getPlatform()
+    if (platform !== 'darwin') return
+
+    await settingStore.load()
+    if (settingStore.error !== undefined) return
+    if (isDisposed()) return
+    if (settingStore.get('Comfy.Desktop.CloudNotificationShown')) return
+
+    cloudNotificationTimer = setTimeout(async () => {
+      if (isDisposed()) return
+
+      try {
+        await settingStore.set('Comfy.Desktop.CloudNotificationShown', true)
+      } catch (error) {
+        reportNotificationFailure(
+          'cloud_notification_state_save_failed',
+          'save',
+          error,
+          platform
+        )
+        await resetNotificationState(platform)
+        return
+      }
+
+      if (isDisposed()) {
+        await resetNotificationState(platform)
+        return
+      }
+
+      try {
+        await showCloudNotification()
+      } catch (error) {
+        reportNotificationFailure(
+          'cloud_notification_show_failed',
+          'render',
+          error,
+          platform
+        )
+        await resetNotificationState(platform)
+      }
+    }, 2000)
+  }
+
+  onMounted(() => {
+    void scheduleCloudNotification()
+  })
+
+  onUnmounted(() => {
+    disposed = true
+    if (cloudNotificationTimer) clearTimeout(cloudNotificationTimer)
+  })
+}

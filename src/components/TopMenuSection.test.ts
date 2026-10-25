@@ -1,14 +1,27 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from 'primevue/menuitem'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MenuItem } from '@/components/ui/menu/types'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -18,31 +31,30 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockData = vi.hoisted(() => ({
-  isLoggedIn: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => {
-    return {
-      isLoggedIn: computed(() => mockData.isLoggedIn)
-    }
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: vi.fn(async () => {}) })
+)
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
@@ -64,29 +76,26 @@ vi.mock<unknown>(
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useManagerState'),
 
-  () => ({
-    useManagerState: () => ({
-      shouldShowManagerButtons: computed(() => true),
-      openManager: vi.fn()
-    })
-  })
-)
+  () => {
+    const managerState = {
+      shouldShowExtensionsButton: computed(() => true)
+    }
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    menu: {
-      element: document.createElement('div')
+    return {
+      useManagerState: vi.fn(() => {
+        onTestFinished(() => {
+          managerState.shouldShowExtensionsButton = computed(() => true)
+        })
+        return managerState
+      })
     }
   }
-}))
+)
 
-const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -115,6 +124,9 @@ function createWrapper({
         },
         rightSidePanel: {
           togglePanel: 'Toggle properties panel'
+        },
+        deployToComfyApi: {
+          buttonLabel: 'Deploy to Comfy API'
         }
       }
     }
@@ -136,12 +148,9 @@ function createWrapper({
           name: 'ContextMenu',
           props: ['model'],
           template:
-            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
+            '<div data-testid="context-menu" :data-model="JSON.stringify(model)"><slot /></div>'
         },
         ...stubs
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   }
@@ -194,7 +203,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
 
@@ -209,11 +217,8 @@ describe('TopMenuSection', () => {
     }
 
     describe('when user is logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = true
-      })
-
       it('should display CurrentUserButton and not display LoginButton', () => {
+        useCurrentUser().isLoggedIn = computed(() => true)
         const { container } = createLegacyTabBarWrapper()
         expect(
           container.querySelector('current-user-button-stub')
@@ -223,10 +228,6 @@ describe('TopMenuSection', () => {
     })
 
     describe('when user is not logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = false
-      })
-
       it('should display LoginButton and not display CurrentUserButton', () => {
         const { container } = createLegacyTabBarWrapper()
         expect(container.querySelector('login-button-stub')).not.toBeNull()
@@ -259,7 +260,7 @@ describe('TopMenuSection', () => {
 
   it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
     const pinia = getActivePinia()!
-    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+    useCanvasStore(pinia).isPickingNodes = true
 
     createWrapper({
       pinia,
@@ -284,7 +285,7 @@ describe('TopMenuSection', () => {
       screen.getByRole('button', { name: 'Toggle properties panel' })
     )
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'right_side_panel_opened',
       element_group: 'top_menu'
     })
@@ -405,6 +406,20 @@ describe('TopMenuSection', () => {
       ).toBeNull()
     })
 
+    it('does not render inline progress summary while action bars are hidden', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      useCanvasStore(pinia).isPickingNodes = true
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
     it('teleports inline progress summary when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
@@ -459,6 +474,46 @@ describe('TopMenuSection', () => {
         container.querySelector('queue-notification-banner-host-stub')
       ).not.toBeNull()
     })
+
+    it.for([
+      { isActionBarsHidden: false, rendered: true },
+      { isActionBarsHidden: true, rendered: false }
+    ])(
+      'renders the queue progress overlay: $rendered when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, rendered }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        expect(
+          container.querySelector('queue-progress-overlay-stub') !== null
+        ).toBe(rendered)
+      }
+    )
+
+    it.for([
+      { isActionBarsHidden: false, hidden: false },
+      { isActionBarsHidden: true, hidden: true }
+    ])(
+      'keeps the queue notification banner host mounted and hidden=$hidden when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, hidden }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        const host = container.querySelector(
+          'queue-notification-banner-host-stub'
+        )
+        if (!host) throw new Error('banner host is not mounted')
+        expect(host.classList.contains('hidden')).toBe(hidden)
+      }
+    )
 
     it('renders queue notification banners when QPO V2 is disabled', async () => {
       const pinia = getActivePinia()!
@@ -557,16 +612,114 @@ describe('TopMenuSection', () => {
     const { container } = createWrapper()
 
     // Release red dot is mocked as true globally for this test file.
-    expect(container.querySelector('span.bg-red-500')).toBeNull()
+    expect(container.querySelector('span.bg-destructive')).toBeNull()
 
     mockData.setShowConflictRedDot(true)
     await nextTick()
 
-    expect(container.querySelector('span.bg-red-500')).not.toBeNull()
+    expect(container.querySelector('span.bg-destructive')).not.toBeNull()
+  })
+
+  it('keeps the floating actionbar container open for the extensions button', async () => {
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) => {
+      if (key === 'Comfy.UseNewMenu') return 'Top'
+      if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+      if (key === 'Comfy.RightSidePanel.IsOpen') return true
+      return undefined
+    })
+
+    const { container } = createWrapper({ pinia })
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: 'menu.manageExtensions' })
+    ).toBeInTheDocument()
+    expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+      'w-0'
+    )
+  })
+
+  describe('Deploy to Comfy API button', () => {
+    function enableDeployButton() {
+      Object.assign(useFeatureFlags().flags, { deployToCloud: true })
+    }
+
+    it.for([
+      { when: 'when the server allows it', deployToCloud: true, count: 1 },
+      { when: 'otherwise', deployToCloud: false, count: 0 }
+    ])('renders $count deploy button $when', ({ deployToCloud, count }) => {
+      Object.assign(useFeatureFlags().flags, { deployToCloud })
+
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+      ).toHaveLength(count)
+    })
+
+    it('sits left of the panel toggle and opens the dialog for the installation', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+      const deploy = screen.getByRole('button', {
+        name: 'Deploy to Comfy API'
+      })
+
+      expect(
+        deploy.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Toggle properties panel' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      await user.click(deploy)
+
+      expect(openDeployToComfyApiDialog).toHaveBeenCalledExactlyOnceWith({
+        deploysInstallation: true
+      })
+    })
+
+    it('tracks deploy button clicks', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Deploy to Comfy API' })
+      )
+
+      expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+        button_id: 'run_bar_deploy_clicked',
+        element_group: 'top_menu'
+      })
+    })
+
+    it('keeps the floating actionbar container open for the deploy button', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      useManagerState().shouldShowExtensionsButton = computed(() => false)
+      enableDeployButton()
+      const pinia = getActivePinia()
+      assert.exists(pinia)
+      vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+        if (key === 'Comfy.RightSidePanel.IsOpen') return true
+        return undefined
+      })
+
+      const { container } = createWrapper({ pinia })
+      await nextTick()
+
+      expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+        'w-0'
+      )
+    })
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+    useManagerState().shouldShowExtensionsButton = computed(() => false)
 
     const rafCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

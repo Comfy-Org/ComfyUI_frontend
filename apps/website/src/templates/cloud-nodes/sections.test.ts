@@ -1,8 +1,7 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { externalLinks, getRoutes } from '../../config/routes'
+import { externalLinks, getRoutes } from '@/config/routes'
 import ClosingCtaSection from './ClosingCtaSection.vue'
 import FAQSection from './FAQSection.vue'
 import HeroSection from './HeroSection.vue'

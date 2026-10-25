@@ -1,6 +1,10 @@
 <template>
   <!-- Create a new stacking context for widgets to avoid z-index issues -->
-  <div class="isolate">
+  <div
+    class="isolate"
+    data-testid="dom-widgets"
+    :inert="canvasStore.isPickingNodes"
+  >
     <DomWidget
       v-for="widgetState in widgetStates"
       :key="widgetState.widget.id"

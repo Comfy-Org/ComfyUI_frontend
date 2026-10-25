@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 import { Clock } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
-import CheckIcon from '../icons/CheckIcon.vue'
+import CheckIcon from '@/components/icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 
 interface IncludedFeature {
   titleKey: TranslationKey
@@ -63,7 +64,7 @@ const features: IncludedFeature[] = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto w-full lg:grid lg:grid-cols-[280px_1fr] lg:gap-x-16">
       <div
         class="sticky top-20 mb-10 bg-primary-comfy-ink py-2 lg:top-28 lg:mb-0 lg:self-start"
@@ -71,7 +72,7 @@ const features: IncludedFeature[] = [
         <h2
           class="text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
         >
-          {{ t('pricing.included.heading', locale) }}
+          {{ t('pricing.included.heading') }}
         </h2>
       </div>
 
@@ -94,15 +95,15 @@ const features: IncludedFeature[] = [
             />
             <CheckIcon
               v-else
-              class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+              class="mt-0.5 size-4 shrink-0 text-primary-comfy-yellow"
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
-              {{ t(feature.titleKey, locale) }}
+              {{ t(feature.titleKey) }}
               <span
                 v-if="feature.isComingSoon"
                 class="block text-primary-comfy-canvas/55"
               >
-                {{ t('pricing.included.comingSoon', locale) }}
+                {{ t('pricing.included.comingSoon') }}
               </span>
             </p>
           </div>
@@ -110,7 +111,7 @@ const features: IncludedFeature[] = [
           <SafeRichText
             as="p"
             class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55 lg:mt-0"
-            :html="t(feature.descriptionKey, locale)"
+            :html="t(feature.descriptionKey)"
           />
         </div>
       </div>

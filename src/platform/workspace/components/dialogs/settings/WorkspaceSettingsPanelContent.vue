@@ -1,17 +1,7 @@
 <template>
   <div class="@container flex size-full min-h-0 flex-col">
-    <header class="mb-6 flex items-center gap-4">
-      <WorkspaceProfilePic
-        class="size-12 text-3xl!"
-        :workspace-name="workspaceName"
-        :subscription-tier="activeWorkspace?.subscriptionTier"
-      />
-      <h1 class="text-3xl font-semibold text-base-foreground">
-        {{ workspaceName }}
-      </h1>
-    </header>
-
-    <BillingStatusBanner class="mb-4" />
+    <WorkspaceHeaderMenu />
+    <BillingStatusBanner :section class="mb-4" />
 
     <PlanCreditsPanelContent v-if="section === 'planCredits'" />
     <WorkspaceMembersPanelContent v-else-if="section === 'members'" />
@@ -20,18 +10,13 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
-import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
+import PlanCreditsPanelContent from '@/platform/billing/components/settings/PlanCreditsPanelContent.vue'
+import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import WorkspaceMembersPanelContent from '@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const { section } = defineProps<{
   section: 'planCredits' | 'members' | 'allowlist'
 }>()
-
-const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 </script>
