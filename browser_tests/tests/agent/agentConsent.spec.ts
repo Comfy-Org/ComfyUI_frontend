@@ -26,7 +26,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.use({
     agentConsentAccepted: false,
     initialLocalStorage: {
-      'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+      'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true'
     }
   })
 
@@ -624,7 +624,7 @@ test.describe(
       agentConsentAccepted: false,
       agentConsentWebSession: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal': 'true'
       }
     })
 
@@ -674,8 +674,8 @@ test.describe(
       agentConsentWrites
     }) => {
       const page = comfyPage.page
-      const autoShownKey =
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+      const responseKey =
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal'
       const gettingStarted = page.getByRole('dialog', {
         name: enMessages.gettingStarted.title
       })
@@ -687,29 +687,28 @@ test.describe(
         await expect(gettingStarted).toBeVisible()
       })
 
-      await test.step('The automatic offer waits without spending its one-time attempt', async () => {
+      await test.step('The automatic offer waits behind Getting Started', async () => {
         await expect
           .poll(() => page.evaluate(() => window.__autoShownReads ?? 0), {
-            message:
-              'the held-offer decision reads the unspent one-shot marker',
+            message: 'the held-offer decision reads the response marker',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toBeVisible()
         expect(
-          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
+          await page.evaluate((key) => localStorage.getItem(key), responseKey)
         ).toBeNull()
       })
 
-      await test.step('Taking the blank canvas leaves the activated panel available for a message', async () => {
+      await test.step('Taking the blank canvas shows the card over the activated panel', async () => {
         await page.getByTestId('getting-started-blank').click()
         await expect(gettingStarted).toHaveCount(0)
-        await expect(consent).toHaveCount(0)
+        await expect(consent).toBeVisible()
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
         expect(
-          await page.evaluate((key) => localStorage.getItem(key), autoShownKey)
+          await page.evaluate((key) => localStorage.getItem(key), responseKey)
         ).toBeNull()
       })
     })
@@ -737,7 +736,7 @@ test.describe(
       )
     })
 
-    test('waits for the approval before leaving Agent available', async ({
+    test('waits for the approval before offering consent', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -767,16 +766,16 @@ test.describe(
         expect(
           await page.evaluate(() =>
             localStorage.getItem(
-              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+              'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal'
             )
           )
         ).toBeNull()
       })
 
-      await test.step('Approving clears the screen without covering the activated panel', async () => {
+      await test.step('Approving clears the screen, then the card shows over the activated panel', async () => {
         await approve.click()
         await expect(approval).toHaveCount(0)
-        await expect(consent).toHaveCount(0)
+        await expect(consent).toBeVisible()
         await expect(agentPanel.root).toBeVisible()
       })
     })

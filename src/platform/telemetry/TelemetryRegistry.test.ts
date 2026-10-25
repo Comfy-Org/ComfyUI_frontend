@@ -597,13 +597,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })

@@ -178,10 +178,7 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (
-      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
-      agentPanelStore.isVisible
-    ) {
+    if (agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
         resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
       })

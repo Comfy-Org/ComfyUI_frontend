@@ -684,8 +684,7 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * are losses (it was owed and did not happen), so **a query over this event
  * must split by `exit`; a total is not a quantity.**
  *
- * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `already_offered`, `consent_declined`.
+ * Correctly not needed: `consent_already_accepted`, `card_already_seen`.
  * Owed and not made: everything else.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
@@ -700,14 +699,6 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * (`stage`, `exit`) pair and never across stages.
  */
 export type AgentConsentOfferExit =
-  /** No Comfy account is signed in. */
-  | 'signed_out'
-  /** Signed in, but the account has not resolved to a user id yet. */
-  | 'account_unresolved'
-  /** No active workspace id yet, and no switch is in progress. */
-  | 'workspace_unresolved'
-  /** A workspace switch is in progress, so the consent scope is moving. */
-  | 'workspace_switching'
   /** The stored consent read has not settled, so consent is unknown. */
   | 'consent_unresolved'
   /** The stored consent read rejected. */
@@ -718,16 +709,10 @@ export type AgentConsentOfferExit =
   | 'offer_in_flight'
   /** The card has already been on screen for this scope this page load. */
   | 'card_already_seen'
-  /** Panel activation owns consent timing, so the automatic offer is dropped. */
-  | 'activation_opened_panel'
-  /** The bounded panel-discovery window is complete and the panel is closed. */
+  /** This launch is past the panel's automatic-open launches. */
   | 'activation_window_complete'
-  /** The one-shot auto-show key for this scope is already burned. */
-  | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
-  /** A prior explicit rejection suppressed this automatic offer. */
-  | 'consent_declined'
   /**
    * The consent scope moved while it was being resolved - a different account,
    * a workspace transition, or a switch that started - so the read that would

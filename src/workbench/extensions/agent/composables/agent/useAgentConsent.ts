@@ -14,10 +14,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
-import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
@@ -49,7 +47,6 @@ export function useAgentConsent() {
   const { showSignInDialog } = useAuthDialogs()
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
-  const agentPanelStore = useAgentPanelStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
@@ -211,12 +208,6 @@ export function useAgentConsent() {
             if (settled) return
             markIntroductionResponded()
             reportOutcome('rejected')
-            if (
-              agentPanelStore.onboarding.persistSkipAsRefusal &&
-              expectedIdentity &&
-              identity.value === expectedIdentity
-            )
-              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },

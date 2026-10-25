@@ -4,8 +4,6 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -13,7 +11,6 @@ import type {
   AgentConsentOfferExit,
   AgentConsentOfferStage
 } from '@/platform/telemetry/types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
@@ -36,7 +33,6 @@ import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2
 
@@ -67,62 +63,6 @@ function automaticActivationVisitsComplete(): boolean {
   } catch {
     // Storage failures must not turn into an unbounded automatic opener.
     return true
-  }
-}
-
-function automaticConsentOfferScope(
-  {
-    activationOpenedPanel,
-    panelOpen,
-    userId,
-    workspaceId,
-    workspaceSwitching
-  }: {
-    activationOpenedPanel: boolean
-    panelOpen: boolean
-    userId: string | undefined
-    workspaceId: string | null
-    workspaceSwitching: boolean
-  },
-  onMissingScope: () => void,
-  onActivatedPanel: () => void
-): [userId: string, workspaceId: string] | null {
-  if (!userId || !workspaceId || workspaceSwitching) {
-    onMissingScope()
-    return null
-  }
-  if (activationOpenedPanel && panelOpen) {
-    onActivatedPanel()
-    return null
-  }
-  return [userId, workspaceId]
-}
-
-function writeAutoShown(key: string, shown: boolean): boolean {
-  try {
-    localStorage.setItem(key, String(shown))
-    return true
-  } catch {
-    return false
-  }
-}
-
-function wasAutoShown(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function prepareAutoShow(
-  key: string
-): 'ready' | 'already_offered' | 'storage_unavailable' {
-  try {
-    if (localStorage.getItem(key) === 'true') return 'already_offered'
-    return writeAutoShown(key, false) ? 'ready' : 'storage_unavailable'
-  } catch {
-    return 'storage_unavailable'
   }
 }
 
@@ -162,7 +102,6 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const introductionStore = useAgentConsentIntroductionStore()
       const { enabled } = storeToRefs(agentPanelStore)
-      const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
         useCurrentUser()
       const { withConsent } = useAgentConsent()
@@ -190,29 +129,17 @@ export function registerAgentPanelExtension(): void {
       const screenIsClear = computed(() => screenHolder() === null)
 
       const reportedWithheld = new Set<string>()
-      const withholdOffer = (
-        reason: AgentConsentNotOfferedReason,
-        userId = resolvedUserInfo.value?.id,
-        workspaceId = workspaceStore.activeWorkspaceId
-      ): void => {
-        if (!userId || !workspaceId) return
-        if (
-          wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
-        )
-          return
-        const key = `${userId}.${workspaceId}:${reason}`
+      const withholdOffer = (reason: AgentConsentNotOfferedReason): void => {
+        if (!introductionOwed()) return
+        const key = `${introductionStore.scope}:${reason}`
         if (reportedWithheld.has(key)) return
         reportedWithheld.add(key)
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
       const offerHeld = ref(false)
-      const holdOffer = (
-        reason: AgentConsentNotOfferedReason,
-        userId?: string,
-        workspaceId?: string
-      ): void => {
-        withholdOffer(reason, userId, workspaceId)
+      const holdOffer = (reason: AgentConsentNotOfferedReason): void => {
+        withholdOffer(reason)
         offerHeld.value = true
       }
 
@@ -237,7 +164,9 @@ export function registerAgentPanelExtension(): void {
       }
 
       const consentCardSeenIn = new Set<string>()
-      let activationOpenedPanel = false
+      // The automatic card belongs to the launches that open the panel by
+      // themselves. Read once, before this launch claims its visit.
+      const launchInActivationWindow = !automaticActivationVisitsComplete()
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
@@ -252,60 +181,17 @@ export function registerAgentPanelExtension(): void {
       }
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
-        (agentPanelStore.onboarding.introduceBeforeSignIn
-          ? isAuthInitialized.value
-          : isLoggedIn.value) &&
+        isAuthInitialized.value &&
         !introductionStore.isContinuingSignIn &&
-        (agentPanelStore.onboarding.offerMemory !== 'answered' ||
-          introductionOwed()) &&
+        introductionOwed() &&
         !consentStore.isChecking &&
         !consentStore.accepted
       const offerIneligibility = (): AgentConsentOfferExit | null =>
-        !agentPanelStore.onboarding.introduceBeforeSignIn && !isLoggedIn.value
-          ? 'signed_out'
-          : consentStore.isChecking
-            ? 'consent_unresolved'
-            : consentStore.accepted
-              ? 'consent_already_accepted'
-              : null
-
-      const missingScopeExit = (
-        userId: string | undefined
-      ): AgentConsentOfferExit =>
-        workspaceStore.isSwitching
-          ? 'workspace_switching'
-          : !userId
-            ? 'account_unresolved'
-            : 'workspace_unresolved'
-
-      function claimOneShotOffer(
-        candidateUserId: string | undefined,
-        offeredWorkspaceId: string | null
-      ): string | null {
-        const offerScope = automaticConsentOfferScope(
-          {
-            activationOpenedPanel,
-            panelOpen: agentPanelStore.isOpen,
-            userId: candidateUserId,
-            workspaceId: offeredWorkspaceId,
-            workspaceSwitching: workspaceStore.isSwitching
-          },
-          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
-          () => {
-            reportOfferExit('activation_opened_panel', 'offer')
-            dropHold()
-          }
-        )
-        if (!offerScope) return null
-        const [userId, workspaceId] = offerScope
-        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        const autoShow = prepareAutoShow(key)
-        if (autoShow === 'ready') return key
-        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
-        else reportOfferExit('already_offered', 'offer')
-        dropHold()
-        return null
-      }
+        consentStore.isChecking
+          ? 'consent_unresolved'
+          : consentStore.accepted
+            ? 'consent_already_accepted'
+            : null
 
       let autoShowInFlight = false
 
@@ -338,15 +224,6 @@ export function registerAgentPanelExtension(): void {
           return
         }
 
-        const candidateUserId = resolvedUserInfo.value?.id
-        const offeredWorkspaceId = workspaceStore.activeWorkspaceId
-        const { offerMemory } = agentPanelStore.onboarding
-        const key =
-          offerMemory === 'shown'
-            ? claimOneShotOffer(candidateUserId, offeredWorkspaceId)
-            : null
-        if (offerMemory === 'shown' && key === null) return
-
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
         dropHold()
@@ -363,17 +240,9 @@ export function registerAgentPanelExtension(): void {
             agentPanelStore.open('automatic_consent')
           },
           {
-            onShown: () => {
-              if (key) writeAutoShown(key, true)
-            },
             canShow: () => {
               const held = screenHolder()
-              if (held)
-                holdOffer(
-                  held,
-                  candidateUserId,
-                  offeredWorkspaceId ?? undefined
-                )
+              if (held) holdOffer(held)
               return held === null && agentPanelStore.enabled
             }
           }
@@ -381,8 +250,7 @@ export function registerAgentPanelExtension(): void {
       }
 
       function prepareStartupPanel(): boolean {
-        if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
-          return true
+        if (launchInActivationWindow) return true
         reportOfferExit('activation_window_complete', 'startup')
         dropHold()
         return false
@@ -391,14 +259,6 @@ export function registerAgentPanelExtension(): void {
       const offerWhenStartupDecided = (): void => {
         whenStartupDecided()
           .then((decided) => {
-            if (
-              agentPanelStore.onboarding.persistSkipAsRefusal &&
-              useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
-            ) {
-              reportOfferExit('consent_declined', 'startup')
-              dropHold()
-              return
-            }
             if (!decided) {
               if (offerEligible()) withholdOffer('boot_undecided')
               else {
@@ -429,10 +289,8 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen) {
+              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen)
                 agentPanelStore.open('activation')
-                activationOpenedPanel = true
-              }
             }
           })
           .catch((error: unknown) => {
@@ -447,13 +305,8 @@ export function registerAgentPanelExtension(): void {
       }
 
       const loadConsentIfEligible = (): void => {
-        const { introduceBeforeSignIn } = agentPanelStore.onboarding
-        if (
-          !agentPanelStore.enabled ||
-          (introduceBeforeSignIn && !isAuthInitialized.value)
-        )
-          return
-        if (introduceBeforeSignIn && !isLoggedIn.value) {
+        if (!agentPanelStore.enabled || !isAuthInitialized.value) return
+        if (!isLoggedIn.value) {
           offerWhenStartupDecided()
           return
         }
