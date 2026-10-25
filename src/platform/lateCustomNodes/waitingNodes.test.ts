@@ -85,6 +85,16 @@ describe('showPlaceholdersAsWaiting', () => {
     expect(nodeOfType(graph, 'LatePackNode').getTitle()).toBe('My sampler')
   })
 
+  it('shows the title the artist gives a waiting node that had none', () => {
+    const graph = graphWith(['LatePackNode'])
+    const node = nodeOfType(graph, 'LatePackNode')
+    showPlaceholdersAsWaiting(graph)
+
+    node.title = 'My sampler'
+
+    expect(node.getTitle()).toBe('My sampler')
+  })
+
   it('shows a node inside a subgraph as waiting', () => {
     const rootGraph = createTestRootGraph()
     const subgraph = createTestSubgraph({ rootGraph })

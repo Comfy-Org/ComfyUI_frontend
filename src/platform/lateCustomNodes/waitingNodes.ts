@@ -25,12 +25,17 @@ function hideMissingOutline(node: LGraphNode): void {
   node.strokeStyles = { ...node.strokeStyles, error: () => undefined }
 }
 
+function showTypeWhenUntitled(node: LGraphNode): void {
+  const titleOf = node.getTitle
+  node.getTitle = () => titleOf.call(node) || node.type
+}
+
 /** Shows the nodes whose type is not registered yet as waiting for their pack instead of missing; they stay placeholders and change nothing they save. */
 export function showPlaceholdersAsWaiting(graph: LGraph): void {
   forEachNode(graph, (node) => {
     if (!isPlaceholder(node) || node.badges.includes(waitingBadge)) return
     hideMissingOutline(node)
-    if (!node.getTitle()) node.getTitle = () => node.type
+    showTypeWhenUntitled(node)
     node.badges.push(waitingBadge)
   })
   graph.setDirtyCanvas(true, true)
