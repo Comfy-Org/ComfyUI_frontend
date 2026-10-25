@@ -151,6 +151,13 @@ test.describe(
       send(askExpired())
       await expect(cardLead).toHaveCount(0)
       await expect(runButton).toHaveCount(0)
+
+      const draft = 'The approval expired.'
+      send({
+        type: 'agent_message_draft',
+        data: { text: draft, ...askTurnIds }
+      })
+      await expect(panel.getByText(draft, { exact: true })).toBeVisible()
       expect(answers()).toHaveLength(0)
     })
 
