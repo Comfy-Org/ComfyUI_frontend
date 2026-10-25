@@ -108,6 +108,14 @@ export const useExtensionStore = defineStore('extension', () => {
       }
   }
 
+  /** Returns the extensions held so far, in registration order; holding goes on. */
+  function takeHeldExtensions(): ComfyExtension[] {
+    const current = registration.value
+    if (current.mode !== 'holding') return []
+    registration.value = { mode: 'holding', held: [] }
+    return [...current.held]
+  }
+
   /** Ends holding and returns the extensions still held; they stay pending until `finishLateExtensions`. */
   function stopHoldingExtensions(): ComfyExtension[] {
     const current = registration.value
@@ -184,6 +192,7 @@ export const useExtensionStore = defineStore('extension', () => {
     holdNewExtensions,
     holdExtension,
     releaseHeldExtension,
+    takeHeldExtensions,
     stopHoldingExtensions,
     finishLateExtensions,
     oweNodeDefHooks,

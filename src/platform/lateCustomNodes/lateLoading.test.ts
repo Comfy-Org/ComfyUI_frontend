@@ -20,6 +20,10 @@ import {
   createMockLoadedWorkflow
 } from '@/utils/__tests__/litegraphTestUtils'
 
+import {
+  importNoticingFetchFailure,
+  loadCustomExtensionsWithDeadline
+} from './lateLoading'
 import { nodeTypesMayStillArrive } from './lateNodeTypes'
 
 vi.mock(import('firebase/auth'))
@@ -43,22 +47,40 @@ interface Pack {
   ms: number
   extension?: string
   fails?: boolean
+  fetchFailures?: number
 }
 
-function packScript({ ms, extension, fails }: Pack): string {
+const fetchFailuresLeft = new Map<string, number>()
+
+function fetchTestPack(path: string, url: string): boolean {
+  const left = fetchFailuresLeft.get(path) ?? 0
+  if (left === 0) return true
+  fetchFailuresLeft.set(path, left - 1)
+  throw new TypeError(`Failed to fetch dynamically imported module: ${url}`)
+}
+
+function packScript(path: string, { ms, extension, fails }: Pack): string {
   const arrive = fails
     ? "throw new Error('pack failed')"
     : extension
       ? `globalThis.registerTestPack(${JSON.stringify(extension)})`
       : ''
   scriptCount += 1
-  const source = `await new Promise((r) => setTimeout(r, ${ms})); ${arrive}; export const id = ${scriptCount}`
+  const source = [
+    `await new Promise((r) => setTimeout(r, ${ms}))`,
+    `if (globalThis.fetchTestPack(${JSON.stringify(path)}, import.meta.url)) { ${arrive} }`,
+    `export const id = ${scriptCount}`,
+    '//'
+  ].join(';\n')
   return `data:text/javascript,${encodeURIComponent(source)}`
 }
 
 function serve(packs: Record<string, Pack>) {
+  fetchFailuresLeft.clear()
+  for (const [path, pack] of Object.entries(packs))
+    fetchFailuresLeft.set(path, pack.fetchFailures ?? 0)
   const urls = Object.fromEntries(
-    Object.entries(packs).map(([path, pack]) => [path, packScript(pack)])
+    Object.entries(packs).map(([path, pack]) => [path, packScript(path, pack)])
   )
   vi.spyOn(api, 'getExtensions').mockResolvedValue(Object.keys(packs))
   vi.spyOn(api, 'fileURL').mockImplementation((path) => urls[path] ?? path)
@@ -76,6 +98,54 @@ function recording(name: string): ComfyExtension {
 const isRegistered = (name: string) =>
   useExtensionStore().isExtensionInstalled(name)
 
+type Attempt = 'evaluates' | 'throws' | { fetchFails: string }
+
+const absolute = (path: string) => new URL(path, document.baseURI).href
+
+function swallowedByPreloadHelper(
+  baseModule: () => Promise<unknown>
+): Promise<unknown> {
+  return baseModule().catch((error: unknown) => {
+    window.dispatchEvent(
+      Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+        payload: error
+      })
+    )
+    return undefined
+  })
+}
+
+function preloadHelperLoader(attempts: Record<string, Attempt[]>) {
+  const runs: Record<string, number> = {}
+  const tries = new Map<string, number>()
+  const settleTogether = new Promise((resolve) => setTimeout(resolve, 100))
+  async function evaluate(ext: string, attempt: Attempt) {
+    await settleTogether
+    if (typeof attempt === 'object') throw new TypeError(attempt.fetchFails)
+    runs[ext] = (runs[ext] ?? 0) + 1
+    if (attempt === 'throws') throw new Error('pack failed')
+    return {}
+  }
+  return {
+    runs,
+    loader: {
+      importScript: async (ext: string, { retry = false } = {}) => {
+        const tried = tries.get(ext) ?? 0
+        tries.set(ext, tried + 1)
+        try {
+          await importNoticingFetchFailure(retry ? `${ext}?retry=1` : ext, () =>
+            swallowedByPreloadHelper(() => evaluate(ext, attempts[ext][tried]))
+          )
+          return undefined
+        } catch (error) {
+          return { ext, error }
+        }
+      },
+      reportFailures: () => {}
+    }
+  }
+}
+
 async function startEditor(signal?: AbortSignal) {
   let finished = false
   void loadExtensions(signal).then(() => {
@@ -90,6 +160,7 @@ describe('late custom node loading', () => {
     vi.useFakeTimers()
     log = []
     vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = true
+    vi.stubGlobal('fetchTestPack', fetchTestPack)
     vi.stubGlobal('registerTestPack', (name: string) =>
       useExtensionService().registerExtension(recording(name))
     )
@@ -693,5 +764,340 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(1_000)
 
     expect(useToast().toasts).toEqual([])
+  })
+
+  it('tries a script that could not be fetched once more after five seconds, and turns it on', async () => {
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(isRegistered('A')).toBe(false)
+    expect(useToast().toasts[0].description).toContain('Waiting for: a')
+
+    await vi.advanceTimersByTimeAsync(4_000)
+
+    expect(isRegistered('A')).toBe(true)
+    expect(log).toContain('A:setup')
+    expect(reportError).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ title: 'Custom nodes are ready' })
+    ])
+  })
+
+  it.for<{
+    name: string
+    attempts: Record<string, Attempt[]>
+    runs: Record<string, number>
+  }>([
+    {
+      name: 'tries a script again when the fetch failure the editor swallowed names exactly it',
+      attempts: {
+        '/extensions/a/main.js': [
+          {
+            fetchFails: `Failed to fetch dynamically imported module: ${absolute('/extensions/a/main.js')}`
+          },
+          'evaluates'
+        ]
+      },
+      runs: { '/extensions/a/main.js': 1 }
+    },
+    {
+      name: "runs a script that threw once when Safari's fetch failure without a URL arrives with it",
+      attempts: {
+        '/extensions/a/main.js': ['throws', 'throws'],
+        '/extensions/b/main.js': [
+          { fetchFails: 'Importing a module script failed.' },
+          'evaluates'
+        ]
+      },
+      runs: { '/extensions/a/main.js': 1 }
+    },
+    {
+      name: 'runs a script that threw once when the fetch failure of a file another script imports arrives with it',
+      attempts: {
+        '/extensions/a/main.js': ['throws', 'throws'],
+        '/extensions/b/main.js': [
+          {
+            fetchFails: `Failed to fetch dynamically imported module: ${absolute('/extensions/b/dep.js')}`
+          },
+          'evaluates'
+        ]
+      },
+      runs: { '/extensions/a/main.js': 1 }
+    },
+    {
+      name: 'runs a main.js that threw once beside a main.js.backup.js that could not be fetched',
+      attempts: {
+        '/extensions/pack/main.js': ['throws', 'throws'],
+        '/extensions/pack/main.js.backup.js': [
+          {
+            fetchFails: `Failed to fetch dynamically imported module: ${absolute('/extensions/pack/main.js.backup.js')}`
+          },
+          'evaluates'
+        ]
+      },
+      runs: {
+        '/extensions/pack/main.js': 1,
+        '/extensions/pack/main.js.backup.js': 1
+      }
+    }
+  ])('$name', async ({ attempts, runs: expectedRuns }) => {
+    const { runs, loader } = preloadHelperLoader(attempts)
+
+    void loadCustomExtensionsWithDeadline(
+      Object.keys(attempts),
+      loader,
+      new AbortController().signal
+    )
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(runs).toEqual(expectedRuns)
+  })
+
+  it('treats a script that could not be fetched within the wait as late', async () => {
+    serve({
+      '/extensions/a/main.js': { ms: 500, extension: 'A', fetchFailures: 1 }
+    })
+
+    const { isFinished } = await startEditor()
+    expect(isFinished()).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(isRegistered('A')).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(false)
+  })
+
+  it('offers Reload, naming the pack, when the second try fails too, and reloads the page from it', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+    serve({
+      '/extensions/a-pack/main.js': {
+        ms: 3_000,
+        extension: 'A',
+        fetchFailures: 2
+      }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: "Some custom nodes didn't start",
+        description: 'Reload the page to turn on: a-pack',
+        action: expect.objectContaining({ label: 'Reload' })
+      })
+    ])
+    expect(reload).not.toHaveBeenCalled()
+    useToast().toasts[0].action?.onClick()
+    expect(reload).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual([
+      expect.objectContaining({ ext: '/extensions/a-pack/main.js' })
+    ])
+  })
+
+  it('turns a healthy late pack on while another pack waits for its second try', async () => {
+    serve({
+      '/extensions/healthy/main.js': { ms: 3_000, extension: 'Healthy' },
+      '/extensions/retried/main.js': {
+        ms: 3_000,
+        extension: 'Retried',
+        fetchFailures: 1
+      }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(log).toContain('Healthy:setup')
+    expect(isRegistered('Retried')).toBe(false)
+    expect(nodeTypesMayStillArrive()).toBe(true)
+  })
+
+  it('lets nothing go unhandled when the editor is gone while one pack starts and another waits for its second try', async () => {
+    let finishInit = () => {}
+    const initDone = new Promise<void>((resolve) => {
+      finishInit = resolve
+    })
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        init: () => initDone
+      })
+    )
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    onTestFinished(() => {
+      process.off('unhandledRejection', unhandled)
+    })
+    const editor = new AbortController()
+    serve({
+      '/extensions/healthy/main.js': { ms: 3_000, extension: 'Healthy' },
+      '/extensions/retried/main.js': {
+        ms: 3_000,
+        extension: 'Retried',
+        fetchFailures: 1
+      }
+    })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(1_000)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(10_000)
+    finishInit()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(unhandled).not.toHaveBeenCalled()
+  })
+
+  it('does not try a script that threw a second time', async () => {
+    serve({ '/extensions/a/main.js': { ms: 3_000, fails: true } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fileURL).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('stops the retry and says nothing once the editor that started it is gone', async () => {
+    const editor = new AbortController()
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+    })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(2_000)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(isRegistered('A')).toBe(false)
+    expect(api.fileURL).toHaveBeenCalledOnce()
+    expect(useToast().toasts).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('says nothing about a failed second try once the editor that started it is gone', async () => {
+    const editor = new AbortController()
+    useWorkspaceStore().spinner = true
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 2 }
+    })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(10_000)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(useToast().toasts).toEqual([])
+  })
+})
+
+describe('importNoticingFetchFailure', () => {
+  const URL = '/extensions/a/main.js'
+  const fetchFailure = (url: string) =>
+    new TypeError(`Failed to fetch dynamically imported module: ${url}`)
+  const swallowing = (failure: unknown) => () =>
+    swallowedByPreloadHelper(async () => {
+      throw failure
+    })
+
+  it('resolves when the script loads', async () => {
+    await expect(
+      importNoticingFetchFailure(URL, async () => ({}))
+    ).resolves.toBeUndefined()
+  })
+
+  it.for<{ name: string; payload: unknown }>([
+    { name: 'a string', payload: 'plugin threw a string' },
+    { name: 'nothing', payload: null },
+    { name: 'a plain object', payload: { code: 1 } },
+    { name: 'an error naming another script', payload: new Error('/b.js') },
+    { name: 'a fetch failure naming it', payload: fetchFailure(URL) }
+  ])(
+    'resolves when the script loads while the helper reports $name',
+    async ({ payload }) => {
+      const load = async () => {
+        window.dispatchEvent(
+          Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+            payload
+          })
+        )
+        return {}
+      }
+
+      await expect(
+        importNoticingFetchFailure(URL, load)
+      ).resolves.toBeUndefined()
+    }
+  )
+
+  it.for<{ name: string; failure: TypeError }>([
+    { name: 'the path', failure: fetchFailure(URL) },
+    { name: 'the full URL', failure: fetchFailure(absolute(URL)) }
+  ])(
+    'rejects as not fetched when the swallowed fetch failure names exactly $name of the script',
+    async ({ failure }) => {
+      await expect(
+        importNoticingFetchFailure(URL, swallowing(failure))
+      ).rejects.toMatchObject({ name: 'ScriptNotFetched', cause: failure })
+    }
+  )
+
+  it('rejects as not fetched when its own fetch failure names exactly the script', async () => {
+    const failure = fetchFailure(absolute(URL))
+
+    await expect(
+      importNoticingFetchFailure(URL, async () => {
+        throw failure
+      })
+    ).rejects.toMatchObject({ name: 'ScriptNotFetched', cause: failure })
+  })
+
+  it.for<{ name: string; failure: unknown }>([
+    { name: 'the script threw', failure: new Error('pack failed') },
+    {
+      name: "Safari's fetch failure has no URL",
+      failure: new TypeError('Importing a module script failed.')
+    },
+    {
+      name: 'the fetch failure names a file the script imports',
+      failure: fetchFailure('/extensions/a/dep.js')
+    },
+    {
+      name: 'the fetch failure names a longer path starting with the script',
+      failure: fetchFailure(`${URL}.backup.js`)
+    }
+  ])(
+    'rejects without claiming a fetch failure when the helper swallowed it and $name',
+    async ({ failure }) => {
+      await expect(
+        importNoticingFetchFailure(URL, swallowing(failure))
+      ).rejects.toMatchObject({
+        name: 'Error',
+        message: `Could not import ${URL}`
+      })
+    }
+  )
+
+  it('rejects with what the script threw when nothing swallowed it', async () => {
+    const thrown = new Error('pack failed')
+
+    await expect(
+      importNoticingFetchFailure(URL, async () => {
+        throw thrown
+      })
+    ).rejects.toBe(thrown)
+  })
+
+  it('rejects without claiming a fetch failure when the helper resolved nothing and said nothing', async () => {
+    await expect(
+      importNoticingFetchFailure(URL, async () => undefined)
+    ).rejects.toThrow(`Could not import ${URL}`)
   })
 })

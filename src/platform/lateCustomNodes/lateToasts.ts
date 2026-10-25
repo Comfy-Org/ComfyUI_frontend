@@ -56,3 +56,14 @@ export function showStartingToast(
 export function showReadyToast() {
   useToast().info(t('lateCustomNodes.ready'), { duration: 5000 })
 }
+
+/** Names the packs that did not start, with a Reload action. */
+export function showFailedToast(scripts: string[]) {
+  useToast().warning(t('lateCustomNodes.failed'), {
+    description: t('lateCustomNodes.failedDetail', { packs: packsOf(scripts) }),
+    action: {
+      label: t('lateCustomNodes.reload'),
+      onClick: () => window.location.reload()
+    }
+  })
+}
