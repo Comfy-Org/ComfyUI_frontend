@@ -371,6 +371,28 @@ describe('useProcessingTopupPayment', () => {
     expect(screen.getByRole('status')).toHaveTextContent('2500')
   })
 
+  it('keeps the processing notice when a return detail read fails', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+    const cause = new WorkspaceApiError('bad gateway', 502)
+    vi.mocked(workspaceApi.getTopupCheckout).mockRejectedValue(cause)
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        errorType: 'failure_reading_topup_checkout',
+        surface: 'billing'
+      })
+    )
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('2500')
+  })
+
   it('drops the notice without reporting when billing owner access is refused', async () => {
     enableProcessingRead()
     serveCheckout('payment_processing')

@@ -92,9 +92,11 @@ export function useProcessingTopupPayment(
       return
     }
 
-    for (const cause of outcome.read.sessionFailures)
-      reportCheckoutReadFailure(cause)
-    payment.value = outcome.read.payment
+    const { sessionFailures } = outcome.read
+    for (const cause of sessionFailures) reportCheckoutReadFailure(cause)
+    payment.value =
+      outcome.read.payment ??
+      (sessionFailures.length > 0 ? payment.value : null)
   }
 
   watch(reading, () => void load(), { immediate: true })
