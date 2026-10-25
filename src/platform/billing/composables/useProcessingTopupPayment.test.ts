@@ -393,6 +393,76 @@ describe('useProcessingTopupPayment', () => {
     expect(screen.getByRole('status')).toHaveTextContent('2500')
   })
 
+  it('drops the notice when the processing checkout is fulfilled while another detail fails', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    renderPayment(ref(true))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+
+    const cause = new WorkspaceApiError('bad gateway', 502)
+    vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+      checkouts: [listed('cs_bank'), listed('cs_other')],
+      next_cursor: null
+    })
+    vi.mocked(workspaceApi.getTopupCheckout).mockImplementation((sessionId) =>
+      sessionId === 'cs_other'
+        ? Promise.reject(cause)
+        : Promise.resolve(checkout('fulfilled', 2500, sessionId))
+    )
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        errorType: 'failure_reading_topup_checkout',
+        surface: 'billing'
+      })
+    )
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('none')
+  })
+
+  it('drops a checkout read that started in the previous workspace', async () => {
+    enableProcessingRead()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    const workspaceARead = deferred<HostedTopupCheckout>()
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_a')],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockReturnValue(
+      workspaceARead.promise
+    )
+    renderPayment(ref(true))
+    await waitFor(() =>
+      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_a')
+    )
+
+    const workspaceBList =
+      deferred<Awaited<ReturnType<typeof workspaceApi.listTopupCheckouts>>>()
+    vi.mocked(workspaceApi.listTopupCheckouts).mockReturnValueOnce(
+      workspaceBList.promise
+    )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    await waitFor(() =>
+      expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(2)
+    )
+
+    workspaceARead.resolve(checkout('payment_processing', 2500, 'cs_a'))
+    await workspaceARead.promise
+    await new Promise((settle) => setTimeout(settle))
+    expect(screen.getByRole('status')).toHaveTextContent('none')
+
+    vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue(
+      checkout('payment_processing', 100, 'cs_b')
+    )
+    workspaceBList.resolve({ checkouts: [listed('cs_b')], next_cursor: null })
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('100')
+    )
+  })
+
   it('drops the notice without reporting when billing owner access is refused', async () => {
     enableProcessingRead()
     serveCheckout('payment_processing')

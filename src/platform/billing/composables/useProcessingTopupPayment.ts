@@ -6,43 +6,41 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { processingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 
 interface ProcessingTopupRead {
-  payment: ProcessingTopupPayment | null
+  checkouts: HostedTopupCheckout[]
   sessionFailures: unknown[]
+  unreadSession: boolean
 }
 
-async function readProcessingTopupPayment(): Promise<
+async function readProcessingTopupCheckouts(
+  lastKnown: ReadonlyMap<string, HostedTopupCheckout>
+): Promise<
   { ok: true; read: ProcessingTopupRead } | { ok: false; cause: unknown }
 > {
   try {
-    const { checkouts } = await workspaceApi.listTopupCheckouts()
+    const { checkouts: listed } = await workspaceApi.listTopupCheckouts()
     const reads = await Promise.allSettled(
-      checkouts.map(({ session_id }) =>
-        workspaceApi.getTopupCheckout(session_id)
-      )
+      listed.map(({ session_id }) => workspaceApi.getTopupCheckout(session_id))
     )
-    const sessions: HostedTopupCheckout[] = []
+    const checkouts: HostedTopupCheckout[] = []
     const sessionFailures: unknown[] = []
-    for (const read of reads) {
-      if (read.status === 'fulfilled') sessions.push(read.value)
-      else sessionFailures.push(read.reason)
-    }
-    const knownPayment = processingTopupPayment(sessions)
-    const payment =
-      knownPayment !== null && sessionFailures.length > 0
-        ? { paymentAmountCents: null }
-        : knownPayment
-    return {
-      ok: true,
-      read: {
-        payment,
-        sessionFailures
+    let unreadSession = false
+    reads.forEach((read, index) => {
+      if (read.status === 'fulfilled') {
+        checkouts.push(read.value)
+        return
       }
-    }
+      sessionFailures.push(read.reason)
+      const known = lastKnown.get(listed[index].session_id)
+      if (known) checkouts.push(known)
+      else unreadSession = true
+    })
+    return { ok: true, read: { checkouts, sessionFailures, unreadSession } }
   } catch (cause) {
     return { ok: false, cause }
   }
@@ -56,7 +54,11 @@ export function useProcessingTopupPayment(
   shown: MaybeRefOrGetter<boolean> = true
 ) {
   const { flags } = useFeatureFlags()
+  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceScope = () =>
+    `${workspaceStore.workspaceTransitionGeneration}:${workspaceStore.activeWorkspaceId}`
   const payment = shallowRef<ProcessingTopupPayment | null>(null)
+  let knownCheckouts = new Map<string, HostedTopupCheckout>()
   let generation = 0
   let disposed = false
   let failureReported = false
@@ -70,6 +72,11 @@ export function useProcessingTopupPayment(
     })
   }
 
+  function clear() {
+    payment.value = null
+    knownCheckouts = new Map()
+  }
+
   function reading() {
     return !disposed && toValue(shown) && flags.unifiedBillingSettingsEnabled
   }
@@ -77,28 +84,37 @@ export function useProcessingTopupPayment(
   async function load() {
     const current = ++generation
     if (!reading()) {
-      payment.value = null
+      clear()
       return
     }
 
-    const outcome = await readProcessingTopupPayment()
+    const outcome = await readProcessingTopupCheckouts(knownCheckouts)
     if (current !== generation || !reading()) return
     if (!outcome.ok) {
       if (isBillingOwnerRequired(outcome.cause)) {
-        payment.value = null
+        clear()
         return
       }
       reportCheckoutReadFailure(outcome.cause)
       return
     }
 
-    const { sessionFailures } = outcome.read
+    const { checkouts, sessionFailures, unreadSession } = outcome.read
     for (const cause of sessionFailures) reportCheckoutReadFailure(cause)
+    knownCheckouts = new Map(
+      checkouts.map((known) => [known.session_id, known])
+    )
+    const servedPayment = processingTopupPayment(checkouts)
     payment.value =
-      outcome.read.payment ??
-      (sessionFailures.length > 0 ? payment.value : null)
+      servedPayment !== null && unreadSession
+        ? { paymentAmountCents: null }
+        : servedPayment
   }
 
+  watch(workspaceScope, () => {
+    clear()
+    void load()
+  })
   watch(reading, () => void load(), { immediate: true })
   const stopRefreshOnReturn = registerRefreshOnReturn(load)
   onScopeDispose(() => {
