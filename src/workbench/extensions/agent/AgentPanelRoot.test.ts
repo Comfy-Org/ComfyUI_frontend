@@ -904,23 +904,19 @@ describe('AgentPanelRoot onboarding', () => {
     dialog.setAttribute('data-state', 'open')
     document.body.append(dialog)
 
-    try {
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      expect(
-        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
-      ).not.toBeInTheDocument()
-      expect(
-        useTelemetry()!.trackAgentOnboardingNotShown
-      ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
+    expect(
+      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).not.toBeInTheDocument()
+    expect(
+      useTelemetry()!.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
 
-      dialog.remove()
-      expect(
-        await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-      ).toBeInTheDocument()
-    } finally {
-      dialog.remove()
-    }
+    dialog.remove()
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
   })
 
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
