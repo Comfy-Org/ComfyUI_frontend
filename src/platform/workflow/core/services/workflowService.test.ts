@@ -1948,9 +1948,17 @@ describe('useWorkflowService', () => {
       )
     }
 
-    it.for(['configure', 'live'] as const)(
-      'reports a tab only when a user action activates it through %s',
-      async (path) => {
+    it.for([
+      { path: 'configure', arrange: (_workflow: ComfyWorkflow) => {} },
+      {
+        path: 'live',
+        arrange: (workflow: ComfyWorkflow) => {
+          workflow.adoptGraph(app.createRootGraph())
+        }
+      }
+    ])(
+      'reports a tab only when a user action activates it through $path',
+      async ({ arrange }) => {
         const workflowStore = useWorkflowStore()
         const restored = createModeTestWorkflow({
           path: 'workflows/restored.json'
@@ -1958,10 +1966,8 @@ describe('useWorkflowService', () => {
         const clicked = createModeTestWorkflow({
           path: 'workflows/clicked.json'
         })
-        if (path === 'live') {
-          restored.adoptGraph(app.createRootGraph())
-          clicked.adoptGraph(app.createRootGraph())
-        }
+        arrange(restored)
+        arrange(clicked)
         activateOnLoad()
         const activated = vi.fn()
         workflowStore.onUserActivation(activated)

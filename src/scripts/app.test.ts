@@ -727,9 +727,37 @@ describe('ComfyApp', () => {
       expect(app.rootGraph).toBe(active)
     })
 
-    it.for(['success', 'configure-error'] as const)(
-      'keeps visible subgraph constructors after a background load: %s',
-      async (outcome) => {
+    it.for([
+      {
+        outcome: 'success',
+        arrange: (_graph: LGraph) => {},
+        expectedResult: true
+      },
+      {
+        outcome: 'configure-error',
+        arrange: (graph: LGraph) => {
+          vi.spyOn(graph, 'configure').mockImplementationOnce(() => {
+            throw new Error('configure failed')
+          })
+        },
+        expectedResult: false
+      },
+      {
+        outcome: 'before-configure-error',
+        arrange: (_graph: LGraph) => {
+          vi.when(mockExtensionService.invokeExtensionsAsync)
+            .calledWith(
+              'beforeConfigureGraph',
+              expect.anything(),
+              expect.anything()
+            )
+            .thenRejectOnce(new Error('before configure failed'))
+        },
+        expectedResult: false
+      }
+    ])(
+      'keeps visible subgraph constructors after a background load: $outcome',
+      async ({ arrange, expectedResult }) => {
         const active = new LGraph()
         const previous = singletonApp.rootGraphOrUndefined
         onTestFinished(() => {
@@ -749,11 +777,7 @@ describe('ComfyApp', () => {
         })
         const owned = new LGraph()
         workflow.adoptGraph(owned)
-        if (outcome === 'configure-error') {
-          vi.spyOn(owned, 'configure').mockImplementationOnce(() => {
-            throw new Error('configure failed')
-          })
-        }
+        arrange(owned)
 
         const result = await app.loadGraphData(
           zComfyWorkflow.parse({
@@ -765,12 +789,53 @@ describe('ComfyApp', () => {
           workflow
         )
 
-        expect(result).toBe(outcome === 'success')
+        expect(result).toBe(expectedResult)
         const node = LiteGraph.createNode(definition.id)
         assert(node && 'subgraph' in node)
         expect(node.subgraph).toBe(visibleSubgraph)
       }
     )
+
+    it('restores a background workflow containing an uninstalled node without losing its tracker state', async () => {
+      const active = new LGraph()
+      active.extra = { marker: 'visible' }
+      Reflect.set(app, 'rootGraphInternal', active)
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/missing-node.json',
+        modified: 0,
+        size: 0
+      })
+      const owned = new LGraph()
+      workflow.adoptGraph(owned)
+      const data = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        nodes: [
+          {
+            id: 1,
+            type: 'test/UninstalledBackgroundNode',
+            pos: [10, 20],
+            size: [100, 100],
+            order: 0,
+            mode: 0,
+            flags: {},
+            properties: {}
+          }
+        ]
+      })
+      const missingNode = data.nodes[0]
+      assert(missingNode)
+      Reflect.deleteProperty(missingNode, 'flags')
+      const tracker = new ChangeTracker(workflow, createWorkflowGraphData())
+      workflow.changeTracker = tracker
+
+      await expect(
+        app.loadGraphData(data, false, false, workflow)
+      ).resolves.toBe(true)
+
+      expect(tracker.activeState.nodes).toEqual(data.nodes)
+      expect(active.extra).toEqual({ marker: 'visible' })
+      expect(app.rootGraph).toBe(active)
+    })
 
     it('refuses a non-clean load into a workflow whose graph was released instead of borrowing the active one', async () => {
       app.canvasElRef.value = document.createElement('canvas')
@@ -793,9 +858,20 @@ describe('ComfyApp', () => {
       expect(mockExtensionService.invokeExtensionsAsync).not.toHaveBeenCalled()
     })
 
-    it.for(['beforeLoadGraph', 'beforeConfigureGraph'] as const)(
-      'refuses an undo when its workflow graph is released during %s',
-      async (releaseHook) => {
+    it.for([
+      {
+        releaseHook: 'beforeLoadGraph',
+        ownedGraph: (active: LGraph) => active,
+        expectedVisibleExtra: {}
+      },
+      {
+        releaseHook: 'beforeConfigureGraph',
+        ownedGraph: (_active: LGraph) => new LGraph(),
+        expectedVisibleExtra: { marker: 'visible' }
+      }
+    ])(
+      'refuses an undo when its workflow graph is released during $releaseHook',
+      async ({ releaseHook, ownedGraph, expectedVisibleExtra }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const workflow = markLoaded(
           new ComfyWorkflow({
@@ -805,7 +881,7 @@ describe('ComfyApp', () => {
           })
         )
         const active = new LGraph()
-        workflow.adoptGraph(active)
+        workflow.adoptGraph(ownedGraph(active))
         active.extra = { marker: 'visible' }
         Reflect.set(app, 'rootGraphInternal', active)
         mockExtensionService.invokeExtensionsAsync.mockImplementation(
@@ -818,7 +894,7 @@ describe('ComfyApp', () => {
           app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
         ).resolves.toBe(false)
 
-        expect(active.extra).toEqual({})
+        expect(active.extra).toEqual(expectedVisibleExtra)
         expect(workflow.graph).toBe(null)
         expect(ChangeTracker.isLoadingGraph).toBe(false)
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
@@ -1238,11 +1314,11 @@ describe('ComfyApp', () => {
     )
 
     it.for([
-      { first: 'undo', second: 'switch' },
-      { first: 'switch', second: 'undo' }
+      { first: 'undo', second: 'switch', expectedBeforeLoadCalls: 2 },
+      { first: 'switch', second: 'undo', expectedBeforeLoadCalls: 1 }
     ] as const)(
       'keeps the switched-to tab active with $first queued before $second',
-      async ({ first, second }) => {
+      async ({ first, second, expectedBeforeLoadCalls }) => {
         const undoneGraph = new LGraph()
         const switchedGraph = new LGraph()
         const previousGraph = singletonApp.rootGraphOrUndefined
@@ -1322,6 +1398,11 @@ describe('ComfyApp', () => {
         await expect(firstLoad).resolves.toBeTruthy()
         await expect(secondLoad).resolves.toBeTruthy()
 
+        expect(
+          mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+            ([hook]) => hook === 'beforeLoadGraph'
+          )
+        ).toHaveLength(expectedBeforeLoadCalls)
         expect(workflowStore.activeWorkflow).toMatchObject({
           path: switched.path
         })
@@ -1484,42 +1565,38 @@ describe('ComfyApp', () => {
         useCanvasScheduler().flush()
       }
 
-      it.for(['active', 'background'] as const)(
-        'survives an undo in the %s workflow',
-        async (target) => {
-          const workflow = new ComfyWorkflow({
-            path: 'workflows/camera.json',
-            modified: 0,
-            size: 0
-          })
-
-          await app.loadGraphData(
-            createWorkflowGraphData(),
-            true,
-            true,
-            workflow
-          )
-          workflow.adoptGraph(app.rootGraph)
-          const undone =
-            target === 'active'
-              ? workflow
-              : new ComfyWorkflow({
-                  path: 'workflows/background-camera.json',
-                  modified: 0,
-                  size: 0
-                })
-          if (target === 'background') undone.adoptGraph(new LGraph())
-          await app.loadGraphData(
-            createWorkflowGraphData(),
-            false,
-            false,
-            undone
-          )
-          revealCanvas()
-
-          expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      it.for([
+        {
+          target: 'active',
+          arrange: (workflow: ComfyWorkflow) => workflow
+        },
+        {
+          target: 'background',
+          arrange: (_workflow: ComfyWorkflow) => {
+            const background = new ComfyWorkflow({
+              path: 'workflows/background-camera.json',
+              modified: 0,
+              size: 0
+            })
+            background.adoptGraph(new LGraph())
+            return background
+          }
         }
-      )
+      ])('survives an undo in the $target workflow', async ({ arrange }) => {
+        const workflow = new ComfyWorkflow({
+          path: 'workflows/camera.json',
+          modified: 0,
+          size: 0
+        })
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, workflow)
+        workflow.adoptGraph(app.rootGraph)
+        const undone = arrange(workflow)
+        await app.loadGraphData(createWorkflowGraphData(), false, false, undone)
+        revealCanvas()
+
+        expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+      })
 
       it('is dropped when a different anonymous graph loads', async () => {
         await app.loadGraphData(createWorkflowGraphData(), true, true)

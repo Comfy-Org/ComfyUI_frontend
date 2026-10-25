@@ -1215,13 +1215,6 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
-  /**
-   * Shared failure reporting for a graph load that cannot proceed: shows the
-   * load-error dialog, logs it, and notifies `onGraphLoadError` so any
-   * loading-state a `beforeLoadGraph` listener opened for this same load is
-   * closed out, exactly as if `rootGraph.configure` itself had thrown.
-   * Callers still decide what to return/rethrow.
-   */
   private async reportGraphLoadFailure(error: unknown): Promise<void> {
     useDialogService().showErrorDialog(error, {
       title: t('errorDialog.loadWorkflowTitle'),
@@ -1624,7 +1617,10 @@ export class ComfyApp implements IComfyApp {
           workflow instanceof ComfyWorkflow &&
           graph !== this.rootGraph
         ) {
-          workflow.changeTracker?.reset(zComfyWorkflow.parse(graph.serialize()))
+          const parsed = zComfyWorkflow.safeParse(graph.serialize())
+          workflow.changeTracker?.reset(
+            parsed.success ? parsed.data : graphData
+          )
           return true
         }
 
