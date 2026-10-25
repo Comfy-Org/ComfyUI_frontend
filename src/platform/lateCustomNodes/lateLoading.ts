@@ -185,7 +185,8 @@ async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
 
   const extensions = registerHeldExtensions()
   if (extensions.length > 0) await startLateExtensions(extensions)
-  if (!work.isAborted()) useExtensionStore().finishLateExtensions()
+  if (work.isAborted()) return
+  useExtensionStore().finishLateExtensions()
   await rebuildOpenWorkflow()
 }
 

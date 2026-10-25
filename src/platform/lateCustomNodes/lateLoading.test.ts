@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -211,6 +211,7 @@ describe('late custom node loading', () => {
   it('waits while the artist types in a text field, at most half a minute', async () => {
     const field = document.createElement('input')
     document.body.append(field)
+    onTestFinished(() => field.remove())
     field.focus()
     serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
 
@@ -220,7 +221,6 @@ describe('late custom node loading', () => {
 
     await vi.advanceTimersByTimeAsync(15_000)
     expect(log).toContain('A:setup')
-    field.remove()
   })
 
   it('keeps the unsaved mark and the saved baseline through the rebuild', async () => {
@@ -486,6 +486,30 @@ describe('late custom node loading', () => {
 
     expect(log).toEqual([])
     expect(isRegistered('A')).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(false)
+  })
+
+  it('does not rebuild the workflow when the editor is gone while late extensions start', async () => {
+    let finishInit = () => {}
+    const initDone = new Promise<void>((resolve) => {
+      finishInit = resolve
+    })
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        init: () => initDone
+      })
+    )
+    const editor = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(1_000)
+    editor.abort()
+    finishInit()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(log).toEqual(['A:registerCustomNodes', 'reloadNodeDefs', 'A:setup'])
     expect(nodeTypesMayStillArrive()).toBe(false)
   })
 
