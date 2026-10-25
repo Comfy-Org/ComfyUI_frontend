@@ -40,6 +40,8 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.beforeEach(async ({ page, agentFlagEnabled }) => {
+      test.setTimeout(60_000)
+
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )
@@ -63,8 +65,6 @@ test.describe(
     test('returns to the chat from history after the chat fails to open', async ({
       page
     }) => {
-      test.setTimeout(60_000)
-
       const panel = new AgentPanel(page)
       await panel.open(PANEL_MOUNT_TIMEOUT)
 
