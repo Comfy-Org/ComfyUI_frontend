@@ -545,13 +545,6 @@ const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
 
-// Detects any other open global dialog (e.g. the desktop sign-in confirm
-// shown by desktopLoginRedemption) without depending on the dialog-host
-// domain: reka-ui dialogs render `[role="dialog"][data-state="open"]`, which
-// this component's own coach card never sets. Mirrors modalUtil.ts's
-// hasOpenRekaDialog/isRendered (duplicated, not imported, since that file
-// belongs to the keybindings domain) to skip popper-wrapped and hidden
-// dialogs.
 function hasOpenGlobalDialog(): boolean {
   return Array.from(
     document.querySelectorAll('[role="dialog"][data-state="open"]')
@@ -562,9 +555,6 @@ function hasOpenGlobalDialog(): boolean {
       dialog.checkVisibility({ visibilityProperty: true })
   )
 }
-// Computed eagerly (not in onMounted) so a dialog already open when this
-// component mounts defers the coach from its very first render, instead of
-// flashing the coach for a frame until the observer below catches up.
 const globalDialogOpen = ref(hasOpenGlobalDialog())
 const globalDialogObserver = new MutationObserver(() => {
   globalDialogOpen.value = hasOpenGlobalDialog()

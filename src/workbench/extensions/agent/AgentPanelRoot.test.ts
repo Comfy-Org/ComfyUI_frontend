@@ -899,9 +899,6 @@ describe('AgentPanelRoot onboarding', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-dialog'
     })
-    // Stands in for a real-world dialog (e.g. the desktop sign-in confirm
-    // shown by desktopLoginRedemption): reka-ui dialogs render exactly this
-    // shape, which is what the coach's own MutationObserver looks for.
     const dialog = document.createElement('div')
     dialog.setAttribute('role', 'dialog')
     dialog.setAttribute('data-state', 'open')
