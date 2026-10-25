@@ -197,13 +197,7 @@ function paginationFailure<Item>(
 
 export type ThreadListing =
   | { status: 'complete'; threads: AgentThreadSummary[] }
-  /**
-   * Pagination stopped before the last page. The threads it did reach are
-   * carried here rather than dropped, because a truncated listing is partial
-   * data, not a failed request. They are a subset of the real list, not
-   * necessarily a prefix of it: a server that repeats a page serves the same
-   * threads more than once, so they are deduplicated on the way out.
-   */
+  /** Paging stopped early; carries the distinct threads it did reach. */
   | {
       status: 'incomplete'
       reason: PaginationStopReason
@@ -541,11 +535,6 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
-/**
- * Keeps the first thread seen per id. A server that serves the same page for
- * every cursor -- the paging bug this guards against -- would otherwise have
- * its threads listed once per repeat, which renders as duplicate chat rows.
- */
 function uniqueById(threads: AgentThreadSummary[]): AgentThreadSummary[] {
   const seen = new Set<string>()
   return threads.filter(({ id }) => {

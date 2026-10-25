@@ -11,17 +11,10 @@ import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-/**
- * A local agent with more than one page of chats served page 1 again for every
- * cursor, so the list never reached its last page. The panel treated that as a
- * failed request: it threw the 100 chats it had away and raised the blocking
- * error overlay, leaving the whole chat history unusable (OBL-287).
- */
 test.describe(
   'Agent chat history with truncated paging',
   { tag: ['@cloud', '@ui'] },
   () => {
-    // Every page, cursor or not, answers with page 1 and the same next cursor.
     test.beforeEach(async ({ page }) => {
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(thirtyAgentThreadPages.first))
@@ -44,8 +37,6 @@ test.describe(
           .withText(enMessages.agent.historyIncomplete)
           .and(toast.toastWarnings)
       ).toBeVisible()
-      // Exactly one row per chat: the repeated page served the same threads
-      // more than once, and strict mode would fail here on a duplicate.
       await expect(
         panel.getByRole('button', {
           name: thirtyAgentThreadPages.first.threads[0].title,

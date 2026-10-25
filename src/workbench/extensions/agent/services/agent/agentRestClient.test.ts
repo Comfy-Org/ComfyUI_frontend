@@ -213,9 +213,7 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7/x', 'turn-1:call/1', {
-      selected: ['run']
-    })
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
@@ -396,10 +394,7 @@ describe('listThreads pagination', () => {
 
   it('follows next_cursor at the maximum page size until has_more is false', async () => {
     respond(
-      threadPage(['th-1', 'th-2'], {
-        has_more: true,
-        next_cursor: 'next page'
-      })
+      threadPage(['th-1', 'th-2'], { has_more: true, next_cursor: 'next page' })
     )
     respond(threadPage(['th-3'], { has_more: false }))
 
