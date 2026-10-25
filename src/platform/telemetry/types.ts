@@ -159,6 +159,8 @@ export interface BootstrapCompleteMetadata {
   total_ms: number
   outcome: 'completed' | 'failed' | 'timed_out'
   phase_count: number
+  /** Wall-clock ms not covered by any recorded phase. */
+  untraced_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -1657,6 +1659,7 @@ export const TelemetryEvents = {
   SSO_WORKSPACE_LANDED: SSO_TELEMETRY_EVENT.workspaceLanded,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
   BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
+  THEME_LOADED: 'app:theme_loaded',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',

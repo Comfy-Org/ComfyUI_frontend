@@ -1,0 +1,393 @@
+<template>
+  <div class="flex size-full flex-col">
+    <div
+      ref="topBarRef"
+      class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
+      @wheel.stop
+    >
+      <Popover v-model:open="categoryMenuOpen">
+        <PopoverTrigger as-child>
+          <Button
+            variant="textonly"
+            size="unset"
+            :tooltip="compact ? activeLabel : ''"
+            tooltip-side="bottom"
+            :class="chipClass"
+            type="button"
+            :aria-label="compact ? activeLabel : undefined"
+            data-testid="load3d-category-menu"
+          >
+            <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
+            <template v-else>{{ activeLabel }}</template>
+            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          :side-offset="8"
+          :class="menuPanelClass"
+        >
+          <button
+            v-for="c in categoryDefs"
+            :key="c.key"
+            type="button"
+            :class="
+              cn(
+                menuButtonClass,
+                activeCategory === c.key && selectedMenuButtonClass
+              )
+            "
+            :aria-pressed="activeCategory === c.key"
+            @click="selectCategory(c.key)"
+          >
+            <i :class="cn(c.icon, 'size-4')" />
+            {{ c.label }}
+          </button>
+        </PopoverContent>
+      </Popover>
+
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
+
+      <SceneMenuGroup
+        v-if="activeCategory === 'scene' && sceneConfig"
+        v-model:config="sceneConfig"
+        v-model:fov="cameraFov"
+        :compact
+        :can-use-background-image="canUseBackgroundImage"
+        :hdri-active="hdriActive"
+        @update-background-image="emit('updateBackgroundImage', $event)"
+      />
+      <ModelMenuGroup
+        v-else-if="activeCategory === 'model' && modelConfig"
+        v-model:config="modelConfig"
+        :compact
+        :material-modes="materialModes"
+        :has-skeleton="hasSkeleton"
+      />
+      <CameraMenuGroup
+        v-else-if="activeCategory === 'camera' && cameraConfig"
+        v-model:config="cameraConfig"
+        :compact
+      />
+      <LightMenuGroup
+        v-else-if="activeCategory === 'light' && lightConfig && modelConfig"
+        v-model:config="lightConfig"
+        :compact
+        :is-original-material="isOriginalMaterial"
+      />
+      <HdriMenuGroup
+        v-else-if="activeCategory === 'hdri' && lightConfig"
+        v-model:config="lightConfig"
+        :compact
+        :scene-has-image="sceneHasImage"
+        @update-hdri-file="emit('updateHdriFile', $event)"
+      />
+      <GizmoMenuGroup
+        v-else-if="activeCategory === 'gizmo' && modelConfig"
+        v-model:config="modelConfig"
+        :compact
+        @toggle-gizmo="emit('toggleGizmo', $event)"
+        @set-gizmo-mode="emit('setGizmoMode', $event)"
+        @reset-gizmo-transform="emit('resetGizmoTransform')"
+      />
+    </div>
+
+    <div class="relative min-h-0 flex-1 overflow-hidden">
+      <slot />
+      <div
+        v-if="isRecording"
+        class="pointer-events-none absolute inset-0 border-2 border-primary"
+      />
+    </div>
+
+    <AnimationMenuStrip
+      v-if="animations.length > 0"
+      v-model:playing="playing"
+      v-model:selected-speed="selectedSpeed"
+      v-model:selected-animation="selectedAnimation"
+      v-model:animation-progress="animationProgress"
+      :animations="animations"
+      :animation-duration="animationDuration"
+      :compact
+      @seek="emit('seek', $event)"
+    />
+
+    <div
+      class="flex h-10 shrink-0 items-center justify-between gap-1 bg-popover px-2"
+      @wheel.stop
+    >
+      <div class="flex items-center gap-1">
+        <RecordMenuControl
+          v-if="canUseRecording"
+          v-model:is-recording="isRecording"
+          v-model:has-recording="hasRecording"
+          v-model:recording-duration="recordingDuration"
+          :compact
+          @start-recording="emit('startRecording')"
+          @stop-recording="emit('stopRecording')"
+          @export-recording="emit('exportRecording')"
+          @clear-recording="emit('clearRecording')"
+        />
+      </div>
+      <div class="flex items-center gap-1">
+        <ViewerControls
+          v-if="enableViewer && node"
+          :node="node as LGraphNode"
+        />
+        <Button
+          v-if="canFitToViewer"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.fitToViewer')"
+          type="button"
+          :aria-label="t('load3d.fitToViewer')"
+          @click="emit('fitToViewer')"
+        >
+          <i class="icon-[lucide--scan] size-4" />
+        </Button>
+        <Button
+          v-if="canCenterCameraOnModel"
+          variant="textonly"
+          size="icon"
+          :tooltip="t('load3d.centerCameraOnModel')"
+          type="button"
+          :aria-label="t('load3d.centerCameraOnModel')"
+          @click="emit('centerCamera')"
+        >
+          <i class="icon-[lucide--crosshair] size-4" />
+        </Button>
+        <Popover v-if="canExport" v-model:open="exportOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="textonly"
+              size="icon"
+              :tooltip="t('load3d.export')"
+              type="button"
+              :aria-label="t('load3d.export')"
+            >
+              <i class="icon-[lucide--download] size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="end"
+            :side-offset="8"
+            :class="menuPanelClass"
+          >
+            <button
+              v-for="format in exportFormats"
+              :key="format.value"
+              type="button"
+              :class="menuButtonClass"
+              @click="onExport(format.value)"
+            >
+              {{ format.label }}
+            </button>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useElementSize } from '@vueuse/core'
+import { PopoverTrigger } from 'reka-ui'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+import AnimationMenuStrip from '@/extensions/core/load3d/components/menubar/AnimationMenuStrip.vue'
+import CameraMenuGroup from '@/extensions/core/load3d/components/menubar/CameraMenuGroup.vue'
+import GizmoMenuGroup from '@/extensions/core/load3d/components/menubar/GizmoMenuGroup.vue'
+import HdriMenuGroup from '@/extensions/core/load3d/components/menubar/HdriMenuGroup.vue'
+import LightMenuGroup from '@/extensions/core/load3d/components/menubar/LightMenuGroup.vue'
+import {
+  chipClass,
+  menuPanelClass
+} from '@/extensions/core/load3d/components/menubar/menuBarStyles'
+import ModelMenuGroup from '@/extensions/core/load3d/components/menubar/ModelMenuGroup.vue'
+import RecordMenuControl from '@/extensions/core/load3d/components/menubar/RecordMenuControl.vue'
+import SceneMenuGroup from '@/extensions/core/load3d/components/menubar/SceneMenuGroup.vue'
+import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
+import ViewerControls from '@/extensions/core/load3d/components/controls/ViewerControls.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import {
+  menuButtonClass,
+  selectedMenuButtonClass
+} from '@/components/ui/menu/menuStyles'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  AnimationItem,
+  CameraConfig,
+  GizmoMode,
+  LightConfig,
+  MaterialMode,
+  ModelConfig,
+  SceneConfig
+} from '@comfyorg/viewport3d/load3d/interfaces'
+
+const {
+  animations = [],
+  animationDuration = 0,
+  canUseLighting = true,
+  canUseHdri = true,
+  canUseGizmo = true,
+  canExport = true,
+  canUseBackgroundImage = true,
+  canFitToViewer = true,
+  canCenterCameraOnModel = true,
+  canUseRecording = true,
+  enableViewer = false,
+  node = null,
+  materialModes = ['original', 'clay', 'normal', 'wireframe'],
+  hasSkeleton = false,
+  sourceFormat = null
+} = defineProps<{
+  animations?: AnimationItem[]
+  animationDuration?: number
+  canUseLighting?: boolean
+  canUseHdri?: boolean
+  canUseGizmo?: boolean
+  canExport?: boolean
+  canUseBackgroundImage?: boolean
+  canFitToViewer?: boolean
+  canCenterCameraOnModel?: boolean
+  canUseRecording?: boolean
+  enableViewer?: boolean
+  node?: LGraphNode | null
+  materialModes?: readonly MaterialMode[]
+  hasSkeleton?: boolean
+  sourceFormat?: string | null
+}>()
+
+const sceneConfig = defineModel<SceneConfig>('sceneConfig')
+const modelConfig = defineModel<ModelConfig>('modelConfig')
+const cameraConfig = defineModel<CameraConfig>('cameraConfig')
+const lightConfig = defineModel<LightConfig>('lightConfig')
+const isRecording = defineModel<boolean>('isRecording')
+const hasRecording = defineModel<boolean>('hasRecording')
+const recordingDuration = defineModel<number>('recordingDuration')
+const playing = defineModel<boolean>('playing')
+const selectedSpeed = defineModel<number>('selectedSpeed')
+const selectedAnimation = defineModel<number>('selectedAnimation')
+const animationProgress = defineModel<number>('animationProgress')
+
+const emit = defineEmits<{
+  (e: 'seek', progress: number): void
+  (e: 'updateBackgroundImage', file: File | null): void
+  (e: 'updateHdriFile', file: File | null): void
+  (e: 'exportModel', format: string): void
+  (e: 'fitToViewer'): void
+  (e: 'centerCamera'): void
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
+  (e: 'startRecording'): void
+  (e: 'stopRecording'): void
+  (e: 'exportRecording'): void
+  (e: 'clearRecording'): void
+}>()
+
+const { t } = useI18n()
+
+const categoryDefs = computed(() =>
+  [
+    {
+      key: 'scene',
+      label: t('load3d.scene'),
+      icon: 'icon-[lucide--layers]',
+      show: !!sceneConfig.value
+    },
+    {
+      key: 'model',
+      label: t('load3d.model3d'),
+      icon: 'icon-[lucide--box]',
+      show: !!modelConfig.value
+    },
+    {
+      key: 'camera',
+      label: t('load3d.camera'),
+      icon: 'icon-[lucide--camera]',
+      show: !!cameraConfig.value
+    },
+    {
+      key: 'light',
+      label: t('load3d.light'),
+      icon: 'icon-[lucide--sun]',
+      show: canUseLighting && !!lightConfig.value && !!modelConfig.value
+    },
+    {
+      key: 'hdri',
+      label: t('load3d.hdri.label'),
+      icon: 'icon-[lucide--globe]',
+      show: canUseHdri && !!lightConfig.value
+    },
+    {
+      key: 'gizmo',
+      label: t('load3d.gizmo.label'),
+      icon: 'icon-[lucide--axis-3d]',
+      show: canUseGizmo && !!modelConfig.value
+    }
+  ].filter((c) => c.show)
+)
+
+const activeCategory = ref('scene')
+const activeDef = computed(() =>
+  categoryDefs.value.find((c) => c.key === activeCategory.value)
+)
+const activeLabel = computed(() => activeDef.value?.label ?? '')
+const activeIcon = computed(() => activeDef.value?.icon ?? '')
+watch(categoryDefs, (defs) => {
+  if (!defs.some((c) => c.key === activeCategory.value)) {
+    activeCategory.value = defs[0]?.key ?? 'scene'
+  }
+})
+
+const exclusivePopover = usePopoverExclusivity()
+const categoryMenuOpen = exclusivePopover('category-menu')
+const exportOpen = exclusivePopover('export')
+
+const sceneHasImage = computed(
+  () =>
+    !!sceneConfig.value?.backgroundImage &&
+    sceneConfig.value.backgroundImage !== ''
+)
+const hdriActive = computed(
+  () =>
+    !!lightConfig.value?.hdri?.hdriPath && !!lightConfig.value?.hdri?.enabled
+)
+const isOriginalMaterial = computed(
+  () => modelConfig.value?.materialMode === 'original'
+)
+const cameraFov = computed({
+  get: () => cameraConfig.value?.fov ?? 0,
+  set: (value) => {
+    if (cameraConfig.value) cameraConfig.value.fov = value
+  }
+})
+
+const exportFormats = computed(() => getExportFormatOptions(sourceFormat))
+
+const topBarRef = ref<HTMLElement | null>(null)
+const { width: topW } = useElementSize(topBarRef)
+const compactWidthThreshold = 480
+const compact = computed(
+  () => topW.value > 0 && topW.value < compactWidthThreshold
+)
+
+function selectCategory(key: string) {
+  activeCategory.value = key
+  categoryMenuOpen.value = false
+}
+
+function onExport(format: string) {
+  emit('exportModel', format)
+  exportOpen.value = false
+}
+</script>

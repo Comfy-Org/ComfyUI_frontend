@@ -55,6 +55,32 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
+  test.describe('on a phone-width viewport', () => {
+    test.use({ viewport: { width: 390, height: 844 } })
+
+    test('keeps the switcher on screen and switches workspaces', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      const panel = page.getByTestId('workspace-switcher-panel')
+      const teamRow = panel.getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      await expect(panel).toBeInViewport({ ratio: 1 })
+
+      await teamRow.click()
+      await comfyPage.waitForAppReady()
+
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await expect(
+        page.getByTestId('workspace-switcher-trigger')
+      ).toContainText(TEAM_WORKSPACE_NAME)
+    })
+  })
+
   test(
     'scrolls the list to reveal workspaces past the visible area',
     { tag: '@screenshot' },

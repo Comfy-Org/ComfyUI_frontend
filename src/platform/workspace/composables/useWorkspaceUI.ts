@@ -1,11 +1,11 @@
 import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 import type {
   WorkspaceRole,
