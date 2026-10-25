@@ -17,6 +17,10 @@ import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const apiEvents: EventTarget = api
 
+function draftScope(subject: string, workspaceId: string): string {
+  return `${encodeURIComponent(subject)}:${workspaceId}`
+}
+
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
   () => ({
@@ -771,11 +775,11 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      sourceWorkspaceId
+      draftScope('unauthenticated', sourceWorkspaceId)
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      draftScope('unauthenticated', destinationWorkspaceId)
     )
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
 
@@ -922,7 +926,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      draftScope('user-b', destinationWorkspaceId)
     )
     const personalPayloadKey = StorageKeys.draftPayload(
       workflow.path,

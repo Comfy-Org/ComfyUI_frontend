@@ -122,6 +122,26 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.updatedAt).toEqual(expect.any(Number))
     })
 
+    it('retains CRDT lineage when draft content changes', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
+      store.saveDraft(path, '{"nodes":[1]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.lineage).toEqual({
+        workflowId: 'wf-1',
+        lineageSeq: 12
+      })
+    })
+
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
       const store = useWorkflowDraftStoreV2()
 

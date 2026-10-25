@@ -28,6 +28,7 @@ export interface DocOp {
 export interface DocUpdate {
   workflowId: string
   seq: number
+  lineageSeq?: number
   update: Uint8Array
   actor?: string
   /** Accepted semantic op identities folded into this effect frame (DQ-9). */
@@ -38,6 +39,7 @@ export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number
+  lineageSeq?: number
   expectedSeq?: number
   code?: string
   message?: string
@@ -138,6 +140,7 @@ interface WireData {
   index?: unknown
   op_id?: unknown
   outcome?: unknown
+  lineage_seq?: unknown
 }
 
 function decodeBase64(value: string): Uint8Array | null {
@@ -326,6 +329,7 @@ function parseDocSubscribed(
     workflowId,
     ok,
     ...(isSequence(data.seq) && { seq: data.seq }),
+    ...(isSequence(data.lineage_seq) && { lineageSeq: data.lineage_seq }),
     ...(isSequence(data.expected_seq) && { expectedSeq: data.expected_seq }),
     ...(code !== undefined && { code }),
     ...(message !== undefined && { message })
@@ -380,6 +384,9 @@ const serverFrameParsers: ServerFrameParsers = {
       data: {
         workflowId,
         seq,
+        ...(isSequence(data.lineage_seq) && {
+          lineageSeq: data.lineage_seq
+        }),
         update,
         ...(actor !== undefined && { actor }),
         ...(isStringArray(data.op_ids) && { opIds: data.op_ids })
@@ -501,11 +508,16 @@ export class DocFrameClient extends EventTarget {
   }
 
   /** @returns whether the subscribe frame actually left the transport. */
-  subscribe(workflowId: string, stateVector: Uint8Array): boolean {
+  subscribe(
+    workflowId: string,
+    stateVector: Uint8Array,
+    knownLineageSeq = 0
+  ): boolean {
     return this.send('doc_subscribe', {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
+      known_lineage_seq: knownLineageSeq,
       supports_reseed: true,
       schema_version: SCHEMA_VERSION
     })

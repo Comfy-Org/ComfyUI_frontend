@@ -83,7 +83,8 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog,
+    private readonly lineageSeq = 1
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -133,7 +134,8 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
+        seq: this.seq,
+        lineage_seq: this.lineageSeq
       }
     }
   }
@@ -316,6 +318,7 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         applied,
         skipped,
         ...(rejected && {

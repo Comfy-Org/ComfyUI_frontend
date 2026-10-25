@@ -57,6 +57,7 @@ export function useWorkflowPersistenceV2() {
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
+  draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
   const { onUserLogout, onUserResolved } = useCurrentUser()
@@ -145,13 +146,15 @@ export function useWorkflowPersistenceV2() {
 
   onUserLogout(() => {
     if (!isCloud) return
+    draftStore.setAuthSubject(null)
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
     prepareWorkflowLogoutTransition()
     clearAllWorkspaceStorage()
   })
-  onUserResolved(() => {
+  onUserResolved((user) => {
     if (!isCloud) return
+    draftStore.setAuthSubject(user.id)
     stopPendingWorkspaceReadinessWatcher()
 
     // Release the fence once initialization concludes either way: a resolved

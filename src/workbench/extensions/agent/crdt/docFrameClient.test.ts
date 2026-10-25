@@ -118,6 +118,7 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           state_vector_b64: encodeBase64(stateVector),
+          known_lineage_seq: 0,
           supports_reseed: true,
           schema_version: SCHEMA_VERSION
         }
@@ -177,11 +178,17 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 2 }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: true,
+          seq: 2,
+          lineage_seq: 7
+        }
       })
     ).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true, seq: 2 }
+      data: { workflowId: 'wf-1', ok: true, seq: 2, lineageSeq: 7 }
     })
     expect(
       parseServerDocFrame({
@@ -245,6 +252,28 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it('replaces a restored follower when the subscribed lineage differs', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+
+    bridge.subscribe('wf-1', 4)
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 9,
+      lineage_seq: 8
+    })
+
+    expect(JSON.parse(transport.sent[0]).data.known_lineage_seq).toBe(4)
+    expect(resets).toEqual([{ workflowId: 'wf-1', seq: 9, lineageSeq: 8 }])
   })
 
   it('keeps a seq-0 or absent-seq doc_subscribed ok ack as a valid baseline', () => {
