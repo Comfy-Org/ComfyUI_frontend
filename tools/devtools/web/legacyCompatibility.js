@@ -175,6 +175,58 @@ if (
   window.__legacyGraphInstancePatches = fired
   const safelyHookedGraphs = new WeakSet()
 
+  if (localStorage.getItem('Comfy.DevTools.TargetedGraphPatches') === 'true') {
+    const allowedMembers = new Map([
+      [
+        'DevTools.LegacyGraphInstancePatches.Boot',
+        [
+          'onNodeAdded',
+          'onNodeRemoved',
+          'configure',
+          'serialize',
+          'clear',
+          'beforeChange',
+          'afterChange',
+          'add',
+          'remove'
+        ]
+      ]
+    ])
+    const patches = new Map()
+    const registerExtension = app.registerExtension
+    app.registerExtension = function (extension) {
+      const members = allowedMembers.get(extension.name)
+      if (!members || !extension.setup)
+        return registerExtension.call(this, extension)
+      const setup = extension.setup
+      return registerExtension.call(this, {
+        ...extension,
+        setup(...args) {
+          const graph = app.graph
+          const previous = new Map(members.map((name) => [name, graph[name]]))
+          const result = setup.apply(this, args)
+          const changed = members.filter(
+            (name) =>
+              typeof graph[name] === 'function' &&
+              graph[name] !== previous.get(name)
+          )
+          for (const name of changed) patches.set(name, graph[name])
+          if (changed.length)
+            console.warn(
+              `${extension.name} uses temporary graph patch compatibility. Update the extension to install hooks per graph.`
+            )
+          return result
+        }
+      })
+    }
+    const createRootGraph = app.createRootGraph
+    app.createRootGraph = function () {
+      const graph = createRootGraph.call(this)
+      for (const [name, patch] of patches) graph[name] = patch
+      return graph
+    }
+  }
+
   function hookGraphOnce(graph) {
     if (safelyHookedGraphs.has(graph)) return
     safelyHookedGraphs.add(graph)
@@ -186,7 +238,7 @@ if (
   }
 
   app.registerExtension({
-    name: 'DevTools.LegacyGraphInstancePatches',
+    name: 'DevTools.LegacyGraphInstancePatches.Boot',
     setup() {
       const graph = app.graph
       const previousOnNodeAdded = graph.onNodeAdded
@@ -217,6 +269,13 @@ if (
           return previous.call(this, item, ...args)
         }
       }
+    }
+  })
+
+  app.registerExtension({
+    name: 'DevTools.LegacyGraphInstancePatches.GraphLocal',
+    setup() {
+      const graph = app.graph
       hookGraphOnce(graph)
       if (
         localStorage.getItem('Comfy.DevTools.ReplayGraphPatches') === 'true'
