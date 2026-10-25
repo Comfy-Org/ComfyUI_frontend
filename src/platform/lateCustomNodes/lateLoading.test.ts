@@ -103,6 +103,16 @@ function recording(name: string): ComfyExtension {
   }
 }
 
+function cpuServerUnknown() {
+  return new WorkspaceApiError(
+    'step unknown',
+    502,
+    'cpu_server_unknown',
+    undefined,
+    'getDeploymentCpuServer'
+  )
+}
+
 const isRegistered = (name: string) =>
   useExtensionStore().isExtensionInstalled(name)
 
@@ -1158,7 +1168,7 @@ describe('naming the CPU server step', () => {
 
   it('stops asking about the server once the late scripts are on', async () => {
     vi.mocked(workspaceApi.getDeploymentCpuServer).mockRejectedValue(
-      new WorkspaceApiError('cpu_server_unknown', 502)
+      cpuServerUnknown()
     )
     serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
 
@@ -1173,20 +1183,35 @@ describe('naming the CPU server step', () => {
     expect(workspaceApi.getDeploymentCpuServer).toHaveBeenCalledTimes(asked)
   })
 
-  it('tries a script that could not be fetched again only once the server exists', async () => {
+  it('tries a script that could not be fetched again after five seconds while the server step is unknown', async () => {
+    vi.mocked(workspaceApi.getDeploymentCpuServer).mockRejectedValue(
+      cpuServerUnknown()
+    )
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fileURL).toHaveBeenCalledTimes(2)
+    expect(isRegistered('A')).toBe(true)
+  })
+
+  it('tries a script that could not be fetched again only once a server being built exists', async () => {
     vi.mocked(workspaceApi.getDeploymentCpuServer)
-      .mockRejectedValueOnce(new WorkspaceApiError('cpu_server_unknown', 502))
-      .mockRejectedValueOnce(new WorkspaceApiError('cpu_server_unknown', 502))
+      .mockRejectedValueOnce(cpuServerUnknown())
+      .mockResolvedValueOnce({ cpu_server: 'building' })
       .mockResolvedValueOnce({ cpu_server: 'created' })
     serve({
       '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
     })
 
     await startEditor()
-    await vi.advanceTimersByTimeAsync(6_000)
+    await vi.advanceTimersByTimeAsync(9_000)
     expect(api.fileURL).toHaveBeenCalledOnce()
 
-    await vi.advanceTimersByTimeAsync(5_000)
+    await vi.advanceTimersByTimeAsync(2_000)
     expect(api.fileURL).toHaveBeenCalledTimes(2)
   })
 

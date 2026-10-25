@@ -15,7 +15,11 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
-import type { CpuServerReading, CpuServerWatch } from './cpuServerStep'
+import type {
+  CpuServerReading,
+  CpuServerStep,
+  CpuServerWatch
+} from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
 import {
   showFailedToast,
@@ -312,18 +316,20 @@ interface LateOutcome extends BatchOutcome {
   failedAgain: LateScriptFailure[]
 }
 
+function isSettingUp(step: CpuServerStep | undefined): boolean {
+  return step === 'creating' || step === 'building'
+}
+
 async function retryFetchFailures(
   failures: LateScriptFailure[],
   { loader, waiting, signal, server }: LateRun
 ): Promise<LateScriptFailure[]> {
-  const waited = await Promise.all([
-    delay(LATE_EXTENSION_RETRY_MS, { signal }),
-    server.ready
-  ]).then(
+  const waited = await delay(LATE_EXTENSION_RETRY_MS, { signal }).then(
     () => true,
     () => false
   )
   if (!waited) return []
+  if (isSettingUp(server.step())) await server.ready
   const retries = await Promise.all(
     failures.map(({ ext }) =>
       loader
