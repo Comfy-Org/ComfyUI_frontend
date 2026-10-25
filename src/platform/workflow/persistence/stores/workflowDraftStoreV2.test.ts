@@ -142,6 +142,22 @@ describe('workflowDraftStoreV2', () => {
       })
     })
 
+    it('does not rewrite a draft when its CRDT lineage is unchanged', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+      const lineage = { workflowId: 'wf-1', lineageSeq: 12 }
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+      store.setLineage(path, lineage)
+      const setItemSpy = vi.spyOn(localStorage, 'setItem')
+
+      store.setLineage(path, lineage)
+
+      expect(setItemSpy).not.toHaveBeenCalled()
+    })
+
     it('keeps payload updatedAt stable when only recency is refreshed', () => {
       const store = useWorkflowDraftStoreV2()
 

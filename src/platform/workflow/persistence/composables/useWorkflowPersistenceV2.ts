@@ -9,7 +9,7 @@
 
 import { debounce } from 'es-toolkit'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { tryOnScopeDispose, whenever } from '@vueuse/core'
+import { tryOnScopeDispose, until, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -33,6 +33,7 @@ import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftT
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
+  clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
@@ -60,9 +61,12 @@ export function useWorkflowPersistenceV2() {
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const { isAuthInitialized, onUserLogout, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
+  let resolvedAuthSubject: string | null = null
+  let authTransitionVersion = 0
+  let authTransition = Promise.resolve()
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -144,27 +148,12 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    draftStore.setAuthSubject(null)
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
-  })
-  onUserResolved((user) => {
-    if (!isCloud) return
-    draftStore.setAuthSubject(user.id)
-    stopPendingWorkspaceReadinessWatcher()
+  const isWorkspaceInitConcluded = () =>
+    (teamWorkspaceStore.initState === 'ready' &&
+      teamWorkspaceStore.activeWorkspaceId !== null) ||
+    teamWorkspaceStore.initState === 'error'
 
-    // Release the fence once initialization concludes either way: a resolved
-    // workspace, or a permanent init failure. Waiting on 'ready' alone would
-    // leave writes blocked for the rest of the session if init settles on
-    // 'error' (e.g. no workspaces available, retries exhausted).
-    const isWorkspaceInitConcluded = () =>
-      (teamWorkspaceStore.initState === 'ready' &&
-        teamWorkspaceStore.activeWorkspaceId !== null) ||
-      teamWorkspaceStore.initState === 'error'
+  function resumePersistenceWhenWorkspaceIsReady(): void {
     if (isWorkspaceInitConcluded()) {
       completeWorkflowLogoutTransition()
       return
@@ -178,6 +167,66 @@ export function useWorkflowPersistenceV2() {
       },
       { once: true }
     )
+  }
+
+  async function waitForAuthResolution(): Promise<void> {
+    await until(isAuthInitialized).toBe(true)
+  }
+
+  async function waitForWorkspaceInitialization(): Promise<void> {
+    if (isWorkspaceInitConcluded()) return
+    await until(isWorkspaceInitConcluded).toBe(true)
+  }
+
+  onUserLogout(() => {
+    if (!isCloud) return
+    authTransitionVersion++
+    resolvedAuthSubject = null
+    draftStore.setAuthSubject(null)
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearAllWorkspaceStorage()
+  })
+  onUserResolved((user) => {
+    if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
+    const previousSubject = resolvedAuthSubject
+    resolvedAuthSubject = user.id
+    const transitionVersion = ++authTransitionVersion
+
+    if (!previousSubject || previousSubject === user.id) {
+      draftStore.setAuthSubject(user.id)
+      resumePersistenceWhenWorkspaceIsReady()
+      return
+    }
+
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearWorkflowRestoreState()
+    authTransition = authTransition
+      .then(async () => {
+        if (transitionVersion !== authTransitionVersion) return
+        workflowStore.activeWorkflow = null
+        try {
+          await useWorkflowService().loadBlankWorkflow()
+          if (transitionVersion !== authTransitionVersion) return
+          draftStore.setAuthSubject(user.id)
+          await waitForWorkspaceInitialization()
+          if (transitionVersion !== authTransitionVersion) return
+          await draftStore.loadPersistedWorkflow({
+            fallbackToLatestDraft: true
+          })
+        } finally {
+          if (transitionVersion === authTransitionVersion) {
+            draftStore.setAuthSubject(user.id)
+            completeWorkflowLogoutTransition()
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Error switching workflow persistence identity', error)
+      })
   })
 
   const loadPreviousWorkflowFromStorage = async () => {
@@ -269,6 +318,8 @@ export function useWorkflowPersistenceV2() {
     if (!workflowPersistenceEnabled.value) {
       return await resolveStartupOutcome()
     }
+
+    if (isCloud && !isAuthInitialized.value) await waitForAuthResolution()
 
     try {
       if (getRestorableTabState()) {
@@ -367,6 +418,8 @@ export function useWorkflowPersistenceV2() {
       tabStateRestored = true
       return
     }
+
+    if (isCloud && !isAuthInitialized.value) await waitForAuthResolution()
 
     try {
       await workflowStore.loadWorkflows()

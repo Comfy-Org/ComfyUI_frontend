@@ -377,7 +377,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const draftKey = hashPath(path)
     lineageByDraft.set(lineageKey(workspaceId, draftKey), lineage)
     const payload = readPayload(workspaceId, draftKey)
-    if (payload) writePayload(workspaceId, draftKey, { ...payload, lineage })
+    if (
+      payload &&
+      (payload.lineage?.workflowId !== lineage.workflowId ||
+        payload.lineage.lineageSeq !== lineage.lineageSeq)
+    )
+      writePayload(workspaceId, draftKey, { ...payload, lineage })
   }
 
   /**
