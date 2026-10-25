@@ -123,6 +123,7 @@ import {
   isGraphLoadFailurePresented,
   markGraphLoadFailurePresented
 } from '@/services/graphLoadFailure'
+import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -924,6 +925,7 @@ export class ComfyApp implements IComfyApp {
     })
     this.addAfterConfigureHandler(graph)
     installNodeAddedTelemetry(graph)
+    applyLegacyGraphPatches(this, graph)
     return graph
   }
 
