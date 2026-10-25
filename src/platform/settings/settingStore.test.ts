@@ -721,17 +721,25 @@ describe('useSettingStore', () => {
       })
 
       it('tells listeners the rejected value was taken back', async () => {
-        const changes: Array<{ id: string; value: unknown }> = []
+        const changes: unknown[] = []
         store.addSetting(packsSetting)
         await store.set(PACKS, ['/extensions/saved/'])
-        store.onSettingChanged(({ id, value }) => changes.push({ id, value }))
+        store.onSettingChanged((change) => changes.push(change))
         vi.mocked(api.storeSetting).mockRejectedValue(new Error('offline'))
 
         await store.setOrRevert(PACKS, ['/extensions/rejected/'])
 
         expect(changes).toEqual([
-          { id: PACKS, value: ['/extensions/rejected/'] },
-          { id: PACKS, value: ['/extensions/saved/'] }
+          {
+            id: PACKS,
+            value: ['/extensions/rejected/'],
+            oldValue: ['/extensions/saved/']
+          },
+          {
+            id: PACKS,
+            value: ['/extensions/saved/'],
+            oldValue: ['/extensions/rejected/']
+          }
         ])
       })
 
