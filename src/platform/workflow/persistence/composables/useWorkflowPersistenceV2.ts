@@ -169,16 +169,12 @@ export function useWorkflowPersistenceV2() {
     )
   }
 
-  /**
-   * Waits until restore can read a settled cloud identity. The returned check
-   * reports whether a later account switch has taken over the canvas.
-   */
   async function waitForRestoreIdentity(): Promise<() => boolean> {
     if (isCloud && !isAuthInitialized.value)
       await until(isAuthInitialized).toBe(true)
     const restoreVersion = authTransitionVersion
     if (isCloud) await authTransition
-    return () => restoreVersion !== authTransitionVersion
+    return () => restoreVersion === authTransitionVersion
   }
 
   async function waitForWorkspaceInitialization(): Promise<void> {
@@ -238,30 +234,30 @@ export function useWorkflowPersistenceV2() {
       })
   })
 
-  const loadPreviousWorkflowFromStorage = async () => {
+  const loadPreviousWorkflowFromStorage = async (isCurrent: () => boolean) => {
     const sessionPath = tabState.getActivePath()
 
-    // 1. Try draft for session path
     if (
       sessionPath &&
       (await draftStore.loadPersistedWorkflow({
-        preferredPath: sessionPath
+        preferredPath: sessionPath,
+        isCurrent
       }))
     )
       return true
 
-    // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
+    if (!isCurrent()) return false
     if (sessionPath) {
       const saved = workflowStore.getWorkflowByPath(sessionPath)
       if (saved) {
-        await useWorkflowService().openWorkflow(saved)
+        await useWorkflowService().openWorkflow(saved, { isCurrent })
         return true
       }
     }
 
-    // 3. Fall back to most recent draft
     return await draftStore.loadPersistedWorkflow({
-      fallbackToLatestDraft: true
+      fallbackToLatestDraft: true,
+      isCurrent
     })
   }
 
@@ -328,19 +324,17 @@ export function useWorkflowPersistenceV2() {
       return await resolveStartupOutcome()
     }
 
-    const isRestoreStale = await waitForRestoreIdentity()
+    const isRestoreCurrent = await waitForRestoreIdentity()
 
     try {
       if (getRestorableTabState()) {
-        // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
-        // fallback here so the saved tab order and active index drive startup.
         return 'restored'
       }
 
       await workflowStore.loadWorkflows()
-      // An account switch during the load owns the canvas from here on.
-      if (isRestoreStale()) return 'restored'
-      const restored = await loadPreviousWorkflowFromStorage()
+      if (!isRestoreCurrent()) return 'restored'
+      const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
+      if (!isRestoreCurrent()) return 'restored'
       return restored ? 'restored' : await resolveStartupOutcome()
     } catch (err) {
       console.error('Error loading previous workflow', err)
@@ -430,7 +424,7 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    const isRestoreStale = await waitForRestoreIdentity()
+    const isRestoreCurrent = await waitForRestoreIdentity()
 
     try {
       await workflowStore.loadWorkflows()
@@ -441,7 +435,9 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    const restorableTabState = isRestoreStale() ? null : getRestorableTabState()
+    const restorableTabState = isRestoreCurrent()
+      ? getRestorableTabState()
+      : null
     if (!restorableTabState) {
       tabStateRestored = true
       return
@@ -474,7 +470,6 @@ export function useWorkflowPersistenceV2() {
     tabStateRestored = true
     if (openedFolderWorkflows) return
 
-    // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
     const workflow = activePath
       ? workflowStore.getWorkflowByPath(activePath)

@@ -50,6 +50,7 @@ interface DraftMeta {
 interface LoadPersistedWorkflowOptions {
   preferredPath?: string | null
   fallbackToLatestDraft?: boolean
+  isCurrent?: () => boolean
 }
 
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
@@ -412,17 +413,16 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return getIndexEntry(index, key)?.path ?? null
   }
 
-  /**
-   * Tries to load workflow data into the graph.
-   */
   async function tryLoadGraph(
     payload: string | null,
     workflowName: string | null,
+    isCurrent?: () => boolean,
     onFailure?: () => void
   ): Promise<boolean> {
     if (!payload) return false
     try {
       const workflow = JSON.parse(payload)
+      if (isCurrent?.() === false) return false
       await useApp().loadGraphData(workflow, true, true, workflowName)
       return true
     } catch (err) {
@@ -432,41 +432,35 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Loads a draft into the graph.
-   */
-  async function loadDraft(path: string): Promise<boolean> {
+  async function loadDraft(
+    path: string,
+    isCurrent?: () => boolean
+  ): Promise<boolean> {
     const draft = getDraft(path)
     if (!draft) return false
 
-    const loaded = await tryLoadGraph(draft.data, draft.name, () => {
+    const loaded = await tryLoadGraph(draft.data, draft.name, isCurrent, () => {
       removeDraft(path)
     })
     if (loaded) {
-      // Direct persisted-draft restores do not go through ComfyWorkflow.load().
       markDraftUsed(path)
     }
 
     return loaded
   }
 
-  /**
-   * Loads a persisted workflow with fallback chain.
-   */
   async function loadPersistedWorkflow(
     options: LoadPersistedWorkflowOptions
   ): Promise<boolean> {
-    const { preferredPath, fallbackToLatestDraft = false } = options
+    const { preferredPath, fallbackToLatestDraft = false, isCurrent } = options
 
-    // 1. Try preferred path
-    if (preferredPath && (await loadDraft(preferredPath))) {
+    if (preferredPath && (await loadDraft(preferredPath, isCurrent))) {
       return true
     }
 
-    // 2. Fall back to most recent draft
-    if (fallbackToLatestDraft) {
+    if (fallbackToLatestDraft && isCurrent?.() !== false) {
       const mostRecent = getMostRecentPath()
-      if (mostRecent && (await loadDraft(mostRecent))) {
+      if (mostRecent && (await loadDraft(mostRecent, isCurrent))) {
         return true
       }
     }

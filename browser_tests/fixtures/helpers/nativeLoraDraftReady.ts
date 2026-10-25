@@ -7,11 +7,13 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 export const nativeLoraDraftReady = ({
   path,
   draftKey,
-  expected
+  expected,
+  subject
 }: {
   path: string
   draftKey: string
   expected: ComfyWorkflowJSON
+  subject?: string
 }) => {
   type WidgetStateGraph = {
     nodes?: readonly {
@@ -45,35 +47,21 @@ export const nativeLoraDraftReady = ({
       sessionStorage.getItem(`Comfy.Workflow.ActivePath:${clientId}`)!
     )
     if (pointer?.path !== path) return false
-    // Cloud scopes draft storage by the authenticated subject:
-    // `Comfy.Workflow.Draft.v2:<subject>:<workspaceId>:<draftKey>`.
-    const prefix = 'Comfy.Workflow.Draft.v2:'
-    const suffix = `${pointer.workspaceId}:${draftKey}`
-    const isDraftKey = (key: string) => {
-      if (!key.startsWith(prefix)) return false
-      const scope = key.slice(prefix.length)
-      if (scope === suffix) return true
-      if (!scope.endsWith(`:${suffix}`)) return false
-      return !scope.slice(0, -suffix.length - 1).includes(':')
-    }
-    return Object.keys(localStorage)
-      .filter(isDraftKey)
-      .some((key) => {
-        try {
-          const payload: DraftPayloadV2 | null = JSON.parse(
-            localStorage.getItem(key)!
-          )
-          if (typeof payload?.data !== 'string') return false
-          const persisted: ComfyWorkflowJSON | null = JSON.parse(payload.data)
-          if (!persisted || !Array.isArray(persisted.nodes)) return false
-          return (
-            JSON.stringify(widgetState(persisted)) ===
-            JSON.stringify(widgetState(expected))
-          )
-        } catch {
-          return false
-        }
-      })
+    const draftScope =
+      subject === undefined
+        ? pointer.workspaceId
+        : `${encodeURIComponent(subject)}:${pointer.workspaceId}`
+    const draftStorageKey = `Comfy.Workflow.Draft.v2:${draftScope}:${draftKey}`
+    const payload: DraftPayloadV2 | null = JSON.parse(
+      localStorage.getItem(draftStorageKey)!
+    )
+    if (typeof payload?.data !== 'string') return false
+    const persisted: ComfyWorkflowJSON | null = JSON.parse(payload.data)
+    if (!persisted || !Array.isArray(persisted.nodes)) return false
+    return (
+      JSON.stringify(widgetState(persisted)) ===
+      JSON.stringify(widgetState(expected))
+    )
   } catch {
     return false
   }

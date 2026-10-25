@@ -323,7 +323,9 @@ describe('useWorkflowPersistenceV2', () => {
       gate.resolve()
       await pending
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('loads saved workflow when draft is missing for session path', async () => {
@@ -338,7 +340,9 @@ describe('useWorkflowPersistenceV2', () => {
       await initializeWorkflow()
 
       // Should call workflowService.openWorkflow with the saved workflow
-      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow, {
+        isCurrent: expect.any(Function)
+      })
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
     })
@@ -783,7 +787,9 @@ describe('useWorkflowPersistenceV2', () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow, {
+        isCurrent: expect.any(Function)
+      })
     })
   })
 
