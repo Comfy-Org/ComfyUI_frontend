@@ -237,7 +237,9 @@ export class AgentCrdtDocLifecycle {
   onSubscribeRefused(code?: string): boolean {
     if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
       if (this.confirmedSinceLastSend) return false
+      const supersedesRecoverableGiveUp = this.recoverableGiveUpReason !== null
       this.recoverableGiveUpReason = null
+      if (supersedesRecoverableGiveUp) this.gaveUp = false
       this.clearAckTimer()
       this.clearStaleProbe()
       return this.giveUpPermanently(code, isNotifyingPermanentRefusalCode(code))

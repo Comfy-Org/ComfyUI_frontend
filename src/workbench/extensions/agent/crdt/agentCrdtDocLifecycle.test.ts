@@ -529,6 +529,22 @@ describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('notifies once when a permanent refusal supersedes exhaustion', () => {
+    const { lifecycle, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+      lifecycle.onSubscribeRefused()
+      vi.advanceTimersByTime(delay)
+    }
+    lifecycle.onSubscribeRefused()
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+
+    expect(onGaveUp.mock.calls).toEqual([['retry_exhausted'], ['refused']])
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
   it('a reconnect releases the permanent give-up latch', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
