@@ -25,6 +25,7 @@ import {
 } from 'vitest'
 import { markRaw, ref } from 'vue'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useSubgraphService } from '@/services/subgraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 
@@ -686,7 +687,7 @@ describe('ComfyApp', () => {
       }
     )
 
-    it('configures the given workflow graph on a non-clean load even when another graph is active', async () => {
+    it('loads subgraph definitions into the inactive workflow on a non-clean load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const workflow = markLoaded(
         new ComfyWorkflow({
@@ -699,13 +700,19 @@ describe('ComfyApp', () => {
       workflow.adoptGraph(owned)
       const active = new LGraph()
       Reflect.set(app, 'rootGraphInternal', active)
-      const configureOwned = vi.spyOn(owned, 'configure')
-      const configureActive = vi.spyOn(active, 'configure')
+      const source = createTestRootGraph()
+      const subgraph = createTestSubgraph({ rootGraph: source })
+      const data = zComfyWorkflow.parse({
+        ...createWorkflowGraphData(),
+        extra: { marker: 'undone' },
+        definitions: { subgraphs: [subgraph.asSerialisable()] }
+      })
 
-      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+      await app.loadGraphData(data, false, false, workflow)
 
-      expect(configureOwned).toHaveBeenCalledOnce()
-      expect(configureActive).not.toHaveBeenCalled()
+      expect(owned.extra).toMatchObject({ marker: 'undone' })
+      expect(owned.subgraphs.has(subgraph.id)).toBe(true)
+      expect(active.subgraphs.has(subgraph.id)).toBe(false)
       expect(app.rootGraph).toBe(active)
     })
 
@@ -728,6 +735,37 @@ describe('ComfyApp', () => {
 
       expect(configureActive).not.toHaveBeenCalled()
       expect(mockExtensionService.invokeExtensionsAsync).not.toHaveBeenCalled()
+    })
+
+    it('refuses an undo when its workflow graph is released during beforeLoadGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/closed.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      workflow.adoptGraph(new LGraph())
+      const active = new LGraph()
+      active.extra = { marker: 'visible' }
+      Reflect.set(app, 'rootGraphInternal', active)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeLoadGraph') workflow.releaseGraph()
+        }
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+      ).resolves.toBe(false)
+
+      expect(active.extra).toEqual({ marker: 'visible' })
+      expect(workflow.graph).toBe(null)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.any(Error)
+      )
     })
 
     it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
@@ -1044,7 +1082,7 @@ describe('ComfyApp', () => {
             size: 0
           })
         )
-        firstWorkflow.adoptGraph(new LGraph())
+        firstWorkflow.adoptGraph(graph)
         const firstTracker = markRaw(new ChangeTracker(firstWorkflow, saved))
         firstTracker.activeState = changed
         firstTracker._restoringState = true
@@ -1058,7 +1096,8 @@ describe('ComfyApp', () => {
             size: 0
           })
         )
-        secondWorkflow.adoptGraph(graph)
+        const secondGraph = new LGraph()
+        secondWorkflow.adoptGraph(secondGraph)
         const secondTracker = markRaw(new ChangeTracker(secondWorkflow, other))
         secondWorkflow.changeTracker = secondTracker
         let releasePause!: () => void
@@ -1110,7 +1149,7 @@ describe('ComfyApp', () => {
         await vi.waitFor(() => expect(reachedPause).toBe(true))
         const newerLoad = app.loadGraphData(
           other,
-          false,
+          true,
           false,
           secondWorkflow,
           {
@@ -1133,90 +1172,114 @@ describe('ComfyApp', () => {
         expect(firstTracker.activeState.extra).toMatchObject({
           marker: 'saved'
         })
-        expect(graph.extra).toMatchObject({ marker: 'other' })
+        expect(secondGraph.extra).toMatchObject({ marker: 'other' })
         expect(ChangeTracker.isLoadingGraph).toBe(false)
       }
     )
 
-    it('keeps the switched-to tab active when a live tab switch follows an undo paused in beforeLoadGraph', async () => {
-      const undoneGraph = new LGraph()
-      const switchedGraph = new LGraph()
-      const previousGraph = singletonApp.rootGraphOrUndefined
-      const previousCanvas = singletonApp.canvas
-      onTestFinished(() => {
-        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
-        singletonApp.canvas = previousCanvas
-      })
-      Reflect.set(singletonApp, 'rootGraphInternal', undoneGraph)
-      singletonApp.canvas = mockCanvas
-      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
-      const workflowService = await useRealWorkflowService()
-      const workflowStore = useWorkflowStore()
-      vi.mocked(workflowStore.openWorkflow).mockRestore()
-      vi.mocked(workflowStore.isActive).mockRestore()
+    it.for([
+      { first: 'undo', second: 'switch' },
+      { first: 'switch', second: 'undo' }
+    ] as const)(
+      'keeps the switched-to tab active with $first queued before $second',
+      async ({ first, second }) => {
+        const undoneGraph = new LGraph()
+        const switchedGraph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvas
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          singletonApp.canvas = previousCanvas
+        })
+        Reflect.set(singletonApp, 'rootGraphInternal', undoneGraph)
+        singletonApp.canvas = mockCanvas
+        Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+        const workflowService = await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
 
-      const saved = createWorkflowGraphData()
-      saved.extra = { marker: 'saved' }
-      const changed = structuredClone(saved)
-      changed.extra = { marker: 'changed' }
-      const undone = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/undone.json',
-          modified: 0,
-          size: 0
+        const undoneSubgraph = createTestSubgraph({ rootGraph: undoneGraph })
+        const definition = undoneSubgraph.asSerialisable()
+        const saved = zComfyWorkflow.parse({
+          ...createWorkflowGraphData(),
+          extra: { marker: 'saved' },
+          definitions: { subgraphs: [definition] }
         })
-      )
-      undone.adoptGraph(undoneGraph)
-      const undoneTracker = markRaw(new ChangeTracker(undone, saved))
-      undoneTracker.activeState = changed
-      undoneTracker._restoringState = true
-      undone.changeTracker = undoneTracker
-      const switched = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/switched.json',
-          modified: 0,
-          size: 0
+        const switchedSubgraph = switchedGraph.createSubgraph(definition)
+        useSubgraphService().registerNewSubgraph(switchedSubgraph, definition)
+        const changed = structuredClone(saved)
+        changed.extra = { marker: 'changed' }
+        const undone = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/undone.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        undone.adoptGraph(undoneGraph)
+        const undoneTracker = markRaw(new ChangeTracker(undone, saved))
+        undoneTracker.activeState = changed
+        undoneTracker._restoringState = true
+        undone.changeTracker = undoneTracker
+        const switched = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/switched.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        switched.adoptGraph(switchedGraph)
+        switched.changeTracker = markRaw(
+          new ChangeTracker(switched, createWorkflowGraphData())
+        )
+        workflowStore.attachWorkflow(undone, 0)
+        workflowStore.attachWorkflow(switched, 1)
+        workflowStore.activeWorkflow = undone
+        let releasePause!: () => void
+        const pause = new Promise<void>((resolve) => {
+          releasePause = resolve
         })
-      )
-      switched.adoptGraph(switchedGraph)
-      switched.changeTracker = markRaw(
-        new ChangeTracker(switched, createWorkflowGraphData())
-      )
-      workflowStore.attachWorkflow(undone, 0)
-      workflowStore.attachWorkflow(switched, 1)
-      workflowStore.activeWorkflow = undone
-      let releasePause!: () => void
-      const pause = new Promise<void>((resolve) => {
-        releasePause = resolve
-      })
-      let reachedPause = false
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook) => {
-          if (hook === 'beforeLoadGraph' && !reachedPause) {
-            reachedPause = true
-            await pause
+        let reachedPause = false
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'beforeLoadGraph' && !reachedPause) {
+              reachedPause = true
+              await pause
+            }
           }
+        )
+
+        const operations = {
+          undo: () =>
+            singletonApp.loadGraphData(saved, false, false, undone, {
+              skipAssetScans: true
+            }),
+          switch: () => workflowService.openWorkflow(switched)
         }
-      )
+        const firstLoad = operations[first]()
+        await vi.waitFor(() => expect(reachedPause).toBe(true))
+        const secondLoad = operations[second]()
+        releasePause()
+        await expect(firstLoad).resolves.toBeTruthy()
+        await expect(secondLoad).resolves.toBeTruthy()
 
-      const undoLoad = singletonApp.loadGraphData(saved, false, false, undone, {
-        skipAssetScans: true
-      })
-      await vi.waitFor(() => expect(reachedPause).toBe(true))
-      const tabSwitch = workflowService.openWorkflow(switched)
-      releasePause()
-      await expect(undoLoad).resolves.toBeTruthy()
-      await expect(tabSwitch).resolves.toBe(true)
-
-      expect(workflowStore.activeWorkflow).toMatchObject({
-        path: switched.path
-      })
-      expect(singletonApp.rootGraph).toBe(switchedGraph)
-      expect(undoneGraph.extra).toMatchObject({ marker: 'saved' })
-      expect(undoneTracker.activeState.extra).toMatchObject({
-        marker: 'saved'
-      })
-    })
+        expect(workflowStore.activeWorkflow).toMatchObject({
+          path: switched.path
+        })
+        expect(singletonApp.rootGraph).toBe(switchedGraph)
+        expect(useExecutionErrorStore().captureRunErrorKey()).toBe(
+          `${switched.path}:${switchedGraph.id}`
+        )
+        const subgraphNode = LiteGraph.createNode(definition.id)
+        assert(subgraphNode && 'subgraph' in subgraphNode)
+        expect(subgraphNode.subgraph).toBe(switchedSubgraph)
+        expect(undoneGraph.extra).toMatchObject({ marker: 'saved' })
+        expect(undoneTracker.activeState.extra).toMatchObject({
+          marker: 'saved'
+        })
+      }
+    )
 
     it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
       app.canvasElRef.value = document.createElement('canvas')
@@ -1419,6 +1482,30 @@ describe('ComfyApp', () => {
           ([hook]) => hook
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+    })
+
+    it('creates subgraph nodes from the returning root when graphs share a definition ID', () => {
+      const first = new LGraph()
+      const definition = createTestSubgraph().asSerialisable()
+      const firstSubgraph = first.createSubgraph(definition)
+      const second = new LGraph()
+      const secondSubgraph = second.createSubgraph(definition)
+      for (const [index, graph] of [first, second].entries()) {
+        const owner = new ComfyWorkflow({
+          path: `workflows/subgraph-${index}.json`,
+          modified: 0,
+          size: 0
+        })
+        owner.adoptGraph(graph)
+        useWorkflowStore().attachWorkflow(owner)
+      }
+      app.activateRootGraph(first)
+      app.activateRootGraph(second)
+      app.activateRootGraph(first)
+      const node = LiteGraph.createNode(definition.id)
+      assert(node && 'subgraph' in node)
+      expect(node.subgraph).toBe(firstSubgraph)
+      expect(node.subgraph).not.toBe(secondSubgraph)
     })
 
     it('registers only the DOM widgets of the root graph on screen across a tab round trip', () => {
