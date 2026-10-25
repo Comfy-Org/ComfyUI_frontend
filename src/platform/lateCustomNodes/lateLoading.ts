@@ -23,6 +23,7 @@ interface LateScriptFailure {
 interface ScriptLoader {
   importScript: (ext: string) => Promise<LateScriptFailure | undefined>
   reportFailures: (failures: LateScriptFailure[]) => void
+  afterLateRegistration: () => void
 }
 
 const LATE_EXTENSION_WAIT_MS = 2000
@@ -176,7 +177,10 @@ async function startLateExtensions(extensions: ComfyExtension[]) {
   reportStartupHookFailures(failures)
 }
 
-async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
+async function runLateBatch(
+  work: ReturnType<typeof watchLateWork>,
+  afterLateRegistration: () => void
+) {
   await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
   await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
     timeout: ARTIST_PAUSE_TIMEOUT_MS
@@ -184,7 +188,10 @@ async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
   if (work.isAborted()) return
 
   const extensions = registerHeldExtensions()
-  if (extensions.length > 0) await startLateExtensions(extensions)
+  if (extensions.length > 0) {
+    afterLateRegistration()
+    await startLateExtensions(extensions)
+  }
   if (work.isAborted()) return
   useExtensionStore().finishLateExtensions()
   await rebuildOpenWorkflow()
@@ -198,7 +205,7 @@ async function turnOnLateExtensions(
   const work = watchLateWork(signal, keepHeldExtensionsForNextEditor)
   try {
     loader.reportFailures((await firstTries).filter(isNonNullish))
-    await runLateBatch(work)
+    await runLateBatch(work, loader.afterLateRegistration)
   } catch (error) {
     reportError(error, {
       errorType: LATE_EXTENSION_ERROR_TYPE,

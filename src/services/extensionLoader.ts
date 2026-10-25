@@ -185,6 +185,18 @@ export async function notifyNewAgentExtensions() {
   }
 }
 
+function createAgentExtensionDiscoveryQueue() {
+  let queued = Promise.resolve()
+  return () => {
+    queued = queued.then(notifyNewAgentExtensions).catch((cause) => {
+      reportError(cause, {
+        errorType: 'failure_recording_seen_agent_extensions',
+        surface: 'platform'
+      })
+    })
+  }
+}
+
 /**
  * Loads the core extensions, then every extension served by the backend, in
  * parallel. Core extensions load first because custom extensions may depend
@@ -232,13 +244,15 @@ export async function loadExtensions(
       disableAllCustomExtensions
     })
   )
+  const scheduleAgentExtensionDiscovery = createAgentExtensionDiscoveryQueue()
   if (lateLoadingApplies()) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
       loadCustomExtensionsWithDeadline(
         customExtensions,
         {
           importScript: importCustomExtension,
-          reportFailures: reportExtensionLoadFailures
+          reportFailures: reportExtensionLoadFailures,
+          afterLateRegistration: scheduleAgentExtensionDiscovery
         },
         signal
       )
@@ -251,10 +265,5 @@ export async function loadExtensions(
     )
     reportExtensionLoadFailures(outcomes.filter((outcome) => !!outcome))
   }
-  void notifyNewAgentExtensions().catch((cause) => {
-    reportError(cause, {
-      errorType: 'failure_recording_seen_agent_extensions',
-      surface: 'platform'
-    })
-  })
+  scheduleAgentExtensionDiscovery()
 }
