@@ -142,7 +142,7 @@ describe('store collision contracts (EX-002)', () => {
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
   })
 
-  it('nodeDataStore rejects a different identity at a registered id without touching the incumbent', () => {
+  it('nodeDataStore rejects a different identity at a registered id silently and without touching the incumbent', () => {
     const store = useNodeDataStore()
     const incumbent = store.registerNode(
       scopeA,
@@ -151,8 +151,6 @@ describe('store collision contracts (EX-002)', () => {
     assert(incumbent)
 
     const usurper = nodeState(1, rootA, 'Usurper')
-    // ADR ECS-IDENTITY-0016 pins the collision rejection as silent: the store
-    // must not log, because it lacks the caller's re-mint recovery context.
     expect(store.registerNode(scopeA, usurper)).toBeUndefined()
     expect(console.warn).not.toHaveBeenCalled()
 
