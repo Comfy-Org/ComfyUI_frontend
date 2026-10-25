@@ -1049,5 +1049,6 @@ describe('useWorkflowPersistenceV2', () => {
     })
     expect(workflowStore.activeWorkflow).toBeNull()
     expect(draftStore.getDraft(destinationPath)?.data).toBe('{"owner":"b"}')
+    expect(draftStore.getDraft('workflows/AccountA.json')).toBeNull()
   })
 })
