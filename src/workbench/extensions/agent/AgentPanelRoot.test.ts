@@ -64,7 +64,6 @@ import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -900,25 +899,31 @@ describe('AgentPanelRoot onboarding', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-dialog'
     })
-    const dialogStore = useDialogStore()
-    dialogStore.showDialog({
-      key: 'global-desktop-login-confirm',
-      component: defineComponent({ render: () => null })
-    })
+    // Stands in for a real-world dialog (e.g. the desktop sign-in confirm
+    // shown by desktopLoginRedemption): reka-ui dialogs render exactly this
+    // shape, which is what the coach's own MutationObserver looks for.
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('data-state', 'open')
+    document.body.append(dialog)
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    expect(
-      screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).not.toBeInTheDocument()
-    expect(
-      useTelemetry()!.trackAgentOnboardingNotShown
-    ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
 
-    dialogStore.closeDialog({ key: 'global-desktop-login-confirm' })
-    expect(
-      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-    ).toBeInTheDocument()
+      dialog.remove()
+      expect(
+        await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).toBeInTheDocument()
+    } finally {
+      dialog.remove()
+    }
   })
 
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {

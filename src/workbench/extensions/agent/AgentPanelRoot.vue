@@ -43,7 +43,6 @@ import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -545,7 +544,30 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
-const dialogStore = useDialogStore()
+
+// Detects any other open global dialog (e.g. the desktop sign-in confirm
+// shown by desktopLoginRedemption) without depending on the dialog-host
+// domain: reka-ui dialogs render `[role="dialog"][data-state="open"]`, which
+// this component's own coach card never sets.
+function hasOpenGlobalDialog(): boolean {
+  return document.querySelector('[role="dialog"][data-state="open"]') !== null
+}
+// Computed eagerly (not in onMounted) so a dialog already open when this
+// component mounts defers the coach from its very first render, instead of
+// flashing the coach for a frame until the observer below catches up.
+const globalDialogOpen = ref(hasOpenGlobalDialog())
+const globalDialogObserver = new MutationObserver(() => {
+  globalDialogOpen.value = hasOpenGlobalDialog()
+})
+onMounted(() => {
+  globalDialogObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-state']
+  })
+})
+onBeforeUnmount(() => globalDialogObserver.disconnect())
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -653,7 +675,7 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : dialogStore.dialogStack.length > 0
+      : globalDialogOpen.value
         ? 'dialog_open'
         : null
 )
