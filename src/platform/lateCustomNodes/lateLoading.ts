@@ -41,8 +41,7 @@ const LATE_EXTENSION_ERROR_TYPE = 'late_extension_failed'
 
 const MODULE_FETCH_FAILURES = [
   'Failed to fetch dynamically imported module',
-  'error loading dynamically imported module',
-  'Importing a module script failed'
+  'error loading dynamically imported module'
 ]
 
 function messageOf(error: unknown): string {
@@ -50,43 +49,68 @@ function messageOf(error: unknown): string {
   return typeof error === 'string' ? error : ''
 }
 
-function isModuleFetchFailure(error: unknown): boolean {
+function fetchFailureUrl(error: unknown): string | undefined {
   const message = messageOf(error)
-  return MODULE_FETCH_FAILURES.some((wording) => message.includes(wording))
+  const wording = MODULE_FETCH_FAILURES.find((prefix) =>
+    message.startsWith(`${prefix}: `)
+  )
+  return wording === undefined
+    ? undefined
+    : message.slice(wording.length + ': '.length)
 }
 
-function asImportFailure(url: string, failure: unknown): Error {
-  return failure instanceof Error
-    ? failure
-    : new Error(`Could not import ${url}`, { cause: failure })
+function namesExactly(url: string, error: unknown): boolean {
+  const failedUrl = fetchFailureUrl(error)
+  return (
+    failedUrl !== undefined &&
+    (failedUrl === url || failedUrl === new URL(url, document.baseURI).href)
+  )
 }
 
-/** Imports `url` through `load`, rejecting with the failure the editor's preload helper swallowed for it, so only a fetch failure reads as one. */
+class ScriptNotFetched extends Error {
+  constructor(failure: unknown) {
+    super(messageOf(failure), { cause: failure })
+    this.name = 'ScriptNotFetched'
+  }
+}
+
+function isModuleFetchFailure(error: unknown): boolean {
+  return error instanceof ScriptNotFetched
+}
+
+function ownFailure(url: string, error: unknown): unknown {
+  return namesExactly(url, error) ? new ScriptNotFetched(error) : error
+}
+
+function swallowedFailure(url: string, swallowed: unknown[]): Error {
+  const named = swallowed.find((error) => namesExactly(url, error))
+  return named === undefined
+    ? new Error(`Could not import ${url}`)
+    : new ScriptNotFetched(named)
+}
+
+/** Imports `url` through `load`; rejects as not fetched only when its failure names exactly `url`, so a script that ran is never tried again. */
 export async function importNoticingFetchFailure(
   url: string,
   load: (url: string) => Promise<unknown>
 ): Promise<void> {
-  const seen: unknown[] = []
+  const swallowed: unknown[] = []
   const stopListening = useEventListener(
     window,
     'vite:preloadError',
     (event) => {
       const payload: unknown = event.payload
-      seen.push(payload)
+      swallowed.push(payload)
     }
   )
-  let loaded: unknown
   try {
-    loaded = await load(url)
+    if ((await load(url)) !== undefined) return
+  } catch (error) {
+    throw ownFailure(url, error)
   } finally {
     stopListening()
   }
-  const named = seen.find(
-    (error) => error instanceof Error && error.message.includes(url)
-  )
-  if (named) throw named
-  if (loaded !== undefined) return
-  throw asImportFailure(url, seen.at(-1))
+  throw swallowedFailure(url, swallowed)
 }
 
 /** Whether startup may stop waiting for slow custom node scripts. */
