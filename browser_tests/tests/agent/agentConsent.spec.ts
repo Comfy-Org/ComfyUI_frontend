@@ -789,8 +789,7 @@ test.describe(
 
       test('shows the coach after the approval closes', async ({
         comfyPage,
-        agentPanel,
-        agentConsentReads
+        agentPanel
       }) => {
         const page = comfyPage.page
         const approval = page.getByRole('dialog', {
@@ -802,7 +801,7 @@ test.describe(
 
         await expect(approval).toBeVisible()
         await expect(agentPanel.root).toBeVisible()
-        await expect.poll(() => agentConsentReads.length).toBeGreaterThan(0)
+        await expect(page.getByTestId('agent-entry-separator')).toHaveCount(1)
         await expect(page.getByRole('dialog')).toHaveCount(1)
         await expect(coach).toHaveCount(0)
 
