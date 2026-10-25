@@ -1,7 +1,11 @@
+import type { Page, Route } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { transparentPng } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import { mockReplyAssetPreviews } from '@e2e/fixtures/agentPanelFixture'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
@@ -11,18 +15,54 @@ import {
   pushAgentEvent
 } from '@e2e/tests/agent/agentPanelMocks'
 
-const COLLAPSED_COUNT = 12
-const MODEL_COUNT = 13
-const HIDDEN_MODEL = `mesh-${MODEL_COUNT - 1}.glb`
-const VISIBLE_MODELS = Array.from(
-  { length: COLLAPSED_COUNT },
-  (_, index) => `mesh-${index}.glb`
-)
+interface ReplyAssetPreviewOptions {
+  previewMissesBefore?: Record<string, number>
+}
 
-const MODEL_REPLY = Array.from(
-  { length: MODEL_COUNT },
-  (_, index) => `- ![mesh-${index}](/api/view?filename=mesh-${index}.glb)`
-).join('\n')
+async function mockReplyAssetPreviews(
+  page: Page,
+  { previewMissesBefore = {} }: ReplyAssetPreviewOptions = {}
+): Promise<string[]> {
+  const lookedUp: string[] = []
+  const lookupCounts = new Map<string, number>()
+  await page.route('**/api/assets**', (route: Route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith('/content')) {
+      return route.fulfill({ contentType: 'image/png', body: transparentPng })
+    }
+    const name =
+      url.searchParams.get('hash') ?? url.searchParams.get('name_contains')
+    if (!name) {
+      const response = {
+        assets: [],
+        total: 0,
+        has_more: false
+      } satisfies ListAssetsResponse
+      return route.fulfill(jsonRoute(response))
+    }
+    if (/^mesh-\d+\.glb$/.test(name)) lookedUp.push(name)
+    const seen = (lookupCounts.get(name) ?? 0) + 1
+    lookupCounts.set(name, seen)
+    const asset = {
+      id: `asset-${name}`,
+      name,
+      hash: name,
+      preview_id:
+        seen <= (previewMissesBefore[name] ?? 0) ? null : `preview-${name}`,
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z'
+    } satisfies Asset
+    const response = {
+      assets: [asset],
+      total: 1,
+      has_more: false
+    } satisfies ListAssetsResponse
+    return route.fulfill(jsonRoute(response))
+  })
+  return lookedUp
+}
+
+const COLLAPSED_COUNT = 12
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -36,9 +76,16 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     getWebSocket,
     getAgentSocket
   }) => {
-    // The new-test video gate runs with SLOW_MO=250; leave headroom for the
-    // 13-tile expand path while retaining bounded failure reporting.
-    test.setTimeout(60_000)
+    const MODEL_COUNT = 13
+    const HIDDEN_MODEL = `mesh-${MODEL_COUNT - 1}.glb`
+    const VISIBLE_MODELS = Array.from(
+      { length: COLLAPSED_COUNT },
+      (_, index) => `mesh-${index}.glb`
+    )
+    const MODEL_REPLY = Array.from(
+      { length: MODEL_COUNT },
+      (_, index) => `- ![mesh-${index}](/api/view?filename=mesh-${index}.glb)`
+    ).join('\n')
 
     const lookedUpModels = await mockReplyAssetPreviews(page)
 
@@ -79,12 +126,6 @@ test.describe('Agent reply assets', { tag: '@cloud' }, () => {
     getWebSocket,
     getAgentSocket
   }) => {
-    test.setTimeout(60_000)
-
-    // The first lookup for this asset reports no preview, and its model bytes
-    // never arrive, so the offscreen render fails. A surface that treats the
-    // first outcome as terminal leaves the tile blank for the message's
-    // lifetime; the preview is available from the second lookup onwards.
     const UNRENDERABLE = 'mesh-0'
     const lookedUpModels = await mockReplyAssetPreviews(page, {
       previewMissesBefore: { [`${UNRENDERABLE}.glb`]: 1 }
