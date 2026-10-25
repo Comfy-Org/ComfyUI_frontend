@@ -211,16 +211,22 @@ is already loaded shows that instance without rebuilding its nodes. The
 per-graph DOM or Vue state when the visible graph changes should do so in
 `afterLoadGraph`, which runs on both the first load and every later switch.
 
+Load hooks must not await another graph load or workflow switch. Loads and
+switches share a serial queue, so the nested operation cannot start until the
+current hook returns.
+
 Because each workflow owns a separate `LGraph`, an `app.graph` reference
 captured in `setup` points at the first workflow loaded after startup. Read
 `app.graph` when you need it instead of caching it. A callback patched onto
 one instance (`onNodeAdded`, `onConfigure`, `add`) reaches only that
 instance, and the app wraps `onConfigure` per instance when it creates the
 graph, so an `LGraph.prototype.onConfigure` patch applied in `setup` misses
-the boot graph. Prefer the `afterConfigureGraph` and `afterLoadGraph` hooks
-or the graph's `events` target. If you must patch `LGraph.prototype`, do it
-at module top level; the patch then applies to every root graph and every
-subgraph. If you re-apply an instance patch in `afterLoadGraph`, track the
+the boot graph. Prefer the `afterConfigureGraph` and `afterLoadGraph` hooks.
+Subscribe to each graph's `events` in `afterLoadGraph`, tracking subscribed
+instances in a `WeakSet` to avoid duplicate listeners on tab switches.
+If you must patch `LGraph.prototype`, do it at module top level. The patch
+then applies to every root graph and subgraph. If you re-apply an instance
+patch in `afterLoadGraph`, track the
 instances you have already patched in a `WeakSet`: graphs are reused across
 tab switches, so the hook runs more than once per instance.
 

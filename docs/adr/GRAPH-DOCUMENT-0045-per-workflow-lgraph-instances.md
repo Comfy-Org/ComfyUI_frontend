@@ -107,9 +107,10 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   read `app.graph` at use time, use the load hooks, or patch
   `LGraph.prototype` at module top level: `createRootGraph` wraps
   `onConfigure` per instance before extension `setup` runs, so a prototype
-  patch applied in `setup` misses the boot graph, and a patch re-applied per
-  graph in `afterLoadGraph` must be idempotent because graphs are reused
-  across switches. A census of the custom node ecosystem for this pattern is
+  patch applied in `setup` misses the boot graph. Prototype patches also reach
+  subgraphs. Instance patches and graph event subscriptions installed in
+  `afterLoadGraph` need a `WeakSet` of handled instances to avoid duplicates
+  when a graph returns. A census of the custom node ecosystem for this pattern is
   a prerequisite for leaving draft.
 - Activation does not touch the `LGraph.start()` step loop. `setup` starts the
   boot graph and the first `clear()` stops it, as before; no graph runs the
