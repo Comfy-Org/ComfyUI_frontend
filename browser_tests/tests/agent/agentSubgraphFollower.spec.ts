@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { webSocketFixture } from '@e2e/fixtures/ws'
+import { sendWebSocketFrames, webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 import {
@@ -266,75 +266,104 @@ test.describe(
       })
     })
 
-    test('reuses one subgraph definition as an independent second instance', async ({
-      page,
-      getAgentSocket
-    }) => {
-      await page.setViewportSize({ width: 1920, height: 1280 })
-      await bootAgentApp(page, true, {
-        onboardingCompleted: true,
-        settings: { 'Comfy.VueNodes.Enabled': true },
-        objectInfo: agentSubgraphNodeDefs,
-        beforeNavigate: async (page) => {
-          await mockAgentTurnApi(page, {
-            message_id: '824a0b17-5bdc-4410-83d0-e630a2639a12',
-            thread_id: 'fe42337e-7510-45ce-be47-cddc1944eb82',
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
-          })
-          await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
-        }
-      })
+    test(
+      'reuses one subgraph definition as an independent second instance',
+      {
+        tag: '@vue-nodes'
+      },
+      async ({ page, getAgentSocket }) => {
+        await page.setViewportSize({ width: 1920, height: 1280 })
+        await bootAgentApp(page, true, {
+          onboardingCompleted: true,
+          objectInfo: agentSubgraphNodeDefs,
+          beforeNavigate: async (page) => {
+            await mockAgentTurnApi(page, {
+              message_id: '824a0b17-5bdc-4410-83d0-e630a2639a12',
+              thread_id: 'fe42337e-7510-45ce-be47-cddc1944eb82',
+              workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+            })
+            await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+          }
+        })
 
-      const outboundFrames: string[] = []
-      await loadSeedIntoActiveTab(page, subgraphWorkflow)
-      const agentPanel = new AgentPanel(page)
-      await agentPanel.open()
-      const socket = await getAgentSocket()
-      socket.onMessage((message) => outboundFrames.push(String(message)))
-      await agentPanel.selectWorkflow()
-      await agentPanel.composer.fill('Create a second copy of this module')
-      await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        const outboundFrames: string[] = []
+        await loadSeedIntoActiveTab(page, subgraphWorkflow)
+        const agentPanel = new AgentPanel(page)
+        await agentPanel.open()
+        const socket = await getAgentSocket()
+        socket.onMessage((message) => outboundFrames.push(String(message)))
+        await agentPanel.selectWorkflow()
+        await agentPanel.composer.fill('Create a second copy of this module')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
 
-      await expect
-        .poll(() => outboundFrames, { timeout: 15_000 })
-        .toContainEqual(
-          expect.stringMatching(
-            new RegExp(
-              `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+        await expect
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(
+            expect.stringMatching(
+              new RegExp(
+                `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+              )
             )
           )
+
+        const frames = agentSubgraphReuseFrames()
+        sendWebSocketFrames(socket, [...frames.initial, frames.reuse])
+
+        const nodes = new VueNodeHelpers(page)
+        const original = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
+        const reused = nodes.getNodeLocator(
+          String(AGENT_SUBGRAPH_REUSED_HOST_ID)
         )
+        await expect(reused).toBeAttached()
 
-      const frames = agentSubgraphReuseFrames()
-      for (const frame of frames.initial) socket.send(JSON.stringify(frame))
-      socket.send(JSON.stringify(frames.reuse))
+        await page
+          .getByRole('button', { name: 'Fit View (.)', exact: true })
+          .click()
+        await expect(original).toBeVisible()
+        await expect(reused).toBeVisible()
+        await expect(original.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect(reused.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect(
+          reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
 
-      await page
-        .getByRole('button', { name: 'Fit View (.)', exact: true })
-        .click()
-      const nodes = new VueNodeHelpers(page)
-      const original = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
-      const reused = nodes.getNodeLocator(String(AGENT_SUBGRAPH_REUSED_HOST_ID))
-      await expect(original).toBeVisible()
-      await expect(reused).toBeVisible()
-      await expect(original.getByRole('textbox')).toHaveValue(
-        AGENT_SUBGRAPH_INITIAL_TEXT
-      )
-      await expect(reused.getByRole('textbox')).toHaveValue(
-        AGENT_SUBGRAPH_INITIAL_TEXT
-      )
-      await expect(
-        reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
-      ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
-
-      const secondInstanceText = 'a photo of a lighthouse'
-      await reused.getByRole('textbox').fill(secondInstanceText)
-      await reused.getByRole('textbox').blur()
-      await expect(reused.getByRole('textbox')).toHaveValue(secondInstanceText)
-      await expect(original.getByRole('textbox')).toHaveValue(
-        AGENT_SUBGRAPH_INITIAL_TEXT
-      )
-    })
+        const secondInstanceText = 'a photo of a lighthouse'
+        await reused.getByRole('textbox').fill(secondInstanceText)
+        await reused.getByRole('textbox').blur()
+        await expect(reused.getByRole('textbox')).toHaveValue(
+          secondInstanceText
+        )
+        await expect(original.getByRole('textbox')).toHaveValue(
+          AGENT_SUBGRAPH_INITIAL_TEXT
+        )
+        await expect
+          .poll(() =>
+            page.evaluate(
+              ([originalId, reusedId]) => {
+                const textValue = (id: number) =>
+                  window
+                    .app!.graph.nodes.find(
+                      ({ id: nodeId }) => String(nodeId) === String(id)
+                    )
+                    ?.widgets?.find(({ name }) => name === 'text')?.value
+                return {
+                  original: textValue(originalId),
+                  reused: textValue(reusedId)
+                }
+              },
+              [AGENT_SUBGRAPH_HOST_ID, AGENT_SUBGRAPH_REUSED_HOST_ID]
+            )
+          )
+          .toEqual({
+            original: AGENT_SUBGRAPH_INITIAL_TEXT,
+            reused: secondInstanceText
+          })
+      }
+    )
 
     test('applies interior widget edits to the subgraph and its host', async ({
       page,

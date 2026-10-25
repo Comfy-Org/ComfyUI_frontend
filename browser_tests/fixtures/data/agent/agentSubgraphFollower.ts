@@ -184,17 +184,19 @@ export function agentSubgraphReuseFrames(): {
   reuse: HostFrame
 } {
   const workflow = structuredClone(subgraphWorkflow)
-  Object.assign(workflow.nodes[0], {
+  const original = workflow.nodes.find(
+    ({ id }) => id === AGENT_SUBGRAPH_HOST_ID
+  )
+  if (!original) throw new Error('Agent subgraph host fixture is missing')
+  Object.assign(original, {
     widgets_values_form: { order: ['text', 'seed'] }
   })
   const host = new HostDoc(AGENT_SUBGRAPH_WORKFLOW_ID, workflow, catalog)
   const initial = host.initialSync()
-  const reused = structuredClone(workflow.nodes[0])
+  const reused = structuredClone(original)
   reused.id = AGENT_SUBGRAPH_REUSED_HOST_ID
   reused.pos = [720, 300]
   for (const input of reused.inputs) input.link = null
-  for (const output of reused.outputs as Array<{ links: number[] | null }>)
-    output.links = []
   const reuse = host.apply([
     {
       op: 'add_node',
