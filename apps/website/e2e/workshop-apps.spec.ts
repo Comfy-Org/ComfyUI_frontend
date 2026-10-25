@@ -132,7 +132,7 @@ for (const { reducedMotion, paused } of [
     await page.emulateMedia({ reducedMotion })
     const posters: string[] = []
     page.on('requestfinished', (request) => {
-      if (request.url().endsWith('/poster.jpg')) posters.push(request.url())
+      if (request.url().endsWith('_V2.jpg')) posters.push(request.url())
     })
     await page.goto('/hub/apps/')
 
@@ -142,17 +142,17 @@ for (const { reducedMotion, paused } of [
     await expect(artwork).toHaveCount(2)
     await expect(artwork.nth(0)).toHaveAttribute(
       'src',
-      `${APP_MEDIA}/cinematic-studio/v2/thumbnail-480.mp4`
+      `${APP_MEDIA}/cinematic-studio/thumbnail-480_V2.mp4`
     )
     await expect(artwork.nth(1)).toHaveAttribute(
       'src',
-      `${APP_MEDIA}/reshoot/v2/thumbnail-480.mp4`
+      `${APP_MEDIA}/reshoot/thumbnail-4802_V2.mp4`
     )
     await expect
       .poll(() => posters.toSorted())
       .toEqual([
-        `${APP_MEDIA}/cinematic-studio/v2/poster.jpg`,
-        `${APP_MEDIA}/reshoot/v2/poster.jpg`
+        `${APP_MEDIA}/cinematic-studio/cinematic_poster_V2.jpg`,
+        `${APP_MEDIA}/reshoot/reshoot_poster_V2.jpg`
       ])
     await expect(artwork.nth(0)).toHaveJSProperty('paused', paused)
     await expect(artwork.nth(1)).toHaveJSProperty('paused', paused)
