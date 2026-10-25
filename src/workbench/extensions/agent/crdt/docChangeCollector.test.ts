@@ -125,7 +125,9 @@ describe('DocChangeCollector', () => {
     })
 
     const changes = collector.take()
-    expect(changes.resyncNodes).toEqual(new Map([['1', new Set(['flags'])]]))
+    expect(changes.resyncNodes).toEqual(
+      new Map([['1', new Set(['flags.collapsed'])]])
+    )
     expect(changes.widgets.size).toBe(0)
   })
 

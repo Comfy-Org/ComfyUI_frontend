@@ -171,7 +171,10 @@ export class DocChangeCollector {
     else if (event.path.length === 1) this.onNodeFieldsChanged(event)
     else if (event.path[1] === 'widgets') this.onNamedWidgetsChanged(event)
     else if (event.path[1] === 'flags')
-      this.markFields(String(event.path[0]), ['flags'])
+      this.markFields(
+        String(event.path[0]),
+        [...event.keysChanged].map((key) => `flags.${key}`)
+      )
   }
 
   private onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {
@@ -204,7 +207,9 @@ export class DocChangeCollector {
   }
 
   private markFields(id: string, keys: Iterable<string>): void {
-    const synced = [...keys].filter((key) => SYNCED_NODE_FIELDS.has(key))
+    const synced = [...keys].filter(
+      (key) => SYNCED_NODE_FIELDS.has(key) || key.startsWith('flags.')
+    )
     if (synced.length === 0) return
     const current = this.resyncNodes.get(id) ?? new Set<string>()
     for (const key of synced) current.add(key)

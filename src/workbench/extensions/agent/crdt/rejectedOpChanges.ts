@@ -52,7 +52,7 @@ export function changesForRejectedOps(
       case 'set_node_field': {
         const id = String(op.node_id)
         const keys = resyncNodes.get(id) ?? new Set<string>()
-        keys.add(op.field.split('.')[0])
+        keys.add(op.field)
         resyncNodes.set(id, keys)
         break
       }

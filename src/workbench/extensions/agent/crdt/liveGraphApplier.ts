@@ -1039,6 +1039,10 @@ export class LiveGraphApplier {
   ): void {
     const source = docNode.serialised
     const edited = (key: string): boolean => !keys || keys.has(key)
+    const flagsEdited =
+      !keys ||
+      keys.has('flags') ||
+      [...keys].some((key) => key.startsWith('flags.'))
     if (
       edited('title') &&
       source.title !== undefined &&
@@ -1046,7 +1050,7 @@ export class LiveGraphApplier {
     )
       node.title = source.title
     if (edited('mode')) this.applyMode(node, docNode)
-    if (edited('flags')) applyFlags(node, source.flags)
+    if (flagsEdited) applyFlags(node, source.flags, keys)
     if (edited('properties')) applyProperties(node, source.properties)
     applyAppearance(node, source, edited)
   }
@@ -1781,11 +1785,19 @@ function writeWidgetValue(
   }
 }
 
-function applyFlags(node: LGraphNode, flags: INodeFlags): void {
-  if (node.collapsed !== !!flags.collapsed) node.collapse(true)
-  if (node.pinned !== !!flags.pinned) node.pin(!!flags.pinned)
+function applyFlags(
+  node: LGraphNode,
+  flags: INodeFlags,
+  keys?: ReadonlySet<string>
+): void {
+  const edited = (key: string) =>
+    !keys || keys.has('flags') || keys.has(`flags.${key}`)
+  if (edited('collapsed') && node.collapsed !== !!flags.collapsed)
+    node.collapse(true)
+  if (edited('pinned') && node.pinned !== !!flags.pinned)
+    node.pin(!!flags.pinned)
   for (const [key, value] of Object.entries({ ...node.flags, ...flags })) {
-    if (['ghost', 'collapsed', 'pinned'].includes(key)) continue
+    if (['ghost', 'collapsed', 'pinned'].includes(key) || !edited(key)) continue
     if (key in flags) {
       Object.assign(node.flags, { [key]: value })
     } else {
