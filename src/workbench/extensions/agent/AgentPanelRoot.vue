@@ -2,11 +2,7 @@
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import {
-  useClipboard,
-  useEventListener,
-  useMutationObserver
-} from '@vueuse/core'
+import { useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -32,6 +28,7 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogHostState } from '@/components/dialog/useDialogHostState'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
 import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -548,30 +545,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
-
-function hasOpenGlobalDialog(): boolean {
-  return Array.from(
-    document.querySelectorAll('[role="dialog"][data-state="open"]')
-  ).some(
-    (dialog) =>
-      dialog.closest('[data-reka-popper-content-wrapper]') === null &&
-      dialog.closest('[hidden], [aria-hidden="true"]') === null &&
-      dialog.checkVisibility({ visibilityProperty: true })
-  )
-}
-const globalDialogOpen = ref(hasOpenGlobalDialog())
-useMutationObserver(
-  document.body,
-  () => {
-    globalDialogOpen.value = hasOpenGlobalDialog()
-  },
-  {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['data-state', 'hidden', 'aria-hidden']
-  }
-)
+const { hasOpenDialog } = useDialogHostState()
 watch(
   () => canvasStore.canvas?.graph,
   (graph, _previous, onCleanup) => {
@@ -679,7 +653,7 @@ const coachDeferredBy = computed(() =>
     ? 'app_mode'
     : activeTour.value !== null
       ? 'tour_active'
-      : globalDialogOpen.value
+      : hasOpenDialog.value
         ? 'dialog_open'
         : null
 )

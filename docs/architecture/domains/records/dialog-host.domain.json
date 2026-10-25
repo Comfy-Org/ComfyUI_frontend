@@ -48,16 +48,17 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/components/dialog/useDialogHostState.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": ["bounding-boxes", "settings"],
+  "allowedConsumers": ["agent", "bounding-boxes", "settings"],
   "characterizationScenarios": [
     {
       "name": "Global dialog renders stacked dialogs and restores body pointer events on close",
       "checks": [
         "src/components/dialog/GlobalDialog.test.ts",
         "src/components/dialog/GlobalDialog.menu.test.ts",
-        "src/components/dialog/bodyPointerEventsRestore.test.ts"
+        "src/components/dialog/bodyPointerEventsRestore.test.ts",
+        "src/components/dialog/useDialogHostState.test.ts"
       ]
     },
     {

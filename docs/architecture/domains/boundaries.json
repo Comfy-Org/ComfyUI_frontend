@@ -6,6 +6,10 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "dialog-host/presentation/public",
+        "patterns": ["src/components/dialog/useDialogHostState.ts"]
+      },
+      {
         "name": "keybindings/integration/public",
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
@@ -3982,6 +3986,16 @@
         ]
       },
       {
+        "from": "dialog-host/presentation/public",
+        "allow": [
+          "dialog-host/presentation/public",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "keybindings/integration/public",
         "allow": [
           "keybindings/integration/public",
@@ -4015,6 +4029,7 @@
           "agent/domain",
           "authentication/domain",
           "design-system/domain",
+          "dialog-host/domain",
           "error-reporting/domain",
           "extension-runtime/domain",
           "workbench-shell/domain",
@@ -4035,6 +4050,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4066,6 +4083,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4088,6 +4107,7 @@
       {
         "from": "agent/presentation",
         "allow": [
+          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/presentation",
@@ -4097,6 +4117,8 @@
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-runtime/domain",
@@ -4110,6 +4132,7 @@
           "workflow-management/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/presentation/outer-1",
           "workflow-management/presentation/outer-1",
@@ -4120,6 +4143,7 @@
       {
         "from": "agent/integration",
         "allow": [
+          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4134,6 +4158,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4156,6 +4183,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -4463,6 +4491,7 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
+          "dialog-host/presentation/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4489,6 +4518,7 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
+          "dialog-host/presentation/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4777,6 +4807,7 @@
       {
         "from": "dialog-host/integration",
         "allow": [
+          "dialog-host/presentation/public",
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/integration",
@@ -6077,6 +6108,7 @@
       {
         "from": "settings/presentation",
         "allow": [
+          "dialog-host/presentation/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -6093,6 +6125,7 @@
       {
         "from": "settings/integration",
         "allow": [
+          "dialog-host/presentation/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6732,6 +6765,7 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
+          "dialog-host/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -6746,6 +6780,9 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "dialog-host/domain",
+          "dialog-host/application",
+          "dialog-host/integration",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -6768,6 +6805,7 @@
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "dialog-host/presentation/outer-1",
           "error-reporting/application/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "extension-runtime/presentation/outer-1",
@@ -7010,6 +7048,7 @@
       {
         "from": "dialog-host/presentation/outer-1",
         "allow": [
+          "dialog-host/presentation/public",
           "dialog-host/domain",
           "dialog-host/application",
           "dialog-host/presentation/outer-1",
@@ -7685,6 +7724,7 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
+          "dialog-host/presentation/public",
           "keybindings/integration/public",
           "node-definition/domain/public",
           "webcam-capture/integration/public",

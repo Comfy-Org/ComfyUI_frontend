@@ -34,6 +34,7 @@ vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 import { i18n } from '@/i18n'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useDialogHostState } from '@/components/dialog/useDialogHostState'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
@@ -117,6 +118,9 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
+vi.mock(import('@/components/dialog/useDialogHostState'), { spy: true })
+
+const dialogHostOpen = ref(false)
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -333,6 +337,10 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  dialogHostOpen.value = false
+  vi.mocked(useDialogHostState).mockReturnValue({
+    hasOpenDialog: computed(() => dialogHostOpen.value)
+  })
   distribution.isCloud = true
   distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
@@ -899,10 +907,7 @@ describe('AgentPanelRoot onboarding', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-dialog'
     })
-    const dialog = document.createElement('div')
-    dialog.setAttribute('role', 'dialog')
-    dialog.setAttribute('data-state', 'open')
-    document.body.append(dialog)
+    dialogHostOpen.value = true
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -913,7 +918,7 @@ describe('AgentPanelRoot onboarding', () => {
       useTelemetry()!.trackAgentOnboardingNotShown
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'dialog_open' })
 
-    dialog.remove()
+    dialogHostOpen.value = false
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
