@@ -1100,17 +1100,21 @@ describe('BillingTab', () => {
       arrange({ autoTopUpFlag: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
+      vi.mocked(workspaceApi.listTopupCheckouts).mockClear()
+      let settleWorkspaceBList: (
+        listed: Awaited<ReturnType<typeof workspaceApi.listTopupCheckouts>>
+      ) => void = () => {}
+      vi.mocked(workspaceApi.listTopupCheckouts).mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleWorkspaceBList = resolve
+        })
+      )
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspaceId: 'workspace-b'
       })
       await nextTick()
-      vi.mocked(workspaceApi.listTopupCheckouts).mockClear()
-      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
-        checkouts: [],
-        next_cursor: null
-      })
-      settleDetail[0](checkout('failed', { session_id: 'cs_a' }))
 
+      settleDetail[0](checkout('failed', { session_id: 'cs_a' }))
       await vi.waitFor(() =>
         expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledOnce()
       )
@@ -1118,6 +1122,23 @@ describe('BillingTab', () => {
       expect(
         screen.queryByTestId('billing-topup-checkout-banner')
       ).not.toBeInTheDocument()
+
+      vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue(
+        checkout('payment_processing', { session_id: 'cs_b' })
+      )
+      settleWorkspaceBList({
+        checkouts: [
+          {
+            session_id: 'cs_b',
+            amount_cents: 2500,
+            created_at: '2026-10-21T00:00:00Z'
+          }
+        ],
+        next_cursor: null
+      })
+      expect(
+        await screen.findByTestId('billing-topup-checkout-banner')
+      ).toHaveTextContent('Payment processing')
     })
 
     it("clears the previous workspace's checkout banner on a workspace switch", async () => {
