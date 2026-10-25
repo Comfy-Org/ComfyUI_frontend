@@ -781,7 +781,8 @@ describe('late custom node loading', () => {
     expect(nodeTypesMayStillArrive()).toBe(false)
   })
 
-  it('offers Reload, naming the pack, when the second try fails too', async () => {
+  it('offers Reload, naming the pack, when the second try fails too, and reloads the page from it', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
     serve({
       '/extensions/a-pack/main.js': {
         ms: 3_000,
@@ -801,10 +802,66 @@ describe('late custom node loading', () => {
         action: expect.objectContaining({ label: 'Reload' })
       })
     ])
+    expect(reload).not.toHaveBeenCalled()
+    useToast().toasts[0].action?.onClick()
+    expect(reload).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual([
       expect.objectContaining({ ext: '/extensions/a-pack/main.js' })
     ])
+  })
+
+  it('turns a healthy late pack on while another pack waits for its second try', async () => {
+    serve({
+      '/extensions/healthy/main.js': { ms: 3_000, extension: 'Healthy' },
+      '/extensions/retried/main.js': {
+        ms: 3_000,
+        extension: 'Retried',
+        fetchFailures: 1
+      }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(log).toContain('Healthy:setup')
+    expect(isRegistered('Retried')).toBe(false)
+    expect(nodeTypesMayStillArrive()).toBe(true)
+  })
+
+  it('lets nothing go unhandled when the editor is gone while one pack starts and another waits for its second try', async () => {
+    let finishInit = () => {}
+    const initDone = new Promise<void>((resolve) => {
+      finishInit = resolve
+    })
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        init: () => initDone
+      })
+    )
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    const editor = new AbortController()
+    serve({
+      '/extensions/healthy/main.js': { ms: 3_000, extension: 'Healthy' },
+      '/extensions/retried/main.js': {
+        ms: 3_000,
+        extension: 'Retried',
+        fetchFailures: 1
+      }
+    })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(1_000)
+    editor.abort()
+    vi.useRealTimers()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    finishInit()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    process.off('unhandledRejection', unhandled)
+
+    expect(unhandled).not.toHaveBeenCalled()
   })
 
   it('does not try a script that threw a second time', async () => {
@@ -869,6 +926,76 @@ describe('importNoticingFetchFailure', () => {
     ).resolves.toBeUndefined()
   })
 
+  it.for<{ name: string; payload: unknown }>([
+    { name: 'a string', payload: 'plugin threw a string' },
+    { name: 'nothing', payload: null },
+    { name: 'a plain object', payload: { code: 1 } },
+    { name: 'an error naming another script', payload: new Error('/b.js') }
+  ])(
+    'resolves when the script loads while another script throws $name',
+    async ({ payload }) => {
+      const load = async () => {
+        window.dispatchEvent(
+          Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+            payload
+          })
+        )
+        return {}
+      }
+
+      await expect(
+        importNoticingFetchFailure(URL, load)
+      ).resolves.toBeUndefined()
+    }
+  )
+
+  it('rejects with the error the script threw when the helper swallowed it, not as a fetch failure', async () => {
+    let payload: Error | undefined
+    const load = async () => {
+      payload = new Error('pack failed')
+      window.dispatchEvent(
+        Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+          payload
+        })
+      )
+      return undefined
+    }
+
+    await expect(importNoticingFetchFailure(URL, load)).rejects.toBe(payload)
+  })
+
+  it('rejects with the error the script threw, not a fetch failure another script hit earlier', async () => {
+    let payload: Error | undefined
+    const load = async () => {
+      preloadError('Failed to fetch dynamically imported module: /b.js')
+      payload = new Error('pack failed')
+      window.dispatchEvent(
+        Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+          payload
+        })
+      )
+      return undefined
+    }
+
+    await expect(importNoticingFetchFailure(URL, load)).rejects.toBe(payload)
+  })
+
+  it('rejects with an error carrying what the script threw when it was not an error', async () => {
+    const load = async () => {
+      window.dispatchEvent(
+        Object.assign(new Event('vite:preloadError', { cancelable: true }), {
+          payload: 'plugin threw a string'
+        })
+      )
+      return undefined
+    }
+
+    await expect(importNoticingFetchFailure(URL, load)).rejects.toMatchObject({
+      message: `Could not import ${URL}`,
+      cause: 'plugin threw a string'
+    })
+  })
+
   it('rejects with the preload error that names the script', async () => {
     let payload: Error | undefined
     const load = async () => {
@@ -887,10 +1014,10 @@ describe('importNoticingFetchFailure', () => {
     const nested = '/rgthree/common/utils.js'
     let payload: Error | undefined
     const load = async () => {
+      preloadError('Unable to preload CSS for /assets/theme.css')
       payload = preloadError(
         `error loading dynamically imported module: ${nested}`
       )
-      preloadError('Unable to preload CSS for /assets/theme.css')
       return undefined
     }
 
@@ -899,9 +1026,9 @@ describe('importNoticingFetchFailure', () => {
     await expect(result).rejects.toBe(payload)
   })
 
-  it('rejects as a fetch failure when the helper resolved nothing and said nothing', async () => {
+  it('rejects without claiming a fetch failure when the helper resolved nothing and said nothing', async () => {
     await expect(
       importNoticingFetchFailure(URL, async () => undefined)
-    ).rejects.toThrow(`Failed to fetch dynamically imported module: ${URL}`)
+    ).rejects.toThrow(`Could not import ${URL}`)
   })
 })

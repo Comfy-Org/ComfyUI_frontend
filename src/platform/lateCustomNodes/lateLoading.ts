@@ -45,21 +45,33 @@ const MODULE_FETCH_FAILURES = [
   'Importing a module script failed'
 ]
 
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return typeof error === 'string' ? error : ''
+}
+
 function isModuleFetchFailure(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = messageOf(error)
   return MODULE_FETCH_FAILURES.some((wording) => message.includes(wording))
 }
 
-/** Imports `url` through `load`, rejecting when the editor's preload helper swallowed a fetch failure for it or for a file it imports. */
+function asImportFailure(url: string, failure: unknown): Error {
+  return failure instanceof Error
+    ? failure
+    : new Error(`Could not import ${url}`, { cause: failure })
+}
+
+/** Imports `url` through `load`, rejecting with the failure the editor's preload helper swallowed for it, so only a fetch failure reads as one. */
 export async function importNoticingFetchFailure(
   url: string,
   load: (url: string) => Promise<unknown>
 ): Promise<void> {
-  const seen: Error[] = []
+  const seen: unknown[] = []
   const stopListening = useEventListener(
     window,
     'vite:preloadError',
-    ({ payload }) => {
+    (event) => {
+      const payload: unknown = event.payload
       seen.push(payload)
     }
   )
@@ -69,13 +81,12 @@ export async function importNoticingFetchFailure(
   } finally {
     stopListening()
   }
-  const named = seen.find(({ message }) => message.includes(url))
+  const named = seen.find(
+    (error) => error instanceof Error && error.message.includes(url)
+  )
   if (named) throw named
   if (loaded !== undefined) return
-  throw (
-    seen.find(isModuleFetchFailure) ??
-    new TypeError(`Failed to fetch dynamically imported module: ${url}`)
-  )
+  throw asImportFailure(url, seen.at(-1))
 }
 
 /** Whether startup may stop waiting for slow custom node scripts. */
@@ -276,7 +287,11 @@ async function retryFetchFailures(
   failures: LateScriptFailure[],
   { loader, waiting, signal }: LateRun
 ): Promise<LateScriptFailure[]> {
-  await delay(LATE_EXTENSION_RETRY_MS, { signal })
+  const waited = await delay(LATE_EXTENSION_RETRY_MS, { signal }).then(
+    () => true,
+    () => false
+  )
+  if (!waited) return []
   const retries = await Promise.all(
     failures.map(({ ext }) =>
       loader
