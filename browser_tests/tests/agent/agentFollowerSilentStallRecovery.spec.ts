@@ -10,18 +10,23 @@ test.describe(
   'Agent follower stale-document recovery',
   { tag: ['@cloud', '@canvas', '@vue-nodes'] },
   () => {
+    let agent: AgentRemoteApplyHarness
+
+    test.setTimeout(60_000)
+
+    test.beforeEach(async ({ page }) => {
+      await page.clock.install()
+      agent = new AgentRemoteApplyHarness(page)
+      await agent.setUp()
+    })
+
     test('retains the live canvas while catching up after document frames stop', async ({
       page
     }) => {
-      test.setTimeout(60_000)
-      await page.clock.install()
-
-      const agent = new AgentRemoteApplyHarness(page)
       const retainedNodeId = 7_010_101
       const missedNodeId = 7_010_102
 
       await test.step('complete the initial workflow sync', async () => {
-        await agent.setUp()
         await agent.openAndTarget()
         await agent.sendPrompt('Watch this workflow for changes.')
         await agent.hostSocket.waitForSubscribe()
