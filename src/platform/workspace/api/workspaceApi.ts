@@ -49,17 +49,18 @@ import type {
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
+  WorkspaceDeploymentCpuServer,
   WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
   zDeploymentCompatibility,
   zRetentionAcceptance,
-  zRetentionFlowResponse
+  zRetentionFlowResponse,
+  zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
-import { z } from 'zod'
 
 import {
   webSessionRequests,
@@ -178,13 +179,7 @@ export type { WorkspaceDeploymentList }
 
 export type { DeploymentCompatibility }
 
-const zWorkspaceDeploymentCpuServer = z.object({
-  deployment_id: z.string().optional(),
-  cpu_server: z.enum(['none', 'creating', 'building', 'created'])
-})
-export type WorkspaceDeploymentCpuServer = z.infer<
-  typeof zWorkspaceDeploymentCpuServer
->
+export type { WorkspaceDeploymentCpuServer }
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
