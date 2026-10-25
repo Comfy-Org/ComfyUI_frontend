@@ -3737,6 +3737,11 @@
           "title": "Verify your payment"
         }
       },
+      "parked": {
+        "title": "Something went wrong with a recent payment",
+        "body": "Contact support so we can fix it.",
+        "contactSupport": "Contact support"
+      },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
