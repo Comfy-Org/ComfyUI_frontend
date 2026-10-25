@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { sendWebSocketFrames, webSocketFixture } from '@e2e/fixtures/ws'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 import {
@@ -10,6 +10,7 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { pushHostFrames } from '@e2e/tests/agent/agentPanelMocks'
 import {
   AGENT_INNER_HOST_ID,
   AGENT_NESTED_SUBGRAPH_ID,
@@ -308,7 +309,7 @@ test.describe(
           )
 
         const frames = agentSubgraphReuseFrames()
-        sendWebSocketFrames(socket, [...frames.initial, frames.reuse])
+        pushHostFrames(socket, [...frames.initial, frames.reuse])
 
         const nodes = new VueNodeHelpers(page)
         const original = nodes.getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))

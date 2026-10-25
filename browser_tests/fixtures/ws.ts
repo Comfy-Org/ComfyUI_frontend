@@ -50,13 +50,6 @@ function currentOrNext(tracker: WebSocketTracker): Promise<WebSocketRoute> {
   return open ? Promise.resolve(open) : tracker.waitForNext()
 }
 
-export function sendWebSocketFrames(
-  socket: WebSocketRoute,
-  frames: readonly object[]
-): void {
-  for (const frame of frames) socket.send(JSON.stringify(frame))
-}
-
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
   getWebSocket: () => Promise<WebSocketRoute>
