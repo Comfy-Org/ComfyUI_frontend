@@ -67,9 +67,13 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     test('keeps the cloud-subscription 402 out of the error panel', async ({
       comfyPage
     }) => {
-      const queued = comfyPage.page.waitForResponse('**/api/prompt')
-      await comfyPage.actionbar.queueButton.primaryButton.click()
-      await queued
+      const refused = comfyPage.page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url().endsWith('/api/prompt')
+      )
+      await comfyPage.page.evaluate(() => window.app!.queuePrompt(0))
+      await refused
 
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
