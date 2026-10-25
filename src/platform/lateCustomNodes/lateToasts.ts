@@ -4,6 +4,14 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { createToastId } from '@/types/toastId'
 
+import type { CpuServerStep } from './cpuServerStep'
+
+const STEP_DETAIL = {
+  creating: 'lateCustomNodes.stepCreating',
+  building: 'lateCustomNodes.stepBuilding',
+  starting: 'lateCustomNodes.stepStarting'
+} as const satisfies Record<CpuServerStep, string>
+
 function packNameOf(ext: string): string {
   const match = /^\/?extensions\/([^/]+)\//.exec(ext)
   return match ? match[1] : ext
@@ -13,25 +21,27 @@ function packsOf(scripts: Iterable<string>): string {
   return [...new Set([...scripts].map(packNameOf))].join(', ')
 }
 
-/** Shows the seconds since `startedAt` and the packs still in `waiting`, kept current every second until dismissed. */
+/** Shows the seconds since `startedAt`, the CPU server's step when known, and the packs still in `waiting`, kept current every second until dismissed. */
 export function showStartingToast(
   startedAt: number,
-  waiting: ReadonlySet<string>
+  waiting: ReadonlySet<string>,
+  step: () => CpuServerStep | undefined
 ) {
   const toast = useToast()
   const id = createToastId()
   function text() {
     const packs = packsOf(waiting)
+    const current = step()
     return {
       title: t('lateCustomNodes.starting', {
         seconds: Math.round((Date.now() - startedAt) / 1000)
       }),
       description: [
-        t('lateCustomNodes.startingDetail'),
+        t(current ? STEP_DETAIL[current] : 'lateCustomNodes.startingDetail'),
         packs ? t('lateCustomNodes.waitingFor', { packs }) : ''
       ]
         .filter(Boolean)
-        .join(' ')
+        .join('\n')
     }
   }
   const first = text()

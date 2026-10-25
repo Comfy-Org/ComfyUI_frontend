@@ -15,6 +15,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isNonNullish } from '@/utils/typeGuardUtil'
 
+import type { CpuServerReading, CpuServerWatch } from './cpuServerStep'
+import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
 import {
   showFailedToast,
   showReadyToast,
@@ -36,6 +38,7 @@ interface ScriptLoader {
 
 const LATE_EXTENSION_WAIT_MS = 2000
 const LATE_EXTENSION_RETRY_MS = 5000
+const CPU_SERVER_FIRST_ANSWER_WAIT_MS = 1000
 const ARTIST_PAUSE_TIMEOUT_MS = 30_000
 const LATE_EXTENSION_ERROR_TYPE = 'late_extension_failed'
 
@@ -301,6 +304,8 @@ interface LateRun {
   waiting: Set<string>
   loader: ScriptLoader
   signal: AbortSignal
+  server: CpuServerWatch
+  stopWatchingServer: () => void
 }
 
 interface LateOutcome extends BatchOutcome {
@@ -309,9 +314,12 @@ interface LateOutcome extends BatchOutcome {
 
 async function retryFetchFailures(
   failures: LateScriptFailure[],
-  { loader, waiting, signal }: LateRun
+  { loader, waiting, signal, server }: LateRun
 ): Promise<LateScriptFailure[]> {
-  const waited = await delay(LATE_EXTENSION_RETRY_MS, { signal }).then(
+  const waited = await Promise.all([
+    delay(LATE_EXTENSION_RETRY_MS, { signal }),
+    server.ready
+  ]).then(
     () => true,
     () => false
   )
@@ -368,7 +376,7 @@ function showOutcome({ turnedOn, allStarted, failedAgain }: LateOutcome) {
 }
 
 async function turnOnLateExtensions(run: LateRun, startedAt: number) {
-  const starting = showStartingToast(startedAt, run.waiting)
+  const starting = showStartingToast(startedAt, run.waiting, run.server.step)
   const work = watchLateWork(run.signal, () => {
     starting.dismiss()
     keepHeldExtensionsForNextEditor()
@@ -385,28 +393,71 @@ async function turnOnLateExtensions(run: LateRun, startedAt: number) {
         level: 'warning'
       })
   } finally {
+    run.stopWatchingServer()
     starting.dismiss()
     work.stop()
     if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   }
 }
 
-/** Imports every custom script, waits two seconds, then turns on what arrives later until `signal` aborts. */
+function startLateRun(
+  run: Pick<LateRun, 'waiting' | 'loader' | 'signal'>,
+  firstReading: Promise<CpuServerReading>,
+  startedAt: number,
+  firstTries: (server: CpuServerWatch) => LateRun['firstTries']
+) {
+  const watching = new AbortController()
+  const server = watchCpuServer(
+    firstReading,
+    AbortSignal.any([run.signal, watching.signal])
+  )
+  useExtensionStore().holdNewExtensions()
+  void turnOnLateExtensions(
+    {
+      ...run,
+      firstTries: firstTries(server),
+      server,
+      stopWatchingServer: () => watching.abort()
+    },
+    startedAt
+  )
+}
+
+/** Imports every custom script at once but waits for them only two seconds, and on a first open only once the CPU server exists; extensions registered later, and scripts that could not be fetched, are turned on after startup, until `signal` aborts. */
 export async function loadCustomExtensionsWithDeadline(
   extensions: string[],
   loader: ScriptLoader,
-  signal: AbortSignal
+  signal: AbortSignal,
+  firstReading: Promise<CpuServerReading>
 ) {
   const startedAt = Date.now()
   const waiting = new Set(extensions)
-  const firstTries = Promise.all(
-    extensions.map((ext) =>
-      loader.importScript(ext).finally(() => waiting.delete(ext))
+  const importAll = () =>
+    Promise.all(
+      extensions.map((ext) =>
+        loader.importScript(ext).finally(() => waiting.delete(ext))
+      )
     )
-  )
+  const readingInTime = await Promise.race([
+    firstReading,
+    delay(CPU_SERVER_FIRST_ANSWER_WAIT_MS).then(() => undefined)
+  ])
+  if (isBeingSetUp(readingInTime)) {
+    startLateRun(
+      { waiting, loader, signal },
+      firstReading,
+      startedAt,
+      (server) => server.ready.then(() => (signal.aborted ? [] : importAll()))
+    )
+    return
+  }
+
+  const firstTries = importAll()
   const settledInTime = await Promise.race([
     firstTries.then(() => true),
-    delay(LATE_EXTENSION_WAIT_MS).then(() => false)
+    delay(Math.max(0, startedAt + LATE_EXTENSION_WAIT_MS - Date.now())).then(
+      () => false
+    )
   ])
   if (settledInTime) {
     const failures = (await firstTries).filter(isNonNullish)
@@ -415,6 +466,10 @@ export async function loadCustomExtensionsWithDeadline(
       return
     }
   }
-  useExtensionStore().holdNewExtensions()
-  void turnOnLateExtensions({ firstTries, waiting, loader, signal }, startedAt)
+  startLateRun(
+    { waiting, loader, signal },
+    firstReading,
+    startedAt,
+    () => firstTries
+  )
 }

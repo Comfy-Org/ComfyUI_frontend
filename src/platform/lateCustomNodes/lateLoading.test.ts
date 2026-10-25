@@ -1,12 +1,19 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -30,6 +37,7 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {}
@@ -857,7 +865,8 @@ describe('late custom node loading', () => {
     void loadCustomExtensionsWithDeadline(
       Object.keys(attempts),
       loader,
-      new AbortController().signal
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' })
     )
     await vi.advanceTimersByTimeAsync(10_000)
 
@@ -880,7 +889,8 @@ describe('late custom node loading', () => {
     void loadCustomExtensionsWithDeadline(
       [main, backup],
       loader,
-      new AbortController().signal
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' })
     )
     await vi.advanceTimersByTimeAsync(10_000)
 
@@ -1026,6 +1036,144 @@ describe('late custom node loading', () => {
     editor.abort()
     await vi.advanceTimersByTimeAsync(0)
 
+    expect(useToast().toasts).toEqual([])
+  })
+})
+
+describe('naming the CPU server step', () => {
+  function cpuServerAnswers(...steps: ('creating' | 'building' | 'created')[]) {
+    for (const step of steps)
+      vi.mocked(workspaceApi.getDeploymentCpuServer).mockResolvedValueOnce({
+        cpu_server: step
+      })
+  }
+
+  const startingText = () => useToast().toasts[0]?.description ?? ''
+
+  beforeEach(async () => {
+    vi.useFakeTimers()
+    log = []
+    vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = true
+    vi.stubGlobal('fetchTestPack', fetchTestPack)
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension(recording(name))
+    )
+    provideCurrentUser(() => ({
+      userEmail: computed(() => null),
+      isApiKeyLogin: computed(() => true)
+    }))
+    await useTeamWorkspaceStore().initialize()
+  })
+
+  it('does not ask about the server with the switch off', async () => {
+    vi.mocked(useFeatureFlags().flags).lateCustomNodesEnabled = false
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    await startEditor()
+
+    expect(workspaceApi.getDeploymentCpuServer).not.toHaveBeenCalled()
+  })
+
+  it('says the server is being created on a first open, and imports the scripts only once it exists', async () => {
+    cpuServerAnswers('creating', 'created')
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    const { isFinished } = await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(isFinished()).toBe(true)
+    expect(startingText()).toContain(
+      'Creating the server for your custom nodes.\nFirst-time setup.'
+    )
+    expect(api.fileURL).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(api.fileURL).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(isRegistered('A')).toBe(true)
+  })
+
+  it('says the server is being built for a new version', async () => {
+    cpuServerAnswers('building')
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(startingText()).toContain(
+      'Building the server for your custom nodes.\nFirst-time setup for this version, takes a few minutes.'
+    )
+  })
+
+  it('says custom nodes are loading once the server exists, without calling it first-time setup', async () => {
+    cpuServerAnswers('created')
+    serve({ '/extensions/a/main.js': { ms: 15_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(startingText()).toBe(
+      'Loading custom nodes.\nThis usually takes under half a minute.\nWaiting for: a'
+    )
+  })
+
+  it('counts the wait for the first answer within the two seconds', async () => {
+    vi.mocked(workspaceApi.getDeploymentCpuServer).mockReturnValueOnce(
+      new Promise(() => {})
+    )
+    serve({ '/extensions/a/main.js': { ms: 1_500, extension: 'A' } })
+
+    const { isFinished } = await startEditor()
+
+    expect(isFinished()).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(true)
+  })
+
+  it('stops asking about the server once the late scripts are on', async () => {
+    vi.mocked(workspaceApi.getDeploymentCpuServer).mockRejectedValue(
+      new WorkspaceApiError('cpu_server_unknown', 502)
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(isRegistered('A')).toBe(true)
+    const asked = vi.mocked(workspaceApi.getDeploymentCpuServer).mock.calls
+      .length
+
+    await vi.advanceTimersByTimeAsync(20_000)
+
+    expect(workspaceApi.getDeploymentCpuServer).toHaveBeenCalledTimes(asked)
+  })
+
+  it('tries a script that could not be fetched again only once the server exists', async () => {
+    vi.mocked(workspaceApi.getDeploymentCpuServer)
+      .mockRejectedValueOnce(new WorkspaceApiError('cpu_server_unknown', 502))
+      .mockRejectedValueOnce(new WorkspaceApiError('cpu_server_unknown', 502))
+      .mockResolvedValueOnce({ cpu_server: 'created' })
+    serve({
+      '/extensions/a/main.js': { ms: 3_000, extension: 'A', fetchFailures: 1 }
+    })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(6_000)
+    expect(api.fileURL).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(api.fileURL).toHaveBeenCalledTimes(2)
+  })
+
+  it('imports nothing after the editor that started the wait is gone', async () => {
+    const editor = new AbortController()
+    cpuServerAnswers('creating', 'created')
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    await startEditor(editor.signal)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fileURL).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
   })
 })

@@ -1,4 +1,5 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
+import { askCpuServer } from '@/platform/lateCustomNodes/cpuServerStep'
 import {
   importNoticingFetchFailure,
   lateLoadingApplies,
@@ -121,6 +122,9 @@ export async function loadExtensions(
     useSettingStore().get('Comfy.Extension.Disabled')
   )
 
+  const firstCpuServerReading = lateLoadingApplies()
+    ? askCpuServer()
+    : undefined
   const extensions = await api.getExtensions()
 
   installErrorNodeWidgets()
@@ -133,7 +137,7 @@ export async function loadExtensions(
   const customExtensions = extensions.filter((extension) =>
     shouldLoadExtension(extension, __DISTRIBUTION__ === 'cloud')
   )
-  if (lateLoadingApplies()) {
+  if (firstCpuServerReading) {
     await bootstrapTracer.settle('bootstrap/extensions-load-custom', () =>
       loadCustomExtensionsWithDeadline(
         customExtensions,
@@ -142,7 +146,8 @@ export async function loadExtensions(
             importCustomExtension(ext, { late: true, retry }),
           reportFailures: reportExtensionLoadFailures
         },
-        signal
+        signal,
+        firstCpuServerReading
       )
     )
     return

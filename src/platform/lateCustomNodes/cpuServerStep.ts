@@ -16,7 +16,7 @@ const CPU_SERVER_UNKNOWN = 'cpu_server_unknown'
 
 type CpuServerAnswer = WorkspaceDeploymentCpuServer['cpu_server'] | 'unknown'
 
-type CpuServerStep = 'creating' | 'building' | 'starting'
+export type CpuServerStep = 'creating' | 'building' | 'starting'
 
 export interface CpuServerReading {
   answer: CpuServerAnswer
