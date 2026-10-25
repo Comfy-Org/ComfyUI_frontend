@@ -57,13 +57,16 @@ and, in development mode, force the panel on; consent is still required. A
 plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
 feature. A restored open intent cannot bypass consent.
 
-On first use, click **Agent**, then **Start using Comfy Agent**.
-Acceptance is stored through the hosted Global Settings API under
-`Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
-Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
-without accepting. Skip stores an account preference that suppresses future
-automatic offers; Escape and outside clicks do not. An explicit Send can offer
-consent again. Failed loads or saves keep the panel closed and allow retry.
+Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
+first two launches the panel opens by itself, with the consent card over it
+until the user answers. After that, **Agent** asks for consent before it opens
+a closed panel, and Send asks before the first message. Signed-out users see
+the card before sign-in. Acceptance is stored through the hosted Global
+Settings API under `Comfy.AgentPanel.ConsentAccepted` for the authenticated
+user and workspace. Skip, Escape and outside clicks dismiss without accepting.
+Skip is remembered on the device for the account and workspace and ends the
+automatic card; Escape and outside clicks do not. Failed loads or saves keep
+the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the
 new scope. Desktop/Local sign-in continuation authenticates before saving.
 

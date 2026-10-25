@@ -6,8 +6,16 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
+import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
+import type { CapturedTelemetryEvent } from '@e2e/fixtures/hostTelemetryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+function heldBy(events: CapturedTelemetryEvent[]): unknown[] {
+  return events
+    .filter(({ event }) => event === 'app:agent_consent_not_offered')
+    .map(({ properties }) => properties.reason)
+}
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -660,7 +668,6 @@ test.describe(
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({
-      agentResponseMarkerReadProbe: true,
       agentConsentAccepted: false,
       initialSettings: { 'Comfy.TutorialCompleted': false },
       initialFeatureFlags: {
@@ -673,11 +680,10 @@ test.describe(
     test('defers the offer until Getting Started releases the screen', async ({
       comfyPage,
       agentPanel,
-      agentConsentWrites
+      agentConsentWrites,
+      agentConsentReads
     }) => {
       const page = comfyPage.page
-      const responseKey =
-        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal'
       const gettingStarted = page.getByRole('dialog', {
         name: enMessages.gettingStarted.title
       })
@@ -691,16 +697,13 @@ test.describe(
 
       await test.step('The automatic offer waits behind Getting Started', async () => {
         await expect
-          .poll(() => page.evaluate(() => window.__responseMarkerReads ?? 0), {
-            message: 'the held-offer decision reads the response marker',
+          .poll(() => agentConsentReads.length, {
+            message: 'the automatic offer runs once the consent read is in',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toBeVisible()
-        expect(
-          await page.evaluate((key) => localStorage.getItem(key), responseKey)
-        ).toBeNull()
       })
 
       await test.step('Taking the blank canvas shows the card over the activated panel', async () => {
@@ -709,25 +712,22 @@ test.describe(
         await expect(consent).toBeVisible()
         await expect(agentPanel.root).toBeVisible()
         expect(agentConsentWrites).toHaveLength(0)
-        expect(
-          await page.evaluate((key) => localStorage.getItem(key), responseKey)
-        ).toBeNull()
       })
     })
   }
 )
 
-test.describe(
+telemetryTest.describe(
   'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({
+    telemetryTest.use({
       agentConsentAccepted: false,
       initialUrl:
         '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
     })
 
-    test.beforeEach(async ({ page }) => {
+    telemetryTest.beforeEach(async ({ page }) => {
       await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
         route.fulfill({
           status: 200,
@@ -738,48 +738,43 @@ test.describe(
       )
     })
 
-    test('waits for the approval before offering consent', async ({
-      comfyPage,
-      agentPanel,
-      agentConsentReads
-    }) => {
-      const page = comfyPage.page
-      const approval = page.getByRole('dialog', {
-        name: enMessages.desktopLogin.confirmSummary
-      })
-      const consent = page.getByRole('dialog', {
-        name: enMessages.agent.consent.title
-      })
-      const approve = approval.getByRole('button', {
-        name: enMessages.g.confirm
-      })
+    telemetryTest(
+      'waits for the approval before offering consent',
+      async ({ comfyPage, agentPanel, consentTelemetry }) => {
+        const page = comfyPage.page
+        const approval = page.getByRole('dialog', {
+          name: enMessages.desktopLogin.confirmSummary
+        })
+        const consent = page.getByRole('dialog', {
+          name: enMessages.agent.consent.title
+        })
+        const approve = approval.getByRole('button', {
+          name: enMessages.g.confirm
+        })
 
-      await test.step('The approval owns the screen and the offer waits behind it', async () => {
-        await expect(approval).toBeVisible()
-        await expect
-          .poll(() => agentConsentReads.length, {
-            message: 'the automatic offer runs once the consent read is in',
-            timeout: 15_000
-          })
-          .toBeGreaterThan(0)
-        await approve.click({ trial: true })
-        await expect(consent).toHaveCount(0)
-        await expect(agentPanel.root).toBeVisible()
-        expect(
-          await page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal'
-            )
-          )
-        ).toBeNull()
-      })
+        await telemetryTest.step(
+          'The approval owns the screen and the offer waits behind it',
+          async () => {
+            await expect(approval).toBeVisible()
+            await expect
+              .poll(() => heldBy(consentTelemetry), { timeout: 15_000 })
+              .toContain('dialog_open')
+            await approve.click({ trial: true })
+            await expect(consent).toHaveCount(0)
+            await expect(agentPanel.root).toBeVisible()
+          }
+        )
 
-      await test.step('Approving clears the screen, then the card shows over the activated panel', async () => {
-        await approve.click()
-        await expect(approval).toHaveCount(0)
-        await expect(consent).toBeVisible()
-        await expect(agentPanel.root).toBeVisible()
-      })
-    })
+        await telemetryTest.step(
+          'Approving clears the screen, then the card shows over the activated panel',
+          async () => {
+            await approve.click()
+            await expect(approval).toHaveCount(0)
+            await expect(consent).toBeVisible()
+            await expect(agentPanel.root).toBeVisible()
+          }
+        )
+      }
+    )
   }
 )

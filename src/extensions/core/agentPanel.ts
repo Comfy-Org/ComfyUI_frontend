@@ -66,12 +66,12 @@ function automaticActivationVisitsComplete(): boolean {
   }
 }
 
-function activationVisitsWritable(): boolean {
+const STORAGE_PROBE_KEY = 'Comfy.AgentPanel.storageProbe'
+
+function storageWritable(): boolean {
   try {
-    const storedVisits = localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)
-    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, storedVisits ?? '0')
-    if (storedVisits === null)
-      localStorage.removeItem(ACTIVATION_VISITS_STORAGE_KEY)
+    localStorage.setItem(STORAGE_PROBE_KEY, '1')
+    localStorage.removeItem(STORAGE_PROBE_KEY)
     return true
   } catch {
     return false
@@ -260,13 +260,13 @@ export function registerAgentPanelExtension(): void {
       }
 
       function prepareStartupPanel(): boolean {
-        if (!activationVisitsWritable()) {
-          withholdOffer('storage_unavailable')
+        if (!launchInActivationWindow) {
+          reportOfferExit('activation_window_complete', 'startup')
           dropHold()
           return false
         }
-        if (launchInActivationWindow) return true
-        reportOfferExit('activation_window_complete', 'startup')
+        if (storageWritable()) return true
+        withholdOffer('storage_unavailable')
         dropHold()
         return false
       }

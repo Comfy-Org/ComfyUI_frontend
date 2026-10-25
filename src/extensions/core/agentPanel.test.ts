@@ -1195,9 +1195,13 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     })
 
-    it('reports an in-flight tour against the current consent scope', async () => {
+    it('reports nothing for an in-flight tour once the current scope has answered', async () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-b',
+        'true'
+      )
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
         async (_trigger, _onAccept, hooks) => {
           Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
@@ -1213,9 +1217,7 @@ describe('AgentPanel extension flag gate', () => {
       )
       await flush()
 
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
-      })
+      expect(await notOffered()).not.toHaveBeenCalled()
     })
 
     it('reports a reason again for a second workspace', async () => {
@@ -1820,24 +1822,57 @@ describe('AgentPanel extension flag gate', () => {
     }
   )
 
-  it.for(['getItem', 'setItem'] as const)(
-    'skips the automatic offer when storage %s fails',
-    async (method) => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.spyOn(localStorage, method).mockImplementation(() => {
-        throw new Error('Storage unavailable')
-      })
+  it('withholds the automatic card when storage cannot be written', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
 
-      await loadEntryAndSetup()
-      await flush()
+    await loadEntryAndSetup()
+    await flush()
 
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'storage_unavailable'
-      })
-    }
-  )
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
+    })
+  })
+
+  it('stays silent for an answered scope when storage cannot be written', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(
+      'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+      'true'
+    )
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).not.toHaveBeenCalled()
+  })
+
+  it('treats unreadable storage as past the automatic launches', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+  })
 
   it('stays silent when the saved consent cannot be read', async () => {
     setAgentReady(true)

@@ -38,8 +38,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const AGENT_INTRODUCTION_RESPONDED_KEY =
-  'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal'
 export const AGENT_COACH_SEEN_KEY =
   'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 /** The cloud workflow id a turn ack binds the posting tab to. */
@@ -329,7 +327,6 @@ async function mockAgentBoot(
     agentConsentSave,
     agentConsentWebSession,
     agentConsentWrites,
-    agentResponseMarkerReadProbe,
     agentFlagEnabled,
     starterPromptSet,
     agentPanelInitiallyOpen,
@@ -353,23 +350,7 @@ async function mockAgentBoot(
   const csrfToken = 'csrf-e2e'
 
   await page.addInitScript(
-    ({
-      initiallyOpen,
-      onboardingCompleted,
-      debugEnabled,
-      responseMarkerReadProbe,
-      responseMarkerKey
-    }) => {
-      if (responseMarkerReadProbe) {
-        const originalGetItem = Storage.prototype.getItem
-        window.__responseMarkerReads = 0
-        Storage.prototype.getItem = function (candidate: string) {
-          if (candidate === responseMarkerKey)
-            window.__responseMarkerReads =
-              (window.__responseMarkerReads ?? 0) + 1
-          return originalGetItem.call(this, candidate)
-        }
-      }
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
@@ -387,9 +368,7 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
-      debugEnabled: crdtDebugEnabled,
-      responseMarkerReadProbe: agentResponseMarkerReadProbe,
-      responseMarkerKey: AGENT_INTRODUCTION_RESPONDED_KEY
+      debugEnabled: crdtDebugEnabled
     }
   )
 
@@ -662,7 +641,6 @@ async function mockAgentBoot(
 type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
-  agentResponseMarkerReadProbe: boolean
   agentConsentAccepted: boolean
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
@@ -687,7 +665,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentBilling: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use(new AgentBillingFixture())
   },
-  agentResponseMarkerReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
@@ -711,7 +688,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   objectInfo: [undefined, { option: true }],
   page: async (
     {
-      agentResponseMarkerReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
@@ -735,7 +711,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     testInfo
   ) => {
     await mockAgentBoot(page, {
-      agentResponseMarkerReadProbe,
       agentConsentAccepted,
       agentConsentReads,
       agentConsentSave,
