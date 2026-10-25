@@ -279,9 +279,7 @@ const suppressionMetadataSchema = architectureExceptionSchema.pick({
 })
 
 const SUPPRESSION_MARKER = /follower-invariant-allow-next-line\b[ \t]*(\S*)/
-const REQUIRED_SUPPRESSION_FIELDS = Object.keys(
-  suppressionMetadataSchema.shape
-) as (keyof typeof suppressionMetadataSchema.shape)[]
+const REQUIRED_SUPPRESSION_FIELDS = Object.keys(suppressionMetadataSchema.shape)
 const SUPPRESSION_FIELD = new RegExp(
   `\\b(${REQUIRED_SUPPRESSION_FIELDS.join('|')})\\s*:\\s*([^;]+)`,
   'g'
@@ -1229,7 +1227,7 @@ const MOVING_REFERENCE =
   /(?:refs\/heads\/[\w.-]+|@(?:main|master|develop|HEAD)\b|\/(?:blob|tree)\/(?:main|master|develop|HEAD)(?:\/|\b)|raw\.githubusercontent\.com\/[^\s/]+\/[^\s/]+\/(?:main|master|develop|HEAD)(?:\/|\b)|[?&]ref=(?:main|master|develop|HEAD)\b)/i
 const HOSTED_CITATION =
   /^https?:\/\/(?:github\.com|raw\.githubusercontent\.com)\//i
-const PINNED_SHA = /\b[0-9a-f]{40}\b/i
+const PINNED_SHA = /^[0-9a-f]{40}$/i
 
 const HOSTED_URL = /https?:\/\/[^\s'"`)\]}]+/gi
 const BARE_MOVING_REFERENCE =

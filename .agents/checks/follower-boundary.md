@@ -68,7 +68,7 @@ surface cannot drift from the ledger's owner, date and removal-criteria contract
 // follower-invariant-allow-next-line no-scattered-distribution-checks
 // owner: @handle; rationale: why the rule is wrong here;
 // sunset: 2026-12-31; removalCriteria: what makes this deletable
-const isCloud = readSomethingUnrelated()
+const enabled = isCloud
 ```
 
 Only real comment trivia is parsed; marker-shaped strings and templates have no effect.

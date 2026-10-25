@@ -14,8 +14,7 @@ import {
   checkNoScatteredDistributionChecks,
   checkOpLayerManifest,
   checkOpLayerPurity,
-  checkOpLayerRuntimeImports,
-  findFollowerFiles
+  checkOpLayerRuntimeImports
 } from './check-follower-invariants'
 
 const FOLLOWER_FILE = 'src/workbench/extensions/agent/crdt/follower.ts'
@@ -648,7 +647,8 @@ describe('checkCatalogPinnedBySha', () => {
     'widget vocabulary https://example.com/spec?ref=HEAD',
     'widget catalog\nhttps://github.com/Comfy-Org/repo/blob/master/catalog.json',
     'widget catalog https://github.com/Comfy-Org/repo/commits/latest/catalog.json',
-    'widget catalog https://github.com/Org/repo/blob/feature/0123456789abcdef0123456789abcdef01234567/catalog.json'
+    'widget catalog https://github.com/Org/repo/blob/feature/0123456789abcdef0123456789abcdef01234567/catalog.json',
+    'widget catalog https://github.com/Org/repo/blob/release-0123456789abcdef0123456789abcdef01234567/catalog.json'
   ])('fails an unpinned catalog citation: %s', (fixture) => {
     const violations = checkCatalogPinnedBySha(FOLLOWER_FILE, fixture)
     expect(violations).toHaveLength(1)
@@ -1281,7 +1281,7 @@ describe('filesystem contract', () => {
     ])
   })
 
-  test('discovers CRDT and Agent transport production files', () => {
+  test('analyzes discovered CRDT and Agent transport production files', () => {
     const files = [
       'src/workbench/extensions/agent/crdt/follower.ts',
       'src/workbench/extensions/agent/services/agent/transport.ts'
@@ -1289,9 +1289,20 @@ describe('filesystem contract', () => {
     for (const file of [...files, `${files[0]}.test.ts`]) {
       const target = join(root, file)
       mkdirSync(join(target, '..'), { recursive: true })
-      writeFileSync(target, '')
+      writeFileSync(target, "const endpoint = 'wss://example.com/ws'")
     }
-    expect(findFollowerFiles(root)).toEqual(files)
+    expect(
+      checkFollowerFiles(root).map(({ file, rule }) => ({ file, rule }))
+    ).toEqual([
+      {
+        file: 'src/workbench/extensions/agent/crdt/follower.ts',
+        rule: 'no-hardcoded-endpoint'
+      },
+      {
+        file: 'src/workbench/extensions/agent/services/agent/transport.ts',
+        rule: 'no-hardcoded-endpoint'
+      }
+    ])
   })
 
   test('scans exactly the files it is given, never a rediscovered set', () => {
