@@ -519,6 +519,22 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ])
   })
 
+  it('leaves visible DynamicGroup rows alone on a remote row count change', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    const first = node.widgets?.find(
+      (widget) => widget.name === 'rows.0.strength'
+    )
+    assert.exists(first)
+    first.value = 0.9
+
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.9, 'tail'])
+  })
+
   it('does not report a hidden DynamicGroup row the document kept as a missing widget', () => {
     const { graph, node, doc, collector } = twoRowFollower()
     const applier = new LiveGraphApplier({ getGraph: () => graph })
