@@ -177,6 +177,12 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 }
 
 async function rebuildOpenWorkflow() {
+  await useApp().enqueueGraphLoad(async () => {
+    const store = useWorkflowStore()
+    for (const workflow of store.openWorkflows) {
+      if (!store.isActive(workflow)) workflow.releaseGraph()
+    }
+  })
   const workflow = useWorkflowStore().activeWorkflow
   const baseline = workflow?.changeTracker.initialState
   const wasModified = workflow?.isModified ?? false
