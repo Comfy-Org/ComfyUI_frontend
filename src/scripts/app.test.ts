@@ -3809,6 +3809,28 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('fetches the definitions, or the status of an HTTP error answer that getNodeDefs reads as none', async () => {
+      const refusal = () =>
+        Response.json(
+          { code: 'unauthorized', message: 'invalid auth token' },
+          { status: 401 }
+        )
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+        .mockResolvedValueOnce(refusal())
+        .mockResolvedValueOnce(refusal())
+
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: true,
+        defs: { Server: expect.objectContaining({ name: 'Server' }) }
+      })
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: false,
+        status: 401
+      })
+      await expect(app.getNodeDefs()).resolves.toEqual({})
+    })
+
     it('registers the definitions it is given without fetching them', async () => {
       const defs: Record<string, ComfyNodeDef> = {
         Custom: fromPartial<ComfyNodeDef>({ name: 'Custom' })

@@ -133,18 +133,26 @@ function keepHeldExtensionsForNextEditor() {
   useExtensionStore().finishLateExtensions()
 }
 
+function reportNodeDefsFailure(error: unknown) {
+  reportError(error, {
+    errorType: LATE_EXTENSION_ERROR_TYPE,
+    surface: 'platform',
+    level: 'warning',
+    tags: { step: 'getNodeDefs' }
+  })
+}
+
 async function fetchNodeDefs() {
   try {
-    return await useApp().getNodeDefs()
+    const fetched = await useApp().fetchNodeDefs()
+    if (fetched.ok) return fetched.defs
+    reportNodeDefsFailure(
+      new Error(`GET /object_info answered ${fetched.status}`)
+    )
   } catch (error) {
-    reportError(error, {
-      errorType: LATE_EXTENSION_ERROR_TYPE,
-      surface: 'platform',
-      level: 'warning',
-      tags: { step: 'getNodeDefs' }
-    })
-    return undefined
+    reportNodeDefsFailure(error)
   }
+  return undefined
 }
 
 async function startLateExtensions(extensions: ComfyExtension[]) {

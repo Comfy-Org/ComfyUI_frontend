@@ -78,6 +78,7 @@ const actions = vi.mockObject<
   Pick<
     RealComfyApp,
     | 'clean'
+    | 'fetchNodeDefs'
     | 'getNodeDefs'
     | 'getPreviewFormatParam'
     | 'getRandParam'
@@ -109,6 +110,9 @@ const actions = vi.mockObject<
     registerExtension() {},
     async getNodeDefs() {
       return {}
+    },
+    async fetchNodeDefs() {
+      return { ok: true, defs: {} }
     },
     async registerNodeDef() {},
     async reloadNodeDefs() {},

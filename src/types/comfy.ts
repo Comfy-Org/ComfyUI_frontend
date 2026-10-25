@@ -90,6 +90,11 @@ export interface LoadGraphDataOptions {
  * instance through `useApp()` from `@/scripts/appInstance`; only the
  * composition root imports the class.
  */
+/** The node definitions, or the HTTP status of the server's refusal. */
+export type NodeDefsFetch =
+  | { ok: true; defs: Record<string, ComfyNodeDef> }
+  | { ok: false; status: number }
+
 export interface ComfyApp {
   vueAppReady: boolean
   readonly api: ComfyApi
@@ -153,6 +158,7 @@ export interface ComfyApp {
 
   setup(canvasEl: HTMLCanvasElement): Promise<void>
   getNodeDefs(): Promise<Record<string, ComfyNodeDef>>
+  fetchNodeDefs(): Promise<NodeDefsFetch>
   registerNodes(): Promise<void>
   registerNodeDef(nodeId: string, nodeDef: ComfyNodeDef): Promise<void>
   registerNodesFromDefs(defs: Record<string, ComfyNodeDef>): Promise<void>

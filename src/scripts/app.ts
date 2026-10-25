@@ -133,6 +133,7 @@ import type {
   ComfyWidgetConstructor,
   CustomComfyWidgetConstructor,
   LoadGraphDataOptions,
+  NodeDefsFetch,
   QueuePromptOptions
 } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -302,6 +303,39 @@ function createNodeOutputsMutationView(
       return deleted
     }
   })
+}
+
+function toNodeDefs(response: unknown): Record<string, ComfyNodeDefV1> {
+  const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
+    return {
+      ...def,
+      category: (typeof def.category === 'string' ? def.category : '')
+        .split('/')
+        .map((category: string) =>
+          st(`nodeCategories.${normalizeI18nKey(category)}`, category)
+        )
+        .join('/')
+    }
+  }
+
+  const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string'
+
+  const entries =
+    typeof response === 'object' &&
+    response !== null &&
+    !Array.isArray(response)
+      ? Object.entries(response)
+      : []
+  const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
+    entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
+      isNodeDef(entry[1])
+    )
+  )
+  setBackendNodeText(Object.values(defs))
+  return _.mapValues(defs, (def) => translateNodeDef(def))
 }
 
 export class ComfyApp implements IComfyApp {
@@ -1024,37 +1058,14 @@ export class ComfyApp implements IComfyApp {
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
-      return {
-        ...def,
-        category: (typeof def.category === 'string' ? def.category : '')
-          .split('/')
-          .map((category: string) =>
-            st(`nodeCategories.${normalizeI18nKey(category)}`, category)
-          )
-          .join('/')
-      }
-    }
+    return toNodeDefs(await api.getNodeDefs())
+  }
 
-    const isNodeDef = (value: unknown): value is ComfyNodeDefV1 =>
-      typeof value === 'object' &&
-      value !== null &&
-      typeof (value as { name?: unknown }).name === 'string'
-
-    const response: unknown = await api.getNodeDefs()
-    const entries =
-      typeof response === 'object' &&
-      response !== null &&
-      !Array.isArray(response)
-        ? Object.entries(response)
-        : []
-    const defs: Record<string, ComfyNodeDefV1> = Object.fromEntries(
-      entries.filter((entry): entry is [string, ComfyNodeDefV1] =>
-        isNodeDef(entry[1])
-      )
-    )
-    setBackendNodeText(Object.values(defs))
-    return _.mapValues(defs, (def) => translateNodeDef(def))
+  /** Fetches the node definitions, or the HTTP status when the server refused, instead of reading the refusal as definitions. */
+  async fetchNodeDefs(): Promise<NodeDefsFetch> {
+    const response = await api.fetchNodeDefs()
+    if (!response.ok) return { ok: false, status: response.status }
+    return { ok: true, defs: toNodeDefs(await response.json()) }
   }
 
   /**

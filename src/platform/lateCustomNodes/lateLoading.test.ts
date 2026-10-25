@@ -95,6 +95,10 @@ describe('late custom node loading', () => {
     vi.mocked(app.getNodeDefs).mockImplementation(async () => ({
       Server: nodeDef('Server')
     }))
+    vi.mocked(app.fetchNodeDefs).mockImplementation(async () => ({
+      ok: true,
+      defs: await app.getNodeDefs()
+    }))
     vi.mocked(app.reloadNodeDefs).mockImplementation(async () => {
       log.push('reloadNodeDefs')
     })
@@ -401,6 +405,22 @@ describe('late custom node loading', () => {
         errorType: 'late_extension_failed',
         tags: { step: 'getNodeDefs' }
       })
+    )
+  })
+
+  it('reports the late node definitions answering with an HTTP error, and owes them to every extension', async () => {
+    vi.mocked(app.getNodeDefs).mockResolvedValue({})
+    vi.mocked(app.fetchNodeDefs).mockResolvedValue({ ok: false, status: 401 })
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).not.toContain('reloadNodeDefs')
+    expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(true)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'GET /object_info answered 401' }),
+      expect.objectContaining({ tags: { step: 'getNodeDefs' } })
     )
   })
 
