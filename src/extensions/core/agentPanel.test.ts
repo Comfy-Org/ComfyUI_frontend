@@ -845,7 +845,8 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, onAccept) => {
+      async (_trigger, onAccept, hooks) => {
+        hooks?.canShow?.()
         accept = onAccept
         await pending
       }
@@ -858,6 +859,7 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
     )
+    expect(agentStore.isOpen).toBe(true)
 
     agentStore.close('close_button')
     accept()
