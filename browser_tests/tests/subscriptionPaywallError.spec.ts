@@ -46,31 +46,35 @@ test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
     ).toBeHidden()
   })
 
-  test('keeps the cloud-subscription 402 out of the error panel', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.route('**/api/prompt', async (route) => {
-      await route.fulfill({
-        status: 402,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          error: {
-            credits_locked: true,
-            message:
-              'A cloud subscription is required to use your credits on cloud.',
-            type: 'CLOUD_SUBSCRIPTION_REQUIRED'
-          }
+  test.describe('cloud-subscription 402', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.route('**/api/prompt', async (route) => {
+        await route.fulfill({
+          status: 402,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: {
+              credits_locked: true,
+              message:
+                'A cloud subscription is required to use your credits on cloud.',
+              type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+            }
+          })
         })
       })
     })
 
-    const queued = comfyPage.page.waitForResponse('**/api/prompt')
-    await comfyPage.actionbar.queueButton.primaryButton.click()
-    await queued
+    test('keeps the cloud-subscription 402 out of the error panel', async ({
+      comfyPage
+    }) => {
+      const queued = comfyPage.page.waitForResponse('**/api/prompt')
+      await comfyPage.actionbar.queueButton.primaryButton.click()
+      await queued
 
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).toBeHidden()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+    })
   })
 
   test('still surfaces ordinary queue errors in the error panel', async ({
