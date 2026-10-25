@@ -5436,35 +5436,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
   })
 
-  // PM-1410: "the agent keeps reporting a removed connection as still
-  // connected". (h10) above pins that the *flag* is not re-sent on a second
-  // turn, which is wanted. What it does not pin is what happens to the
-  // *canvas*, and the two travel together through canSendDraft: once
-  // boundWorkflowId is set, a still-unbound tab sends neither. So a graph edit
-  // made on that tab reaches the agent by no route at all -
-  // docOpMinter.onIntent drops every local intent while the document is
-  // unbound, and this turn carries no draft to make up for it. The agent
-  // answers from the document it already holds, which still has the link the
-  // user removed - the reported observable, in the reporter's own words "my
-  // server-side copy is the stale one, not your canvas".
-  //
-  // Why `adopted` being a no-op here is the product's own behaviour and not a
-  // convenience: AgentPanelRoot's onWorkflowAdopted binds the tab only when
-  // the acked workflow is adoptable, and for a turn that named no workflow
-  // that means `bindingStore.tabPathFor(id) === undefined &&
-  // storedWorkflowFor(id) === null`. When the server answers with a workflow
-  // that already belongs to another tab - which is exactly what the comment
-  // on isUnboundTarget describes the fallback doing - adoption refuses, the
-  // tab stays unbound, and boundWorkflowId is set all the same. That is the
-  // reachable shape of this hole.
-  //
-  // The first test records today's behaviour so the second cannot pass
-  // vacuously; the second states the behaviour the fix owes and is marked
-  // `it.fails`, so it is green while the gap stands and turns red the moment a
-  // continuing turn starts carrying the canvas. Closing it is a design call -
-  // the server targets the thread's remembered workflow for a turn that names
-  // none, which is a different workflow in the general case - so this pins the
-  // gap rather than choosing the fix.
   function unboundSecondTurnSession(draft: () => DraftSnapshot) {
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
@@ -5505,11 +5476,8 @@ describe('useAgentSession (v1 composition root)', () => {
     const { session, postMessage } = unboundSecondTurnSession(() => draft)
 
     await session.sendMessage('what is connected here?')
-    // The control: turn 1 does carry the connection, so its later absence is
-    // the turn dropping the canvas rather than a canvas that never had it.
     expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
 
-    // The user severs the connection on that same tab.
     draft = SEVERED_DRAFT
     await session.sendMessage('is it still connected?')
 
