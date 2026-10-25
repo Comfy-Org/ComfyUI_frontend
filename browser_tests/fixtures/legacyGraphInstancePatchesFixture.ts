@@ -7,6 +7,9 @@ export const test = comfyPageFixture.extend<{ legacyGraphPatches: void }>({
     'Comfy.DevTools.LegacyGraphInstancePatches': 'true',
     'Comfy.DevTools.ReplayGraphPatches': String(
       process.env.GRAPH_PATCH_REPLAY === '1'
+    ),
+    'Comfy.DevTools.TargetedGraphPatches': String(
+      process.env.GRAPH_PATCH_TARGETED === '1'
     )
   },
   legacyGraphPatches: [
