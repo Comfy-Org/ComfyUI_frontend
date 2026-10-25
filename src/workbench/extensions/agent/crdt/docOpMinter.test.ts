@@ -3212,24 +3212,29 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
         n.addWidget('text', 'prompt', 'a', () => {})
         n.addWidget('text', 'prompt', 'b', () => {})
       }
-    },
-    {
-      case: 'a stored value whose widget its serializer removed',
-      definition: nodeDef('Dynamic', {}),
-      build: (n: LGraphNode) => {
-        n.addWidget('text', 'prompt', 'a', () => {})
-        n.addWidget('text', 'extra', 'b', () => {})
-        new LGraph().add(n)
-        n.onSerialize = () => {
-          n.widgets?.pop()
-        }
-      }
     }
   ])('declares no form for a node with $case', ({ definition, build }) => {
     useNodeDefStore().addNodeDef(definition)
     const node = nodeWith('Dynamic', build)
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the filtered form when serialization removes a widget', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Dynamic', {}))
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('text', 'prompt', 'a', () => {})
+      n.addWidget('text', 'extra', 'b', () => {})
+      new LGraph().add(n)
+      n.onSerialize = () => {
+        n.widgets?.pop()
+      }
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { prompt: 'a' },
+      widgets_values_form: { order: ['prompt'] }
+    })
   })
 
   it('declares the form for a node built by the real widget constructors', () => {
