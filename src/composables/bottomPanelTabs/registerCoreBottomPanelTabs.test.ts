@@ -17,7 +17,7 @@ const stubTab = (
   targetPanel
 })
 
-vi.mock(import('@/composables/bottomPanelTabs/useShortcutsTab'), () => ({
+vi.mock(import('@/platform/keybindings/composables/useShortcutsTab'), () => ({
   useShortcutsTab: () => [
     stubTab('shortcuts-essentials', 'shortcuts'),
     stubTab('shortcuts-view-controls', 'shortcuts')

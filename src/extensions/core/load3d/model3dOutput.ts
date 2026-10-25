@@ -4,7 +4,7 @@ import type {
   CameraState,
   LoadFolder,
   Model3DInfo
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 export interface Model3DOutput {
   filePath: string

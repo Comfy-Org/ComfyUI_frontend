@@ -39,8 +39,8 @@
         >
           <template #link>
             <Button
-              variant="textonly"
-              class="p-0 text-sm text-muted-foreground underline hover:bg-transparent"
+              variant="muted-textonly"
+              class="p-0 text-sm underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}
@@ -85,7 +85,7 @@
         </Button>
         <Button autofocus @click="onConfirm">
           <i class="pi pi-save" />
-          {{ $t('g.save') }}
+          {{ confirmLabel ?? $t('g.save') }}
         </Button>
       </template>
       <Button
@@ -126,6 +126,7 @@ const props = defineProps<{
   itemList?: string[]
   hint?: string
   denyLabel?: string
+  confirmLabel?: string
 }>()
 
 const { t } = useI18n()

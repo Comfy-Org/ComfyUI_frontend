@@ -1,0 +1,115 @@
+<template>
+  <div class="flex flex-col">
+    <Button
+      :tooltip="t('load3d.gizmo.toggle')"
+      tooltip-side="right"
+      variant="textonly"
+      size="icon"
+      :class="cn('rounded-full', gizmoEnabled && 'ring-2 ring-white/50')"
+      :aria-label="t('load3d.gizmo.toggle')"
+      @click="toggleGizmo"
+    >
+      <i class="pi pi-compass text-lg text-foreground" />
+    </Button>
+
+    <template v-if="gizmoEnabled">
+      <Button
+        :tooltip="t('load3d.gizmo.translate')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'rounded-full',
+            gizmoMode === 'translate' && 'ring-2 ring-white/50'
+          )
+        "
+        :aria-label="t('load3d.gizmo.translate')"
+        @click="setMode('translate')"
+      >
+        <i class="pi pi-arrows-alt text-lg text-foreground" />
+      </Button>
+
+      <Button
+        :tooltip="t('load3d.gizmo.rotate')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn('rounded-full', gizmoMode === 'rotate' && 'ring-2 ring-white/50')
+        "
+        :aria-label="t('load3d.gizmo.rotate')"
+        @click="setMode('rotate')"
+      >
+        <i class="pi pi-sync text-lg text-foreground" />
+      </Button>
+
+      <Button
+        :tooltip="t('load3d.gizmo.scale')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn('rounded-full', gizmoMode === 'scale' && 'ring-2 ring-white/50')
+        "
+        :aria-label="t('load3d.gizmo.scale')"
+        @click="setMode('scale')"
+      >
+        <i class="pi pi-expand text-lg text-foreground" />
+      </Button>
+
+      <Button
+        :tooltip="t('load3d.gizmo.reset')"
+        tooltip-side="right"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="t('load3d.gizmo.reset')"
+        @click="resetTransform"
+      >
+        <i class="pi pi-refresh text-lg text-foreground" />
+      </Button>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import type {
+  GizmoConfig,
+  GizmoMode
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { t } = useI18n()
+
+const gizmoConfig = defineModel<GizmoConfig>('gizmoConfig')
+
+const gizmoEnabled = computed(() => gizmoConfig.value?.enabled ?? false)
+const gizmoMode = computed(() => gizmoConfig.value?.mode ?? 'translate')
+
+const emit = defineEmits<{
+  (e: 'toggleGizmo', enabled: boolean): void
+  (e: 'setGizmoMode', mode: GizmoMode): void
+  (e: 'resetGizmoTransform'): void
+}>()
+
+const toggleGizmo = () => {
+  if (!gizmoConfig.value) return
+  gizmoConfig.value.enabled = !gizmoConfig.value.enabled
+  emit('toggleGizmo', gizmoConfig.value.enabled)
+}
+
+const setMode = (mode: GizmoMode) => {
+  if (!gizmoConfig.value) return
+  gizmoConfig.value.mode = mode
+  emit('setGizmoMode', mode)
+}
+
+const resetTransform = () => {
+  emit('resetGizmoTransform')
+}
+</script>

@@ -8,7 +8,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import Button from '@/components/ui/button/Button.vue'
 import {
   findOutputAsset,
@@ -18,8 +18,8 @@ import {
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { replyAssetResultItem } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
@@ -89,7 +89,7 @@ async function generateOffscreenModelThumbnail(
   attempt = 1
 ): Promise<void> {
   const { generateModelThumbnail } =
-    await import('@/components/load3d/modelThumbnail')
+    await import('@/extensions/core/load3d/components/modelThumbnail')
   const generated = await generateModelThumbnail(
     url,
     filename,
@@ -151,7 +151,7 @@ watch(
 )
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
@@ -207,7 +207,7 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'aspect-square bg-secondary-background-hover',
+            multi && 'aspect-square bg-accent',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
@@ -245,9 +245,7 @@ function stopPreview(event: Event): void {
           :class="
             cn(
               'flex items-center justify-center',
-              multi
-                ? 'size-full'
-                : 'aspect-square w-40 bg-secondary-background-hover'
+              multi ? 'size-full' : 'aspect-square w-40 bg-accent'
             )
           "
         >
@@ -273,7 +271,7 @@ function stopPreview(event: Event): void {
       type="button"
       variant="outline"
       size="sm"
-      class="self-center rounded-full border-component-node-border"
+      class="self-center rounded-full"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -296,7 +294,7 @@ function stopPreview(event: Event): void {
         type="button"
         variant="outline"
         size="sm"
-        class="self-center rounded-full border-component-node-border"
+        class="self-center rounded-full"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}

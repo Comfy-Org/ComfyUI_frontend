@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 
+import type { AgentMessage } from '@comfyorg/ingest-types'
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -50,12 +53,73 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     test('does not expose the Agent button', async ({
       agentPanel,
+      page,
       postedMessages
     }) => {
       expect(postedMessages).toHaveLength(0)
 
+      // Positive anchor before either absence: the container that would hold
+      // the entry button is mounted, so "no button" means gated off rather
+      // than a topbar that never rendered. Without this, both negative
+      // assertions below pass on a blank page.
+      const tabBarActions = page.getByTestId(
+        TestIds.topbar.integratedTabBarActions
+      )
+      await expect(tabBarActions).toBeVisible()
+      // The gate resolves asynchronously, and an auto-retrying `toHaveCount(0)`
+      // is satisfied by the first poll. Waiting for the gate to settle is what
+      // stops a late enable from passing as "never exposed".
+      await expect(tabBarActions).toHaveAttribute(
+        'data-agent-gate-settled',
+        'true',
+        { timeout: 30_000 }
+      )
+
       await expect(agentPanel.openButton).toHaveCount(0)
+      await expect(agentPanel.dockedPanel).toHaveCount(0)
     })
+  })
+
+  // The streaming activity label is the only place a user sees "the agent is
+  // still working on this step". Both halves of that signal are untested from
+  // a unit test: `ActivityTrace` has to tag the streaming row with
+  // `agent-shimmer-text`, and `agentPanel.css` has to turn that class into a
+  // running animation. happy-dom reports `animationName: 'none'` for this
+  // shorthand even with the stylesheet loaded, so only a real engine resolves
+  // it.
+  test('shimmers the streaming activity label with a live animation', async ({
+    agentPanel,
+    page,
+    postedMessages,
+    getAgentSocket
+  }) => {
+    // `.agent-shimmer-text` resolves to `animation: none` under
+    // prefers-reduced-motion and the Playwright config pins no preference, so
+    // the contract under test has to say which branch it means.
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const ws = await getAgentSocket()
+    await agentPanel.sendMessage('Set the positive prompt to a red fox scene.')
+    // The turn has to be registered before the socket can narrate it; pushing
+    // earlier drops the event and no streaming row ever renders.
+    await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+
+    pushEvent(ws, THINKING_EVENT)
+    // Located by the text the user reads rather than by the styling class, so
+    // this fails if either half breaks: the component dropping the class and
+    // the stylesheet losing the rule both resolve to `animationName: 'none'`.
+    const streamingLabel = agentPanel.root.getByText(THINKING_TEXT, {
+      exact: true
+    })
+    await expect(streamingLabel).toBeVisible()
+
+    await expect
+      .poll(() =>
+        streamingLabel.evaluate((el) => getComputedStyle(el).animationName)
+      )
+      .toBe('agent-shimmer')
   })
 
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
@@ -66,16 +130,21 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test.setTimeout(30_000)
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
 
+    await expect(
+      panel.getByRole('note').filter({
+        hasText: enMessages.agent.targetFollowsVisibleWorkflow
+      })
+    ).toBeVisible()
+    await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
     await expect(composer).toHaveText('')
@@ -185,7 +254,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const prompt = 'Build a product photo workflow'
 
     await test.step('reject the next turn with a no-funds admission error', async () => {
@@ -248,6 +317,33 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
+      const firstTurn = acceptedTurns.at(0)
+      assert(firstTurn)
+      const history: AgentMessage[] = [
+        {
+          id: `user-${firstTurn.message_id}`,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Complete this workflow without a refusal' }
+        },
+        {
+          id: firstTurn.message_id,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Done.' }
+        }
+      ]
+      await page.route('**/api/agent/threads/*/messages', (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill(jsonRoute(history))
+          : route.fallback()
+      )
       agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
@@ -265,6 +361,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
+      await expect(
+        agentPanel.root.getByTestId('user-message-bubble')
+      ).toHaveText(['Complete this workflow without a refusal'])
       await expect(paywall).toHaveCount(0)
       agentBilling.resumeRefreshes()
     })
@@ -394,9 +493,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
       await test.step('retain tool metadata without conversation content', async () => {
         await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('private diagnostic prompt')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
         await expect(
@@ -457,7 +554,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await agentPanel.open()
 
       const panel = agentPanel.root
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const input = panel.getByTestId('composer-inline-input')
 
       await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
@@ -560,8 +657,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const label = longestItem.getByText(enMessages.agent.addFromAssets, {
       exact: true
     })
+    const items = menu.getByRole('menuitem')
 
     await expect(longestItem).toBeVisible()
+    await expect(items.nth(0)).toHaveAccessibleName(
+      enMessages.agent.addFromAssets
+    )
+    await expect(items.nth(1)).toHaveAccessibleName(enMessages.agent.nodes)
+    await expect(items.nth(2)).toHaveAccessibleName(enMessages.agent.workflows)
     await expect
       .poll(() => menu.boundingBox().then((box) => box?.width))
       .toBeGreaterThan(186)
@@ -675,7 +778,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
 
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'
 

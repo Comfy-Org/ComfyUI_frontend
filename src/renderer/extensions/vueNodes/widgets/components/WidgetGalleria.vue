@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <div
-      class="max-w-full overflow-hidden rounded-lg border border-border-default"
+      class="max-w-full overflow-hidden rounded-lg border"
       role="region"
       :aria-label="t('g.imageGallery')"
     >
@@ -17,26 +17,30 @@
           "
           class="h-auto max-h-64 w-full object-contain"
         />
-        <button
+        <Button
           v-if="images.length > 1"
+          variant="secondary"
+          size="icon"
+          class="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-secondary/80 hover:bg-secondary disabled:opacity-40"
           type="button"
           :aria-label="t('g.previousImage')"
           :disabled="activeIndex === 0"
-          :class="cn(navButtonClass, 'left-2')"
           @click="activeIndex--"
         >
           <i class="icon-[lucide--chevron-left] size-4" aria-hidden="true" />
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="images.length > 1"
+          variant="secondary"
+          size="icon"
+          class="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-secondary/80 hover:bg-secondary disabled:opacity-40"
           type="button"
           :aria-label="t('g.nextImage')"
           :disabled="activeIndex === images.length - 1"
-          :class="cn(navButtonClass, 'right-2')"
           @click="activeIndex++"
         >
           <i class="icon-[lucide--chevron-right] size-4" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
 
       <div v-if="images.length > 1" class="overflow-x-auto px-2 py-4">
@@ -83,6 +87,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RovingFocusGroup, RovingFocusItem } from 'reka-ui'
@@ -102,9 +107,6 @@ const images = computed(() =>
 )
 const activeIndex = ref(0)
 const { t } = useI18n()
-
-const navButtonClass =
-  'absolute top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-secondary-background/80 text-base-foreground transition-colors hover:bg-secondary-background disabled:pointer-events-none disabled:opacity-40'
 
 watch(
   () => images.value.length,

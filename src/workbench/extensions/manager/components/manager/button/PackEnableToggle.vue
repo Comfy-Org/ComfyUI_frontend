@@ -9,7 +9,7 @@
       :aria-label="$t('manager.conflicts.warningTooltip')"
       @click="showConflictModal(true)"
     >
-      <i class="icon-[lucide--triangle-alert] size-6 text-warning-background" />
+      <i class="icon-[lucide--triangle-alert] size-6 text-warning" />
     </Button>
     <Switch
       v-if="!canToggleDirectly"

@@ -67,6 +67,8 @@ const projectionState = vi.hoisted(() => ({
     nodes: { added: [], removed: [] }
   })),
   applyCollected: vi.fn(() => []),
+  retryFailed: vi.fn(() => null),
+  hasPendingFailure: vi.fn(() => false),
   revertRejected: vi.fn(() => []),
   replaceOnNextFrame: vi.fn(),
   discardPending: vi.fn(() => ({ added: [], removed: [] })),
@@ -102,6 +104,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     unbind = projectionState.unbind
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
+    retryFailed = projectionState.retryFailed
+    hasPendingFailure = projectionState.hasPendingFailure
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
@@ -119,6 +123,8 @@ vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
+
+import { api } from '@/scripts/api'
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
@@ -463,6 +469,38 @@ describe('a human edit made while the document connection is down', () => {
       op: 'delete_node',
       node_id: 'edited-during-outage'
     })
+  })
+
+  it('keeps the minted actor paired with the wire tab when the session id changes before a retry', async () => {
+    api.clientId = 'sid-before-reconnect'
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const firstTab = clientState.attempts[0].tab
+
+    api.clientId = 'sid-after-reconnect'
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    const [retried] = clientState.sent
+    expect(retried.tab).toBe(firstTab)
+    expect(retried.ops[0].actor).toBe(clientState.attempts[0].ops[0].actor)
+    expect(retried.ops[0].actor).toBe(`human:anonymous:${retried.tab}`)
+  })
+
+  it('sends a valid wire identity before the first session id arrives', async () => {
+    api.clientId = undefined
+    const { enqueue } = mountFollower('wf-a')
+
+    await enqueue([deleteNode('edited-before-status')])
+
+    expect(clientState.sent).toHaveLength(1)
+    const [sent] = clientState.sent
+    expect(sent.tab).not.toBe('')
+    expect(sent.ops[0].actor).toBe(`human:anonymous:${sent.tab}`)
   })
 
   it('does not resend an acknowledged retry on a later reconnect', async () => {

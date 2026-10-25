@@ -7,12 +7,14 @@ import type {
   AgentError,
   AgentMessage,
   AgentPendingAsk,
+  AgentThreadListResponse,
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import {
   zAgentPendingAsk,
   zAgentPostMessageRequest
 } from '@comfyorg/ingest-types/zod'
+import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -415,7 +417,7 @@ async function routeTurnLock(
   page: Page,
   server: TurnLockServer
 ): Promise<void> {
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(
       jsonRoute({
         threads: [
@@ -443,7 +445,7 @@ async function routeTurnLock(
           }
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
-      })
+      } satisfies AgentThreadListResponse)
     )
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
@@ -465,13 +467,6 @@ async function routeTurnLock(
     })
   })
 
-  /**
-   * The glob accepts any thread and any ask id, so without these checks an
-   * answer posted against the wrong ask -- or an option this ask never offered
-   * -- would still be recorded and `answeredAsks()` would report success. The
-   * assertion this fixture exists to support is "the answer left the client for
-   * *this* ask", so the route has to be the thing that enforces it.
-   */
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) => {
     const url = new URL(route.request().url())
     const segments = url.pathname.split('/').map(decodeURIComponent)
@@ -554,29 +549,22 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.runApproval.run,
       exact: true
     })
-    // RunApprovalCard.vue has no landmark of its own, and its lead line varies
-    // with whether the workflow name is shown. The question line is the one
-    // element every variant renders exactly once per card, so counting it
-    // counts cards -- which is what the no-duplicate-card assertion needs.
     this.approvalCard = this.panel.getByText(
       enMessages.agent.runApproval.question,
       { exact: true }
     )
-    // The workflow the ask names, as the card offers it: a link the user can
-    // open. Anchored on role + accessible name rather than on the text, which
-    // also appears on the panel's workflow picker and inside this link.
     this.approvalWorkflowLink = this.panel.getByRole('button', {
       name: APPROVAL_WORKFLOW_NAME,
       exact: true
     })
-    // WorkSummary.vue renders three labels off the elapsed total: `worked`
-    // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
-    // shared `worked` stem matches all three, so the negative assertions on
-    // this locator cannot go vacuous when a turn is shorter or longer than the
-    // fixture's tool duration, or when the copy is reworded.
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
-        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})$`
       )
     })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {

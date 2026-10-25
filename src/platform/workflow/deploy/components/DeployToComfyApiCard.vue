@@ -17,7 +17,7 @@
   <div class="@container w-[min(640px,calc(100vw-2rem))]">
     <div
       data-testid="deploy-to-comfy-api-card"
-      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
+      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
     >
       <Button
         variant="muted-textonly"
@@ -44,10 +44,10 @@
           <template #fallback>
             <div
               data-testid="deploy-to-comfy-api-video-placeholder"
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
             >
               <span
-                class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-base-foreground"
+                class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10"
                 aria-hidden="true"
               >
                 <i class="icon-[lucide--play] size-6" />
@@ -95,7 +95,12 @@
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
+          <DeployInstallationButton
+            v-if="deploysInstallation"
+            @opened="emit('done')"
+          />
           <Button
+            v-else
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
@@ -125,11 +130,17 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
-const { videoSources = [], posterSrc = '' } = defineProps<{
+const {
+  videoSources = [],
+  posterSrc = '',
+  deploysInstallation = false
+} = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
+  deploysInstallation?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -6,6 +6,7 @@ import type {
 } from '@/lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
+import { SEGMENT_TRIGGER_CLASS } from './cinematic-menu-trigger'
 import CinematicMenu from './CinematicMenu.vue'
 import { useFormatMenus } from './useFormatMenus'
 
@@ -34,9 +35,6 @@ const {
   () => locale,
   () => aspects
 )
-
-const segmentClass =
-  'h-full gap-2 rounded-none px-3 text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-primary-warm-white data-[state=open]:text-primary-warm-white'
 </script>
 
 <template>
@@ -49,7 +47,7 @@ const segmentClass =
       v-model="aspectValue"
       :options="aspectOptions"
       :heading="t('cinematic.output.aspect')"
-      :trigger-class="segmentClass"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       <span class="grid size-4 place-items-center" aria-hidden="true">
@@ -65,7 +63,7 @@ const segmentClass =
       v-model="resolutionValue"
       :options="resolutionOptions"
       :heading="t('cinematic.output.resolution')"
-      :trigger-class="segmentClass"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       {{ resolution }}
@@ -75,7 +73,7 @@ const segmentClass =
       v-model="takesValue"
       :options="takeOptions"
       :heading="t('cinematic.output.takes')"
-      :trigger-class="segmentClass"
+      :trigger-class="SEGMENT_TRIGGER_CLASS"
       tooltip
     >
       ×{{ takes }}

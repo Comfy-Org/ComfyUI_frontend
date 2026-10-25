@@ -22,7 +22,14 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  hasDeploymentLink,
+  readDeploymentHint
+} from '@/platform/workspace/deploymentHint'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -61,6 +68,12 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+
+vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
+  readDeploymentHint: vi.fn<typeof readDeploymentHint>(() => 'deployment'),
+  hasDeploymentLink: vi.fn(() => false),
+  setDeploymentHint: vi.fn()
+}))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -481,8 +494,7 @@ describe('GraphCanvas execution progress updates', () => {
     await nextTick()
 
     expect(replacementNode.progress).toBeUndefined()
-    expect(mocks.setDirty).toHaveBeenCalledOnce()
-    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, expect.anything())
   })
 
   it('does no graph work for structurally equal progress', async () => {
@@ -626,6 +638,24 @@ describe('GraphCanvas widget control mode watcher', () => {
   })
 })
 
+describe('GraphCanvas selection watcher', () => {
+  it('redraws the background when the selected nodes change', async () => {
+    await mountGraphCanvas()
+    const graph = new LGraph()
+    const node = new LGraphNode('Test node')
+    graph.add(node)
+    useCanvasStore().canvas = app.canvas
+    useCanvasStore().currentGraph = graph
+    await nextTick()
+    mocks.setDirty.mockClear()
+
+    node.selected = true
+    await nextTick()
+
+    expect(mocks.setDirty).toHaveBeenCalledWith(expect.anything(), true)
+  })
+})
+
 describe('GraphCanvas agent dock', () => {
   // The dock is slot content of the splitter overlay, so the overlay stub has
   // to render that slot for the guard to be observable.
@@ -664,6 +694,137 @@ describe('deployment model options at startup', () => {
     onTestFinished(() => {
       distribution.isCloud = false
     })
+    vi.mocked(readDeploymentHint).mockReturnValue('deployment')
+    vi.mocked(hasDeploymentLink).mockReturnValue(false)
+  })
+
+  it.for([
+    { listing: 'never answers', answer: () => new Promise<void>(() => {}) },
+    { listing: 'fails', answer: () => Promise.resolve() }
+  ])(
+    'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser last booted on Comfy Cloud',
+    async ({ answer }) => {
+      vi.mocked(readDeploymentHint).mockReturnValue('cloud')
+      const store = useDeploymentPickStore()
+      vi.spyOn(store, 'loadOnce').mockReturnValue(answer())
+
+      await mountGraphCanvas()
+
+      expect(app.setup).toHaveBeenCalledOnce()
+      expect(store.bootDeployment).toBeNull()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+    }
+  )
+
+  it.for([
+    {
+      why: 'the page opened from a deployment link, though this browser last booted on Comfy Cloud',
+      hint: 'cloud' as const,
+      link: true
+    },
+    {
+      why: 'this browser last booted on a deployment',
+      hint: 'deployment' as const,
+      link: false
+    }
+  ])(
+    'waits for the listing, then shows the lookup toast, when $why',
+    async ({ hint, link }) => {
+      vi.mocked(readDeploymentHint).mockReturnValue(hint)
+      vi.mocked(hasDeploymentLink).mockReturnValue(link)
+      vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+        new Promise(() => {})
+      )
+
+      await mountGraphCanvas()
+      expect(app.setup).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+
+      await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+      expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'deploymentSwitcher.lookupUnavailable'
+          })
+        ])
+      )
+    }
+  )
+
+  describe('when this browser has no hint for the workspace', () => {
+    const deployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      status: 'ready',
+      created_at: ''
+    } as const
+
+    function listingAnswersAt(ms: number, pickedDeploymentId: string | null) {
+      const store = useDeploymentPickStore()
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            store.state = {
+              phase: 'ready',
+              deployments: [deployment],
+              pickedDeploymentId,
+              pickSource: pickedDeploymentId ? 'browser' : null,
+              defaultDeploymentId: null,
+              gonePickedDeploymentId: null,
+              goneDefaultDeploymentId: null,
+              buildsVisible: true
+            }
+            resolve()
+          }, ms)
+        })
+      )
+    }
+
+    function lookupToasts() {
+      const toasts: Toast[] = getActivePinia()?.state.value.toast?.toasts ?? []
+      return toasts.filter(
+        (t) => t.title === 'deploymentSwitcher.lookupUnavailable'
+      )
+    }
+
+    beforeEach(() => {
+      vi.mocked(readDeploymentHint).mockReturnValue('unknown')
+    })
+
+    it('boots on Comfy Cloud models after the short wait, with no toast', async () => {
+      vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+        new Promise(() => {})
+      )
+
+      await mountGraphCanvas()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS - 1)
+      expect(app.setup).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+
+      await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+      expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      expect(lookupToasts()).toEqual([])
+    })
+
+    it.for([
+      { answer: 'names a deployment', picked: 'dep-1', toasts: 1 },
+      { answer: 'says Comfy Cloud', picked: null, toasts: 0 }
+    ])(
+      'shows the lookup toast only when a listing that answers late $answer',
+      async ({ picked, toasts }) => {
+        listingAnswersAt(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS + 2_000, picked)
+
+        await mountGraphCanvas()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS)
+        await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+        expect(lookupToasts()).toEqual([])
+        await vi.advanceTimersByTimeAsync(2_000)
+
+        expect(lookupToasts()).toHaveLength(toasts)
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      }
+    )
   })
 
   it('waits for the deployment before constructing workflow widgets', async () => {

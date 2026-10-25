@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import {
-  DropdownMenuItemIndicator,
   DropdownMenuPortal,
+  DropdownMenuItemIndicator,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,7 +16,8 @@ import MenuContent from '@/components/ui/menu/MenuContent.vue'
 import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import type { ActiveTab } from '../../../types/activeTab'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
   activeTab,
@@ -38,6 +39,7 @@ const {
 
 const { t } = useI18n()
 const tabActivity = useWorkflowTabActivityStore()
+const conversation = useAgentConversationStore()
 
 const current = computed(() => (detached ? null : activeTab))
 const workflowTooltipText = computed(() =>
@@ -128,7 +130,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           "
         >
           <span
-            v-if="tabActivity.editingTabPath === current?.path"
+            v-if="conversation.activeTurnTabPath === current?.path"
             role="img"
             :aria-label="t('g.agentWorking')"
             class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
@@ -136,7 +138,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <span
             v-else
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -146,11 +148,11 @@ function onSearchKeydown(event: KeyboardEvent): void {
             data-testid="unsaved-dot"
             class="flex size-3.5 shrink-0 items-center justify-center"
           >
-            <span class="size-[7px] rounded-full bg-base-foreground" />
+            <span class="size-[7px] rounded-full bg-foreground" />
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal>
+      <DropdownMenuPortal :key="Number(open)">
         <MenuContent
           side="top"
           align="start"
@@ -165,13 +167,15 @@ function onSearchKeydown(event: KeyboardEvent): void {
             :disabled="selectingTabPath !== null"
             type="text"
             :placeholder="t('agent.searchWorkflows')"
-            class="mb-1 h-8 bg-base-background px-2.5 py-1"
+            class="mb-1 h-8 bg-background px-2.5 py-1"
             @keydown="onSearchKeydown"
           />
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
             class="max-h-52 overflow-y-auto"
-            @update:model-value="onSelectTab"
+            @update:model-value="
+              typeof $event === 'string' && onSelectTab($event)
+            "
           >
             <div
               v-for="section in tabSections"
@@ -206,7 +210,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
                 </span>
                 <span
-                  v-else-if="tabActivity.editingTabPath === tab.path"
+                  v-else-if="conversation.activeTurnTabPath === tab.path"
                   role="img"
                   :aria-label="t('g.agentWorking')"
                   class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
@@ -222,14 +226,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   :aria-label="t('g.agentModified')"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-primary-background" />
+                  <span class="size-2 rounded-full bg-primary" />
                 </span>
                 <span
                   v-else-if="tab.isPersisted === false || tab.modified"
                   data-testid="unsaved-dot"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-base-foreground" />
+                  <span class="size-2 rounded-full bg-foreground" />
                 </span>
                 <span
                   class="ml-auto flex size-4 shrink-0 items-center justify-center"

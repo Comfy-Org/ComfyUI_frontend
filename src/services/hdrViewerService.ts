@@ -1,6 +1,6 @@
 import { defineAsyncComponent } from 'vue'
 
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import { t } from '@/i18n'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
