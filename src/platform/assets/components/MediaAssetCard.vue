@@ -71,9 +71,7 @@
       >
         <i
           aria-hidden="true"
-          :class="
-            cn('icon-[lucide--check] size-4 shrink-0', !selected && 'opacity-0')
-          "
+          :class="cn('icon-[lucide--check] shrink-0', !selected && 'opacity-0')"
         />
       </Button>
 
@@ -97,7 +95,7 @@
             :aria-label="$t('mediaAsset.actions.download')"
             @click.stop="handleDownload"
           >
-            <i class="icon-[lucide--download] size-4" />
+            <i class="icon-[lucide--download]" />
           </Button>
           <Button
             variant="overlay-white"
@@ -105,7 +103,7 @@
             :aria-label="$t('mediaAsset.actions.moreOptions')"
             @click.stop="handleContextMenu"
           >
-            <i class="icon-[lucide--ellipsis] size-4" />
+            <i class="icon-[lucide--ellipsis]" />
           </Button>
         </IconGroup>
       </div>
@@ -142,7 +140,7 @@
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
-            <i class="icon-[lucide--layers] size-4" />
+            <i class="icon-[lucide--layers]" />
             <span>{{ outputCount }}</span>
           </Button>
         </div>

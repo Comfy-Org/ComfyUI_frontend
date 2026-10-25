@@ -34,10 +34,7 @@
               :class="compact && 'h-full w-auto'"
             />
 
-            <i
-              v-if="showArrow"
-              class="icon-[lucide--chevron-down] size-4 px-1"
-            />
+            <i v-if="showArrow" class="icon-[lucide--chevron-down] px-1" />
           </div>
         </Button>
       </PopoverTrigger>

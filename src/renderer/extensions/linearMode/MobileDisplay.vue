@@ -191,7 +191,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               v-text="workflowStore.activeWorkflow?.filename"
             />
             <i
-              class="icon-[lucide--chevron-down] size-4 shrink-0"
+              class="icon-[lucide--chevron-down] shrink-0"
               aria-hidden="true"
             />
           </Button>
@@ -262,7 +262,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         @click="onClick(index)"
       >
         <div class="relative size-4">
-          <i :class="cn('size-4', icon)" />
+          <i :class="icon" />
           <div
             v-if="index === 1 && isErrorOverlayVisible"
             class="absolute -top-1 -right-1 size-2 rounded-full bg-destructive"

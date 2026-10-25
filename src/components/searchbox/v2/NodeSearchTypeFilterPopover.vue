@@ -18,9 +18,7 @@
         @update:model-value="onSelectionChange"
       >
         <div class="mt-2 flex h-8 items-center gap-2 rounded-sm border px-2">
-          <i
-            class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
-          />
+          <i class="icon-[lucide--search] shrink-0 text-muted-foreground" />
           <ListboxFilter
             ref="searchFilterRef"
             v-model="searchQuery"

@@ -20,7 +20,7 @@
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
     >
-      <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
+      <i class="icon-[comfy--node] shrink-0 text-muted-foreground" />
       <span class="min-w-0 flex-1 truncate">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
@@ -73,14 +73,12 @@
         v-if="item.hasChildren"
         :class="
           cn(
-            'icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground transition-transform',
+            'icon-[lucide--chevron-down] shrink-0 text-muted-foreground transition-transform',
             !isExpanded && '-rotate-90'
           )
         "
       />
-      <i
-        :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
-      />
+      <i :class="cn(item.value.icon, 'shrink-0 text-muted-foreground')" />
       <span class="min-w-0 flex-1 truncate">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}

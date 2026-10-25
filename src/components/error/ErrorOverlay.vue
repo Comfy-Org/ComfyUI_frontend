@@ -20,7 +20,7 @@
             aria-hidden="true"
             :class="
               cn(
-                'mt-0.5 size-4 shrink-0',
+                'mt-0.5 shrink-0',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning'
@@ -73,7 +73,7 @@
           :aria-label="t('g.close')"
           @click="dismiss"
         >
-          <i class="icon-[lucide--x] block size-4 leading-none" />
+          <i class="icon-[lucide--x] block leading-none" />
         </Button>
       </div>
     </div>

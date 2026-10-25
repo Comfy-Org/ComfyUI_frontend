@@ -4,7 +4,7 @@
       v-if="loadFailed"
       class="flex items-center gap-2 px-6 py-3 text-sm text-warning"
     >
-      <i class="icon-[lucide--circle-alert] size-4 shrink-0" />
+      <i class="icon-[lucide--circle-alert] shrink-0" />
       <span>{{ $t('workspacePanel.members.loadFailed') }}</span>
       <Button variant="muted-textonly" size="sm" @click="load">
         {{ $t('g.retry') }}

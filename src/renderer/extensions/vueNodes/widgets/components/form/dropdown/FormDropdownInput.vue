@@ -100,7 +100,7 @@ defineExpose({ focus, showPicker })
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            'mr-2 shrink-0 text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "
@@ -117,11 +117,7 @@ defineExpose({ focus, showPicker })
       "
     >
       <Loader v-if="isUploading" size="sm" />
-      <i
-        v-else
-        class="icon-[lucide--folder-search] size-4"
-        aria-hidden="true"
-      />
+      <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />
       <input
         ref="fileInputRef"
         type="file"

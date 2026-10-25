@@ -55,7 +55,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-4',
+                  'icon-[lucide--chevron-down]',
                   disabled ? 'bg-muted-foreground' : 'bg-muted-foreground'
                 )
               "

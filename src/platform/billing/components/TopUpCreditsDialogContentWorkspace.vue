@@ -212,7 +212,7 @@
           :format-options="{ maximumFractionDigits: 0 }"
         >
           <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+            <i class="icon-[lucide--coins] shrink-0 text-credit" />
           </template>
         </FormNumberField>
       </div>
@@ -236,7 +236,7 @@
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -247,7 +247,7 @@
       v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -315,7 +315,7 @@
           @click="reopenCheckout"
         >
           {{ $t('credits.topUp.reopenCheckout') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
       <Button
@@ -327,7 +327,7 @@
         @click="retryBlockedCheckout"
       >
         {{ $t('credits.topUp.openCheckout') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
       <Button
         v-else-if="step === 'defaultCardBlocked' && blockedDefaultCardUrl"
@@ -341,7 +341,7 @@
         @click="followBlockedDefaultCardLink"
       >
         {{ $t('credits.topUp.openPaymentPage') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
       <div v-else class="flex flex-col gap-2">
         <div
@@ -380,7 +380,7 @@
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
         <Button
           v-else
@@ -421,7 +421,7 @@
           class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </div>
     </div>

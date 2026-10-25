@@ -28,7 +28,7 @@ const {
         :aria-label="closeLabel"
         @click="onClose"
       >
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </CardHeader>
     <slot />

@@ -104,7 +104,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
     <i
       :class="
         cn(
-          'ml-2 size-4 shrink-0 transition-colors duration-150',
+          'ml-2 shrink-0 transition-colors duration-150',
           isQuerying
             ? 'icon-[lucide--loader-circle] animate-spin'
             : 'icon-[lucide--search]',
@@ -131,7 +131,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
       :aria-label="clearLabel"
       @click="searchQuery = ''"
     >
-      <i :class="cn('icon-[lucide--delete] size-4 cursor-pointer')" />
+      <i :class="cn('icon-[lucide--delete] cursor-pointer')" />
     </button>
   </label>
 </template>

@@ -33,7 +33,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
           aria-hidden="true"
           :class="
             cn(
-              'mt-0.5 size-4 shrink-0',
+              'mt-0.5 shrink-0',
               hasError
                 ? 'icon-[lucide--circle-x] text-destructive'
                 : 'icon-[lucide--triangle-alert] text-warning'

@@ -115,7 +115,7 @@
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--coins] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('credits.credits')
       }}</span>

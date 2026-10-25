@@ -10,7 +10,7 @@
         <i
           :class="
             cn(
-              'size-4 shrink-0',
+              'shrink-0',
               banner.kind === 'verifyPayment'
                 ? 'icon-[lucide--triangle-alert] text-warning'
                 : 'icon-[lucide--circle-alert] text-muted-foreground'

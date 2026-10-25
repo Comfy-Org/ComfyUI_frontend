@@ -10,7 +10,7 @@
       <i
         :class="
           cn(
-            'size-4 shrink-0',
+            'shrink-0',
             methods[0].type === 'alipay'
               ? 'icon-[lucide--wallet]'
               : 'icon-[lucide--credit-card]'

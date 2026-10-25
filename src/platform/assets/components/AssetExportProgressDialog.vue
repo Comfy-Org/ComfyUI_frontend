@@ -116,9 +116,7 @@ function closeDialog() {
 
             <div class="flex items-center gap-2">
               <template v-if="job.status === 'failed'">
-                <i
-                  class="icon-[lucide--circle-alert] size-4 text-destructive"
-                />
+                <i class="icon-[lucide--circle-alert] text-destructive" />
               </template>
               <template
                 v-else-if="job.status === 'completed' && job.downloadError"
@@ -132,9 +130,7 @@ function closeDialog() {
                   :aria-label="t('exportToast.retryDownload')"
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
-                  <i
-                    class="icon-[lucide--rotate-ccw] size-4 text-destructive"
-                  />
+                  <i class="icon-[lucide--rotate-ccw] text-destructive" />
                 </Button>
               </template>
               <template v-else-if="job.status === 'completed'">
@@ -144,7 +140,7 @@ function closeDialog() {
                   :aria-label="t('exportToast.downloadExport')"
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
-                  <i class="icon-[lucide--download] size-4 text-success" />
+                  <i class="icon-[lucide--download] text-success" />
                 </Button>
               </template>
               <template v-else-if="job.status === 'cancelled'">
@@ -187,7 +183,7 @@ function closeDialog() {
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <Tooltip :disabled="isExpanded">
             <TooltipTrigger as-child>
-              <i :class="cn('size-4 shrink-0', footerIconClass)" />
+              <i :class="cn('shrink-0', footerIconClass)" />
             </TooltipTrigger>
             <TooltipContent>{{ footerLabel }}</TooltipContent>
           </Tooltip>
@@ -232,12 +228,9 @@ function closeDialog() {
             >
               <i
                 :class="
-                  cn(
-                    'size-4',
-                    isExpanded
-                      ? 'icon-[lucide--chevron-down]'
-                      : 'icon-[lucide--chevron-up]'
-                  )
+                  isExpanded
+                    ? 'icon-[lucide--chevron-down]'
+                    : 'icon-[lucide--chevron-up]'
                 "
               />
             </Button>
@@ -249,7 +242,7 @@ function closeDialog() {
               :aria-label="t('g.close')"
               @click.stop="closeDialog"
             >
-              <i class="icon-[lucide--x] size-4" />
+              <i class="icon-[lucide--x]" />
             </Button>
           </div>
         </div>

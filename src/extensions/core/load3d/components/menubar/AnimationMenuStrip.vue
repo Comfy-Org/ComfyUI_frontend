@@ -12,11 +12,7 @@
       :aria-label="playLabel"
       @click="playing = !playing"
     >
-      <i
-        :class="
-          cn(playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]', 'size-4')
-        "
-      />
+      <i :class="playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'" />
     </Button>
 
     <Slider
@@ -48,7 +44,7 @@
           :aria-label="t('load3d.menuBar.playbackSpeed')"
         >
           {{ speedLabel }}
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -85,9 +81,9 @@
           type="button"
           :aria-label="t('load3d.menuBar.animationClip')"
         >
-          <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
+          <i class="icon-[lucide--clapperboard] shrink-0" />
           <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
-          <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
+          <i class="icon-[lucide--chevron-down] shrink-0 opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

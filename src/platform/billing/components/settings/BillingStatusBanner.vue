@@ -9,7 +9,7 @@
           <i
             :class="
               cn(
-                'size-4 shrink-0',
+                'shrink-0',
                 banner.muted
                   ? 'icon-[lucide--circle-alert] text-muted-foreground'
                   : 'icon-[lucide--triangle-alert] text-warning'

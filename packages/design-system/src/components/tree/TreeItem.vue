@@ -21,7 +21,7 @@
       <i
         :class="
           cn(
-            'icon-[lucide--chevron-right] size-4 shrink-0 transition-transform',
+            'icon-[lucide--chevron-right] shrink-0 transition-transform',
             isExpanded && 'rotate-90'
           )
         "

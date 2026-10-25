@@ -243,7 +243,7 @@ function act() {
         <dd class="m-0 flex items-center gap-1.5 text-foreground tabular-nums">
           <i
             v-if="row.kind === 'added'"
-            class="icon-[lucide--coins] size-4 shrink-0"
+            class="icon-[lucide--coins] shrink-0"
             aria-hidden="true"
             data-testid="checkout-ending-credits-icon"
           />

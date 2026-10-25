@@ -53,7 +53,7 @@ function close(event: MouseEvent) {
       :aria-label="closeLabel"
       @click="close"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </div>
 </template>

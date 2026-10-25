@@ -211,7 +211,7 @@ onMounted(async () => {
               @click="onSegmentClick(seg, $event)"
               @keydown="onSegmentKeydown(seg, $event)"
             >
-              <i :class="cn('size-4 shrink-0', seg.icon)" aria-hidden="true" />
+              <i :class="cn('shrink-0', seg.icon)" aria-hidden="true" />
               <span
                 :class="
                   cn(
@@ -227,7 +227,7 @@ onMounted(async () => {
                 >
                   {{ seg.label }}
                   <i
-                    class="ml-1 icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground"
+                    class="ml-1 icon-[lucide--chevron-down] shrink-0 text-muted-foreground"
                     aria-hidden="true"
                   />
                 </span>

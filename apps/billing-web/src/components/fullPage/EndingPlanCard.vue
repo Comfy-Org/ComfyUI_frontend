@@ -40,7 +40,7 @@ const credits = (count: number) =>
       v-if="creditsAdded !== undefined"
       class="m-0 flex items-center gap-1.5 text-sm text-muted-foreground"
     >
-      <i class="icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
+      <i class="icon-[lucide--coins] shrink-0" aria-hidden="true" />
       <span class="tabular-nums">
         {{
           t('checkout.fullPage.ending.receipt.creditsAddedLine', {

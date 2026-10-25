@@ -34,7 +34,7 @@
             </span>
           </div>
           <div class="flex items-center gap-1 text-muted-foreground">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] shrink-0 bg-credit" />
             <span class="tabular-nums">
               {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
             </span>

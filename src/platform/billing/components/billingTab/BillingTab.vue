@@ -98,7 +98,7 @@
           {{
             $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
           }}
-          <i :class="cn(handoffIcon, 'size-4')" aria-hidden="true" />
+          <i :class="handoffIcon" aria-hidden="true" />
         </Button>
       </div>
     </section>
@@ -106,7 +106,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'

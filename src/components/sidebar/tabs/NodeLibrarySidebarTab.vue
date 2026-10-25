@@ -14,7 +14,7 @@
           :aria-label="$t('g.newFolder')"
           @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         >
-          <i class="icon-[lucide--folder-plus] size-4" />
+          <i class="icon-[lucide--folder-plus]" />
         </Button>
         <PopoverRoot v-slot="{ close }">
           <PopoverTrigger as-child>
@@ -25,7 +25,7 @@
               size="icon"
               :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
             >
-              <i :class="cn(selectedGroupingIcon, 'size-4')" />
+              <i :class="selectedGroupingIcon" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -47,7 +47,7 @@
                   }
                 "
               >
-                <i :class="cn(option.icon, 'size-4')" />
+                <i :class="option.icon" />
                 {{ $t(option.label) }}
               </Button>
             </div>
@@ -62,7 +62,7 @@
               size="icon"
               :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
             >
-              <i :class="cn(selectedSortingIcon, 'size-4')" />
+              <i :class="selectedSortingIcon" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -84,7 +84,7 @@
                   }
                 "
               >
-                <i :class="cn(option.icon, 'size-4')" />
+                <i :class="option.icon" />
                 {{ $t(option.label) }}
               </Button>
             </div>
@@ -98,7 +98,7 @@
           :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
           @click="resetOrganization"
         >
-          <i class="icon-[lucide--filter-x] size-4" />
+          <i class="icon-[lucide--filter-x]" />
         </Button>
         <Button
           :tooltip="$t('menu.refresh')"
@@ -108,7 +108,7 @@
           :aria-label="$t('menu.refresh')"
           @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         >
-          <i class="icon-[lucide--refresh-cw] size-4" />
+          <i class="icon-[lucide--refresh-cw]" />
         </Button>
       </template>
       <template #header>
@@ -132,7 +132,7 @@
                   class="filter-button"
                   :aria-label="$t('g.filter')"
                 >
-                  <i class="icon-[lucide--list-filter] size-4" />
+                  <i class="icon-[lucide--list-filter]" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -200,7 +200,7 @@
                         void subgraphStore.deleteBlueprint(node.data.name)
                       "
                     >
-                      <i class="icon-[lucide--trash-2] size-4" />
+                      <i class="icon-[lucide--trash-2]" />
                     </Button>
                     <Button
                       variant="muted-textonly"
@@ -210,7 +210,7 @@
                         void subgraphStore.editBlueprint(node.data.name)
                       "
                     >
-                      <i class="icon-[lucide--square-pen] size-4" />
+                      <i class="icon-[lucide--square-pen]" />
                     </Button>
                   </template>
                   <template v-else>

@@ -103,7 +103,7 @@
             </div>
             <i
               v-if="selectedWorkspaceId === workspace.id"
-              class="icon-[lucide--check] size-4 shrink-0 text-foreground"
+              class="icon-[lucide--check] shrink-0 text-foreground"
               aria-hidden="true"
             />
           </RadioGroupItem>
@@ -127,7 +127,7 @@
               class="flex items-center gap-2"
             >
               <i
-                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
+                class="icon-[lucide--check] shrink-0 text-brand-yellow"
                 aria-hidden="true"
               />
               <span class="text-sm">

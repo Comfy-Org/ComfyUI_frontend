@@ -2,7 +2,7 @@
   <div class="flex h-8 items-center gap-2 px-2">
     <i
       aria-hidden="true"
-      class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
+      class="icon-[lucide--search] shrink-0 text-muted-foreground"
     />
     <input
       ref="searchInput"
@@ -73,13 +73,11 @@
 
   <MenuSub v-if="!isSearching">
     <DropdownMenuSubTrigger :class="menuItemClass">
-      <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
+      <i class="icon-[lucide--image] shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
         {{ $t('sideToolbar.mediaAssets.filterMediaType') }}
       </span>
-      <i
-        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
-      />
+      <i class="icon-[lucide--chevron-right] shrink-0 text-muted-foreground" />
     </DropdownMenuSubTrigger>
     <MenuSubContent
       :side-offset="8"
@@ -106,15 +104,11 @@
 
   <MenuSub v-if="!isSearching">
     <DropdownMenuSubTrigger :class="menuItemClass">
-      <i
-        class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
-      />
+      <i class="icon-[lucide--calendar] shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
         {{ $t('sideToolbar.mediaAssets.filterDate') }}
       </span>
-      <i
-        class="icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground"
-      />
+      <i class="icon-[lucide--chevron-right] shrink-0 text-muted-foreground" />
     </DropdownMenuSubTrigger>
     <MenuSubContent
       :side-offset="8"

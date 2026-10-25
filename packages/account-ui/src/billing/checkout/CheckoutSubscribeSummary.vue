@@ -27,7 +27,7 @@
         {{ refillLabel }}
       </span>
       <div class="flex items-center gap-1">
-        <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+        <i class="icon-[lucide--coins] shrink-0 bg-credit" />
         <span class="font-bold text-foreground tabular-nums">
           {{ refillCredits }}
         </span>

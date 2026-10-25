@@ -98,7 +98,7 @@
               </span>
               <div class="flex items-center gap-1">
                 <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span class="text-sm/normal font-bold tabular-nums">

@@ -26,7 +26,7 @@
             v-if="command.expandable"
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] shrink-0 text-muted-foreground transition-transform',
                 expanded && 'rotate-90'
               )
             "

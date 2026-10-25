@@ -23,9 +23,7 @@
       >
         <i
           v-if="option.icon"
-          :class="
-            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
-          "
+          :class="cn('shrink-0 text-primary-comfy-canvas/60', option.icon)"
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>
@@ -48,9 +46,7 @@
       >
         <i
           v-if="option.icon"
-          :class="
-            cn('size-4 shrink-0 text-primary-comfy-canvas/60', option.icon)
-          "
+          :class="cn('shrink-0 text-primary-comfy-canvas/60', option.icon)"
           aria-hidden="true"
         />
         <span class="flex-1">{{ resolveOptionLabel(option) }}</span>

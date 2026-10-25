@@ -44,7 +44,7 @@
         class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
-          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
+          class="mt-0.5 icon-[lucide--shield-check] shrink-0 text-(--success-foreground)"
         />
         <p class="m-0">
           {{ copy.alipayRenewalNote }}

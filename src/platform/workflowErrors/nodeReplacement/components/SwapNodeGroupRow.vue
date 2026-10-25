@@ -27,7 +27,7 @@
           aria-hidden="true"
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              'icon-[lucide--chevron-right] text-muted-foreground transition-transform duration-200',
               expanded && 'rotate-90'
             )
           "
@@ -100,7 +100,7 @@
       >
         <i
           aria-hidden="true"
-          class="mr-1 icon-[lucide--repeat] size-4 shrink-0 text-foreground"
+          class="mr-1 icon-[lucide--repeat] shrink-0 text-foreground"
         />
         <span class="min-w-0 truncate text-foreground">
           {{ t('nodeReplacement.replaceNode', 'Replace Node') }}
@@ -115,7 +115,7 @@
         :aria-label="locateNodeLabel"
         @click="handleLocateNode(primaryLocatableNodeType)"
       >
-        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--locate]" />
       </Button>
     </div>
 
@@ -150,7 +150,7 @@
               :aria-label="locateNodeLabel"
               @click="handleLocateNode(nodeType)"
             >
-              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+              <i aria-hidden="true" class="icon-[lucide--locate]" />
             </Button>
           </div>
         </li>

@@ -7,10 +7,7 @@
       role="note"
       class="mb-2 flex gap-2 rounded-md border border-warning/30 bg-warning/10 p-2.5 text-warning"
     >
-      <i
-        aria-hidden="true"
-        class="mt-0.5 icon-[lucide--lock] size-4 shrink-0"
-      />
+      <i aria-hidden="true" class="mt-0.5 icon-[lucide--lock] shrink-0" />
       <p class="m-0 text-xs/relaxed">
         <span class="font-semibold">
           {{ t('rightSidePanel.missingModels.gatedModelsHintLabel') }}
@@ -77,7 +74,7 @@
         :aria-describedby="showGatedModelsHint ? gatedHintId : undefined"
         @click="downloadAllModels"
       >
-        <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
+        <i aria-hidden="true" class="icon-[lucide--download] shrink-0" />
         <span class="truncate">{{ downloadAllLabel }}</span>
       </Button>
     </div>

@@ -27,7 +27,7 @@
           aria-hidden="true"
           :class="
             cn(
-              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              'icon-[lucide--chevron-right] text-muted-foreground transition-transform duration-200',
               expanded && 'rotate-90'
             )
           "
@@ -35,7 +35,7 @@
       </Button>
       <i
         v-if="isUnknownPack"
-        class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
+        class="icon-[lucide--triangle-alert] shrink-0 text-warning"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2">
         <span class="flex min-w-0 items-center gap-2.5">
@@ -86,7 +86,7 @@
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
-            <i class="icon-[lucide--info] size-4" />
+            <i class="icon-[lucide--info]" />
           </Button>
           <span
             v-if="showNodeCount"

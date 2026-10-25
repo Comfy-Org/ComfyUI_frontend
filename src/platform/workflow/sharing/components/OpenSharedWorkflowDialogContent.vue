@@ -64,7 +64,7 @@
           >
             <i
               v-if="isOpening"
-              class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
+              class="icon-[lucide--loader-circle] motion-safe:animate-spin"
               aria-hidden="true"
             />
             <span>
@@ -88,7 +88,7 @@
                 class="w-full justify-between px-4 py-1 text-sm"
               >
                 <i
-                  class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
+                  class="icon-[lucide--circle-alert] shrink-0 text-warning"
                   aria-hidden="true"
                 />
                 <span class="flex-1 text-left text-sm text-muted-foreground">
@@ -97,7 +97,7 @@
                 <i
                   :class="
                     cn(
-                      'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                      'icon-[lucide--chevron-right] shrink-0 text-muted-foreground transition-transform',
                       isWarningExpanded && 'rotate-90'
                     )
                   "

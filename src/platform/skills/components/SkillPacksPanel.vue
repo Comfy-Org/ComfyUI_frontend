@@ -14,7 +14,7 @@
         {{ $t('skillPacks.yourPacks') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="mr-1 icon-[lucide--plus] size-4" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('skillPacks.addPack') }}
       </Button>
     </div>

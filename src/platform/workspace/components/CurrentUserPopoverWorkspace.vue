@@ -170,7 +170,7 @@
       :data-dd-action-name="BILLING_ACTION_NAME.managePlanPopover"
       @click="handleOpenManagePlanSettings"
     >
-      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.managePlan')
       }}</span>
@@ -183,7 +183,7 @@
       data-testid="plans-credits-menu-item"
       @click="handleOpenPlanCreditsSettings"
     >
-      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <i class="icon-[lucide--coins] text-muted-foreground" />
       <span class="flex-1 text-sm text-foreground">{{
         $t('subscription.plansAndCredits')
       }}</span>

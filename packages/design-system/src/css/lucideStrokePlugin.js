@@ -25,7 +25,7 @@ const STROKE_WIDTHS = ['1', '1.3', '1.5', '2', '2.5']
 const LUCIDE_PREFIX = 'lucide'
 const SUPPORTED_PREFIXES = new Set([LUCIDE_PREFIX, COMFY_ICON_PREFIX])
 
-const SCALE = 1.2
+const SIZE = 'calc(var(--spacing) * 4)'
 
 const STROKE_WIDTH_ATTR_RE = /stroke-width="[^"]*"/g
 
@@ -62,13 +62,11 @@ function getDynamicCSSRulesWithStroke(icon, strokeWidth) {
   if (generated.css.length !== 1) {
     throw new Error(`Cannot find "${icon}". Bad icon name?`)
   }
-  if (generated.common?.rules) {
-    generated.common.rules.height = SCALE + 'em'
-    generated.common.rules.width = SCALE + 'em'
-  }
   return {
     ...generated.common?.rules,
-    ...generated.css[0].rules
+    ...generated.css[0].rules,
+    width: SIZE,
+    height: SIZE
   }
 }
 

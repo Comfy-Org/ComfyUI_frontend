@@ -161,7 +161,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex items-center gap-2">
                 <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span class="text-sm/normal font-bold tabular-nums">
@@ -242,7 +242,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <i
-                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span class="text-sm/normal font-bold tabular-nums">
@@ -388,7 +388,7 @@
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
         <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-background"
+          class="icon-[lucide--info] shrink-0 bg-background"
           aria-hidden="true"
         />
         <span>

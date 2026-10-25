@@ -16,7 +16,7 @@ const { hasSubmenu, item } = defineProps<{
 
 <template>
   <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
-  <i v-else-if="item.icon" :class="cn(item.icon, 'size-4 shrink-0')" />
+  <i v-else-if="item.icon" :class="cn(item.icon, 'shrink-0')" />
   <span class="min-w-0 flex-1">
     <span class="block truncate">{{ toValue(item.label) }}</span>
     <span
@@ -25,10 +25,7 @@ const { hasSubmenu, item } = defineProps<{
       >{{ toValue(item.description) }}</span
     >
   </span>
-  <i
-    v-if="item.trailingIcon"
-    :class="cn(item.trailingIcon, 'ml-auto size-4')"
-  />
+  <i v-if="item.trailingIcon" :class="cn(item.trailingIcon, 'ml-auto')" />
   <Badge
     v-if="item.badge"
     variant="pill"
@@ -40,7 +37,7 @@ const { hasSubmenu, item } = defineProps<{
   <i
     v-if="hasSubmenu"
     data-testid="menu-item-submenu-indicator"
-    class="ml-auto icon-[lucide--chevron-right] size-4"
+    class="ml-auto icon-[lucide--chevron-right]"
   />
   <Switch
     v-else-if="item.presentation === 'switch'"
@@ -54,10 +51,7 @@ const { hasSubmenu, item } = defineProps<{
     v-else-if="item.checked !== undefined"
     data-testid="menu-item-indicator"
     :class="
-      cn(
-        'ml-auto icon-[lucide--check] size-4',
-        !toValue(item.checked) && 'invisible'
-      )
+      cn('ml-auto icon-[lucide--check]', !toValue(item.checked) && 'invisible')
     "
   />
   <span

@@ -31,7 +31,7 @@
           <span
             class="flex h-10 items-center gap-2 rounded-lg bg-secondary px-4"
           >
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+            <i class="icon-[lucide--coins] shrink-0 text-credit" />
             <input
               v-model="limitModel"
               inputmode="numeric"
@@ -62,7 +62,7 @@
       </div>
     </div>
     <p v-if="showWarning" class="m-0 flex gap-1 text-credit">
-      <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+      <i class="mt-0.5 icon-[lucide--triangle-alert] shrink-0" />
       {{
         $t('workspacePanel.members.creditLimitDialog.warning', {
           credits: $n(creditsUsed ?? 0)

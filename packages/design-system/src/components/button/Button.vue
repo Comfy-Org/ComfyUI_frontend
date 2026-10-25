@@ -55,18 +55,14 @@ const WithoutTooltip: FunctionalComponent = (_, { slots }) =>
     >
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
+        class="icon-[lucide--loader-circle] shrink-0 animate-spin"
         aria-hidden="true"
       />
       <template v-if="loading">
         <span class="sr-only"><slot /></span>
       </template>
       <template v-else>
-        <i
-          v-if="icon"
-          :class="cn(icon, 'size-4 shrink-0')"
-          aria-hidden="true"
-        />
+        <i v-if="icon" :class="cn(icon, 'shrink-0')" aria-hidden="true" />
         <slot />
       </template>
       <span

@@ -86,7 +86,7 @@ function viewNodes(): void {
         <template #icon>
           <i
             :class="presentation.iconClass"
-            class="size-4 shrink-0"
+            class="shrink-0"
             aria-hidden="true"
           />
         </template>
@@ -114,7 +114,7 @@ function viewNodes(): void {
               :aria-label="t('agent.close')"
               @click="activity.dismiss()"
             >
-              <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--x]" aria-hidden="true" />
             </Button>
           </div>
         </template>

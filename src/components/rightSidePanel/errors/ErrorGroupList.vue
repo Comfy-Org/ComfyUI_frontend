@@ -206,7 +206,7 @@
                 <i
                   v-else
                   aria-hidden="true"
-                  class="icon-[lucide--refresh-cw] size-4 shrink-0"
+                  class="icon-[lucide--refresh-cw] shrink-0"
                 />
               </Button>
               <span

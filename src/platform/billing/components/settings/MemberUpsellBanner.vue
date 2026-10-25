@@ -5,7 +5,7 @@
       class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 items-center gap-2 text-muted-foreground">
-        <i class="icon-[lucide--circle-alert] size-4 shrink-0" />
+        <i class="icon-[lucide--circle-alert] shrink-0" />
         <span class="text-sm">
           {{ $t('workspacePanel.members.upsellBanner') }}
         </span>

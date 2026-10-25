@@ -7,7 +7,7 @@
       <i
         :class="
           cn(
-            'size-4 shrink-0',
+            'shrink-0',
             isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
           )
         "
@@ -67,7 +67,7 @@
             :aria-label="item.label"
             @click="onAlign(item.op)"
           >
-            <i :class="cn('size-4', item.icon)" />
+            <i :class="item.icon" />
           </Button>
         </div>
       </div>
@@ -95,7 +95,7 @@
                 :aria-label="t('layerEditor.flipHorizontal')"
                 @click="onFlip('h')"
               >
-                <i class="icon-[lucide--flip-horizontal-2] size-4" />
+                <i class="icon-[lucide--flip-horizontal-2]" />
               </Button>
               <Button
                 variant="textonly"
@@ -105,7 +105,7 @@
                 :aria-label="t('layerEditor.flipVertical')"
                 @click="onFlip('v')"
               >
-                <i class="icon-[lucide--flip-vertical-2] size-4" />
+                <i class="icon-[lucide--flip-vertical-2]" />
               </Button>
             </div>
           </div>

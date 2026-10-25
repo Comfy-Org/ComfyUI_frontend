@@ -9,7 +9,7 @@
     >
       <i
         aria-hidden="true"
-        class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
+        class="mt-0.5 icon-[lucide--triangle-alert] shrink-0 text-warning"
       />
       <div class="flex flex-col gap-1.5 text-xs/relaxed text-muted-foreground">
         <p class="m-0">
@@ -83,11 +83,7 @@
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
-      <i
-        v-else
-        aria-hidden="true"
-        class="icon-[lucide--refresh-cw] size-4 shrink-0"
-      />
+      <i v-else aria-hidden="true" class="icon-[lucide--refresh-cw] shrink-0" />
       <span class="min-w-0 truncate">{{
         t('rightSidePanel.missingNodePacks.applyChanges')
       }}</span>

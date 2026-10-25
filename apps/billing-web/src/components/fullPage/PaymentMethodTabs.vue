@@ -37,7 +37,7 @@ const TABS = [
       "
       @click="emit('select', tab)"
     >
-      <i :class="cn(icon, 'size-4 shrink-0')" aria-hidden="true" />
+      <i :class="cn(icon, 'shrink-0')" aria-hidden="true" />
       {{ t(`checkout.fullPage.tabs.${tab}`) }}
     </button>
   </div>

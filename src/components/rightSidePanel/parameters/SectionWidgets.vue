@@ -297,7 +297,7 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive"
+              class="icon-[lucide--octagon-alert] shrink-0 text-destructive"
             />
             <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">
@@ -330,7 +330,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
           >
-            <i class="icon-[lucide--rotate-ccw] size-4" />
+            <i class="icon-[lucide--rotate-ccw]" />
           </Button>
           <Button
             v-if="canShowLocateButton"
@@ -341,7 +341,7 @@ defineExpose({
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"
           >
-            <i class="icon-[lucide--locate] size-4" />
+            <i class="icon-[lucide--locate]" />
           </Button>
         </div>
       </template>

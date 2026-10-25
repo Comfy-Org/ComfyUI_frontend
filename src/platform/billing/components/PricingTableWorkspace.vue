@@ -99,7 +99,7 @@
                 {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex items-center gap-1">
-                <i class="icon-[lucide--coins] size-4 text-credit" />
+                <i class="icon-[lucide--coins] text-credit" />
                 <span class="text-sm/normal font-bold">
                   {{ n(getCreditsPerMember(tier)) }}
                 </span>

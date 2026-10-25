@@ -43,7 +43,7 @@ defineOptions({ inheritAttrs: false })
       >
         <i
           :class="visible ? 'icon-[lucide--eye-off]' : 'icon-[lucide--eye]'"
-          class="size-4"
+          class=""
         />
       </InputGroupButton>
     </InputGroupAddon>
