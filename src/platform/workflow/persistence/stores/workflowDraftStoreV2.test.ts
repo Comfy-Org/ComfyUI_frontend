@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useApp } from '@/scripts/appInstance'
 
 import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
@@ -571,9 +570,12 @@ describe('workflowDraftStoreV2', () => {
         preferredPath: 'workflows/test.json',
         isCurrent: () => false
       })
+      const { app } = (await vi.importMock('@/scripts/app')) as {
+        app: { loadGraphData: MockInstance }
+      }
 
       expect(result).toBe(false)
-      expect(useApp().loadGraphData).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 
