@@ -39,6 +39,7 @@ export class AgentPanel {
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly fileInput: Locator
+  public readonly historyButton: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
@@ -99,6 +100,9 @@ export class AgentPanel {
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory
+    })
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )
@@ -138,6 +142,13 @@ export class AgentPanel {
     this.workSummary = this.root.getByRole('button', {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
+  }
+
+  async openChatFromHistory(title: string): Promise<void> {
+    await this.historyButton.click()
+    const row = this.root.getByRole('button', { name: title, exact: true })
+    await expect(row).toBeEnabled()
+    await row.click()
   }
 
   async scrollAssetsToEnd(): Promise<void> {

@@ -465,6 +465,29 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageMembers.value).toBe(false)
   })
 
+  it('treats an omitted parked-payment fact as not parked', async () => {
+    const response = capabilitiesResponse(true)
+    Reflect.deleteProperty(response, 'has_parked_billing_operation')
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.hasParkedBillingOperation.value).toBe(false)
+  })
+
+  it('maps an explicit parked-payment fact to parked', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(true),
+      has_parked_billing_operation: true
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.hasParkedBillingOperation.value).toBe(true)
+  })
+
   it('applies changed capabilities when the current scope is refreshed', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities)
       .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-1', true))

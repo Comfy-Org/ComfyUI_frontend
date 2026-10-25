@@ -60,6 +60,8 @@ export type CapabilityRolloutDefaults = z.infer<
 const CapabilitiesBodySchema = z.object({
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
+  has_parked_billing_operation:
+    zBillingCapabilitiesResponse.shape.has_parked_billing_operation,
   payment_recovery_available:
     zBillingCapabilitiesResponse.shape.payment_recovery_available,
   resolved_for: zBillingCapabilityScope,
@@ -81,6 +83,7 @@ export interface CapabilitiesSnapshot {
   /**
    * As received. Absent when the server omits it: unknown, not a refusal.
    */
+  readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean
   /** True values are rollout guidance, not evidence a write will succeed. */
   readonly rolloutDefaultsApplied: CapabilityRolloutDefaults
@@ -186,6 +189,7 @@ export function createCapabilitiesReader(
       value: {
         capabilities: data.capabilities,
         denials,
+        hasParkedBillingOperation: data.has_parked_billing_operation,
         paymentRecoveryAvailable: data.payment_recovery_available,
         rolloutDefaultsApplied: data.rollout_defaults_applied,
         revision: data.revision,

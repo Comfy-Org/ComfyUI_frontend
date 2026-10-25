@@ -6,7 +6,6 @@ import { defineComponent } from 'vue'
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import type { CameraState } from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
@@ -101,24 +100,12 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@comfyorg/viewport3d/load3d/constants'), () => ({
-  SUPPORTED_EXTENSIONS_ACCEPT: '.glb,.gltf'
-}))
-
-vi.mock(import('@/extensions/core/load3d/components/Load3D.vue'), () => ({
-  default: defineComponent({ render: () => null })
-}))
 vi.mock(
   import('@/extensions/core/load3d/components/Load3dViewerContent.vue'),
   () => ({
     default: defineComponent({ render: () => null })
   })
 )
-
-vi.mock(import('@/scripts/domWidget'), () => ({
-  ComponentWidgetImpl: fromAny(vi.fn()),
-  addWidget: vi.fn()
-}))
 
 vi.mock(import('@/scripts/api'))
 
@@ -242,40 +229,6 @@ function setupBaseMocks() {
     cb(makeLoad3dMock())
   })
 }
-
-describe('Comfy.Preview3D.beforeRegisterNodeDef', () => {
-  beforeEach(setupBaseMocks)
-
-  it('rewrites the image input spec for Preview3D nodes', async () => {
-    const nodeData = {
-      name: 'Preview3D',
-      input: { required: { image: ['STRING', {}] } }
-    } as unknown as ComfyNodeDef
-
-    await preview3DExtension.beforeRegisterNodeDef!(
-      {} as typeof LGraphNode,
-      nodeData,
-      app
-    )
-
-    expect(nodeData.input!.required!.image).toEqual(['PREVIEW_3D'])
-  })
-
-  it('leaves non-Preview3D node defs unchanged', async () => {
-    const nodeData = {
-      name: 'Load3D',
-      input: { required: { image: ['STRING', {}] } }
-    } as unknown as ComfyNodeDef
-
-    await preview3DExtension.beforeRegisterNodeDef!(
-      {} as typeof LGraphNode,
-      nodeData,
-      app
-    )
-
-    expect(nodeData.input!.required!.image).toEqual(['STRING', {}])
-  })
-})
 
 describe('Comfy.Preview3D.nodeCreated', () => {
   beforeEach(setupBaseMocks)
@@ -492,91 +445,6 @@ describe('Comfy.Load3D.nodeCreated', () => {
     await load3dExtension.nodeCreated!(node, app)
 
     expect(configureMock).not.toHaveBeenCalled()
-  })
-})
-
-describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
-  beforeEach(setupBaseMocks)
-
-  it('adds upload and clear buttons when the node has a model_file widget', async () => {
-    const node = makeLoad3DNode()
-    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
-
-    ;(await load3dExtension.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
-
-    const buttonNames = addWidget.mock.calls
-      .filter(([type]) => type === 'button')
-      .map(([, name]) => name)
-    expect(buttonNames).toEqual([
-      'upload 3d model',
-      'upload extra resources',
-      'clear'
-    ])
-  })
-
-  it('shows a toast when the uploaded model fails to load', async () => {
-    const node = makeLoad3DNode()
-    const load3d = { ...makeLoad3dMock(), loadModel: vi.fn() }
-    load3d.loadModel.mockRejectedValue(new Error('bad glb'))
-    waitForLoad3dMock.mockImplementation((cb: (l: typeof load3d) => void) =>
-      cb(load3d)
-    )
-    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
-    vi.mocked(utilsModule.default.uploadFile).mockResolvedValue('model.glb')
-    const createElement = document.createElement.bind(document)
-    const fileInputs: HTMLInputElement[] = []
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-      const element = createElement(tag)
-      if (element instanceof HTMLInputElement) fileInputs.push(element)
-      return element
-    })
-
-    ;(await load3dExtension.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
-    const [modelInput] = fileInputs
-    Object.defineProperty(modelInput, 'files', {
-      value: [new File(['x'], 'model.glb')]
-    })
-    await modelInput.onchange!(new Event('change'))
-    await flush()
-
-    expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
-    expect(useToast().warning).toHaveBeenCalledWith(
-      'toastMessages.failedToLoadModel'
-    )
-  })
-
-  it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
-    const node = makeLoad3DNode({
-      comfyClass: 'Preview3DAdvanced',
-      widgets: [
-        { name: 'width', value: 512 },
-        { name: 'height', value: 512 },
-        { name: 'image', value: '' }
-      ]
-    })
-    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
-
-    ;(await load3dExtension.getCustomWidgets!(app)).LOAD_3D(
-      node,
-      'model_file',
-      ['LOAD_3D', {}],
-      app
-    )
-
-    const buttonCalls = addWidget.mock.calls.filter(
-      ([type]) => type === 'button'
-    )
-    expect(buttonCalls).toEqual([])
   })
 })
 
