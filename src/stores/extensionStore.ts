@@ -26,6 +26,7 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
 type Registration =
   | { mode: 'immediate' }
   | { mode: 'holding'; held: readonly ComfyExtension[] }
+  | { mode: 'starting' }
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
@@ -79,6 +80,9 @@ export const useExtensionStore = defineStore('extension', () => {
   const isHoldingExtensions = computed(
     () => registration.value.mode === 'holding'
   )
+  const areLateExtensionsPending = computed(
+    () => registration.value.mode !== 'immediate'
+  )
 
   /** From now on the extension service holds new extensions instead of registering them. */
   function holdNewExtensions() {
@@ -104,11 +108,16 @@ export const useExtensionStore = defineStore('extension', () => {
       }
   }
 
-  /** Ends holding and returns the extensions still held. */
+  /** Ends holding and returns the extensions still held; they stay pending until `finishLateExtensions`. */
   function stopHoldingExtensions(): ComfyExtension[] {
     const current = registration.value
+    if (current.mode !== 'holding') return []
+    registration.value = { mode: 'starting' }
+    return [...current.held]
+  }
+
+  function finishLateExtensions() {
     registration.value = { mode: 'immediate' }
-    return current.mode === 'holding' ? [...current.held] : []
   }
 
   function unregisterExtension(name: string) {
@@ -152,10 +161,12 @@ export const useExtensionStore = defineStore('extension', () => {
     registerExtension,
     unregisterExtension,
     isHoldingExtensions,
+    areLateExtensionsPending,
     holdNewExtensions,
     holdExtension,
     releaseHeldExtension,
     stopHoldingExtensions,
+    finishLateExtensions,
     loadDisabledExtensionNames,
     captureCoreExtensions,
     isCoreExtension,

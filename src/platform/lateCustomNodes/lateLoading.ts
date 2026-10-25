@@ -44,7 +44,7 @@ function isTextField(element: Element | null | undefined): boolean {
   )
 }
 
-function watchLateWork(signal: AbortSignal) {
+function watchLateWork(signal: AbortSignal, onAbort: () => void) {
   const scope = effectScope(true)
   const state = scope.run(() => {
     const pointerHeld = ref(false)
@@ -66,8 +66,10 @@ function watchLateWork(signal: AbortSignal) {
       },
       { capture: true }
     )
+    if (signal.aborted) onAbort()
     useEventListener(signal, 'abort', () => {
       aborted.value = true
+      onAbort()
     })
     return {
       aborted,
@@ -111,15 +113,9 @@ function reportStartupHookFailures(failures: StartupHookFailure[]) {
     reportLateExtensionFailure(extension, method, error)
 }
 
-async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
-  await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
-  await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
-    timeout: ARTIST_PAUSE_TIMEOUT_MS
-  })
-  if (work.isAborted()) return
-
+function registerHeldExtensions(): ComfyExtension[] {
   const service = useExtensionService()
-  const extensions = useExtensionStore()
+  return useExtensionStore()
     .stopHoldingExtensions()
     .filter((extension) => {
       try {
@@ -130,15 +126,37 @@ async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
         return false
       }
     })
-  if (extensions.length > 0) {
-    const failures = [
-      ...(await service.invokeStartupHook(extensions, 'init')),
-      ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
-    ]
-    await useApp().reloadNodeDefs()
-    failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
-    reportStartupHookFailures(failures)
-  }
+}
+
+function keepHeldExtensionsForNextEditor() {
+  registerHeldExtensions()
+  useExtensionStore().finishLateExtensions()
+}
+
+async function startLateExtensions(extensions: ComfyExtension[]) {
+  const service = useExtensionService()
+  const app = useApp()
+  const failures = await service.invokeStartupHook(extensions, 'init')
+  const defs = await app.getNodeDefs()
+  failures.push(
+    ...(await service.invokeStartupHook(extensions, 'addCustomNodeDefs', defs)),
+    ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
+  )
+  await app.reloadNodeDefs(defs)
+  failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
+  reportStartupHookFailures(failures)
+}
+
+async function runLateBatch(work: ReturnType<typeof watchLateWork>) {
+  await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
+  await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
+    timeout: ARTIST_PAUSE_TIMEOUT_MS
+  })
+  if (work.isAborted()) return
+
+  const extensions = registerHeldExtensions()
+  if (extensions.length > 0) await startLateExtensions(extensions)
+  if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   await rebuildOpenWorkflow()
 }
 
@@ -147,7 +165,7 @@ async function turnOnLateExtensions(
   loader: ScriptLoader,
   signal: AbortSignal
 ) {
-  const work = watchLateWork(signal)
+  const work = watchLateWork(signal, keepHeldExtensionsForNextEditor)
   try {
     loader.reportFailures((await firstTries).filter(isNonNullish))
     await runLateBatch(work)
@@ -159,7 +177,7 @@ async function turnOnLateExtensions(
     })
   } finally {
     work.stop()
-    useExtensionStore().stopHoldingExtensions()
+    if (!work.isAborted()) useExtensionStore().finishLateExtensions()
   }
 }
 

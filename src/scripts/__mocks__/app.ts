@@ -78,6 +78,7 @@ const actions = vi.mockObject<
   Pick<
     RealComfyApp,
     | 'clean'
+    | 'getNodeDefs'
     | 'getPreviewFormatParam'
     | 'getRandParam'
     | 'graphToPrompt'
@@ -106,6 +107,9 @@ const actions = vi.mockObject<
       assert.fail('Configure app.graphToPrompt for this test')
     },
     registerExtension() {},
+    async getNodeDefs() {
+      return {}
+    },
     async registerNodeDef() {},
     async reloadNodeDefs() {},
     async refreshMissingModels() {

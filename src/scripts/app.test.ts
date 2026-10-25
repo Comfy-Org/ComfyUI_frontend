@@ -3807,6 +3807,22 @@ describe('ComfyApp', () => {
         defs
       )
     })
+
+    it('registers the definitions it is given without fetching them', async () => {
+      const defs: Record<string, ComfyNodeDef> = {
+        Custom: fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      }
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const getNodeDefs = vi.spyOn(app, 'getNodeDefs')
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs(defs)
+
+      expect(getNodeDefs).not.toHaveBeenCalled()
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', defs.Custom)
+    })
   })
 
   describe('refreshMissingModels', () => {

@@ -28,24 +28,29 @@ scripts and then stops waiting.
 
 1. **Hold.** From then on the extension service does not register new
    extensions; the extension store holds them, in registration order, as one
-   discriminated-union state (`immediate` or `holding` with the held list).
+   discriminated-union state (`immediate`, `holding` with the held list, or
+   `starting` while the held extensions run their startup steps).
    A held extension whose disposer runs is dropped.
 2. **One batch.** Once every script has settled, the startup spinner is gone,
    and the artist is not holding the pointer down or typing in a text field
    (at most 30 s), holding stops and the held extensions are registered. Their
-   `init` and `registerCustomNodes` run on them only, then the node definitions
-   are reloaded so every extension's per-definition hooks see the new types,
-   then their `setup` runs.
+   `init`, `addCustomNodeDefs` (on freshly fetched node definitions) and
+   `registerCustomNodes` run on them only, then those definitions are
+   registered again so every extension's per-definition hooks see the new
+   types, then their `setup` runs.
 3. **Rebuild.** The open workflow is rebuilt once so every extension's per-node
    functions run on its nodes, even when no late extension arrived. The rebuild keeps the saved baseline and the
    unsaved mark, and adds no undo entry.
-4. **Missing nodes wait.** While holding, a node type missing from the open
-   workflow is not reported missing; the rebuild reports what is still missing.
+4. **Missing nodes wait.** While holding, and until the held extensions'
+   startup steps finish, a node type missing from the open workflow is not
+   reported missing; the rebuild after them reports what is still missing.
 5. **Failures are reported.** A script that failed is reported with the other
    load failures; an extension that cannot register or whose startup step
    throws is reported through `reportError`, and the rest of the batch goes on.
 6. **Lifetime.** The work belongs to the canvas that started it: when it
-   unmounts, the batch stops and the held extensions are dropped.
+   unmounts, the batch stops, the held extensions are registered without their
+   startup steps and later ones register as before, so the next canvas's
+   startup runs them, as it would without this change.
 
 With the flag off, or on Comfy Cloud where no deployment can be booted,
 startup waits for every script as before.

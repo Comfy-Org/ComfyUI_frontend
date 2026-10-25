@@ -174,8 +174,8 @@ every other extension's `setup`:
 ```
 getCustomWidgets         [late extensions only]
 init                     [late extensions only]
+addCustomNodeDefs        [late extensions only]
 registerCustomNodes      [late extensions only]
-addCustomNodeDefs        [every extension]
 beforeRegisterNodeDef    [repeated multiple times, every extension]
 setup                    [late extensions only]
 ```

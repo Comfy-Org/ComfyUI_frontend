@@ -64,7 +64,11 @@ function createGraphLoadHookApp(app: ComfyApp) {
   }
 }
 
-type StartupHook = 'init' | 'registerCustomNodes' | 'setup'
+type StartupHook =
+  | 'init'
+  | 'addCustomNodeDefs'
+  | 'registerCustomNodes'
+  | 'setup'
 
 export interface StartupHookFailure {
   extension: ComfyExtension
@@ -304,22 +308,20 @@ export const useExtensionService = () => {
   }
 
   /** Runs one startup step on the given extensions only, in order; returns the ones that threw. */
-  const invokeStartupHook = async (
+  const invokeStartupHook = async <T extends StartupHook>(
     extensions: ComfyExtension[],
-    method: StartupHook
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ): Promise<StartupHookFailure[]> => {
     const failures: StartupHookFailure[] = []
     for (const extension of extensions) {
-      const fn = extension[method]
-      if (
-        typeof fn !== 'function' ||
-        !extensionStore.isExtensionEnabled(extension.name)
-      )
-        continue
-      if (method === 'setup')
-        legacyMenuCompat.setCurrentExtension(extension.name)
+      if (!extensionStore.isExtensionEnabled(extension.name)) continue
       try {
-        await fn.call(extension, useApp())
+        const fn: unknown = extension[method]
+        if (typeof fn !== 'function') continue
+        if (method === 'setup')
+          legacyMenuCompat.setCurrentExtension(extension.name)
+        await fn.call(extension, ...args, useApp())
       } catch (error) {
         failures.push({ extension, method, error })
       } finally {

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -5,6 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { loadExtensions } from '@/services/extensionLoader'
@@ -31,6 +33,7 @@ vi.mock(import('@/extensions/core/index'), () => ({
 const WAIT_MS = 2_000
 const SAVED_STATE = createMockChangeTracker().initialState
 const REBUILT_STATE = { ...SAVED_STATE, last_node_id: 7 }
+const nodeDef = (name: string) => fromPartial<ComfyNodeDef>({ name })
 
 let log: string[] = []
 let scriptCount = 0
@@ -89,12 +92,19 @@ describe('late custom node loading', () => {
     vi.stubGlobal('registerTestPack', (name: string) =>
       useExtensionService().registerExtension(recording(name))
     )
+    vi.mocked(app.getNodeDefs).mockImplementation(async () => ({
+      Server: nodeDef('Server')
+    }))
     vi.mocked(app.reloadNodeDefs).mockImplementation(async () => {
       log.push('reloadNodeDefs')
     })
     vi.mocked(useWorkflowService().reloadCurrentWorkflow).mockImplementation(
       async () => {
-        log.push('reloadCurrentWorkflow')
+        log.push(
+          nodeTypesMayStillArrive()
+            ? 'reloadCurrentWorkflow while types may still arrive'
+            : 'reloadCurrentWorkflow'
+        )
         const workflow = useWorkflowStore().activeWorkflow
         if (!workflow) return
         workflow.changeTracker.initialState = REBUILT_STATE
@@ -306,7 +316,66 @@ describe('late custom node loading', () => {
     expect(log).not.toContain('AfterBatch:init')
   })
 
-  it('stops turning late extensions on once the editor that started them is gone', async () => {
+  it('lets late extensions add node definitions before their custom nodes, and registers them with the server ones', async () => {
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        addCustomNodeDefs: (defs) => {
+          log.push(`${name}:addCustomNodeDefs`)
+          defs[`${name}Custom`] = nodeDef(`${name}Custom`)
+        }
+      })
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(log).toEqual([
+      'A:init',
+      'A:addCustomNodeDefs',
+      'A:registerCustomNodes',
+      'reloadNodeDefs',
+      'A:setup',
+      'reloadCurrentWorkflow'
+    ])
+    expect(app.reloadNodeDefs).toHaveBeenCalledWith({
+      Server: nodeDef('Server'),
+      ACustom: nodeDef('ACustom')
+    })
+  })
+
+  it('counts node types as still arriving until the late extensions have finished starting', async () => {
+    let finishInit = () => {}
+    const initDone = new Promise<void>((resolve) => {
+      finishInit = resolve
+    })
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        init: () => initDone
+      })
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(isRegistered('A')).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(true)
+
+    finishInit()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(nodeTypesMayStillArrive()).toBe(false)
+    expect(log).toEqual([
+      'A:registerCustomNodes',
+      'reloadNodeDefs',
+      'A:setup',
+      'reloadCurrentWorkflow'
+    ])
+  })
+
+  it('stops turning late extensions on once the editor that started them is gone, and keeps them registered for the next one', async () => {
     const editor = new AbortController()
     serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
 
@@ -315,7 +384,50 @@ describe('late custom node loading', () => {
     await vi.advanceTimersByTimeAsync(5_000)
 
     expect(log).toEqual([])
-    expect(isRegistered('A')).toBe(false)
+    expect(isRegistered('A')).toBe(true)
+    expect(nodeTypesMayStillArrive()).toBe(false)
+  })
+
+  it('keeps a held extension registered, not turned on, when the editor that started it is gone', async () => {
+    useWorkspaceStore().spinner = true
+    const editor = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor(editor.signal)
+    await vi.advanceTimersByTimeAsync(1_000)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(isRegistered('A')).toBe(true)
+    expect(log).toEqual([])
+    expect(nodeTypesMayStillArrive()).toBe(false)
+  })
+
+  it('registers a late extension for the next editor when it arrives once the one that started it is gone', async () => {
+    const first = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor(first.signal)
+    first.abort()
+    await vi.advanceTimersByTimeAsync(500)
+    const { isFinished } = await startEditor()
+
+    expect(isFinished()).toBe(true)
+    expect(isRegistered('A')).toBe(true)
+    expect(log).toEqual([])
+  })
+
+  it('registers late extensions as they arrive when the editor is gone before the wait ends', async () => {
+    const editor = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    void loadExtensions(editor.signal)
+    await vi.advanceTimersByTimeAsync(1_000)
+    editor.abort()
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(isRegistered('A')).toBe(true)
+    expect(log).toEqual([])
     expect(nodeTypesMayStillArrive()).toBe(false)
   })
 })

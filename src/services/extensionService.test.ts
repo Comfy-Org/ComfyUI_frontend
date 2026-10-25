@@ -5,6 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { useExtensionService } from './extensionService'
 
@@ -505,6 +506,38 @@ describe('invokeStartupHook', () => {
 
     expect(after).toHaveBeenCalledOnce()
     expect(failures).toEqual([{ extension: bad, method: 'setup', error }])
+  })
+
+  it('returns an extension whose step cannot be read and runs the rest', async () => {
+    const error = new Error('getter')
+    const after = vi.fn()
+    const bad: ComfyExtension = {
+      name: 'bad',
+      get init(): never {
+        throw error
+      }
+    }
+
+    const failures = await useExtensionService().invokeStartupHook(
+      [bad, { name: 'after', init: after }],
+      'init'
+    )
+
+    expect(after).toHaveBeenCalledOnce()
+    expect(failures).toEqual([{ extension: bad, method: 'init', error }])
+  })
+
+  it('passes the step its arguments before the app', async () => {
+    const addCustomNodeDefs = vi.fn()
+    const defs = {}
+
+    await useExtensionService().invokeStartupHook(
+      [{ name: 'a', addCustomNodeDefs }],
+      'addCustomNodeDefs',
+      defs
+    )
+
+    expect(addCustomNodeDefs).toHaveBeenCalledWith(defs, useApp())
   })
 })
 
