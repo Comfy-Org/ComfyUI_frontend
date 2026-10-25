@@ -1215,6 +1215,17 @@ describe('naming the CPU server step', () => {
     expect(api.fileURL).toHaveBeenCalledTimes(2)
   })
 
+  it('moves the toast on from Creating to the next step while the scripts wait', async () => {
+    cpuServerAnswers('creating', 'building', 'created')
+    serve({ '/extensions/a/main.js': { ms: 500, extension: 'A' } })
+
+    await startEditor()
+    expect(startingText()).toContain('Creating the server')
+
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(startingText()).toContain('Building the server')
+  })
+
   it('imports nothing when the editor is gone before the first answer about the server', async () => {
     const editor = new AbortController()
     vi.mocked(workspaceApi.getDeploymentCpuServer).mockReturnValueOnce(
