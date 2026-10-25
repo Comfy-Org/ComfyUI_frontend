@@ -49,7 +49,7 @@ describe('extensionStore', () => {
   })
 
   describe('agent provenance', () => {
-    it('attributes explicit provenance or the agent. prefix, and nothing else', () => {
+    it('attributes explicit provenance or an agent.<pack>. prefix, and nothing else', () => {
       const store = useExtensionStore()
       store.registerExtension({
         name: 'custom.toolbar',
@@ -57,6 +57,8 @@ describe('extensionStore', () => {
       })
       store.registerExtension({ name: 'agent.cushions.toolbar' })
       store.registerExtension({ name: 'agentic.toolbar' })
+      store.registerExtension({ name: 'agent.tools' })
+      store.registerExtension({ name: 'agent..toolbar' })
       store.registerExtension({ name: 'custom.manual' })
 
       expect(store.agentExtensions.map((extension) => extension.name)).toEqual([
