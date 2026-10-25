@@ -366,6 +366,29 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getDeploymentCpuServer() sends GET /workspaces/:id/deployment/cpu-server and reads the step', async () => {
+      const data = { deployment_id: 'dep-1', cpu_server: 'building' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getDeploymentCpuServer('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment/cpu-server',
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getDeploymentCpuServer() rejects a step it does not know instead of reading it as one', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { cpu_server: 'exists' }
+      })
+
+      await expect(
+        workspaceApi.getDeploymentCpuServer('ws-1')
+      ).rejects.toThrow()
+    })
+
     it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
 

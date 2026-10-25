@@ -44,6 +44,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     clearDeployment: async () => {},
     setDefaultDeployment: async () => {},
     clearDefaultDeployment: async () => {},
+    getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),
     checkDeploymentCompatibility: async () => ({
       deployments: [],
       cloud: { missing_node_types: [] }
