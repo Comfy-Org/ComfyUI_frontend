@@ -51,3 +51,9 @@ refuse an update racing the metadata/content reads; reopening from the sidebar
 or retrying after synchronization is safe. A future server-owned filename or
 record-ID association can replace the candidate-path verification without
 changing the URL contract.
+
+Startup coordination lives with the [app URL loaders](../../src/composables/useSavedWorkflowUrlLoader.ts).
+[Navigation](../../src/platform/navigation/savedWorkflowLink.ts) validates the query,
+and an [authenticated read adapter](../../src/services/savedWorkflowService.ts)
+verifies the saved record and userdata. These are navigation and integration
+responsibilities rather than workflow-format domain logic.

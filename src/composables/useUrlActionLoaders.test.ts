@@ -84,14 +84,11 @@ vi.mock(
     useWorkspaceUrlLoader: mocks.useWorkspace
   })
 )
-vi.mock(
-  import('@/platform/workflow/management/composables/useSavedWorkflowUrlLoader'),
-  () => ({
-    useSavedWorkflowUrlLoader: () => ({
-      openSavedWorkflowFromUrl: mocks.loadSavedWorkflow
-    })
+vi.mock(import('@/composables/useSavedWorkflowUrlLoader'), () => ({
+  useSavedWorkflowUrlLoader: () => ({
+    openSavedWorkflowFromUrl: mocks.loadSavedWorkflow
   })
-)
+}))
 vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))

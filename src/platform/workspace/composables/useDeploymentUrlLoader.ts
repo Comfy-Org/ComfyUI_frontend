@@ -48,6 +48,32 @@ function linkQuery(routeQuery: LocationQueryRaw): LocationQueryRaw {
   )
 }
 
+type DeploymentLink =
+  | { kind: 'absent' }
+  | { kind: 'invalidEnvironment' }
+  | { kind: 'invalidTarget' }
+  | { kind: 'target'; workspaceId: string; deploymentId: string | null }
+
+function isInvalidStandardTarget(query: LocationQueryRaw) {
+  return (
+    'environment' in query &&
+    (readLinkValue(query.environment) !== 'standard' || 'deployment' in query)
+  )
+}
+
+function readDeploymentLink(query: LocationQueryRaw): DeploymentLink {
+  if (!('deployment' in query) && !('environment' in query))
+    return { kind: 'absent' }
+  if (isInvalidStandardTarget(query)) return { kind: 'invalidEnvironment' }
+  const workspaceId = readLinkValue(query.workspace)
+  if (!workspaceId) return { kind: 'invalidTarget' }
+  if ('environment' in query)
+    return { kind: 'target', workspaceId, deploymentId: null }
+  const deploymentId = readLinkValue(query.deployment)
+  if (!deploymentId) return { kind: 'invalidTarget' }
+  return { kind: 'target', workspaceId, deploymentId }
+}
+
 /**
  * The workspace this page switched to for a deployment link, taken once: the
  * next boot reads and drops it, so a switch that did not land is never tried
@@ -179,13 +205,9 @@ export function useDeploymentUrlLoader() {
   async function loadDeploymentFromUrl(): Promise<boolean> {
     const query = linkQuery(route.query)
     const switchedTo = takeSwitchTarget()
-    if (!('deployment' in query) && !('environment' in query)) return false
-
-    const standard = 'environment' in query
-    if (
-      standard &&
-      (readLinkValue(query.environment) !== 'standard' || 'deployment' in query)
-    ) {
+    const link = readDeploymentLink(query)
+    if (link.kind === 'absent') return false
+    if (link.kind === 'invalidEnvironment') {
       await stripParams(query, ['workspace', 'deployment', 'environment'])
       toast.error(t('deploymentSwitcher.linkEnvironmentInvalid'), {
         duration: 8000
@@ -193,16 +215,14 @@ export function useDeploymentUrlLoader() {
       return false
     }
 
-    const workspaceId = readLinkValue(query.workspace)
-    const deploymentId = readLinkValue(query.deployment)
-    if (!workspaceId || (!standard && !deploymentId) || isApiKeyLogin.value) {
+    if (link.kind === 'invalidTarget' || isApiKeyLogin.value) {
       await stripParams(query, ['deployment', 'environment'])
       return false
     }
-    if (activeWorkspace.value?.id !== workspaceId) {
-      return openWorkspace(query, workspaceId, switchedTo)
+    if (activeWorkspace.value?.id !== link.workspaceId) {
+      return openWorkspace(query, link.workspaceId, switchedTo)
     }
-    return pickDeployment(query, standard ? null : deploymentId)
+    return pickDeployment(query, link.deploymentId)
   }
 
   return {

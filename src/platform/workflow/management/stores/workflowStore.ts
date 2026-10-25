@@ -184,8 +184,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow: ComfyWorkflow,
     options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
-    if (options.isCurrent?.() === false)
-      throw new DOMException('Workflow load was replaced', 'AbortError')
+    assertCurrentContext(options.isCurrent)
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
     if (
@@ -196,17 +195,25 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     const graphState = useApp().rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
-    if (
-      graphState !== useApp().rootGraphOrUndefined?.state ||
-      options.isCurrent?.() === false
-    ) {
+    assertCurrentContext(options.isCurrent)
+    if (graphState !== useApp().rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
+    activateLoadedWorkflow(loadedWorkflow)
+    return loadedWorkflow
+  }
+
+  function assertCurrentContext(isCurrent?: () => boolean) {
+    if (isCurrent?.() === false)
+      throw new DOMException('Workflow load was replaced', 'AbortError')
+  }
+
+  function activateLoadedWorkflow(workflow: LoadedComfyWorkflow) {
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    activeWorkflow.value = loadedWorkflow
-    useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
+    activeWorkflow.value = workflow
+    useApp().canvas.bg_tint = workflow.tintCanvasBg
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
     if (historyIndex !== -1) {
       tabActivationHistory.value.splice(historyIndex, 1)
@@ -215,8 +222,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
       tabActivationHistory.value.shift()
     }
-
-    return loadedWorkflow
   }
 
   const getUnconflictedPath = (basePath: string): string => {

@@ -11,9 +11,9 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { fetchSavedWorkflow } from '@/platform/workflow/management/services/savedWorkflowService'
+import { fetchSavedWorkflow } from '@/services/savedWorkflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { readSavedWorkflowLink } from '@/platform/workflow/management/utils/savedWorkflowLink'
+import { readSavedWorkflowLink } from '@/platform/navigation/savedWorkflowLink'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -22,6 +22,11 @@ type SavedWorkflowUrlLoadStatus =
   | 'deferred'
   | 'loaded'
   | 'failed'
+
+type ValidSavedWorkflowLink = Extract<
+  ReturnType<typeof readSavedWorkflowLink>,
+  { status: 'valid' }
+>
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKFLOW
 
@@ -64,6 +69,74 @@ export function useSavedWorkflowUrlLoader() {
     }
   }
 
+  function readyContext() {
+    if (!isLoggedIn.value || workspaceStore.initState !== 'ready') return null
+    const userId = resolvedUserInfo.value?.id
+    const workspaceId = workspaceStore.activeWorkspace?.id
+    if (!userId || !workspaceId) return null
+    return { userId, workspaceId }
+  }
+
+  function hasSameIdentity(context: { userId: string; workspaceId: string }) {
+    return (
+      isLoggedIn.value &&
+      resolvedUserInfo.value?.id === context.userId &&
+      workspaceStore.activeWorkspace?.id === context.workspaceId
+    )
+  }
+
+  function hasSameBootEnvironment(bootDeploymentId: string | null) {
+    return (
+      (deploymentStore.bootDeployment?.deployment_id ?? null) ===
+        bootDeploymentId &&
+      !deploymentStore.isSwitching &&
+      !deploymentStore.changeSinceBoot
+    )
+  }
+
+  function matchesTarget(link: ValidSavedWorkflowLink, workspaceId: string) {
+    if (link.workspaceId && link.workspaceId !== workspaceId) return false
+    if (link.deploymentId)
+      return link.deploymentId === deploymentStore.bootDeployment?.deployment_id
+    return !link.environment || deploymentStore.bootDeployment === null
+  }
+
+  async function openSavedDocument(
+    path: string,
+    isCurrent: () => boolean
+  ): Promise<SavedWorkflowUrlLoadStatus> {
+    if (!isCurrent()) return 'failed'
+    await workflowStore.loadWorkflows()
+    if (!isCurrent()) return 'failed'
+    const workflow = workflowStore.getWorkflowByPath(path)
+    if (!workflow || !workflow.isPersisted) {
+      toast.error(t('workflowService.privateLinkFileUnavailable'))
+      return 'failed'
+    }
+    if (!(await workflowService.openWorkflow(workflow, { isCurrent }))) {
+      toast.error(t('workflowService.privateLinkUnavailable'))
+      return 'failed'
+    }
+    return 'loaded'
+  }
+
+  async function readAndOpen(
+    workflowId: string,
+    controller: AbortController,
+    isCurrent: () => boolean
+  ): Promise<SavedWorkflowUrlLoadStatus> {
+    const saved = await fetchSavedWorkflow(workflowId, controller.signal)
+    if (saved.ok) return openSavedDocument(saved.path, isCurrent)
+    if (saved.reason === 'cancelled') return 'failed'
+    const message = {
+      unavailable: 'workflowService.privateLinkUnavailable',
+      file_unavailable: 'workflowService.privateLinkFileUnavailable',
+      file_mismatch: 'workflowService.privateLinkFileMismatch'
+    } as const
+    toast.error(t(message[saved.reason]))
+    return 'failed'
+  }
+
   async function load(): Promise<SavedWorkflowUrlLoadStatus> {
     const link = readSavedWorkflowLink(linkQuery())
     if (link.status === 'absent') return 'not-present'
@@ -72,42 +145,20 @@ export function useSavedWorkflowUrlLoader() {
       await clearIntent()
       return 'failed'
     }
-    const userId = resolvedUserInfo.value?.id
-    const workspaceId = workspaceStore.activeWorkspace?.id
-    if (
-      !isLoggedIn.value ||
-      !userId ||
-      !workspaceId ||
-      workspaceStore.initState !== 'ready'
-    )
-      return 'deferred'
+    const context = readyContext()
+    if (!context) return 'deferred'
     const bootDeploymentId =
       deploymentStore.bootDeployment?.deployment_id ?? null
-    const {
-      workflowId,
-      workspaceId: targetWorkspaceId,
-      deploymentId: targetDeploymentId,
-      environment
-    } = link
     const controller = new AbortController()
-    function isCurrent() {
+    const isCurrent = () => {
       const current = readSavedWorkflowLink(linkQuery())
       return (
         !controller.signal.aborted &&
-        isLoggedIn.value &&
-        resolvedUserInfo.value?.id === userId &&
-        workspaceStore.activeWorkspace?.id === workspaceId &&
-        (!targetWorkspaceId || targetWorkspaceId === workspaceId) &&
-        (!targetDeploymentId ||
-          targetDeploymentId ===
-            deploymentStore.bootDeployment?.deployment_id) &&
-        (!environment || deploymentStore.bootDeployment === null) &&
-        (deploymentStore.bootDeployment?.deployment_id ?? null) ===
-          bootDeploymentId &&
-        !deploymentStore.isSwitching &&
-        !deploymentStore.changeSinceBoot &&
+        hasSameIdentity(context) &&
+        matchesTarget(link, context.workspaceId) &&
+        hasSameBootEnvironment(bootDeploymentId) &&
         current.status === 'valid' &&
-        current.workflowId === workflowId
+        current.workflowId === link.workflowId
       )
     }
     if (!isCurrent()) {
@@ -128,30 +179,7 @@ export function useSavedWorkflowUrlLoader() {
       { flush: 'sync' }
     )
     try {
-      const saved = await fetchSavedWorkflow(link.workflowId, controller.signal)
-      if (!saved.ok) {
-        if (saved.reason === 'cancelled') return 'failed'
-        const message = {
-          unavailable: 'workflowService.privateLinkUnavailable',
-          file_unavailable: 'workflowService.privateLinkFileUnavailable',
-          file_mismatch: 'workflowService.privateLinkFileMismatch'
-        } as const
-        toast.error(t(message[saved.reason]))
-        return 'failed'
-      }
-      if (!isCurrent()) return 'failed'
-      await workflowStore.loadWorkflows()
-      if (!isCurrent()) return 'failed'
-      const workflow = workflowStore.getWorkflowByPath(saved.path)
-      if (!workflow || !workflow.isPersisted) {
-        toast.error(t('workflowService.privateLinkFileUnavailable'))
-        return 'failed'
-      }
-      if (!(await workflowService.openWorkflow(workflow, { isCurrent }))) {
-        toast.error(t('workflowService.privateLinkUnavailable'))
-        return 'failed'
-      }
-      return 'loaded'
+      return await readAndOpen(link.workflowId, controller, isCurrent)
     } catch (error) {
       toast.error(t('workflowService.privateLinkUnavailable'))
       reportError(error, {
