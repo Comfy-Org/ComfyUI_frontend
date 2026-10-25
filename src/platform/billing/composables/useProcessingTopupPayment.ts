@@ -14,7 +14,6 @@ import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 interface ProcessingTopupRead {
   checkouts: HostedTopupCheckout[]
   sessionFailures: unknown[]
-  unreadSession: boolean
 }
 
 async function readProcessingTopupCheckouts(
@@ -29,7 +28,6 @@ async function readProcessingTopupCheckouts(
     )
     const checkouts: HostedTopupCheckout[] = []
     const sessionFailures: unknown[] = []
-    let unreadSession = false
     reads.forEach((read, index) => {
       if (read.status === 'fulfilled') {
         checkouts.push(read.value)
@@ -38,9 +36,8 @@ async function readProcessingTopupCheckouts(
       sessionFailures.push(read.reason)
       const known = lastKnown.get(listed[index].session_id)
       if (known) checkouts.push(known)
-      else unreadSession = true
     })
-    return { ok: true, read: { checkouts, sessionFailures, unreadSession } }
+    return { ok: true, read: { checkouts, sessionFailures } }
   } catch (cause) {
     return { ok: false, cause }
   }
@@ -99,14 +96,14 @@ export function useProcessingTopupPayment(
       return
     }
 
-    const { checkouts, sessionFailures, unreadSession } = outcome.read
+    const { checkouts, sessionFailures } = outcome.read
     for (const cause of sessionFailures) reportCheckoutReadFailure(cause)
     knownCheckouts = new Map(
       checkouts.map((known) => [known.session_id, known])
     )
     const servedPayment = processingTopupPayment(checkouts)
     payment.value =
-      servedPayment !== null && unreadSession
+      servedPayment !== null && sessionFailures.length > 0
         ? { paymentAmountCents: null }
         : servedPayment
   }

@@ -371,7 +371,7 @@ describe('useProcessingTopupPayment', () => {
     expect(screen.getByRole('status')).toHaveTextContent('2500')
   })
 
-  it('keeps the processing notice when a return detail read fails', async () => {
+  it('keeps the processing notice without its amount when a return detail read fails', async () => {
     enableProcessingRead()
     serveCheckout('payment_processing')
     renderPayment(ref(true))
@@ -390,7 +390,38 @@ describe('useProcessingTopupPayment', () => {
       })
     )
     await nextTick()
-    expect(screen.getByRole('status')).toHaveTextContent('2500')
+    expect(screen.getByRole('status')).toHaveTextContent('withheld')
+  })
+
+  it('withholds the amount when a cached open sibling cannot be refreshed', async () => {
+    enableProcessingRead()
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_bank'), listed('cs_other')],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation((sessionId) =>
+      Promise.resolve(
+        sessionId === 'cs_other'
+          ? checkout('open', null, sessionId)
+          : checkout('payment_processing', 2500, sessionId)
+      )
+    )
+    renderPayment(ref(true))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+
+    const cause = new WorkspaceApiError('bad gateway', 502)
+    vi.mocked(workspaceApi.getTopupCheckout).mockImplementation((sessionId) =>
+      sessionId === 'cs_other'
+        ? Promise.reject(cause)
+        : Promise.resolve(checkout('payment_processing', 2500, sessionId))
+    )
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('withheld')
+    )
   })
 
   it('drops the notice when the processing checkout is fulfilled while another detail fails', async () => {
