@@ -1494,6 +1494,36 @@ describe('LiveGraphApplier', () => {
     }
   )
 
+  it('keeps a local colour, shape and property when a frame edits only the title (FE-3494)', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        sourceNode(1, {
+          color: '#232',
+          bgcolor: '#353',
+          shape: LiteGraph.CARD_SHAPE,
+          properties: { mode: 'document' }
+        })
+      ],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    Object.assign(node, { color: '#322', bgcolor: '#533' })
+    node.shape = LiteGraph.BOX_SHAPE
+    node.setProperty('mode', 'local')
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('title', 'Renamed'))
+
+    expect(node).toMatchObject({
+      title: 'Renamed',
+      color: '#322',
+      bgcolor: '#533',
+      shape: LiteGraph.BOX_SHAPE,
+      properties: { mode: 'local' }
+    })
+  })
+
   it('replaces live flags with the document flags but keeps a live placement ghost', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1, { flags: { pinned: true } })],
@@ -1584,7 +1614,7 @@ describe('LiveGraphApplier', () => {
         {
           nodes: new Map([['2', 'delete']]),
           widgets: new Map(),
-          resyncNodes: new Set(),
+          resyncNodes: new Map(),
           links: new Set()
         },
         { actor: 'agent:inner', opIds: ['op-inner'] }
