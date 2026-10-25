@@ -67,10 +67,7 @@ export interface FrameChanges {
   nodes: ReadonlyMap<string, NodeChange>
   /** Widget names edited per node, or `'all'` when the storage was replaced. */
   widgets: ReadonlyMap<string, ReadonlySet<string> | 'all'>
-  /**
-   * Synced node-map keys edited per node. Only these are mirrored onto the
-   * live node, so a local edit to a key the frame did not touch survives.
-   */
+  /** Synced node-map keys edited per node. */
   resyncNodes: ReadonlyMap<string, ReadonlySet<string>>
   links: ReadonlySet<string>
 
