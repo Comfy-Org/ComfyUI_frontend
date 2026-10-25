@@ -214,6 +214,12 @@ function useBillingCapabilitiesInternal() {
       resolvedResponse.value?.payment_recovery_available ?? false
     )
   )
+  const hasParkedBillingOperation = computed(() =>
+    receiveServerFact(
+      'has_parked_billing_operation',
+      resolvedResponse.value?.has_parked_billing_operation === true
+    )
+  )
   const runWorkflowsDenial = computed(() =>
     receiveServerFact(
       'denied_reasons.can_run_workflows',
@@ -571,6 +577,7 @@ function useBillingCapabilitiesInternal() {
     planKind,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
+    hasParkedBillingOperation,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,

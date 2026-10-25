@@ -1645,6 +1645,16 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
   })
 
+  it('reports whether an explicit resubscribe left the socket', () => {
+    const { transport, bridge } = wire()
+    bridge.subscribe(WORKFLOW_ID)
+
+    expect(bridge.resubscribe()).toBe(false)
+
+    transport.open = true
+    expect(bridge.resubscribe()).toBe(true)
+  })
+
   it.for([
     {
       label: 'an explicit resubscribe',

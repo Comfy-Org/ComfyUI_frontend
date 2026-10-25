@@ -23,6 +23,9 @@ export function projectBillingCapabilities(
     ...(snapshot.planKind === undefined
       ? {}
       : { plan_kind: snapshot.planKind }),
+    ...(snapshot.hasParkedBillingOperation === undefined
+      ? {}
+      : { has_parked_billing_operation: snapshot.hasParkedBillingOperation }),
     ...(snapshot.paymentRecoveryAvailable === undefined
       ? {}
       : { payment_recovery_available: snapshot.paymentRecoveryAvailable })

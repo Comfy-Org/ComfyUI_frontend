@@ -87,4 +87,25 @@ describe('projectBillingCapabilities', () => {
       projectBillingCapabilities({ ...SNAPSHOT, planKind: undefined })
     ).not.toHaveProperty('plan_kind')
   })
+
+  it.for([true, false])(
+    'passes has_parked_billing_operation %s through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({
+          ...SNAPSHOT,
+          hasParkedBillingOperation: served
+        }).has_parked_billing_operation
+      ).toBe(served)
+    }
+  )
+
+  it('omits has_parked_billing_operation when the snapshot has no value', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        hasParkedBillingOperation: undefined
+      })
+    ).not.toHaveProperty('has_parked_billing_operation')
+  })
 })

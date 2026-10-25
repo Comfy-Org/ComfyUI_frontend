@@ -17,6 +17,8 @@ import type {
   CreateTopupResponse,
   CreateWorkspaceRequest,
   CurrentWorkspaceResponse,
+  DeploymentCompatibility,
+  DeploymentCompatibilityRequest,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -47,12 +49,15 @@ import type {
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
+  WorkspaceDeploymentCpuServer,
   WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
+  zDeploymentCompatibility,
   zRetentionAcceptance,
-  zRetentionFlowResponse
+  zRetentionFlowResponse,
+  zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
 import type { AxiosInstance } from 'axios'
 import axios from 'axios'
@@ -171,6 +176,12 @@ export type BillingRecoveryAction = NonNullable<
 
 export type { WorkspaceDeployment }
 export type { WorkspaceDeploymentList }
+
+export type { DeploymentCompatibility }
+
+export type { WorkspaceDeploymentCpuServer }
+
+const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
 interface GetBillingEventsParams {
   page?: number
@@ -427,6 +438,46 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'clearDefaultDeployment')
+    }
+  },
+
+  /**
+   * Which step the CPU server of the deployment this browser runs on is on.
+   * GET /api/workspaces/:id/deployment/cpu-server
+   */
+  async getDeploymentCpuServer(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentCpuServer> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment/cpu-server`),
+        { ...auth, timeout: CPU_SERVER_READ_TIMEOUT_MS }
+      )
+      return zWorkspaceDeploymentCpuServer.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'getDeploymentCpuServer')
+    }
+  },
+
+  /**
+   * Ask which of these node types each deployment, and Comfy Cloud, lacks.
+   * POST /api/workspaces/:id/deployments/compatibility
+   */
+  async checkDeploymentCompatibility(
+    workspaceId: WorkspaceId,
+    nodeTypes: string[]
+  ): Promise<DeploymentCompatibility> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments/compatibility`),
+        { node_types: nodeTypes } satisfies DeploymentCompatibilityRequest,
+        auth
+      )
+      return zDeploymentCompatibility.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'checkDeploymentCompatibility')
     }
   },
 

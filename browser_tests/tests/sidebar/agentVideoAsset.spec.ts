@@ -43,9 +43,17 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
           contentType: 'video/mp4'
         })
     )
+    await comfyPage.page.route(
+      /\/api\/view\?(.*&)?filename=blake3%3A2{64}(&.*)?$/,
+      async (route) =>
+        await route.fulfill({
+          path: assetPath('workflowInMedia/workflow.mp4'),
+          contentType: 'video/mp4'
+        })
+    )
   })
 
-  test('plays the video from its own content URL, not a black tile', async ({
+  test('plays the video from its content hash, not a black tile', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -58,7 +66,9 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
     await expect(video).toBeVisible()
     await expect
       .poll(() => video.evaluate((el: HTMLVideoElement) => el.currentSrc))
-      .toContain(`/api/assets/${AGENT_VIDEO_ASSET.id}/content`)
+      .toContain(
+        `/api/view?filename=${encodeURIComponent(AGENT_VIDEO_ASSET.hash ?? '')}`
+      )
     await expect
       .poll(() => video.evaluate((el: HTMLVideoElement) => el.videoWidth))
       .toBeGreaterThan(0)

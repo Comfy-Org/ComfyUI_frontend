@@ -14,6 +14,10 @@ const command = vi.mockObject<TopupCommand>(
     createTopupCheckout: async () => ({
       status: 'error',
       code: 'NOT_AVAILABLE'
+    }),
+    createInteractiveTopup: async () => ({
+      status: 'error',
+      code: 'NOT_AVAILABLE'
     })
   },
   { spy: true }

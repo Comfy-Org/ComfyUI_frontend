@@ -152,6 +152,10 @@ export function useErrorOverlayState() {
     allErrorGroups.value.some((group) => group.severity === 'error')
   )
 
+  const hasMissingNodes = computed(() =>
+    allErrorGroups.value.some((group) => group.type === 'missing_node')
+  )
+
   const totalErrorCount = computed(() =>
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
@@ -207,6 +211,7 @@ export function useErrorOverlayState() {
 
   return {
     hasError,
+    hasMissingNodes,
     isVisible,
     overlayMessage,
     overlayTitle
