@@ -161,12 +161,6 @@ describe('ReplyAssetGroup', () => {
   })
 
   it('PM-1895 keeps the playing tile badge-free when another tile pauses', async () => {
-    const play = vi
-      .spyOn(HTMLMediaElement.prototype, 'play')
-      .mockResolvedValue()
-    const pause = vi
-      .spyOn(HTMLMediaElement.prototype, 'pause')
-      .mockImplementation(() => {})
     const second: ReplyAsset = {
       url: 'https://x/clip2.mp4',
       filename: 'clip2.mp4',
@@ -192,9 +186,6 @@ describe('ReplyAssetGroup', () => {
     expect(
       within(playingTile).getByTestId('reply-video-affordance')
     ).toBeInTheDocument()
-
-    play.mockRestore()
-    pause.mockRestore()
   })
 
   it('PM-1895 keeps the play badge when the browser refuses the preview', async () => {
