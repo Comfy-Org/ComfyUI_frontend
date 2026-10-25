@@ -646,6 +646,32 @@ describe('late custom node loading', () => {
     expect(useToast().toasts).toEqual([])
   })
 
+  it('leaves the next editor holding its late extensions when a gone editor finishes turning its own on', async () => {
+    vi.stubGlobal('registerTestPack', (name: string) =>
+      useExtensionService().registerExtension({
+        ...recording(name),
+        init: async () => {
+          if (name === 'A') await new Promise((done) => setTimeout(done, 4_000))
+          log.push(`${name}:init`)
+        }
+      })
+    )
+    const gone = new AbortController()
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+    await startEditor(gone.signal)
+    await vi.advanceTimersByTimeAsync(2_000)
+    gone.abort()
+
+    serve({ '/extensions/b/main.js': { ms: 5_000, extension: 'B' } })
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(log).toContain('A:init')
+    expect(nodeTypesMayStillArrive()).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(log).toContain('B:setup')
+  })
+
   it('shows a starting toast that counts the seconds and names the packs still loading, then says they are ready', async () => {
     serve({
       '/extensions/fast/main.js': { ms: 500, extension: 'Fast' },
