@@ -42,6 +42,7 @@ const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
   workflowId: 'doc-123',
+  terminal: null,
   updatesApplied: 1,
   lastFrameType: 'doc_update',
   outcomes: {
