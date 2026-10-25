@@ -60,6 +60,8 @@ function useDeploymentUrlLoader(): ReturnType<
       messages: {
         en: {
           deploymentSwitcher: {
+            linkEnvironmentInvalid:
+              'This environment link is invalid. Choose either the standard environment or one custom deployment.',
             linkRefused: "Couldn't open this deployment",
             linkTimedOut:
               'This deployment took too long to open. Try the link again.',
@@ -112,6 +114,54 @@ describe('useDeploymentUrlLoader', () => {
       kind: 'picked'
     })
   })
+
+  it('selects the standard environment and keeps the workflow for the reload', async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-1',
+      environment: 'standard',
+      workflow: 'saved-workflow'
+    }
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(true)
+
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith(null)
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { workflow: 'saved-workflow' }
+    })
+  })
+
+  it('refuses conflicting custom and standard environment destinations', async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-1',
+      deployment: 'dep-1',
+      environment: 'standard',
+      workflow: 'saved-workflow'
+    }
+
+    await expect(
+      useDeploymentUrlLoader().loadDeploymentFromUrl()
+    ).resolves.toBe(false)
+
+    expect(useDeploymentPickStore().pickFromLink).not.toHaveBeenCalled()
+    expect(useToast().error).toHaveBeenCalledWith(
+      'This environment link is invalid. Choose either the standard environment or one custom deployment.',
+      { duration: 8000 }
+    )
+  })
+
+  it.for([null, '', 'unknown', ['standard', 'standard']])(
+    'refuses invalid standard environment parameter %j',
+    async (environment) => {
+      mockRouteQuery.value = { workspace: 'ws-1', environment }
+
+      await expect(
+        useDeploymentUrlLoader().loadDeploymentFromUrl()
+      ).resolves.toBe(false)
+      expect(useDeploymentPickStore().pickFromLink).not.toHaveBeenCalled()
+    }
+  )
 
   it('does nothing when the URL has no deployment link', async () => {
     mockRouteQuery.value = { workflow: 'keep-me' }

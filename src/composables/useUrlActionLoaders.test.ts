@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
   loadDeployment: vi.fn(async (): Promise<boolean> => false),
   loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
+  loadSavedWorkflow: vi.fn(async () => 'not-present' as const),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -81,6 +82,14 @@ vi.mock(
   import('@/platform/workspace/composables/useWorkspaceUrlLoader'),
   () => ({
     useWorkspaceUrlLoader: mocks.useWorkspace
+  })
+)
+vi.mock(
+  import('@/platform/workflow/management/composables/useSavedWorkflowUrlLoader'),
+  () => ({
+    useSavedWorkflowUrlLoader: () => ({
+      openSavedWorkflowFromUrl: mocks.loadSavedWorkflow
+    })
   })
 )
 vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
@@ -236,12 +245,23 @@ describe('useUrlActionLoaders', () => {
 
     expect(mocks.loadDeployment).toHaveBeenCalledOnce()
     expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
+    expect(mocks.loadSavedWorkflow).toHaveBeenCalledOnce()
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadAssets).toHaveBeenCalledOnce()
+  })
+
+  it('opens private workflow content only after the workspace loader has settled', async () => {
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadSavedWorkflow).toHaveBeenCalledOnce()
+    expect(mocks.loadSavedWorkflow.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mocks.loadWorkspace.mock.invocationCallOrder[0]
+    )
   })
 
   it('opens the requested workspace before any other loader reads the URL', async () => {
@@ -292,6 +312,7 @@ describe('useUrlActionLoaders', () => {
     await runUrlActionLoaders()
 
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
+    expect(mocks.loadSavedWorkflow).not.toHaveBeenCalled()
     expect(router.currentRoute.value.query).toEqual({
       workspace: 'w-2',
       deployment: 'dep-1',
@@ -357,6 +378,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.loadSavedWorkflow).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()

@@ -12549,6 +12549,10 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
+     * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
+     */
+    private_workflow_links_enabled?: boolean
+    /**
      * Present when the caller passes the agent-in-app-experience rollout gate that /api/agent* also enforces; the frontend mounts the agent panel only when it is. Absent when the gate is off and for unauthenticated requests. It answers the rollout question only: it does not reflect a scoped OAuth token's agent scope or whether the agent service is currently reachable.
      */
     agent?: {

@@ -373,6 +373,32 @@ describe('useWorkflowStore', () => {
   })
 
   describe('openWorkflow', () => {
+    it('does not activate or add a tab when its context changes during loading', async () => {
+      const retained = store.createTemporary('dirty.json', defaultGraph)
+      await store.openWorkflow(retained)
+      retained.isModified = true
+      const currentDocument = store.activeWorkflow
+      const incoming = new ComfyWorkflow({
+        path: 'workflows/private.json',
+        modified: 1,
+        size: 1
+      })
+      let current = true
+      vi.mocked(api.getUserData).mockImplementation(async () => {
+        current = false
+        return new Response(defaultGraphJSON)
+      })
+
+      await expect(
+        store.openWorkflow(incoming, { isCurrent: () => current })
+      ).rejects.toMatchObject({ name: 'AbortError' })
+      expect(store.activeWorkflow).toBe(currentDocument)
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        retained.path
+      ])
+      expect(retained.isModified).toBe(true)
+    })
+
     it('should load and open a temporary workflow', async () => {
       // Create a test workflow
       const workflow = store.createTemporary('test.json')

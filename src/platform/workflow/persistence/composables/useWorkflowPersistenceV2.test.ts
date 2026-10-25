@@ -97,13 +97,6 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
   )
 }))
 
-vi.mock<unknown>(
-  import('@/platform/navigation/preservedQueryNamespaces'),
-  () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
-  })
-)
-
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -630,6 +623,14 @@ describe('useWorkflowPersistenceV2', () => {
       [
         'template intent preserved across /user-select redirect',
         () => (preservedQueryMocks.payloads.template = { template: 'id' })
+      ],
+      [
+        'private workflow param in URL',
+        () => (routeMocks.query = { workflow: 'id' })
+      ],
+      [
+        'private workflow intent preserved across sign-in',
+        () => (preservedQueryMocks.payloads.workflow = { workflow: 'id' })
       ]
     ] as const)(
       'reports url-intent, not fresh, with %s',

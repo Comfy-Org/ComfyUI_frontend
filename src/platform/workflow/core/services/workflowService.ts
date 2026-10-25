@@ -474,19 +474,25 @@ export const useWorkflowService = () => {
         workflow.changeTracker?.prepareForSave()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
-          /* clean=*/ true,
-          /* restore_view=*/ true,
+          true,
+          true,
           workflow,
           {
             checkForRerouteMigration: false,
             deferWarnings: true,
             skipAssetScans: !loadFromRemote && !options.force,
-            workflowNavigationId: navigationIntentId
+            workflowNavigationId: navigationIntentId,
+            ...(options.isCurrent ? { isCurrent: options.isCurrent } : {})
           }
         )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           await restoreRetainedWorkflow(workflow)
+          return false
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
         }
         showPendingWarnings(undefined, {
@@ -724,11 +730,17 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    isCurrent?: () => boolean
   ) => {
+    if (isCurrent?.() === false) return
     const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(value, workflowData, shareId)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    await activateLoadedWorkflow(value, workflowData, shareId, isCurrent)
+    if (
+      graphState !== useApp().rootGraphOrUndefined?.state ||
+      isCurrent?.() === false
+    )
+      return
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
@@ -737,7 +749,8 @@ export const useWorkflowService = () => {
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string
+    shareId?: string,
+    isCurrent?: () => boolean
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
@@ -745,12 +758,15 @@ export const useWorkflowService = () => {
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
 
+    function openInCurrentContext(workflow: ComfyWorkflow) {
+      return isCurrent
+        ? workflowStore.openWorkflow(workflow, { isCurrent })
+        : workflowStore.openWorkflow(workflow)
+    }
+
     function activateRunErrors(workflow: ComfyWorkflow) {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
     }
-
-    // Determine the initial app mode for fresh loads from serialized state.
-    // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
     useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
@@ -761,17 +777,9 @@ export const useWorkflowService = () => {
     }
 
     if (value === null || typeof value === 'string') {
-      // Check if a persisted workflow with this path exists
       if (value) {
         const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
-
-        // Reuse an existing workflow when this is a restoration case
-        // (persisted but currently unloaded) or an idempotent repeated load
-        // of the currently active same-path workflow.
-        //
-        // This prevents accidental duplicate tabs when startup/load flows
-        // invoke loadGraphData more than once for the same workflow name.
         const existingId = existingWorkflow?.activeState?.id
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
@@ -788,13 +796,10 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow =
-            await workflowStore.openWorkflow(existingWorkflow)
+          const loadedWorkflow = await openInCurrentContext(existingWorkflow)
           if (graphState !== useApp().rootGraphOrUndefined?.state) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
-            // Prefer the file's linearMode over the draft's since the file
-            // is the authoritative saved state.
             loadedWorkflow.initialMode =
               linearModeToAppMode(
                 loadedWorkflow.initialState.extra?.linearMode
@@ -825,13 +830,13 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
+      const loadedWorkflow = await openInCurrentContext(tempWorkflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
-    const loadedWorkflow = await workflowStore.openWorkflow(value)
+    const loadedWorkflow = await openInCurrentContext(value)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {

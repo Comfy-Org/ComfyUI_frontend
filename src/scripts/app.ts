@@ -1202,22 +1202,22 @@ export class ComfyApp implements IComfyApp {
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false,
-      workflowNavigationId
+      workflowNavigationId,
+      isCurrent
     } = options
-    useWorkflowService().beforeLoadNewGraph(clean)
-    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-
-    ChangeTracker.isLoadingGraph = true
-    let reset_invalid_values = false
-    const missingNodeTypes: MissingNodeType[] = []
-    try {
+    if (isCurrent?.() === false) return undefined
+    async function cancelLoad(): Promise<undefined> {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      return undefined
+    }
+    const resetCurrentGraph = () => {
+      ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
-        // Only reset candidates; preserve UI state (fileSizes, etc.)
-        // so cached results restored by showPendingWarnings still display sizes.
-        // Abort any in-flight verification from the outgoing workflow so a late
-        // result cannot repopulate the store after we've switched workflows.
         useMissingModelStore().createVerificationAbortController().abort()
         useMissingMediaStore().createVerificationAbortController().abort()
         useMissingModelStore().setMissingModels([])
@@ -1228,17 +1228,19 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (clean) {
-        // Reset canvas context before configuring a new graph so subgraph UI
-        // state from the previous workflow cannot leak into the newly loaded
-        // one, and so `clean()` can clear the root graph even when the user is
-        // currently inside a subgraph.
         this.canvas.setGraph(this.rootGraph)
 
         withGraphIntentSource('load', () => this.clean())
       }
+    }
+    if (!isCurrent) useWorkflowService().beforeLoadNewGraph(clean)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    if (isCurrent?.() === false) return cancelLoad()
 
-      // Use explicit validation instead of falsy check to avoid replacing
-      // valid but falsy values (empty objects, 0, false, etc.)
+    let reset_invalid_values = false
+    const missingNodeTypes: MissingNodeType[] = []
+    try {
+      if (!isCurrent) resetCurrentGraph()
       if (
         !graphData ||
         typeof graphData !== 'object' ||
@@ -1253,15 +1255,9 @@ export class ComfyApp implements IComfyApp {
       if (useSettingStore().get('Comfy.Validation.Workflows')) {
         const { graphData: validatedGraphData } =
           await useWorkflowValidation().validateWorkflow(graphData)
-
-        // If the validation failed, use the original graph data.
-        // Ideally we should not block users from loading the workflow.
+        if (isCurrent?.() === false) return cancelLoad()
         graphData = validatedGraphData ?? graphData
       }
-      // Only show the reroute migration warning if the workflow does not have native
-      // reroutes. Merging reroute network has great complexity, and it is not supported
-      // for now.
-      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
       if (
         checkForRerouteMigration &&
         graphData.version === 0.4 &&
@@ -1290,18 +1286,23 @@ export class ComfyApp implements IComfyApp {
         )
       }
 
-      useSubgraphService().loadSubgraphs(graphData)
+      if (!isCurrent) useSubgraphService().loadSubgraphs(graphData)
 
       await useExtensionService().invokeExtensionsAsync(
         'beforeConfigureGraph',
         graphData,
         missingNodeTypes
       )
+      if (isCurrent?.() === false) return cancelLoad()
 
       const nodeReplacementStore = useNodeReplacementStore()
       await nodeReplacementStore.load()
-
-      // Collect missing node types from all nodes (root + subgraphs)
+      if (isCurrent?.() === false) return cancelLoad()
+      if (isCurrent) {
+        useWorkflowService().beforeLoadNewGraph(clean)
+        resetCurrentGraph()
+        useSubgraphService().loadSubgraphs(graphData)
+      }
       const collectMissingNodes = (
         nodes: readonly FlattenableWorkflowNode[],
         pathPrefix: string = '',
@@ -1316,8 +1317,6 @@ export class ComfyApp implements IComfyApp {
         }
         for (const n of nodes) {
           if (!(n.type in LiteGraph.registered_node_types)) {
-            // Always sanitize so configure() can handle unregistered types,
-            // but only report as missing if the node is active.
             const isMuted =
               n.mode === LGraphEventMode.NEVER ||
               n.mode === LGraphEventMode.BYPASS
@@ -1368,16 +1367,6 @@ export class ComfyApp implements IComfyApp {
         }
       }
     } catch (error) {
-      // This try wraps everything between `beforeLoadGraph` and
-      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
-      // cloning, `validateWorkflow`, reroute-migration inspection, a
-      // malformed subgraph definition, a `beforeConfigureGraph` extension
-      // hook throwing, or a node-replacement load failure. Any of those
-      // happens before `rootGraph.configure` and so reaches neither the
-      // `afterConfigureGraph` success path nor the `onGraphLoadError` catch
-      // below. Left unhandled, that would both reject silently and leak any
-      // suppression/loading-state a `beforeLoadGraph` listener opened for
-      // this load, since nothing ever notifies it the load ended.
       try {
         await this.reportGraphLoadFailure(error)
       } finally {
@@ -1399,14 +1388,11 @@ export class ComfyApp implements IComfyApp {
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
-        // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
         } else if (savedCameraState) {
           this.canvas.ds.offset = savedCameraState.offset
           this.canvas.ds.scale = savedCameraState.scale
-
-          // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
           if (
             this.canvas.visible_area.width &&
@@ -1428,18 +1414,15 @@ export class ComfyApp implements IComfyApp {
     let reconcileResourceErrors: (() => void) | undefined
     let resourceScanLoadCompleted = false
     try {
+      if (isCurrent?.() === false) {
+        await cancelLoad()
+        return false
+      }
       try {
         this.rootGraph.configure(graphData as ISerialisedGraph)
-
-        // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
           this.rootGraph.extra.workflowRendererVersion
-
-        // Scale main graph
         ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
-
-        // Scale all subgraphs that were loaded with the workflow
-        // Use original main graph renderer as fallback (not the modified one)
         for (const subgraph of this.rootGraph.subgraphs.values()) {
           ensureCorrectLayoutScale(
             subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
@@ -1460,7 +1443,8 @@ export class ComfyApp implements IComfyApp {
             canvasScheduler.schedule({
               key: 'graph-load-camera',
               element: this.canvasEl,
-              isCurrent: () => this.pendingCamera?.id === loadId,
+              isCurrent: () =>
+                this.pendingCamera?.id === loadId && isCurrent?.() !== false,
               run: () => {
                 const viewport = measureViewportFromElement(this.canvasEl)
                 applyViewport(
@@ -1480,12 +1464,11 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
-        // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
       const configuredGraphState = this.rootGraph.state
       const isCurrentGraphLoad = () =>
-        configuredGraphState === this.rootGraph.state
+        configuredGraphState === this.rootGraph.state && isCurrent?.() !== false
       const cancelReplacedLoad = () =>
         useExtensionService().invokeExtensionsAsync(
           'onGraphLoadError',
@@ -1502,8 +1485,6 @@ export class ComfyApp implements IComfyApp {
           snapPoint(size, snapTo, 'ceil')
           node.setSize(size)
           if (node.widgets) {
-            // If you break something in the backend and want to patch workflows in the frontend
-            // This is the place to do this
             for (const widget of node.widgets) {
               if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
                 if (widget.name == 'sampler_name') {
@@ -1557,7 +1538,7 @@ export class ComfyApp implements IComfyApp {
       )
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
-        return undefined
+        return isCurrent?.() === false ? false : undefined
       }
 
       const effectiveShareId =
@@ -1578,29 +1559,23 @@ export class ComfyApp implements IComfyApp {
         await useWorkflowService().afterLoadNewGraph(
           workflow,
           this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-          effectiveShareId
+          effectiveShareId,
+          isCurrent
         )
       } catch (error) {
         if (isCurrentGraphLoad()) throw error
       }
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
-        return undefined
+        return isCurrent?.() === false ? false : undefined
       }
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
-        return undefined
+        return isCurrent?.() === false ? false : undefined
       }
       ChangeTracker.isLoadingGraph = false
-      // Capture the workflow this load activated before the asset-scan awaits
-      // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
-
-      // Drop missing-node entries whose enclosing subgraph is
-      // muted/bypassed. The initial JSON scan only checks each node's
-      // own mode; the cascade from an inactive container is applied here
-      // using the now-configured live graph.
       const activeMissingNodeTypes = missingNodeTypes.filter(
         (n) =>
           typeof n === 'string' ||
@@ -1614,6 +1589,7 @@ export class ComfyApp implements IComfyApp {
         let models: MissingModelCandidate[] | undefined
         let media: MissingMediaCandidate[] | undefined
         const reconcile = () => {
+          if (isCurrent?.() === false) return
           if (!resourceScanLoadCompleted || (!models && !media)) return
           errorStore.retireResolvedMissingResourceErrors(
             { models, media },
@@ -1632,6 +1608,10 @@ export class ComfyApp implements IComfyApp {
             reconcile()
           }
         })
+        if (isCurrent?.() === false) {
+          await cancelLoad()
+          return false
+        }
 
         await runMissingMediaPipeline({
           rootGraph: this.rootGraph,
@@ -1641,6 +1621,10 @@ export class ComfyApp implements IComfyApp {
             reconcile()
           }
         })
+        if (isCurrent?.() === false) {
+          await cancelLoad()
+          return false
+        }
       }
 
       if (!deferWarnings) {
@@ -1651,17 +1635,16 @@ export class ComfyApp implements IComfyApp {
       resourceScanLoadCompleted = true
 
       requestAnimationFrame(() => {
+        if (isCurrent?.() === false) return
         this.canvas.setDirty(true, true)
       })
       return activatedWorkflow ?? true
     } finally {
-      // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
       )
       ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
     }

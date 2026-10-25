@@ -181,28 +181,37 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to open.
    */
   const openWorkflow = async (
-    workflow: ComfyWorkflow
+    workflow: ComfyWorkflow,
+    options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
+    if (options.isCurrent?.() === false)
+      throw new DOMException('Workflow load was replaced', 'AbortError')
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
-    if (!openWorkflowPaths.value.includes(workflow.path)) {
+    if (
+      !options.isCurrent &&
+      !openWorkflowPaths.value.includes(workflow.path)
+    ) {
       openWorkflowPaths.value.push(workflow.path)
     }
     const graphState = useApp().rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
-    if (graphState !== useApp().rootGraphOrUndefined?.state) {
+    if (
+      graphState !== useApp().rootGraphOrUndefined?.state ||
+      options.isCurrent?.() === false
+    ) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
+    }
+    if (!openWorkflowPaths.value.includes(workflow.path)) {
+      openWorkflowPaths.value.push(workflow.path)
     }
     activeWorkflow.value = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
-
-    // Track activation in history (move to end if already present)
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
     if (historyIndex !== -1) {
       tabActivationHistory.value.splice(historyIndex, 1)
     }
     tabActivationHistory.value.push(workflow.path)
-    // Trim history if too large
     if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
       tabActivationHistory.value.shift()
     }
@@ -224,7 +233,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
-    // Generate new id when saving existing workflow as a new file
     const id = generateUUID()
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)

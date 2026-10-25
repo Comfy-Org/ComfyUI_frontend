@@ -19,6 +19,7 @@ import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 
 const WORKSPACE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 const DEPLOYMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.DEPLOYMENT
+const ENVIRONMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.ENVIRONMENT
 const SWITCH_KEY = WORKSPACE_STORAGE_KEYS.DEPLOYMENT_LINK_SWITCH
 
 /**
@@ -32,15 +33,18 @@ function readLinkValue(raw: unknown): string | null {
   return value && !value.includes(',') ? value : null
 }
 
-/** The link's query: the URL's, plus what the sign-in redirect stashed. */
 function linkQuery(routeQuery: LocationQueryRaw): LocationQueryRaw {
   hydratePreservedQuery(WORKSPACE_NAMESPACE)
   hydratePreservedQuery(DEPLOYMENT_NAMESPACE)
+  hydratePreservedQuery(ENVIRONMENT_NAMESPACE)
   const withWorkspace =
     mergePreservedQueryIntoQuery(WORKSPACE_NAMESPACE, routeQuery) ?? routeQuery
-  return (
+  const withDeployment =
     mergePreservedQueryIntoQuery(DEPLOYMENT_NAMESPACE, withWorkspace) ??
     withWorkspace
+  return (
+    mergePreservedQueryIntoQuery(ENVIRONMENT_NAMESPACE, withDeployment) ??
+    withDeployment
   )
 }
 
@@ -69,23 +73,6 @@ function setSwitchTarget(workspaceId: string | null): boolean {
   }
 }
 
-/**
- * Opens the editor on the deployment a link names (BE-20294):
- * `/?workspace=<workspace id>&deployment=<deployment id>`. Runs before the
- * `?workspace=` loader and owns both params when `deployment` is present.
- *
- * In another workspace it switches there first, keeping both params so the
- * boot after the switch's reload picks; a switch that fails, or that did not
- * land after its reload, stays in the active workspace and says so. In the
- * named workspace it strips both params, then picks with the switcher's own
- * request, which reloads onto the deployment's nodes; a refused pick (outside
- * the rollout, a deployment gone or not the workspace's) shows the server's
- * reason and changes nothing. A link without both values, or an API-key
- * session (bound to one workspace, no pick), does nothing but drop
- * `deployment`. Signed out, the router sends the person to sign in with the
- * full path, query included, to come back to; both params are also stashed
- * by the preserved-query tracker.
- */
 export function useDeploymentUrlLoader() {
   const route = useRoute()
   const router = useRouter()
@@ -103,7 +90,7 @@ export function useDeploymentUrlLoader() {
    * the link again. */
   async function stripParams(
     query: LocationQueryRaw,
-    keys: ('workspace' | 'deployment')[]
+    keys: ('workspace' | 'deployment' | 'environment')[]
   ) {
     const cleanQuery = { ...query }
     for (const key of keys) delete cleanQuery[key]
@@ -117,6 +104,7 @@ export function useDeploymentUrlLoader() {
     }
     if (keys.includes('workspace')) clearPreservedQuery(WORKSPACE_NAMESPACE)
     clearPreservedQuery(DEPLOYMENT_NAMESPACE)
+    clearPreservedQuery(ENVIRONMENT_NAMESPACE)
   }
 
   function notifyWorkspaceRefused() {
@@ -139,12 +127,11 @@ export function useDeploymentUrlLoader() {
     workspaceId: string,
     switchedTo: string | null
   ): Promise<boolean> {
-    // A switch this link already made did not land: never reload again.
     if (switchedTo !== workspaceId && setSwitchTarget(workspaceId)) {
       if (await switchWorkspace(workspaceId)) return true
       setSwitchTarget(null)
     }
-    await stripParams(query, ['workspace', 'deployment'])
+    await stripParams(query, ['workspace', 'deployment', 'environment'])
     notifyWorkspaceRefused()
     return false
   }
@@ -155,18 +142,32 @@ export function useDeploymentUrlLoader() {
    */
   async function pickDeployment(
     query: LocationQueryRaw,
-    deploymentId: string
+    deploymentId: string | null
   ): Promise<boolean> {
-    await stripParams(query, ['workspace', 'deployment'])
+    await stripParams(query, ['workspace', 'deployment', 'environment'])
     const outcome = await pickStore.pickFromLink(deploymentId)
     if (outcome.kind === 'timedOut') {
-      toast.error(t('deploymentSwitcher.linkTimedOut'), { duration: 8000 })
+      toast.error(
+        t(
+          deploymentId === null
+            ? 'deploymentSwitcher.linkEnvironmentTimedOut'
+            : 'deploymentSwitcher.linkTimedOut'
+        ),
+        { duration: 8000 }
+      )
     }
     if (outcome.kind === 'refused') {
-      toast.error(t('deploymentSwitcher.linkRefused'), {
-        description: outcome.message,
-        duration: 8000
-      })
+      toast.error(
+        t(
+          deploymentId === null
+            ? 'deploymentSwitcher.linkEnvironmentRefused'
+            : 'deploymentSwitcher.linkRefused'
+        ),
+        {
+          description: outcome.message,
+          duration: 8000
+        }
+      )
     }
     return outcome.kind === 'picked'
   }
@@ -178,19 +179,30 @@ export function useDeploymentUrlLoader() {
   async function loadDeploymentFromUrl(): Promise<boolean> {
     const query = linkQuery(route.query)
     const switchedTo = takeSwitchTarget()
-    if (!('deployment' in query)) return false
+    if (!('deployment' in query) && !('environment' in query)) return false
+
+    const standard = 'environment' in query
+    if (
+      standard &&
+      (readLinkValue(query.environment) !== 'standard' || 'deployment' in query)
+    ) {
+      await stripParams(query, ['workspace', 'deployment', 'environment'])
+      toast.error(t('deploymentSwitcher.linkEnvironmentInvalid'), {
+        duration: 8000
+      })
+      return false
+    }
 
     const workspaceId = readLinkValue(query.workspace)
     const deploymentId = readLinkValue(query.deployment)
-    // `workspace` stays for its own loader, which opens the workspace alone.
-    if (!workspaceId || !deploymentId || isApiKeyLogin.value) {
-      await stripParams(query, ['deployment'])
+    if (!workspaceId || (!standard && !deploymentId) || isApiKeyLogin.value) {
+      await stripParams(query, ['deployment', 'environment'])
       return false
     }
     if (activeWorkspace.value?.id !== workspaceId) {
       return openWorkspace(query, workspaceId, switchedTo)
     }
-    return pickDeployment(query, deploymentId)
+    return pickDeployment(query, standard ? null : deploymentId)
   }
 
   return {

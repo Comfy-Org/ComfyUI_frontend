@@ -5583,6 +5583,7 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  private_workflow_links_enabled: z.boolean().optional(),
   agent: z
     .object({
       state: z.enum(['ready'])

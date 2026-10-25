@@ -241,7 +241,9 @@ export function useWorkflowPersistenceV2() {
     await useWorkflowService().loadBlankWorkflow()
     await nextTick()
     discardStartupBlankDraft()
-    return hasSharedWorkflowIntent() || hasTemplateUrlIntent()
+    return hasSharedWorkflowIntent() ||
+      hasTemplateUrlIntent() ||
+      hasPreservedIntent(PRESERVED_QUERY_NAMESPACES.WORKFLOW, 'workflow')
       ? 'url-intent'
       : 'fresh'
   }

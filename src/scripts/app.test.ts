@@ -562,6 +562,151 @@ describe('ComfyApp', () => {
       )
     })
 
+    it.for([
+      { hook: 'beforeLoadGraph', change: 'sign-out' },
+      { hook: 'beforeConfigureGraph', change: 'workspace switch' }
+    ] as const)(
+      'retains the dirty saved canvas after $change during $hook',
+      async ({ hook, change }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        graph.add(new LGraphNode('Keep my edits'))
+        graph.extra = { marker: 'dirty current canvas' }
+        Reflect.set(app, 'rootGraphInternal', graph)
+        vi.spyOn(singletonApp, 'loadGraphData').mockImplementation(
+          app.loadGraphData.bind(app)
+        )
+        const workflowService = await useRealWorkflowService()
+        vi.mocked(
+          useSubgraphNavigationStore().endWorkflowNavigation
+        ).mockImplementation(() => {})
+        const retained = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/retained.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        retained.changeTracker.activeState = {
+          ...createWorkflowGraphData(),
+          extra: { marker: 'dirty current canvas' }
+        }
+        retained.isModified = true
+        useWorkflowStore().activeWorkflow = retained
+        const retainedDocument = useWorkflowStore().activeWorkflow
+        const incoming = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/private.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        const context = ref({ userId: 'user-a', workspaceId: 'workspace-a' })
+        let releaseHook = () => {}
+        const paused = new Promise<void>((resolve) => {
+          releaseHook = resolve
+        })
+        let hookEntered = () => {}
+        const entered = new Promise<void>((resolve) => {
+          hookEntered = resolve
+        })
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (name) => {
+            if (name === hook) {
+              hookEntered()
+              await paused
+            }
+          }
+        )
+        const options = {
+          isCurrent: () =>
+            context.value.userId === 'user-a' &&
+            context.value.workspaceId === 'workspace-a'
+        }
+        const loading = workflowService.openWorkflow(incoming, options)
+        await entered
+        context.value = {
+          userId: change === 'sign-out' ? '' : 'user-a',
+          workspaceId:
+            change === 'workspace switch' ? 'workspace-b' : 'workspace-a'
+        }
+        releaseHook()
+
+        await expect(loading).resolves.toBe(false)
+        expect(graph.nodes.map((node) => node.title)).toEqual(['Keep my edits'])
+        expect(graph.extra).toEqual({ marker: 'dirty current canvas' })
+        expect(useWorkflowStore().activeWorkflow).toBe(retainedDocument)
+        expect(retained.isModified).toBe(true)
+        expect(retained.activeState.extra).toEqual({
+          marker: 'dirty current canvas'
+        })
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
+      }
+    )
+
+    it('does not activate a guarded load cancelled after configuration', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph') current = false
+        }
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, null, {
+          isCurrent: () => current
+        })
+      ).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('drops a stale guarded load while it waits in the graph queue', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      let releaseFirst = () => {}
+      const paused = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      let firstEntered = () => {}
+      const entered = new Promise<void>((resolve) => {
+        firstEntered = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async () => {
+          firstEntered()
+          await paused
+        }
+      )
+      const first = app.loadGraphData({
+        ...createWorkflowGraphData(),
+        extra: { marker: 'current' }
+      })
+      await entered
+      let current = true
+      const stale = app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        null,
+        {
+          isCurrent: () => current
+        }
+      )
+      current = false
+      releaseFirst()
+
+      await first
+      await expect(stale).resolves.toBeUndefined()
+      expect(graph.extra).toEqual({ marker: 'current' })
+    })
+
     it('resolves false, not rejects, when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()

@@ -745,6 +745,61 @@ describe('useDeploymentPickStore', () => {
   })
 
   describe('a pick from a link', () => {
+    it('selects standard Cloud for this browser through the clear-pick route and reloads', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'picked'
+      })
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith(
+        'ws-1',
+        {},
+        expect.any(AbortSignal)
+      )
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it('aborts a stalled standard-environment selection without reloading on late success', async () => {
+      vi.useFakeTimers()
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const selected = deferred<void>()
+      let selectionSignal: AbortSignal | undefined
+      mockWorkspaceApi.clearDeployment.mockImplementation(
+        (_id: string, _options: unknown, signal?: AbortSignal) => {
+          selectionSignal = signal
+          return selected.promise
+        }
+      )
+      const store = useDeploymentPickStore()
+      const linked = store.pickFromLink(null)
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+
+      await expect(linked).resolves.toEqual({ kind: 'timedOut' })
+      expect(selectionSignal?.aborted).toBe(true)
+      selected.resolve()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('does not assume an unreadable deployment pick already selects standard Cloud', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('outside rollout', 403)
+      )
+      mockWorkspaceApi.clearDeployment.mockRejectedValue(
+        new WorkspaceApiError('outside rollout', 403)
+      )
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'refused',
+        message: 'outside rollout'
+      })
+      expect(reload).not.toHaveBeenCalled()
+    })
     it('keeps a link pick exclusive when a late listing arrives after a failed boot listing', async () => {
       const listed = deferred<WorkspaceDeploymentList>()
       const put = deferred<void>()
