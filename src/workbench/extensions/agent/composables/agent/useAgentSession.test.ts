@@ -44,6 +44,7 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
+  DraftSnapshot,
   PostMessageInput
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -5433,6 +5434,98 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  // PM-1410: "the agent keeps reporting a removed connection as still
+  // connected". (h10) above pins that the *flag* is not re-sent on a second
+  // turn, which is wanted. What it does not pin is what happens to the
+  // *canvas*, and the two travel together through canSendDraft: once
+  // boundWorkflowId is set, a still-unbound tab sends neither. So a graph edit
+  // made on that tab reaches the agent by no route at all -
+  // docOpMinter.onIntent drops every local intent while the document is
+  // unbound, and this turn carries no draft to make up for it. The agent
+  // answers from the document it already holds, which still has the link the
+  // user removed - the reported observable, in the reporter's own words "my
+  // server-side copy is the stale one, not your canvas".
+  //
+  // Why `adopted` being a no-op here is the product's own behaviour and not a
+  // convenience: AgentPanelRoot's onWorkflowAdopted binds the tab only when
+  // the acked workflow is adoptable, and for a turn that named no workflow
+  // that means `bindingStore.tabPathFor(id) === undefined &&
+  // storedWorkflowFor(id) === null`. When the server answers with a workflow
+  // that already belongs to another tab - which is exactly what the comment
+  // on isUnboundTarget describes the fallback doing - adoption refuses, the
+  // tab stays unbound, and boundWorkflowId is set all the same. That is the
+  // reachable shape of this hole.
+  //
+  // The first test records today's behaviour so the second cannot pass
+  // vacuously; the second states the behaviour the fix owes and is marked
+  // `it.fails`, so it is green while the gap stands and turns red the moment a
+  // continuing turn starts carrying the canvas. Closing it is a design call -
+  // the server targets the thread's remembered workflow for a turn that names
+  // none, which is a different workflow in the general case - so this pins the
+  // gap rather than choosing the fix.
+  function unboundSecondTurnSession(draft: () => DraftSnapshot) {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValue({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft
+      }
+    })
+    session.start()
+    return { session, postMessage }
+  }
+
+  const LINKED_DRAFT: DraftSnapshot = {
+    content: {
+      nodes: [
+        { id: 1, type: 'CheckpointLoaderSimple' },
+        { id: 2, type: 'CLIPTextEncode' }
+      ],
+      links: [[1, 1, 1, 2, 1, 'CLIP']]
+    }
+  }
+  const SEVERED_DRAFT: DraftSnapshot = {
+    content: { nodes: LINKED_DRAFT.content.nodes, links: [] }
+  }
+
+  it('(h11) a second turn on a still-unbound tab sends no canvas at all (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    // The control: turn 1 does carry the connection, so its later absence is
+    // the turn dropping the canvas rather than a canvas that never had it.
+    expect(postMessage.mock.calls[0][1].draft).toEqual(LINKED_DRAFT)
+
+    // The user severs the connection on that same tab.
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('workflowId')
+  })
+
+  it.fails('(h12) a second turn on a still-unbound tab carries the connection the user severed (PM-1410)', async () => {
+    let draft = LINKED_DRAFT
+    const { session, postMessage } = unboundSecondTurnSession(() => draft)
+
+    await session.sendMessage('what is connected here?')
+    draft = SEVERED_DRAFT
+    await session.sendMessage('is it still connected?')
+
+    expect(postMessage.mock.calls[1][1].draft).toEqual(SEVERED_DRAFT)
   })
 
   it.for(['new-chat', 'history'])(
