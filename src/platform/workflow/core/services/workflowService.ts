@@ -490,14 +490,16 @@ export const useWorkflowService = () => {
             navigationIntentId
           )
           showPendingWarnings(undefined, { silent: true })
+          if (options.initiator === 'user')
+            workflowStore.reportUserActivation(workflow)
           return true
         }
 
         workflow.changeTracker?.prepareForSave()
         const loaded = await useApp().loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
-          /* clean=*/ true,
-          /* restore_view=*/ true,
+          true,
+          true,
           workflow,
           {
             checkForRerouteMigration: false,

@@ -1948,27 +1948,32 @@ describe('useWorkflowService', () => {
       )
     }
 
-    it('reports a tab only when a user action activates it', async () => {
-      const workflowStore = useWorkflowStore()
-      const restored = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/restored.json'
-      })
-      const clicked = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/clicked.json'
-      })
-      activateOnLoad()
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
-      const service = useWorkflowService()
+    it.for(['configure', 'live'] as const)(
+      'reports a tab only when a user action activates it through %s',
+      async (path) => {
+        const workflowStore = useWorkflowStore()
+        const restored = createModeTestWorkflow({
+          path: 'workflows/restored.json'
+        })
+        const clicked = createModeTestWorkflow({
+          path: 'workflows/clicked.json'
+        })
+        if (path === 'live') {
+          restored.adoptGraph(app.createRootGraph())
+          clicked.adoptGraph(app.createRootGraph())
+        }
+        activateOnLoad()
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+        const service = useWorkflowService()
 
-      await service.openWorkflow(restored)
-      await service.openWorkflow(clicked, { initiator: 'user' })
+        await service.openWorkflow(restored)
+        await service.openWorkflow(clicked, { initiator: 'user' })
 
-      expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
-      expect(activated.mock.calls).toEqual([[clicked]])
-    })
+        expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
+        expect(activated.mock.calls).toEqual([[clicked]])
+      }
+    )
 
     it('does not report a user activation whose load fails', async () => {
       const workflowStore = useWorkflowStore()
