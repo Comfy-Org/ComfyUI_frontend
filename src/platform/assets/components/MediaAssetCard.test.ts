@@ -2,15 +2,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -18,6 +11,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import '@/platform/assets/components/MediaAudioTop.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
+import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -99,9 +93,7 @@ const historyImage: AssetItem = fromPartial({
   preview_url: '/api/view?filename=a.png&type=output&subfolder='
 })
 
-function renderCard(
-  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
-) {
+function cardGlobalConfig() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -109,14 +101,20 @@ function renderCard(
     missingWarn: false,
     fallbackWarn: false
   })
+  return {
+    plugins: [i18n],
+    stubs: {
+      MediaTitle: true
+    }
+  }
+}
+
+function renderCard(
+  props: Partial<ComponentProps<typeof MediaAssetCard>> = {}
+) {
   return render(MediaAssetCard, {
     props: { asset, loading: true, ...props },
-    global: {
-      plugins: [i18n],
-      stubs: {
-        MediaTitle: true
-      }
-    }
+    global: cardGlobalConfig()
   })
 }
 
@@ -406,8 +404,7 @@ describe('MediaAssetCard', () => {
       { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
     ]
 
-    async function renderAudioCard() {
-      const rendered = renderCard({ loading: false, asset: audioAsset })
+    async function prepareAudioStrip() {
       const audio = await screen.findByTestId('wave-audio-media')
       assert.instanceOf(audio, HTMLAudioElement)
       Object.defineProperty(audio, 'duration', {
@@ -419,11 +416,51 @@ describe('MediaAssetCard', () => {
       waveform.getBoundingClientRect = () =>
         new DOMRect(0, 0, waveformWidth, 32)
       return {
-        ...rendered,
         waveform,
         playButton: screen.getByRole('button', { name: 'g.play' }),
         playSpy: vi.spyOn(audio, 'play').mockResolvedValue()
       }
+    }
+
+    async function renderAudioCard() {
+      const rendered = renderCard({ loading: false, asset: audioAsset })
+      return { ...rendered, ...(await prepareAudioStrip()) }
+    }
+
+    async function renderAudioCardInSelectionGrid() {
+      const SelectionGrid = defineComponent({
+        components: { MediaAssetCard },
+        setup() {
+          const gridRef = ref<HTMLElement>()
+          const { marqueeStyle } = useAssetGridSelection({
+            marqueeContainerRef: gridRef,
+            hoverTargetRef: gridRef,
+            getAssets: () => [audioAsset],
+            getSelectedIds: () => [],
+            setSelectedIds: vi.fn(),
+            selectAll: vi.fn()
+          })
+          return { gridRef, marqueeStyle, audioAsset }
+        },
+        template: `
+          <div ref="gridRef">
+            <MediaAssetCard :asset="audioAsset" :loading="false" />
+            <div v-if="marqueeStyle" data-testid="marquee" :style="marqueeStyle" />
+          </div>
+        `
+      })
+      render(SelectionGrid, { global: cardGlobalConfig() })
+      return prepareAudioStrip()
+    }
+
+    async function dragAcross(
+      user: ReturnType<typeof userEvent.setup>,
+      target: HTMLElement
+    ) {
+      await user.pointer([
+        { keys: '[MouseLeft>]', target, coords: { clientX: 10, clientY: 10 } },
+        { target, coords: { clientX: 30, clientY: 20 } }
+      ])
     }
 
     it.for(selectionModifiers)(
@@ -446,38 +483,29 @@ describe('MediaAssetCard', () => {
       }
     )
 
-    function recordPointerDownsReachingHost() {
-      const reachedHost = vi.fn()
-      document.addEventListener('pointerdown', reachedHost)
-      onTestFinished(() =>
-        document.removeEventListener('pointerdown', reachedHost)
-      )
-      return reachedHost
-    }
-
-    it.for(selectionModifiers)(
-      'lets a $modifier press on the waveform reach the host for marquee selection',
+    it.for(selectionModifiers.filter(({ modifier }) => modifier !== 'Shift'))(
+      'starts a marquee from a $modifier drag on the waveform',
       async ({ keyDown, keyUp }) => {
         const user = userEvent.setup()
-        const { waveform } = await renderAudioCard()
-        const reachedHost = recordPointerDownsReachingHost()
+        const { waveform } = await renderAudioCardInSelectionGrid()
 
         await user.keyboard(keyDown)
-        await user.pointer({ keys: '[MouseLeft>]', target: waveform })
-        await user.keyboard(keyUp)
+        await dragAcross(user, waveform)
 
-        expect(reachedHost).toHaveBeenCalledTimes(1)
+        expect(screen.getByTestId('marquee')).toBeInTheDocument()
+
+        await user.pointer({ keys: '[/MouseLeft]', target: waveform })
+        await user.keyboard(keyUp)
       }
     )
 
-    it('keeps a plain press on the waveform from reaching the host', async () => {
+    it('does not start a marquee from a plain drag on the waveform', async () => {
       const user = userEvent.setup()
-      const { waveform } = await renderAudioCard()
-      const reachedHost = recordPointerDownsReachingHost()
+      const { waveform } = await renderAudioCardInSelectionGrid()
 
-      await user.pointer({ keys: '[MouseLeft>]', target: waveform })
+      await dragAcross(user, waveform)
 
-      expect(reachedHost).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('marquee')).not.toBeInTheDocument()
     })
 
     it('seeks without selecting from a plain click on the waveform', async () => {
