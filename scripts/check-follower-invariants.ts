@@ -123,7 +123,8 @@ function enclosingPattern(pattern: ts.Node): ts.Node | undefined {
   const container = pattern.parent
   if (
     ts.isParenthesizedExpression(container) ||
-    ts.isArrayLiteralExpression(container)
+    ts.isArrayLiteralExpression(container) ||
+    ts.isSpreadElement(container)
   )
     return container
   if (ts.isPropertyAssignment(container) && container.initializer === pattern)
@@ -133,9 +134,10 @@ function enclosingPattern(pattern: ts.Node): ts.Node | undefined {
 function isAssignmentTarget(pattern: ts.Node): boolean {
   const container = pattern.parent
   return (
-    ts.isBinaryExpression(container) &&
-    container.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-    container.left === pattern
+    (ts.isBinaryExpression(container) &&
+      container.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      container.left === pattern) ||
+    (ts.isForOfStatement(container) && container.initializer === pattern)
   )
 }
 

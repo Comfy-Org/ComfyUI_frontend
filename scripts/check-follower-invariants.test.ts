@@ -75,6 +75,19 @@ describe('checkNoOutboundUpdateB64', () => {
     },
     { source: 'let update_b64; [{ update_b64 }] = data', expected: 0 },
     {
+      source:
+        'let update_b64; for ({ update_b64 } of frames) consume(update_b64)',
+      expected: 0
+    },
+    {
+      source: 'let update_b64; [...[{ update_b64 }]] = frames',
+      expected: 0
+    },
+    {
+      source: 'for (const frame of [{ update_b64: encoded }]) consume(frame)',
+      expected: 1
+    },
+    {
       source: 'let payload; ({ payload = { update_b64: encoded } } = data)',
       expected: 1
     }
