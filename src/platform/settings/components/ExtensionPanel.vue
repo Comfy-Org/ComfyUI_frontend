@@ -87,10 +87,15 @@
           </TableCell>
           <TableCell>
             {{ extension.name }}
-            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
-              {{ $t('g.core') }}
+            <Badge :severity="extensionBadge(extension).severity">
+              {{ extensionBadge(extension).label }}
             </Badge>
-            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
+            <div
+              v-if="extension.provenance?.summary"
+              class="text-xs text-muted-foreground"
+            >
+              {{ extension.provenance.summary }}
+            </div>
           </TableCell>
           <TableCell class="text-right">
             <Switch
@@ -137,7 +142,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 const { t } = useI18n()
 
-const filterTypeKeys = ['all', 'core', 'custom'] as const
+const filterTypeKeys = ['all', 'core', 'custom', 'agentCreated'] as const
 type FilterTypeKey = (typeof filterTypeKeys)[number]
 const filterTypes = computed(() =>
   filterTypeKeys.map((key) => ({
@@ -155,6 +160,18 @@ const settingStore = useSettingStore()
 
 const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
+function extensionBadge(extension: (typeof extensionStore.extensions)[number]) {
+  if (extensionStore.isCoreExtension(extension.name)) {
+    return { label: t('g.core'), severity: undefined }
+  }
+  return {
+    label: extensionStore.isAgentCreatedExtension(extension)
+      ? t('g.createdByAgent')
+      : t('g.custom'),
+    severity: 'info' as const
+  }
+}
+
 const filteredExtensions = computed(() => {
   const extensions = extensionStore.extensions
   switch (filterType.value) {
@@ -166,6 +183,8 @@ const filteredExtensions = computed(() => {
       return extensions.filter(
         (ext) => !extensionStore.isCoreExtension(ext.name)
       )
+    case 'agentCreated':
+      return extensionStore.agentExtensions
     default:
       return extensions
   }
@@ -273,6 +292,15 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
+const disableAgentExtensions = async () => {
+  extensionStore.agentExtensions.forEach((ext) => {
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  await updateExtensionStatus()
+}
+
 const applyChanges = () => {
   // Refresh the page to apply changes
   window.location.reload()
@@ -321,6 +349,12 @@ const extensionActions = computed<MenuItem[]>(() => [
     icon: 'pi pi-times',
     command: disableThirdPartyExtensions,
     disabled: !extensionStore.hasThirdPartyExtensions
+  },
+  {
+    label: t('g.disableAgentCreated'),
+    icon: 'pi pi-times',
+    command: disableAgentExtensions,
+    disabled: !extensionStore.hasAgentExtensions
   }
 ])
 </script>
